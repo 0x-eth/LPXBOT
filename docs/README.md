@@ -4,6 +4,59 @@
 > 当前阶段：产品取证、范围冻结与工程路线设计已完成；尚未开始产品代码开发  
 > 操作边界：本轮仅执行公开资料读取、登录态页面只读浏览和链上 RPC 查询，未提交表单、未签名、未广播交易、未执行资金操作。
 
+## 本地开发基础设施
+
+### 前置条件
+
+- Node.js 22、pnpm 11.17.0（仓库通过 `.nvmrc` 和 `packageManager` 固定）。
+- Docker Engine 和 Docker Compose，Apple Silicon 使用 ARM64 镜像。
+- 本地栈不读取外部 RPC；Anvil 始终是独立本地链，chain ID 为 `31337`。
+
+### 首次启动
+
+```bash
+cp .env.example .env
+pnpm infra:up
+pnpm db:migrate
+pnpm db:seed
+pnpm infra:verify
+pnpm test:infra
+```
+
+`.env.example` 只含本地开发占位凭证。`.env` 已被 Git 忽略，可在其中覆盖端口或本地凭证。默认所有端口只绑定 `127.0.0.1`：
+
+| 服务 | 默认宿主机端口 |
+|---|---:|
+| PostgreSQL / TimescaleDB | `15432` |
+| Redis | `16379` |
+| MinIO API / Console | `19000` / `19001` |
+| Anvil JSON-RPC | `18545` |
+
+### 日常命令
+
+```bash
+pnpm infra:status       # 查看容器和健康状态
+pnpm infra:logs         # 查看最近的服务日志
+pnpm infra:down         # 停止容器，保留本项目 named volumes
+pnpm infra:reset        # 停止并仅删除 lpbot-p00-local 的四个标记卷
+pnpm infra:up           # 从现有或空卷启动，带有超时健康等待
+pnpm db:migrate         # 通过 dbmate 执行 infra/migrations
+pnpm db:status          # 显示 migration 的 applied/pending 状态
+pnpm db:seed            # 幂等写入固定 fixture version
+pnpm infra:verify       # 验证健康状态、bucket 和 Anvil chain ID
+pnpm test:infra         # 独立运行全部 Docker 集成测试
+```
+
+`pnpm test` 是无 Docker 依赖的普通质量门禁。基础设施集成测试只通过 `pnpm test:infra` 显式执行。
+
+### 常见故障
+
+- `Docker daemon is not available`：启动 Docker Desktop 或 Colima，然后重试。
+- 端口已占用：在 `.env` 中修改对应的 `*_PORT`，同时更新同一文件中面向宿主机的 URL。
+- 服务未在限时内健康：执行 `pnpm infra:status` 和 `pnpm infra:logs`；低性能机器可在 `.env` 中增大 `INFRA_WAIT_TIMEOUT_SECONDS`。
+- migration 提示 PostgreSQL 未运行：先执行 `pnpm infra:up`；如需全新库，执行 `pnpm infra:reset` 后重跑首次启动步骤。
+- MinIO bucket 缺失：重跑 `pnpm infra:up`，该命令会幂等执行初始化容器。
+
 ## 交付物
 
 | 文档 | 用途 |
