@@ -16,12 +16,52 @@ const REQUIRED_FILES = [
   "network-observations.json",
   "dom-accessibility-summary.json",
   "state-catalog.json",
+  "screenshot-redaction-policy.json",
   "contracts/p01-02-contract.json",
+  "checks/artifact-integrity.txt",
   "checks/initial-failure.txt",
   "checks/read-only-audit.json",
   "checks/secret-scan.txt",
   "checks/frozen-baseline.txt",
   "checks/repository-quality.txt"
+];
+const REQUIRED_ROUTES = [
+  "/tasks/running",
+  "/tasks/paused",
+  "/tasks/stopped",
+  "/pools",
+  "/strategies",
+  "/activity",
+  "/wallets",
+  "/developer",
+  "/settings"
+];
+const REQUIRED_FEATURE_REFERENCES = [
+  "AUTH-01",
+  "AUTH-02",
+  "AUTH-03",
+  "AUTH-04",
+  "AUTH-05",
+  "AUTH-06",
+  "AUTH-07",
+  "AUTH-08",
+  "AUTH-09",
+  "AUTH-10",
+  "SHELL-01",
+  "SHELL-02",
+  "SHELL-03",
+  "SHELL-04",
+  "SHELL-05",
+  "SHELL-06",
+  "SET-01",
+  "SET-02"
+];
+const REQUIRED_CHECK_IDS = [
+  "artifact-integrity",
+  "secret-scan",
+  "read-only-methods",
+  "frozen-baseline",
+  "repository-quality"
 ];
 const REQUIRED_STATE_CATEGORIES = [
   "sidebar",
@@ -145,6 +185,18 @@ async function main() {
       }
     }
 
+    const checks = Array.isArray(manifest.checks) ? manifest.checks : [];
+    const checkIds = checks.map((check) => check.id);
+    for (const duplicate of duplicateValues(checkIds)) errors.push(`duplicate manifest check: ${duplicate}`);
+    for (const checkId of REQUIRED_CHECK_IDS) {
+      if (!checkIds.includes(checkId)) errors.push(`manifest missing passed check: ${checkId}`);
+    }
+    for (const check of checks) {
+      if (!recordPaths.includes(check.evidencePath)) {
+        errors.push(`manifest check evidence is not inventoried: ${check.id}`);
+      }
+    }
+
     const viewportMap = new Map((manifest.viewports ?? []).map((entry) => [entry.id, entry]));
     const desktop = viewportMap.get("desktop");
     const mobile = viewportMap.get("mobile");
@@ -198,8 +250,17 @@ async function main() {
       if (manifest && manifest.routeCount !== routeMatrix.routes?.length) {
         errors.push("manifest routeCount does not match route-state-matrix.json");
       }
+      const routePaths = (routeMatrix.routes ?? []).map((route) => route.path);
+      for (const duplicate of duplicateValues(routePaths)) errors.push(`duplicate route path: ${duplicate}`);
+      if (JSON.stringify(routePaths) !== JSON.stringify(REQUIRED_ROUTES)) {
+        errors.push("route-state-matrix.json does not contain the canonical route inventory");
+      }
+      const screenshotPaths = [];
       for (const route of routeMatrix.routes ?? []) {
         if (!route.path?.startsWith("/")) errors.push(`invalid route path: ${route.path ?? "<missing>"}`);
+        if (route.canonical !== true || route.evidenceLevel !== "live-observed") {
+          errors.push(`${route.path}: canonical live-observed evidence is required`);
+        }
         if (route.access === "verified") {
           for (const viewport of ["desktop", "mobile"]) {
             const state = route.viewports?.[viewport];
@@ -207,6 +268,7 @@ async function main() {
               errors.push(`${route.path}: ${viewport} observation or screenshot missing`);
               continue;
             }
+            screenshotPaths.push(state.screenshot);
             try {
               const buffer = await readFile(inside(artifactDirectory, state.screenshot));
               const dimensions = pngDimensions(buffer);
@@ -219,6 +281,12 @@ async function main() {
             }
           }
         }
+      }
+      for (const duplicate of duplicateValues(screenshotPaths)) {
+        errors.push(`duplicate route screenshot: ${duplicate}`);
+      }
+      if (screenshotPaths.length !== REQUIRED_ROUTES.length * 2) {
+        errors.push(`expected ${REQUIRED_ROUTES.length * 2} route screenshots, found ${screenshotPaths.length}`);
       }
     } catch (error) {
       errors.push(`route-state-matrix.json: ${error.message}`);
@@ -234,6 +302,9 @@ async function main() {
       const matrixPaths = (routeMatrix?.routes ?? [])
         .filter((route) => route.access === "verified")
         .map((route) => route.path);
+      if (JSON.stringify(expected) !== JSON.stringify(REQUIRED_ROUTES)) {
+        errors.push("coverage.json does not contain the canonical ordinary-user route inventory");
+      }
       if (expected.length === 0) errors.push("coverage.json has no expected ordinary-user routes");
       if (missing.length !== 0) errors.push(`coverage.json has missing routes: ${missing.join(", ")}`);
       for (const route of expected) {
@@ -281,6 +352,14 @@ async function main() {
       if (network.bodyValuesStored !== false || network.headersStored !== false) {
         errors.push("network observations must not store body values or headers");
       }
+      if (
+        network.webmcp?.operation !== "webmcp_list_tools" ||
+        network.webmcp?.userApproval !== "approved" ||
+        network.webmcp?.result !== "capability-not-exposed" ||
+        network.webmcp?.toolsCalled?.length !== 0
+      ) {
+        errors.push("network observations must preserve the approved capability-not-exposed WebMCP result");
+      }
       for (const request of network.requests ?? []) {
         if (request.method !== "GET") errors.push(`non-GET request recorded: ${request.method} ${request.path}`);
         if (!request.path?.startsWith("/") || request.path.includes("?")) {
@@ -292,6 +371,97 @@ async function main() {
       }
     } catch (error) {
       errors.push(`network-observations.json: ${error.message}`);
+    }
+  }
+
+  if (actualFiles.includes("checks/read-only-audit.json")) {
+    try {
+      const audit = await readJson(path.join(artifactDirectory, "checks/read-only-audit.json"));
+      const zeroFields = [
+        "formsSubmitted",
+        "settingsChanged",
+        "walletOperations",
+        "signatures",
+        "broadcasts",
+        "fundsOperations",
+        "targetFetchesInitiatedByAgent",
+        "webmcpToolsCalled"
+      ];
+      if (audit.result !== "passed" || audit.target !== "https://www.lpbot.cc") {
+        errors.push("read-only audit has an invalid result or target");
+      }
+      if (audit.completeNetworkMethodTelemetry !== false) {
+        errors.push("read-only audit must not claim complete network method telemetry");
+      }
+      if (!Array.isArray(audit.prohibitedControlsTriggered) || audit.prohibitedControlsTriggered.length !== 0) {
+        errors.push("read-only audit recorded a prohibited control");
+      }
+      for (const field of zeroFields) {
+        if (audit[field] !== 0) errors.push(`read-only audit ${field} must be zero`);
+      }
+    } catch (error) {
+      errors.push(`checks/read-only-audit.json: ${error.message}`);
+    }
+  }
+
+  if (actualFiles.includes("screenshot-redaction-policy.json")) {
+    try {
+      const policy = await readJson(path.join(artifactDirectory, "screenshot-redaction-policy.json"));
+      const entries = policy.files ?? [];
+      const policyPaths = entries.map((entry) => entry.path);
+      const screenshotPaths = actualFiles.filter((file) => file.startsWith("screenshots/") && file.endsWith(".png"));
+      for (const duplicate of duplicateValues(policyPaths)) errors.push(`duplicate redaction policy path: ${duplicate}`);
+      if (JSON.stringify([...policyPaths].sort()) !== JSON.stringify(screenshotPaths)) {
+        errors.push("screenshot redaction policy must inventory every PNG exactly once");
+      }
+      for (const entry of entries) {
+        const expected = entry.path.startsWith("screenshots/desktop-")
+          ? { width: 1440, height: 900 }
+          : { width: 390, height: 844 };
+        if (entry.viewport?.width !== expected.width || entry.viewport?.height !== expected.height) {
+          errors.push(`${entry.path}: redaction policy viewport mismatch`);
+        }
+        if (!Array.isArray(entry.redactions)) {
+          errors.push(`${entry.path}: redactions must be an array`);
+          continue;
+        }
+        for (const rectangle of entry.redactions) {
+          const withinBounds =
+            Number.isInteger(rectangle.x) &&
+            Number.isInteger(rectangle.y) &&
+            Number.isInteger(rectangle.width) &&
+            Number.isInteger(rectangle.height) &&
+            rectangle.x >= 0 &&
+            rectangle.y >= 0 &&
+            rectangle.width > 0 &&
+            rectangle.height > 0 &&
+            rectangle.x + rectangle.width <= expected.width &&
+            rectangle.y + rectangle.height <= expected.height;
+          if (!withinBounds || typeof rectangle.reason !== "string" || rectangle.reason.length === 0) {
+            errors.push(`${entry.path}: invalid redaction rectangle`);
+          }
+        }
+      }
+    } catch (error) {
+      errors.push(`screenshot-redaction-policy.json: ${error.message}`);
+    }
+  }
+
+  if (actualFiles.includes("contracts/p01-02-contract.json")) {
+    try {
+      const contract = await readJson(path.join(artifactDirectory, "contracts/p01-02-contract.json"));
+      if (
+        contract.sourceWorkItem !== "P01-01" ||
+        contract.status !== "adoptable-with-unverified-fixtures" ||
+        JSON.stringify(contract.featureIds) !== JSON.stringify(REQUIRED_FEATURE_REFERENCES)
+      ) {
+        errors.push("P01-02 contract identity, status, or feature reference inventory is invalid");
+      }
+      if (!contract.testGate?.requestBoundary?.includes("unexpected non-GET request")) {
+        errors.push("P01-02 contract must retain the default non-GET abort boundary");
+      }
+    } catch (error) {
+      errors.push(`contracts/p01-02-contract.json: ${error.message}`);
     }
   }
 

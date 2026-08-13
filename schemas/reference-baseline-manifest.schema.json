@@ -34,7 +34,7 @@
       "required": ["application", "origin", "accountRole"],
       "properties": {
         "application": { "const": "LPBot" },
-        "origin": { "type": "string", "format": "uri" },
+        "origin": { "const": "https://www.lpbot.cc" },
         "accountRole": { "const": "ordinary-user" }
       }
     },

@@ -26,6 +26,7 @@
     "db:status": "bash scripts/db.sh status",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
+    "finalize:p01-reference": "node scripts/finalize-p01-reference-artifacts.mjs",
     "infra:down": "bash scripts/infra.sh down",
     "infra:logs": "bash scripts/infra.sh logs",
     "infra:reset": "bash scripts/infra.sh reset",

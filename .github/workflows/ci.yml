@@ -69,6 +69,8 @@ jobs:
         run: pnpm check:docs
       - name: Verify acceptance manifests
         run: pnpm check:acceptance
+      - name: Verify P01-01 reference artifacts
+        run: pnpm check:p01-reference
 
   browser:
     name: Browser
