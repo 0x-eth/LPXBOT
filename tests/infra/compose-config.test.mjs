@@ -20,6 +20,8 @@ function readComposeConfig() {
       envFile,
       "--file",
       composeFile,
+      "--profile",
+      "tools",
       "config",
       "--format",
       "json",
