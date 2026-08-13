@@ -3,7 +3,12 @@ import { LogOut, RefreshCw, ShieldAlert, Wrench } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
-import { AuthClient, authStatePath, canEnterRoute } from "./auth-client";
+import {
+  AuthClient,
+  authStatePath,
+  canEnterRoute,
+  type AuthPageState,
+} from "./auth-client";
 
 function BootingPage() {
   return (
@@ -76,23 +81,24 @@ function MaintenancePage({ state }: { state: Extract<AuthState, { status: "maint
 
 interface ShellProps {
   client: AuthClient;
-  onStateChange(state: AuthState): void;
+  onClientChange(state: AuthState, page: AuthPageState): void;
+  page: AuthPageState;
   state: Extract<AuthState, { status: "active" }>;
 }
 
-function Shell({ client, onStateChange, state }: ShellProps) {
+function Shell({ client, onClientChange, page, state }: ShellProps) {
   const navigate = useNavigate();
 
   const refresh = async () => {
     const next = await client.restore();
-    onStateChange(next);
+    onClientChange(next, client.page);
     const destination = authStatePath(next);
     if (destination) navigate(destination, { replace: true });
   };
 
   const logout = async () => {
     const next = await client.logout();
-    onStateChange(next);
+    onClientChange(next, client.page);
     navigate("/login", { replace: true });
   };
 
@@ -116,6 +122,19 @@ function Shell({ client, onStateChange, state }: ShellProps) {
           </button>
         </div>
       </header>
+      {page.kind === "forbidden" ? (
+        <main className="workspace">
+          <p className="eyebrow">Permission required</p>
+          <h1>Access denied</h1>
+          <p role="alert">{page.message}</p>
+        </main>
+      ) : page.kind === "error" ? (
+        <main className="workspace">
+          <p className="eyebrow">Request error</p>
+          <h1>Request failed</h1>
+          <p role="alert">{page.message}</p>
+        </main>
+      ) : (
       <Routes>
         <Route
           path="/tasks/:status"
@@ -143,12 +162,14 @@ function Shell({ client, onStateChange, state }: ShellProps) {
         />
         <Route path="*" element={<Navigate to="/tasks/running" replace />} />
       </Routes>
+      )}
     </div>
   );
 }
 
 function AuthRouter() {
   const client = useMemo(() => new AuthClient(), []);
+  const [page, setPage] = useState<AuthPageState>({ kind: "ready" });
   const [state, setState] = useState<AuthState>({ status: "booting" });
   const navigate = useNavigate();
   useEffect(() => {
@@ -156,6 +177,7 @@ function AuthRouter() {
     void client.restore().then((next) => {
       if (!current) return;
       setState(next);
+      setPage(client.page);
       const destination = authStatePath(next);
       if (destination) navigate(destination, { replace: true });
     });
@@ -173,7 +195,17 @@ function AuthRouter() {
 
   const path = globalThis.location.pathname;
   if (!canEnterRoute(path, state)) return <Navigate to="/tasks/running" replace />;
-  return <Shell client={client} onStateChange={setState} state={state} />;
+  return (
+    <Shell
+      client={client}
+      onClientChange={(nextState, nextPage) => {
+        setState(nextState);
+        setPage(nextPage);
+      }}
+      page={page}
+      state={state}
+    />
+  );
 }
 
 export function App() {
