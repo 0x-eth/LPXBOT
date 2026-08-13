@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P00-05",
+  "phase": "P00",
+  "risk": "R0",
+  "status": "accepted-with-gaps",
+  "featureIds": [],
+  "tests": [
+    {
+      "id": "T-UI",
+      "command": "pnpm test:e2e",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-05/command-output.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "forge fmt --check && forge build && pnpm test:contracts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-05/command-output.md"
+    },
+    {
+      "id": "T-UNIT",
+      "command": "node --test tests/governance/governance-checkers.test.mjs",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-05/command-output.md"
+    },
+    {
+      "id": "T-UNIT",
+      "command": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-05/command-output.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm infra:up && pnpm db:migrate && pnpm db:migrate && pnpm db:seed && pnpm db:seed && pnpm infra:verify && pnpm test:infra && pnpm infra:down && pnpm infra:reset",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-05/command-output.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-05/command-output.md"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E-OPS",
+      "path": "artifacts/acceptance/P00-05/command-output.md"
+    }
+  ],
+  "assumptions": [
+    "P00-05 is R0 test and CI infrastructure and does not close a business feature ID.",
+    "No external RPC, mainnet fork, signature, or funds operation was used.",
+    "The GitHub-hosted Browser and Contracts jobs, Ubuntu dependency installation, failure-only report upload, and existing Gitleaks Action were configured and statically validated but were not run locally or observed in GitHub Actions."
+  ],
+  "completedAt": "2026-08-13T12:35:45.000Z",
+  "commit": null
+}
