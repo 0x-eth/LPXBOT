@@ -362,7 +362,10 @@ test("repository exposes a real Playwright browser suite", async () => {
   const config = await readFile(path.join(ROOT, "playwright.config.ts"), "utf8");
   const browserTest = await readFile(path.join(ROOT, "tests/e2e/web-rendering.spec.ts"), "utf8");
 
-  assert.equal(packageJson.scripts["test:e2e"], "playwright test");
+  assert.equal(
+    packageJson.scripts["test:e2e"],
+    "pnpm --filter @lpbot/web^... build && playwright test",
+  );
   assert.match(packageJson.devDependencies["@playwright/test"], /^\d+\.\d+\.\d+$/);
   assert.match(config, /pnpm --filter @lpbot\/web dev/);
   assert.match(config, /reporter:[\s\S]*html/);
