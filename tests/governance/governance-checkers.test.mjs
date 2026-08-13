@@ -151,6 +151,19 @@ test("rejects a broken relative Markdown link", async () => {
   assert.match(output(result), /broken relative link.*missing\.md/i);
 });
 
+test("rejects a relative Markdown link with a missing heading anchor", async () => {
+  const docsDirectory = await mkdtemp(path.join(tmpdir(), "lpbot-doc-anchor-"));
+  await writeFile(path.join(docsDirectory, "target.md"), "# Existing heading\n");
+  await writeFile(
+    path.join(docsDirectory, "README.md"),
+    "# Fixture\n\n[Missing heading](./target.md#missing-heading)\n",
+  );
+  const result = run("scripts/check-doc-links.mjs", ["--docs-dir", docsDirectory]);
+
+  assert.notEqual(result.status, 0);
+  assert.match(output(result), /broken relative link.*missing heading anchor/i);
+});
+
 async function acceptanceFixture(manifest) {
   const repoRoot = await mkdtemp(path.join(tmpdir(), "lpbot-acceptance-"));
   const acceptanceDirectory = path.join(repoRoot, "artifacts/acceptance/P00-99");
