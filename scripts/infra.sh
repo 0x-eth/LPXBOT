@@ -33,16 +33,18 @@ require_docker() {
   fi
 }
 
-timeout_seconds() {
-  local value="${INFRA_WAIT_TIMEOUT_SECONDS:-}"
+positive_env_value() {
+  local variable_name="$1"
+  local default_value="$2"
+  local value="${!variable_name:-}"
 
   if [[ -z "$value" ]]; then
-    value="$(sed -n 's/^INFRA_WAIT_TIMEOUT_SECONDS=//p' "$ENV_FILE" | tail -n 1)"
+    value="$(sed -n "s/^${variable_name}=//p" "$ENV_FILE" | tail -n 1)"
   fi
-  value="${value:-120}"
+  value="${value:-$default_value}"
 
   if [[ ! "$value" =~ ^[1-9][0-9]*$ ]]; then
-    printf 'Error: INFRA_WAIT_TIMEOUT_SECONDS must be a positive integer.\n' >&2
+    printf 'Error: %s must be a positive integer.\n' "$variable_name" >&2
     exit 1
   fi
 
@@ -56,7 +58,7 @@ show_failure_status() {
 
 up() {
   local timeout
-  timeout="$(timeout_seconds)"
+  timeout="$(positive_env_value INFRA_WAIT_TIMEOUT_SECONDS 120)"
   printf 'Starting LPBot local infrastructure (timeout: %ss)...\n' "$timeout"
 
   if ! compose up --detach --wait --wait-timeout "$timeout" postgres redis minio anvil; then
@@ -116,9 +118,11 @@ reset() {
 }
 
 verify() {
-  local container_id health service state
+  local command_timeout container_id health service state
   local -a services=(postgres redis minio anvil)
   local failed=0
+
+  command_timeout="$(positive_env_value INFRA_COMMAND_TIMEOUT_SECONDS 30)"
 
   compose config --quiet
 
@@ -146,10 +150,10 @@ verify() {
   fi
 
   compose run --rm --no-deps --entrypoint /bin/sh minio-init -ec \
-    'mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null && mc stat "local/$MINIO_BUCKET" >/dev/null'
+    'timeout "$INFRA_COMMAND_TIMEOUT_SECONDS" sh -ec '\''mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null && mc stat "local/$MINIO_BUCKET" >/dev/null'\'''
 
   local chain_id
-  chain_id="$(compose exec -T anvil cast rpc eth_chainId --rpc-url http://127.0.0.1:8545 | tr -d '"')"
+  chain_id="$(compose exec -T anvil timeout "$command_timeout" cast rpc eth_chainId --rpc-url http://127.0.0.1:8545 | tr -d '"')"
   if [[ "$chain_id" != "0x7a69" ]]; then
     printf 'Error: Anvil returned chain ID %s; expected 0x7a69.\n' "$chain_id" >&2
     exit 1
