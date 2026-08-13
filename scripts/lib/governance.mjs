@@ -27,6 +27,7 @@ export const EVIDENCE_IDS = new Set([
   "E-RBAC",
   "E-SEC",
   "E-OPS",
+  "E-MIG",
 ]);
 
 export function parseOptions(defaults) {

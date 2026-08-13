@@ -92,7 +92,8 @@
               "E-REC",
               "E-RBAC",
               "E-SEC",
-              "E-OPS"
+              "E-OPS",
+              "E-MIG"
             ]
           },
           "path": { "$ref": "#/definitions/repositoryPath" }

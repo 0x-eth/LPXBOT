@@ -271,6 +271,26 @@ test("accepts a valid P00 infrastructure manifest with no feature IDs", async ()
   assert.match(output(result), /1 acceptance manifest.*valid/i);
 });
 
+test("accepts migration evidence in an acceptance manifest", async () => {
+  const manifest = validP00Manifest();
+  manifest.evidence.push({
+    id: "E-MIG",
+    path: "artifacts/acceptance/P00-99/evidence.md",
+  });
+  const fixture = await acceptanceFixture(manifest);
+  const result = run("scripts/check-acceptance.mjs", [
+    "--repo-root",
+    fixture.repoRoot,
+    "--acceptance-dir",
+    fixture.acceptanceDirectory,
+    "--function-matrix",
+    path.join(fixture.repoRoot, "docs/FUNCTION_MATRIX.md"),
+  ]);
+
+  assert.equal(result.status, 0, output(result));
+  assert.match(output(result), /1 acceptance manifest.*valid/i);
+});
+
 test("rejects a frozen baseline file omitted from its artifact manifest", async () => {
   const baselineDirectory = await mkdtemp(path.join(tmpdir(), "lpbot-baseline-"));
   const payload = "frozen fixture\n";

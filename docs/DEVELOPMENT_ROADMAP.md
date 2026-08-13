@@ -367,6 +367,7 @@ flowchart LR
 | `E-RBAC` | user/pro/admin 允许和拒绝 | `artifacts/acceptance/<ID>/rbac/` |
 | `E-SEC` | 安全控制和审查 | `artifacts/acceptance/<ID>/security/` |
 | `E-OPS` | 部署、监控、回滚 | `artifacts/acceptance/<ID>/ops/` |
+| `E-MIG` | migration/seed 升级、幂等和回滚 | `artifacts/acceptance/<ID>/migration/` |
 
 ## 7. 每个子任务的完成定义
 
