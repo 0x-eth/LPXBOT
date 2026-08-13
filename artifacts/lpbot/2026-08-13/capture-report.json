@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "task": "P00-01 freeze LPBot production baseline",
-  "startedAt": "2026-08-13T07:44:00.209Z",
-  "completedAt": "2026-08-13T07:44:23.948Z",
+  "startedAt": "2026-08-13T07:53:08.467Z",
+  "completedAt": "2026-08-13T07:53:32.126Z",
   "command": "node scripts/freeze-lpbot-baseline.mjs artifacts/lpbot/2026-08-13",
   "requestPolicy": {
     "allowedMethods": [
@@ -27,8 +27,8 @@
     "cssFiles": 1,
     "firstPartyModuleImportEdges": 1193,
     "officialApiEndpoints": 61,
-    "bundleApiCandidates": 58,
-    "routesWithEvidence": 14,
+    "bundleApiCandidates": 206,
+    "routesWithEvidence": 17,
     "featureGateRows": 14,
     "chains": 5
   },

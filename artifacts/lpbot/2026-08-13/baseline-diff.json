@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-13T07:44:23.943Z",
+  "generatedAt": "2026-08-13T07:53:32.119Z",
   "baselineDate": "2026-08-13",
   "baselineSource": "docs/research/public-surface.md",
   "hasDifferences": true,
@@ -61,13 +61,9 @@
   },
   "routes": {
     "expectedCount": 16,
-    "missingExactLiterals": [
-      "/tasks/paused",
-      "/tasks/stopped",
-      "/all/:status?"
-    ],
+    "missingExpectedRoutes": [],
     "additionalCandidates": [],
-    "note": "Missing exact literals are extraction results, not proof that a route is unavailable; minified routers may compose paths."
+    "note": "A route is observed when its exact quoted path literal exists in the captured bundle. contextType distinguishes route declarations from references."
   },
   "gates": {
     "expectedRoles": [

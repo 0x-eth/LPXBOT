@@ -837,7 +837,7 @@ async function main() {
   }));
   const gateTerms = [
     { label: 'allowedChains property', pattern: '\\ballowedChains\\b' },
-    { label: 'tier compared to pro', pattern: '\\btier(?:\\?\\.)?\s*={2,3}\s*["\']pro["\']' },
+    { label: 'tier compared to pro', pattern: '\\btier(?:\\?\\.)?\\s*={2,3}\\s*["\']pro["\']' },
     { label: 'administrator flag', pattern: '\\bisAdmin\\b' },
     { label: 'fee hook API', pattern: '["\'`]\\/api\\/(?:pools\\/)?(?:create-fee-hook|fee-hook(?:-lp)?)[^"\'`]*["\'`]' },
     { label: 'chain access configuration API', pattern: '["\'`]\\/api\\/system-config\\/chains["\'`]' },
@@ -894,6 +894,14 @@ async function main() {
     sourceBoundary: 'Role and access semantics come from the frozen documentation baseline; live evidence records client-bundle occurrences only.',
     roles,
     chainAccessLevels,
+    observedPredicates: {
+      allowedChainsFilter: regexEvidenceFor(corpus, 'allowedChains filters chain registry', 'allowedChains[\\s\\S]{0,240}\\.filter\\([^)]{0,180}\\.has\\(', 8),
+      proTier: regexEvidenceFor(corpus, 'Pro tier comparison', '\\btier(?:\\?\\.)?\\s*={2,3}\\s*["\']pro["\']', 12),
+      administrator: regexEvidenceFor(corpus, 'administrator flag', '\\bisAdmin\\b', 12),
+      proOrAdminFeeHook: regexEvidenceFor(corpus, 'admin or Pro fee-hook UI condition', '\\bisAdmin\\b[\\s\\S]{0,240}\\btier(?:\\?\\.)?\\s*={2,3}\\s*["\']pro["\']|\\btier(?:\\?\\.)?\\s*={2,3}\\s*["\']pro["\'][\\s\\S]{0,240}\\bisAdmin\\b', 12),
+      chainAccessConfigApi: regexEvidenceFor(corpus, 'chain access config read/write client', '\\/api\\/system-config\\/chains', 12),
+      feeHookApi: regexEvidenceFor(corpus, 'fee-hook client calls', '\\/api\\/(?:pools\\/)?(?:create-fee-hook|fee-hook(?:-lp)?|fee-hooks)', 12),
+    },
     featureMatrix: baseline.featureGates,
     liveGateTerms: gateTerms.map(({ label, pattern }) => regexEvidenceFor(corpus, label, pattern, 12)),
   };

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-13T07:44:23.925Z",
+  "generatedAt": "2026-08-13T07:53:32.117Z",
   "baseline": {
     "date": "2026-08-13",
     "source": "docs/research/public-surface.md",
@@ -73,53 +73,22 @@
         "Uniswap V4",
         "PancakeSwap V4/Infinity"
       ],
-      "chainIdEvidence": {
-        "term": "56",
-        "occurrenceCount": 3660,
-        "evidence": [
-          {
-            "file": "assets/address-BIuQGhYh.js",
-            "offset": 533,
-            "snippet": "a as Qe,C as Xe,y as et}from\"./http-CqmYNlLj.js\";import{fd as tt,a4 as _,a6 as ae,a8 as nt,ac as rt,J as it,Q as st,ag as ce,a7 as ot,B as at}from\"./index-D0FmPqGc.js\";import{secp256k1 as ct}from\"./secp256k1-BhM12iXK.js\";function ue(e){let t;if(typeof e==\"string\")t=te(e);else{const r=be(e),n=e.length;for(let i=0;i<n;i++){const s=e[i];if(!ge(s)){t=te(s,r);break"
-          },
-          {
-            "file": "assets/address-BIuQGhYh.js",
-            "offset": 556,
-            "snippet": "}from\"./http-CqmYNlLj.js\";import{fd as tt,a4 as _,a6 as ae,a8 as nt,ac as rt,J as it,Q as st,ag as ce,a7 as ot,B as at}from\"./index-D0FmPqGc.js\";import{secp256k1 as ct}from\"./secp256k1-BhM12iXK.js\";function ue(e){let t;if(typeof e==\"string\")t=te(e);else{const r=be(e),n=e.length;for(let i=0;i<n;i++){const s=e[i];if(!ge(s)){t=te(s,r);break}}}if(!t)throw new Ve({"
-          },
-          {
-            "file": "assets/address-BIuQGhYh.js",
-            "offset": 9645,
-            "snippet": "erable:!0,configurable:!0,writable:!0,value:\"Address.InvalidChecksumError\"})}}const Rt=/^(.*)\\[([0-9]*)\\]$/,Lt=/^bytes([1-9]|1[0-9]|2[0-9]|3[0-2])?$/,Se=/^(u?int)(8|16|24|32|40|48|56|64|72|80|88|96|104|112|120|128|136|144|152|160|168|176|184|192|200|208|216|224|232|240|248|256)?$/,ye=2n**256n-1n;function Be(e,t={}){const{recovered:r}=t;if(typeof e.r>\"u\")throw "
-          },
-          {
-            "file": "assets/address-BIuQGhYh.js",
-            "offset": 9740,
-            "snippet": "([0-9]*)\\]$/,Lt=/^bytes([1-9]|1[0-9]|2[0-9]|3[0-2])?$/,Se=/^(u?int)(8|16|24|32|40|48|56|64|72|80|88|96|104|112|120|128|136|144|152|160|168|176|184|192|200|208|216|224|232|240|248|256)?$/,ye=2n**256n-1n;function Be(e,t={}){const{recovered:r}=t;if(typeof e.r>\"u\")throw new V({signature:e});if(typeof e.s>\"u\")throw new V({signature:e});if(r&&typeof e.yParity>\"u\")th"
-          },
-          {
-            "file": "assets/address-BIuQGhYh.js",
-            "offset": 9755,
-            "snippet": "=/^bytes([1-9]|1[0-9]|2[0-9]|3[0-2])?$/,Se=/^(u?int)(8|16|24|32|40|48|56|64|72|80|88|96|104|112|120|128|136|144|152|160|168|176|184|192|200|208|216|224|232|240|248|256)?$/,ye=2n**256n-1n;function Be(e,t={}){const{recovered:r}=t;if(typeof e.r>\"u\")throw new V({signature:e});if(typeof e.s>\"u\")throw new V({signature:e});if(r&&typeof e.yParity>\"u\")throw new V({sign"
-          }
-        ]
-      },
-      "nameEvidence": {
-        "term": "BNB Smart Chain",
-        "occurrenceCount": 2,
-        "evidence": [
-          {
-            "file": "assets/index-D0FmPqGc.js",
-            "offset": 298378,
-            "snippet": "97e\",blockCreated:17482143}},l1StandardBridge:{[$c]:{address:\"0x3154Cf16ccdb4C6d922629664174b904d80F2C35\",blockCreated:17482143}}},sourceId:$c});({...fk});const t_=Xl({id:56,name:\"BNB Smart Chain\",blockTime:750,nativeCurrency:{decimals:18,name:\"BNB\",symbol:\"BNB\"},rpcUrls:{default:{http:[\"https://56.rpc.thirdweb.com\"]}},blockExplorers:{default:{name:\"BscScan\",url:\"https://b"
-          },
-          {
-            "file": "assets/index-D0FmPqGc.js",
-            "offset": 301248,
-            "snippet": "ANCAKESWAP_V3:2,UNISWAP_V4:4,PANCAKESWAP_V4:5},i_={1:\"UniV3\",2:\"CakeV3\",4:\"UniV4\",5:\"CakeV4\"},bg=\"0x0000000000000000000000000000000000000000\",ls={56:{id:56,name:\"bsc\",displayName:\"BNB Smart Chain\",shortName:\"BSC\",emoji:\"🟡\",logo:\"/bsc.png\",viemChain:t_,okxChainIndex:\"56\",explorerUrl:\"https://bscscan.com\",explorerName:\"BscScan\",dexScreenerPath:\"bsc\",nativeToken:{symbol:\"BNB"
-          }
-        ]
-      }
+      "observed": true,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 301213,
+          "registryName": "bsc",
+          "displayName": "BNB Smart Chain",
+          "supportedPlatformSymbols": [
+            "UNISWAP_V3",
+            "PANCAKESWAP_V3",
+            "UNISWAP_V4",
+            "PANCAKESWAP_V4"
+          ],
+          "snippet": "lockscout.com\"}},contracts:{multicall3:{address:\"0xcA11bde05977b3631167028862bE2a173976CA11\"}}}),un={UNISWAP_V3:1,PANCAKESWAP_V3:2,UNISWAP_V4:4,PANCAKESWAP_V4:5},i_={1:\"UniV3\",2:\"CakeV3\",4:\"UniV4\",5:\"CakeV4\"},bg=\"0x0000000000000000000000000000000000000000\",ls={56:{id:56,name:\"bsc\",displayName:\"BNB Smart Chain\",shortName:\"BSC\",emoji:\"🟡\",logo:\"/bsc.png\",viemChain:t_,okxChainIndex:\"56\",explorerUrl:\"https://bscscan.com\",explorerName:\"BscScan\",dexScreenerPath:\"bsc\",nativeToken:{symbol:\"BNB\",wrappedSymbol:\"WBNB\",decimals:18,wrapped:\"0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c\",logo:\"https://static.o"
+        }
+      ]
     },
     {
       "chainId": 8453,
@@ -127,68 +96,20 @@
       "protocols": [
         "主要为 Uniswap V3/V4"
       ],
-      "chainIdEvidence": {
-        "term": "8453",
-        "occurrenceCount": 29,
-        "evidence": [
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 113084,
-            "snippet": "ALANCE_SUPPORTED_CHAINS:[B.CHAIN.EVM,B.CHAIN.SOLANA],SEND_PARAMS_SUPPORTED_CHAINS:[B.CHAIN.EVM],SWAP_SUPPORTED_NETWORKS:[\"eip155:1\",\"eip155:42161\",\"eip155:10\",\"eip155:324\",\"eip155:8453\",\"eip155:56\",\"eip155:137\",\"eip155:100\",\"eip155:43114\",\"eip155:250\",\"eip155:8217\",\"eip155:1313161554\"],NAMES_SUPPORTED_CHAIN_NAMESPACES:[B.CHAIN.EVM],ONRAMP_SUPPORTED_CHAIN_NAMESPA"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 213014,
-            "snippet": "155:137\",\"eip155:80001\",\"eip155:42220\",\"eip155:1313161554\",\"eip155:1313161555\",\"eip155:56\",\"eip155:97\",\"eip155:43114\",\"eip155:43113\",\"eip155:324\",\"eip155:280\",\"eip155:100\",\"eip155:8453\",\"eip155:84531\",\"eip155:84532\",\"eip155:7777777\",\"eip155:999\",\"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp\",\"solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z\",\"solana:EtWTRABZaYq6iMfeYKouRu166V"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 213028,
-            "snippet": "55:80001\",\"eip155:42220\",\"eip155:1313161554\",\"eip155:1313161555\",\"eip155:56\",\"eip155:97\",\"eip155:43114\",\"eip155:43113\",\"eip155:324\",\"eip155:280\",\"eip155:100\",\"eip155:8453\",\"eip155:84531\",\"eip155:84532\",\"eip155:7777777\",\"eip155:999\",\"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp\",\"solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z\",\"solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1\"].map(n"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 213043,
-            "snippet": "55:42220\",\"eip155:1313161554\",\"eip155:1313161555\",\"eip155:56\",\"eip155:97\",\"eip155:43114\",\"eip155:43113\",\"eip155:324\",\"eip155:280\",\"eip155:100\",\"eip155:8453\",\"eip155:84531\",\"eip155:84532\",\"eip155:7777777\",\"eip155:999\",\"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp\",\"solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z\",\"solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1\"].map(n=>({[n]:{rpcUrl"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 835529,
-            "snippet": "o=e):n===\"eip155\"&&Xv[r]&&(o=Xv[r]),`${`${n}:${r}`}/${s}:${o}`}const mK={network:\"eip155:1\",asset:\"native\",metadata:{name:\"Ethereum\",symbol:\"ETH\",decimals:18}},wK={network:\"eip155:8453\",asset:\"native\",metadata:{name:\"Ethereum\",symbol:\"ETH\",decimals:18}},S_={network:\"eip155:8453\",asset:\"0x833589fcd6edb6e08f4c7c32d4f71b54bda02913\",metadata:{name:\"USD Coin\",symbol:"
-          }
-        ]
-      },
-      "nameEvidence": {
-        "term": "Base",
-        "occurrenceCount": 397,
-        "evidence": [
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 9777,
-            "snippet": "rror(\"Cannot read private member from an object whose class did not declare it\");return n===\"m\"?r:n===\"a\"?r.call(t):r?r.value:e.get(t)},vh,fC;let xs=class Cm extends Error{get docsBaseUrl(){return\"https://wagmi.sh/core\"}get version(){return aA()}constructor(e,n={}){super(),vh.add(this),Object.defineProperty(this,\"details\",{enumerable:!0,configurable:!0,writable:"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 10629,
-            "snippet": "essage:n.details,i=n.cause instanceof Cm&&n.cause.docsPath||n.docsPath;this.message=[e||\"An error occurred.\",\"\",...n.metaMessages?[...n.metaMessages,\"\"]:[],...i?[`Docs: ${this.docsBaseUrl}${i}.html${n.docsSlug?`#${n.docsSlug}`:\"\"}`]:[],...r?[`Details: ${r}`]:[],`Version: ${this.version}`].join(` `),n.cause&&(this.cause=n.cause),this.details=r,this.docsPath=i,thi"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 46024,
-            "snippet": "=>`wagmi@${ZA}`;let JA=class extends xs{constructor(){super(...arguments),Object.defineProperty(this,\"name\",{enumerable:!0,configurable:!0,writable:!0,value:\"WagmiError\"})}get docsBaseUrl(){return\"https://wagmi.sh/react\"}get version(){return YA()}};class XA extends JA{constructor(){super(\"`useConfig` must be used within `WagmiProvider`.\",{docsPath:\"/api/WagmiPro"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 89147,
-            "snippet": " few seconds\",m:\"a minute\",mm:\"%d minutes\",h:\"an hour\",hh:\"%d hours\",d:\"a day\",dd:\"%d days\",M:\"a month\",MM:\"%d months\",y:\"a year\",yy:\"%d years\"};function a(l,u,d,h){return s.fromToBase(l,u,d,h)}i.en.relativeTime=o,s.fromToBase=function(l,u,d,h,f){for(var p,g,m,_=d.$locale().relativeTime||o,S=n.thresholds||[{l:\"s\",r:44,d:\"second\"},{l:\"m\",r:89},{l:\"mm\",r:44,d:\"min"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 89189,
-            "snippet": ",h:\"an hour\",hh:\"%d hours\",d:\"a day\",dd:\"%d days\",M:\"a month\",MM:\"%d months\",y:\"a year\",yy:\"%d years\"};function a(l,u,d,h){return s.fromToBase(l,u,d,h)}i.en.relativeTime=o,s.fromToBase=function(l,u,d,h,f){for(var p,g,m,_=d.$locale().relativeTime||o,S=n.thresholds||[{l:\"s\",r:44,d:\"second\"},{l:\"m\",r:89},{l:\"mm\",r:44,d:\"minute\"},{l:\"h\",r:89},{l:\"hh\",r:21,d:\"hour\"},"
-          }
-        ]
-      }
+      "observed": true,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 304177,
+          "registryName": "base",
+          "displayName": "Base",
+          "supportedPlatformSymbols": [
+            "UNISWAP_V3",
+            "UNISWAP_V4"
+          ],
+          "snippet": "ickSpacing:{uniswapV3:{100:1,500:10,3e3:60,1e4:200},pancakeV3:{100:1,500:10,2500:50,1e4:200},uniswapV4:{100:1,500:10,3e3:60,1e4:200},pancakeV4:{100:1,500:10,2500:50,1e4:200}},supportedPlatforms:[un.UNISWAP_V3,un.PANCAKESWAP_V3,un.UNISWAP_V4,un.PANCAKESWAP_V4]},8453:{id:8453,name:\"base\",displayName:\"Base\",shortName:\"Base\",emoji:\"🔵\",logo:\"/base.png\",viemChain:fk,okxChainIndex:\"8453\",explorerUrl:\"https://basescan.org\",explorerName:\"BaseScan\",dexScreenerPath:\"base\",nativeToken:{symbol:\"ETH\",wrappedSymbol:\"WETH\",decimals:18,wrapped:\"0x4200000000000000000000000000000000000006\",logo:\"https://static."
+        }
+      ]
     },
     {
       "chainId": 1,
@@ -196,68 +117,20 @@
       "protocols": [
         "主要为 Uniswap V3/V4"
       ],
-      "chainIdEvidence": {
-        "term": "1",
-        "occurrenceCount": 72721,
-        "evidence": [
-          {
-            "file": "assets/add-CJtjuV52.js",
-            "offset": 161,
-            "snippet": "import{b as o}from\"./AppKitProvider-nVcOIkXs.js\";import\"./index-D0FmPqGc.js\";import\"./http-CqmYNlLj.js\";import\"./parseUnits-CN82zxnQ.js\";const e=o`<svg width=\"14\" height=\"14\" viewBox=\"0 0 14 14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" > <path fill=\"currentColor\" fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M"
-          },
-          {
-            "file": "assets/add-CJtjuV52.js",
-            "offset": 175,
-            "snippet": "import{b as o}from\"./AppKitProvider-nVcOIkXs.js\";import\"./index-D0FmPqGc.js\";import\"./http-CqmYNlLj.js\";import\"./parseUnits-CN82zxnQ.js\";const e=o`<svg width=\"14\" height=\"14\" viewBox=\"0 0 14 14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" > <path fill=\"currentColor\" fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M7.0023 0.875C7"
-          },
-          {
-            "file": "assets/add-CJtjuV52.js",
-            "offset": 194,
-            "snippet": "from\"./AppKitProvider-nVcOIkXs.js\";import\"./index-D0FmPqGc.js\";import\"./http-CqmYNlLj.js\";import\"./parseUnits-CN82zxnQ.js\";const e=o`<svg width=\"14\" height=\"14\" viewBox=\"0 0 14 14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" > <path fill=\"currentColor\" fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M7.0023 0.875C7.48571 0.875 7.8776"
-          },
-          {
-            "file": "assets/add-CJtjuV52.js",
-            "offset": 197,
-            "snippet": "m\"./AppKitProvider-nVcOIkXs.js\";import\"./index-D0FmPqGc.js\";import\"./http-CqmYNlLj.js\";import\"./parseUnits-CN82zxnQ.js\";const e=o`<svg width=\"14\" height=\"14\" viewBox=\"0 0 14 14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" > <path fill=\"currentColor\" fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M7.0023 0.875C7.48571 0.875 7.8776 1."
-          },
-          {
-            "file": "assets/add-CJtjuV52.js",
-            "offset": 361,
-            "snippet": "viewBox=\"0 0 14 14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" > <path fill=\"currentColor\" fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M7.0023 0.875C7.48571 0.875 7.8776 1.26675 7.8776 1.75V6.125H12.2541C12.7375 6.125 13.1294 6.51675 13.1294 7C13.1294 7.48325 12.7375 7.875 12.2541 7.875H7.8776V12.25C7.8776 12.7332 7.48571 13.125 7.002"
-          }
-        ]
-      },
-      "nameEvidence": {
-        "term": "Ethereum",
-        "occurrenceCount": 329,
-        "evidence": [
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 22242,
-            "snippet": "rogrammatic chain switching.`),Object.defineProperty(this,\"name\",{enumerable:!0,configurable:!0,writable:!0,value:\"SwitchChainNotSupportedError\"})}}async function j1(t,e){const{addEthereumChainParameter:n,chainId:r}=e,i=t.state.connections.get(e.connector?.uid??t.state.current);if(i){const o=i.connector;if(!o.switchChain)throw new vA({connector:o});return await o.sw"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 22444,
-            "snippet": ":n,chainId:r}=e,i=t.state.connections.get(e.connector?.uid??t.state.current);if(i){const o=i.connector;if(!o.switchChain)throw new vA({connector:o});return await o.switchChain({addEthereumChainParameter:n,chainId:r})}const s=t.chains.find(o=>o.id===r);if(!s)throw new Ml;return t.setState(o=>({...o,chainId:r})),s}async function CA(t,e){const{chainId:n,timeout:r=0,..."
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 27729,
-            "snippet": ")=>g(h()),{once:!0}))]:[],new Promise(g=>setTimeout(()=>g(h()),f))]))return!0}throw new Fs}return!!(await X6(()=>this.getAccounts())).length}catch{return!1}},async switchChain({addEthereumChainParameter:l,chainId:u}){const d=await this.getProvider();if(!d)throw new Fs;const h=c.chains.find(p=>p.id===u);if(!h)throw new Bl(new Ml);const f=new Promise(p=>{const g=(m=>{"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 28070,
-            "snippet": "w Promise(p=>{const g=(m=>{\"chainId\"in m&&m.chainId===u&&(c.emitter.off(\"change\",g),p())});c.emitter.on(\"change\",g)});try{return await Promise.all([d.request({method:\"wallet_switchEthereumChain\",params:[{chainId:yh(u)}]}).then(async()=>{await this.getChainId()===u&&c.emitter.emit(\"change\",{chainId:u})}),f]),h}catch(p){const g=p;if(g.code===4902||g?.data?.originalErr"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 28703,
-            "snippet": "inId:yh(u),chainName:l?.chainName??h.name,iconUrls:l?.iconUrls,nativeCurrency:l?.nativeCurrency??h.nativeCurrency,rpcUrls:y};return await Promise.all([d.request({method:\"wallet_addEthereumChain\",params:[v]}).then(async()=>{if(await this.getChainId()===u)c.emitter.emit(\"change\",{chainId:u});else throw new Sn(new Error(\"User rejected switch after adding network.\"))}),"
-          }
-        ]
-      }
+      "observed": true,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 306121,
+          "registryName": "eth",
+          "displayName": "Ethereum",
+          "supportedPlatformSymbols": [
+            "UNISWAP_V3",
+            "UNISWAP_V4"
+          ],
+          "snippet": "67A71\",PERMIT2:\"0x000000000022D473030F116dDEE9F6B43aC78BA3\",MULTICALL3:\"0xcA11bde05977b3631167028862bE2a173976CA11\"},tickSpacing:{uniswapV3:{100:1,500:10,3e3:60,1e4:200},uniswapV4:{100:1,500:10,3e3:60,1e4:200}},supportedPlatforms:[un.UNISWAP_V3,un.UNISWAP_V4]},1:{id:1,name:\"eth\",displayName:\"Ethereum\",shortName:\"ETH\",emoji:\"💠\",logo:\"/eth.png\",viemChain:n_,okxChainIndex:\"1\",explorerUrl:\"https://etherscan.io\",explorerName:\"Etherscan\",dexScreenerPath:\"ethereum\",nativeToken:{symbol:\"ETH\",wrappedSymbol:\"WETH\",decimals:18,wrapped:\"0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\",logo:\"https://static.okl"
+        }
+      ]
     },
     {
       "chainId": 4663,
@@ -265,53 +138,20 @@
       "protocols": [
         "公开配置以 Uniswap V3/V4 适配为主"
       ],
-      "chainIdEvidence": {
-        "term": "4663",
-        "occurrenceCount": 5,
-        "evidence": [
-          {
-            "file": "assets/index-D0FmPqGc.js",
-            "offset": 300729,
-            "snippet": "m/xlayer\",apiUrl:\"https://www.oklink.com/api/v5/explorer/xlayer/api\"}},contracts:{multicall3:{address:\"0xcA11bde05977b3631167028862bE2a173976CA11\",blockCreated:47416}}}),a_=Xl({id:4663,name:\"Robinhood Chain\",nativeCurrency:{name:\"Ether\",symbol:\"ETH\",decimals:18},rpcUrls:{default:{http:[\"https://rpc.mainnet.chain.robinhood.com\"]}},blockExplorers:{default:{name:\"B"
-          },
-          {
-            "file": "assets/index-D0FmPqGc.js",
-            "offset": 308058,
-            "snippet": "05977b3631167028862bE2a173976CA11\"},tickSpacing:{uniswapV3:{100:1,500:10,3e3:60,1e4:200},uniswapV4:{100:1,500:10,3e3:60,1e4:200}},supportedPlatforms:[un.UNISWAP_V3,un.UNISWAP_V4]},4663:{id:4663,name:\"robinhood\",displayName:\"Robinhood Chain\",shortName:\"Robinhood\",emoji:\"🏹\",logo:\"/robinhood.png\",viemChain:a_,okxChainIndex:\"4663\",explorerUrl:\"https://robinhoodchai"
-          },
-          {
-            "file": "assets/index-D0FmPqGc.js",
-            "offset": 308067,
-            "snippet": "1167028862bE2a173976CA11\"},tickSpacing:{uniswapV3:{100:1,500:10,3e3:60,1e4:200},uniswapV4:{100:1,500:10,3e3:60,1e4:200}},supportedPlatforms:[un.UNISWAP_V3,un.UNISWAP_V4]},4663:{id:4663,name:\"robinhood\",displayName:\"Robinhood Chain\",shortName:\"Robinhood\",emoji:\"🏹\",logo:\"/robinhood.png\",viemChain:a_,okxChainIndex:\"4663\",explorerUrl:\"https://robinhoodchain.blocksc"
-          },
-          {
-            "file": "assets/index-D0FmPqGc.js",
-            "offset": 308202,
-            "snippet": "orms:[un.UNISWAP_V3,un.UNISWAP_V4]},4663:{id:4663,name:\"robinhood\",displayName:\"Robinhood Chain\",shortName:\"Robinhood\",emoji:\"🏹\",logo:\"/robinhood.png\",viemChain:a_,okxChainIndex:\"4663\",explorerUrl:\"https://robinhoodchain.blockscout.com\",explorerName:\"Blockscout\",dexScreenerPath:\"robinhood\",nativeToken:{symbol:\"ETH\",wrappedSymbol:\"WETH\",decimals:18,wrapped:\"0x0B"
-          },
-          {
-            "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
-            "offset": 15777,
-            "snippet": "static.okx.com/cdn/wallet/logo/USDT-991ffed9-e495-4d1b-80c2-a4c5f96ce22d.png\",\"0x5fc5360d0400a0fd4f2af552add042d716f1d168\":\"https://static.oklink.com/cdn/web3/currency/token/large/4663-0x5fc5360d0400a0fd4f2af552add042d716f1d168-999/type=default_90_0?v=1783582629079\",\"0xc879c018db60520f4355c26ed1a6d572cdac1815\":\"https://static.okx.com/cdn/web3/currency/token/larg"
-          }
-        ]
-      },
-      "nameEvidence": {
-        "term": "Robinhood Chain",
-        "occurrenceCount": 2,
-        "evidence": [
-          {
-            "file": "assets/index-D0FmPqGc.js",
-            "offset": 300740,
-            "snippet": "piUrl:\"https://www.oklink.com/api/v5/explorer/xlayer/api\"}},contracts:{multicall3:{address:\"0xcA11bde05977b3631167028862bE2a173976CA11\",blockCreated:47416}}}),a_=Xl({id:4663,name:\"Robinhood Chain\",nativeCurrency:{name:\"Ether\",symbol:\"ETH\",decimals:18},rpcUrls:{default:{http:[\"https://rpc.mainnet.chain.robinhood.com\"]}},blockExplorers:{default:{name:\"Blockscout\",url:\"https:"
-          },
-          {
-            "file": "assets/index-D0FmPqGc.js",
-            "offset": 308102,
-            "snippet": "ing:{uniswapV3:{100:1,500:10,3e3:60,1e4:200},uniswapV4:{100:1,500:10,3e3:60,1e4:200}},supportedPlatforms:[un.UNISWAP_V3,un.UNISWAP_V4]},4663:{id:4663,name:\"robinhood\",displayName:\"Robinhood Chain\",shortName:\"Robinhood\",emoji:\"🏹\",logo:\"/robinhood.png\",viemChain:a_,okxChainIndex:\"4663\",explorerUrl:\"https://robinhoodchain.blockscout.com\",explorerName:\"Blockscout\",dexScreener"
-          }
-        ]
-      }
+      "observed": true,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 308057,
+          "registryName": "robinhood",
+          "displayName": "Robinhood Chain",
+          "supportedPlatformSymbols": [
+            "UNISWAP_V3",
+            "UNISWAP_V4"
+          ],
+          "snippet": "97227\",PERMIT2:\"0x000000000022D473030F116dDEE9F6B43aC78BA3\",MULTICALL3:\"0xcA11bde05977b3631167028862bE2a173976CA11\"},tickSpacing:{uniswapV3:{100:1,500:10,3e3:60,1e4:200},uniswapV4:{100:1,500:10,3e3:60,1e4:200}},supportedPlatforms:[un.UNISWAP_V3,un.UNISWAP_V4]},4663:{id:4663,name:\"robinhood\",displayName:\"Robinhood Chain\",shortName:\"Robinhood\",emoji:\"🏹\",logo:\"/robinhood.png\",viemChain:a_,okxChainIndex:\"4663\",explorerUrl:\"https://robinhoodchain.blockscout.com\",explorerName:\"Blockscout\",dexScreenerPath:\"robinhood\",nativeToken:{symbol:\"ETH\",wrappedSymbol:\"WETH\",decimals:18,wrapped:\"0x0Bd7D308f8E16"
+        }
+      ]
     },
     {
       "chainId": 196,
@@ -319,127 +159,21 @@
       "protocols": [
         "公开配置以 Uniswap V3/V4 适配为主"
       ],
-      "chainIdEvidence": {
-        "term": "196",
-        "occurrenceCount": 126,
-        "evidence": [
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 106065,
-            "snippet": "93\",[B.COIN98_CONNECTOR_NAME]:\"2a3c89040ac3b723a1972a33a125b1db11e258a6975d3a61252cd64e6ea5ea01\",[B.MAGIC_EDEN_CONNECTOR_NAME]:\"8b830a2b724a9c3fbab63af6f55ed29c9dfa8a55e732dc88c80a196a2ba136c6\",[B.BACKPACK_CONNECTOR_NAME]:\"2bd8c14e035c2d48f184aaa168559e86b0e3433228d3c4075900a221785019b0\",[B.BITGET_CONNECTOR_NAME]:\"38f5d18bd8522c244bdd70cb4a68e0e718865155811c043"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 383918,
-            "snippet": "turn E._setWindowSize(b),E.multiply(BigInt(3)),E}}}}BigInt(0),BigInt(1);const xw=BigInt(\"57896044618658097711785492504343953926634992332820282019728792003956564819949\"),ib=BigInt(\"19681161376707505956807079304988542015446066515923890162744021073123829784752\");BigInt(0);const i$=BigInt(1),sb=BigInt(2);BigInt(3);const s$=BigInt(5),o$=BigInt(8);function a$(t){cons"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 465766,
-            "snippet": "ypeof e==\"object\")this.encodeMap(e,n);else throw new Error(`Unrecognized object: ${Object.prototype.toString.apply(e)}`)}encodeBinary(e){const n=e.byteLength;if(n<256)this.writeU8(196),this.writeU8(n);else if(n<65536)this.writeU8(197),this.writeU16(n);else if(n<4294967296)this.writeU8(198),this.writeU32(n);else throw new Error(`Too large binary: ${n}`);const r="
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 475518,
-            "snippet": "){this.pushMapState(i),this.complete();continue e}else n={}}else if(e===223){const i=this.readU32();if(i!==0){this.pushMapState(i),this.complete();continue e}else n={}}else if(e===196){const i=this.lookU8();n=this.decodeBinary(i,1)}else if(e===197){const i=this.lookU16();n=this.decodeBinary(i,2)}else if(e===198){const i=this.lookU32();n=this.decodeBinary(i,4)}e"
-          },
-          {
-            "file": "assets/AppKitProvider-nVcOIkXs.js",
-            "offset": 579234,
-            "snippet": "ffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff\"),n:BigInt(\"0xffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973\"),h:BigInt(1),a:BigInt(\"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc\"),b:BigInt(\"0xb3312fa7e23ee7e4988e056be3f82d191"
-          }
-        ]
-      },
-      "nameEvidence": {
-        "term": "X Layer",
-        "occurrenceCount": 3,
-        "evidence": [
-          {
-            "file": "assets/index-D0FmPqGc.js",
-            "offset": 300345,
-            "snippet": "defaultPrevented)throw c}return a.then(c=>{for(const d of c||[])d.status===\"rejected\"&&l(d.reason);return t().catch(l)})};function bl(e,t){return M0(e,t)}const s_=Xl({id:196,name:\"X Layer Mainnet\",nativeCurrency:{decimals:18,name:\"OKB\",symbol:\"OKB\"},blockTime:1e3,rpcUrls:{default:{http:[\"https://xlayerrpc.okx.com\"]}},blockExplorers:{default:{name:\"OKLink\",url:\"http"
-          },
-          {
-            "file": "assets/index-D0FmPqGc.js",
-            "offset": 309731,
-            "snippet": "kSpacing:{uniswapV3:{100:1,500:10,3e3:60,1e4:200},uniswapV4:{100:1,500:10,3e3:60,1e4:200}},supportedPlatforms:[un.UNISWAP_V3,un.UNISWAP_V4]},196:{id:196,name:\"xlayer\",displayName:\"X Layer\",shortName:\"XLayer\",emoji:\"⚫\",logo:\"/xlayer.png\",viemChain:s_,okxChainIndex:\"196\",explorerUrl:\"https://www.oklink.com/x-layer\",explorerName:\"OKLink\",dexScreenerPath:\"xlayer\",nativ"
-          },
-          {
-            "file": "assets/index-D0FmPqGc.js",
-            "offset": 310740,
-            "snippet": "E0630b35a9b54bE713736\"},{symbol:\"usdt\",address:\"0x1E4a5963aBFD975d8c9021ce480b42188849D41d\"},{symbol:\"usdc\",address:\"0x74b7F16337b8972027F6196A17a631aC6dE26d22\"}],rpcNodes:[{name:\"X Layer (默认)\",url:\"https://rpc.xlayer.tech\"},{name:\"OKX\",url:\"https://xlayerrpc.okx.com\"}],contracts:{UNISWAP_V3_ROUTER:\"0x4f0C28f5926AFDA16bf2506D5D9e57Ea190f9bcA\",UNISWAP_V3_POSITION_MA"
-          }
-        ]
-      }
+      "observed": true,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 309691,
+          "registryName": "xlayer",
+          "displayName": "X Layer",
+          "supportedPlatformSymbols": [
+            "UNISWAP_V3",
+            "UNISWAP_V4"
+          ],
+          "snippet": "e673b\",PERMIT2:\"0x000000000022D473030F116dDEE9F6B43aC78BA3\",MULTICALL3:\"0xcA11bde05977b3631167028862bE2a173976CA11\"},tickSpacing:{uniswapV3:{100:1,500:10,3e3:60,1e4:200},uniswapV4:{100:1,500:10,3e3:60,1e4:200}},supportedPlatforms:[un.UNISWAP_V3,un.UNISWAP_V4]},196:{id:196,name:\"xlayer\",displayName:\"X Layer\",shortName:\"XLayer\",emoji:\"⚫\",logo:\"/xlayer.png\",viemChain:s_,okxChainIndex:\"196\",explorerUrl:\"https://www.oklink.com/x-layer\",explorerName:\"OKLink\",dexScreenerPath:\"xlayer\",nativeToken:{symbol:\"OKB\",wrappedSymbol:\"WOKB\",decimals:18,wrapped:\"0xe538905cf8410324e03A5A23C1c177a474D59b2b\",logo:\""
+        }
+      ]
     }
   ],
-  "observedChainIdCandidates": [
-    {
-      "chainId": 0,
-      "file": "assets/index-D0FmPqGc.js",
-      "offset": 822859,
-      "snippet": "roomKey!==T.roomKey));try{await V_(T.roomKey)}catch{y(!0)}},[y]),w=a===null,S=(a||[]).find(T=>T.isPublic)||null,E=(a||[]).filter(T=>!T.isPublic),j=S||{roomKey:\"public\",isPublic:!0,chainId:0,tokenAddress:null,symbol:null,messageCount:0,lastMessageAt:null,visitedAt:null,preview:null};return i.jsx(gm,{open:e,onOpenChange:T=>{T||t?.()},mobileProps:{handleOnly:!0},childre"
-    },
-    {
-      "chainId": 0,
-      "file": "assets/index-D0FmPqGc.js",
-      "offset": 825738,
-      "snippet": "`,chainId:r,tokenAddress:a,chain:e.chain,primary:t.primary,secondary:t.secondary,primaryAddress:a,secondaryAddress:t.secondaryAddress||null}}const Nu={roomKey:\"public\",isPublic:!0,chainId:0,tokenAddress:null,chain:null,primary:\"公共聊天室\",secondary:null,primaryAddress:null,secondaryAddress:null},Bm=f.createContext(null);function Xx(){return f.useContext(Bm)}function Jx(e"
-    },
-    {
-      "chainId": 1,
-      "file": "assets/AppKitProvider-nVcOIkXs.js",
-      "offset": 907481,
-      "snippet": "ssions(){return Promise.resolve({})}async revokePermissions(){return Promise.resolve(\"0x\")}async syncConnection(){return Promise.resolve({id:\"WALLET_CONNECT\",type:\"WALLET_CONNECT\",chainId:1,provider:this.provider,address:\"\"})}async switchNetwork(e){const{caipNetwork:n}=e,r=this.getWalletConnectConnector();if(n.chainNamespace===B.CHAIN.EVM)try{await r.provider?.reques"
-    },
-    {
-      "chainId": 1,
-      "file": "assets/core-CWWtHjXQ.js",
-      "offset": 489347,
-      "snippet": "ssions(){return Promise.resolve({})}async revokePermissions(){return Promise.resolve(\"0x\")}async syncConnection(){return Promise.resolve({id:\"WALLET_CONNECT\",type:\"WALLET_CONNECT\",chainId:1,provider:this.provider,address:\"\"})}async switchNetwork(e){const{caipNetwork:s}=e,r=this.getWalletConnectConnector();if(s.chainNamespace===K.CHAIN.EVM)try{await r.provider?.reques"
-    },
-    {
-      "chainId": 1,
-      "file": "assets/index-CRn3eGoO.js",
-      "offset": 212294,
-      "snippet": "}var zc;function B0(){if(zc)return Rr;zc=1,Object.defineProperty(Rr,\"__esModule\",{value:!0}),Rr.LinkFlow=void 0;const e=We,r=T0();let n=class{constructor(d){this.connected=!1,this.chainId=1,this.isOpen=!1,this.onCancel=null,this.root=null,this.connectDisabled=!1,this.darkMode=d.darkMode,this.version=d.version,this.sessionId=d.sessionId,this.sessionSecret=d.sessionSec"
-    },
-    {
-      "chainId": 1,
-      "file": "assets/index.es-kWEtVW6f.js",
-      "offset": 330409,
-      "snippet": "s.signer.logger.error(\"Failed to load persisted session, clearing state...\"),this.signer.logger.error(e),await this.disconnect().catch(t=>this.signer.logger.warn(t))}}reset(){this.chainId=1,this.accounts=[]}persist(){this.session&&this.signer.client.core.storage.setItem(`${this.STORAGE_KEY}/chainId`,this.chainId)}parseAccounts(e){return typeof e==\"string\"||e instance"
-    },
-    {
-      "chainId": 56,
-      "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
-      "offset": 22964,
-      "snippet": "`);return}const xe=[...r.map(w=>w.address).filter(w=>w&&!ve.has(String(w).toLowerCase())),...T];if(xe.length===0){x(\"白名单至少需要一个地址\");return}I(!0),x(null),O([]);try{const w=await st({chainId:56,token0:k.trim(),token1:N.trim(),feePercent:String(b).trim(),providers:xe,presetKeyId:Number(y),...p!==null?{tickSpacing:p}:{},...Re});if(!w.success)throw new Error(w.error||\"创建私有池"
-    },
-    {
-      "chainId": 56,
-      "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
-      "offset": 23875,
-      "snippet": "et M=null;if(String(m||\"\").trim()){const F=parseInt(String(m).trim(),10);if(!Number.isInteger(F)||F<1){x(\"Tick Spacing 需为正整数\");return}M=F}I(!0),x(null),O([]);try{const F=await tt({chainId:56,token0:k.trim(),token1:N.trim(),feePercent:String(b).trim(),swapFeeBps:p,dynamicLpFee:we,...T?{feeRecipient:T}:{},presetKeyId:Number(y),...M!==null?{tickSpacing:M}:{},...Re});if(!"
-    },
-    {
-      "chainId": 56,
-      "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
-      "offset": 25931,
-      "snippet": "ame:\"space-y-1.5\",children:[e.jsxs(\"div\",{className:\"flex items-center gap-1.5 flex-wrap\",children:[e.jsxs(\"button\",{type:\"button\",onClick:()=>{R?ke(!1):(ke(!0),Ne(!1),g(s=>({...s,chainId:56,platform:\"univ4\"})))},className:`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border transition-colors ${R?\"bg-primary/10 border-primary/40 text-primary font-"
-    },
-    {
-      "chainId": 56,
-      "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
-      "offset": 26345,
-      "snippet": "-muted-foreground hover:bg-muted\"}`,children:[e.jsx(Ws,{className:\"w-3.5 h-3.5\"}),\" HOOK 私有池\"]}),$&&e.jsxs(\"button\",{type:\"button\",onClick:()=>{Q?Ne(!1):(Ne(!0),ke(!1),g(s=>({...s,chainId:56,platform:\"univ4\"})))},className:`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border transition-colors ${Q?\"bg-primary/10 border-primary/40 text-primary font-"
-    },
-    {
-      "chainId": 56,
-      "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
-      "offset": 40625,
-      "snippet": "sx(\"button\",{type:\"button\",onClick:()=>Ae(!0),className:\"text-[11px] text-primary hover:underline\",children:\"改已有 hook 费率 / 收款地址\"})}),e.jsx(ct,{open:Ls,onOpenChange:Ae,presetKeys:r,chainId:56})]}),R&&e.jsxs(\"div\",{className:\"space-y-2 rounded-lg border border-dashed border-border p-3\",children:[e.jsx(P,{className:\"text-xs text-muted-foreground\",children:\"白名单（可加流动性的地址）\""
-    }
-  ],
-  "caveat": "Candidates are syntax-level chainId assignments; they may include defaults, test values, or third-party library data."
+  "caveat": "Live records are parsed from chain registry objects containing id, name, displayName, and supportedPlatforms in the captured bundle."
 }
