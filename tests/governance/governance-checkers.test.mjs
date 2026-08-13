@@ -343,8 +343,8 @@ test("CI defines four pinned, bounded jobs with unconditional infrastructure cle
   ]);
   assert.equal(workflow.permissions.contents, "read");
   assert.equal(workflow.concurrency["cancel-in-progress"], true);
-  assert.ok(workflow.pull_request ?? workflow.on?.pull_request ?? workflow["on"]?.pull_request);
-  assert.ok(workflow.workflow_dispatch ?? workflow.on?.workflow_dispatch ?? workflow["on"]?.workflow_dispatch);
+  assert.ok(Object.hasOwn(workflow.on, "pull_request"));
+  assert.ok(Object.hasOwn(workflow.on, "workflow_dispatch"));
   assert.deepEqual(workflow.on.push.branches, ["main"]);
 
   const steps = Object.values(jobs).flatMap((job) => job.steps);
