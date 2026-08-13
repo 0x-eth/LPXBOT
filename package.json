@@ -38,6 +38,7 @@
     "test:contracts": "forge test -vvv",
     "test:e2e": "pnpm --filter @lpbot/web^... build && playwright test",
     "test:infra": "bash scripts/test-infra.sh",
+    "test:postgres": "vitest run --config vitest.postgres.config.ts",
     "typecheck": "turbo run typecheck && tsc -p tsconfig.json",
     "version-packages": "changeset version",
     "release": "changeset publish"

@@ -145,6 +145,8 @@ jobs:
         run: pnpm infra:verify
       - name: Run infrastructure tests
         run: pnpm test:infra
+      - name: Run PostgreSQL session integration tests
+        run: pnpm test:postgres
       - name: Stop infrastructure
         if: always()
         run: pnpm infra:down
