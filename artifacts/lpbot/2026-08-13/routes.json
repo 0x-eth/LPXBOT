@@ -1,0 +1,1526 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-13T07:39:32.083Z",
+  "baseline": {
+    "date": "2026-08-13",
+    "source": "docs/research/public-surface.md",
+    "routes": [
+      {
+        "path": "/login",
+        "access": "未登录",
+        "behavior": "登录页",
+        "interactions": "Telegram Mini App、Bot 一次性链接轮询、钱包消息签名登录"
+      },
+      {
+        "path": "/blocked",
+        "access": "被拒绝/封禁",
+        "behavior": "阻断页",
+        "interactions": "显示访问状态，退出或重新登录"
+      },
+      {
+        "path": "/maintenance",
+        "access": "系统维护",
+        "behavior": "维护页",
+        "interactions": "显示维护信息并阻断业务路由"
+      },
+      {
+        "path": "/",
+        "access": "已登录",
+        "behavior": "重定向",
+        "interactions": "跳转 /tasks/running"
+      },
+      {
+        "path": "/tasks/running",
+        "access": "已登录",
+        "behavior": "运行中任务",
+        "interactions": "创建、查看、暂停、停止、移仓、复投、领费、换池等"
+      },
+      {
+        "path": "/tasks/paused",
+        "access": "已登录",
+        "behavior": "已暂停任务",
+        "interactions": "恢复、停止、编辑、删除等"
+      },
+      {
+        "path": "/tasks/stopped",
+        "access": "已登录",
+        "behavior": "已停止任务",
+        "interactions": "启动、撤池、复制、删除等"
+      },
+      {
+        "path": "/pools",
+        "access": "已登录且链可用",
+        "behavior": "池子发现",
+        "interactions": "手续费排行、搜索筛选、流动性分布、实时动向、监控、建池"
+      },
+      {
+        "path": "/strategies",
+        "access": "已登录且链可用",
+        "behavior": "自动策略",
+        "interactions": "规则组、钱包分配、开关、导入导出、历史/PnL"
+      },
+      {
+        "path": "/activity",
+        "access": "已登录",
+        "behavior": "活动日志",
+        "interactions": "时间/任务过滤、详情、状态追踪"
+      },
+      {
+        "path": "/wallets",
+        "access": "已登录",
+        "behavior": "钱包与仓位",
+        "interactions": "导入/生成、余额、Swap、转账、LP 扫描、领费、撤池、Helper 残留"
+      },
+      {
+        "path": "/users",
+        "access": "管理员",
+        "behavior": "用户管理",
+        "interactions": "审批、封禁、套餐/费率、任务/钱包、系统配置入口"
+      },
+      {
+        "path": "/developer",
+        "access": "已登录",
+        "behavior": "开发者 API",
+        "interactions": "创建/撤销 Key、文档与调用说明"
+      },
+      {
+        "path": "/settings",
+        "access": "已登录",
+        "behavior": "设置",
+        "interactions": "外观、风险、RPC、通知、密钥保护、屏蔽、反馈等"
+      },
+      {
+        "path": "/all/:status?",
+        "access": "兼容旧链接",
+        "behavior": "重定向",
+        "interactions": "映射到新的任务状态路由"
+      },
+      {
+        "path": "/*",
+        "access": "任意",
+        "behavior": "受保护应用壳/兜底",
+        "interactions": "根据认证、封禁、维护状态重定向"
+      }
+    ],
+    "documentedRedirect": {
+      "from": "/monitors",
+      "to": "/pools"
+    }
+  },
+  "observed": {
+    "evidence": [
+      {
+        "path": "/",
+        "file": "assets/AppKitProvider-nVcOIkXs.js",
+        "offset": 130861,
+        "declarationContext": false,
+        "snippet": "t.startsWith(\"http://\")||t.startsWith(\"https://\")},formatNativeUrl(t,e,n=null){if(K.isHttpUrl(t))return this.formatUniversalUrl(t,e);let r=t,i=n;r.includes(\"://\")||(r=t.replaceAll(\"/\",\"\").replaceAll(\":\",\"\"),r=`${r}://`),r.endsWith(\"/\")||(r=`${r}/`),i&&!i?.endsWith(\"/\")&&(i=`${i}/`),this.isTelegram()&&this.isAndroid()&&(e=encodeURIComponent(e));const s=encodeURI"
+      },
+      {
+        "path": "/",
+        "file": "assets/AppKitProvider-nVcOIkXs.js",
+        "offset": 130912,
+        "declarationContext": false,
+        "snippet": "formatNativeUrl(t,e,n=null){if(K.isHttpUrl(t))return this.formatUniversalUrl(t,e);let r=t,i=n;r.includes(\"://\")||(r=t.replaceAll(\"/\",\"\").replaceAll(\":\",\"\"),r=`${r}://`),r.endsWith(\"/\")||(r=`${r}/`),i&&!i?.endsWith(\"/\")&&(i=`${i}/`),this.isTelegram()&&this.isAndroid()&&(e=encodeURIComponent(e));const s=encodeURIComponent(e);return{redirect:`${r}wc?uri=${s}`,redi"
+      },
+      {
+        "path": "/",
+        "file": "assets/AppKitProvider-nVcOIkXs.js",
+        "offset": 130946,
+        "declarationContext": false,
+        "snippet": "sHttpUrl(t))return this.formatUniversalUrl(t,e);let r=t,i=n;r.includes(\"://\")||(r=t.replaceAll(\"/\",\"\").replaceAll(\":\",\"\"),r=`${r}://`),r.endsWith(\"/\")||(r=`${r}/`),i&&!i?.endsWith(\"/\")&&(i=`${i}/`),this.isTelegram()&&this.isAndroid()&&(e=encodeURIComponent(e));const s=encodeURIComponent(e);return{redirect:`${r}wc?uri=${s}`,redirectUniversalLink:i?`${i}wc?uri=${"
+      },
+      {
+        "path": "/",
+        "file": "assets/AppKitProvider-nVcOIkXs.js",
+        "offset": 131268,
+        "declarationContext": false,
+        "snippet": "}`,redirectUniversalLink:i?`${i}wc?uri=${s}`:void 0,href:r,universalHref:i??void 0}},formatUniversalUrl(t,e){if(!K.isHttpUrl(t))return this.formatNativeUrl(t,e);let n=t;n.endsWith(\"/\")||(n=`${n}/`);const r=encodeURIComponent(e);return{redirect:`${n}wc?uri=${r}`,href:n}},getOpenTargetForPlatform(t){return t===\"popupWindow\"?t:this.isTelegram()?Y.getTelegramSocial"
+      },
+      {
+        "path": "/",
+        "file": "assets/core-CWWtHjXQ.js",
+        "offset": 105880,
+        "declarationContext": false,
+        "snippet": "eturn e===Yt.browser?[e,((t=Ot.getLocation())==null?void 0:t.host)||\"unknown\"].join(\":\"):e}function nd(t,e,s){const r=vg(),i=Eg();return[[t,e].join(\"-\"),[gg,s].join(\"-\"),r,i].join(\"/\")}function Cg({protocol:t,version:e,relayUrl:s,sdkVersion:r,auth:i,projectId:n,useOnCloseEvent:o,bundleId:a,packageName:c}){const l=s.split(\"?\"),u=nd(t,e,r),d={auth:i,ua:u,projectI"
+      },
+      {
+        "path": "/",
+        "file": "assets/core-CWWtHjXQ.js",
+        "offset": 157765,
+        "declarationContext": false,
+        "snippet": "`,Td)}function rr(t){return Number(rt(t,Td))}function Rd(t){return t.replace(/\\+/g,\"-\").replace(/\\//g,\"_\").replace(/=/g,\"\")}function Ud(t){const e=t.replace(/-/g,\"+\").replace(/_/g,\"/\"),s=(4-e.length%4)%4;return e+\"=\".repeat(s)}function ym(t){const e=$d(typeof t.type<\"u\"?t.type:xd);if(rr(e)===li&&typeof t.senderPublicKey>\"u\")throw new Error(\"Missing sender publi"
+      },
+      {
+        "path": "/",
+        "file": "assets/core-CWWtHjXQ.js",
+        "offset": 22119,
+        "declarationContext": false,
+        "snippet": ".startsWith(\"http://\")||t.startsWith(\"https://\")},formatNativeUrl(t,e,s=null){if(te.isHttpUrl(t))return this.formatUniversalUrl(t,e);let r=t,i=s;r.includes(\"://\")||(r=t.replaceAll(\"/\",\"\").replaceAll(\":\",\"\"),r=`${r}://`),r.endsWith(\"/\")||(r=`${r}/`),i&&!i?.endsWith(\"/\")&&(i=`${i}/`),this.isTelegram()&&this.isAndroid()&&(e=encodeURIComponent(e));const n=encodeURI"
+      },
+      {
+        "path": "/",
+        "file": "assets/core-CWWtHjXQ.js",
+        "offset": 22170,
+        "declarationContext": false,
+        "snippet": "ormatNativeUrl(t,e,s=null){if(te.isHttpUrl(t))return this.formatUniversalUrl(t,e);let r=t,i=s;r.includes(\"://\")||(r=t.replaceAll(\"/\",\"\").replaceAll(\":\",\"\"),r=`${r}://`),r.endsWith(\"/\")||(r=`${r}/`),i&&!i?.endsWith(\"/\")&&(i=`${i}/`),this.isTelegram()&&this.isAndroid()&&(e=encodeURIComponent(e));const n=encodeURIComponent(e);return{redirect:`${r}wc?uri=${n}`,redi"
+      },
+      {
+        "path": "/",
+        "file": "assets/core-CWWtHjXQ.js",
+        "offset": 22204,
+        "declarationContext": false,
+        "snippet": "sHttpUrl(t))return this.formatUniversalUrl(t,e);let r=t,i=s;r.includes(\"://\")||(r=t.replaceAll(\"/\",\"\").replaceAll(\":\",\"\"),r=`${r}://`),r.endsWith(\"/\")||(r=`${r}/`),i&&!i?.endsWith(\"/\")&&(i=`${i}/`),this.isTelegram()&&this.isAndroid()&&(e=encodeURIComponent(e));const n=encodeURIComponent(e);return{redirect:`${r}wc?uri=${n}`,redirectUniversalLink:i?`${i}wc?uri=${"
+      },
+      {
+        "path": "/",
+        "file": "assets/core-CWWtHjXQ.js",
+        "offset": 22503,
+        "declarationContext": false,
+        "snippet": "edirect:`${r}wc?uri=${n}`,redirectUniversalLink:i?`${i}wc?uri=${n}`:void 0,href:r}},formatUniversalUrl(t,e){if(!te.isHttpUrl(t))return this.formatNativeUrl(t,e);let s=t;s.endsWith(\"/\")||(s=`${s}/`);const r=encodeURIComponent(e);return{redirect:`${s}wc?uri=${r}`,href:s}},getOpenTargetForPlatform(t){return t===\"popupWindow\"?t:this.isTelegram()?H.getTelegramSocial"
+      },
+      {
+        "path": "/",
+        "file": "assets/core-CWWtHjXQ.js",
+        "offset": 267048,
+        "declarationContext": true,
+        "snippet": "typeof(global==null?void 0:global.Linking)<\"u\"&&await global.Linking.openURL(o)}catch(i){console.error(i)}}function oE(t,e,s){const r=`requestId=${e}&sessionTopic=${s}`;t.endsWith(\"/\")&&(t=t.slice(0,-1));let i=`${t}`;if(t.startsWith(\"https://t.me\")){const n=t.includes(\"?\")?\"&startapp=\":\"?startapp=\";i=`${i}${n}${hE(r,!0)}`}else i=`${i}/wc?${r}`;return i}function"
+      },
+      {
+        "path": "/",
+        "file": "assets/core-CWWtHjXQ.js",
+        "offset": 278592,
+        "declarationContext": false,
+        "snippet": "to perform the following actions on my behalf: \";if(t.includes(s))return t;const r=[];let i=0;Object.keys(e.att).forEach(a=>{const c=Object.keys(e.att[a]).map(d=>({ability:d.split(\"/\")[0],action:d.split(\"/\")[1]}));c.sort((d,h)=>d.action.localeCompare(h.action));const l={};c.forEach(d=>{l[d.ability]||(l[d.ability]=[]),l[d.ability].push(d.action)});const u=Object"
+      },
+      {
+        "path": "/",
+        "file": "assets/core-CWWtHjXQ.js",
+        "offset": 278615,
+        "declarationContext": false,
+        "snippet": "g actions on my behalf: \";if(t.includes(s))return t;const r=[];let i=0;Object.keys(e.att).forEach(a=>{const c=Object.keys(e.att[a]).map(d=>({ability:d.split(\"/\")[0],action:d.split(\"/\")[1]}));c.sort((d,h)=>d.action.localeCompare(h.action));const l={};c.forEach(d=>{l[d.ability]||(l[d.ability]=[]),l[d.ability].push(d.action)});const u=Object.keys(l).map(d=>(i++,`("
+      },
+      {
+        "path": "/",
+        "file": "assets/core-CWWtHjXQ.js",
+        "offset": 279070,
+        "declarationContext": false,
+        "snippet": ";const n=r.join(\" \"),o=`${s}${n}`;return`${t?t+\" \":\"\"}${o}`}function eu(t){var e;const s=Gi(t);nr(s);const r=(e=s.att)==null?void 0:e.eip155;return r?Object.keys(r).map(i=>i.split(\"/\")[1]):[]}function tu(t){const e=Gi(t);nr(e);const s=[];return Object.values(e.att).forEach(r=>{Object.values(r).forEach(i=>{var n;(n=i?.[0])!=null&&n.chains&&s.push(i[0].chains)})}"
+      },
+      {
+        "path": "/",
+        "file": "assets/core-CWWtHjXQ.js",
+        "offset": 32193,
+        "declarationContext": true,
+        "snippet": "obileDeeplinkRedirect(t,e){const s=window.location.href,r=encodeURIComponent(s);if(t===is.PHANTOM.id&&!(\"phantom\"in window)){const i=s.startsWith(\"https\")?\"https\":\"http\",n=s.split(\"/\")[2],o=encodeURIComponent(`${i}://${n}`);window.location.href=`${is.PHANTOM.url}/ul/browse/${r}?ref=${o}`}t===is.SOLFLARE.id&&!(\"solflare\"in window)&&(window.location.href=`${is.SO"
+      },
+      {
+        "path": "/",
+        "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+        "offset": 34082,
+        "declarationContext": false,
+        "snippet": "full ring-1 ring-background\"}),o&&e.jsx(ke,{src:o,alt:\"\",width:16,height:16,className:\"rounded-full ring-1 ring-background\"})]}),e.jsxs(\"span\",{className:\"font-medium\",children:[c,\"/\",g]}),e.jsxs(\"span\",{className:\"text-muted-foreground text-[10px]\",children:[m.includes(\"V4\")?\"V4\":\"V3\",s.feePercent?` ${s.feePercent}%`:\"\"]})]},`${s.id||n}-${s.createdAt||\"\"}`)})}"
+      },
+      {
+        "path": "/",
+        "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+        "offset": 39863,
+        "declarationContext": false,
+        "snippet": "ildren:e.jsx(\"span\",{className:\"cursor-pointer hover:text-primary\",onClick:()=>d(u.addr),children:u.sym})}),e.jsx(\"span\",{className:\"text-muted-foreground/70 font-normal\",children:\"/\"}),e.jsx(L,{content:`用 ${v.sym} 创建新池子`,children:e.jsx(\"span\",{className:\"cursor-pointer hover:text-primary\",onClick:()=>d(v.addr),children:v.sym})})]})]})})()}),e.jsxs(\"span\",{clas"
+      },
+      {
+        "path": "/",
+        "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+        "offset": 48057,
+        "declarationContext": false,
+        "snippet": "==null?null:Ge>=1?`${Math.round(Ge)}%`:Ge>0?\"<1%\":\"0%\";return e.jsxs(\"div\",{className:\"text-[10px] font-mono text-muted-foreground/70 leading-tight text-center\",children:[\"第 \",s+1,\"/\",n,\" 档 · 在仓 \",Gs(oe),X!=null?e.jsxs(e.Fragment,{children:[\" / \",Gs(X),\" · 还差 \",$t]}):\" · 已是最高档\"]})})()]})})(),e.jsxs(\"div\",{className:\"flex flex-wrap items-center gap-1.5\",children"
+      },
+      {
+        "path": "/",
+        "file": "assets/features-iiARlVwc.js",
+        "offset": 5769,
+        "declarationContext": true,
+        "snippet": "onst e=d.split(\".\");if(e.length!==3)throw new Error(\"Invalid token\");const t=e[1];if(typeof t!=\"string\")throw new Error(\"Invalid token\");const n=t.replace(/-/gu,\"+\").replace(/_/gu,\"/\"),s=n.padEnd(n.length+(4-n.length%4)%4,\"=\");return JSON.parse(atob(s))}export{K as ReownAuthentication,A as ReownAuthenticationMessenger}; "
+      },
+      {
+        "path": "/",
+        "file": "assets/hook-icon-3erkRLp7.js",
+        "offset": 8409,
+        "declarationContext": true,
+        "snippet": "sition-colors disabled:opacity-50\",children:t.jsx(Ke,{className:`w-3 h-3 ${V?\"animate-spin\":\"\"}`})})})]}),t.jsxs(\"span\",{className:\"text-muted-foreground\",children:[r.token0Symbol,\"/\",r.token1Symbol]})]}),t.jsxs(\"div\",{className:\"relative h-[80px] rounded-lg bg-muted/30 border border-border p-2 select-none\",style:{touchAction:\"none\"},onContextMenu:e=>{e.prevent"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-CALbxsQk.js",
+        "offset": 147435,
+        "declarationContext": false,
+        "snippet": "ts:n?.map(i=>({address:i,capabilities:{subAccounts:t?[t]:void 0,spendPermissions:e.length>0?{permissions:e}:void 0}}))}:null}function Ha(e){return e.replaceAll(\"+\",\"-\").replaceAll(\"/\",\"_\").replace(/=+$/,\"\")}function Ne(e){const t=btoa(String.fromCharCode(...new Uint8Array(e)));return Ha(t)}function qa({webauthn:e,signature:t,id:n}){const r=un(t);return{id:n,raw"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-CfZ5bUHm.js",
+        "offset": 121597,
+        "declarationContext": false,
+        "snippet": "i=e.length%3,o=Math.floor(e.length/3)*4+(i&&i+1);let u=kf.decode(new Uint8Array(s.buffer,0,o));return n&&i===1&&(u+=\"==\"),n&&i===2&&(u+=\"=\"),r&&(u=u.replaceAll(\"+\",\"-\").replaceAll(\"/\",\"_\")),u}function Pf(e,t={}){return Sf(We(e),t)}function Tr(e){const t=e.replace(/=+$/,\"\"),n=t.length,r=new Uint8Array(n+3);Af.encodeInto(t+\"===\",r);for(let i=0,o=0;i<t.length;i+=4"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-CfZ5bUHm.js",
+        "offset": 143051,
+        "declarationContext": false,
+        "snippet": "ata}}async function ri(e){e.persist.hasHydrated()||await new Promise(t=>{e.persist.onFinishHydration(()=>t(!0)),setTimeout(()=>t(!0),100)})}function ir(e){if(e)return e.startsWith(\"/\")?`${window.location.origin}${e}`:e}function Eh(e){const{config:t,getMode:n,id:r,store:s}=e,{announceProvider:i}=t;function o(p={}){const m=u(),g=p.request??ni(ti,{method:\"wallet_g"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0CkVZ_w.js",
+        "offset": 188380,
+        "declarationContext": false,
+        "snippet": "urn e.dataSuffix}}function $(e,t){const n=e.filter(a=>a!==t);return[t,...n]}function ee(e,t){return[...e.filter(a=>a!==t),t]}function Ar(e){return e.replaceAll(\"+\",\"-\").replaceAll(\"/\",\"_\").replace(/=+$/,\"\")}function te(e){const t=btoa(String.fromCharCode(...new Uint8Array(e)));return Ar(t)}function Sr({webauthn:e,signature:t,id:n}){const a=$e(t);return{id:n,raw"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 147391,
+        "declarationContext": false,
+        "snippet": "eRoot,Vd}var IT=RT(),f=zf();const Z=p0(f),Wl=kT({__proto__:null,default:Z},[f]);var h0=/^(?:[a-z][a-z0-9+.-]*:|[\\\\/]{2})/i,Y1=/^[\\\\/]{2}/;function _T(e,t){return t+e.replace(/\\\\/g,\"/\")}var wb=\"popstate\";function Sb(e){return typeof e==\"object\"&&e!=null&&\"pathname\"in e&&\"search\"in e&&\"hash\"in e&&\"state\"in e&&\"key\"in e}function AT(e={}){function t(r,a){let l=a.st"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 148425,
+        "declarationContext": true,
+        "snippet": "on fg(e,t,n=null,r,a){return{pathname:typeof e==\"string\"?e:e.pathname,search:\"\",hash:\"\",...typeof t==\"string\"?Gl(t):t,state:n,key:t&&t.key||r||OT(),mask:a}}function ou({pathname:e=\"/\",search:t=\"\",hash:n=\"\"}){return t&&t!==\"?\"&&(e+=t.charAt(0)===\"?\"?t:\"?\"+t),n&&n!==\"#\"&&(e+=n.charAt(0)===\"#\"?n:\"#\"+n),e}function Gl(e){let t={};if(e){let n=e.indexOf(\"#\");n>=0&&(t."
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 150221,
+        "declarationContext": false,
+        "snippet": ",\"No window.location.(origin|href) available to create URL\");let a=typeof t==\"string\"?t:ou(t);return a=a.replace(/ $/,\"%20\"),!n&&Y1.test(a)&&(a=r+a),new URL(a,r)}function X1(e,t,n=\"/\"){return $T(e,t,n,!1)}function $T(e,t,n,r,a){let l=typeof t==\"string\"?Gl(t):t,c=Bs(l.pathname||\"/\",n);if(c==null)return null;let d=LT(e),m=null,p=YT(c);for(let x=0;m==null&&x<d.len"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 150319,
+        "declarationContext": true,
+        "snippet": "rn a=a.replace(/ $/,\"%20\"),!n&&Y1.test(a)&&(a=r+a),new URL(a,r)}function X1(e,t,n=\"/\"){return $T(e,t,n,!1)}function $T(e,t,n,r,a){let l=typeof t==\"string\"?Gl(t):t,c=Bs(l.pathname||\"/\",n);if(c==null)return null;let d=LT(e),m=null,p=YT(c);for(let x=0;m==null&&x<d.length;++x)m=qT(d[x],p,r);return m}function LT(e){let t=J1(e);return FT(t),t}function J1(e,t=[],n=[],"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 150666,
+        "declarationContext": true,
+        "snippet": " J1(e,t=[],n=[],r=\"\",a=!1){let l=(c,d,m=a,p)=>{let x={relativePath:p===void 0?c.path||\"\":p,caseSensitive:c.caseSensitive===!0,childrenIndex:d,route:c};if(x.relativePath.startsWith(\"/\")){if(!x.relativePath.startsWith(r)&&m)return;fn(x.relativePath.startsWith(r),`Absolute route path \"${x.relativePath}\" nested under path \"${r}\" is not valid. An absolute child rout"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 151516,
+        "declarationContext": true,
+        "snippet": "b,matcher:k,compiledParams:w}})})};return e.forEach((c,d)=>{if(c.path===\"\"||!c.path?.includes(\"?\"))l(c,d);else for(let m of Q1(c.path))l(c,d,!0,m)}),t}function Q1(e){let t=e.split(\"/\");if(t.length===0)return[];let[n,...r]=t,a=n.endsWith(\"?\"),l=n.replace(/\\?$/,\"\");if(r.length===0)return a?[l,\"\"]:[l];let c=Q1(r.join(\"/\")),d=[];return d.push(...c.map(m=>m===\"\"?l:["
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 151652,
+        "declarationContext": false,
+        "snippet": "(c,d,!0,m)}),t}function Q1(e){let t=e.split(\"/\");if(t.length===0)return[];let[n,...r]=t,a=n.endsWith(\"?\"),l=n.replace(/\\?$/,\"\");if(r.length===0)return a?[l,\"\"]:[l];let c=Q1(r.join(\"/\")),d=[];return d.push(...c.map(m=>m===\"\"?l:[l,m].join(\"/\"))),a&&d.push(...c),d.map(m=>e.startsWith(\"/\")&&m===\"\"?\"/\":m)}function FT(e){e.sort((t,n)=>t.score!==n.score?n.score-t.scor"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 151709,
+        "declarationContext": false,
+        "snippet": "gth===0)return[];let[n,...r]=t,a=n.endsWith(\"?\"),l=n.replace(/\\?$/,\"\");if(r.length===0)return a?[l,\"\"]:[l];let c=Q1(r.join(\"/\")),d=[];return d.push(...c.map(m=>m===\"\"?l:[l,m].join(\"/\"))),a&&d.push(...c),d.map(m=>e.startsWith(\"/\")&&m===\"\"?\"/\":m)}function FT(e){e.sort((t,n)=>t.score!==n.score?n.score-t.score:KT(t.routesMeta.map(r=>r.childrenIndex),n.routesMeta.ma"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 151754,
+        "declarationContext": false,
+        "snippet": "?\"),l=n.replace(/\\?$/,\"\");if(r.length===0)return a?[l,\"\"]:[l];let c=Q1(r.join(\"/\")),d=[];return d.push(...c.map(m=>m===\"\"?l:[l,m].join(\"/\"))),a&&d.push(...c),d.map(m=>e.startsWith(\"/\")&&m===\"\"?\"/\":m)}function FT(e){e.sort((t,n)=>t.score!==n.score?n.score-t.score:KT(t.routesMeta.map(r=>r.childrenIndex),n.routesMeta.map(r=>r.childrenIndex)))}var BT=/^:[\\w-]+$/,zT"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 151767,
+        "declarationContext": false,
+        "snippet": "ce(/\\?$/,\"\");if(r.length===0)return a?[l,\"\"]:[l];let c=Q1(r.join(\"/\")),d=[];return d.push(...c.map(m=>m===\"\"?l:[l,m].join(\"/\"))),a&&d.push(...c),d.map(m=>e.startsWith(\"/\")&&m===\"\"?\"/\":m)}function FT(e){e.sort((t,n)=>t.score!==n.score?n.score-t.score:KT(t.routesMeta.map(r=>r.childrenIndex),n.routesMeta.map(r=>r.childrenIndex)))}var BT=/^:[\\w-]+$/,zT=3,UT=2,VT=1,"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 152007,
+        "declarationContext": false,
+        "snippet": "e-t.score:KT(t.routesMeta.map(r=>r.childrenIndex),n.routesMeta.map(r=>r.childrenIndex)))}var BT=/^:[\\w-]+$/,zT=3,UT=2,VT=1,HT=10,WT=-2,Cb=e=>e===\"*\";function GT(e,t){let n=e.split(\"/\"),r=n.length;return n.some(Cb)&&(r+=WT),t&&(r+=UT),n.filter(a=>!Cb(a)).reduce((a,l)=>a+(BT.test(l)?zT:l===\"\"?VT:HT),r)}function KT(e,t){return e.length===t.length&&e.slice(0,-1).ev"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 152290,
+        "declarationContext": false,
+        "snippet": "T:l===\"\"?VT:HT),r)}function KT(e,t){return e.length===t.length&&e.slice(0,-1).every((r,a)=>r===t[a])?e[e.length-1]-t[t.length-1]:0}function qT(e,t,n=!1){let{routesMeta:r}=e,a={},l=\"/\",c=[];for(let d=0;d<r.length;++d){let m=r[d],p=d===r.length-1,x=l===\"/\"?t:t.slice(l.length)||\"/\",h={path:m.relativePath,caseSensitive:m.caseSensitive,end:p},y=m.matcher&&m.compiled"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 152361,
+        "declarationContext": false,
+        "snippet": "(0,-1).every((r,a)=>r===t[a])?e[e.length-1]-t[t.length-1]:0}function qT(e,t,n=!1){let{routesMeta:r}=e,a={},l=\"/\",c=[];for(let d=0;d<r.length;++d){let m=r[d],p=d===r.length-1,x=l===\"/\"?t:t.slice(l.length)||\"/\",h={path:m.relativePath,caseSensitive:m.caseSensitive,end:p},y=m.matcher&&m.compiledParams?Z1(h,x,m.matcher,m.compiledParams):Cf(h,x),b=m.route;if(!y&&p&&n"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 152386,
+        "declarationContext": false,
+        "snippet": "[a])?e[e.length-1]-t[t.length-1]:0}function qT(e,t,n=!1){let{routesMeta:r}=e,a={},l=\"/\",c=[];for(let d=0;d<r.length;++d){let m=r[d],p=d===r.length-1,x=l===\"/\"?t:t.slice(l.length)||\"/\",h={path:m.relativePath,caseSensitive:m.caseSensitive,end:p},y=m.matcher&&m.compiledParams?Z1(h,x,m.matcher,m.compiledParams):Cf(h,x),b=m.route;if(!y&&p&&n&&!r[r.length-1].route.in"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 152796,
+        "declarationContext": true,
+        "snippet": ".caseSensitive,end:!1},x)),!y)return null;Object.assign(a,y.params),c.push({params:a,pathname:_o([l,y.pathname]),pathnameBase:QT(_o([l,y.pathnameBase])),route:b}),y.pathnameBase!==\"/\"&&(l=_o([l,y.pathnameBase]))}return c}function Cf(e,t){typeof e==\"string\"&&(e={path:e,caseSensitive:!1,end:!0});let[n,r]=eS(e.path,e.caseSensitive,e.end);return Z1(e,t,n,r)}functio"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 153286,
+        "declarationContext": false,
+        "snippet": "{paramName:x,isOptional:h},y)=>{if(x===\"*\"){let C=d[y]||\"\";c=l.slice(0,l.length-C.length).replace(/(.)\\/+$/,\"$1\")}const b=d[y];return h&&!b?p[x]=void 0:p[x]=(b||\"\").replace(/%2F/g,\"/\"),p},{}),pathname:l,pathnameBase:c,pattern:e}}function eS(e,t=!1,n=!0){Mo(e===\"*\"||!e.endsWith(\"*\")||e.endsWith(\"/*\"),`Route path \"${e}\" will be treated as if it were \"${e.replace("
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 153698,
+        "declarationContext": false,
+        "snippet": "ways follow a \\`/\\` in the pattern. To get rid of this warning, please change the route path to \"${e.replace(/\\*$/,\"/*\")}\".`);let r=[],a=\"^\"+e.replace(/\\/*\\*?$/,\"\").replace(/^\\/*/,\"/\").replace(/[\\\\.*+^${}|()[\\]]/g,\"\\\\$&\").replace(/\\/:([\\w-]+)(\\?)?/g,(c,d,m,p,x)=>{if(r.push({paramName:d,isOptional:m!=null}),m){let h=x.charAt(p+c.length);return h&&h!==\"/\"?\"/([^\\\\"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 153870,
+        "declarationContext": false,
+        "snippet": "(/^\\/*/,\"/\").replace(/[\\\\.*+^${}|()[\\]]/g,\"\\\\$&\").replace(/\\/:([\\w-]+)(\\?)?/g,(c,d,m,p,x)=>{if(r.push({paramName:d,isOptional:m!=null}),m){let h=x.charAt(p+c.length);return h&&h!==\"/\"?\"/([^\\\\/]*)\":\"(?:/([^\\\\/]*))?\"}return\"/([^\\\\/]+)\"}).replace(/\\/([\\w-]+)\\?(\\/|$)/g,\"(/$1)?$2\");return e.endsWith(\"*\")?(r.push({paramName:\"*\"}),a+=e===\"*\"||e===\"/*\"?\"(.*)$\":\"(?:\\\\/("
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154091,
+        "declarationContext": false,
+        "snippet": "\"/([^\\\\/]+)\"}).replace(/\\/([\\w-]+)\\?(\\/|$)/g,\"(/$1)?$2\");return e.endsWith(\"*\")?(r.push({paramName:\"*\"}),a+=e===\"*\"||e===\"/*\"?\"(.*)$\":\"(?:\\\\/(.+)|\\\\/*)$\"):n?a+=\"\\\\/*$\":e!==\"\"&&e!==\"/\"&&(a+=\"(?:(?=\\\\/|$))\"),[new RegExp(a,t?void 0:\"i\"),r]}function YT(e){try{return e.split(\"/\").map(t=>decodeURIComponent(t).replace(/\\//g,\"%2F\")).join(\"/\")}catch(t){return Mo(!1,`The"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154182,
+        "declarationContext": false,
+        "snippet": "ramName:\"*\"}),a+=e===\"*\"||e===\"/*\"?\"(.*)$\":\"(?:\\\\/(.+)|\\\\/*)$\"):n?a+=\"\\\\/*$\":e!==\"\"&&e!==\"/\"&&(a+=\"(?:(?=\\\\/|$))\"),[new RegExp(a,t?void 0:\"i\"),r]}function YT(e){try{return e.split(\"/\").map(t=>decodeURIComponent(t).replace(/\\//g,\"%2F\")).join(\"/\")}catch(t){return Mo(!1,`The URL path \"${e}\" could not be decoded because it is a malformed URL segment. This is probab"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154243,
+        "declarationContext": false,
+        "snippet": "\"):n?a+=\"\\\\/*$\":e!==\"\"&&e!==\"/\"&&(a+=\"(?:(?=\\\\/|$))\"),[new RegExp(a,t?void 0:\"i\"),r]}function YT(e){try{return e.split(\"/\").map(t=>decodeURIComponent(t).replace(/\\//g,\"%2F\")).join(\"/\")}catch(t){return Mo(!1,`The URL path \"${e}\" could not be decoded because it is a malformed URL segment. This is probably due to a bad percent encoding (${t}).`),e}}function Bs(e,t"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154435,
+        "declarationContext": true,
+        "snippet": "){return Mo(!1,`The URL path \"${e}\" could not be decoded because it is a malformed URL segment. This is probably due to a bad percent encoding (${t}).`),e}}function Bs(e,t){if(t===\"/\")return e;if(!e.toLowerCase().startsWith(t.toLowerCase()))return null;let n=t.endsWith(\"/\")?t.length-1:t.length,r=e.charAt(n);return r&&r!==\"/\"?null:e.slice(n)||\"/\"}function XT(e,t"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154525,
+        "declarationContext": true,
+        "snippet": "ment. This is probably due to a bad percent encoding (${t}).`),e}}function Bs(e,t){if(t===\"/\")return e;if(!e.toLowerCase().startsWith(t.toLowerCase()))return null;let n=t.endsWith(\"/\")?t.length-1:t.length,r=e.charAt(n);return r&&r!==\"/\"?null:e.slice(n)||\"/\"}function XT(e,t=\"/\"){let{pathname:n,search:r=\"\",hash:a=\"\"}=typeof e==\"string\"?Gl(e):e,l;return n?(n=tS(n)"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154578,
+        "declarationContext": false,
+        "snippet": "(${t}).`),e}}function Bs(e,t){if(t===\"/\")return e;if(!e.toLowerCase().startsWith(t.toLowerCase()))return null;let n=t.endsWith(\"/\")?t.length-1:t.length,r=e.charAt(n);return r&&r!==\"/\"?null:e.slice(n)||\"/\"}function XT(e,t=\"/\"){let{pathname:n,search:r=\"\",hash:a=\"\"}=typeof e==\"string\"?Gl(e):e,l;return n?(n=tS(n),n.startsWith(\"/\")?l=Nb(n.substring(1),\"/\"):l=Nb(n,t)"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154599,
+        "declarationContext": false,
+        "snippet": " Bs(e,t){if(t===\"/\")return e;if(!e.toLowerCase().startsWith(t.toLowerCase()))return null;let n=t.endsWith(\"/\")?t.length-1:t.length,r=e.charAt(n);return r&&r!==\"/\"?null:e.slice(n)||\"/\"}function XT(e,t=\"/\"){let{pathname:n,search:r=\"\",hash:a=\"\"}=typeof e==\"string\"?Gl(e):e,l;return n?(n=tS(n),n.startsWith(\"/\")?l=Nb(n.substring(1),\"/\"):l=Nb(n,t)):l=t,{pathname:l,sea"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154619,
+        "declarationContext": false,
+        "snippet": "return e;if(!e.toLowerCase().startsWith(t.toLowerCase()))return null;let n=t.endsWith(\"/\")?t.length-1:t.length,r=e.charAt(n);return r&&r!==\"/\"?null:e.slice(n)||\"/\"}function XT(e,t=\"/\"){let{pathname:n,search:r=\"\",hash:a=\"\"}=typeof e==\"string\"?Gl(e):e,l;return n?(n=tS(n),n.startsWith(\"/\")?l=Nb(n.substring(1),\"/\"):l=Nb(n,t)):l=t,{pathname:l,search:ZT(r),hash:eP(a)"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154722,
+        "declarationContext": false,
+        "snippet": ".length,r=e.charAt(n);return r&&r!==\"/\"?null:e.slice(n)||\"/\"}function XT(e,t=\"/\"){let{pathname:n,search:r=\"\",hash:a=\"\"}=typeof e==\"string\"?Gl(e):e,l;return n?(n=tS(n),n.startsWith(\"/\")?l=Nb(n.substring(1),\"/\"):l=Nb(n,t)):l=t,{pathname:l,search:ZT(r),hash:eP(a)}}function Nb(e,t){let n=Nf(t).split(\"/\");return e.split(\"/\").forEach(a=>{a===\"..\"?n.length>1&&n.pop():"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154747,
+        "declarationContext": false,
+        "snippet": "urn r&&r!==\"/\"?null:e.slice(n)||\"/\"}function XT(e,t=\"/\"){let{pathname:n,search:r=\"\",hash:a=\"\"}=typeof e==\"string\"?Gl(e):e,l;return n?(n=tS(n),n.startsWith(\"/\")?l=Nb(n.substring(1),\"/\"):l=Nb(n,t)):l=t,{pathname:l,search:ZT(r),hash:eP(a)}}function Nb(e,t){let n=Nf(t).split(\"/\");return e.split(\"/\").forEach(a=>{a===\"..\"?n.length>1&&n.pop():a!==\".\"&&n.push(a)}),n.le"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154839,
+        "declarationContext": true,
+        "snippet": "\"}=typeof e==\"string\"?Gl(e):e,l;return n?(n=tS(n),n.startsWith(\"/\")?l=Nb(n.substring(1),\"/\"):l=Nb(n,t)):l=t,{pathname:l,search:ZT(r),hash:eP(a)}}function Nb(e,t){let n=Nf(t).split(\"/\");return e.split(\"/\").forEach(a=>{a===\"..\"?n.length>1&&n.pop():a!==\".\"&&n.push(a)}),n.length>1?n.join(\"/\"):\"/\"}function Sh(e,t,n,r){return`Cannot include a '${e}' character in a ma"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154859,
+        "declarationContext": false,
+        "snippet": "\"?Gl(e):e,l;return n?(n=tS(n),n.startsWith(\"/\")?l=Nb(n.substring(1),\"/\"):l=Nb(n,t)):l=t,{pathname:l,search:ZT(r),hash:eP(a)}}function Nb(e,t){let n=Nf(t).split(\"/\");return e.split(\"/\").forEach(a=>{a===\"..\"?n.length>1&&n.pop():a!==\".\"&&n.push(a)}),n.length>1?n.join(\"/\"):\"/\"}function Sh(e,t,n,r){return`Cannot include a '${e}' character in a manually specified \\`t"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154944,
+        "declarationContext": false,
+        "snippet": "=t,{pathname:l,search:ZT(r),hash:eP(a)}}function Nb(e,t){let n=Nf(t).split(\"/\");return e.split(\"/\").forEach(a=>{a===\"..\"?n.length>1&&n.pop():a!==\".\"&&n.push(a)}),n.length>1?n.join(\"/\"):\"/\"}function Sh(e,t,n,r){return`Cannot include a '${e}' character in a manually specified \\`to.${t}\\` field [${JSON.stringify(r)}]. Please separate it out to the \\`to.${n}\\` fie"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154949,
+        "declarationContext": false,
+        "snippet": "athname:l,search:ZT(r),hash:eP(a)}}function Nb(e,t){let n=Nf(t).split(\"/\");return e.split(\"/\").forEach(a=>{a===\"..\"?n.length>1&&n.pop():a!==\".\"&&n.push(a)}),n.length>1?n.join(\"/\"):\"/\"}function Sh(e,t,n,r){return`Cannot include a '${e}' character in a manually specified \\`to.${t}\\` field [${JSON.stringify(r)}]. Please separate it out to the \\`to.${n}\\` field. A"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 155727,
+        "declarationContext": true,
+        "snippet": "rch\",a)),fn(!a.pathname||!a.pathname.includes(\"#\"),Sh(\"#\",\"pathname\",\"hash\",a)),fn(!a.search||!a.search.includes(\"#\"),Sh(\"#\",\"search\",\"hash\",a)));let l=e===\"\"||a.pathname===\"\",c=l?\"/\":a.pathname,d;if(c==null)d=n;else{let h=t.length-1;if(!r&&c.startsWith(\"..\")){let y=c.split(\"/\");for(;y[0]===\"..\";)y.shift(),h-=1;a.pathname=y.join(\"/\")}d=h>=0?t[h]:\"/\"}let m=XT(a,"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 155822,
+        "declarationContext": false,
+        "snippet": "a.search.includes(\"#\"),Sh(\"#\",\"search\",\"hash\",a)));let l=e===\"\"||a.pathname===\"\",c=l?\"/\":a.pathname,d;if(c==null)d=n;else{let h=t.length-1;if(!r&&c.startsWith(\"..\")){let y=c.split(\"/\");for(;y[0]===\"..\";)y.shift(),h-=1;a.pathname=y.join(\"/\")}d=h>=0?t[h]:\"/\"}let m=XT(a,d),p=c&&c!==\"/\"&&c.endsWith(\"/\"),x=(l||c===\".\")&&n.endsWith(\"/\");return!m.pathname.endsWith(\"/\""
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 155878,
+        "declarationContext": true,
+        "snippet": "=e===\"\"||a.pathname===\"\",c=l?\"/\":a.pathname,d;if(c==null)d=n;else{let h=t.length-1;if(!r&&c.startsWith(\"..\")){let y=c.split(\"/\");for(;y[0]===\"..\";)y.shift(),h-=1;a.pathname=y.join(\"/\")}d=h>=0?t[h]:\"/\"}let m=XT(a,d),p=c&&c!==\"/\"&&c.endsWith(\"/\"),x=(l||c===\".\")&&n.endsWith(\"/\");return!m.pathname.endsWith(\"/\")&&(p||x)&&(m.pathname+=\"/\"),m}var tS=e=>e.replace(/[\\\\/"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 155895,
+        "declarationContext": true,
+        "snippet": "me===\"\",c=l?\"/\":a.pathname,d;if(c==null)d=n;else{let h=t.length-1;if(!r&&c.startsWith(\"..\")){let y=c.split(\"/\");for(;y[0]===\"..\";)y.shift(),h-=1;a.pathname=y.join(\"/\")}d=h>=0?t[h]:\"/\"}let m=XT(a,d),p=c&&c!==\"/\"&&c.endsWith(\"/\"),x=(l||c===\".\")&&n.endsWith(\"/\");return!m.pathname.endsWith(\"/\")&&(p||x)&&(m.pathname+=\"/\"),m}var tS=e=>e.replace(/[\\\\/]{2,}/g,\"/\"),_o=e"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 155922,
+        "declarationContext": true,
+        "snippet": "d;if(c==null)d=n;else{let h=t.length-1;if(!r&&c.startsWith(\"..\")){let y=c.split(\"/\");for(;y[0]===\"..\";)y.shift(),h-=1;a.pathname=y.join(\"/\")}d=h>=0?t[h]:\"/\"}let m=XT(a,d),p=c&&c!==\"/\"&&c.endsWith(\"/\"),x=(l||c===\".\")&&n.endsWith(\"/\");return!m.pathname.endsWith(\"/\")&&(p||x)&&(m.pathname+=\"/\"),m}var tS=e=>e.replace(/[\\\\/]{2,}/g,\"/\"),_o=e=>tS(e.join(\"/\")),Nf=e=>e.r"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 155938,
+        "declarationContext": true,
+        "snippet": ";else{let h=t.length-1;if(!r&&c.startsWith(\"..\")){let y=c.split(\"/\");for(;y[0]===\"..\";)y.shift(),h-=1;a.pathname=y.join(\"/\")}d=h>=0?t[h]:\"/\"}let m=XT(a,d),p=c&&c!==\"/\"&&c.endsWith(\"/\"),x=(l||c===\".\")&&n.endsWith(\"/\");return!m.pathname.endsWith(\"/\")&&(p||x)&&(m.pathname+=\"/\"),m}var tS=e=>e.replace(/[\\\\/]{2,}/g,\"/\"),_o=e=>tS(e.join(\"/\")),Nf=e=>e.replace(/\\/+$/,\"\""
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 155970,
+        "declarationContext": false,
+        "snippet": "startsWith(\"..\")){let y=c.split(\"/\");for(;y[0]===\"..\";)y.shift(),h-=1;a.pathname=y.join(\"/\")}d=h>=0?t[h]:\"/\"}let m=XT(a,d),p=c&&c!==\"/\"&&c.endsWith(\"/\"),x=(l||c===\".\")&&n.endsWith(\"/\");return!m.pathname.endsWith(\"/\")&&(p||x)&&(m.pathname+=\"/\"),m}var tS=e=>e.replace(/[\\\\/]{2,}/g,\"/\"),_o=e=>tS(e.join(\"/\")),Nf=e=>e.replace(/\\/+$/,\"\"),QT=e=>Nf(e).replace(/^\\/*/,\"/\""
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 156002,
+        "declarationContext": true,
+        "snippet": "\"/\");for(;y[0]===\"..\";)y.shift(),h-=1;a.pathname=y.join(\"/\")}d=h>=0?t[h]:\"/\"}let m=XT(a,d),p=c&&c!==\"/\"&&c.endsWith(\"/\"),x=(l||c===\".\")&&n.endsWith(\"/\");return!m.pathname.endsWith(\"/\")&&(p||x)&&(m.pathname+=\"/\"),m}var tS=e=>e.replace(/[\\\\/]{2,}/g,\"/\"),_o=e=>tS(e.join(\"/\")),Nf=e=>e.replace(/\\/+$/,\"\"),QT=e=>Nf(e).replace(/^\\/*/,\"/\"),ZT=e=>!e||e===\"?\"?\"\":e.startsW"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 156029,
+        "declarationContext": true,
+        "snippet": "ift(),h-=1;a.pathname=y.join(\"/\")}d=h>=0?t[h]:\"/\"}let m=XT(a,d),p=c&&c!==\"/\"&&c.endsWith(\"/\"),x=(l||c===\".\")&&n.endsWith(\"/\");return!m.pathname.endsWith(\"/\")&&(p||x)&&(m.pathname+=\"/\"),m}var tS=e=>e.replace(/[\\\\/]{2,}/g,\"/\"),_o=e=>tS(e.join(\"/\")),Nf=e=>e.replace(/\\/+$/,\"\"),QT=e=>Nf(e).replace(/^\\/*/,\"/\"),ZT=e=>!e||e===\"?\"?\"\":e.startsWith(\"?\")?e:\"?\"+e,eP=e=>!e||"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 156069,
+        "declarationContext": true,
+        "snippet": "?t[h]:\"/\"}let m=XT(a,d),p=c&&c!==\"/\"&&c.endsWith(\"/\"),x=(l||c===\".\")&&n.endsWith(\"/\");return!m.pathname.endsWith(\"/\")&&(p||x)&&(m.pathname+=\"/\"),m}var tS=e=>e.replace(/[\\\\/]{2,}/g,\"/\"),_o=e=>tS(e.join(\"/\")),Nf=e=>e.replace(/\\/+$/,\"\"),QT=e=>Nf(e).replace(/^\\/*/,\"/\"),ZT=e=>!e||e===\"?\"?\"\":e.startsWith(\"?\")?e:\"?\"+e,eP=e=>!e||e===\"#\"?\"\":e.startsWith(\"#\")?e:\"#\"+e,tP="
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 156090,
+        "declarationContext": true,
+        "snippet": "d),p=c&&c!==\"/\"&&c.endsWith(\"/\"),x=(l||c===\".\")&&n.endsWith(\"/\");return!m.pathname.endsWith(\"/\")&&(p||x)&&(m.pathname+=\"/\"),m}var tS=e=>e.replace(/[\\\\/]{2,}/g,\"/\"),_o=e=>tS(e.join(\"/\")),Nf=e=>e.replace(/\\/+$/,\"\"),QT=e=>Nf(e).replace(/^\\/*/,\"/\"),ZT=e=>!e||e===\"?\"?\"\":e.startsWith(\"?\")?e:\"?\"+e,eP=e=>!e||e===\"#\"?\"\":e.startsWith(\"#\")?e:\"#\"+e,tP=class{constructor(e,t"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 156150,
+        "declarationContext": false,
+        "snippet": "\"/\");return!m.pathname.endsWith(\"/\")&&(p||x)&&(m.pathname+=\"/\"),m}var tS=e=>e.replace(/[\\\\/]{2,}/g,\"/\"),_o=e=>tS(e.join(\"/\")),Nf=e=>e.replace(/\\/+$/,\"\"),QT=e=>Nf(e).replace(/^\\/*/,\"/\"),ZT=e=>!e||e===\"?\"?\"\":e.startsWith(\"?\")?e:\"?\"+e,eP=e=>!e||e===\"#\"?\"\":e.startsWith(\"#\")?e:\"#\"+e,tP=class{constructor(e,t,n,r=!1){this.status=e,this.statusText=t||\"\",this.internal=r"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 156609,
+        "declarationContext": true,
+        "snippet": "=null&&typeof e.status==\"number\"&&typeof e.statusText==\"string\"&&typeof e.internal==\"boolean\"&&\"data\"in e}function rP(e){let t=e.map(n=>n.route.path).filter(Boolean);return _o(t)||\"/\"}var nS=typeof window<\"u\"&&typeof window.document<\"u\"&&typeof window.document.createElement<\"u\";function rS(e,t){let n=e;if(typeof n!=\"string\"||!h0.test(n))return{absoluteURL:void "
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 158918,
+        "declarationContext": true,
+        "snippet": "),\"useHref() may be used only in the context of a <Router> component.\");let{basename:n,navigator:r}=f.useContext(qr),{hash:a,pathname:l,search:c}=ju(e,{relative:t}),d=l;return n!==\"/\"&&(d=l===\"/\"?n:_o([n,l])),r.createHref({pathname:d,search:c,hash:a})}function ql(){return f.useContext(Eu)!=null}function yr(){return fn(ql(),\"useLocation() may be used only in the"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 158930,
+        "declarationContext": true,
+        "snippet": " may be used only in the context of a <Router> component.\");let{basename:n,navigator:r}=f.useContext(qr),{hash:a,pathname:l,search:c}=ju(e,{relative:t}),d=l;return n!==\"/\"&&(d=l===\"/\"?n:_o([n,l])),r.createHref({pathname:d,search:c,hash:a})}function ql(){return f.useContext(Eu)!=null}function yr(){return fn(ql(),\"useLocation() may be used only in the context of "
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 159835,
+        "declarationContext": true,
+        "snippet": "=>{c.current=!0}),f.useCallback((m,p={})=>{if(Mo(c.current,lS),!c.current)return;if(typeof m==\"number\"){n.go(m);return}let x=Uf(m,JSON.parse(l),a,p.relative===\"path\");e==null&&t!==\"/\"&&(x.pathname=x.pathname===\"/\"?t:_o([t,x.pathname])),(p.replace?n.replace:n.push)(x,p.state,p)},[t,n,l,a,e])}f.createContext(null);function gP(){let{matches:e}=f.useContext($o);ret"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 159865,
+        "declarationContext": true,
+        "snippet": "k((m,p={})=>{if(Mo(c.current,lS),!c.current)return;if(typeof m==\"number\"){n.go(m);return}let x=Uf(m,JSON.parse(l),a,p.relative===\"path\");e==null&&t!==\"/\"&&(x.pathname=x.pathname===\"/\"?t:_o([t,x.pathname])),(p.replace?n.replace:n.push)(x,p.state,p)},[t,n,l,a,e])}f.createContext(null);function gP(){let{matches:e}=f.useContext($o);return e[e.length-1]?.params??{}}"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 160459,
+        "declarationContext": true,
+        "snippet": "seRoutes() may be used only in the context of a <Router> component.\");let{navigator:r}=f.useContext(qr),{matches:a}=f.useContext($o),l=a[a.length-1],c=l?l.params:{},d=l?l.pathname:\"/\",m=l?l.pathnameBase:\"/\",p=l&&l.route;{let w=p&&p.path||\"\";fS(d,!p||w.endsWith(\"*\")||w.endsWith(\"*?\"),`You rendered descendant <Routes> (or called \\`useRoutes()\\`) at \"${d}\" (under "
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 160482,
+        "declarationContext": true,
+        "snippet": "only in the context of a <Router> component.\");let{navigator:r}=f.useContext(qr),{matches:a}=f.useContext($o),l=a[a.length-1],c=l?l.params:{},d=l?l.pathname:\"/\",m=l?l.pathnameBase:\"/\",p=l&&l.route;{let w=p&&p.path||\"\";fS(d,!p||w.endsWith(\"*\")||w.endsWith(\"*?\"),`You rendered descendant <Routes> (or called \\`useRoutes()\\`) at \"${d}\" (under <Route path=\"${w}\">) bu"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 160976,
+        "declarationContext": false,
+        "snippet": "ild routes will never render. Please change the parent <Route path=\"${w}\"> to <Route path=\"${w===\"/\"?\"*\":`${w}/*`}\">.`)}let x=yr(),h;if(t){let w=typeof t==\"string\"?Gl(t):t;fn(m===\"/\"||w.pathname?.startsWith(m),`When overriding the location using \\`<Routes location>\\` or \\`useRoutes(routes, location)\\`, the location pathname must begin with the portion of the U"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 161344,
+        "declarationContext": true,
+        "snippet": "thname that was matched by all parent routes. The current pathname base is \"${m}\" but pathname \"${w.pathname}\" was given in the \\`location\\` prop.`),h=w}else h=x;let y=h.pathname||\"/\",b=y;if(m!==\"/\"){let w=m.replace(/^\\//,\"\").split(\"/\");b=\"/\"+y.replace(/^\\//,\"\").split(\"/\").slice(w.length).join(\"/\")}let C=n&&n.state.matches.length?n.state.matches.map(w=>Object.a"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 161359,
+        "declarationContext": true,
+        "snippet": " matched by all parent routes. The current pathname base is \"${m}\" but pathname \"${w.pathname}\" was given in the \\`location\\` prop.`),h=w}else h=x;let y=h.pathname||\"/\",b=y;if(m!==\"/\"){let w=m.replace(/^\\//,\"\").split(\"/\");b=\"/\"+y.replace(/^\\//,\"\").split(\"/\").slice(w.length).join(\"/\")}let C=n&&n.state.matches.length?n.state.matches.map(w=>Object.assign(w,{route:"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 161396,
+        "declarationContext": true,
+        "snippet": "rrent pathname base is \"${m}\" but pathname \"${w.pathname}\" was given in the \\`location\\` prop.`),h=w}else h=x;let y=h.pathname||\"/\",b=y;if(m!==\"/\"){let w=m.replace(/^\\//,\"\").split(\"/\");b=\"/\"+y.replace(/^\\//,\"\").split(\"/\").slice(w.length).join(\"/\")}let C=n&&n.state.matches.length?n.state.matches.map(w=>Object.assign(w,{route:n.manifest[w.route.id]||w.route})):X1"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 161403,
+        "declarationContext": true,
+        "snippet": "athname base is \"${m}\" but pathname \"${w.pathname}\" was given in the \\`location\\` prop.`),h=w}else h=x;let y=h.pathname||\"/\",b=y;if(m!==\"/\"){let w=m.replace(/^\\//,\"\").split(\"/\");b=\"/\"+y.replace(/^\\//,\"\").split(\"/\").slice(w.length).join(\"/\")}let C=n&&n.state.matches.length?n.state.matches.map(w=>Object.assign(w,{route:n.manifest[w.route.id]||w.route})):X1(e,{pat"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 161433,
+        "declarationContext": false,
+        "snippet": "hname \"${w.pathname}\" was given in the \\`location\\` prop.`),h=w}else h=x;let y=h.pathname||\"/\",b=y;if(m!==\"/\"){let w=m.replace(/^\\//,\"\").split(\"/\");b=\"/\"+y.replace(/^\\//,\"\").split(\"/\").slice(w.length).join(\"/\")}let C=n&&n.state.matches.length?n.state.matches.map(w=>Object.assign(w,{route:n.manifest[w.route.id]||w.route})):X1(e,{pathname:b});Mo(p||C!=null,`No ro"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 161459,
+        "declarationContext": false,
+        "snippet": "given in the \\`location\\` prop.`),h=w}else h=x;let y=h.pathname||\"/\",b=y;if(m!==\"/\"){let w=m.replace(/^\\//,\"\").split(\"/\");b=\"/\"+y.replace(/^\\//,\"\").split(\"/\").slice(w.length).join(\"/\")}let C=n&&n.state.matches.length?n.state.matches.map(w=>Object.assign(w,{route:n.manifest[w.route.id]||w.route})):X1(e,{pathname:b});Mo(p||C!=null,`No routes matched location \"${h"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 162260,
+        "declarationContext": true,
+        "snippet": "rams),pathname:_o([m,r.encodeLocation?r.encodeLocation(w.pathname.replace(/%/g,\"%25\").replace(/\\?/g,\"%3F\").replace(/#/g,\"%23\")).pathname:w.pathname]),pathnameBase:w.pathnameBase===\"/\"?m:_o([m,r.encodeLocation?r.encodeLocation(w.pathnameBase.replace(/%/g,\"%25\").replace(/\\?/g,\"%3F\").replace(/#/g,\"%23\")).pathname:w.pathnameBase])})),a,n);return t&&k?f.createElemen"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 162484,
+        "declarationContext": true,
+        "snippet": "n(w.pathnameBase.replace(/%/g,\"%25\").replace(/\\?/g,\"%3F\").replace(/#/g,\"%23\")).pathname:w.pathnameBase])})),a,n);return t&&k?f.createElement(Eu.Provider,{value:{location:{pathname:\"/\",search:\"\",hash:\"\",state:null,key:\"default\",mask:void 0,...h},navigationType:\"POP\"}},k):k}function yP(){let e=jP(),t=nP(e)?`${e.status} ${e.statusText}`:e instanceof Error?e.messag"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 168822,
+        "declarationContext": false,
+        "snippet": "unction gi(e){fn(!1,\"A <Route> is only ever to be used as the child of <Routes> element, never rendered directly. Please wrap your <Route> in a <Routes>.\")}function RP({basename:e=\"/\",children:t=null,location:n,navigationType:r=\"POP\",navigator:a,static:l=!1,useTransitions:c}){fn(!ql(),\"You cannot render a <Router> inside another <Router>. You should never have "
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 169057,
+        "declarationContext": false,
+        "snippet": "avigator:a,static:l=!1,useTransitions:c}){fn(!ql(),\"You cannot render a <Router> inside another <Router>. You should never have more than one in your app.\");let d=e.replace(/^\\/*/,\"/\"),m=f.useMemo(()=>({basename:d,navigator:a,static:l,useTransitions:c,future:{}}),[d,a,l,c]);typeof n==\"string\"&&(n=Gl(n));let{pathname:p=\"/\",search:x=\"\",hash:h=\"\",state:y=null,key:"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 169197,
+        "declarationContext": true,
+        "snippet": "e in your app.\");let d=e.replace(/^\\/*/,\"/\"),m=f.useMemo(()=>({basename:d,navigator:a,static:l,useTransitions:c,future:{}}),[d,a,l,c]);typeof n==\"string\"&&(n=Gl(n));let{pathname:p=\"/\",search:x=\"\",hash:h=\"\",state:y=null,key:b=\"default\",mask:C}=n,k=f.useMemo(()=>{let w=Bs(p,d);return w==null?null:{location:{pathname:w,search:x,hash:h,state:y,key:b,mask:C},navigat"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 172876,
+        "declarationContext": true,
+        "snippet": "f e>\"u\")throw new Error(t)}function pS(e,t,n,r){let a=typeof e==\"string\"?new URL(e,typeof window>\"u\"?\"server://singlefetch/\":window.location.origin):e;return n?a.pathname.endsWith(\"/\")?a.pathname=`${a.pathname}_.${r}`:a.pathname=`${a.pathname}.${r}`:a.pathname===\"/\"?a.pathname=`_root.${r}`:t&&Bs(a.pathname,t)===\"/\"?a.pathname=`${Nf(t)}/_root.${r}`:a.pathname=`$"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 172959,
+        "declarationContext": true,
+        "snippet": "typeof window>\"u\"?\"server://singlefetch/\":window.location.origin):e;return n?a.pathname.endsWith(\"/\")?a.pathname=`${a.pathname}_.${r}`:a.pathname=`${a.pathname}.${r}`:a.pathname===\"/\"?a.pathname=`_root.${r}`:t&&Bs(a.pathname,t)===\"/\"?a.pathname=`${Nf(t)}/_root.${r}`:a.pathname=`${Nf(a.pathname)}.${r}`,a}async function BP(e,t){if(e.id in t)return t[e.id];try{let"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 173009,
+        "declarationContext": true,
+        "snippet": "ocation.origin):e;return n?a.pathname.endsWith(\"/\")?a.pathname=`${a.pathname}_.${r}`:a.pathname=`${a.pathname}.${r}`:a.pathname===\"/\"?a.pathname=`_root.${r}`:t&&Bs(a.pathname,t)===\"/\"?a.pathname=`${Nf(t)}/_root.${r}`:a.pathname=`${Nf(a.pathname)}.${r}`,a}async function BP(e,t){if(e.id in t)return t[e.id];try{let n=await import(e.module);return t[e.id]=n,n}catch"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 179536,
+        "declarationContext": true,
+        "snippet": ",navigator:S,useTransitions:E}=f.useContext(qr),j=typeof x==\"string\"&&h0.test(x),T=rS(x,w);x=T.to;let I=pP(x,{relative:a}),O=yr(),_=null;if(d){let J=Uf(d,[],O.mask?O.mask.pathname:\"/\",!0);w!==\"/\"&&(J.pathname=J.pathname===\"/\"?w:_o([w,J.pathname])),_=S.createHref(J)}let[P,R,M]=qP(r,C),D=sR(x,{replace:c,mask:d,state:m,target:p,preventScrollReset:h,relative:a,view"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 179548,
+        "declarationContext": true,
+        "snippet": ",useTransitions:E}=f.useContext(qr),j=typeof x==\"string\"&&h0.test(x),T=rS(x,w);x=T.to;let I=pP(x,{relative:a}),O=yr(),_=null;if(d){let J=Uf(d,[],O.mask?O.mask.pathname:\"/\",!0);w!==\"/\"&&(J.pathname=J.pathname===\"/\"?w:_o([w,J.pathname])),_=S.createHref(J)}let[P,R,M]=qP(r,C),D=sR(x,{replace:c,mask:d,state:m,target:p,preventScrollReset:h,relative:a,viewTransition:y"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 179578,
+        "declarationContext": true,
+        "snippet": "t(qr),j=typeof x==\"string\"&&h0.test(x),T=rS(x,w);x=T.to;let I=pP(x,{relative:a}),O=yr(),_=null;if(d){let J=Uf(d,[],O.mask?O.mask.pathname:\"/\",!0);w!==\"/\"&&(J.pathname=J.pathname===\"/\"?w:_o([w,J.pathname])),_=S.createHref(J)}let[P,R,M]=qP(r,C),D=sR(x,{replace:c,mask:d,state:m,target:p,preventScrollReset:h,relative:a,viewTransition:y,defaultShouldRevalidate:b,use"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 180630,
+        "declarationContext": true,
+        "snippet": "ame,j=b&&b.navigation&&b.navigation.location?b.navigation.location.pathname:null;n||(E=E.toLowerCase(),j=j?j.toLowerCase():null,S=S.toLowerCase()),j&&k&&(j=Bs(j,k)||j);const T=S!==\"/\"&&S.endsWith(\"/\")?S.length-1:S.length;let I=E===S||!a&&E.startsWith(S)&&E.charAt(T)===\"/\",O=j!=null&&(j===S||!a&&j.startsWith(S)&&j.charAt(S.length)===\"/\"),_={isActive:I,isPending:"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 180646,
+        "declarationContext": true,
+        "snippet": "ation&&b.navigation.location?b.navigation.location.pathname:null;n||(E=E.toLowerCase(),j=j?j.toLowerCase():null,S=S.toLowerCase()),j&&k&&(j=Bs(j,k)||j);const T=S!==\"/\"&&S.endsWith(\"/\")?S.length-1:S.length;let I=E===S||!a&&E.startsWith(S)&&E.charAt(T)===\"/\",O=j!=null&&(j===S||!a&&j.startsWith(S)&&j.charAt(S.length)===\"/\"),_={isActive:I,isPending:O,isTransitionin"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 180719,
+        "declarationContext": false,
+        "snippet": "toLowerCase(),j=j?j.toLowerCase():null,S=S.toLowerCase()),j&&k&&(j=Bs(j,k)||j);const T=S!==\"/\"&&S.endsWith(\"/\")?S.length-1:S.length;let I=E===S||!a&&E.startsWith(S)&&E.charAt(T)===\"/\",O=j!=null&&(j===S||!a&&j.startsWith(S)&&j.charAt(S.length)===\"/\"),_={isActive:I,isPending:O,isTransitioning:w},P=I?t:void 0,R;typeof r==\"function\"?R=r(_):R=[r,I?\"active\":null,O?\"p"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 180784,
+        "declarationContext": false,
+        "snippet": "j=Bs(j,k)||j);const T=S!==\"/\"&&S.endsWith(\"/\")?S.length-1:S.length;let I=E===S||!a&&E.startsWith(S)&&E.charAt(T)===\"/\",O=j!=null&&(j===S||!a&&j.startsWith(S)&&j.charAt(S.length)===\"/\"),_={isActive:I,isPending:O,isTransitioning:w},P=I?t:void 0,R;typeof r==\"function\"?R=r(_):R=[r,I?\"active\":null,O?\"pending\":null,w?\"transitioning\":null].filter(Boolean).join(\" \");le"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 183927,
+        "declarationContext": false,
+        "snippet": "h).forEach(h=>d.append(\"index\",h));let x=d.toString();l.search=x?`?${x}`:\"\"}}return(!e||e===\".\")&&a.route.index&&(l.search=l.search?l.search.replace(/^\\?/,\"?index&\"):\"?index\"),n!==\"/\"&&(l.pathname=l.pathname===\"/\"?n:_o([n,l.pathname])),ou(l)}function uR(e,{relative:t}={}){let n=f.useContext(aS);fn(n!=null,\"`useViewTransitionState` must be used within `react-rou"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 183957,
+        "declarationContext": true,
+        "snippet": ",h));let x=d.toString();l.search=x?`?${x}`:\"\"}}return(!e||e===\".\")&&a.route.index&&(l.search=l.search?l.search.replace(/^\\?/,\"?index&\"):\"?index\"),n!==\"/\"&&(l.pathname=l.pathname===\"/\"?n:_o([n,l.pathname])),ou(l)}function uR(e,{relative:t}={}){let n=f.useContext(aS);fn(n!=null,\"`useViewTransitionState` must be used within `react-router-dom`'s `RouterProvider`. "
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 299231,
+        "declarationContext": false,
+        "snippet": "b47d9923deab1335e144eeee\",blockCreated:23085558},multicall3:{address:\"0xca11bde05977b3631167028862be2a173976ca11\",blockCreated:14353601}}}),r_=\"modulepreload\",o_=function(e){return\"/\"+e},zb={},gr=function(t,n,r){let a=Promise.resolve();if(n&&n.length>0){let m=function(p){return Promise.all(p.map(x=>Promise.resolve(x).then(h=>({status:\"fulfilled\",value:h}),h=>({"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 385838,
+        "declarationContext": false,
+        "snippet": "==1,a=t[0],l=t.length,c=d=>{const m=[];let p=0,x=0,h;for(let w=0;w<d.length;w++){let S=d[w];if(p===0){if(S===a&&(r||d.slice(w,w+l)===t)){m.push(d.slice(x,w)),x=w+l;continue}if(S===\"/\"){h=w;continue}}S===\"[\"?p++:S===\"]\"&&p--}const y=m.length===0?d:d.substring(x),b=y.startsWith(OC),C=b?y.substring(1):y,k=h&&h>x?h-x:void 0;return{modifiers:m,hasImportantModifier:b"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 410440,
+        "declarationContext": false,
+        "snippet": "p,x]=f.useState(null),h=\"lpbotabc_bot\";f.useEffect(()=>{let k=!1;return em().then(w=>!k&&w?.enabled&&x(w)).catch(()=>{}),()=>{k=!0}},[]),f.useEffect(()=>{let k=!1;if(IS())return e(\"/\"),()=>{k=!0};const S=typeof window<\"u\"?window.Telegram?.WebApp?.initData:null;return S?(_S(S).then(E=>{k||(E?.success?e(\"/\"):(m(E?.error||\"自动登录失败\"),n(!1)))}).catch(E=>{k||(m(E?.mes"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 410563,
+        "declarationContext": false,
+        "snippet": "=>{k=!0}},[]),f.useEffect(()=>{let k=!1;if(IS())return e(\"/\"),()=>{k=!0};const S=typeof window<\"u\"?window.Telegram?.WebApp?.initData:null;return S?(_S(S).then(E=>{k||(E?.success?e(\"/\"):(m(E?.error||\"自动登录失败\"),n(!1)))}).catch(E=>{k||(m(E?.message||\"自动登录失败\"),n(!1))}),()=>{k=!0}):(n(!1),()=>{k=!0})},[e]);const y=()=>{e(\"/\")},b=k=>{console.error(\"登录失败:\",k)},C=()=>{a"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 410700,
+        "declarationContext": false,
+        "snippet": ";return S?(_S(S).then(E=>{k||(E?.success?e(\"/\"):(m(E?.error||\"自动登录失败\"),n(!1)))}).catch(E=>{k||(m(E?.message||\"自动登录失败\"),n(!1))}),()=>{k=!0}):(n(!1),()=>{k=!0})},[e]);const y=()=>{e(\"/\")},b=k=>{console.error(\"登录失败:\",k)},C=()=>{a(!0),c(!1)};return t?i.jsx(\"div\",{className:\"min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-1"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 418376,
+        "declarationContext": false,
+        "snippet": ")),[c,d]=f.useState(!1),m=f.useCallback(async({manual:h=!1}={})=>{h&&d(!0);try{const y=await em();if(y?.serverTime&&r(y.serverTime-Date.now()),!y?.enabled){window.location.replace(\"/\");return}t({enabled:!0,message:y.message||\"\",until:y.until||null})}catch{}finally{h&&d(!1)}},[]);f.useEffect(()=>{m();const h=setInterval(m,SO),y=()=>!document.hidden&&m();return d"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 437879,
+        "declarationContext": true,
+        "snippet": "text(BC);if(!e)throw new Error(\"useDashboardStable must be used within DashboardProvider\");return e};function JO({children:e}){const{pathname:t}=yr(),n=Hf(),r=t.replace(/\\/$/,\"\")||\"/\",a=VO[r]||\"tasks\",[l,c]=f.useState(!1),[d,m]=f.useState([]),[p,x]=f.useState([]),[h,y]=f.useState({}),[b,C]=f.useState([]),[k,w]=f.useState([]),[S,E]=f.useState(!1),[j,T]=f.useStat"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 447101,
+        "declarationContext": false,
+        "snippet": "readyState===\"complete\"?L():window.addEventListener(\"load\",L,{once:!0})},[]);const et=f.useCallback(L=>{const te=HO[L]||L;n(te)},[n]);f.useEffect(()=>{const L=t.replace(/\\/$/,\"\")||\"/\";L===\"/\"&&n(\"/tasks/running\",{replace:!0}),Nt===\"user\"&&L===\"/users\"&&n(\"/tasks/running\",{replace:!0}),L===\"/monitors\"&&n(\"/pools\",{replace:!0})},[Nt,t,n]);const Ue=(L,{force:te=!1"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 447109,
+        "declarationContext": false,
+        "snippet": "te===\"complete\"?L():window.addEventListener(\"load\",L,{once:!0})},[]);const et=f.useCallback(L=>{const te=HO[L]||L;n(te)},[n]);f.useEffect(()=>{const L=t.replace(/\\/$/,\"\")||\"/\";L===\"/\"&&n(\"/tasks/running\",{replace:!0}),Nt===\"user\"&&L===\"/users\"&&n(\"/tasks/running\",{replace:!0}),L===\"/monitors\"&&n(\"/pools\",{replace:!0})},[Nt,t,n]);const Ue=(L,{force:te=!1}={})=>{"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 604247,
+        "declarationContext": false,
+        "snippet": "ol||\"\",r=e.token0?.address||null,a=e.token1?.address||null,l=e.token0?.binance||null,c=e.token1?.binance||null),!t&&!n){if(typeof e.trading_pair==\"string\"&&e.trading_pair.includes(\"/\")){const[p,x]=e.trading_pair.split(\"/\");return{primary:p||\"?\",secondary:x||\"?\",swapped:!1,primaryAddress:null,secondaryAddress:null,primaryBinance:null,secondaryBinance:null}}retur"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 604285,
+        "declarationContext": false,
+        "snippet": "oken1?.address||null,l=e.token0?.binance||null,c=e.token1?.binance||null),!t&&!n){if(typeof e.trading_pair==\"string\"&&e.trading_pair.includes(\"/\")){const[p,x]=e.trading_pair.split(\"/\");return{primary:p||\"?\",secondary:x||\"?\",swapped:!1,primaryAddress:null,secondaryAddress:null,primaryBinance:null,secondaryBinance:null}}return e.token?{primary:String(e.token),sec"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 6541,
+        "declarationContext": false,
+        "snippet": "ring\":case\"number\":Ne=!0;break;case\"object\":switch(F.$$typeof){case e:case t:Ne=!0}}if(Ne)return Ne=F,ce=ce(Ne),F=ie===\"\"?\".\"+z(Ne,0):ie,T(ce)?(W=\"\",F!=null&&(W=F.replace(B,\"$&/\")+\"/\"),ee(ce,H,W,\"\",function(xe){return xe})):ce!=null&&(M(ce)&&(ce=R(ce,W+(!ce.key||Ne&&Ne.key===ce.key?\"\":(\"\"+ce.key).replace(B,\"$&/\")+\"/\")+F)),H.push(ce)),1;if(Ne=0,ie=ie===\"\"?\".\":ie"
+      },
+      {
+        "path": "/",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 6676,
+        "declarationContext": false,
+        "snippet": "e,T(ce)?(W=\"\",F!=null&&(W=F.replace(B,\"$&/\")+\"/\"),ee(ce,H,W,\"\",function(xe){return xe})):ce!=null&&(M(ce)&&(ce=R(ce,W+(!ce.key||Ne&&Ne.key===ce.key?\"\":(\"\"+ce.key).replace(B,\"$&/\")+\"/\")+F)),H.push(ce)),1;if(Ne=0,ie=ie===\"\"?\".\":ie+\":\",T(F))for(var U=0;U<F.length;U++){he=F[U];var fe=ie+z(he,U);Ne+=ee(he,H,W,fe,ce)}else if(fe=y(F),typeof fe==\"function\")for(F=fe.cal"
+      },
+      {
+        "path": "/",
+        "file": "assets/index.es-kWEtVW6f.js",
+        "offset": 17191,
+        "declarationContext": false,
+        "snippet": "eturn e===Le.browser?[e,((i=mt.getLocation())==null?void 0:i.host)||\"unknown\"].join(\":\"):e}function oc(i,e,t){const s=Bh(),r=Vh();return[[i,e].join(\"-\"),[qh,t].join(\"-\"),s,r].join(\"/\")}function Kh({protocol:i,version:e,relayUrl:t,sdkVersion:s,auth:r,projectId:n,useOnCloseEvent:o,bundleId:a,packageName:c}){const l=t.split(\"?\"),h=oc(i,e,s),d={auth:r,ua:h,projectI"
+      },
+      {
+        "path": "/",
+        "file": "assets/index.es-kWEtVW6f.js",
+        "offset": 19618,
+        "declarationContext": true,
+        "snippet": "typeof(global==null?void 0:global.Linking)<\"u\"&&await global.Linking.openURL(o)}catch(r){console.error(r)}}function Wh(i,e,t){const s=`requestId=${e}&sessionTopic=${t}`;i.endsWith(\"/\")&&(i=i.slice(0,-1));let r=`${i}`;if(i.startsWith(\"https://t.me\")){const n=i.includes(\"?\")?\"&startapp=\":\"?startapp=\";r=`${r}${n}${Xh(s,!0)}`}else r=`${r}/wc?${s}`;return r}function"
+      },
+      {
+        "path": "/",
+        "file": "assets/index.es-kWEtVW6f.js",
+        "offset": 31504,
+        "declarationContext": false,
+        "snippet": "to perform the following actions on my behalf: \";if(i.includes(t))return i;const s=[];let r=0;Object.keys(e.att).forEach(a=>{const c=Object.keys(e.att[a]).map(d=>({ability:d.split(\"/\")[0],action:d.split(\"/\")[1]}));c.sort((d,p)=>d.action.localeCompare(p.action));const l={};c.forEach(d=>{l[d.ability]||(l[d.ability]=[]),l[d.ability].push(d.action)});const h=Object"
+      },
+      {
+        "path": "/",
+        "file": "assets/index.es-kWEtVW6f.js",
+        "offset": 31527,
+        "declarationContext": false,
+        "snippet": "g actions on my behalf: \";if(i.includes(t))return i;const s=[];let r=0;Object.keys(e.att).forEach(a=>{const c=Object.keys(e.att[a]).map(d=>({ability:d.split(\"/\")[0],action:d.split(\"/\")[1]}));c.sort((d,p)=>d.action.localeCompare(p.action));const l={};c.forEach(d=>{l[d.ability]||(l[d.ability]=[]),l[d.ability].push(d.action)});const h=Object.keys(l).map(d=>(r++,`("
+      },
+      {
+        "path": "/",
+        "file": "assets/index.es-kWEtVW6f.js",
+        "offset": 31982,
+        "declarationContext": false,
+        "snippet": ";const n=s.join(\" \"),o=`${t}${n}`;return`${i?i+\" \":\"\"}${o}`}function to(i){var e;const t=Gi(i);Mt(t);const s=(e=t.att)==null?void 0:e.eip155;return s?Object.keys(s).map(r=>r.split(\"/\")[1]):[]}function io(i){const e=Gi(i);Mt(e);const t=[];return Object.values(e.att).forEach(s=>{Object.values(s).forEach(r=>{var n;(n=r?.[0])!=null&&n.chains&&t.push(r[0].chains)})}"
+      },
+      {
+        "path": "/",
+        "file": "assets/index.es-kWEtVW6f.js",
+        "offset": 76548,
+        "declarationContext": false,
+        "snippet": "`,Lc)}function Bt(i){return Number(xe(i,Lc))}function Dc(i){return i.replace(/\\+/g,\"-\").replace(/\\//g,\"_\").replace(/=/g,\"\")}function zc(i){const e=i.replace(/-/g,\"+\").replace(/_/g,\"/\"),t=(4-e.length%4)%4;return e+\"=\".repeat(t)}function gp(i){const e=qc(typeof i.type<\"u\"?i.type:kc);if(Bt(e)===gt&&typeof i.senderPublicKey>\"u\")throw new Error(\"Missing sender publi"
+      },
+      {
+        "path": "/",
+        "file": "assets/LiquidityFlowSheet-DEk34LQj.js",
+        "offset": 14649,
+        "declarationContext": false,
+        "snippet": ",className:\"text-foreground hover:text-primary transition-colors\",children:j.primary})}),e.jsx(\"span\",{className:\"text-muted-foreground/70 text-[11px] font-normal mx-0.5\",children:\"/\"}),e.jsx(\"span\",{className:\"text-muted-foreground text-[10px] font-normal\",children:j.secondary})]}),N&&e.jsx(\"span\",{className:\"shrink-0 px-1.5 py-0.5 rounded text-[10px] font-sem"
+      },
+      {
+        "path": "/",
+        "file": "assets/LiquidityFlowSheet-DEk34LQj.js",
+        "offset": 19649,
+        "declarationContext": false,
+        "snippet": "\"truncate\",children:[e.jsxs(\"span\",{className:\"font-mono tabular-nums text-market-up\",children:[\"+\",Z(t.addUsd)]}),e.jsx(\"span\",{className:\"text-muted-foreground/40 mx-1\",children:\"/\"}),e.jsxs(\"span\",{className:\"font-mono tabular-nums text-market-down\",children:[\"-\",Z(t.remUsd)]}),e.jsx(\"span\",{className:\"text-muted-foreground/40 mx-1\",children:\"·\"}),e.jsxs(\"sp"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-BnYod_Cx.js",
+        "offset": 13321,
+        "declarationContext": false,
+        "snippet": "ren:[e.jsx(\"span\",{className:\"font-semibold text-foreground\",children:x.primary}),e.jsx(sa,{info:x.primaryBinance}),e.jsx(\"span\",{className:\"text-muted-foreground mx-0.5\",children:\"/\"}),e.jsx(\"span\",{className:\"text-muted-foreground\",children:x.secondary})]}),e.jsxs(\"span\",{className:\"px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foregroun"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-BnYod_Cx.js",
+        "offset": 153668,
+        "declarationContext": false,
+        "snippet": "ard.writeText(t.token1),Le(!0),O.success(`${It} 地址已复制`),setTimeout(()=>Le(!1),1500))}},...us.handlers,children:It},\"s1\"),Y=e.jsx(\"span\",{className:\"text-muted-foreground\",children:\"/\"},\"sep\");return Es?e.jsxs(e.Fragment,{children:[J,Y,B]}):e.jsxs(e.Fragment,{children:[B,Y,J]})})()})]}),vn&&e.jsxs(st,{variant:\"outline\",className:`flex items-center gap-1 sm:gap-1"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-BnYod_Cx.js",
+        "offset": 170292,
+        "declarationContext": false,
+        "snippet": "turn e.jsxs(\"div\",{className:\"space-y-2\",children:[e.jsxs(\"div\",{className:\"flex items-center justify-between text-xs text-foreground\",children:[e.jsxs(\"span\",{children:[\"区间 (\",xs,\"/\",fs,$e?` ${$e}格`:\"\",ge!==null&&e.jsxs(\"span\",{className:ge>=20?\"text-red-600 dark:text-red-400\":ge>=10?\"text-emerald-600 dark:text-emerald-400\":ge>=5?\"text-amber-500 dark:text-ambe"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-BnYod_Cx.js",
+        "offset": 172947,
+        "declarationContext": false,
+        "snippet": "400\":\"text-foreground\"}`,children:[ge<.01?\"<0.01\":ge.toFixed(2),\"%\"]})]}),e.jsxs(\"div\",{className:\"text-muted-foreground text-[10px] mt-1 pt-1 border-t border-border\",children:[xs,\"/\",fs,\" · \",$e?`${$e} ticks`:\"\",Xe?` · spacing ${Xe}`:\"\"]})]}):`设置区间: ${xn(t)}`,zs=Vr(t.outOfRange),Zr=t.fixedAmountUsd!=null&&t.fixedAmountUsd>0?`$${Number(t.fixedAmountUsd).toLocal"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-BnYod_Cx.js",
+        "offset": 207618,
+        "declarationContext": true,
+        "snippet": "null)},children:e.jsxs(Tt,{className:\"sm:max-w-md\",children:[e.jsxs($t,{children:[e.jsx(_t,{children:\"从观察列表移除\"}),e.jsxs(Ft,{className:\"break-all\",children:[\"确定移除 \",o?.token0Symbol,\"/\",o?.token1Symbol,\"？ 仅从台账删除记录，不会撤回链上流动性。\"]})]}),e.jsxs(Pt,{children:[e.jsx(Mt,{children:\"取消\"}),e.jsx(kt,{onClick:S,className:\"bg-red-600 hover:bg-red-700 focus:ring-red-600 text-whi"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-BnYod_Cx.js",
+        "offset": 211349,
+        "declarationContext": false,
+        "snippet": "没有正在运行的 LP 任务\"},paused:{title:\"暂无已暂停的任务\",message:\"当前没有暂停的任务\"},stopped:{title:\"暂无已停止的任务\",message:\"当前没有停止的任务\"}},Io=300,Eo=600,rn=420,Gn=\"pools-panel-width\";function Xn(t){if(!t||t===\"/\")return qn;const s=t.match(/^\\/tasks\\/(\\w+)/)?.[1];return Lo.has(s)?s:qn}function Uo(t,n){try{const s=localStorage.getItem(t);return s!=null?JSON.parse(s):n}catch{return n}}functio"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-BnYod_Cx.js",
+        "offset": 213707,
+        "declarationContext": false,
+        "snippet": "emoveEventListener(\"mousedown\",h)},[w]);const _=r.useCallback(h=>{const R=(h||\"\").trim();/^0x[0-9a-fA-F]{40}$/.test(R)&&(o(R),c(te=>te+1),g(!1),j(R))},[j]);r.useEffect(()=>{if(t===\"/\"||t.startsWith(\"/tasks\")){const h=Xn(t);a(h),(t===\"/tasks\"||t===\"/tasks/\")&&n(`/tasks/${h}`,{replace:!0})}},[t,n]);const U=r.useCallback(h=>{n(`/tasks/${h}`),a(h)},[n]),{tasks:V,lo"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-BnYod_Cx.js",
+        "offset": 82484,
+        "declarationContext": false,
+        "snippet": ":\"h-5 w-5\"}),\"复投\"]}),e.jsx(gn,{children:g?e.jsxs(e.Fragment,{children:[\"把钱包余额追加进头寸\",\" \",e.jsxs(\"span\",{className:\"font-mono text-foreground/70\",children:[\"#\",g.nftId]}),\" ·\",\" \",C,\"/\",z]}):\"把钱包余额追加进现有头寸\"})]}),o?e.jsxs(\"div\",{className:\"flex items-center justify-center gap-2 py-10 text-muted-foreground\",children:[e.jsx(He,{className:\"h-5 w-5 animate-spin\"}),e.js"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-BnYod_Cx.js",
+        "offset": 95009,
+        "declarationContext": false,
+        "snippet": "return o?Math.round((n-t)/o):null}function tn(t,n=18,s=18){return t==null?null:Math.pow(1.0001,t)*Math.pow(10,n-s)}function Vr(t){if(typeof t!=\"string\")return!1;const[n,s]=t.split(\"/\"),a=Number(n),i=Number(s);return!Number.isFinite(a)||!Number.isFinite(i)||i<=0?!1:a>=i}function qt(t,n=4){if(t==null||isNaN(t)||!isFinite(t))return\"—\";if(t===0)return\"0\";if(t>=1e15"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-CM8SqSqG.js",
+        "offset": 14636,
+        "declarationContext": false,
+        "snippet": ",rows:4,className:\"text-sm\"}),e.jsxs(\"div\",{className:\"flex items-center justify-between\",children:[e.jsxs(\"span\",{className:\"text-[11px] text-muted-foreground\",children:[c.length,\"/\",xs]}),e.jsxs(D,{size:\"sm\",className:\"h-8 gap-1.5\",onClick:y,disabled:N||!c.trim(),children:[N?e.jsx(L,{className:\"h-3.5 w-3.5 animate-spin\"}):e.jsx(Ee,{className:\"h-3.5 w-3.5\"}),\""
+      },
+      {
+        "path": "/",
+        "file": "assets/page-Dr5jQwH1.js",
+        "offset": 54030,
+        "declarationContext": false,
+        "snippet": "ap-2 text-[11px] text-muted-foreground flex-wrap\",children:[e.jsxs(\"span\",{children:[\"活跃\",\" \",e.jsxs(\"span\",{className:\"text-foreground font-medium\",children:[t.activeTaskCount??0,\"/\",t.max_concurrent_tasks||\"-\"]})]}),e.jsx(\"span\",{className:\"text-border\",children:\"·\"}),e.jsxs(\"span\",{children:[\"钱包 \",t.wallets?.length||0,\"个\"]}),e.jsx(\"span\",{className:\"text-bor"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-Dr5jQwH1.js",
+        "offset": 58123,
+        "declarationContext": false,
+        "snippet": "children:[\"$\",(x?.totalInvested??t.total_invested_usd??0).toFixed(2)]}),e.jsxs(\"div\",{className:\"text-sm text-muted-foreground font-mono mt-1\",children:[\"活跃 \",t.activeTaskCount??0,\"/\",t.max_concurrent_tasks||\"-\",\" · 累计\",\" \",t.tasks_created_count||0,\" 个任务\"]})]})]}),(t.open_rules?.groups?.length>0||t.close_rules?.groups?.length>0)&&e.jsxs(\"div\",{className:\"space-"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-t8EgeIiW.js",
+        "offset": 40401,
+        "declarationContext": false,
+        "snippet": "unction(n){if(n<1)throw\"glog(\"+n+\")\";return r[n]},a.gexp=function(n){for(;n<0;)n+=255;for(;n>=256;)n-=255;return t[n]},a})(),wt=function(t,r){if(typeof t.length>\"u\")throw t.length+\"/\"+r;const a=(function(){let i=0;for(;i<t.length&&t[i]==0;)i+=1;const l=new Array(t.length-i+r);for(let o=0;o<t.length-i;o+=1)l[o]=t[o+i];return l})(),n={};return n.getAt=function(i)"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-t8EgeIiW.js",
+        "offset": 40401,
+        "declarationContext": false,
+        "snippet": "unction(n){if(n<1)throw\"glog(\"+n+\")\";return r[n]},a.gexp=function(n){for(;n<0;)n+=255;for(;n>=256;)n-=255;return t[n]},a})(),wt=function(t,r){if(typeof t.length>\"u\")throw t.length+\"/\"+r;const a=(function(){let i=0;for(;i<t.length&&t[i]==0;)i+=1;const l=new Array(t.length-i+r);for(let o=0;o<t.length-i;o+=1)l[o]=t[o+i];return l})(),n={};return n.getAt=function(i)"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-t8EgeIiW.js",
+        "offset": 45891,
+        "declarationContext": false,
+        "snippet": "=l&&l<=\"Z\")return l.charCodeAt(0)-65+10;switch(l){case\" \":return 36;case\"$\":return 37;case\"%\":return 38;case\"*\":return 39;case\"+\":return 40;case\"-\":return 41;case\".\":return 42;case\"/\":return 43;case\":\":return 44;default:throw\"illegal char :\"+l}};return n},fa=function(t){const r=fe.MODE_8BIT_BYTE,a=Ze.stringToBytes(t),n={};return n.getMode=function(){return r},n"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-t8EgeIiW.js",
+        "offset": 45891,
+        "declarationContext": false,
+        "snippet": "=l&&l<=\"Z\")return l.charCodeAt(0)-65+10;switch(l){case\" \":return 36;case\"$\":return 37;case\"%\":return 38;case\"*\":return 39;case\"+\":return 40;case\"-\":return 41;case\".\":return 42;case\"/\":return 43;case\":\":return 44;default:throw\"illegal char :\"+l}};return n},fa=function(t){const r=fe.MODE_8BIT_BYTE,a=Ze.stringToBytes(t),n={};return n.getMode=function(){return r},n"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-t8EgeIiW.js",
+        "offset": 46631,
+        "declarationContext": false,
+        "snippet": "ction(l){const o=n;let s=0;for(;s+1<o.length;){let m=(255&o[s])<<8|255&o[s+1];if(33088<=m&&m<=40956)m-=33088;else if(57408<=m&&m<=60351)m-=49472;else throw\"illegal char at \"+(s+1)+\"/\"+m;m=(m>>>8&255)*192+(m&255),l.put(m,13),s+=2}if(s<o.length)throw\"illegal char at \"+(s+1)},i},vn=function(){const t=[],r={};return r.writeByte=function(a){t.push(a&255)},r.writeSho"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-t8EgeIiW.js",
+        "offset": 46631,
+        "declarationContext": false,
+        "snippet": "ction(l){const o=n;let s=0;for(;s+1<o.length;){let m=(255&o[s])<<8|255&o[s+1];if(33088<=m&&m<=40956)m-=33088;else if(57408<=m&&m<=60351)m-=49472;else throw\"illegal char at \"+(s+1)+\"/\"+m;m=(m>>>8&255)*192+(m&255),l.put(m,13),s+=2}if(s<o.length)throw\"illegal char at \"+(s+1)},i},vn=function(){const t=[],r={};return r.writeByte=function(a){t.push(a&255)},r.writeSho"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-t8EgeIiW.js",
+        "offset": 78595,
+        "declarationContext": false,
+        "snippet": "0,symbol:B,logoUrl:t.token0Logo,size:24}),e.jsx(ke,{address:t.token1,symbol:E,logoUrl:t.token1Logo,size:24})]}),e.jsxs(\"span\",{className:\"font-medium text-sm truncate\",children:[B,\"/\",E]}),e.jsxs(Yt,{variant:\"secondary\",className:\"text-[10px] px-1 py-0 h-4\",children:[_,\"%\"]})]}),e.jsxs(\"div\",{className:`flex items-center gap-1 text-xs ${U?\"text-emerald-600 dark"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-t8EgeIiW.js",
+        "offset": 78595,
+        "declarationContext": false,
+        "snippet": "0,symbol:B,logoUrl:t.token0Logo,size:24}),e.jsx(ke,{address:t.token1,symbol:E,logoUrl:t.token1Logo,size:24})]}),e.jsxs(\"span\",{className:\"font-medium text-sm truncate\",children:[B,\"/\",E]}),e.jsxs(Yt,{variant:\"secondary\",className:\"text-[10px] px-1 py-0 h-4\",children:[_,\"%\"]})]}),e.jsxs(\"div\",{className:`flex items-center gap-1 text-xs ${U?\"text-emerald-600 dark"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-t8EgeIiW.js",
+        "offset": 83037,
+        "declarationContext": false,
+        "snippet": "s:x.token0,symbol:w,logoUrl:x.token0Logo,size:20}),e.jsx(ke,{address:x.token1,symbol:g,logoUrl:x.token1Logo,size:20})]}),e.jsxs(\"span\",{className:\"font-medium text-sm\",children:[w,\"/\",g]}),e.jsxs(\"span\",{className:\"text-xs text-muted-foreground font-mono\",children:[\"#\",x.nftId]})]}),x.amount0!==void 0&&e.jsxs(\"div\",{className:\"grid grid-cols-2 gap-2 text-sm\",ch"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-t8EgeIiW.js",
+        "offset": 83037,
+        "declarationContext": false,
+        "snippet": "s:x.token0,symbol:w,logoUrl:x.token0Logo,size:20}),e.jsx(ke,{address:x.token1,symbol:g,logoUrl:x.token1Logo,size:20})]}),e.jsxs(\"span\",{className:\"font-medium text-sm\",children:[w,\"/\",g]}),e.jsxs(\"span\",{className:\"text-xs text-muted-foreground font-mono\",children:[\"#\",x.nftId]})]}),x.amount0!==void 0&&e.jsxs(\"div\",{className:\"grid grid-cols-2 gap-2 text-sm\",ch"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-t8EgeIiW.js",
+        "offset": 98606,
+        "declarationContext": true,
+        "snippet": "ext-muted-foreground cursor-pointer\",children:[e.jsx(Vs,{checked:G>0&&G>=O,onCheckedChange:c}),\"全选\"]}),e.jsxs(\"span\",{className:\"text-xs text-muted-foreground ml-auto\",children:[G,\"/\",O,\" 已选\"]})]}),e.jsx(\"div\",{className:\"flex-1 min-h-0 overflow-y-auto px-5 py-3 space-y-3\",children:s?e.jsx(\"div\",{className:\"py-10 text-center text-muted-foreground\",children:e.js"
+      },
+      {
+        "path": "/",
+        "file": "assets/page-t8EgeIiW.js",
+        "offset": 98606,
+        "declarationContext": true,
+        "snippet": "ext-muted-foreground cursor-pointer\",children:[e.jsx(Vs,{checked:G>0&&G>=O,onCheckedChange:c}),\"全选\"]}),e.jsxs(\"span\",{className:\"text-xs text-muted-foreground ml-auto\",children:[G,\"/\",O,\" 已选\"]})]}),e.jsx(\"div\",{className:\"flex-1 min-h-0 overflow-y-auto px-5 py-3 space-y-3\",children:s?e.jsx(\"div\",{className:\"py-10 text-center text-muted-foreground\",children:e.js"
+      },
+      {
+        "path": "/",
+        "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
+        "offset": 10074,
+        "declarationContext": true,
+        "snippet": "k_address,className:\"text-xs\",children:e.jsxs(\"span\",{className:\"inline-flex items-center gap-1.5\",children:[e.jsxs(\"span\",{className:\"font-medium\",children:[r.token0_symbol||\"T0\",\"/\",r.token1_symbol||\"T1\"]}),e.jsx(\"span\",{className:\"text-muted-foreground\",children:r.swap_fee_bps!=null?(r.swap_fee_bps/100).toFixed(2)+\"%\":\"?\"}),e.jsxs(\"span\",{className:\"text-mut"
+      },
+      {
+        "path": "/",
+        "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
+        "offset": 2172,
+        "declarationContext": false,
+        "snippet": ",{logoUrl:V.logo,symbol:V.bal?.symbol,size:14}),e.jsx(\"span\",{className:\"text-foreground font-medium\",children:te(V.bal?.formatted)}),e.jsx(\"span\",{className:\"opacity-40\",children:\"/\"}),e.jsx(us,{logoUrl:B.logo,symbol:B.bal?.symbol,size:14}),e.jsx(\"span\",{className:\"text-foreground font-medium\",children:te(B.bal?.formatted)})]}):null,W=l&&l.running+l.paused>0;r"
+      },
+      {
+        "path": "/",
+        "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
+        "offset": 37578,
+        "declarationContext": false,
+        "snippet": "sm:py-2.5\"}),e.jsxs(\"div\",{className:\"flex shrink-0 items-center gap-1 pl-1 text-xs text-muted-foreground/70\",children:[e.jsx(\"span\",{className:\"text-muted-foreground/40\",children:\"/\"}),os?e.jsx(\"img\",{src:os,alt:Le,className:\"h-4 w-4 shrink-0 rounded-full object-cover\",onError:s=>{s.currentTarget.style.display=\"none\"}}):e.jsx(\"span\",{className:\"inline-flex h-4"
+      },
+      {
+        "path": "/",
+        "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
+        "offset": 41117,
+        "declarationContext": false,
+        "snippet": ".jsxs(\"span\",{className:\"text-[10px] text-muted-foreground\",children:[\"已导入钱包\",r.length>0&&e.jsxs(\"span\",{className:\"ml-1 text-muted-foreground/60\",children:[\"已选 \",r.length-ve.size,\"/\",r.length]})]}),r.length>0&&e.jsx(\"button\",{type:\"button\",onClick:()=>qe(s=>s.size===0?new Set(r.map(n=>String(n.address).toLowerCase())):new Set),className:\"text-[10px] text-muted"
+      },
+      {
+        "path": "/",
+        "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
+        "offset": 46129,
+        "declarationContext": false,
+        "snippet": "full ring-1 ring-background\"}),y&&e.jsx(ce,{src:y,alt:\"\",width:16,height:16,className:\"rounded-full ring-1 ring-background\"})]}),e.jsxs(\"span\",{className:\"font-medium\",children:[k,\"/\",N]}),e.jsxs(\"span\",{className:\"text-muted-foreground text-[10px]\",children:[m.includes(\"V4\")?\"V4\":\"V3\",s.feePercent?` ${s.feePercent}%`:\"\"]})]},b)})})]})]}),e.jsxs(Xs,{className:\""
+      },
+      {
+        "path": "/",
+        "file": "assets/TopPoolsView-BmMrLEMA.js",
+        "offset": 102745,
+        "declarationContext": false,
+        "snippet": "s(\"div\",{className:\"px-3 py-1.5 text-[11px] font-medium text-muted-foreground border-b mb-1 flex items-center justify-between\",children:[e.jsxs(\"span\",{children:[\"指标布局 (\",J.length,\"/\",Ys,\")\"]}),e.jsxs(\"span\",{className:\"text-[10px] opacity-50\",children:[\"近 \",Vt]})]}),J.map((s,n)=>{const o=As[s];if(!o)return null;const c=!!o.sparklineKey,b=c&&!!Ps[o.sparklineKey"
+      },
+      {
+        "path": "/",
+        "file": "assets/TopPoolsView-BmMrLEMA.js",
+        "offset": 117225,
+        "declarationContext": true,
+        "snippet": "ity-40 cursor-not-allowed\":\"hover:bg-red-500/10 hover:text-red-500\"}`,children:[s?\"已屏蔽\":\"屏蔽此池子\",\" \",e.jsxs(\"span\",{className:\"text-muted-foreground ml-1\",children:[G.token0_symbol,\"/\",G.token1_symbol]})]}),e.jsxs(\"button\",{onClick:b,disabled:n,className:`w-full text-left text-xs px-3 py-2.5 rounded-lg transition-colors ${n?\"opacity-40 cursor-not-allowed\":\"hover"
+      },
+      {
+        "path": "/",
+        "file": "assets/TopPoolsView-BmMrLEMA.js",
+        "offset": 17586,
+        "declarationContext": false,
+        "snippet": "ame:\"min-w-0 flex-1\",children:e.jsxs(\"div\",{className:\"flex items-center gap-1.5 flex-wrap\",children:[e.jsxs(\"span\",{className:\"font-semibold text-sm truncate\",children:[C.primary,\"/\",C.secondary]}),e.jsx(\"span\",{className:`px-1.5 py-0.5 rounded text-[9px] font-semibold ${y.isV4?\"bg-violet-500/10 text-violet-500\":\"bg-sky-500/10 text-sky-500\"}`,children:y.label}"
+      },
+      {
+        "path": "/",
+        "file": "assets/TopPoolsView-BmMrLEMA.js",
+        "offset": 49464,
+        "declarationContext": false,
+        "snippet": "\":\"text-foreground hover:text-primary\"}`,children:S.primary})}),e.jsx(Bn,{info:S.primaryBinance})]}),e.jsx(\"span\",{className:\"text-muted-foreground/70 text-[11px] mx-0.5\",children:\"/\"}),e.jsx(A,{content:`${$e?\"取消筛选\":`筛选 ${S.secondary}`} · 右键搜索池子`,children:e.jsx(\"button\",{onClick:()=>j(S.secondary,S.secondaryAddress),onContextMenu:k=>{k.preventDefault(),T(S.seco"
+      },
+      {
+        "path": "/",
+        "file": "assets/TopPoolsView-BmMrLEMA.js",
+        "offset": 54846,
+        "declarationContext": false,
+        "snippet": "ext-primary hover:bg-primary/10 transition-all\",children:e.jsx(fs,{className:\"w-3 h-3\"})})})]}),e.jsx(\"span\",{className:\"text-muted-foreground/70 text-xs mx-0.5 shrink-0\",children:\"/\"}),e.jsx(A,{content:`${$e?\"取消筛选\":`筛选 ${S.secondary}`} · 右键搜索池子`,children:e.jsx(\"button\",{onClick:()=>j(S.secondary,S.secondaryAddress),onContextMenu:k=>{k.preventDefault(),T(S.seco"
+      },
+      {
+        "path": "/",
+        "file": "assets/TopPoolsView-BmMrLEMA.js",
+        "offset": 79878,
+        "declarationContext": true,
+        "snippet": "hildren:[e.jsx(Jt,{className:\"w-3.5 h-3.5 mr-2\"}),\"监控\",x.length>0&&e.jsxs(\"span\",{className:\"ml-auto text-[10px] font-semibold text-emerald-600 dark:text-emerald-400\",children:[bt,\"/\",x.length]})]}),e.jsxs(U,{onClick:()=>{Sn()},children:[N?e.jsx(ke,{className:\"w-3.5 h-3.5 mr-2 animate-spin\"}):e.jsx(Ct,{className:\"w-3.5 h-3.5 mr-2\"}),\"通知\"]}),e.jsxs(U,{onClick:()"
+      },
+      {
+        "path": "/",
+        "file": "assets/TopPoolsView-BmMrLEMA.js",
+        "offset": 83854,
+        "declarationContext": false,
+        "snippet": "创建新监控\"]})})]})}),e.jsx(je,{open:Dr,onOpenChange:vn,children:e.jsxs(ve,{className:\"max-w-xs\",children:[e.jsx(Ne,{children:e.jsxs(ye,{className:\"text-sm\",children:[\"指标布局 (\",J.length,\"/\",Ys,\")\",e.jsxs(\"span\",{className:\"text-muted-foreground font-normal ml-2 text-[10px]\",children:[\"近 \",Vt]})]})}),e.jsxs(\"div\",{className:\"-mx-2\",children:[J.map((s,n)=>{const o=As[s"
+      },
+      {
+        "path": "/",
+        "file": "assets/TopPoolsView-BmMrLEMA.js",
+        "offset": 94813,
+        "declarationContext": false,
+        "snippet": "),e.jsx(\"span\",{children:\"监控\"}),e.jsxs(\"span\",{className:\"px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400\",children:[bt,\"/\",x.length]})]})}),e.jsxs(xs,{align:\"end\",collisionPadding:16,className:\"w-72 max-w-[calc(100vw-2rem)]\",children:[e.jsxs(\"div\",{className:\"px-2 py-1.5 text-xs font-medium text-muted"
+      },
+      {
+        "path": "/",
+        "file": "assets/vanilla-BG3-rOSy.js",
+        "offset": 18,
+        "declarationContext": false,
+        "snippet": "const O={BASE_URL:\"/\",DEV:!1,MODE:\"production\",PROD:!0,SSR:!1,VITE_API_URL:\"https://api.lpbot.cc\",VITE_BUILD_ID:\"1661d25fed57139f40407e37151289a915a96cee\",VITE_DEFAULT_OKX_API_KEY:\"8ad63501-4c83-4e15-9"
+      },
+      {
+        "path": "/",
+        "file": "assets/WebCryptoP256-lzcT2XcW.js",
+        "offset": 96565,
+        "declarationContext": false,
+        "snippet": "i=e.length%3,s=Math.floor(e.length/3)*4+(i&&i+1);let o=Yi.decode(new Uint8Array(a.buffer,0,s));return r&&i===1&&(o+=\"==\"),r&&i===2&&(o+=\"=\"),n&&(o=o.replaceAll(\"+\",\"-\").replaceAll(\"/\",\"_\")),o}function Wi(e,t={}){return Xi(rr(e),t)}const Sr={p:BigInt(\"0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff\"),n:BigInt(\"0xffffffff00000000fffffffffffffff"
+      },
+      {
+        "path": "/*",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 153401,
+        "declarationContext": false,
+        "snippet": "onst b=d[y];return h&&!b?p[x]=void 0:p[x]=(b||\"\").replace(/%2F/g,\"/\"),p},{}),pathname:l,pathnameBase:c,pattern:e}}function eS(e,t=!1,n=!0){Mo(e===\"*\"||!e.endsWith(\"*\")||e.endsWith(\"/*\"),`Route path \"${e}\" will be treated as if it were \"${e.replace(/\\*$/,\"/*\")}\" because the \\`*\\` character must always follow a \\`/\\` in the pattern. To get rid of this warning, ple"
+      },
+      {
+        "path": "/*",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 154032,
+        "declarationContext": false,
+        "snippet": "th);return h&&h!==\"/\"?\"/([^\\\\/]*)\":\"(?:/([^\\\\/]*))?\"}return\"/([^\\\\/]+)\"}).replace(/\\/([\\w-]+)\\?(\\/|$)/g,\"(/$1)?$2\");return e.endsWith(\"*\")?(r.push({paramName:\"*\"}),a+=e===\"*\"||e===\"/*\"?\"(.*)$\":\"(?:\\\\/(.+)|\\\\/*)$\"):n?a+=\"\\\\/*$\":e!==\"\"&&e!==\"/\"&&(a+=\"(?:(?=\\\\/|$))\"),[new RegExp(a,t?void 0:\"i\"),r]}function YT(e){try{return e.split(\"/\").map(t=>decodeURIComponent(t)."
+      },
+      {
+        "path": "/activity",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436066,
+        "declarationContext": false,
+        "snippet": "}const r=()=>{const l=e-Date.now();n(l<=0?\"\":Zc(l))};r();const a=setInterval(r,1e3);return()=>clearInterval(a)},[e]),t}const VO={\"/tasks\":\"tasks\",\"/pools\":\"pools\",\"/users\":\"users\",\"/activity\":\"activity\",\"/wallets\":\"wallets\",\"/developer\":\"developer\",\"/strategies\":\"strategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\",users:\"/users\",activity:\"/activity\",w"
+      },
+      {
+        "path": "/activity",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436244,
+        "declarationContext": false,
+        "snippet": "\",\"/activity\":\"activity\",\"/wallets\":\"wallets\",\"/developer\":\"developer\",\"/strategies\":\"strategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\",users:\"/users\",activity:\"/activity\",wallets:\"/wallets\",developer:\"/developer\",strategies:\"/strategies\",settings:\"/settings\"},gw=[{key:\"tasks\",label:\"任务\",locked:!0},{key:\"pools\",label:\"池子\"},{key:\"strategies\",label:\"策"
+      },
+      {
+        "path": "/activity",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436773,
+        "declarationContext": false,
+        "snippet": "ategies\",\"wallets\",\"users\",\"activity\",\"recent-chats\"],GO=[\"activity\"],KO={tasks:\"/tasks/running\",pools:\"/pools\",strategies:\"/strategies\",wallets:\"/wallets\",users:\"/users\",activity:\"/activity\"},qO={create_fail:\"error\",rebalance_fail:\"error\",withdraw_fail:\"error\",consecutive_fail:\"error\",task_start:\"success\",system_recover:\"success\",rebalance_ok:\"success\",withdraw_ok:\"su"
+      },
+      {
+        "path": "/activity",
+        "file": "assets/page-CM8SqSqG.js",
+        "offset": 64099,
+        "declarationContext": false,
+        "snippet": "icon:la,children:\"开发者\"}),e.jsxs(te,{children:[e.jsx(_,{title:\"开发者 API\",desc:\"API Key 管理与文档\",onClick:()=>a(\"/developer\")}),e.jsx(_,{icon:Zt,title:\"活动日志\",desc:\"查看操作记录\",onClick:()=>a(\"/activity\")})]})]}),e.jsx(ga,{open:_s,onOpenChange:Ie}),e.jsx(Sa,{open:Is,onOpenChange:ze}),e.jsx(Pa,{open:zs,onClose:()=>Be(!1),onSaved:fe}),e.jsx(Aa,{open:Bs,onClose:()=>We(!1),onChanged:f"
+      },
+      {
+        "path": "/blocked",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 244487,
+        "declarationContext": true,
+        "snippet": " Pu(){typeof window>\"u\"||(vg(),window.location.pathname.startsWith(\"/login\")||(window.location.href=\"/login\"))}function B5(){typeof window>\"u\"||window.location.pathname.startsWith(\"/blocked\")||(window.location.href=\"/blocked\")}function Qf(){if(typeof window>\"u\")return;const e=window.location.pathname;e.startsWith(\"/maintenance\")||e.startsWith(\"/login\")||(window.locati"
+      },
+      {
+        "path": "/blocked",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 244522,
+        "declarationContext": true,
+        "snippet": "ow.location.pathname.startsWith(\"/login\")||(window.location.href=\"/login\"))}function B5(){typeof window>\"u\"||window.location.pathname.startsWith(\"/blocked\")||(window.location.href=\"/blocked\")}function Qf(){if(typeof window>\"u\")return;const e=window.location.pathname;e.startsWith(\"/maintenance\")||e.startsWith(\"/login\")||(window.location.href=\"/maintenance\")}function z5"
+      },
+      {
+        "path": "/developer",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436110,
+        "declarationContext": false,
+        "snippet": ":Zc(l))};r();const a=setInterval(r,1e3);return()=>clearInterval(a)},[e]),t}const VO={\"/tasks\":\"tasks\",\"/pools\":\"pools\",\"/users\":\"users\",\"/activity\":\"activity\",\"/wallets\":\"wallets\",\"/developer\":\"developer\",\"/strategies\":\"strategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\",users:\"/users\",activity:\"/activity\",wallets:\"/wallets\",developer:\"/developer\",stra"
+      },
+      {
+        "path": "/developer",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436285,
+        "declarationContext": false,
+        "snippet": "ets\",\"/developer\":\"developer\",\"/strategies\":\"strategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\",users:\"/users\",activity:\"/activity\",wallets:\"/wallets\",developer:\"/developer\",strategies:\"/strategies\",settings:\"/settings\"},gw=[{key:\"tasks\",label:\"任务\",locked:!0},{key:\"pools\",label:\"池子\"},{key:\"strategies\",label:\"策略\"},{key:\"wallets\",label:\"钱包\"},{key:\"users"
+      },
+      {
+        "path": "/developer",
+        "file": "assets/page-CM8SqSqG.js",
+        "offset": 64025,
+        "declarationContext": false,
+        "snippet": "er:!0})]})]}),e.jsxs(\"section\",{className:\"space-y-2\",children:[e.jsx(se,{icon:la,children:\"开发者\"}),e.jsxs(te,{children:[e.jsx(_,{title:\"开发者 API\",desc:\"API Key 管理与文档\",onClick:()=>a(\"/developer\")}),e.jsx(_,{icon:Zt,title:\"活动日志\",desc:\"查看操作记录\",onClick:()=>a(\"/activity\")})]})]}),e.jsx(ga,{open:_s,onOpenChange:Ie}),e.jsx(Sa,{open:Is,onOpenChange:ze}),e.jsx(Pa,{open:zs,onClose"
+      },
+      {
+        "path": "/login",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 244374,
+        "declarationContext": true,
+        "snippet": "ion vg(){typeof window>\"u\"||(localStorage.removeItem(\"auth_token\"),localStorage.removeItem(\"user_info\"))}function Pu(){typeof window>\"u\"||(vg(),window.location.pathname.startsWith(\"/login\")||(window.location.href=\"/login\"))}function B5(){typeof window>\"u\"||window.location.pathname.startsWith(\"/blocked\")||(window.location.href=\"/blocked\")}function Qf(){if(typeof wind"
+      },
+      {
+        "path": "/login",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 244407,
+        "declarationContext": true,
+        "snippet": "lStorage.removeItem(\"auth_token\"),localStorage.removeItem(\"user_info\"))}function Pu(){typeof window>\"u\"||(vg(),window.location.pathname.startsWith(\"/login\")||(window.location.href=\"/login\"))}function B5(){typeof window>\"u\"||window.location.pathname.startsWith(\"/blocked\")||(window.location.href=\"/blocked\")}function Qf(){if(typeof window>\"u\")return;const e=window.loca"
+      },
+      {
+        "path": "/login",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 244652,
+        "declarationContext": true,
+        "snippet": "ame.startsWith(\"/blocked\")||(window.location.href=\"/blocked\")}function Qf(){if(typeof window>\"u\")return;const e=window.location.pathname;e.startsWith(\"/maintenance\")||e.startsWith(\"/login\")||(window.location.href=\"/maintenance\")}function z5(e){Si={...Si,...e}}function dU(){return Si}function Zf(){const e={},t=Ef();return t?e.Authorization=`Bearer ${t}`:Si.initData&&"
+      },
+      {
+        "path": "/login",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 459157,
+        "declarationContext": false,
+        "snippet": "tUsd):\"\";ge(!1),Ee({poolAddress:L.poolAddress||L.poolId||null,copyConfig:$e,copyFixedAmount:We}),fe(!0)},[ks,xt]),Um=()=>{vg(),He(null),nt(!1),wo.current=null,window.location.href=\"/login\"},Vm=f.useCallback(async()=>{try{const L=Ef(),te=window.Telegram?.WebApp?.initData||null,be=await fetch(`${se}/api/auth/me`,{method:\"POST\",headers:{\"Content-Type\":\"application/json"
+      },
+      {
+        "path": "/maintenance",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 244622,
+        "declarationContext": true,
+        "snippet": "dow>\"u\"||window.location.pathname.startsWith(\"/blocked\")||(window.location.href=\"/blocked\")}function Qf(){if(typeof window>\"u\")return;const e=window.location.pathname;e.startsWith(\"/maintenance\")||e.startsWith(\"/login\")||(window.location.href=\"/maintenance\")}function z5(e){Si={...Si,...e}}function dU(){return Si}function Zf(){const e={},t=Ef();return t?e.Authorization=`Be"
+      },
+      {
+        "path": "/maintenance",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 244685,
+        "declarationContext": true,
+        "snippet": "ow.location.href=\"/blocked\")}function Qf(){if(typeof window>\"u\")return;const e=window.location.pathname;e.startsWith(\"/maintenance\")||e.startsWith(\"/login\")||(window.location.href=\"/maintenance\")}function z5(e){Si={...Si,...e}}function dU(){return Si}function Zf(){const e={},t=Ef();return t?e.Authorization=`Bearer ${t}`:Si.initData&&(e[\"X-Telegram-Init-Data\"]=Si.initData)"
+      },
+      {
+        "path": "/maintenance",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 453473,
+        "declarationContext": false,
+        "snippet": "ry{localStorage.setItem(\"lp_bot_viewMode\",Nt)}catch{}Je||Yt(null)},[Nt]),f.useEffect(()=>{let L=!1;const te=Re=>!Re?.maintenance?.enabled||Re.isAdmin?!1:(L=!0,window.location.href=\"/maintenance\",!0);(async()=>{const Re=pw(\"auth init\");Ht(!0);try{const $e=Ef(),We=IS();if($e&&We)try{const Ft=pw(\"auth /api/auth/me (jwt)\"),Yn=()=>{const Xn=new AbortController,Dr=setTimeout(()"
+      },
+      {
+        "path": "/monitors",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 447211,
+        "declarationContext": false,
+        "snippet": "te=HO[L]||L;n(te)},[n]);f.useEffect(()=>{const L=t.replace(/\\/$/,\"\")||\"/\";L===\"/\"&&n(\"/tasks/running\",{replace:!0}),Nt===\"user\"&&L===\"/users\"&&n(\"/tasks/running\",{replace:!0}),L===\"/monitors\"&&n(\"/pools\",{replace:!0})},[Nt,t,n]);const Ue=(L,{force:te=!1}={})=>{X(!1);{const be=ye?.telegramId!=null?String(ye.telegramId):null,Re=pe.current,$e=new Map;for(const We of L){co"
+      },
+      {
+        "path": "/pools",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436032,
+        "declarationContext": false,
+        "snippet": "useEffect(()=>{if(!e){n(\"\");return}const r=()=>{const l=e-Date.now();n(l<=0?\"\":Zc(l))};r();const a=setInterval(r,1e3);return()=>clearInterval(a)},[e]),t}const VO={\"/tasks\":\"tasks\",\"/pools\":\"pools\",\"/users\":\"users\",\"/activity\":\"activity\",\"/wallets\":\"wallets\",\"/developer\":\"developer\",\"/strategies\":\"strategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\","
+      },
+      {
+        "path": "/pools",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436211,
+        "declarationContext": false,
+        "snippet": ",\"/pools\":\"pools\",\"/users\":\"users\",\"/activity\":\"activity\",\"/wallets\":\"wallets\",\"/developer\":\"developer\",\"/strategies\":\"strategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\",users:\"/users\",activity:\"/activity\",wallets:\"/wallets\",developer:\"/developer\",strategies:\"/strategies\",settings:\"/settings\"},gw=[{key:\"tasks\",label:\"任务\",locked:!0},{key:\"pools\",la"
+      },
+      {
+        "path": "/pools",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436696,
+        "declarationContext": false,
+        "snippet": "ivity\",label:\"日志\"},{key:\"recent-chats\",label:\"聊天室\"}],WO=[\"tasks\",\"pools\",\"strategies\",\"wallets\",\"users\",\"activity\",\"recent-chats\"],GO=[\"activity\"],KO={tasks:\"/tasks/running\",pools:\"/pools\",strategies:\"/strategies\",wallets:\"/wallets\",users:\"/users\",activity:\"/activity\"},qO={create_fail:\"error\",rebalance_fail:\"error\",withdraw_fail:\"error\",consecutive_fail:\"error\",task"
+      },
+      {
+        "path": "/pools",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 447226,
+        "declarationContext": true,
+        "snippet": "e)},[n]);f.useEffect(()=>{const L=t.replace(/\\/$/,\"\")||\"/\";L===\"/\"&&n(\"/tasks/running\",{replace:!0}),Nt===\"user\"&&L===\"/users\"&&n(\"/tasks/running\",{replace:!0}),L===\"/monitors\"&&n(\"/pools\",{replace:!0})},[Nt,t,n]);const Ue=(L,{force:te=!1}={})=>{X(!1);{const be=ye?.telegramId!=null?String(ye.telegramId):null,Re=pe.current,$e=new Map;for(const We of L){const Ye=We.la"
+      },
+      {
+        "path": "/pools",
+        "file": "assets/page-CM8SqSqG.js",
+        "offset": 56586,
+        "declarationContext": true,
+        "snippet": "rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors whitespace-nowrap\",children:\"全部重置\"}),e.jsxs(\"button\",{onClick:()=>a(\"/pools\"),className:\"flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors whitespac"
+      },
+      {
+        "path": "/settings",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436162,
+        "declarationContext": false,
+        "snippet": "earInterval(a)},[e]),t}const VO={\"/tasks\":\"tasks\",\"/pools\":\"pools\",\"/users\":\"users\",\"/activity\":\"activity\",\"/wallets\":\"wallets\",\"/developer\":\"developer\",\"/strategies\":\"strategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\",users:\"/users\",activity:\"/activity\",wallets:\"/wallets\",developer:\"/developer\",strategies:\"/strategies\",settings:\"/settings\"},gw=[{key"
+      },
+      {
+        "path": "/settings",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436332,
+        "declarationContext": false,
+        "snippet": "rategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\",users:\"/users\",activity:\"/activity\",wallets:\"/wallets\",developer:\"/developer\",strategies:\"/strategies\",settings:\"/settings\"},gw=[{key:\"tasks\",label:\"任务\",locked:!0},{key:\"pools\",label:\"池子\"},{key:\"strategies\",label:\"策略\"},{key:\"wallets\",label:\"钱包\"},{key:\"users\",label:\"管理\",requireAdmin:!0},{key:\"activity\","
+      },
+      {
+        "path": "/strategies",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436135,
+        "declarationContext": false,
+        "snippet": "nterval(r,1e3);return()=>clearInterval(a)},[e]),t}const VO={\"/tasks\":\"tasks\",\"/pools\":\"pools\",\"/users\":\"users\",\"/activity\":\"activity\",\"/wallets\":\"wallets\",\"/developer\":\"developer\",\"/strategies\":\"strategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\",users:\"/users\",activity:\"/activity\",wallets:\"/wallets\",developer:\"/developer\",strategies:\"/strategies\",setti"
+      },
+      {
+        "path": "/strategies",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436309,
+        "declarationContext": false,
+        "snippet": "oper\",\"/strategies\":\"strategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\",users:\"/users\",activity:\"/activity\",wallets:\"/wallets\",developer:\"/developer\",strategies:\"/strategies\",settings:\"/settings\"},gw=[{key:\"tasks\",label:\"任务\",locked:!0},{key:\"pools\",label:\"池子\"},{key:\"strategies\",label:\"策略\"},{key:\"wallets\",label:\"钱包\"},{key:\"users\",label:\"管理\",requireAdmin"
+      },
+      {
+        "path": "/strategies",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436716,
+        "declarationContext": false,
+        "snippet": "key:\"recent-chats\",label:\"聊天室\"}],WO=[\"tasks\",\"pools\",\"strategies\",\"wallets\",\"users\",\"activity\",\"recent-chats\"],GO=[\"activity\"],KO={tasks:\"/tasks/running\",pools:\"/pools\",strategies:\"/strategies\",wallets:\"/wallets\",users:\"/users\",activity:\"/activity\"},qO={create_fail:\"error\",rebalance_fail:\"error\",withdraw_fail:\"error\",consecutive_fail:\"error\",task_start:\"success\",system_r"
+      },
+      {
+        "path": "/tasks/running",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436673,
+        "declarationContext": false,
+        "snippet": "uireAdmin:!0},{key:\"activity\",label:\"日志\"},{key:\"recent-chats\",label:\"聊天室\"}],WO=[\"tasks\",\"pools\",\"strategies\",\"wallets\",\"users\",\"activity\",\"recent-chats\"],GO=[\"activity\"],KO={tasks:\"/tasks/running\",pools:\"/pools\",strategies:\"/strategies\",wallets:\"/wallets\",users:\"/users\",activity:\"/activity\"},qO={create_fail:\"error\",rebalance_fail:\"error\",withdraw_fail:\"error\",consecutive_fa"
+      },
+      {
+        "path": "/tasks/running",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 447116,
+        "declarationContext": false,
+        "snippet": "omplete\"?L():window.addEventListener(\"load\",L,{once:!0})},[]);const et=f.useCallback(L=>{const te=HO[L]||L;n(te)},[n]);f.useEffect(()=>{const L=t.replace(/\\/$/,\"\")||\"/\";L===\"/\"&&n(\"/tasks/running\",{replace:!0}),Nt===\"user\"&&L===\"/users\"&&n(\"/tasks/running\",{replace:!0}),L===\"/monitors\"&&n(\"/pools\",{replace:!0})},[Nt,t,n]);const Ue=(L,{force:te=!1}={})=>{X(!1);{const be=ye?."
+      },
+      {
+        "path": "/tasks/running",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 447176,
+        "declarationContext": false,
+        "snippet": ");const et=f.useCallback(L=>{const te=HO[L]||L;n(te)},[n]);f.useEffect(()=>{const L=t.replace(/\\/$/,\"\")||\"/\";L===\"/\"&&n(\"/tasks/running\",{replace:!0}),Nt===\"user\"&&L===\"/users\"&&n(\"/tasks/running\",{replace:!0}),L===\"/monitors\"&&n(\"/pools\",{replace:!0})},[Nt,t,n]);const Ue=(L,{force:te=!1}={})=>{X(!1);{const be=ye?.telegramId!=null?String(ye.telegramId):null,Re=pe.current,$e"
+      },
+      {
+        "path": "/users",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436049,
+        "declarationContext": false,
+        "snippet": "(!e){n(\"\");return}const r=()=>{const l=e-Date.now();n(l<=0?\"\":Zc(l))};r();const a=setInterval(r,1e3);return()=>clearInterval(a)},[e]),t}const VO={\"/tasks\":\"tasks\",\"/pools\":\"pools\",\"/users\":\"users\",\"/activity\":\"activity\",\"/wallets\":\"wallets\",\"/developer\":\"developer\",\"/strategies\":\"strategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\",users:\"/users\",ac"
+      },
+      {
+        "path": "/users",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436226,
+        "declarationContext": false,
+        "snippet": "s\",\"/users\":\"users\",\"/activity\":\"activity\",\"/wallets\":\"wallets\",\"/developer\":\"developer\",\"/strategies\":\"strategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\",users:\"/users\",activity:\"/activity\",wallets:\"/wallets\",developer:\"/developer\",strategies:\"/strategies\",settings:\"/settings\"},gw=[{key:\"tasks\",label:\"任务\",locked:!0},{key:\"pools\",label:\"池子\"},{key:"
+      },
+      {
+        "path": "/users",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436755,
+        "declarationContext": false,
+        "snippet": "asks\",\"pools\",\"strategies\",\"wallets\",\"users\",\"activity\",\"recent-chats\"],GO=[\"activity\"],KO={tasks:\"/tasks/running\",pools:\"/pools\",strategies:\"/strategies\",wallets:\"/wallets\",users:\"/users\",activity:\"/activity\"},qO={create_fail:\"error\",rebalance_fail:\"error\",withdraw_fail:\"error\",consecutive_fail:\"error\",task_start:\"success\",system_recover:\"success\",rebalance_ok:\"suc"
+      },
+      {
+        "path": "/users",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 447164,
+        "declarationContext": false,
+        "snippet": "nce:!0})},[]);const et=f.useCallback(L=>{const te=HO[L]||L;n(te)},[n]);f.useEffect(()=>{const L=t.replace(/\\/$/,\"\")||\"/\";L===\"/\"&&n(\"/tasks/running\",{replace:!0}),Nt===\"user\"&&L===\"/users\"&&n(\"/tasks/running\",{replace:!0}),L===\"/monitors\"&&n(\"/pools\",{replace:!0})},[Nt,t,n]);const Ue=(L,{force:te=!1}={})=>{X(!1);{const be=ye?.telegramId!=null?String(ye.telegramId):n"
+      },
+      {
+        "path": "/wallets",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436089,
+        "declarationContext": false,
+        "snippet": "-Date.now();n(l<=0?\"\":Zc(l))};r();const a=setInterval(r,1e3);return()=>clearInterval(a)},[e]),t}const VO={\"/tasks\":\"tasks\",\"/pools\":\"pools\",\"/users\":\"users\",\"/activity\":\"activity\",\"/wallets\":\"wallets\",\"/developer\":\"developer\",\"/strategies\":\"strategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\",users:\"/users\",activity:\"/activity\",wallets:\"/wallets\",deve"
+      },
+      {
+        "path": "/wallets",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436264,
+        "declarationContext": false,
+        "snippet": "ity\",\"/wallets\":\"wallets\",\"/developer\":\"developer\",\"/strategies\":\"strategies\",\"/settings\":\"settings\"},HO={tasks:\"/tasks\",pools:\"/pools\",users:\"/users\",activity:\"/activity\",wallets:\"/wallets\",developer:\"/developer\",strategies:\"/strategies\",settings:\"/settings\"},gw=[{key:\"tasks\",label:\"任务\",locked:!0},{key:\"pools\",label:\"池子\"},{key:\"strategies\",label:\"策略\"},{key:\"wallets\","
+      },
+      {
+        "path": "/wallets",
+        "file": "assets/index-D0FmPqGc.js",
+        "offset": 436738,
+        "declarationContext": false,
+        "snippet": "el:\"聊天室\"}],WO=[\"tasks\",\"pools\",\"strategies\",\"wallets\",\"users\",\"activity\",\"recent-chats\"],GO=[\"activity\"],KO={tasks:\"/tasks/running\",pools:\"/pools\",strategies:\"/strategies\",wallets:\"/wallets\",users:\"/users\",activity:\"/activity\"},qO={create_fail:\"error\",rebalance_fail:\"error\",withdraw_fail:\"error\",consecutive_fail:\"error\",task_start:\"success\",system_recover:\"success\",re"
+      }
+    ],
+    "uniquePaths": [
+      "/",
+      "/*",
+      "/activity",
+      "/blocked",
+      "/developer",
+      "/login",
+      "/maintenance",
+      "/monitors",
+      "/pools",
+      "/settings",
+      "/strategies",
+      "/tasks/running",
+      "/users",
+      "/wallets"
+    ]
+  },
+  "comparison": {
+    "expectedCount": 16,
+    "missingExactLiterals": [
+      "/tasks/paused",
+      "/tasks/stopped",
+      "/all/:status?"
+    ],
+    "additionalCandidates": [],
+    "note": "Missing exact literals are extraction results, not proof that a route is unavailable; minified routers may compose paths."
+  }
+}

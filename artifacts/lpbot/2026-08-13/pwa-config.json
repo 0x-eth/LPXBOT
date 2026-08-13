@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-13T07:39:32.122Z",
+  "manifestUrl": "https://www.lpbot.cc/manifest.json",
+  "manifest": {
+    "name": "LP Farm Monitor",
+    "short_name": "LP Farm",
+    "description": "DeFi LP 自动化农场监控系统",
+    "icons": [
+      {
+        "src": "/logo.png",
+        "sizes": "919x919",
+        "type": "image/png",
+        "purpose": "any"
+      },
+      {
+        "src": "/logo-maskable.png",
+        "sizes": "1024x1024",
+        "type": "image/png",
+        "purpose": "maskable"
+      }
+    ],
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#171717"
+  },
+  "htmlReferences": {
+    "manifest": [
+      "/manifest.json"
+    ],
+    "icons": [
+      "/icon.png"
+    ],
+    "themeColorLiterals": [
+      "#171717",
+      "#3B82F6",
+      "#8B5CF6",
+      "#22C55E",
+      "#F97316",
+      "#E11D48",
+      "#06B6D4",
+      "#EC4899",
+      "#6366F1",
+      "#F59E0B",
+      "#14B8A6",
+      "#1a1a1a"
+    ]
+  },
+  "serviceWorkerEvidence": {
+    "term": "serviceWorker",
+    "occurrenceCount": 20,
+    "evidence": [
+      {
+        "file": "assets/index-CALbxsQk.js",
+        "offset": 14573,
+        "snippet": "yticsTracker&&(k.isHidden&&![\"CLS\",\"INP\"].includes(e)||a.analyticsTracker({attribution:r,metricName:e,data:t,navigatorInformation:c?{deviceMemory:l()||0,hardwareConcurrency:d()||0,serviceWorkerStatus:\"serviceWorker\"in c?c.serviceWorker.controller?\"controlled\":\"supported\":\"unsupported\",isLowEndDevice:E(),isLowEndExperience:x(f,v)}:{},rating:n,navigationType:i}))};[\"CLS\",\""
+      },
+      {
+        "file": "assets/index-CALbxsQk.js",
+        "offset": 14594,
+        "snippet": "dden&&![\"CLS\",\"INP\"].includes(e)||a.analyticsTracker({attribution:r,metricName:e,data:t,navigatorInformation:c?{deviceMemory:l()||0,hardwareConcurrency:d()||0,serviceWorkerStatus:\"serviceWorker\"in c?c.serviceWorker.controller?\"controlled\":\"supported\":\"unsupported\",isLowEndDevice:E(),isLowEndExperience:x(f,v)}:{},rating:n,navigationType:i}))};[\"CLS\",\"INP\"].includes(e)?u()"
+      },
+      {
+        "file": "assets/index-CALbxsQk.js",
+        "offset": 14615,
+        "snippet": "includes(e)||a.analyticsTracker({attribution:r,metricName:e,data:t,navigatorInformation:c?{deviceMemory:l()||0,hardwareConcurrency:d()||0,serviceWorkerStatus:\"serviceWorker\"in c?c.serviceWorker.controller?\"controlled\":\"supported\":\"unsupported\",isLowEndDevice:E(),isLowEndExperience:x(f,v)}:{},rating:n,navigationType:i}))};[\"CLS\",\"INP\"].includes(e)?u():(s=u,\"requestIdleCal"
+      },
+      {
+        "file": "assets/index-CALbxsQk.js",
+        "offset": 27050,
+        "snippet": "ming&&S(\"element\",Oe)},Ie=function(e){var t=\"usageDetails\"in e?e.usageDetails:{};R(\"storageEstimate\",{quota:j(e.quota),usage:j(e.usage),caches:j(t.caches),indexedDB:j(t.indexedDB),serviceWorker:j(t.serviceWorkerRegistrations)})},Pe={finalMarkToStepsMap:{},startMarkToStepsMap:{},active:{},navigationSteps:{}},Me=function(e){delete Pe.active[e]},Be=function(){return Pe.navi"
+      },
+      {
+        "file": "assets/index-CALbxsQk.js",
+        "offset": 27068,
+        "snippet": "Oe)},Ie=function(e){var t=\"usageDetails\"in e?e.usageDetails:{};R(\"storageEstimate\",{quota:j(e.quota),usage:j(e.usage),caches:j(t.caches),indexedDB:j(t.indexedDB),serviceWorker:j(t.serviceWorkerRegistrations)})},Pe={finalMarkToStepsMap:{},startMarkToStepsMap:{},active:{},navigationSteps:{}},Me=function(e){delete Pe.active[e]},Be=function(){return Pe.navigationSteps},Ce=fu"
+      },
+      {
+        "file": "assets/index-CALbxsQk.js",
+        "offset": 59269,
+        "snippet": "bile_web,v.tablet_web];function q(){return\"android\"===A.platform}function F(){return\"ios\"===A.platform}function z(){return R.includes(A.platform)}function K(e){if(z()&&navigator&&\"serviceWorker\"in navigator&&navigator.serviceWorker.controller)try{navigator.serviceWorker.controller.postMessage(e)}catch(e){e instanceof Error&&A.onError(e)}}var $=n(353),Q=n.n($);const W={am"
+      },
+      {
+        "file": "assets/index-CALbxsQk.js",
+        "offset": 59307,
+        "snippet": "turn\"android\"===A.platform}function F(){return\"ios\"===A.platform}function z(){return R.includes(A.platform)}function K(e){if(z()&&navigator&&\"serviceWorker\"in navigator&&navigator.serviceWorker.controller)try{navigator.serviceWorker.controller.postMessage(e)}catch(e){e instanceof Error&&A.onError(e)}}var $=n(353),Q=n.n($);const W={amplitudeOSName:null,amplitudeOSVersion:"
+      },
+      {
+        "file": "assets/index-CALbxsQk.js",
+        "offset": 59346,
+        "snippet": "{return\"ios\"===A.platform}function z(){return R.includes(A.platform)}function K(e){if(z()&&navigator&&\"serviceWorker\"in navigator&&navigator.serviceWorker.controller)try{navigator.serviceWorker.controller.postMessage(e)}catch(e){e instanceof Error&&A.onError(e)}}var $=n(353),Q=n.n($);const W={amplitudeOSName:null,amplitudeOSVersion:null,amplitudeDeviceModel:null,amplitud"
+      },
+      {
+        "file": "assets/index-CALbxsQk.js",
+        "offset": 82330,
+        "snippet": "ll==i?void 0:i.deviceMemory)||0,u=(null==i?void 0:i.hardwareConcurrency)||0,l=(null==i?void 0:i.isLowEndDevice)||!1,p=(null==i?void 0:i.isLowEndExperience)||!1,v=(null==i?void 0:i.serviceWorkerStatus)||\"unsupported\",g=Vt({deviceMemory:c,hardwareConcurrency:u,isLowEndDevice:l,isLowEndExperience:p,serviceWorkerStatus:v},Gt),b={is_low_end_device:l,is_low_end_experience:p,pa"
+      },
+      {
+        "file": "assets/index-CALbxsQk.js",
+        "offset": 82447,
+        "snippet": "=(null==i?void 0:i.isLowEndExperience)||!1,v=(null==i?void 0:i.serviceWorkerStatus)||\"unsupported\",g=Vt({deviceMemory:c,hardwareConcurrency:u,isLowEndDevice:l,isLowEndExperience:p,serviceWorkerStatus:v},Gt),b={is_low_end_device:l,is_low_end_experience:p,page_key:re.pageKey||\"\",save_data:t.saveData||!1,service_worker:v,is_perf_metric:!0};if(\"navigationTiming\"===r)t&&\"numb"
+      },
+      {
+        "file": "assets/index-D0CkVZ_w.js",
+        "offset": 10893,
+        "snippet": "yticsTracker&&(k.isHidden&&![\"CLS\",\"INP\"].includes(e)||a.analyticsTracker({attribution:r,metricName:e,data:t,navigatorInformation:c?{deviceMemory:l()||0,hardwareConcurrency:d()||0,serviceWorkerStatus:\"serviceWorker\"in c?c.serviceWorker.controller?\"controlled\":\"supported\":\"unsupported\",isLowEndDevice:E(),isLowEndExperience:x(f,v)}:{},rating:n,navigationType:i}))};[\"CLS\",\""
+      },
+      {
+        "file": "assets/index-D0CkVZ_w.js",
+        "offset": 10914,
+        "snippet": "dden&&![\"CLS\",\"INP\"].includes(e)||a.analyticsTracker({attribution:r,metricName:e,data:t,navigatorInformation:c?{deviceMemory:l()||0,hardwareConcurrency:d()||0,serviceWorkerStatus:\"serviceWorker\"in c?c.serviceWorker.controller?\"controlled\":\"supported\":\"unsupported\",isLowEndDevice:E(),isLowEndExperience:x(f,v)}:{},rating:n,navigationType:i}))};[\"CLS\",\"INP\"].includes(e)?u()"
+      },
+      {
+        "file": "assets/index-D0CkVZ_w.js",
+        "offset": 10935,
+        "snippet": "includes(e)||a.analyticsTracker({attribution:r,metricName:e,data:t,navigatorInformation:c?{deviceMemory:l()||0,hardwareConcurrency:d()||0,serviceWorkerStatus:\"serviceWorker\"in c?c.serviceWorker.controller?\"controlled\":\"supported\":\"unsupported\",isLowEndDevice:E(),isLowEndExperience:x(f,v)}:{},rating:n,navigationType:i}))};[\"CLS\",\"INP\"].includes(e)?u():(s=u,\"requestIdleCal"
+      },
+      {
+        "file": "assets/index-D0CkVZ_w.js",
+        "offset": 23370,
+        "snippet": "ming&&S(\"element\",Oe)},Ie=function(e){var t=\"usageDetails\"in e?e.usageDetails:{};R(\"storageEstimate\",{quota:j(e.quota),usage:j(e.usage),caches:j(t.caches),indexedDB:j(t.indexedDB),serviceWorker:j(t.serviceWorkerRegistrations)})},Pe={finalMarkToStepsMap:{},startMarkToStepsMap:{},active:{},navigationSteps:{}},Me=function(e){delete Pe.active[e]},Be=function(){return Pe.navi"
+      },
+      {
+        "file": "assets/index-D0CkVZ_w.js",
+        "offset": 23388,
+        "snippet": "Oe)},Ie=function(e){var t=\"usageDetails\"in e?e.usageDetails:{};R(\"storageEstimate\",{quota:j(e.quota),usage:j(e.usage),caches:j(t.caches),indexedDB:j(t.indexedDB),serviceWorker:j(t.serviceWorkerRegistrations)})},Pe={finalMarkToStepsMap:{},startMarkToStepsMap:{},active:{},navigationSteps:{}},Me=function(e){delete Pe.active[e]},Be=function(){return Pe.navigationSteps},Ce=fu"
+      },
+      {
+        "file": "assets/index-D0CkVZ_w.js",
+        "offset": 55589,
+        "snippet": "bile_web,v.tablet_web];function q(){return\"android\"===A.platform}function F(){return\"ios\"===A.platform}function z(){return R.includes(A.platform)}function K(e){if(z()&&navigator&&\"serviceWorker\"in navigator&&navigator.serviceWorker.controller)try{navigator.serviceWorker.controller.postMessage(e)}catch(e){e instanceof Error&&A.onError(e)}}var $=n(353),Q=n.n($);const W={am"
+      },
+      {
+        "file": "assets/index-D0CkVZ_w.js",
+        "offset": 55627,
+        "snippet": "turn\"android\"===A.platform}function F(){return\"ios\"===A.platform}function z(){return R.includes(A.platform)}function K(e){if(z()&&navigator&&\"serviceWorker\"in navigator&&navigator.serviceWorker.controller)try{navigator.serviceWorker.controller.postMessage(e)}catch(e){e instanceof Error&&A.onError(e)}}var $=n(353),Q=n.n($);const W={amplitudeOSName:null,amplitudeOSVersion:"
+      },
+      {
+        "file": "assets/index-D0CkVZ_w.js",
+        "offset": 55666,
+        "snippet": "{return\"ios\"===A.platform}function z(){return R.includes(A.platform)}function K(e){if(z()&&navigator&&\"serviceWorker\"in navigator&&navigator.serviceWorker.controller)try{navigator.serviceWorker.controller.postMessage(e)}catch(e){e instanceof Error&&A.onError(e)}}var $=n(353),Q=n.n($);const W={amplitudeOSName:null,amplitudeOSVersion:null,amplitudeDeviceModel:null,amplitud"
+      },
+      {
+        "file": "assets/index-D0CkVZ_w.js",
+        "offset": 78650,
+        "snippet": "ll==i?void 0:i.deviceMemory)||0,u=(null==i?void 0:i.hardwareConcurrency)||0,l=(null==i?void 0:i.isLowEndDevice)||!1,p=(null==i?void 0:i.isLowEndExperience)||!1,v=(null==i?void 0:i.serviceWorkerStatus)||\"unsupported\",g=Vt({deviceMemory:c,hardwareConcurrency:u,isLowEndDevice:l,isLowEndExperience:p,serviceWorkerStatus:v},Gt),b={is_low_end_device:l,is_low_end_experience:p,pa"
+      },
+      {
+        "file": "assets/index-D0CkVZ_w.js",
+        "offset": 78767,
+        "snippet": "=(null==i?void 0:i.isLowEndExperience)||!1,v=(null==i?void 0:i.serviceWorkerStatus)||\"unsupported\",g=Vt({deviceMemory:c,hardwareConcurrency:u,isLowEndDevice:l,isLowEndExperience:p,serviceWorkerStatus:v},Gt),b={is_low_end_device:l,is_low_end_experience:p,page_key:re.pageKey||\"\",save_data:t.saveData||!1,service_worker:v,is_perf_metric:!0};if(\"navigationTiming\"===r)t&&\"numb"
+      }
+    ]
+  }
+}

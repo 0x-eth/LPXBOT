@@ -1,0 +1,23 @@
+{
+  "name": "LP Farm Monitor",
+  "short_name": "LP Farm",
+  "description": "DeFi LP 自动化农场监控系统",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "919x919",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-maskable.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#171717"
+}

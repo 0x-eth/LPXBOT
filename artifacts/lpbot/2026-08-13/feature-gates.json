@@ -1,0 +1,620 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-13T07:39:32.083Z",
+  "sourceBoundary": "Role and access semantics come from the frozen documentation baseline; live evidence records client-bundle occurrences only.",
+  "roles": [
+    {
+      "id": "user",
+      "source": "docs/research/public-surface.md sections 6.1-6.2",
+      "liveBundleEvidence": {
+        "term": "user",
+        "occurrenceCount": 759,
+        "evidence": [
+          {
+            "file": "assets/app-store-C39ULOQK.js",
+            "offset": 1071,
+            "snippet": "0.485-1.372-2.367-.391-4.743.576-5.549 1.075 1.846 2.682 4.631 4.828 8.348Z\" fill=\"#fff\" /> <defs> <linearGradient id=\"a\" x1=\"18\" y1=\"0\" x2=\"18\" y2=\"36\" gradientUnits=\"userSpaceOnUse\"> <stop stop-color=\"#18BFFB\" /> <stop offset=\"1\" stop-color=\"#2072F3\" /> </linearGradient> </defs> </svg>`;export{e as appStoreSvg}; "
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 108855,
+            "snippet": "object\"&&t!==null){const e=t,n=typeof e.message==\"string\",r=typeof e.code==\"number\";return n&&r}return!1}catch{return!1}},isUserRejectedMessage(t){return t.toLowerCase().includes(\"user rejected\")||t.toLowerCase().includes(\"user cancelled\")||t.toLowerCase().includes(\"user canceled\")},isUserRejectedRequestError(t){if(qn.isRpcProviderError(t)){const e=t.code===qn.R"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 108898,
+            "snippet": "sage==\"string\",r=typeof e.code==\"number\";return n&&r}return!1}catch{return!1}},isUserRejectedMessage(t){return t.toLowerCase().includes(\"user rejected\")||t.toLowerCase().includes(\"user cancelled\")||t.toLowerCase().includes(\"user canceled\")},isUserRejectedRequestError(t){if(qn.isRpcProviderError(t)){const e=t.code===qn.RPC_ERROR_CODE.USER_REJECTED_REQUEST,n=t.cod"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 108942,
+            "snippet": "urn n&&r}return!1}catch{return!1}},isUserRejectedMessage(t){return t.toLowerCase().includes(\"user rejected\")||t.toLowerCase().includes(\"user cancelled\")||t.toLowerCase().includes(\"user canceled\")},isUserRejectedRequestError(t){if(qn.isRpcProviderError(t)){const e=t.code===qn.RPC_ERROR_CODE.USER_REJECTED_REQUEST,n=t.code===qn.RPC_ERROR_CODE.USER_REJECTED_METHODS;"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 118508,
+            "snippet": "\"Unable to delete connected social provider\")}},getConnectedSocialUsername(){try{return Ce.getItem(_e.CONNECTED_SOCIAL_USERNAME)}catch{console.info(\"Unable to get connected social username\")}},getStoredActiveCaipNetworkId(){return Ce.getItem(_e.ACTIVE_CAIP_NETWORK_ID)?.split(\":\")?.[1]},setConnectionStatus(t){try{Ce.setItem(_e.CONNECTION_STATUS,t)}catch{console.i"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 129377,
+            "snippet": "!!(window?.matchMedia&&typeof window.matchMedia==\"function\"&&window.matchMedia(\"(pointer:coarse)\")?.matches||/Android|webOS|iPhone|iPad|iPod|BlackBerry|Opera Mini/u.test(navigator.userAgent)):!1},checkCaipNetwork(t,e=\"\"){return t?.caipNetworkId.toLocaleLowerCase().includes(e.toLowerCase())},isAndroid(){if(!this.isMobile())return!1;const t=window?.navigator.userA"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 129556,
+            "snippet": ".userAgent)):!1},checkCaipNetwork(t,e=\"\"){return t?.caipNetworkId.toLocaleLowerCase().includes(e.toLowerCase())},isAndroid(){if(!this.isMobile())return!1;const t=window?.navigator.userAgent.toLowerCase();return K.isMobile()&&t.includes(\"android\")},isIos(){if(!this.isMobile())return!1;const t=window?.navigator.userAgent.toLowerCase();return t.includes(\"iphone\")||"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 129687,
+            "snippet": "is.isMobile())return!1;const t=window?.navigator.userAgent.toLowerCase();return K.isMobile()&&t.includes(\"android\")},isIos(){if(!this.isMobile())return!1;const t=window?.navigator.userAgent.toLowerCase();return t.includes(\"iphone\")||t.includes(\"ipad\")},isSafari(){return this.isClient()?(window?.navigator.userAgent.toLowerCase()).includes(\"safari\"):!1},isClient()"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pro",
+      "source": "docs/research/public-surface.md sections 6.1-6.2",
+      "liveBundleEvidence": {
+        "term": "pro",
+        "occurrenceCount": 6186,
+        "evidence": [
+          {
+            "file": "assets/address-BIuQGhYh.js",
+            "offset": 11558,
+            "snippet": "ble:!0,value:\"Signature.InvalidSerializedSizeError\"})}}class V extends l{constructor({signature:t}){super(`Signature \\`${De(t)}\\` is missing either an \\`r\\`, \\`s\\`, or \\`yParity\\` property.`),Object.defineProperty(this,\"name\",{enumerable:!0,configurable:!0,writable:!0,value:\"Signature.MissingPropertiesError\"})}}class Dt extends l{constructor({value:t}){super(`V"
+          },
+          {
+            "file": "assets/AdvancedSettingsForm-ijDomvHC.js",
+            "offset": 8707,
+            "snippet": "LossPrice||null)&&(r.stop_loss_price=m,m!==null&&(r.stop_loss_percent=null));const b=s.takeProfitPrice?parseFloat(s.takeProfitPrice):null;if(b!==(l.takeProfitPrice||null)&&(r.take_profit_price=b,b!==null&&(r.take_profit_percent=null)),s.comboMode){const h=s.ruleGroups||[],x=h.reduce((u,p)=>u+p.conditions.length,0),d=h.filter(u=>u.conditions.some(p=>y(p.type,p.v"
+          },
+          {
+            "file": "assets/AdvancedSettingsForm-ijDomvHC.js",
+            "offset": 8740,
+            "snippet": "ice=m,m!==null&&(r.stop_loss_percent=null));const b=s.takeProfitPrice?parseFloat(s.takeProfitPrice):null;if(b!==(l.takeProfitPrice||null)&&(r.take_profit_price=b,b!==null&&(r.take_profit_percent=null)),s.comboMode){const h=s.ruleGroups||[],x=h.reduce((u,p)=>u+p.conditions.length,0),d=h.filter(u=>u.conditions.some(p=>y(p.type,p.value))),g=d.reduce((u,p)=>u+p.con"
+          },
+          {
+            "file": "assets/AdvancedSettingsForm-ijDomvHC.js",
+            "offset": 13559,
+            "snippet": "tespace-nowrap tabular-nums bg-muted/60 rounded-full px-2.5 py-0.5 inline-flex items-center gap-1\";function Cs({values:s,onChange:n,token0Symbol:l=\"Token0\",token1Symbol:r=\"Token1\",projectSymbol:f,currentPrice:m=null,priceLoading:b=!1,withdrawAction:h,mempoolWatchAvailable:x,disabled:d=!1,className:g=\"\",closeSectionOpen:u,onCloseSectionOpenChange:p}){const c=U.u"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 1103,
+            "snippet": "-CilcXles.js\",\"assets/index-XyqDt4u3.js\",\"assets/index-BP7COeHG.js\",\"assets/data-capture-CuPg5j5X.js\",\"assets/w3m-modal-DmIw0s6n.js\",\"assets/PhArrowCircleDown-BtlNV0TZ.js\",\"assets/property-CnFDNXw5.js\",\"assets/PhArrowClockwise-mOiWYLMV.js\",\"assets/PhArrowDown-CkoOD89h.js\",\"assets/PhArrowLeft-C0jlxVhM.js\",\"assets/PhArrowRight-BI-V03Xf.js\",\"assets/PhArrowSquareOu"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 19252,
+            "snippet": "if(Array.isArray(t)&&Array.isArray(e)){if(n=t.length,n!==e.length)return!1;for(r=n;r--!==0;)if(!Ec(t[r],e[r]))return!1;return!0}if(typeof t.valueOf==\"function\"&&t.valueOf!==Object.prototype.valueOf)return t.valueOf()===e.valueOf();if(typeof t.toString==\"function\"&&t.toString!==Object.prototype.toString)return t.toString()===e.toString();const i=Object.keys(t);i"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 19357,
+            "snippet": "[r]))return!1;return!0}if(typeof t.valueOf==\"function\"&&t.valueOf!==Object.prototype.valueOf)return t.valueOf()===e.valueOf();if(typeof t.toString==\"function\"&&t.toString!==Object.prototype.toString)return t.toString()===e.toString();const i=Object.keys(t);if(n=i.length,n!==Object.keys(e).length)return!1;for(r=n;r--!==0;)if(!Object.hasOwn(e,i[r]))return!1;for(r"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 22061,
+            "snippet": "Property(this,\"name\",{enumerable:!0,configurable:!0,writable:!0,value:\"ProviderNotFoundError\"})}}class vA extends xs{constructor({connector:e}){super(`\"${e.name}\" does not support programmatic chain switching.`),Object.defineProperty(this,\"name\",{enumerable:!0,configurable:!0,writable:!0,value:\"SwitchChainNotSupportedError\"})}}async function j1(t,e){const{addEt"
+          }
+        ]
+      }
+    },
+    {
+      "id": "admin",
+      "source": "docs/research/public-surface.md sections 6.1-6.2",
+      "liveBundleEvidence": {
+        "term": "admin",
+        "occurrenceCount": 98,
+        "evidence": [
+          {
+            "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+            "offset": 37470,
+            "snippet": " ${S}`,tip:u.isMine?`你创建的收费池，每笔 swap 抽 ${S} 给你的收款地址`:Os?`该池每笔 swap 由 hook 额外抽 ${S} 费用给收款地址`:`该池每笔 swap 由 hook 额外抽 ${S} 费用给 hook 收款地址`,editable:!!u.isMine,hookAddress:t.hookAddress,adminView:!u.isMine&&Os?{hookAddress:t.hookAddress,owner:u.owner,feeRecipient:u.feeRecipient,swapFeeBps:u.swapFeeBps,chainId:t.chainId}:null}}else{const S=yn(t.hookAddress),T=g?.support"
+          },
+          {
+            "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+            "offset": 41210,
+            "snippet": "emerald-500/25 text-emerald-500 hover:bg-emerald-500/20\",children:[e.jsx(gs,{className:\"w-3.5 h-3.5\"}),e.jsx(\"span\",{className:\"truncate max-w-[10rem]\",children:bs(o.label)})]}):o.adminView?e.jsxs(\"button\",{type:\"button\",onClick:()=>{bt(o.adminView),Ss(!0)},className:\"inline-flex items-center gap-1 h-[26px] rounded-full px-2.5 text-[11px] font-medium transition-c"
+          },
+          {
+            "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+            "offset": 41269,
+            "snippet": "ildren:[e.jsx(gs,{className:\"w-3.5 h-3.5\"}),e.jsx(\"span\",{className:\"truncate max-w-[10rem]\",children:bs(o.label)})]}):o.adminView?e.jsxs(\"button\",{type:\"button\",onClick:()=>{bt(o.adminView),Ss(!0)},className:\"inline-flex items-center gap-1 h-[26px] rounded-full px-2.5 text-[11px] font-medium transition-colors bg-amber-500/10 border border-amber-500/25 text-amber"
+          },
+          {
+            "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+            "offset": 45314,
+            "snippet": "e.jsx(ne,{className:\"h-3 w-3 animate-spin\"}),\"正在检查代币热度...\"]}),C?.tiersEnabled&&C.tierIndex!=null&&C.tierCount>=2&&(()=>{const{tierIndex:s,tierCount:n,feeRateBps:r,exact:i,source:c,admin:g,wouldBeRateBps:m,walletAmountUsd:o}=C,N=o>0,d=c===\"tiered\"||c===\"global\",u=un(s,n),v=(Number.isFinite(C.progress)?Math.min(1,Math.max(0,C.progress)):(s+1)/n)*100,H=Number.isFini"
+          },
+          {
+            "file": "assets/index-BdetfxSp.js",
+            "offset": 94237,
+            "snippet": "d:S([M(\"minute\"),M(\"hour\"),M(\"day\"),M(\"week\"),M(\"month\"),M(\"year\")]),token:h(S([v(),x()])),type:M(\"spend\")}),$a=S([Ta,xa]),it=u({expiry:P(),prehash:h(Z()),publicKey:g(),role:S([M(\"admin\"),M(\"normal\")]),type:S([M(\"p256\"),M(\"secp256k1\"),M(\"webauthnp256\")])}),Zn=u({...it.shape,permissions:b(D($a))});var St;(function(e){e.AssetDiffAsset=S([u({address:h(S([v(),x()])),"
+          },
+          {
+            "file": "assets/index-BdetfxSp.js",
+            "offset": 103681,
+            "snippet": "{proof:oe(u({account:v(),initPreCall:oe(Ve),keyHash:g()})),valid:Z()})})(ai||(ai={}));const ne=u({chainId:h(P()),expiry:P(),hash:g(),id:g(),prehash:h(Z()),publicKey:g(),role:S([M(\"admin\"),M(\"session\")]),type:S([M(\"address\"),M(\"p256\"),M(\"secp256k1\"),M(\"webauthn-p256\")])}),nn=b(D(gt([u({signature:w(),to:v()}),u({signature:w()}),u({to:v()})])).check(lr(1))),mr=u({li"
+          },
+          {
+            "file": "assets/index-BdetfxSp.js",
+            "offset": 110340,
+            "snippet": "(function(e){e.Parameters=u({context:K(),signatures:u({auth:g(),exec:g()})}),e.Request=u({method:M(\"wallet_upgradeAccount\"),params:b(A([e.Parameters]))}),e.ResponseCapabilities=u({admins:h(b(D(ut.Key))),permissions:h(ye.Response)}),e.Response=u({address:v(),capabilities:h(e.ResponseCapabilities)})})(ji||(ji={}));var Ai;(function(e){e.Request=u({method:M(\"personal"
+          },
+          {
+            "file": "assets/index-BdetfxSp.js",
+            "offset": 111175,
+            "snippet": "equest)}),e.Parameters=u({capabilities:h(e.Capabilities),chainIds:h(b(D(P())))}),e.Request=u({method:M(\"wallet_connect\"),params:h(b(A([e.Parameters])))}),e.ResponseCapabilities=u({admins:h(b(D(u({...ce(ne,{id:!0,publicKey:!0,type:!0}).shape,credentialId:h(w())})))),permissions:h(ye.Response),preCalls:h(we.Response),signInWithEthereum:h(ot.Response)}),e.Response=u"
+          }
+        ]
+      }
+    }
+  ],
+  "chainAccessLevels": [
+    {
+      "id": "off",
+      "semantics": "blocks new creation while monitoring/removal remains available according to the documented baseline",
+      "source": "docs/FUNCTION_MATRIX.md AUTH-10 and docs/research/public-surface.md section 6",
+      "liveBundleEvidence": {
+        "term": "off",
+        "occurrenceCount": 660,
+        "evidence": [
+          {
+            "file": "assets/address-BIuQGhYh.js",
+            "offset": 4435,
+            "snippet": "t+1,limit:this.recursiveReadLimit})},assertPosition(e){if(e<0||e>this.bytes.length-1)throw new It({length:this.bytes.length,position:e})},decrementPosition(e){if(e<0)throw new le({offset:e});const t=this.position-e;this.assertPosition(t),this.position=t},getReadCount(e){return this.positionReadCount.get(e||this.position)||0},incrementPosition(e){if(e<0)throw ne"
+          },
+          {
+            "file": "assets/address-BIuQGhYh.js",
+            "offset": 4624,
+            "snippet": ");const t=this.position-e;this.assertPosition(t),this.position=t},getReadCount(e){return this.positionReadCount.get(e||this.position)||0},incrementPosition(e){if(e<0)throw new le({offset:e});const t=this.position+e;this.assertPosition(t),this.position=t},inspectByte(e){const t=e??this.position;return this.assertPosition(t),this.bytes[t]},inspectBytes(e,t){const"
+          },
+          {
+            "file": "assets/address-BIuQGhYh.js",
+            "offset": 7199,
+            "snippet": "Object.create(Et);return r.bytes=e,r.dataView=new DataView(e.buffer,e.byteOffset,e.byteLength),r.positionReadCount=new Map,r.recursiveReadLimit=t,r}class le extends l{constructor({offset:t}){super(`Offset \\`${t}\\` cannot be negative.`),Object.defineProperty(this,\"name\",{enumerable:!0,configurable:!0,writable:!0,value:\"Cursor.NegativeOffsetError\"})}}class It ext"
+          },
+          {
+            "file": "assets/app-store-C39ULOQK.js",
+            "offset": 1136,
+            "snippet": "828 8.348Z\" fill=\"#fff\" /> <defs> <linearGradient id=\"a\" x1=\"18\" y1=\"0\" x2=\"18\" y2=\"36\" gradientUnits=\"userSpaceOnUse\"> <stop stop-color=\"#18BFFB\" /> <stop offset=\"1\" stop-color=\"#2072F3\" /> </linearGradient> </defs> </svg>`;export{e as appStoreSvg}; "
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 13092,
+            "snippet": ".current)throw new cA;try{t.setState(o=>({...o,status:\"connecting\"})),n.emitter.emit(\"message\",{type:\"connecting\"});const{connector:r,...i}=e,s=await n.connect(i);return n.emitter.off(\"connect\",t._internal.events.connect),n.emitter.on(\"change\",t._internal.events.change),n.emitter.on(\"disconnect\",t._internal.events.disconnect),await t.storage?.setItem(\"recentCon"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 14885,
+            "snippet": "tion M1(t,e={}){let n;if(e.connector)n=e.connector;else{const{connections:i,current:s}=t.state;n=i.get(s)?.connector}const r=t.state.connections;n&&(await n.disconnect(),n.emitter.off(\"change\",t._internal.events.change),n.emitter.off(\"disconnect\",t._internal.events.disconnect),n.emitter.on(\"connect\",t._internal.events.connect),r.delete(n.uid)),t.setState(i=>{if"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 14935,
+            "snippet": ";else{const{connections:i,current:s}=t.state;n=i.get(s)?.connector}const r=t.state.connections;n&&(await n.disconnect(),n.emitter.off(\"change\",t._internal.events.change),n.emitter.off(\"disconnect\",t._internal.events.disconnect),n.emitter.on(\"connect\",t._internal.events.connect),r.delete(n.uid)),t.setState(i=>{if(r.size===0)return{...i,connections:new Map,curren"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 20668,
+            "snippet": "s){const u=await l.getProvider().catch(()=>{});if(!u||c.some(f=>f===u)||!await l.isAuthorized())continue;const h=await l.connect({isReconnecting:!0}).catch(()=>null);h&&(l.emitter.off(\"connect\",t._internal.events.connect),l.emitter.on(\"change\",t._internal.events.change),l.emitter.on(\"disconnect\",t._internal.events.disconnect),t.setState(f=>{const p=new Map(o?f."
+          }
+        ]
+      }
+    },
+    {
+      "id": "pro",
+      "semantics": "available to Pro users and administrators according to the documented baseline",
+      "source": "docs/FUNCTION_MATRIX.md AUTH-10 and docs/research/public-surface.md section 6",
+      "liveBundleEvidence": {
+        "term": "pro",
+        "occurrenceCount": 6186,
+        "evidence": [
+          {
+            "file": "assets/address-BIuQGhYh.js",
+            "offset": 11558,
+            "snippet": "ble:!0,value:\"Signature.InvalidSerializedSizeError\"})}}class V extends l{constructor({signature:t}){super(`Signature \\`${De(t)}\\` is missing either an \\`r\\`, \\`s\\`, or \\`yParity\\` property.`),Object.defineProperty(this,\"name\",{enumerable:!0,configurable:!0,writable:!0,value:\"Signature.MissingPropertiesError\"})}}class Dt extends l{constructor({value:t}){super(`V"
+          },
+          {
+            "file": "assets/AdvancedSettingsForm-ijDomvHC.js",
+            "offset": 8707,
+            "snippet": "LossPrice||null)&&(r.stop_loss_price=m,m!==null&&(r.stop_loss_percent=null));const b=s.takeProfitPrice?parseFloat(s.takeProfitPrice):null;if(b!==(l.takeProfitPrice||null)&&(r.take_profit_price=b,b!==null&&(r.take_profit_percent=null)),s.comboMode){const h=s.ruleGroups||[],x=h.reduce((u,p)=>u+p.conditions.length,0),d=h.filter(u=>u.conditions.some(p=>y(p.type,p.v"
+          },
+          {
+            "file": "assets/AdvancedSettingsForm-ijDomvHC.js",
+            "offset": 8740,
+            "snippet": "ice=m,m!==null&&(r.stop_loss_percent=null));const b=s.takeProfitPrice?parseFloat(s.takeProfitPrice):null;if(b!==(l.takeProfitPrice||null)&&(r.take_profit_price=b,b!==null&&(r.take_profit_percent=null)),s.comboMode){const h=s.ruleGroups||[],x=h.reduce((u,p)=>u+p.conditions.length,0),d=h.filter(u=>u.conditions.some(p=>y(p.type,p.value))),g=d.reduce((u,p)=>u+p.con"
+          },
+          {
+            "file": "assets/AdvancedSettingsForm-ijDomvHC.js",
+            "offset": 13559,
+            "snippet": "tespace-nowrap tabular-nums bg-muted/60 rounded-full px-2.5 py-0.5 inline-flex items-center gap-1\";function Cs({values:s,onChange:n,token0Symbol:l=\"Token0\",token1Symbol:r=\"Token1\",projectSymbol:f,currentPrice:m=null,priceLoading:b=!1,withdrawAction:h,mempoolWatchAvailable:x,disabled:d=!1,className:g=\"\",closeSectionOpen:u,onCloseSectionOpenChange:p}){const c=U.u"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 1103,
+            "snippet": "-CilcXles.js\",\"assets/index-XyqDt4u3.js\",\"assets/index-BP7COeHG.js\",\"assets/data-capture-CuPg5j5X.js\",\"assets/w3m-modal-DmIw0s6n.js\",\"assets/PhArrowCircleDown-BtlNV0TZ.js\",\"assets/property-CnFDNXw5.js\",\"assets/PhArrowClockwise-mOiWYLMV.js\",\"assets/PhArrowDown-CkoOD89h.js\",\"assets/PhArrowLeft-C0jlxVhM.js\",\"assets/PhArrowRight-BI-V03Xf.js\",\"assets/PhArrowSquareOu"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 19252,
+            "snippet": "if(Array.isArray(t)&&Array.isArray(e)){if(n=t.length,n!==e.length)return!1;for(r=n;r--!==0;)if(!Ec(t[r],e[r]))return!1;return!0}if(typeof t.valueOf==\"function\"&&t.valueOf!==Object.prototype.valueOf)return t.valueOf()===e.valueOf();if(typeof t.toString==\"function\"&&t.toString!==Object.prototype.toString)return t.toString()===e.toString();const i=Object.keys(t);i"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 19357,
+            "snippet": "[r]))return!1;return!0}if(typeof t.valueOf==\"function\"&&t.valueOf!==Object.prototype.valueOf)return t.valueOf()===e.valueOf();if(typeof t.toString==\"function\"&&t.toString!==Object.prototype.toString)return t.toString()===e.toString();const i=Object.keys(t);if(n=i.length,n!==Object.keys(e).length)return!1;for(r=n;r--!==0;)if(!Object.hasOwn(e,i[r]))return!1;for(r"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 22061,
+            "snippet": "Property(this,\"name\",{enumerable:!0,configurable:!0,writable:!0,value:\"ProviderNotFoundError\"})}}class vA extends xs{constructor({connector:e}){super(`\"${e.name}\" does not support programmatic chain switching.`),Object.defineProperty(this,\"name\",{enumerable:!0,configurable:!0,writable:!0,value:\"SwitchChainNotSupportedError\"})}}async function j1(t,e){const{addEt"
+          }
+        ]
+      }
+    },
+    {
+      "id": "all",
+      "semantics": "available to ordinary, Pro, and administrator roles according to the documented baseline",
+      "source": "docs/FUNCTION_MATRIX.md AUTH-10 and docs/research/public-surface.md section 6",
+      "liveBundleEvidence": {
+        "term": "all",
+        "occurrenceCount": 7524,
+        "evidence": [
+          {
+            "file": "assets/address-BIuQGhYh.js",
+            "offset": 20121,
+            "snippet": "(e){return Array.isArray(e)&&typeof e[0]==\"string\"||typeof e==\"string\"?de(e):e}class cn extends l{constructor({data:t,parameters:r,size:n}){super(`Data size of ${n} bytes is too small for given parameters.`,{metaMessages:[`Params: (${We(r)})`,`Data: ${t} (${n} bytes)`]}),Object.defineProperty(this,\"name\",{enumerable:!0,configurable:!0,writable:!0,value:\"AbiPa"
+          },
+          {
+            "file": "assets/address-BIuQGhYh.js",
+            "offset": 20326,
+            "snippet": "`,{metaMessages:[`Params: (${We(r)})`,`Data: ${t} (${n} bytes)`]}),Object.defineProperty(this,\"name\",{enumerable:!0,configurable:!0,writable:!0,value:\"AbiParameters.DataSizeTooSmallError\"})}}class un extends l{constructor(){super('Cannot decode zero data (\"0x\") with ABI parameters.'),Object.defineProperty(this,\"name\",{enumerable:!0,configurable:!0,writable:!0"
+          },
+          {
+            "file": "assets/address-BIuQGhYh.js",
+            "offset": 27801,
+            "snippet": "x\"?o:nt(o)}async function kn(e,t){const{address:r,chain:n=e.chain,hash:i,erc6492VerifierAddress:s=t.universalSignatureVerifierAddress??n?.contracts?.erc6492Verifier?.address,multicallAddress:o=t.multicallAddress??n?.contracts?.multicall3?.address,mode:c=\"auto\"}=t;if(n?.verifyHash)return await n.verifyHash(e,t);const u=(()=>{const a=t.signature;return rt(a)?a:ty"
+          },
+          {
+            "file": "assets/address-BIuQGhYh.js",
+            "offset": 27822,
+            "snippet": "tion kn(e,t){const{address:r,chain:n=e.chain,hash:i,erc6492VerifierAddress:s=t.universalSignatureVerifierAddress??n?.contracts?.erc6492Verifier?.address,multicallAddress:o=t.multicallAddress??n?.contracts?.multicall3?.address,mode:c=\"auto\"}=t;if(n?.verifyHash)return await n.verifyHash(e,t);const u=(()=>{const a=t.signature;return rt(a)?a:typeof a==\"object\"&&\"r\""
+          },
+          {
+            "file": "assets/address-BIuQGhYh.js",
+            "offset": 27854,
+            "snippet": "in:n=e.chain,hash:i,erc6492VerifierAddress:s=t.universalSignatureVerifierAddress??n?.contracts?.erc6492Verifier?.address,multicallAddress:o=t.multicallAddress??n?.contracts?.multicall3?.address,mode:c=\"auto\"}=t;if(n?.verifyHash)return await n.verifyHash(e,t);const u=(()=>{const a=t.signature;return rt(a)?a:typeof a==\"object\"&&\"r\"in a&&\"s\"in a?Sn(a):it(a)})();tr"
+          },
+          {
+            "file": "assets/address-BIuQGhYh.js",
+            "offset": 28150,
+            "snippet": "urn rt(a)?a:typeof a==\"object\"&&\"r\"in a&&\"s\"in a?Sn(a):it(a)})();try{if(c===\"eoa\")try{if(k(_(r),await se({hash:i,signature:u})))return!0}catch{}return $n(u)?await Bn(e,{...t,multicallAddress:o,signature:u}):await Cn(e,{...t,verifierAddress:s,signature:u})}catch(a){if(c!==\"eoa\")try{if(k(_(r),await se({hash:i,signature:u})))return!0}catch{}if(a instanceof P)retur"
+          },
+          {
+            "file": "assets/address-BIuQGhYh.js",
+            "offset": 28435,
+            "snippet": "k(_(r),await se({hash:i,signature:u})))return!0}catch{}if(a instanceof P)return!1;throw a}}async function Bn(e,t){const{address:r,blockHash:n,blockNumber:i,blockTag:s,hash:o,multicallAddress:c,requireCanonical:u}=t,{authorization:a,data:d,signature:f,to:h}=En(t.signature);if(await bn(e,{address:r,blockHash:n,blockNumber:i,blockTag:s,requireCanonical:u})===st([\""
+          },
+          {
+            "file": "assets/address-BIuQGhYh.js",
+            "offset": 29063,
+            "snippet": ",Y,\"readContract\")({...c?{address:c}:{code:Je},authorizationList:[S],abi:Ge,blockHash:n,blockNumber:i,blockTag:\"pending\",functionName:\"aggregate3\",requireCanonical:u,args:[[...d?[{allowFailure:!0,target:h??r,callData:d}]:[],{allowFailure:!0,target:r,callData:Pe({abi:xe,functionName:\"isValidSignature\",args:[o,f]})}]]});if(N[N.length-1]?.returnData?.startsWith(\"0"
+          }
+        ]
+      }
+    }
+  ],
+  "featureMatrix": [
+    {
+      "feature": "基础任务/钱包/池排行/日志",
+      "user": "是",
+      "pro": "是",
+      "admin": "是",
+      "evidenceAndStatus": "正常用户 UI 已核对"
+    },
+    {
+      "feature": "链访问",
+      "user": "按 all",
+      "pro": "all + pro",
+      "admin": "管理配置",
+      "evidenceAndStatus": "Bundle 角色与链级配置"
+    },
+    {
+      "feature": "自动策略",
+      "user": "条件开放",
+      "pro": "条件开放",
+      "admin": "可管理",
+      "evidenceAndStatus": "页面存在；具体套餐门槛需账号核对"
+    },
+    {
+      "feature": "BSC UniV4 私有白名单池",
+      "user": "条件开放",
+      "pro": "条件开放",
+      "admin": "是",
+      "evidenceAndStatus": "Bundle 中存在客户端入口"
+    },
+    {
+      "feature": "收费 Hook 池创建",
+      "user": "否",
+      "pro": "是",
+      "admin": "是",
+      "evidenceAndStatus": "明确 Pro/admin 条件"
+    },
+    {
+      "feature": "收费池费率/LP 费率调整",
+      "user": "否",
+      "pro": "条件开放",
+      "admin": "是",
+      "evidenceAndStatus": "Bundle 中存在调用；权限细节未验证"
+    },
+    {
+      "feature": "用户审批/拒绝/删除/封禁",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "管理员页面 chunk"
+    },
+    {
+      "feature": "Pro 升降级、免佣、自定义费率",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "管理员 API 客户端"
+    },
+    {
+      "feature": "用户冷静期、钱包/任务查看",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "管理员 API 客户端"
+    },
+    {
+      "feature": "活动热力图",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "管理员用户页"
+    },
+    {
+      "feature": "维护模式、链级访问、抽佣配置",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "系统/维护配置调用"
+    },
+    {
+      "feature": "RPC/mempool、OKX Key 池",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "管理端 Bundle 调用"
+    },
+    {
+      "feature": "反馈回复/关闭",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "管理端反馈调用"
+    },
+    {
+      "feature": "聊天审核、禁言、红包合约部署",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "聊天管理调用"
+    }
+  ],
+  "liveGateTerms": [
+    {
+      "term": "allowedChains",
+      "occurrenceCount": 3,
+      "evidence": [
+        {
+          "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+          "offset": 17187,
+          "snippet": "Zn,Pe]=l.useState(\"\"),[ee,Is]=l.useState([]),[Ms,Fs]=l.useState(!1),[G,Ae]=l.useState(null),[ns,ve]=l.useState(!0),{keystoreStatus:kt,setUnlockDialogOpen:jt,isAdmin:Os}=qt(),re=U?.allowedChains,[as,Ps]=l.useState([]),[Nt,Te]=l.useState(null),[yt,As]=l.useState(!1),[f,A]=l.useState(ks),[$e,rs]=l.useState(fs),[Ts,ls]=l.useState(null),[vt,$s]=l.useState(!1),[os,is]=l.useSta"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 455956,
+          "snippet": "t(Re,te()))}),()=>{L=!1,document.removeEventListener(\"visibilitychange\",$e),En.current&&(clearTimeout(En.current),En.current=null)}},[a,Je,Nt]);const Ja=f.useMemo(()=>{const L=ye?.allowedChains;if(!Array.isArray(L))return ee;const te=new Set(wg().filter(Re=>L.includes(Re.id)).map(Re=>Re.name)),be=ee.split(\",\").filter(Re=>te.has(Re));return be.length?be.join(\",\"):te.has(\""
+        },
+        {
+          "file": "assets/useAllowedChains-BmyeJKiD.js",
+          "offset": 100,
+          "snippet": "import{aB as o,aC as i,aI as l}from\"./index-D0FmPqGc.js\";function d(){const{currentUser:n}=o(),e=n?.allowedChains;return i.useMemo(()=>{const s=Array.isArray(e)?new Set(e.map(Number)):null,r=l().filter(a=>!s||s.has(a.id)),t=new Set(r.map(a=>a.name));return{chains:r,isChainIdAllowed:a=>!s||s.h"
+        }
+      ]
+    },
+    {
+      "term": "tier",
+      "occurrenceCount": 42,
+      "evidence": [
+        {
+          "file": "assets/AppKitProvider-nVcOIkXs.js",
+          "offset": 94979,
+          "snippet": "hantom\",COIN98_CONNECTOR_NAME:\"Coin98\",MAGIC_EDEN_CONNECTOR_NAME:\"Magic Eden\",BACKPACK_CONNECTOR_NAME:\"Backpack\",BITGET_CONNECTOR_NAME:\"Bitget Wallet\",FRONTIER_CONNECTOR_NAME:\"Frontier\",XVERSE_CONNECTOR_NAME:\"Xverse Wallet\",LEATHER_CONNECTOR_NAME:\"Leather\",OKX_CONNECTOR_NAME:\"OKX Wallet\",BINANCE_CONNECTOR_NAME:\"Binance Wallet\",EIP155:\"eip155\",ADD_CHAIN_METHOD:\"w"
+        },
+        {
+          "file": "assets/AppKitProvider-nVcOIkXs.js",
+          "offset": 262255,
+          "snippet": "Recommended:[],wallets:[],filteredWallets:[],search:[],isAnalyticsEnabled:!1,excludedWallets:[],isFetchingRecommendedWallets:!1,explorerWallets:[],explorerFilteredWallets:[],plan:{tier:\"none\",hasExceededUsageLimit:!1,limits:{isAboveRpcLimit:!1,isAboveMauLimit:!1}}}),ee={state:Pe,subscribeKey(t,e){return ot(Pe,t,e)},_getSdkProperties(){const{projectId:t,sdkType:e"
+        },
+        {
+          "file": "assets/AppKitProvider-nVcOIkXs.js",
+          "offset": 264013,
+          "snippet": "{path:\"/appkit/v1/config\",params:ee._getSdkProperties()})).features},async fetchUsage(){try{const t=await An.get({path:\"/appkit/v1/project-limits\",params:ee._getSdkProperties()}),{tier:e,isAboveMauLimit:n,isAboveRpcLimit:r}=t.planLimits,i=e===\"starter\",s=n||r;ee.state.plan={tier:e,hasExceededUsageLimit:i&&s,limits:{isAboveRpcLimit:r,isAboveMauLimit:n}}}catch(t){"
+        },
+        {
+          "file": "assets/AppKitProvider-nVcOIkXs.js",
+          "offset": 264108,
+          "snippet": "st t=await An.get({path:\"/appkit/v1/project-limits\",params:ee._getSdkProperties()}),{tier:e,isAboveMauLimit:n,isAboveRpcLimit:r}=t.planLimits,i=e===\"starter\",s=n||r;ee.state.plan={tier:e,hasExceededUsageLimit:i&&s,limits:{isAboveRpcLimit:r,isAboveMauLimit:n}}}catch(t){console.warn(\"Failed to fetch usage\",t)}},async fetchAllowedOrigins(){try{const{allowedOrigins:"
+        },
+        {
+          "file": "assets/AppKitProvider-nVcOIkXs.js",
+          "offset": 847136,
+          "snippet": "hantom\",COIN98_CONNECTOR_NAME:\"Coin98\",MAGIC_EDEN_CONNECTOR_NAME:\"Magic Eden\",BACKPACK_CONNECTOR_NAME:\"Backpack\",BITGET_CONNECTOR_NAME:\"Bitget Wallet\",FRONTIER_CONNECTOR_NAME:\"Frontier\",XVERSE_CONNECTOR_NAME:\"Xverse Wallet\",LEATHER_CONNECTOR_NAME:\"Leather\",OKX_CONNECTOR_NAME:\"OKX Wallet\",BINANCE_CONNECTOR_NAME:\"Binance Wallet\",EIP155:B.CHAIN.EVM,ADD_CHAIN_METHOD"
+        },
+        {
+          "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+          "offset": 45199,
+          "snippet": "e:\"flex items-center gap-2 rounded-md border border-dashed px-2.5 h-7 text-[11px] text-muted-foreground\",children:[e.jsx(ne,{className:\"h-3 w-3 animate-spin\"}),\"正在检查代币热度...\"]}),C?.tiersEnabled&&C.tierIndex!=null&&C.tierCount>=2&&(()=>{const{tierIndex:s,tierCount:n,feeRateBps:r,exact:i,source:c,admin:g,wouldBeRateBps:m,walletAmountUsd:o}=C,N=o>0,d=c===\"tiered\"||c"
+        },
+        {
+          "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+          "offset": 45215,
+          "snippet": "nter gap-2 rounded-md border border-dashed px-2.5 h-7 text-[11px] text-muted-foreground\",children:[e.jsx(ne,{className:\"h-3 w-3 animate-spin\"}),\"正在检查代币热度...\"]}),C?.tiersEnabled&&C.tierIndex!=null&&C.tierCount>=2&&(()=>{const{tierIndex:s,tierCount:n,feeRateBps:r,exact:i,source:c,admin:g,wouldBeRateBps:m,walletAmountUsd:o}=C,N=o>0,d=c===\"tiered\"||c===\"global\",u=un"
+        },
+        {
+          "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+          "offset": 45234,
+          "snippet": "md border border-dashed px-2.5 h-7 text-[11px] text-muted-foreground\",children:[e.jsx(ne,{className:\"h-3 w-3 animate-spin\"}),\"正在检查代币热度...\"]}),C?.tiersEnabled&&C.tierIndex!=null&&C.tierCount>=2&&(()=>{const{tierIndex:s,tierCount:n,feeRateBps:r,exact:i,source:c,admin:g,wouldBeRateBps:m,walletAmountUsd:o}=C,N=o>0,d=c===\"tiered\"||c===\"global\",u=un(s,n),v=(Number.isF"
+        },
+        {
+          "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+          "offset": 45260,
+          "snippet": "-2.5 h-7 text-[11px] text-muted-foreground\",children:[e.jsx(ne,{className:\"h-3 w-3 animate-spin\"}),\"正在检查代币热度...\"]}),C?.tiersEnabled&&C.tierIndex!=null&&C.tierCount>=2&&(()=>{const{tierIndex:s,tierCount:n,feeRateBps:r,exact:i,source:c,admin:g,wouldBeRateBps:m,walletAmountUsd:o}=C,N=o>0,d=c===\"tiered\"||c===\"global\",u=un(s,n),v=(Number.isFinite(C.progress)?Math.min"
+        },
+        {
+          "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+          "offset": 45272,
+          "snippet": "t-[11px] text-muted-foreground\",children:[e.jsx(ne,{className:\"h-3 w-3 animate-spin\"}),\"正在检查代币热度...\"]}),C?.tiersEnabled&&C.tierIndex!=null&&C.tierCount>=2&&(()=>{const{tierIndex:s,tierCount:n,feeRateBps:r,exact:i,source:c,admin:g,wouldBeRateBps:m,walletAmountUsd:o}=C,N=o>0,d=c===\"tiered\"||c===\"global\",u=un(s,n),v=(Number.isFinite(C.progress)?Math.min(1,Math.max("
+        },
+        {
+          "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+          "offset": 45373,
+          "snippet": "}),C?.tiersEnabled&&C.tierIndex!=null&&C.tierCount>=2&&(()=>{const{tierIndex:s,tierCount:n,feeRateBps:r,exact:i,source:c,admin:g,wouldBeRateBps:m,walletAmountUsd:o}=C,N=o>0,d=c===\"tiered\"||c===\"global\",u=un(s,n),v=(Number.isFinite(C.progress)?Math.min(1,Math.max(0,C.progress)):(s+1)/n)*100,H=Number.isFinite(C.progressAfter)?Math.min(100,Math.max(v,C.progressAfte"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 319736,
+          "snippet": "`${se}/api/users/${e}/fee-rate`,{method:\"PUT\",headers:{\"Content-Type\":\"application/json\"},body:JSON.stringify({feeRate:t})})}async function j_(e,t){return le(`${se}/api/users/${e}/tier`,{method:\"PUT\",headers:{\"Content-Type\":\"application/json\"},body:JSON.stringify({tier:t})})}async function T_(){return le(`${se}/api/cooldown`)}async function P_(e){return le(`${se"
+        }
+      ]
+    },
+    {
+      "term": "isAdmin",
+      "occurrenceCount": 52,
+      "evidence": [
+        {
+          "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+          "offset": 17164,
+          "snippet": "Yn,ts]=l.useState(!1),[Zn,Pe]=l.useState(\"\"),[ee,Is]=l.useState([]),[Ms,Fs]=l.useState(!1),[G,Ae]=l.useState(null),[ns,ve]=l.useState(!0),{keystoreStatus:kt,setUnlockDialogOpen:jt,isAdmin:Os}=qt(),re=U?.allowedChains,[as,Ps]=l.useState([]),[Nt,Te]=l.useState(null),[yt,As]=l.useState(!1),[f,A]=l.useState(ks),[$e,rs]=l.useState(fs),[Ts,ls]=l.useState(null),[vt,$s]=l."
+        },
+        {
+          "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+          "offset": 58887,
+          "snippet": "ress&&(Y(s.poolAddress),ye(null),R(null),x.success(`${s.alreadyExists?\"池子已存在\":\"池子已创建\"} ${s.poolAddress.slice(0,10)}...`),s.addLiquidity&&Ke(),setTimeout(()=>qe(s.poolAddress),0))},isAdminMode:!1,initialTokenAddress:Me?.address,initialChainId:Me?.chainId,initialFeePercent:Me?.fee,initialPlatform:Me?.platform}),e.jsx(Dn,{open:xt,onOpenChange:ws,presetKeys:ee,chainId:"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 448500,
+          "snippet": ":Dt}}})}}}),Re?$e:be})},ut=async(L,te=!1)=>{te&&X(!0),re(null);const be=So.current;try{const Re=wo.current,$e=Ss.current;switch(L){case\"tasks\":te&&X(!1);return;case\"users\":if(!Re?.isAdmin||$e===\"user\"){x([]),F(new Date),te&&X(!1);return}try{const[We,Ye]=await Promise.all([b_(),R0()]);if(Se.current!==L||be!==So.current)return;const yt=We.users||[];if(x(yt),Qr.curren"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 449158,
+          "snippet": "ole.error(\"Error fetching user avatars:\",Dt)})}}catch(We){console.error(\"Error fetching users:\",We),Se.current===L&&re(We.message)}te&&X(!1);return;case\"activity\":try{const We=Re?.isAdmin&&$e===\"user\"&&Re?.dbUserId?Re.dbUserId:null,yt=(await I_(200,We)).logs||[];if(Se.current!==L||be!==So.current)return;T(yt),F(new Date)}catch(We){console.error(\"Error fetching acti"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 453083,
+          "snippet": "ase(),be.nftId??\"\",(be.walletAddress||\"\").toLowerCase()].join(\"|\")).sort().join(\",\");te!==Li.current&&(Li.current=te,L.length>0&&Xa(L))},[d]);const Mr=!ye||!ye.telegramId?null:!ye.isAdmin||Nt===\"user\"?ye.telegramId:null,Xi=f.useRef(Mr);f.useEffect(()=>{Xi.current!==Mr&&(m([]),ce({}),X(!0),G.current=null,$.current=new Map,Xi.current=Mr)},[Mr]),f.useEffect(()=>{Ss.cu"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 453435,
+          "snippet": "fect(()=>{Ss.current=Nt,So.current++;try{localStorage.setItem(\"lp_bot_viewMode\",Nt)}catch{}Je||Yt(null)},[Nt]),f.useEffect(()=>{let L=!1;const te=Re=>!Re?.maintenance?.enabled||Re.isAdmin?!1:(L=!0,window.location.href=\"/maintenance\",!0);(async()=>{const Re=pw(\"auth init\");Ht(!0);try{const $e=Ef(),We=IS();if($e&&We)try{const Ft=pw(\"auth /api/auth/me (jwt)\"),Yn=()=>{"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454063,
+          "snippet": " br;try{br=await Yn()}catch{br=await Yn()}if(Ft.end({status:br.status}),br.ok){const Xn=await br.json();if(Xn?.success){if(te(Xn))return;const Dr={...Xn.user,telegramId:Xn.user.id,isAdmin:Xn.isAdmin,authMethod:\"jwt\"};He(Dr),nt(Xn.isAdmin),wo.current=Dr,console.log(\"[Auth] JWT 认证成功:\",Dr.isAdmin?\"管理员\":\"普通用户\",Dr),Ht(!1);return}}console.log(\"[Auth] JWT Token 无效，清除\"),vg"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454074,
+          "snippet": "await Yn()}catch{br=await Yn()}if(Ft.end({status:br.status}),br.ok){const Xn=await br.json();if(Xn?.success){if(te(Xn))return;const Dr={...Xn.user,telegramId:Xn.user.id,isAdmin:Xn.isAdmin,authMethod:\"jwt\"};He(Dr),nt(Xn.isAdmin),wo.current=Dr,console.log(\"[Auth] JWT 认证成功:\",Dr.isAdmin?\"管理员\":\"普通用户\",Dr),Ht(!1);return}}console.log(\"[Auth] JWT Token 无效，清除\"),vg()}catch(Ft"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454113,
+          "snippet": "d({status:br.status}),br.ok){const Xn=await br.json();if(Xn?.success){if(te(Xn))return;const Dr={...Xn.user,telegramId:Xn.user.id,isAdmin:Xn.isAdmin,authMethod:\"jwt\"};He(Dr),nt(Xn.isAdmin),wo.current=Dr,console.log(\"[Auth] JWT 认证成功:\",Dr.isAdmin?\"管理员\":\"普通用户\",Dr),Ht(!1);return}}console.log(\"[Auth] JWT Token 无效，清除\"),vg()}catch(Ft){console.error(\"[Auth] JWT 验证失败（网络层，保留"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454170,
+          "snippet": "Xn?.success){if(te(Xn))return;const Dr={...Xn.user,telegramId:Xn.user.id,isAdmin:Xn.isAdmin,authMethod:\"jwt\"};He(Dr),nt(Xn.isAdmin),wo.current=Dr,console.log(\"[Auth] JWT 认证成功:\",Dr.isAdmin?\"管理员\":\"普通用户\",Dr),Ht(!1);return}}console.log(\"[Auth] JWT Token 无效，清除\"),vg()}catch(Ft){console.error(\"[Auth] JWT 验证失败（网络层，保留凭据）:\",Ft)}if(new URLSearchParams(window.location.search)."
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454796,
+          "snippet": "ll)?.initData;let Dt=null;if(Ut)try{Dt=await _S(Ut)}catch(Ft){console.error(\"Telegram auth failed:\",Ft)}if(Dt?.success){if(te(Dt))return;const Ft={...Dt.user,telegramId:Dt.user.id,isAdmin:Dt.isAdmin,authMethod:Dt.authMethod};He(Ft),nt(Dt.isAdmin),wo.current=Ft,console.log(\"[Auth] 用户身份:\",Ft.isAdmin?\"管理员\":\"普通用户\",Ft)}else console.log(\"[Auth] 未验证访客，重定向到登录页\"),wo.current"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454807,
+          "snippet": "ta;let Dt=null;if(Ut)try{Dt=await _S(Ut)}catch(Ft){console.error(\"Telegram auth failed:\",Ft)}if(Dt?.success){if(te(Dt))return;const Ft={...Dt.user,telegramId:Dt.user.id,isAdmin:Dt.isAdmin,authMethod:Dt.authMethod};He(Ft),nt(Dt.isAdmin),wo.current=Ft,console.log(\"[Auth] 用户身份:\",Ft.isAdmin?\"管理员\":\"普通用户\",Ft)}else console.log(\"[Auth] 未验证访客，重定向到登录页\"),wo.current=null}catch"
+        }
+      ]
+    },
+    {
+      "term": "fee-hook",
+      "occurrenceCount": 4,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 314471,
+          "snippet": ":JSON.stringify(e)})}async function wV(e){return le(`${se}/api/pools/create-private`,{method:\"POST\",body:JSON.stringify(e)})}async function SV(e){return le(`${se}/api/pools/create-fee-hook`,{method:\"POST\",body:JSON.stringify(e)})}async function kV(e){return le(`${se}/api/pools/fee-hook`,{method:\"PATCH\",body:JSON.stringify(e)})}async function CV(e){return le(`${se}/a"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 314569,
+          "snippet": "\",body:JSON.stringify(e)})}async function SV(e){return le(`${se}/api/pools/create-fee-hook`,{method:\"POST\",body:JSON.stringify(e)})}async function kV(e){return le(`${se}/api/pools/fee-hook`,{method:\"PATCH\",body:JSON.stringify(e)})}async function CV(e){return le(`${se}/api/pools/fee-hook-lp`,{method:\"PATCH\",body:JSON.stringify(e)})}async function NV(){return le(`${se"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 314668,
+          "snippet": ":\"POST\",body:JSON.stringify(e)})}async function kV(e){return le(`${se}/api/pools/fee-hook`,{method:\"PATCH\",body:JSON.stringify(e)})}async function CV(e){return le(`${se}/api/pools/fee-hook-lp`,{method:\"PATCH\",body:JSON.stringify(e)})}async function NV(){return le(`${se}/api/fee-hooks`)}async function EV(e=3){return le(`${se}/api/pools/create-history?limit=${encodeUR"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 314763,
+          "snippet": "hod:\"PATCH\",body:JSON.stringify(e)})}async function CV(e){return le(`${se}/api/pools/fee-hook-lp`,{method:\"PATCH\",body:JSON.stringify(e)})}async function NV(){return le(`${se}/api/fee-hooks`)}async function EV(e=3){return le(`${se}/api/pools/create-history?limit=${encodeURIComponent(e)}`)}async function jV(e){return le(`${se}/api/pools/quick-liquidity`,{method:\"POST"
+        }
+      ]
+    },
+    {
+      "term": "create-fee-hook",
+      "occurrenceCount": 1,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 314464,
+          "snippet": "T\",body:JSON.stringify(e)})}async function wV(e){return le(`${se}/api/pools/create-private`,{method:\"POST\",body:JSON.stringify(e)})}async function SV(e){return le(`${se}/api/pools/create-fee-hook`,{method:\"POST\",body:JSON.stringify(e)})}async function kV(e){return le(`${se}/api/pools/fee-hook`,{method:\"PATCH\",body:JSON.stringify(e)})}async function CV(e){return le(`${se}/a"
+        }
+      ]
+    },
+    {
+      "term": "system-config/chains",
+      "occurrenceCount": 2,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 249821,
+          "snippet": "(e){return le(`${se}/api/user/preferences`,{method:\"PUT\",body:JSON.stringify(e)})}async function R0(){return le(`${se}/api/system-config`)}async function _U(){return le(`${se}/api/system-config/chains`)}async function AU(e){return le(`${se}/api/system-config/chains`,{method:\"POST\",body:JSON.stringify({access:e})})}async function AS(e,t){return le(`${se}/api/system-config`,{meth"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 249886,
+          "snippet": "N.stringify(e)})}async function R0(){return le(`${se}/api/system-config`)}async function _U(){return le(`${se}/api/system-config/chains`)}async function AU(e){return le(`${se}/api/system-config/chains`,{method:\"POST\",body:JSON.stringify({access:e})})}async function AS(e,t){return le(`${se}/api/system-config`,{method:\"POST\",body:JSON.stringify({key:e,value:t})})}async function O"
+        }
+      ]
+    }
+  ]
+}

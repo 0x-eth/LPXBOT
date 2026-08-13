@@ -1,0 +1,1 @@
+import{aA as e}from"./index-D0FmPqGc.js";const a=e("Pause",[["rect",{width:"4",height:"16",x:"6",y:"4",key:"iffhe4"}],["rect",{width:"4",height:"16",x:"14",y:"4",key:"sjin7j"}]]);const i=e("Play",[["polygon",{points:"5 3 19 12 5 21 5 3",key:"191637"}]]);export{a as P,i as a};
