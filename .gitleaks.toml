@@ -23,6 +23,22 @@ regexes = ['''VITE_DEFAULT_(?:OKX_API_KEY|OKX_SECRET_KEY|WALLETCONNECT_PROJECT_I
 description = "Immutable P00-01 third-party analytics bundle containing a public client project identifier; not an LPBot repository credential."
 condition = "AND"
 targetRules = ["generic-api-key"]
-paths = ['''^artifacts/lpbot/2026-08-13/assets/index-CALbxsQk\.js$''']
+paths = ['''^artifacts/lpbot/2026-08-13/assets/(?:index-CALbxsQk|index-D0CkVZ_w)\.js$''']
 regexTarget = "match"
 regexes = ['''amplitudeApiKey:"[0-9a-f]{32}"''']
+
+[[allowlists]]
+description = "Immutable P00-01 documentation examples use token1 for a public token symbol, not an authentication token."
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = ['''^artifacts/lpbot/2026-08-13/(?:api-calls\.json|api-docs\.json|api-docs\.md)$''']
+regexTarget = "match"
+regexes = ['''token1":\s*"[A-Z0-9._-]{1,32}"''']
+
+[[allowlists]]
+description = "Immutable P00-01 third-party client snapshot assigns a public TokenType enum; it is not a credential."
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = ['''^artifacts/lpbot/2026-08-13/assets/index-CL-zNRW4\.js$''']
+regexTarget = "match"
+regexes = ['''e\.TokenType=[A-Za-z_$][A-Za-z0-9_$]*''']
