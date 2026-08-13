@@ -360,10 +360,7 @@ test("rejects a self-consistent baseline that does not match its frozen anchor",
 test("repository exposes a real Playwright browser suite", async () => {
   const packageJson = JSON.parse(await readFile(path.join(ROOT, "package.json"), "utf8"));
   const config = await readFile(path.join(ROOT, "playwright.config.ts"), "utf8");
-  const browserTest = await readFile(
-    path.join(ROOT, "tests/e2e/web-rendering.spec.ts"),
-    "utf8",
-  );
+  const browserTest = await readFile(path.join(ROOT, "tests/e2e/web-rendering.spec.ts"), "utf8");
 
   assert.equal(packageJson.scripts["test:e2e"], "playwright test");
   assert.match(packageJson.devDependencies["@playwright/test"], /^\d+\.\d+\.\d+$/);
@@ -382,10 +379,7 @@ test("repository exposes a real Playwright browser suite", async () => {
 test("repository exposes a real local Foundry contract suite", async () => {
   const packageJson = JSON.parse(await readFile(path.join(ROOT, "package.json"), "utf8"));
   const config = await readFile(path.join(ROOT, "foundry.toml"), "utf8");
-  const contract = await readFile(
-    path.join(ROOT, "contracts/src/TestOnlyCounter.sol"),
-    "utf8",
-  );
+  const contract = await readFile(path.join(ROOT, "contracts/src/TestOnlyCounter.sol"), "utf8");
   const contractTest = await readFile(
     path.join(ROOT, "contracts/test/TestOnlyCounter.t.sol"),
     "utf8",
@@ -456,9 +450,14 @@ test("CI defines six pinned, bounded jobs with real browser and contract gates",
   assert.match(cleanupSteps.map((step) => step.run).join("\n"), /infra:reset/);
 
   assert.equal(jobs.browser.name, "Browser");
-  assert.match(jobs.browser.steps.map((step) => step.run).join("\n"), /playwright install --with-deps chromium/);
+  assert.match(
+    jobs.browser.steps.map((step) => step.run).join("\n"),
+    /playwright install --with-deps chromium/,
+  );
   assert.match(jobs.browser.steps.map((step) => step.run).join("\n"), /pnpm test:e2e/);
-  const reportUpload = jobs.browser.steps.find((step) => step.uses?.startsWith("actions/upload-artifact@"));
+  const reportUpload = jobs.browser.steps.find((step) =>
+    step.uses?.startsWith("actions/upload-artifact@"),
+  );
   assert.equal(reportUpload?.if, "failure()");
   assert.equal(reportUpload?.with?.path, "playwright-report/");
 
@@ -467,7 +466,7 @@ test("CI defines six pinned, bounded jobs with real browser and contract gates",
   assert.match(jobs.contracts.steps.map((step) => step.run).join("\n"), /forge build/);
   assert.match(jobs.contracts.steps.map((step) => step.run).join("\n"), /forge test -vvv/);
   assert.match(
-    jobs.contracts.steps.find((step) => step.uses?.startsWith("foundry-rs\/foundry-toolchain@"))
+    jobs.contracts.steps.find((step) => step.uses?.startsWith("foundry-rs/foundry-toolchain@"))
       ?.with?.version,
     /^v\d+\.\d+\.\d+$/,
   );
