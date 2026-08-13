@@ -37,8 +37,14 @@ function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: repoRoot,
     encoding: "utf8",
+    timeout: 30_000,
     ...options,
   });
+
+  if (result.error) {
+    const message = redact(result.error.message);
+    throw new Error(`${command} failed before completion: ${message}`, { cause: result.error });
+  }
 
   if (result.status !== 0) {
     const details = redact(`${result.stdout ?? ""}${result.stderr ?? ""}`).trim();

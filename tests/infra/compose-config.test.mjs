@@ -24,7 +24,7 @@ function readComposeConfig() {
       "--format",
       "json",
     ],
-    { cwd: repoRoot, encoding: "utf8" },
+    { cwd: repoRoot, encoding: "utf8", timeout: 10_000 },
   );
 
   return JSON.parse(output);
@@ -36,8 +36,11 @@ test("Compose defines an isolated, persistent local LPBot stack", () => {
     postgres: "timescale/timescaledb:2.21.3-pg16",
     redis: "redis:7.4.5-alpine",
     minio: "minio/minio:RELEASE.2025-04-22T22-12-26Z",
+    "minio-init": "minio/mc:RELEASE.2025-04-16T18-13-26Z",
     anvil: "ghcr.io/foundry-rs/foundry:v1.3.1",
+    dbmate: "amacneil/dbmate:2.28.0",
   };
+  const persistentServices = ["postgres", "redis", "minio", "anvil"];
 
   assert.equal(config.name, projectName);
 
@@ -45,6 +48,10 @@ test("Compose defines an isolated, persistent local LPBot stack", () => {
     const service = config.services[serviceName];
     assert.ok(service, `missing ${serviceName} service`);
     assert.equal(service.image, image);
+  }
+
+  for (const serviceName of persistentServices) {
+    const service = config.services[serviceName];
     assert.ok(service.healthcheck?.test, `${serviceName} needs a healthcheck`);
     assert.ok(service.volumes?.length, `${serviceName} needs persistent storage`);
 
@@ -59,6 +66,17 @@ test("Compose defines an isolated, persistent local LPBot stack", () => {
     "postgres-data",
     "redis-data",
   ]);
+
+  const expectedVolumes = {
+    "anvil-data": "lpbot-p00-local-anvil-data",
+    "minio-data": "lpbot-p00-local-minio-data",
+    "postgres-data": "lpbot-p00-local-postgres-data",
+    "redis-data": "lpbot-p00-local-redis-data",
+  };
+  for (const [volumeKey, volumeName] of Object.entries(expectedVolumes)) {
+    assert.equal(config.volumes[volumeKey].name, volumeName);
+    assert.equal(config.volumes[volumeKey].labels["io.lpbot.local-project"], projectName);
+  }
 
   const anvilCommand = config.services.anvil.command.join(" ");
   assert.match(anvilCommand, /--chain-id 31337/);
