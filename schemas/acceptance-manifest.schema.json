@@ -107,10 +107,7 @@
       "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }]
     },
     "commit": {
-      "anyOf": [
-        { "type": "string", "pattern": "^[0-9a-f]{40}$" },
-        { "type": "null" }
-      ]
+      "anyOf": [{ "type": "string", "pattern": "^[0-9a-f]{40}$" }, { "type": "null" }]
     }
   },
   "definitions": {

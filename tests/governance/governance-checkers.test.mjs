@@ -73,10 +73,7 @@ test("rejects a feature ID missing from the traceability matrix", async () => {
 });
 
 test("rejects an extra feature ID in the traceability matrix", async () => {
-  const fixture = await matrixFixture(
-    ["AUTH-01"],
-    [{ id: "AUTH-01" }, { id: "AUTH-02" }],
-  );
+  const fixture = await matrixFixture(["AUTH-01"], [{ id: "AUTH-01" }, { id: "AUTH-02" }]);
   const result = checkTraceability(fixture, 1);
 
   assert.notEqual(result.status, 0);
@@ -84,10 +81,7 @@ test("rejects an extra feature ID in the traceability matrix", async () => {
 });
 
 test("rejects duplicate feature IDs", async () => {
-  const fixture = await matrixFixture(
-    ["AUTH-01", "AUTH-01"],
-    [{ id: "AUTH-01" }],
-  );
+  const fixture = await matrixFixture(["AUTH-01", "AUTH-01"], [{ id: "AUTH-01" }]);
   const result = checkTraceability(fixture, 1);
 
   assert.notEqual(result.status, 0);
@@ -95,9 +89,7 @@ test("rejects duplicate feature IDs", async () => {
 });
 
 test("rejects a phase outside P01-P13", async () => {
-  const fixture = await matrixFixture(["AUTH-01"], [
-    { id: "AUTH-01", phase: "P14" },
-  ]);
+  const fixture = await matrixFixture(["AUTH-01"], [{ id: "AUTH-01", phase: "P14" }]);
   const result = checkTraceability(fixture, 1);
 
   assert.notEqual(result.status, 0);
@@ -105,9 +97,7 @@ test("rejects a phase outside P01-P13", async () => {
 });
 
 test("rejects an unknown Test ID", async () => {
-  const fixture = await matrixFixture(["AUTH-01"], [
-    { id: "AUTH-01", tests: "T-UNIT,T-UNKNOWN" },
-  ]);
+  const fixture = await matrixFixture(["AUTH-01"], [{ id: "AUTH-01", tests: "T-UNIT,T-UNKNOWN" }]);
   const result = checkTraceability(fixture, 1);
 
   assert.notEqual(result.status, 0);
@@ -115,9 +105,10 @@ test("rejects an unknown Test ID", async () => {
 });
 
 test("rejects an unknown Evidence ID", async () => {
-  const fixture = await matrixFixture(["AUTH-01"], [
-    { id: "AUTH-01", evidence: "E-DATA,E-UNKNOWN" },
-  ]);
+  const fixture = await matrixFixture(
+    ["AUTH-01"],
+    [{ id: "AUTH-01", evidence: "E-DATA,E-UNKNOWN" }],
+  );
   const result = checkTraceability(fixture, 1);
 
   assert.notEqual(result.status, 0);
