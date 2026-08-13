@@ -1,0 +1,859 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-13T07:55:43.577Z",
+  "sourceBoundary": "Role and access semantics come from the frozen documentation baseline; live evidence records client-bundle occurrences only.",
+  "roles": [
+    {
+      "id": "user",
+      "source": "docs/research/public-surface.md sections 6.1-6.2",
+      "liveBundleEvidence": {
+        "literal": "user",
+        "occurrenceCount": 30,
+        "evidence": [
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 914725,
+            "snippet": "ol\",r,i)},this.setProfileName=(n,r)=>{w.setAccountProp(\"profileName\",n,r)},this.setProfileImage=(n,r)=>{w.setAccountProp(\"profileImage\",n,r)},this.setUser=(n,r)=>{w.setAccountProp(\"user\",n,r)},this.resetAccount=n=>{w.resetAccount(n)},this.setCaipNetwork=n=>{w.setActiveCaipNetwork(n)},this.setCaipNetworkOfNamespace=(n,r)=>{w.setChainNetworkData(r,{caipNetwork:n})},"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 1091432,
+            "snippet": "s.network?.chainNamespace,n=w.checkIfSmartAccountEnabled(),r=q.getConnectorId(e);return!q.getAuthConnector()||r!==B.CONNECTOR_ID.AUTH||!n?null:A` <wui-list-item icon=\"user\" ?rounded=${!0} ?chevron=${!0} @click=${this.onSmartAccountSettings.bind(this)} data-testid=\"account-smart-account-settings-button\" > "
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 1193557,
+            "snippet": "ress\",void 0);wr([V()],bn.prototype,\"lastSelectedConnectorId\",void 0);wr([V()],bn.prototype,\"isSwitching\",void 0);wr([V()],bn.prototype,\"caipNetwork\",void 0);wr([V()],bn.prototype,\"user\",void 0);wr([V()],bn.prototype,\"remoteFeatures\",void 0);bn=wr([J(\"w3m-profile-wallets-view\")],bn);var Xc=function(t,e,n,r){var i=arguments.length,s=i<3?e:r===null?r=Object.getOwnPr"
+          },
+          {
+            "file": "assets/core-CWWtHjXQ.js",
+            "offset": 79248,
+            "snippet": "AccountProp(\"balanceSymbol\",e,s)},setProfileName(t,e){b.setAccountProp(\"profileName\",t,e)},setProfileImage(t,e){b.setAccountProp(\"profileImage\",t,e)},setUser(t,e){b.setAccountProp(\"user\",t,e)},setAddressExplorerUrl(t,e){b.setAccountProp(\"addressExplorerUrl\",t,e)},setSmartAccountDeployed(t,e){b.setAccountProp(\"smartAccountDeployed\",t,e)},setCurrentTab(t){b.setAccou"
+          },
+          {
+            "file": "assets/data-capture-CuPg5j5X.js",
+            "offset": 8167,
+            "snippet": " iconSize=\"xxl\" iconColor=${this.loading?\"fg-100\":\"accent-100\"} backgroundColor=${this.loading?\"fg-100\":\"accent-100\"} icon=${this.loading?\"id\":\"user\"} isOpaque class=\"hero-main-icon\" data-state=${this.loading?\"loading\":\"default\"} > </wui-icon-box> ${this.heroIcon"
+          },
+          {
+            "file": "assets/features-iiARlVwc.js",
+            "offset": 5552,
+            "snippet": "perties(){return p._getSdkProperties()}emit(e,t){this.listeners[e].forEach(n=>n(t))}setAppKitAccountUser(e){const{email:t}=e;t&&Object.values(y.CHAIN).forEach(n=>{l.setAccountProp(\"user\",{email:t},n)})}}function N(d){const e=d.split(\".\");if(e.length!==3)throw new Error(\"Invalid token\");const t=e[1];if(typeof t!=\"string\")throw new Error(\"Invalid token\");const n=t.r"
+          },
+          {
+            "file": "assets/index-CALbxsQk.js",
+            "offset": 55262,
+            "snippet": ".histogram=\"histogram\",e}({}),p=function(e){return e.commerce_merchant=\"commerce_merchant\",e.device=\"device\",e.edp_fingerprint_id=\"edp_fingerprint_id\",e.nft_user=\"nft_user\",e.user=\"user\",e.wallet_user=\"wallet_user\",e.uuid=\"user_uuid\",e}({}),m=function(e){return e.unknown=\"unknown\",e.banner=\"banner\",e.button=\"button\",e.card=\"card\",e.chart=\"chart\",e.content_script=\""
+          },
+          {
+            "file": "assets/index-D0CkVZ_w.js",
+            "offset": 51582,
+            "snippet": ".histogram=\"histogram\",e}({}),p=function(e){return e.commerce_merchant=\"commerce_merchant\",e.device=\"device\",e.edp_fingerprint_id=\"edp_fingerprint_id\",e.nft_user=\"nft_user\",e.user=\"user\",e.wallet_user=\"wallet_user\",e.uuid=\"user_uuid\",e}({}),m=function(e){return e.unknown=\"unknown\",e.banner=\"banner\",e.button=\"button\",e.card=\"card\",e.chart=\"chart\",e.content_script=\""
+          }
+        ]
+      }
+    },
+    {
+      "id": "pro",
+      "source": "docs/research/public-surface.md sections 6.1-6.2",
+      "liveBundleEvidence": {
+        "literal": "pro",
+        "occurrenceCount": 12,
+        "evidence": [
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 460316,
+            "snippet": "${be}${We}`}else if(L===\"toggleFeeExempt\"){const $e=!te.feeExempt;await E_(te.telegramId,$e),Re=$e?`已设置用户 ${be} 为免佣`:`已开启用户 ${be} 的抽佣`}else if(L===\"toggleTier\"){const $e=te.tier===\"pro\"?\"normal\":\"pro\";await j_(te.telegramId,$e),Re=$e===\"pro\"?`已将用户 ${be} 升级为 Pro`:`已将用户 ${be} 降为普通用户`}else if(L===\"clearCooldown\")await R_(te.telegramId),Re=`已解除用户 ${be} 的冷静期`;else{con"
+          },
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 460331,
+            "snippet": "e if(L===\"toggleFeeExempt\"){const $e=!te.feeExempt;await E_(te.telegramId,$e),Re=$e?`已设置用户 ${be} 为免佣`:`已开启用户 ${be} 的抽佣`}else if(L===\"toggleTier\"){const $e=te.tier===\"pro\"?\"normal\":\"pro\";await j_(te.telegramId,$e),Re=$e===\"pro\"?`已将用户 ${be} 升级为 Pro`:`已将用户 ${be} 降为普通用户`}else if(L===\"clearCooldown\")await R_(te.telegramId),Re=`已解除用户 ${be} 的冷静期`;else{console.warn(\"Unkn"
+          },
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 460372,
+            "snippet": "feeExempt;await E_(te.telegramId,$e),Re=$e?`已设置用户 ${be} 为免佣`:`已开启用户 ${be} 的抽佣`}else if(L===\"toggleTier\"){const $e=te.tier===\"pro\"?\"normal\":\"pro\";await j_(te.telegramId,$e),Re=$e===\"pro\"?`已将用户 ${be} 升级为 Pro`:`已将用户 ${be} 降为普通用户`}else if(L===\"clearCooldown\")await R_(te.telegramId),Re=`已解除用户 ${be} 的冷静期`;else{console.warn(\"Unknown action:\",L);return}ve.success(Re),ut("
+          },
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 809597,
+            "snippet": "P 仓位\",children:i.jsx(\"span\",{className:\"inline-flex items-center gap-0.5 text-[10px] px-1 rounded bg-market-up/10 text-market-up font-medium\",children:\"🌾 LP\"})}),e.sender?.tier===\"pro\"&&i.jsx(\"span\",{className:\"text-[10px] px-1 rounded bg-amber-500/10 text-amber-500 font-medium\",children:\"PRO\"}),p&&x&&i.jsx(\"span\",{className:\"text-[10px] px-1 rounded bg-market-d"
+          },
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 833826,
+            "snippet": "Name||l.username||\"U\").charAt(0).toUpperCase()})}),i.jsx(\"span\",{className:\"max-w-[92px] truncate text-sm text-foreground/85\",children:l.firstName||l.username||\"TG\"}),!n&&l.tier===\"pro\"&&i.jsx(\"span\",{className:\"shrink-0 -ml-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 select-none\""
+          },
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 834521,
+            "snippet": "}`}),i.jsx(\"span\",{className:`px-1.5 py-0.5 text-[10px] font-semibold rounded-full shrink-0 ${n?\"bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400\":l.tier===\"pro\"?\"bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400\":\"bg-muted text-muted-foreground\"}`,children:n?\"Admin\":l.tier===\"pro\"?\"Pro\":\"普通\"})]})}),i.jsxs(zN,{onClic"
+          },
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 834665,
+            "snippet": "0/50 dark:text-purple-400\":l.tier===\"pro\"?\"bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400\":\"bg-muted text-muted-foreground\"}`,children:n?\"Admin\":l.tier===\"pro\"?\"Pro\":\"普通\"})]})}),i.jsxs(zN,{onClick:x,className:\"gap-2 text-red-600 dark:text-red-400\",children:[i.jsx(C5,{className:\"h-4 w-4\"}),\" 退出登录\"]})]})]})]})]}),i.jsx(Y2,{open:_,onOpenCha"
+          },
+          {
+            "file": "assets/page-BVOreg5N.js",
+            "offset": 5603,
+            "snippet": "\"span\",{className:\"px-1.5 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400\",children:\"Admin\"}),!s.isAdmin&&s.tier===\"pro\"&&e.jsx(_,{content:\"Pro 用户，可使用 Pro 专属链\",children:e.jsx(\"span\",{className:\"px-1.5 py-0.5 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:te"
+          }
+        ]
+      }
+    },
+    {
+      "id": "admin",
+      "source": "docs/research/public-surface.md sections 6.1-6.2",
+      "liveBundleEvidence": {
+        "literal": "admin",
+        "occurrenceCount": 44,
+        "evidence": [
+          {
+            "file": "assets/index-BdetfxSp.js",
+            "offset": 94237,
+            "snippet": "od:S([M(\"minute\"),M(\"hour\"),M(\"day\"),M(\"week\"),M(\"month\"),M(\"year\")]),token:h(S([v(),x()])),type:M(\"spend\")}),$a=S([Ta,xa]),it=u({expiry:P(),prehash:h(Z()),publicKey:g(),role:S([M(\"admin\"),M(\"normal\")]),type:S([M(\"p256\"),M(\"secp256k1\"),M(\"webauthnp256\")])}),Zn=u({...it.shape,permissions:b(D($a))});var St;(function(e){e.AssetDiffAsset=S([u({address:h(S([v(),x()])),d"
+          },
+          {
+            "file": "assets/index-BdetfxSp.js",
+            "offset": 103681,
+            "snippet": "({proof:oe(u({account:v(),initPreCall:oe(Ve),keyHash:g()})),valid:Z()})})(ai||(ai={}));const ne=u({chainId:h(P()),expiry:P(),hash:g(),id:g(),prehash:h(Z()),publicKey:g(),role:S([M(\"admin\"),M(\"session\")]),type:S([M(\"address\"),M(\"p256\"),M(\"secp256k1\"),M(\"webauthn-p256\")])}),nn=b(D(gt([u({signature:w(),to:v()}),u({signature:w()}),u({to:v()})])).check(lr(1))),mr=u({lim"
+          },
+          {
+            "file": "assets/index-CfZ5bUHm.js",
+            "offset": 126502,
+            "snippet": "/2n&&(o=kn.CURVE.n-o),{r:i,s:o}}const Vo=\"0x3232323232323232323232323232323232323232\",Ws=\"0x32323232\",Rf={p256:\"p256\",secp256k1:\"secp256k1\",webauthnp256:\"webauthn-p256\"},Lf={admin:\"admin\",normal:\"session\"},qf={0:\"minute\",1:\"hour\",2:\"day\",3:\"week\",4:\"month\",5:\"year\"},Kf={address:\"secp256k1\",p256:\"p256\",secp256k1:\"secp256k1\",\"webauthn-p256\":\"webauthnp256\"},Hf={admin:"
+          },
+          {
+            "file": "assets/index-CfZ5bUHm.js",
+            "offset": 126689,
+            "snippet": ",normal:\"session\"},qf={0:\"minute\",1:\"hour\",2:\"day\",3:\"week\",4:\"month\",5:\"year\"},Kf={address:\"secp256k1\",p256:\"p256\",secp256k1:\"secp256k1\",\"webauthn-p256\":\"webauthnp256\"},Hf={admin:\"admin\",session:\"normal\"},Ff={address:2,p256:0,secp256k1:2,\"webauthn-p256\":1},Zs={day:2,hour:1,minute:0,month:4,week:3,year:5};function Yf(e={}){const t=Ho();return Wf({...e,privateKey:t}"
+          },
+          {
+            "file": "assets/index-CfZ5bUHm.js",
+            "offset": 127500,
+            "snippet": "f({...e,privateKey:t})}async function Vf(e={}){const t=await _f();return Gf({...e,keyPair:t})}function le(e,t={}){const{chainId:n=e.chainId}=t,{expiry:r=0,id:s,prehash:i=!1,role:o=\"admin\",type:u}=e,a=(()=>{const c=e.publicKey;return c===\"0x\"?c:u===\"secp256k1\"||u===\"address\"?ee(c)===20||On(F(c,0,12))===0n?F(c,-20):Zr(Bn(c)):c})();return{...e,chainId:n,expiry:r,hash:"
+          },
+          {
+            "file": "assets/index-CfZ5bUHm.js",
+            "offset": 131105,
+            "snippet": "Key type \"${a}\" is not supported. Key: `+De(e,null,2))})();return i?Jo(d,{keyType:a,prehash:l,publicKey:u}):d}function Pn(e,t={}){const{expiry:n=0,prehash:r=!1,publicKey:s,role:i=\"admin\",type:o}=e,{feeTokens:u,orchestrator:a}=t,c=Object.entries(Go(e,{feeTokens:u})).map(([d,l])=>{if(d===\"calls\")return l.map(({signature:h,to:p})=>({selector:h?Qt(h)?h:_o(h):Ws,to:p??"
+          },
+          {
+            "file": "assets/index-CfZ5bUHm.js",
+            "offset": 151702,
+            "snippet": "ts:[$]}}const M=x.accounts[0],{address:P,key:T}=(()=>{if(O)return typeof O==\"object\"?O:{address:void 0,key:void 0};for(const N of M?.keys??[])if(N.type===\"webauthn-p256\"&&N.role===\"admin\")return{address:M?.address,key:{credentialId:N.credentialId??N.privateKey?.credential?.id,publicKey:N.publicKey}};return{address:void 0,key:void 0}})(),D={internal:z,permissions:k,"
+          },
+          {
+            "file": "assets/index-CfZ5bUHm.js",
+            "offset": 161108,
+            "snippet": "N2Zz4K\",name:r=\"Porto\",rdns:s=\"xyz.ithaca.porto\"}=typeof t==\"object\"?t:{};return Qa({info:{icon:n,name:r,rdns:s,uuid:Lr()},provider:e})}function St(e){return e.map(t=>{if(t.role===\"admin\")try{return R(Ur.Key,{id:t.id??t.publicKey,publicKey:t.publicKey,type:t.type,...t.type===\"webauthn-p256\"?{credentialId:t.privateKey?.credential?.id,privateKey:{credential:{id:t.pri"
+          }
+        ]
+      }
+    }
+  ],
+  "chainAccessLevels": [
+    {
+      "id": "off",
+      "semantics": "blocks new creation while monitoring/removal remains available according to the documented baseline",
+      "source": "docs/FUNCTION_MATRIX.md AUTH-10 and docs/research/public-surface.md section 6",
+      "liveBundleEvidence": {
+        "literal": "off",
+        "occurrenceCount": 40,
+        "evidence": [
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 27005,
+            "snippet": "ndow>\"u\")return;let l;const u=r();return typeof u.provider==\"function\"?l=u.provider(window):typeof u.provider==\"string\"?l=rh(window,u.provider):l=u.provider,l&&!l.removeListener&&(\"off\"in l&&typeof l.off==\"function\"?l.removeListener=l.off:l.removeListener=()=>{}),l},async isAuthorized(){try{if(e&&await c.storage?.getItem(`${this.id}.disconnected`)||!t.target&&!aw"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 637660,
+            "snippet": "?.internal)!=null&&c.throwOnFailedPublish)throw x}finally{this.queue.delete(_)}}),vr(this,\"on\",(r,i)=>{this.events.on(r,i)}),vr(this,\"once\",(r,i)=>{this.events.once(r,i)}),vr(this,\"off\",(r,i)=>{this.events.off(r,i)}),vr(this,\"removeListener\",(r,i)=>{this.events.removeListener(r,i)}),this.relayer=e,this.logger=er(n,this.name),this.registerEventListeners()}get cont"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 641767,
+            "snippet": "Map.topics.includes(r)||this.pending.has(r)||this.cached.some(s=>s.topic===r))})),ct(this,\"on\",(r,i)=>{this.events.on(r,i)}),ct(this,\"once\",(r,i)=>{this.events.once(r,i)}),ct(this,\"off\",(r,i)=>{this.events.off(r,i)}),ct(this,\"removeListener\",(r,i)=>{this.events.removeListener(r,i)}),ct(this,\"start\",async()=>{await this.onConnect()}),ct(this,\"stop\",async()=>{await"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 681422,
+            "snippet": "this.isInitialized(),this.records.has(i)?(await this.getRecord(i)).topic===r:!1)),Qt(this,\"on\",(r,i)=>{this.events.on(r,i)}),Qt(this,\"once\",(r,i)=>{this.events.once(r,i)}),Qt(this,\"off\",(r,i)=>{this.events.off(r,i)}),Qt(this,\"removeListener\",(r,i)=>{this.events.removeListener(r,i)}),this.logger=er(n,this.name)}get context(){return Qn(this.logger)}get storageKey()"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 685115,
+            "snippet": "his.expirations.delete(i),this.events.emit(_r.deleted,{target:i,expiration:s})}}),un(this,\"on\",(r,i)=>{this.events.on(r,i)}),un(this,\"once\",(r,i)=>{this.events.once(r,i)}),un(this,\"off\",(r,i)=>{this.events.off(r,i)}),un(this,\"removeListener\",(r,i)=>{this.events.removeListener(r,i)}),this.logger=er(n,this.name)}get context(){return Qn(this.logger)}get storageKey()"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 697412,
+            "snippet": "Apps\"),ut(this,\"eventClient\"),ut(this,\"initialized\",!1),ut(this,\"logChunkController\"),ut(this,\"on\",(a,c)=>this.events.on(a,c)),ut(this,\"once\",(a,c)=>this.events.once(a,c)),ut(this,\"off\",(a,c)=>this.events.off(a,c)),ut(this,\"removeListener\",(a,c)=>this.events.removeListener(a,c)),ut(this,\"dispatchEnvelope\",({topic:a,message:c,sessionExists:l})=>{if(!a||!c)return;c"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 763556,
+            "snippet": "),He(this,\"proposal\"),He(this,\"pendingRequest\"),He(this,\"auth\"),He(this,\"signConfig\"),He(this,\"on\",(r,i)=>this.events.on(r,i)),He(this,\"once\",(r,i)=>this.events.once(r,i)),He(this,\"off\",(r,i)=>this.events.off(r,i)),He(this,\"removeListener\",(r,i)=>this.events.removeListener(r,i)),He(this,\"removeAllListeners\",r=>this.events.removeAllListeners(r)),He(this,\"connect\","
+          },
+          {
+            "file": "assets/core-CWWtHjXQ.js",
+            "offset": 190312,
+            "snippet": "?.internal)!=null&&o.throwOnFailedPublish)throw g}finally{this.queue.delete(d)}}),Wt(this,\"on\",(r,i)=>{this.events.on(r,i)}),Wt(this,\"once\",(r,i)=>{this.events.once(r,i)}),Wt(this,\"off\",(r,i)=>{this.events.off(r,i)}),Wt(this,\"removeListener\",(r,i)=>{this.events.removeListener(r,i)}),this.relayer=e,this.logger=lt(s,this.name),this.registerEventListeners()}get cont"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pro",
+      "semantics": "available to Pro users and administrators according to the documented baseline",
+      "source": "docs/FUNCTION_MATRIX.md AUTH-10 and docs/research/public-surface.md section 6",
+      "liveBundleEvidence": {
+        "literal": "pro",
+        "occurrenceCount": 12,
+        "evidence": [
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 460316,
+            "snippet": "${be}${We}`}else if(L===\"toggleFeeExempt\"){const $e=!te.feeExempt;await E_(te.telegramId,$e),Re=$e?`已设置用户 ${be} 为免佣`:`已开启用户 ${be} 的抽佣`}else if(L===\"toggleTier\"){const $e=te.tier===\"pro\"?\"normal\":\"pro\";await j_(te.telegramId,$e),Re=$e===\"pro\"?`已将用户 ${be} 升级为 Pro`:`已将用户 ${be} 降为普通用户`}else if(L===\"clearCooldown\")await R_(te.telegramId),Re=`已解除用户 ${be} 的冷静期`;else{con"
+          },
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 460331,
+            "snippet": "e if(L===\"toggleFeeExempt\"){const $e=!te.feeExempt;await E_(te.telegramId,$e),Re=$e?`已设置用户 ${be} 为免佣`:`已开启用户 ${be} 的抽佣`}else if(L===\"toggleTier\"){const $e=te.tier===\"pro\"?\"normal\":\"pro\";await j_(te.telegramId,$e),Re=$e===\"pro\"?`已将用户 ${be} 升级为 Pro`:`已将用户 ${be} 降为普通用户`}else if(L===\"clearCooldown\")await R_(te.telegramId),Re=`已解除用户 ${be} 的冷静期`;else{console.warn(\"Unkn"
+          },
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 460372,
+            "snippet": "feeExempt;await E_(te.telegramId,$e),Re=$e?`已设置用户 ${be} 为免佣`:`已开启用户 ${be} 的抽佣`}else if(L===\"toggleTier\"){const $e=te.tier===\"pro\"?\"normal\":\"pro\";await j_(te.telegramId,$e),Re=$e===\"pro\"?`已将用户 ${be} 升级为 Pro`:`已将用户 ${be} 降为普通用户`}else if(L===\"clearCooldown\")await R_(te.telegramId),Re=`已解除用户 ${be} 的冷静期`;else{console.warn(\"Unknown action:\",L);return}ve.success(Re),ut("
+          },
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 809597,
+            "snippet": "P 仓位\",children:i.jsx(\"span\",{className:\"inline-flex items-center gap-0.5 text-[10px] px-1 rounded bg-market-up/10 text-market-up font-medium\",children:\"🌾 LP\"})}),e.sender?.tier===\"pro\"&&i.jsx(\"span\",{className:\"text-[10px] px-1 rounded bg-amber-500/10 text-amber-500 font-medium\",children:\"PRO\"}),p&&x&&i.jsx(\"span\",{className:\"text-[10px] px-1 rounded bg-market-d"
+          },
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 833826,
+            "snippet": "Name||l.username||\"U\").charAt(0).toUpperCase()})}),i.jsx(\"span\",{className:\"max-w-[92px] truncate text-sm text-foreground/85\",children:l.firstName||l.username||\"TG\"}),!n&&l.tier===\"pro\"&&i.jsx(\"span\",{className:\"shrink-0 -ml-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 select-none\""
+          },
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 834521,
+            "snippet": "}`}),i.jsx(\"span\",{className:`px-1.5 py-0.5 text-[10px] font-semibold rounded-full shrink-0 ${n?\"bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400\":l.tier===\"pro\"?\"bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400\":\"bg-muted text-muted-foreground\"}`,children:n?\"Admin\":l.tier===\"pro\"?\"Pro\":\"普通\"})]})}),i.jsxs(zN,{onClic"
+          },
+          {
+            "file": "assets/index-D0FmPqGc.js",
+            "offset": 834665,
+            "snippet": "0/50 dark:text-purple-400\":l.tier===\"pro\"?\"bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400\":\"bg-muted text-muted-foreground\"}`,children:n?\"Admin\":l.tier===\"pro\"?\"Pro\":\"普通\"})]})}),i.jsxs(zN,{onClick:x,className:\"gap-2 text-red-600 dark:text-red-400\",children:[i.jsx(C5,{className:\"h-4 w-4\"}),\" 退出登录\"]})]})]})]})]}),i.jsx(Y2,{open:_,onOpenCha"
+          },
+          {
+            "file": "assets/page-BVOreg5N.js",
+            "offset": 5603,
+            "snippet": "\"span\",{className:\"px-1.5 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400\",children:\"Admin\"}),!s.isAdmin&&s.tier===\"pro\"&&e.jsx(_,{content:\"Pro 用户，可使用 Pro 专属链\",children:e.jsx(\"span\",{className:\"px-1.5 py-0.5 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:te"
+          }
+        ]
+      }
+    },
+    {
+      "id": "all",
+      "semantics": "available to ordinary, Pro, and administrator roles according to the documented baseline",
+      "source": "docs/FUNCTION_MATRIX.md AUTH-10 and docs/research/public-surface.md section 6",
+      "liveBundleEvidence": {
+        "literal": "all",
+        "occurrenceCount": 51,
+        "evidence": [
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 50539,
+            "snippet": "8(t,e){return Math.max(t+(e||0)-Date.now(),0)}function xm(t,e){return typeof t==\"function\"?t(e):t}function f8(t,e){return typeof t==\"function\"?t(e):t}function Y1(t,e){const{type:n=\"all\",exact:r,fetchStatus:i,predicate:s,queryKey:o,stale:a}=t;if(o){if(r){if(e.queryHash!==uw(o,e.options))return!1}else if(!_c(e.queryKey,o))return!1}if(n!==\"all\"){const c=e.isActive()"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 50697,
+            "snippet": " Y1(t,e){const{type:n=\"all\",exact:r,fetchStatus:i,predicate:s,queryKey:o,stale:a}=t;if(o){if(r){if(e.queryHash!==uw(o,e.options))return!1}else if(!_c(e.queryKey,o))return!1}if(n!==\"all\"){const c=e.isActive();if(n===\"active\"&&!c||n===\"inactive\"&&c)return!1}return!(typeof a==\"boolean\"&&e.isStale()!==a||i&&i!==e.state.fetchStatus||s&&!s(e))}function J1(t,e){const{ex"
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 240778,
+            "snippet": "-undefined\",defaultAccountTypes:xe.DEFAULT_ACCOUNT_TYPES,enableNetworkSwitch:!0,experimental_preferUniversalLinks:!1,remoteFeatures:{},enableMobileFullScreen:!1,coinbasePreference:\"all\"}),j={state:Ee,subscribeKey(t,e){return ot(Ee,t,e)},setOptions(t){Object.assign(Ee,t)},setRemoteFeatures(t){if(!t)return;const e={...Ee.remoteFeatures,...t};Ee.remoteFeatures=e,Ee."
+          },
+          {
+            "file": "assets/AppKitProvider-nVcOIkXs.js",
+            "offset": 926803,
+            "snippet": "ilter(p=>p.status===\"rejected\");if(f.length>0)throw new Error(f.map(p=>p.reason.message).join(\", \"));ce.sendEvent({type:\"track\",event:\"DISCONNECT_SUCCESS\",properties:{namespace:r||\"all\"}})}catch(l){throw new Error(`Failed to disconnect chains: ${l.message}`)}},checkInstalled:e=>e?e.some(n=>!!window.ethereum?.[String(n)]):!!window.ethereum,signMessage:async e=>{co"
+          },
+          {
+            "file": "assets/core-CWWtHjXQ.js",
+            "offset": 504311,
+            "snippet": "(i.length>0)throw new Error(i.map(n=>n.reason.message).join(\", \"));H.deleteConnectedSocialProvider(),Re.sendEvent({type:\"track\",event:\"DISCONNECT_SUCCESS\",properties:{namespace:e||\"all\"}})}catch(r){throw new Error(`Failed to disconnect chains: ${r.message}`)}},checkInstalled:e=>e?e.some(s=>!!window.ethereum?.[String(s)]):!!window.ethereum,signMessage:async e=>(aw"
+          },
+          {
+            "file": "assets/index-BdetfxSp.js",
+            "offset": 11504,
+            "snippet": "t({method:\"eth_chainId\"});return Number(a)},async getProvider(){if(!t){const s=typeof e.preference==\"string\"?{options:e.preference}:{...e.preference,options:e.preference?.options??\"all\"},{createBaseAccountSDK:a}=await ae(async()=>{const{createBaseAccountSDK:d}=await import(\"./index-D0CkVZ_w.js\");return{createBaseAccountSDK:d}},__vite__mapDeps([0,1,2,3,4,5,6,7,8,9"
+          },
+          {
+            "file": "assets/index-BdetfxSp.js",
+            "offset": 14598,
+            "snippet": "t({method:\"eth_chainId\"});return Number(a)},async getProvider(){if(!t){const s=typeof e.preference==\"string\"?{options:e.preference}:{...e.preference,options:e.preference?.options??\"all\"},{createCoinbaseWalletSDK:a}=await ae(async()=>{const{createCoinbaseWalletSDK:d}=await import(\"./index-CALbxsQk.js\");return{createCoinbaseWalletSDK:d}},__vite__mapDeps([17,1,2,3,4"
+          },
+          {
+            "file": "assets/index-CALbxsQk.js",
+            "offset": 102361,
+            "snippet": "f provided.\",data:e});switch(t){case\"eth_sign\":case\"eth_signTypedData_v2\":case\"eth_subscribe\":case\"eth_unsubscribe\":throw y.provider.unsupportedMethod()}}function vi(e){if(e){if(![\"all\",\"smartWalletOnly\",\"eoaOnly\"].includes(e.options))throw new Error(`Invalid options: ${e.options}`);if(e.attribution&&e.attribution.auto!==void 0&&e.attribution.dataSuffix!==void 0)"
+          }
+        ]
+      }
+    }
+  ],
+  "observedPredicates": {
+    "allowedChainsFilter": {
+      "label": "allowedChains filters chain registry",
+      "pattern": "allowedChains[\\s\\S]{0,240}\\.filter\\([^)]{0,180}\\.has\\(",
+      "occurrenceCount": 2,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 455956,
+          "matched": "allowedChains;if(!Array.isArray(L))return ee;const te=new Set(wg().filter(Re=>L.includes(Re.id)).map(Re=>Re.name)),be=ee.split(\",\").filter(Re=>te.has(",
+          "snippet": "t(Re,te()))}),()=>{L=!1,document.removeEventListener(\"visibilitychange\",$e),En.current&&(clearTimeout(En.current),En.current=null)}},[a,Je,Nt]);const Ja=f.useMemo(()=>{const L=ye?.allowedChains;if(!Array.isArray(L))return ee;const te=new Set(wg().filter(Re=>L.includes(Re.id)).map(Re=>Re.name)),be=ee.split(\",\").filter(Re=>te.has(Re));return be.length?be.join(\",\"):te.has(\"bsc\")?\"bsc\":[...te][0]||\"bsc\"},[ee,ye]);LO({userId:Mr,enabled:!Je,r"
+        },
+        {
+          "file": "assets/useAllowedChains-BmyeJKiD.js",
+          "offset": 100,
+          "matched": "allowedChains;return i.useMemo(()=>{const s=Array.isArray(e)?new Set(e.map(Number)):null,r=l().filter(a=>!s||s.has(",
+          "snippet": "import{aB as o,aC as i,aI as l}from\"./index-D0FmPqGc.js\";function d(){const{currentUser:n}=o(),e=n?.allowedChains;return i.useMemo(()=>{const s=Array.isArray(e)?new Set(e.map(Number)):null,r=l().filter(a=>!s||s.has(a.id)),t=new Set(r.map(a=>a.name));return{chains:r,isChainIdAllowed:a=>!s||s.has(Number(a)),isChainNameAllowed:a=>t.has(a)}},[Array.isArray(e)?e.join(\",\"):null])}export{d as u}; "
+        }
+      ]
+    },
+    "proTier": {
+      "label": "Pro tier comparison",
+      "pattern": "\\btier(?:\\?\\.)?\\s*={2,3}\\s*[\"']pro[\"']",
+      "occurrenceCount": 9,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 460308,
+          "matched": "tier===\"pro\"",
+          "snippet": "`已删除用户 ${be}${We}`}else if(L===\"toggleFeeExempt\"){const $e=!te.feeExempt;await E_(te.telegramId,$e),Re=$e?`已设置用户 ${be} 为免佣`:`已开启用户 ${be} 的抽佣`}else if(L===\"toggleTier\"){const $e=te.tier===\"pro\"?\"normal\":\"pro\";await j_(te.telegramId,$e),Re=$e===\"pro\"?`已将用户 ${be} 升级为 Pro`:`已将用户 ${be} 降为普通用户`}else if(L===\"clearCooldown\")await R_(te.telegramId),Re=`已解除用户 ${be} 的冷静期`;else{con"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 809589,
+          "matched": "tier===\"pro\"",
+          "snippet": "此代币持有 LP 仓位\",children:i.jsx(\"span\",{className:\"inline-flex items-center gap-0.5 text-[10px] px-1 rounded bg-market-up/10 text-market-up font-medium\",children:\"🌾 LP\"})}),e.sender?.tier===\"pro\"&&i.jsx(\"span\",{className:\"text-[10px] px-1 rounded bg-amber-500/10 text-amber-500 font-medium\",children:\"PRO\"}),p&&x&&i.jsx(\"span\",{className:\"text-[10px] px-1 rounded bg-market-d"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 833818,
+          "matched": "tier===\"pro\"",
+          "snippet": "l.firstName||l.username||\"U\").charAt(0).toUpperCase()})}),i.jsx(\"span\",{className:\"max-w-[92px] truncate text-sm text-foreground/85\",children:l.firstName||l.username||\"TG\"}),!n&&l.tier===\"pro\"&&i.jsx(\"span\",{className:\"shrink-0 -ml-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 select-none\""
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 834513,
+          "matched": "tier===\"pro\"",
+          "snippet": "egramId}`}),i.jsx(\"span\",{className:`px-1.5 py-0.5 text-[10px] font-semibold rounded-full shrink-0 ${n?\"bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400\":l.tier===\"pro\"?\"bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400\":\"bg-muted text-muted-foreground\"}`,children:n?\"Admin\":l.tier===\"pro\"?\"Pro\":\"普通\"})]})}),i.jsxs(zN,{onClic"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 834657,
+          "matched": "tier===\"pro\"",
+          "snippet": "rple-950/50 dark:text-purple-400\":l.tier===\"pro\"?\"bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400\":\"bg-muted text-muted-foreground\"}`,children:n?\"Admin\":l.tier===\"pro\"?\"Pro\":\"普通\"})]})}),i.jsxs(zN,{onClick:x,className:\"gap-2 text-red-600 dark:text-red-400\",children:[i.jsx(C5,{className:\"h-4 w-4\"}),\" 退出登录\"]})]})]})]})]}),i.jsx(Y2,{open:_,onOpenCha"
+        },
+        {
+          "file": "assets/page-BVOreg5N.js",
+          "offset": 5595,
+          "matched": "tier===\"pro\"",
+          "snippet": "&e.jsx(\"span\",{className:\"px-1.5 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400\",children:\"Admin\"}),!s.isAdmin&&s.tier===\"pro\"&&e.jsx(_,{content:\"Pro 用户，可使用 Pro 专属链\",children:e.jsx(\"span\",{className:\"px-1.5 py-0.5 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:te"
+        },
+        {
+          "file": "assets/page-BVOreg5N.js",
+          "offset": 11288,
+          "matched": "tier===\"pro\"",
+          "snippet": "bg-emerald-50 dark:focus:bg-emerald-950/30\",onClick:()=>n(\"toggleFeeExempt\",s),children:[e.jsx(Rs,{className:\"w-4 h-4 mr-2\"}),s.feeExempt?\"开启抽佣\":\"设为免佣\"]}),C&&e.jsxs(P,{className:s.tier===\"pro\"?\"text-amber-600 dark:text-amber-400 focus:text-amber-700 focus:bg-amber-50 dark:focus:bg-amber-950/30\":\"text-indigo-600 dark:text-indigo-400 focus:text-indigo-700 focus:bg-indigo-"
+        },
+        {
+          "file": "assets/page-BVOreg5N.js",
+          "offset": 11591,
+          "matched": "tier===\"pro\"",
+          "snippet": "ndigo-600 dark:text-indigo-400 focus:text-indigo-700 focus:bg-indigo-50 dark:focus:bg-indigo-950/30\",onClick:()=>n(\"toggleTier\",s),children:[e.jsx(Es,{className:\"w-4 h-4 mr-2\"}),s.tier===\"pro\"?\"降为普通用户\":\"升级为 Pro\"]}),C&&e.jsxs(P,{className:\"text-sky-600 dark:text-sky-400 focus:text-sky-700 focus:bg-sky-50 dark:focus:bg-sky-950/30\",onClick:()=>N?.(s),children:[e.jsx(Re,{cl"
+        },
+        {
+          "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
+          "offset": 18056,
+          "matched": "tier===\"pro\"",
+          "snippet": "ase()||o:\"\"};function pt({open:t,onClose:a,isAdminMode:o,initialTokenAddress:u,initialChainId:h,initialFeePercent:S,initialPlatform:f}){const{isAdmin:j,currentUser:l}=Vs(),$=j||l?.tier===\"pro\",{chains:E}=at(),[c,g]=i.useState(Ns),[q,I]=i.useState(!1),[K,_]=i.useState(!1);i.useEffect(()=>{try{_(localStorage.getItem(\"quickCreatePool_addLiquidity\")===\"1\")}catch{}},[]);cons"
+        }
+      ]
+    },
+    "administrator": {
+      "label": "administrator flag",
+      "pattern": "\\bisAdmin\\b",
+      "occurrenceCount": 49,
+      "evidence": [
+        {
+          "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+          "offset": 17164,
+          "matched": "isAdmin",
+          "snippet": "Yn,ts]=l.useState(!1),[Zn,Pe]=l.useState(\"\"),[ee,Is]=l.useState([]),[Ms,Fs]=l.useState(!1),[G,Ae]=l.useState(null),[ns,ve]=l.useState(!0),{keystoreStatus:kt,setUnlockDialogOpen:jt,isAdmin:Os}=qt(),re=U?.allowedChains,[as,Ps]=l.useState([]),[Nt,Te]=l.useState(null),[yt,As]=l.useState(!1),[f,A]=l.useState(ks),[$e,rs]=l.useState(fs),[Ts,ls]=l.useState(null),[vt,$s]=l."
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 448500,
+          "matched": "isAdmin",
+          "snippet": ":Dt}}})}}}),Re?$e:be})},ut=async(L,te=!1)=>{te&&X(!0),re(null);const be=So.current;try{const Re=wo.current,$e=Ss.current;switch(L){case\"tasks\":te&&X(!1);return;case\"users\":if(!Re?.isAdmin||$e===\"user\"){x([]),F(new Date),te&&X(!1);return}try{const[We,Ye]=await Promise.all([b_(),R0()]);if(Se.current!==L||be!==So.current)return;const yt=We.users||[];if(x(yt),Qr.curren"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 449158,
+          "matched": "isAdmin",
+          "snippet": "ole.error(\"Error fetching user avatars:\",Dt)})}}catch(We){console.error(\"Error fetching users:\",We),Se.current===L&&re(We.message)}te&&X(!1);return;case\"activity\":try{const We=Re?.isAdmin&&$e===\"user\"&&Re?.dbUserId?Re.dbUserId:null,yt=(await I_(200,We)).logs||[];if(Se.current!==L||be!==So.current)return;T(yt),F(new Date)}catch(We){console.error(\"Error fetching acti"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 453083,
+          "matched": "isAdmin",
+          "snippet": "ase(),be.nftId??\"\",(be.walletAddress||\"\").toLowerCase()].join(\"|\")).sort().join(\",\");te!==Li.current&&(Li.current=te,L.length>0&&Xa(L))},[d]);const Mr=!ye||!ye.telegramId?null:!ye.isAdmin||Nt===\"user\"?ye.telegramId:null,Xi=f.useRef(Mr);f.useEffect(()=>{Xi.current!==Mr&&(m([]),ce({}),X(!0),G.current=null,$.current=new Map,Xi.current=Mr)},[Mr]),f.useEffect(()=>{Ss.cu"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 453435,
+          "matched": "isAdmin",
+          "snippet": "fect(()=>{Ss.current=Nt,So.current++;try{localStorage.setItem(\"lp_bot_viewMode\",Nt)}catch{}Je||Yt(null)},[Nt]),f.useEffect(()=>{let L=!1;const te=Re=>!Re?.maintenance?.enabled||Re.isAdmin?!1:(L=!0,window.location.href=\"/maintenance\",!0);(async()=>{const Re=pw(\"auth init\");Ht(!0);try{const $e=Ef(),We=IS();if($e&&We)try{const Ft=pw(\"auth /api/auth/me (jwt)\"),Yn=()=>{"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454063,
+          "matched": "isAdmin",
+          "snippet": " br;try{br=await Yn()}catch{br=await Yn()}if(Ft.end({status:br.status}),br.ok){const Xn=await br.json();if(Xn?.success){if(te(Xn))return;const Dr={...Xn.user,telegramId:Xn.user.id,isAdmin:Xn.isAdmin,authMethod:\"jwt\"};He(Dr),nt(Xn.isAdmin),wo.current=Dr,console.log(\"[Auth] JWT 认证成功:\",Dr.isAdmin?\"管理员\":\"普通用户\",Dr),Ht(!1);return}}console.log(\"[Auth] JWT Token 无效，清除\"),vg"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454074,
+          "matched": "isAdmin",
+          "snippet": "await Yn()}catch{br=await Yn()}if(Ft.end({status:br.status}),br.ok){const Xn=await br.json();if(Xn?.success){if(te(Xn))return;const Dr={...Xn.user,telegramId:Xn.user.id,isAdmin:Xn.isAdmin,authMethod:\"jwt\"};He(Dr),nt(Xn.isAdmin),wo.current=Dr,console.log(\"[Auth] JWT 认证成功:\",Dr.isAdmin?\"管理员\":\"普通用户\",Dr),Ht(!1);return}}console.log(\"[Auth] JWT Token 无效，清除\"),vg()}catch(Ft"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454113,
+          "matched": "isAdmin",
+          "snippet": "d({status:br.status}),br.ok){const Xn=await br.json();if(Xn?.success){if(te(Xn))return;const Dr={...Xn.user,telegramId:Xn.user.id,isAdmin:Xn.isAdmin,authMethod:\"jwt\"};He(Dr),nt(Xn.isAdmin),wo.current=Dr,console.log(\"[Auth] JWT 认证成功:\",Dr.isAdmin?\"管理员\":\"普通用户\",Dr),Ht(!1);return}}console.log(\"[Auth] JWT Token 无效，清除\"),vg()}catch(Ft){console.error(\"[Auth] JWT 验证失败（网络层，保留"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454170,
+          "matched": "isAdmin",
+          "snippet": "Xn?.success){if(te(Xn))return;const Dr={...Xn.user,telegramId:Xn.user.id,isAdmin:Xn.isAdmin,authMethod:\"jwt\"};He(Dr),nt(Xn.isAdmin),wo.current=Dr,console.log(\"[Auth] JWT 认证成功:\",Dr.isAdmin?\"管理员\":\"普通用户\",Dr),Ht(!1);return}}console.log(\"[Auth] JWT Token 无效，清除\"),vg()}catch(Ft){console.error(\"[Auth] JWT 验证失败（网络层，保留凭据）:\",Ft)}if(new URLSearchParams(window.location.search)."
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454796,
+          "matched": "isAdmin",
+          "snippet": "ll)?.initData;let Dt=null;if(Ut)try{Dt=await _S(Ut)}catch(Ft){console.error(\"Telegram auth failed:\",Ft)}if(Dt?.success){if(te(Dt))return;const Ft={...Dt.user,telegramId:Dt.user.id,isAdmin:Dt.isAdmin,authMethod:Dt.authMethod};He(Ft),nt(Dt.isAdmin),wo.current=Ft,console.log(\"[Auth] 用户身份:\",Ft.isAdmin?\"管理员\":\"普通用户\",Ft)}else console.log(\"[Auth] 未验证访客，重定向到登录页\"),wo.current"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454807,
+          "matched": "isAdmin",
+          "snippet": "ta;let Dt=null;if(Ut)try{Dt=await _S(Ut)}catch(Ft){console.error(\"Telegram auth failed:\",Ft)}if(Dt?.success){if(te(Dt))return;const Ft={...Dt.user,telegramId:Dt.user.id,isAdmin:Dt.isAdmin,authMethod:Dt.authMethod};He(Ft),nt(Dt.isAdmin),wo.current=Ft,console.log(\"[Auth] 用户身份:\",Ft.isAdmin?\"管理员\":\"普通用户\",Ft)}else console.log(\"[Auth] 未验证访客，重定向到登录页\"),wo.current=null}catch"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454854,
+          "matched": "isAdmin",
+          "snippet": "Ft){console.error(\"Telegram auth failed:\",Ft)}if(Dt?.success){if(te(Dt))return;const Ft={...Dt.user,telegramId:Dt.user.id,isAdmin:Dt.isAdmin,authMethod:Dt.authMethod};He(Ft),nt(Dt.isAdmin),wo.current=Ft,console.log(\"[Auth] 用户身份:\",Ft.isAdmin?\"管理员\":\"普通用户\",Ft)}else console.log(\"[Auth] 未验证访客，重定向到登录页\"),wo.current=null}catch($e){console.error(\"[Auth] 身份验证错误:\",$e)}finally"
+        }
+      ]
+    },
+    "proOrAdminFeeHook": {
+      "label": "admin or Pro fee-hook UI condition",
+      "pattern": "\\bisAdmin\\b[\\s\\S]{0,240}\\btier(?:\\?\\.)?\\s*={2,3}\\s*[\"']pro[\"']|\\btier(?:\\?\\.)?\\s*={2,3}\\s*[\"']pro[\"'][\\s\\S]{0,240}\\bisAdmin\\b",
+      "occurrenceCount": 2,
+      "evidence": [
+        {
+          "file": "assets/page-BVOreg5N.js",
+          "offset": 5407,
+          "matched": "isAdmin&&e.jsx(\"span\",{className:\"px-1.5 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400\",children:\"Admin\"}),!s.isAdmin&&s.tier===\"pro\"",
+          "snippet": "ssName:\"flex-1 min-w-0\",children:[e.jsxs(\"div\",{className:\"flex items-center gap-2\",children:[e.jsx(\"span\",{className:\"text-sm font-bold text-foreground truncate\",children:w()}),s.isAdmin&&e.jsx(\"span\",{className:\"px-1.5 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400\",children:\"Admin\"}),!s.isAdmin&&s.tier===\"pro\"&&e.jsx(_,{content:\"Pro 用户，可使用 Pro 专属链\",children:e.jsx(\"span"
+        },
+        {
+          "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
+          "offset": 18018,
+          "matched": "isAdmin:j,currentUser:l}=Vs(),$=j||l?.tier===\"pro\"",
+          "snippet": "==S||o===f||o===j})?.address?.toLowerCase()||o:\"\"};function pt({open:t,onClose:a,isAdminMode:o,initialTokenAddress:u,initialChainId:h,initialFeePercent:S,initialPlatform:f}){const{isAdmin:j,currentUser:l}=Vs(),$=j||l?.tier===\"pro\",{chains:E}=at(),[c,g]=i.useState(Ns),[q,I]=i.useState(!1),[K,_]=i.useState(!1);i.useEffect(()=>{try{_(localStorage.getItem(\"quickCreatePool_addLiquidity\")===\"1\")}catch{}},[]);cons"
+        }
+      ]
+    },
+    "chainAccessConfigApi": {
+      "label": "chain access config read/write client",
+      "pattern": "\\/api\\/system-config\\/chains",
+      "occurrenceCount": 2,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 249816,
+          "matched": "/api/system-config/chains",
+          "snippet": "on Q5(e){return le(`${se}/api/user/preferences`,{method:\"PUT\",body:JSON.stringify(e)})}async function R0(){return le(`${se}/api/system-config`)}async function _U(){return le(`${se}/api/system-config/chains`)}async function AU(e){return le(`${se}/api/system-config/chains`,{method:\"POST\",body:JSON.stringify({access:e})})}async function AS(e,t){return le(`${se}/api/system-config`,{meth"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 249881,
+          "matched": "/api/system-config/chains",
+          "snippet": "y:JSON.stringify(e)})}async function R0(){return le(`${se}/api/system-config`)}async function _U(){return le(`${se}/api/system-config/chains`)}async function AU(e){return le(`${se}/api/system-config/chains`,{method:\"POST\",body:JSON.stringify({access:e})})}async function AS(e,t){return le(`${se}/api/system-config`,{method:\"POST\",body:JSON.stringify({key:e,value:t})})}async function O"
+        }
+      ]
+    },
+    "feeHookApi": {
+      "label": "fee-hook client calls",
+      "pattern": "\\/api\\/(?:pools\\/)?(?:create-fee-hook|fee-hook(?:-lp)?|fee-hooks)",
+      "occurrenceCount": 4,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 314453,
+          "matched": "/api/pools/create-fee-hook",
+          "snippet": "method:\"POST\",body:JSON.stringify(e)})}async function wV(e){return le(`${se}/api/pools/create-private`,{method:\"POST\",body:JSON.stringify(e)})}async function SV(e){return le(`${se}/api/pools/create-fee-hook`,{method:\"POST\",body:JSON.stringify(e)})}async function kV(e){return le(`${se}/api/pools/fee-hook`,{method:\"PATCH\",body:JSON.stringify(e)})}async function CV(e){return le(`${se}/a"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 314558,
+          "matched": "/api/pools/fee-hook",
+          "snippet": "ethod:\"POST\",body:JSON.stringify(e)})}async function SV(e){return le(`${se}/api/pools/create-fee-hook`,{method:\"POST\",body:JSON.stringify(e)})}async function kV(e){return le(`${se}/api/pools/fee-hook`,{method:\"PATCH\",body:JSON.stringify(e)})}async function CV(e){return le(`${se}/api/pools/fee-hook-lp`,{method:\"PATCH\",body:JSON.stringify(e)})}async function NV(){return le(`${se"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 314657,
+          "matched": "/api/pools/fee-hook-lp",
+          "snippet": "ok`,{method:\"POST\",body:JSON.stringify(e)})}async function kV(e){return le(`${se}/api/pools/fee-hook`,{method:\"PATCH\",body:JSON.stringify(e)})}async function CV(e){return le(`${se}/api/pools/fee-hook-lp`,{method:\"PATCH\",body:JSON.stringify(e)})}async function NV(){return le(`${se}/api/fee-hooks`)}async function EV(e=3){return le(`${se}/api/pools/create-history?limit=${encodeURICo"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 314758,
+          "matched": "/api/fee-hook",
+          "snippet": ",{method:\"PATCH\",body:JSON.stringify(e)})}async function CV(e){return le(`${se}/api/pools/fee-hook-lp`,{method:\"PATCH\",body:JSON.stringify(e)})}async function NV(){return le(`${se}/api/fee-hooks`)}async function EV(e=3){return le(`${se}/api/pools/create-history?limit=${encodeURIComponent(e)}`)}async function jV(e){return le(`${se}/api/pools/quick-liquidity`,{method:\"POST"
+        }
+      ]
+    }
+  },
+  "featureMatrix": [
+    {
+      "feature": "基础任务/钱包/池排行/日志",
+      "user": "是",
+      "pro": "是",
+      "admin": "是",
+      "evidenceAndStatus": "正常用户 UI 已核对"
+    },
+    {
+      "feature": "链访问",
+      "user": "按 all",
+      "pro": "all + pro",
+      "admin": "管理配置",
+      "evidenceAndStatus": "Bundle 角色与链级配置"
+    },
+    {
+      "feature": "自动策略",
+      "user": "条件开放",
+      "pro": "条件开放",
+      "admin": "可管理",
+      "evidenceAndStatus": "页面存在；具体套餐门槛需账号核对"
+    },
+    {
+      "feature": "BSC UniV4 私有白名单池",
+      "user": "条件开放",
+      "pro": "条件开放",
+      "admin": "是",
+      "evidenceAndStatus": "Bundle 中存在客户端入口"
+    },
+    {
+      "feature": "收费 Hook 池创建",
+      "user": "否",
+      "pro": "是",
+      "admin": "是",
+      "evidenceAndStatus": "明确 Pro/admin 条件"
+    },
+    {
+      "feature": "收费池费率/LP 费率调整",
+      "user": "否",
+      "pro": "条件开放",
+      "admin": "是",
+      "evidenceAndStatus": "Bundle 中存在调用；权限细节未验证"
+    },
+    {
+      "feature": "用户审批/拒绝/删除/封禁",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "管理员页面 chunk"
+    },
+    {
+      "feature": "Pro 升降级、免佣、自定义费率",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "管理员 API 客户端"
+    },
+    {
+      "feature": "用户冷静期、钱包/任务查看",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "管理员 API 客户端"
+    },
+    {
+      "feature": "活动热力图",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "管理员用户页"
+    },
+    {
+      "feature": "维护模式、链级访问、抽佣配置",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "系统/维护配置调用"
+    },
+    {
+      "feature": "RPC/mempool、OKX Key 池",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "管理端 Bundle 调用"
+    },
+    {
+      "feature": "反馈回复/关闭",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "管理端反馈调用"
+    },
+    {
+      "feature": "聊天审核、禁言、红包合约部署",
+      "user": "否",
+      "pro": "否",
+      "admin": "是",
+      "evidenceAndStatus": "聊天管理调用"
+    }
+  ],
+  "liveGateTerms": [
+    {
+      "label": "allowedChains property",
+      "pattern": "\\ballowedChains\\b",
+      "occurrenceCount": 3,
+      "evidence": [
+        {
+          "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+          "offset": 17187,
+          "matched": "allowedChains",
+          "snippet": "Zn,Pe]=l.useState(\"\"),[ee,Is]=l.useState([]),[Ms,Fs]=l.useState(!1),[G,Ae]=l.useState(null),[ns,ve]=l.useState(!0),{keystoreStatus:kt,setUnlockDialogOpen:jt,isAdmin:Os}=qt(),re=U?.allowedChains,[as,Ps]=l.useState([]),[Nt,Te]=l.useState(null),[yt,As]=l.useState(!1),[f,A]=l.useState(ks),[$e,rs]=l.useState(fs),[Ts,ls]=l.useState(null),[vt,$s]=l.useState(!1),[os,is]=l.useSta"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 455956,
+          "matched": "allowedChains",
+          "snippet": "t(Re,te()))}),()=>{L=!1,document.removeEventListener(\"visibilitychange\",$e),En.current&&(clearTimeout(En.current),En.current=null)}},[a,Je,Nt]);const Ja=f.useMemo(()=>{const L=ye?.allowedChains;if(!Array.isArray(L))return ee;const te=new Set(wg().filter(Re=>L.includes(Re.id)).map(Re=>Re.name)),be=ee.split(\",\").filter(Re=>te.has(Re));return be.length?be.join(\",\"):te.has(\""
+        },
+        {
+          "file": "assets/useAllowedChains-BmyeJKiD.js",
+          "offset": 100,
+          "matched": "allowedChains",
+          "snippet": "import{aB as o,aC as i,aI as l}from\"./index-D0FmPqGc.js\";function d(){const{currentUser:n}=o(),e=n?.allowedChains;return i.useMemo(()=>{const s=Array.isArray(e)?new Set(e.map(Number)):null,r=l().filter(a=>!s||s.has(a.id)),t=new Set(r.map(a=>a.name));return{chains:r,isChainIdAllowed:a=>!s||s.h"
+        }
+      ]
+    },
+    {
+      "label": "tier compared to pro",
+      "pattern": "\\btier(?:\\?\\.)?\\s*={2,3}\\s*[\"']pro[\"']",
+      "occurrenceCount": 9,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 460308,
+          "matched": "tier===\"pro\"",
+          "snippet": "`已删除用户 ${be}${We}`}else if(L===\"toggleFeeExempt\"){const $e=!te.feeExempt;await E_(te.telegramId,$e),Re=$e?`已设置用户 ${be} 为免佣`:`已开启用户 ${be} 的抽佣`}else if(L===\"toggleTier\"){const $e=te.tier===\"pro\"?\"normal\":\"pro\";await j_(te.telegramId,$e),Re=$e===\"pro\"?`已将用户 ${be} 升级为 Pro`:`已将用户 ${be} 降为普通用户`}else if(L===\"clearCooldown\")await R_(te.telegramId),Re=`已解除用户 ${be} 的冷静期`;else{con"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 809589,
+          "matched": "tier===\"pro\"",
+          "snippet": "此代币持有 LP 仓位\",children:i.jsx(\"span\",{className:\"inline-flex items-center gap-0.5 text-[10px] px-1 rounded bg-market-up/10 text-market-up font-medium\",children:\"🌾 LP\"})}),e.sender?.tier===\"pro\"&&i.jsx(\"span\",{className:\"text-[10px] px-1 rounded bg-amber-500/10 text-amber-500 font-medium\",children:\"PRO\"}),p&&x&&i.jsx(\"span\",{className:\"text-[10px] px-1 rounded bg-market-d"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 833818,
+          "matched": "tier===\"pro\"",
+          "snippet": "l.firstName||l.username||\"U\").charAt(0).toUpperCase()})}),i.jsx(\"span\",{className:\"max-w-[92px] truncate text-sm text-foreground/85\",children:l.firstName||l.username||\"TG\"}),!n&&l.tier===\"pro\"&&i.jsx(\"span\",{className:\"shrink-0 -ml-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 select-none\""
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 834513,
+          "matched": "tier===\"pro\"",
+          "snippet": "egramId}`}),i.jsx(\"span\",{className:`px-1.5 py-0.5 text-[10px] font-semibold rounded-full shrink-0 ${n?\"bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400\":l.tier===\"pro\"?\"bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400\":\"bg-muted text-muted-foreground\"}`,children:n?\"Admin\":l.tier===\"pro\"?\"Pro\":\"普通\"})]})}),i.jsxs(zN,{onClic"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 834657,
+          "matched": "tier===\"pro\"",
+          "snippet": "rple-950/50 dark:text-purple-400\":l.tier===\"pro\"?\"bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400\":\"bg-muted text-muted-foreground\"}`,children:n?\"Admin\":l.tier===\"pro\"?\"Pro\":\"普通\"})]})}),i.jsxs(zN,{onClick:x,className:\"gap-2 text-red-600 dark:text-red-400\",children:[i.jsx(C5,{className:\"h-4 w-4\"}),\" 退出登录\"]})]})]})]})]}),i.jsx(Y2,{open:_,onOpenCha"
+        },
+        {
+          "file": "assets/page-BVOreg5N.js",
+          "offset": 5595,
+          "matched": "tier===\"pro\"",
+          "snippet": "&e.jsx(\"span\",{className:\"px-1.5 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400\",children:\"Admin\"}),!s.isAdmin&&s.tier===\"pro\"&&e.jsx(_,{content:\"Pro 用户，可使用 Pro 专属链\",children:e.jsx(\"span\",{className:\"px-1.5 py-0.5 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:te"
+        },
+        {
+          "file": "assets/page-BVOreg5N.js",
+          "offset": 11288,
+          "matched": "tier===\"pro\"",
+          "snippet": "bg-emerald-50 dark:focus:bg-emerald-950/30\",onClick:()=>n(\"toggleFeeExempt\",s),children:[e.jsx(Rs,{className:\"w-4 h-4 mr-2\"}),s.feeExempt?\"开启抽佣\":\"设为免佣\"]}),C&&e.jsxs(P,{className:s.tier===\"pro\"?\"text-amber-600 dark:text-amber-400 focus:text-amber-700 focus:bg-amber-50 dark:focus:bg-amber-950/30\":\"text-indigo-600 dark:text-indigo-400 focus:text-indigo-700 focus:bg-indigo-"
+        },
+        {
+          "file": "assets/page-BVOreg5N.js",
+          "offset": 11591,
+          "matched": "tier===\"pro\"",
+          "snippet": "ndigo-600 dark:text-indigo-400 focus:text-indigo-700 focus:bg-indigo-50 dark:focus:bg-indigo-950/30\",onClick:()=>n(\"toggleTier\",s),children:[e.jsx(Es,{className:\"w-4 h-4 mr-2\"}),s.tier===\"pro\"?\"降为普通用户\":\"升级为 Pro\"]}),C&&e.jsxs(P,{className:\"text-sky-600 dark:text-sky-400 focus:text-sky-700 focus:bg-sky-50 dark:focus:bg-sky-950/30\",onClick:()=>N?.(s),children:[e.jsx(Re,{cl"
+        },
+        {
+          "file": "assets/QuickCreatePoolDialog-dPN3jM15.js",
+          "offset": 18056,
+          "matched": "tier===\"pro\"",
+          "snippet": "ase()||o:\"\"};function pt({open:t,onClose:a,isAdminMode:o,initialTokenAddress:u,initialChainId:h,initialFeePercent:S,initialPlatform:f}){const{isAdmin:j,currentUser:l}=Vs(),$=j||l?.tier===\"pro\",{chains:E}=at(),[c,g]=i.useState(Ns),[q,I]=i.useState(!1),[K,_]=i.useState(!1);i.useEffect(()=>{try{_(localStorage.getItem(\"quickCreatePool_addLiquidity\")===\"1\")}catch{}},[]);cons"
+        }
+      ]
+    },
+    {
+      "label": "administrator flag",
+      "pattern": "\\bisAdmin\\b",
+      "occurrenceCount": 49,
+      "evidence": [
+        {
+          "file": "assets/CreateTaskDialog-Bo1Dpibg.js",
+          "offset": 17164,
+          "matched": "isAdmin",
+          "snippet": "Yn,ts]=l.useState(!1),[Zn,Pe]=l.useState(\"\"),[ee,Is]=l.useState([]),[Ms,Fs]=l.useState(!1),[G,Ae]=l.useState(null),[ns,ve]=l.useState(!0),{keystoreStatus:kt,setUnlockDialogOpen:jt,isAdmin:Os}=qt(),re=U?.allowedChains,[as,Ps]=l.useState([]),[Nt,Te]=l.useState(null),[yt,As]=l.useState(!1),[f,A]=l.useState(ks),[$e,rs]=l.useState(fs),[Ts,ls]=l.useState(null),[vt,$s]=l."
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 448500,
+          "matched": "isAdmin",
+          "snippet": ":Dt}}})}}}),Re?$e:be})},ut=async(L,te=!1)=>{te&&X(!0),re(null);const be=So.current;try{const Re=wo.current,$e=Ss.current;switch(L){case\"tasks\":te&&X(!1);return;case\"users\":if(!Re?.isAdmin||$e===\"user\"){x([]),F(new Date),te&&X(!1);return}try{const[We,Ye]=await Promise.all([b_(),R0()]);if(Se.current!==L||be!==So.current)return;const yt=We.users||[];if(x(yt),Qr.curren"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 449158,
+          "matched": "isAdmin",
+          "snippet": "ole.error(\"Error fetching user avatars:\",Dt)})}}catch(We){console.error(\"Error fetching users:\",We),Se.current===L&&re(We.message)}te&&X(!1);return;case\"activity\":try{const We=Re?.isAdmin&&$e===\"user\"&&Re?.dbUserId?Re.dbUserId:null,yt=(await I_(200,We)).logs||[];if(Se.current!==L||be!==So.current)return;T(yt),F(new Date)}catch(We){console.error(\"Error fetching acti"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 453083,
+          "matched": "isAdmin",
+          "snippet": "ase(),be.nftId??\"\",(be.walletAddress||\"\").toLowerCase()].join(\"|\")).sort().join(\",\");te!==Li.current&&(Li.current=te,L.length>0&&Xa(L))},[d]);const Mr=!ye||!ye.telegramId?null:!ye.isAdmin||Nt===\"user\"?ye.telegramId:null,Xi=f.useRef(Mr);f.useEffect(()=>{Xi.current!==Mr&&(m([]),ce({}),X(!0),G.current=null,$.current=new Map,Xi.current=Mr)},[Mr]),f.useEffect(()=>{Ss.cu"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 453435,
+          "matched": "isAdmin",
+          "snippet": "fect(()=>{Ss.current=Nt,So.current++;try{localStorage.setItem(\"lp_bot_viewMode\",Nt)}catch{}Je||Yt(null)},[Nt]),f.useEffect(()=>{let L=!1;const te=Re=>!Re?.maintenance?.enabled||Re.isAdmin?!1:(L=!0,window.location.href=\"/maintenance\",!0);(async()=>{const Re=pw(\"auth init\");Ht(!0);try{const $e=Ef(),We=IS();if($e&&We)try{const Ft=pw(\"auth /api/auth/me (jwt)\"),Yn=()=>{"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454063,
+          "matched": "isAdmin",
+          "snippet": " br;try{br=await Yn()}catch{br=await Yn()}if(Ft.end({status:br.status}),br.ok){const Xn=await br.json();if(Xn?.success){if(te(Xn))return;const Dr={...Xn.user,telegramId:Xn.user.id,isAdmin:Xn.isAdmin,authMethod:\"jwt\"};He(Dr),nt(Xn.isAdmin),wo.current=Dr,console.log(\"[Auth] JWT 认证成功:\",Dr.isAdmin?\"管理员\":\"普通用户\",Dr),Ht(!1);return}}console.log(\"[Auth] JWT Token 无效，清除\"),vg"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454074,
+          "matched": "isAdmin",
+          "snippet": "await Yn()}catch{br=await Yn()}if(Ft.end({status:br.status}),br.ok){const Xn=await br.json();if(Xn?.success){if(te(Xn))return;const Dr={...Xn.user,telegramId:Xn.user.id,isAdmin:Xn.isAdmin,authMethod:\"jwt\"};He(Dr),nt(Xn.isAdmin),wo.current=Dr,console.log(\"[Auth] JWT 认证成功:\",Dr.isAdmin?\"管理员\":\"普通用户\",Dr),Ht(!1);return}}console.log(\"[Auth] JWT Token 无效，清除\"),vg()}catch(Ft"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454113,
+          "matched": "isAdmin",
+          "snippet": "d({status:br.status}),br.ok){const Xn=await br.json();if(Xn?.success){if(te(Xn))return;const Dr={...Xn.user,telegramId:Xn.user.id,isAdmin:Xn.isAdmin,authMethod:\"jwt\"};He(Dr),nt(Xn.isAdmin),wo.current=Dr,console.log(\"[Auth] JWT 认证成功:\",Dr.isAdmin?\"管理员\":\"普通用户\",Dr),Ht(!1);return}}console.log(\"[Auth] JWT Token 无效，清除\"),vg()}catch(Ft){console.error(\"[Auth] JWT 验证失败（网络层，保留"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454170,
+          "matched": "isAdmin",
+          "snippet": "Xn?.success){if(te(Xn))return;const Dr={...Xn.user,telegramId:Xn.user.id,isAdmin:Xn.isAdmin,authMethod:\"jwt\"};He(Dr),nt(Xn.isAdmin),wo.current=Dr,console.log(\"[Auth] JWT 认证成功:\",Dr.isAdmin?\"管理员\":\"普通用户\",Dr),Ht(!1);return}}console.log(\"[Auth] JWT Token 无效，清除\"),vg()}catch(Ft){console.error(\"[Auth] JWT 验证失败（网络层，保留凭据）:\",Ft)}if(new URLSearchParams(window.location.search)."
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454796,
+          "matched": "isAdmin",
+          "snippet": "ll)?.initData;let Dt=null;if(Ut)try{Dt=await _S(Ut)}catch(Ft){console.error(\"Telegram auth failed:\",Ft)}if(Dt?.success){if(te(Dt))return;const Ft={...Dt.user,telegramId:Dt.user.id,isAdmin:Dt.isAdmin,authMethod:Dt.authMethod};He(Ft),nt(Dt.isAdmin),wo.current=Ft,console.log(\"[Auth] 用户身份:\",Ft.isAdmin?\"管理员\":\"普通用户\",Ft)}else console.log(\"[Auth] 未验证访客，重定向到登录页\"),wo.current"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454807,
+          "matched": "isAdmin",
+          "snippet": "ta;let Dt=null;if(Ut)try{Dt=await _S(Ut)}catch(Ft){console.error(\"Telegram auth failed:\",Ft)}if(Dt?.success){if(te(Dt))return;const Ft={...Dt.user,telegramId:Dt.user.id,isAdmin:Dt.isAdmin,authMethod:Dt.authMethod};He(Ft),nt(Dt.isAdmin),wo.current=Ft,console.log(\"[Auth] 用户身份:\",Ft.isAdmin?\"管理员\":\"普通用户\",Ft)}else console.log(\"[Auth] 未验证访客，重定向到登录页\"),wo.current=null}catch"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 454854,
+          "matched": "isAdmin",
+          "snippet": "Ft){console.error(\"Telegram auth failed:\",Ft)}if(Dt?.success){if(te(Dt))return;const Ft={...Dt.user,telegramId:Dt.user.id,isAdmin:Dt.isAdmin,authMethod:Dt.authMethod};He(Ft),nt(Dt.isAdmin),wo.current=Ft,console.log(\"[Auth] 用户身份:\",Ft.isAdmin?\"管理员\":\"普通用户\",Ft)}else console.log(\"[Auth] 未验证访客，重定向到登录页\"),wo.current=null}catch($e){console.error(\"[Auth] 身份验证错误:\",$e)}finally"
+        }
+      ]
+    },
+    {
+      "label": "fee hook API",
+      "pattern": "\\/api\\/(?:pools\\/)?(?:create-fee-hook|fee-hook(?:-lp)?|fee-hooks)",
+      "occurrenceCount": 4,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 314453,
+          "matched": "/api/pools/create-fee-hook",
+          "snippet": "method:\"POST\",body:JSON.stringify(e)})}async function wV(e){return le(`${se}/api/pools/create-private`,{method:\"POST\",body:JSON.stringify(e)})}async function SV(e){return le(`${se}/api/pools/create-fee-hook`,{method:\"POST\",body:JSON.stringify(e)})}async function kV(e){return le(`${se}/api/pools/fee-hook`,{method:\"PATCH\",body:JSON.stringify(e)})}async function CV(e){return le(`${se}/a"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 314558,
+          "matched": "/api/pools/fee-hook",
+          "snippet": "ethod:\"POST\",body:JSON.stringify(e)})}async function SV(e){return le(`${se}/api/pools/create-fee-hook`,{method:\"POST\",body:JSON.stringify(e)})}async function kV(e){return le(`${se}/api/pools/fee-hook`,{method:\"PATCH\",body:JSON.stringify(e)})}async function CV(e){return le(`${se}/api/pools/fee-hook-lp`,{method:\"PATCH\",body:JSON.stringify(e)})}async function NV(){return le(`${se"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 314657,
+          "matched": "/api/pools/fee-hook-lp",
+          "snippet": "ok`,{method:\"POST\",body:JSON.stringify(e)})}async function kV(e){return le(`${se}/api/pools/fee-hook`,{method:\"PATCH\",body:JSON.stringify(e)})}async function CV(e){return le(`${se}/api/pools/fee-hook-lp`,{method:\"PATCH\",body:JSON.stringify(e)})}async function NV(){return le(`${se}/api/fee-hooks`)}async function EV(e=3){return le(`${se}/api/pools/create-history?limit=${encodeURICo"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 314758,
+          "matched": "/api/fee-hook",
+          "snippet": ",{method:\"PATCH\",body:JSON.stringify(e)})}async function CV(e){return le(`${se}/api/pools/fee-hook-lp`,{method:\"PATCH\",body:JSON.stringify(e)})}async function NV(){return le(`${se}/api/fee-hooks`)}async function EV(e=3){return le(`${se}/api/pools/create-history?limit=${encodeURIComponent(e)}`)}async function jV(e){return le(`${se}/api/pools/quick-liquidity`,{method:\"POST"
+        }
+      ]
+    },
+    {
+      "label": "chain access configuration API",
+      "pattern": "\\/api\\/system-config\\/chains",
+      "occurrenceCount": 2,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 249816,
+          "matched": "/api/system-config/chains",
+          "snippet": "on Q5(e){return le(`${se}/api/user/preferences`,{method:\"PUT\",body:JSON.stringify(e)})}async function R0(){return le(`${se}/api/system-config`)}async function _U(){return le(`${se}/api/system-config/chains`)}async function AU(e){return le(`${se}/api/system-config/chains`,{method:\"POST\",body:JSON.stringify({access:e})})}async function AS(e,t){return le(`${se}/api/system-config`,{meth"
+        },
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 249881,
+          "matched": "/api/system-config/chains",
+          "snippet": "y:JSON.stringify(e)})}async function R0(){return le(`${se}/api/system-config`)}async function _U(){return le(`${se}/api/system-config/chains`)}async function AU(e){return le(`${se}/api/system-config/chains`,{method:\"POST\",body:JSON.stringify({access:e})})}async function AS(e,t){return le(`${se}/api/system-config`,{method:\"POST\",body:JSON.stringify({key:e,value:t})})}async function O"
+        }
+      ]
+    }
+  ]
+}

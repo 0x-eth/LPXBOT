@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-13T07:55:43.618Z",
+  "baseline": {
+    "date": "2026-08-13",
+    "source": "docs/research/public-surface.md",
+    "chains": [
+      {
+        "chainId": 56,
+        "name": "BNB Smart Chain",
+        "protocols": [
+          "Uniswap V3",
+          "PancakeSwap V3",
+          "Uniswap V4",
+          "PancakeSwap V4/Infinity"
+        ]
+      },
+      {
+        "chainId": 8453,
+        "name": "Base",
+        "protocols": [
+          "主要为 Uniswap V3/V4"
+        ]
+      },
+      {
+        "chainId": 1,
+        "name": "Ethereum",
+        "protocols": [
+          "主要为 Uniswap V3/V4"
+        ]
+      },
+      {
+        "chainId": 4663,
+        "name": "Robinhood Chain",
+        "protocols": [
+          "公开配置以 Uniswap V3/V4 适配为主"
+        ]
+      },
+      {
+        "chainId": 196,
+        "name": "X Layer",
+        "protocols": [
+          "公开配置以 Uniswap V3/V4 适配为主"
+        ]
+      }
+    ],
+    "platformIds": [
+      {
+        "id": 1,
+        "protocol": "Uniswap V3"
+      },
+      {
+        "id": 2,
+        "protocol": "PancakeSwap V3"
+      },
+      {
+        "id": 4,
+        "protocol": "Uniswap V4"
+      },
+      {
+        "id": 5,
+        "protocol": "PancakeSwap V4"
+      }
+    ]
+  },
+  "liveBundleVerification": [
+    {
+      "chainId": 56,
+      "name": "BNB Smart Chain",
+      "protocols": [
+        "Uniswap V3",
+        "PancakeSwap V3",
+        "Uniswap V4",
+        "PancakeSwap V4/Infinity"
+      ],
+      "observed": true,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 301213,
+          "registryName": "bsc",
+          "displayName": "BNB Smart Chain",
+          "supportedPlatformSymbols": [
+            "UNISWAP_V3",
+            "PANCAKESWAP_V3",
+            "UNISWAP_V4",
+            "PANCAKESWAP_V4"
+          ],
+          "snippet": "lockscout.com\"}},contracts:{multicall3:{address:\"0xcA11bde05977b3631167028862bE2a173976CA11\"}}}),un={UNISWAP_V3:1,PANCAKESWAP_V3:2,UNISWAP_V4:4,PANCAKESWAP_V4:5},i_={1:\"UniV3\",2:\"CakeV3\",4:\"UniV4\",5:\"CakeV4\"},bg=\"0x0000000000000000000000000000000000000000\",ls={56:{id:56,name:\"bsc\",displayName:\"BNB Smart Chain\",shortName:\"BSC\",emoji:\"🟡\",logo:\"/bsc.png\",viemChain:t_,okxChainIndex:\"56\",explorerUrl:\"https://bscscan.com\",explorerName:\"BscScan\",dexScreenerPath:\"bsc\",nativeToken:{symbol:\"BNB\",wrappedSymbol:\"WBNB\",decimals:18,wrapped:\"0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c\",logo:\"https://static.o"
+        }
+      ]
+    },
+    {
+      "chainId": 8453,
+      "name": "Base",
+      "protocols": [
+        "主要为 Uniswap V3/V4"
+      ],
+      "observed": true,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 304177,
+          "registryName": "base",
+          "displayName": "Base",
+          "supportedPlatformSymbols": [
+            "UNISWAP_V3",
+            "UNISWAP_V4"
+          ],
+          "snippet": "ickSpacing:{uniswapV3:{100:1,500:10,3e3:60,1e4:200},pancakeV3:{100:1,500:10,2500:50,1e4:200},uniswapV4:{100:1,500:10,3e3:60,1e4:200},pancakeV4:{100:1,500:10,2500:50,1e4:200}},supportedPlatforms:[un.UNISWAP_V3,un.PANCAKESWAP_V3,un.UNISWAP_V4,un.PANCAKESWAP_V4]},8453:{id:8453,name:\"base\",displayName:\"Base\",shortName:\"Base\",emoji:\"🔵\",logo:\"/base.png\",viemChain:fk,okxChainIndex:\"8453\",explorerUrl:\"https://basescan.org\",explorerName:\"BaseScan\",dexScreenerPath:\"base\",nativeToken:{symbol:\"ETH\",wrappedSymbol:\"WETH\",decimals:18,wrapped:\"0x4200000000000000000000000000000000000006\",logo:\"https://static."
+        }
+      ]
+    },
+    {
+      "chainId": 1,
+      "name": "Ethereum",
+      "protocols": [
+        "主要为 Uniswap V3/V4"
+      ],
+      "observed": true,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 306121,
+          "registryName": "eth",
+          "displayName": "Ethereum",
+          "supportedPlatformSymbols": [
+            "UNISWAP_V3",
+            "UNISWAP_V4"
+          ],
+          "snippet": "67A71\",PERMIT2:\"0x000000000022D473030F116dDEE9F6B43aC78BA3\",MULTICALL3:\"0xcA11bde05977b3631167028862bE2a173976CA11\"},tickSpacing:{uniswapV3:{100:1,500:10,3e3:60,1e4:200},uniswapV4:{100:1,500:10,3e3:60,1e4:200}},supportedPlatforms:[un.UNISWAP_V3,un.UNISWAP_V4]},1:{id:1,name:\"eth\",displayName:\"Ethereum\",shortName:\"ETH\",emoji:\"💠\",logo:\"/eth.png\",viemChain:n_,okxChainIndex:\"1\",explorerUrl:\"https://etherscan.io\",explorerName:\"Etherscan\",dexScreenerPath:\"ethereum\",nativeToken:{symbol:\"ETH\",wrappedSymbol:\"WETH\",decimals:18,wrapped:\"0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2\",logo:\"https://static.okl"
+        }
+      ]
+    },
+    {
+      "chainId": 4663,
+      "name": "Robinhood Chain",
+      "protocols": [
+        "公开配置以 Uniswap V3/V4 适配为主"
+      ],
+      "observed": true,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 308057,
+          "registryName": "robinhood",
+          "displayName": "Robinhood Chain",
+          "supportedPlatformSymbols": [
+            "UNISWAP_V3",
+            "UNISWAP_V4"
+          ],
+          "snippet": "97227\",PERMIT2:\"0x000000000022D473030F116dDEE9F6B43aC78BA3\",MULTICALL3:\"0xcA11bde05977b3631167028862bE2a173976CA11\"},tickSpacing:{uniswapV3:{100:1,500:10,3e3:60,1e4:200},uniswapV4:{100:1,500:10,3e3:60,1e4:200}},supportedPlatforms:[un.UNISWAP_V3,un.UNISWAP_V4]},4663:{id:4663,name:\"robinhood\",displayName:\"Robinhood Chain\",shortName:\"Robinhood\",emoji:\"🏹\",logo:\"/robinhood.png\",viemChain:a_,okxChainIndex:\"4663\",explorerUrl:\"https://robinhoodchain.blockscout.com\",explorerName:\"Blockscout\",dexScreenerPath:\"robinhood\",nativeToken:{symbol:\"ETH\",wrappedSymbol:\"WETH\",decimals:18,wrapped:\"0x0Bd7D308f8E16"
+        }
+      ]
+    },
+    {
+      "chainId": 196,
+      "name": "X Layer",
+      "protocols": [
+        "公开配置以 Uniswap V3/V4 适配为主"
+      ],
+      "observed": true,
+      "evidence": [
+        {
+          "file": "assets/index-D0FmPqGc.js",
+          "offset": 309691,
+          "registryName": "xlayer",
+          "displayName": "X Layer",
+          "supportedPlatformSymbols": [
+            "UNISWAP_V3",
+            "UNISWAP_V4"
+          ],
+          "snippet": "e673b\",PERMIT2:\"0x000000000022D473030F116dDEE9F6B43aC78BA3\",MULTICALL3:\"0xcA11bde05977b3631167028862bE2a173976CA11\"},tickSpacing:{uniswapV3:{100:1,500:10,3e3:60,1e4:200},uniswapV4:{100:1,500:10,3e3:60,1e4:200}},supportedPlatforms:[un.UNISWAP_V3,un.UNISWAP_V4]},196:{id:196,name:\"xlayer\",displayName:\"X Layer\",shortName:\"XLayer\",emoji:\"⚫\",logo:\"/xlayer.png\",viemChain:s_,okxChainIndex:\"196\",explorerUrl:\"https://www.oklink.com/x-layer\",explorerName:\"OKLink\",dexScreenerPath:\"xlayer\",nativeToken:{symbol:\"OKB\",wrappedSymbol:\"WOKB\",decimals:18,wrapped:\"0xe538905cf8410324e03A5A23C1c177a474D59b2b\",logo:\""
+        }
+      ]
+    }
+  ],
+  "caveat": "Live records are parsed from chain registry objects containing id, name, displayName, and supportedPlatforms in the captured bundle."
+}
