@@ -9,7 +9,7 @@
     "pnpm": ">=11.0.0 <12.0.0"
   },
   "scripts": {
-    "audit:dependencies": "pnpm audit --audit-level high",
+    "audit:dependencies": "pnpm audit",
     "build": "turbo run build",
     "check:acceptance": "node scripts/check-acceptance.mjs",
     "check:all": "pnpm check:baseline && pnpm check:traceability && pnpm check:docs && pnpm check:acceptance",
