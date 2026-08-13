@@ -20,7 +20,7 @@
     },
     {
       "id": "T-MIG",
-      "command": "pnpm test:infra && pnpm test:postgres",
+      "command": "pnpm infra:up && pnpm db:migrate && pnpm db:migrate && pnpm db:seed && pnpm db:seed && pnpm infra:verify && pnpm test:infra && pnpm test:postgres && pnpm infra:down && pnpm infra:reset",
       "result": "passed",
       "evidencePath": "artifacts/acceptance/P01-02/E-REC.md"
     },

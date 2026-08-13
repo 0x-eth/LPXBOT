@@ -19,7 +19,7 @@
 
 ## Test observations
 
-- `pnpm test` passed with 49 Vitest tests and 19 governance tests while Docker services were stopped.
+- `pnpm test` passed with 55 Vitest tests and 19 governance tests while Docker services were stopped.
 - The focused Fastify suite passed 26 tests after the final guard status-code matrix was added.
 - `pnpm test:postgres` passed against PostgreSQL after deleting all generated workspace `dist` directories, proving the command is self-contained on a clean checkout.
 
