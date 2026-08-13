@@ -36,7 +36,7 @@ test("Compose defines an isolated, persistent local LPBot stack", () => {
     anvil: "ghcr.io/foundry-rs/foundry:v1.3.1",
   };
 
-  assert.equal(config.name, "lpbot-local");
+  assert.equal(config.name, "lpbot-p00-local");
 
   for (const [serviceName, image] of Object.entries(expectedImages)) {
     const service = config.services[serviceName];

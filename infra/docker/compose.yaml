@@ -1,4 +1,4 @@
-name: lpbot-local
+name: lpbot-p00-local
 
 services:
   postgres:
@@ -149,22 +149,22 @@ services:
 
 volumes:
   postgres-data:
-    name: lpbot-local-postgres-data
+    name: lpbot-p00-local-postgres-data
     labels:
-      io.lpbot.local-project: lpbot-local
+      io.lpbot.local-project: lpbot-p00-local
   redis-data:
-    name: lpbot-local-redis-data
+    name: lpbot-p00-local-redis-data
     labels:
-      io.lpbot.local-project: lpbot-local
+      io.lpbot.local-project: lpbot-p00-local
   minio-data:
-    name: lpbot-local-minio-data
+    name: lpbot-p00-local-minio-data
     labels:
-      io.lpbot.local-project: lpbot-local
+      io.lpbot.local-project: lpbot-p00-local
   anvil-data:
-    name: lpbot-local-anvil-data
+    name: lpbot-p00-local-anvil-data
     labels:
-      io.lpbot.local-project: lpbot-local
+      io.lpbot.local-project: lpbot-p00-local
 
 networks:
   default:
-    name: lpbot-local-network
+    name: lpbot-p00-local-network
