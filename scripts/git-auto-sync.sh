@@ -2,7 +2,7 @@
 
 set -uo pipefail
 
-readonly REPO_DIR="/Users/alpha/Documents/LPXBOT"
+readonly REPO_DIR="/Users/alpha/Projects/LPXBOT"
 readonly BRANCH="main"
 readonly LOCK_DIR="${TMPDIR:-/tmp}/lpxbot-git-auto-sync.lock"
 
