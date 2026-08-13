@@ -22,6 +22,22 @@ compose() {
     "$@"
 }
 
+command_timeout_seconds() {
+  local value="${INFRA_COMMAND_TIMEOUT_SECONDS:-}"
+
+  if [[ -z "$value" ]]; then
+    value="$(sed -n 's/^INFRA_COMMAND_TIMEOUT_SECONDS=//p' "$ENV_FILE" | tail -n 1)"
+  fi
+  value="${value:-30}"
+
+  if [[ ! "$value" =~ ^[1-9][0-9]*$ ]]; then
+    printf 'Error: INFRA_COMMAND_TIMEOUT_SECONDS must be a positive integer.\n' >&2
+    exit 1
+  fi
+
+  printf '%s' "$value"
+}
+
 require_postgres() {
   local container_id health
   container_id="$(compose ps --quiet postgres)"
@@ -39,7 +55,17 @@ require_postgres() {
 }
 
 dbmate() {
-  compose --profile tools run --rm --no-deps dbmate "$@"
+  local operation="$1"
+  local status=0 timeout
+  timeout="$(command_timeout_seconds)"
+
+  compose --profile tools run --rm --no-deps --entrypoint /usr/bin/timeout \
+    dbmate "$timeout" dbmate "$@" || status=$?
+
+  if [[ "$status" -eq 124 ]]; then
+    printf 'Error: database %s exceeded the %ss command timeout.\n' "$operation" "$timeout" >&2
+  fi
+  return "$status"
 }
 
 migrate() {
@@ -51,9 +77,19 @@ status() {
 }
 
 seed() {
-  compose exec -T postgres sh -ec \
+  local status=0 timeout
+  timeout="$(command_timeout_seconds)"
+
+  compose exec -T postgres timeout "$timeout" sh -ec \
     'psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --set ON_ERROR_STOP=1 --quiet' \
-    <"$SEED_FILE"
+    <"$SEED_FILE" || status=$?
+
+  if [[ "$status" -eq 124 ]]; then
+    printf 'Error: database seed exceeded the %ss command timeout.\n' "$timeout" >&2
+  fi
+  if [[ "$status" -ne 0 ]]; then
+    return "$status"
+  fi
   printf 'Deterministic local seed applied.\n'
 }
 

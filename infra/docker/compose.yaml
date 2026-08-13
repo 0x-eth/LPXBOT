@@ -135,6 +135,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       DBMATE_MIGRATIONS_DIR: /db/migrations
       DBMATE_NO_DUMP_SCHEMA: "true"
+      INFRA_COMMAND_TIMEOUT_SECONDS: ${INFRA_COMMAND_TIMEOUT_SECONDS}
     volumes:
       - ../migrations:/db/migrations:ro
     working_dir: /db
