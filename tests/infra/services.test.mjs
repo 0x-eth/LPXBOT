@@ -92,12 +92,12 @@ test("PostgreSQL exposes TimescaleDB, pgcrypto, and migration history", () => {
     "pgcrypto,timescaledb",
   );
   assert.equal(query("SELECT to_regclass('public.schema_migrations') IS NOT NULL"), "t");
-  assert.equal(query("SELECT count(*) FROM schema_migrations"), "1");
+  assert.equal(query("SELECT count(*) FROM schema_migrations"), "2");
   assert.equal(
     query(
       "SELECT string_agg(tablename, ',' ORDER BY tablename) FROM pg_tables WHERE schemaname = 'public'",
     ),
-    "app_metadata,schema_migrations",
+    "access_audit_events,app_metadata,schema_migrations,sessions,users",
   );
 });
 

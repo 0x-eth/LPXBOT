@@ -46,10 +46,7 @@ export function createErrorEnvelope(error: ApiError): ErrorEnvelope {
   return { success: false, error };
 }
 
-export function createSuccessEnvelope<T>(
-  data: T,
-  requestId: string | null,
-): SuccessEnvelope<T> {
+export function createSuccessEnvelope<T>(data: T, requestId: string | null): SuccessEnvelope<T> {
   return { success: true, data, requestId };
 }
 

@@ -1,9 +1,5 @@
 import type { ErrorEnvelope, SessionView } from "../packages/api-contract/src/index.js";
-import {
-  AuthClient,
-  canEnterRoute,
-  type AuthFetch,
-} from "../apps/web/src/auth-client.js";
+import { AuthClient, canEnterRoute, type AuthFetch } from "../apps/web/src/auth-client.js";
 import { describe, expect, it, vi } from "vitest";
 
 const session: SessionView = {
@@ -98,7 +94,9 @@ describe("P01-02 web auth client", () => {
     [403, "REGION_BLOCKED", { status: "region-blocked" }],
     [503, "MAINTENANCE", { status: "maintenance" }],
   ] as const)("maps %i %s to a stable auth state", async (status, code, expected) => {
-    const client = new AuthClient(vi.fn<AuthFetch>().mockResolvedValue(errorResponse(status, code)));
+    const client = new AuthClient(
+      vi.fn<AuthFetch>().mockResolvedValue(errorResponse(status, code)),
+    );
     await expect(client.restore()).resolves.toMatchObject(expected);
   });
 

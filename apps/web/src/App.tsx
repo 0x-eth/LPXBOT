@@ -3,12 +3,7 @@ import { LogOut, RefreshCw, ShieldAlert, Wrench } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
-import {
-  AuthClient,
-  authStatePath,
-  canEnterRoute,
-  type AuthPageState,
-} from "./auth-client";
+import { AuthClient, authStatePath, canEnterRoute, type AuthPageState } from "./auth-client";
 
 function BootingPage() {
   return (
@@ -39,7 +34,11 @@ function LoginPage() {
   );
 }
 
-function BlockedPage({ state }: { state: Extract<AuthState, { status: "blocked" | "region-blocked" }> }) {
+function BlockedPage({
+  state,
+}: {
+  state: Extract<AuthState, { status: "blocked" | "region-blocked" }>;
+}) {
   const regionBlocked = state.status === "region-blocked";
   return (
     <main className="state-page">
@@ -73,7 +72,9 @@ function MaintenancePage({ state }: { state: Extract<AuthState, { status: "maint
           <p>The service is temporarily unavailable.</p>
           {state.message ? <p>{state.message}</p> : null}
         </div>
-        {state.until ? <time dateTime={state.until}>Expected completion: {state.until}</time> : null}
+        {state.until ? (
+          <time dateTime={state.until}>Expected completion: {state.until}</time>
+        ) : null}
       </section>
     </main>
   );
@@ -114,7 +115,12 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
         </nav>
         <div className="header-actions">
           <span className="role-label">{state.session.role}</span>
-          <button className="icon-button" type="button" onClick={refresh} aria-label="Refresh session">
+          <button
+            className="icon-button"
+            type="button"
+            onClick={refresh}
+            aria-label="Refresh session"
+          >
             <RefreshCw size={18} aria-hidden="true" />
           </button>
           <button className="icon-button" type="button" onClick={logout} aria-label="Sign out">
@@ -135,33 +141,33 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
           <p role="alert">{page.message}</p>
         </main>
       ) : (
-      <Routes>
-        <Route
-          path="/tasks/:status"
-          element={
-            <main className="workspace">
-              <p className="eyebrow">Protected workspace</p>
-              <h1>Tasks</h1>
-              <p>Session-backed task access is active.</p>
-            </main>
-          }
-        />
-        <Route
-          path="/users"
-          element={
-            state.session.role === "admin" ? (
+        <Routes>
+          <Route
+            path="/tasks/:status"
+            element={
               <main className="workspace">
-                <p className="eyebrow">Admin only</p>
-                <h1>Users</h1>
-                <p>User administration</p>
+                <p className="eyebrow">Protected workspace</p>
+                <h1>Tasks</h1>
+                <p>Session-backed task access is active.</p>
               </main>
-            ) : (
-              <Navigate to="/tasks/running" replace />
-            )
-          }
-        />
-        <Route path="*" element={<Navigate to="/tasks/running" replace />} />
-      </Routes>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              state.session.role === "admin" ? (
+                <main className="workspace">
+                  <p className="eyebrow">Admin only</p>
+                  <h1>Users</h1>
+                  <p>User administration</p>
+                </main>
+              ) : (
+                <Navigate to="/tasks/running" replace />
+              )
+            }
+          />
+          <Route path="*" element={<Navigate to="/tasks/running" replace />} />
+        </Routes>
       )}
     </div>
   );

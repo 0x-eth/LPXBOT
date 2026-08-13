@@ -20,6 +20,8 @@ describe("P01-02 auth migration", () => {
     expect(sql).toMatch(/REFERENCES users\(id\) ON DELETE CASCADE/);
     expect(sql).toMatch(/CHECK \(role IN \('user', 'pro', 'admin'\)\)/);
     expect(sql).toMatch(/CHECK \(status IN \('active', 'pending', 'rejected', 'banned'\)\)/);
-    expect(sql).not.toMatch(/\b(token|cookie|authorization|ip_address|user_agent)\s+(?:text|varchar|bytea)/i);
+    expect(sql).not.toMatch(
+      /\b(token|cookie|authorization|ip_address|user_agent)\s+(?:text|varchar|bytea)/i,
+    );
   });
 });

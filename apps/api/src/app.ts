@@ -1,9 +1,5 @@
 import cookie from "@fastify/cookie";
-import {
-  createErrorEnvelope,
-  createSuccessEnvelope,
-  type SessionView,
-} from "@lpbot/api-contract";
+import { createErrorEnvelope, createSuccessEnvelope, type SessionView } from "@lpbot/api-contract";
 import {
   authorizeAccount,
   canAccessOwnedResource,
@@ -114,9 +110,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
 
   app.post("/api/auth/me", async (request, reply) => {
     const token = sessionToken(request);
-    const resolved = token
-      ? await findValidSession(token, options.sessionStore, now())
-      : null;
+    const resolved = token ? await findValidSession(token, options.sessionStore, now()) : null;
     if (!resolved) {
       await options.sessionStore.recordAccessAudit({
         action: "session.access",
