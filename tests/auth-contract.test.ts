@@ -4,7 +4,7 @@ import {
   isSessionView,
   type AuthState,
   type SessionView,
-} from "@lpbot/api-contract";
+} from "../packages/api-contract/src/index.js";
 import { describe, expect, it } from "vitest";
 
 const session: SessionView = {
