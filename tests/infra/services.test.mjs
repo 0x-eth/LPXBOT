@@ -30,10 +30,7 @@ function parseEnv(source) {
 }
 
 function redact(source) {
-  return secrets.reduce(
-    (result, secret) => result.replaceAll(secret, "[REDACTED]"),
-    source,
-  );
+  return secrets.reduce((result, secret) => result.replaceAll(secret, "[REDACTED]"), source);
 }
 
 function run(command, args, options = {}) {
