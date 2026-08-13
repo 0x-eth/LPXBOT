@@ -962,6 +962,30 @@ async function main() {
   await writeJson('baseline-diff.json', baselineDiff);
   await writeJson('missing-resources.json', missingResources);
   await writeJson('capture-report.json', captureReport);
+  await mkdir(path.join(OUTPUT, 'tools'), { recursive: true });
+  await writeFile(
+    path.join(OUTPUT, 'tools/freeze-lpbot-baseline.mjs'),
+    await readFile(path.join(ROOT, 'scripts/freeze-lpbot-baseline.mjs')),
+  );
+  await writeFile(
+    path.join(OUTPUT, 'commands.txt'),
+    [
+      `$ node scripts/freeze-lpbot-baseline.mjs ${path.relative(ROOT, OUTPUT)}`,
+      `$ cd ${path.relative(ROOT, OUTPUT)}`,
+      '$ sha256sum --check sha256sums.txt',
+      '$ for file in *.json; do jq empty "$file"; done',
+      '$ find . -type f -print | LC_ALL=C sort',
+      '',
+    ].join('\n'),
+  );
+
+  const plannedFileList = [
+    ...(await listFiles(OUTPUT)),
+    'artifact-manifest.json',
+    'file-list.txt',
+    'sha256sums.txt',
+  ].sort();
+  await writeFile(path.join(OUTPUT, 'file-list.txt'), `${uniqueBy(plannedFileList, (item) => item).join('\n')}\n`);
 
   const sourceRecords = [...fetched.values()]
     .map((item) => item.metadata)
