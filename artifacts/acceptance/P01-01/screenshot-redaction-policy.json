@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "workItemId": "P01-01",
-  "strategy": "opaque-rectangles-over-previously-redacted-png",
+  "strategy": "review-every-screenshot-and-apply-opaque-rectangles-where-required",
   "files": [
     {
       "path": "screenshots/desktop-activity.png",
@@ -98,6 +98,36 @@
       "redactions": [
         { "x": 18, "y": 153, "width": 220, "height": 38, "reason": "account-api-key-timestamp" }
       ]
+    },
+    {
+      "path": "screenshots/desktop-pools.png",
+      "viewport": { "width": 1440, "height": 900 },
+      "redactions": []
+    },
+    {
+      "path": "screenshots/mobile-pools.png",
+      "viewport": { "width": 390, "height": 844 },
+      "redactions": []
+    },
+    {
+      "path": "screenshots/desktop-strategies.png",
+      "viewport": { "width": 1440, "height": 900 },
+      "redactions": []
+    },
+    {
+      "path": "screenshots/mobile-strategies.png",
+      "viewport": { "width": 390, "height": 844 },
+      "redactions": []
+    },
+    {
+      "path": "screenshots/desktop-settings.png",
+      "viewport": { "width": 1440, "height": 900 },
+      "redactions": []
+    },
+    {
+      "path": "screenshots/mobile-settings.png",
+      "viewport": { "width": 390, "height": 844 },
+      "redactions": []
     }
   ]
 }
