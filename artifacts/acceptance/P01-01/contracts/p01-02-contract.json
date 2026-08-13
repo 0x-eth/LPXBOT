@@ -1,0 +1,262 @@
+{
+  "schemaVersion": 1,
+  "contractId": "P01-02-auth-rbac-api-ui",
+  "sourceWorkItem": "P01-01",
+  "status": "adoptable-with-unverified-fixtures",
+  "featureIds": [
+    "AUTH-01", "AUTH-02", "AUTH-03", "AUTH-04", "AUTH-05", "AUTH-06", "AUTH-07", "AUTH-08", "AUTH-09", "AUTH-10",
+    "SHELL-01", "SHELL-02", "SHELL-03", "SHELL-04", "SHELL-05", "SHELL-06", "SET-01", "SET-02"
+  ],
+  "evidencePolicy": {
+    "live-observed": "May be used as a visual and navigation reference.",
+    "live-doc-observed": "May be used as an API schema candidate; validate with local contract tests.",
+    "frozen-bundle-candidate": "May seed implementation but is not a measured live fact.",
+    "unverified": "Must be implemented and tested with local fixtures before status advances."
+  },
+  "auth": {
+    "clientState": {
+      "discriminator": "status",
+      "variants": [
+        { "status": "booting" },
+        { "status": "anonymous" },
+        { "status": "authenticating", "method": "telegram-mini-app|telegram-bot-link|wallet" },
+        { "status": "active", "session": "SessionView" },
+        { "status": "blocked", "reason": "pending|rejected|banned", "message": "string|null" },
+        { "status": "maintenance", "message": "string|null", "until": "iso-date-time|null" },
+        { "status": "region-blocked", "region": "string|null", "message": "string|null" }
+      ]
+    },
+    "sessionView": {
+      "userId": "string",
+      "role": "user|pro|admin",
+      "tier": "normal|pro",
+      "allowedChainIds": "array<number>",
+      "displayName": "string|null",
+      "avatarUrl": "string|null",
+      "maintenanceBypass": "boolean"
+    },
+    "credentialBoundary": [
+      "Passwords and private keys never enter the web API log, telemetry, fixture or artifact layer.",
+      "Telegram initData is accepted only by the auth verifier and never persisted verbatim.",
+      "Wallet nonces are one-time, address/domain/chain/time bound and consumed atomically.",
+      "Bot login tokens are random, one-time and expire; status polling never returns a credential after consumption.",
+      "Bearer tokens are redacted from logs. Prefer an HttpOnly Secure SameSite cookie for the replica; if Bearer compatibility is required, keep it in memory and rotate it."
+    ],
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/me",
+        "featureIds": ["AUTH-01", "AUTH-05"],
+        "evidenceLevel": "frozen-bundle-candidate",
+        "request": { "initData": "sensitive-string|null" },
+        "response": { "success": "boolean", "user": "SessionView", "isAdmin": "boolean", "maintenance": "MaintenanceView|null" },
+        "errors": ["AUTH_INVALID", "AUTH_EXPIRED", "AUTH_REPLAYED", "ACCOUNT_PENDING", "ACCOUNT_REJECTED", "ACCOUNT_BANNED", "MAINTENANCE", "REGION_BLOCKED"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/login-token",
+        "featureIds": ["AUTH-02"],
+        "evidenceLevel": "frozen-bundle-candidate",
+        "request": {},
+        "response": { "success": "boolean", "token": "sensitive-opaque-string", "expiresAt": "iso-date-time" },
+        "errors": ["RATE_LIMITED"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/login-status/{token}",
+        "featureIds": ["AUTH-02"],
+        "evidenceLevel": "frozen-bundle-candidate",
+        "request": {},
+        "response": { "success": "boolean", "confirmed": "boolean", "session": "SessionView|null", "credential": "sensitive-one-time-string|null" },
+        "errors": ["LOGIN_TOKEN_EXPIRED", "LOGIN_TOKEN_CONSUMED"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/wallet/nonce",
+        "featureIds": ["AUTH-03"],
+        "evidenceLevel": "frozen-bundle-candidate",
+        "request": { "address": "evm-address" },
+        "response": { "success": "boolean", "nonceId": "opaque-id", "message": "eip4361-compatible-string", "expiresAt": "iso-date-time" },
+        "errors": ["ADDRESS_INVALID", "RATE_LIMITED"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/wallet/login",
+        "featureIds": ["AUTH-03"],
+        "evidenceLevel": "frozen-bundle-candidate",
+        "request": { "address": "evm-address", "nonceId": "opaque-id", "signature": "sensitive-hex-string" },
+        "response": { "success": "boolean", "session": "SessionView", "credential": "sensitive-string" },
+        "errors": ["NONCE_INVALID", "NONCE_EXPIRED", "NONCE_REPLAYED", "SIGNATURE_INVALID", "ACCOUNT_PENDING", "ACCOUNT_REJECTED", "ACCOUNT_BANNED"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/wallet/links",
+        "featureIds": ["AUTH-04"],
+        "evidenceLevel": "frozen-bundle-candidate",
+        "request": {},
+        "response": { "success": "boolean", "links": "array<{id:opaque-id,addressMasked:string,label:string|null,createdAt:iso-date-time}>" },
+        "errors": ["UNAUTHENTICATED"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/wallet/link-nonce",
+        "featureIds": ["AUTH-04"],
+        "evidenceLevel": "frozen-bundle-candidate",
+        "request": { "address": "evm-address" },
+        "response": { "success": "boolean", "nonceId": "opaque-id", "message": "string", "expiresAt": "iso-date-time" },
+        "errors": ["UNAUTHENTICATED", "ADDRESS_ALREADY_LINKED"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/wallet/link",
+        "featureIds": ["AUTH-04"],
+        "evidenceLevel": "frozen-bundle-candidate",
+        "request": { "address": "evm-address", "nonceId": "opaque-id", "signature": "sensitive-hex-string", "label": "string|null" },
+        "response": { "success": "boolean", "link": "object" },
+        "errors": ["UNAUTHENTICATED", "NONCE_INVALID", "SIGNATURE_INVALID", "ADDRESS_ALREADY_LINKED"]
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/auth/wallet/link/{linkId}",
+        "featureIds": ["AUTH-04"],
+        "evidenceLevel": "frozen-bundle-candidate",
+        "request": {},
+        "response": { "success": "boolean" },
+        "errors": ["UNAUTHENTICATED", "FORBIDDEN", "LINK_NOT_FOUND"]
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/logout",
+        "featureIds": ["AUTH-05"],
+        "evidenceLevel": "implementation-required",
+        "request": {},
+        "response": { "success": "boolean" },
+        "errors": []
+      }
+    ]
+  },
+  "rbac": {
+    "roles": ["anonymous", "user", "pro", "admin"],
+    "serverAuthoritative": true,
+    "defaultDeny": true,
+    "chainAccess": {
+      "values": ["off", "pro", "all"],
+      "semantics": {
+        "off": "deny creation and new risk exposure; allow monitoring and protective exits",
+        "pro": "allow new risk exposure for pro and admin only",
+        "all": "allow new risk exposure for user, pro and admin subject to operation policy"
+      }
+    },
+    "routeMatrix": [
+      { "path": "/login", "anonymous": "allow", "user": "redirect:/tasks/running", "pro": "redirect:/tasks/running", "admin": "redirect:/tasks/running", "validation": "requires-fixture-validation" },
+      { "path": "/blocked", "anonymous": "state-dependent", "user": "state-dependent", "pro": "state-dependent", "admin": "state-dependent", "validation": "requires-fixture-validation" },
+      { "path": "/maintenance", "anonymous": "state-dependent", "user": "state-dependent", "pro": "state-dependent", "admin": "bypass", "validation": "requires-fixture-validation" },
+      { "path": "/tasks/:status", "anonymous": "deny", "user": "allow", "pro": "allow", "admin": "allow", "validation": "ordinary-user-observed" },
+      { "path": "/pools", "anonymous": "deny", "user": "allow-read", "pro": "allow-read", "admin": "allow-read", "validation": "ordinary-user-observed" },
+      { "path": "/strategies", "anonymous": "deny", "user": "allow-read", "pro": "allow-read", "admin": "allow-read", "validation": "ordinary-user-observed" },
+      { "path": "/activity", "anonymous": "deny", "user": "allow-own", "pro": "allow-own", "admin": "allow-authorized-scope", "validation": "ordinary-user-observed" },
+      { "path": "/wallets", "anonymous": "deny", "user": "allow-own", "pro": "allow-own", "admin": "allow-authorized-scope", "validation": "ordinary-user-observed" },
+      { "path": "/developer", "anonymous": "deny", "user": "allow-own", "pro": "allow-own", "admin": "allow-own", "validation": "ordinary-user-observed" },
+      { "path": "/settings", "anonymous": "deny", "user": "allow-own", "pro": "allow-own", "admin": "allow-admin-sections", "validation": "ordinary-user-observed" },
+      { "path": "/users", "anonymous": "deny", "user": "deny", "pro": "deny", "admin": "allow", "validation": "requires-fixture-validation" }
+    ],
+    "apiRequirements": [
+      "Every protected handler derives subject and role from the verified server session.",
+      "Resource ownership is checked in the database query, not after returning a row.",
+      "Hidden navigation is presentation only and never substitutes for a 401/403 response.",
+      "All admin and chain-access writes require audit events and explicit tests."
+    ]
+  },
+  "api": {
+    "successEnvelope": { "success": "true", "data": "endpoint-specific|null", "requestId": "opaque-id|null" },
+    "errorEnvelope": { "success": "false", "error": { "code": "stable-string", "message": "localized-safe-string", "requestId": "opaque-id|null", "retryable": "boolean" } },
+    "statusHandling": [
+      { "status": 401, "action": "clear local session view and navigate /login", "featureIds": ["AUTH-05"] },
+      { "status": 403, "code": "REGION_BLOCKED", "action": "render region-blocked auth state", "featureIds": ["AUTH-08"] },
+      { "status": 403, "code": "ACCOUNT_PENDING|ACCOUNT_REJECTED|ACCOUNT_BANNED", "action": "navigate /blocked with server-provided safe reason", "featureIds": ["AUTH-06"] },
+      { "status": 403, "code": "FORBIDDEN", "action": "render route permission state without data", "featureIds": ["AUTH-09"] },
+      { "status": 503, "code": "MAINTENANCE", "action": "navigate /maintenance; admin may bypass", "featureIds": ["AUTH-07"] }
+    ],
+    "readEndpointsForShell": [
+      { "method": "GET", "path": "/api/user/preferences", "response": { "success": "boolean", "preferences": "UserPreferences" }, "evidenceLevel": "frozen-bundle-candidate" },
+      { "method": "GET", "path": "/api/stats", "response": { "success": "boolean", "stats": "ShellStats" }, "evidenceLevel": "live-doc-observed" },
+      { "method": "GET", "path": "/api/stats/stream", "response": { "transport": "sse", "events": "snapshot|update|rec_pools_snapshot" }, "evidenceLevel": "live-doc-observed" },
+      { "method": "GET", "path": "/api/system-config/chains", "response": { "chains": "array<ChainAccessView>" }, "evidenceLevel": "frozen-bundle-candidate" }
+    ],
+    "userPreferences": {
+      "theme": "light|dark|system",
+      "colorTheme": "preset-id|custom",
+      "customColor": "hex-color|null",
+      "taskViewMode": "grid|list",
+      "poolsPanelCollapsed": "boolean",
+      "showHotPools": "boolean",
+      "showScanTab": "boolean",
+      "navConfig": { "order": "array<nav-key>", "hidden": "array<nav-key>" },
+      "poolPreferences": "versioned-object"
+    },
+    "shellStats": {
+      "online": "boolean",
+      "running": "number",
+      "paused": "number",
+      "stopped": "number",
+      "recommendedPools": "array<redacted-market-summary>",
+      "gas": { "base": "number|null", "eth": "number|null" },
+      "client": { "fps": "number|null", "pingMs": "number|null" }
+    }
+  },
+  "ui": {
+    "canonicalRoutes": ["/tasks/running", "/tasks/paused", "/tasks/stopped", "/pools", "/strategies", "/activity", "/wallets", "/developer", "/settings"],
+    "redirects": [
+      { "from": "/", "to": "/tasks/running" },
+      { "from": "/all/:status?", "to": "/tasks/:status" },
+      { "from": "/monitors", "to": "/pools" }
+    ],
+    "navigation": {
+      "keys": ["tasks", "pools", "strategies", "activity", "wallets", "recent-chats"],
+      "desktop": "header navigation",
+      "mobile": "fixed bottom navigation",
+      "locked": ["tasks"],
+      "adminOnly": ["users"],
+      "preference": "navConfig",
+      "overflowRequirement": "labels and badges must not resize or overlap navigation tracks"
+    },
+    "pageState": {
+      "discriminator": "kind",
+      "variants": [
+        { "kind": "loading", "ariaBusy": true, "skeleton": "route-specific" },
+        { "kind": "ready", "data": "route-view-model" },
+        { "kind": "empty", "title": "string", "description": "string|null", "primaryAction": "command|null" },
+        { "kind": "error", "code": "string", "message": "safe-string", "retry": "command|null" },
+        { "kind": "forbidden", "code": "FORBIDDEN", "message": "safe-string" }
+      ]
+    },
+    "shell": {
+      "desktopViewport": { "width": 1440, "height": 900 },
+      "mobileViewport": { "width": 390, "height": 844 },
+      "bottomStatus": ["online", "running", "paused", "stopped", "recommendedPools", "baseGas", "ethGas", "fps", "ping"],
+      "globalFeedback": ["toast", "confirmation-dialog", "global-error-with-retry"],
+      "pwa": ["manifest", "viewport", "safe-area", "theme-color-sync", "telegram-web-app-adapter"]
+    },
+    "accessibilityAcceptance": [
+      "Each route exposes one programmatic page heading.",
+      "Every icon-only control has a stable accessible name.",
+      "Desktop and mobile navigation expose role=navigation and current route state.",
+      "Loading sets aria-busy; errors use role=alert; toasts use appropriate live regions.",
+      "All interactive shell and settings controls are keyboard reachable with visible focus.",
+      "axe has no serious or critical violations in every state fixture."
+    ]
+  },
+  "requiredLocalFixtures": [
+    "anonymous", "telegram-authenticating", "bot-link-pending", "wallet-signature-pending", "active-user", "active-pro", "active-admin",
+    "account-pending", "account-rejected", "account-banned", "maintenance-user", "maintenance-admin-bypass", "region-blocked",
+    "route-loading", "route-empty", "route-error-retryable", "route-error-fatal", "route-forbidden",
+    "theme-light", "theme-dark", "theme-system-light", "theme-system-dark"
+  ],
+  "testGate": {
+    "unit": ["nonce replay and expiry", "bot token one-time use", "role and chain-access truth table", "preference schema migration"],
+    "api": ["401/403/503 envelopes", "cross-user object access", "admin-only endpoints", "credential redaction"],
+    "ui": ["all canonical routes", "all local fixtures", "desktop/mobile", "keyboard", "axe"],
+    "visual": ["1440x900", "390x844", "light", "dark", "loading", "empty", "error", "forbidden"],
+    "requestBoundary": "Local reference tests must abort any unexpected non-GET request unless the test explicitly names an R1 fixture write."
+  }
+}
