@@ -27,7 +27,7 @@ async function digest(filePath) {
 function checksumRecords(source) {
   const records = [];
   for (const [index, line] of source.trimEnd().split("\n").entries()) {
-    const match = /^([0-9a-f]{64})  (.+)$/.exec(line);
+    const match = /^([0-9a-f]{64}) {2}(.+)$/.exec(line);
     if (!match) {
       throw new Error(`invalid sha256sums.txt line ${index + 1}`);
     }
