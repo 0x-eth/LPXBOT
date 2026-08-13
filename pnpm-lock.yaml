@@ -78,6 +78,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/security
 
+  apps/telegram-bot:
+    dependencies:
+      '@lpbot/api-contract':
+        specifier: workspace:*
+        version: link:../../packages/api-contract
+      '@lpbot/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
+
   apps/web:
     dependencies:
       '@lpbot/api-contract':

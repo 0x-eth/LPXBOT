@@ -63,10 +63,17 @@ describe("LPBot workspace", () => {
   });
 
   it("is discovered by pnpm with unique package names", () => {
-    const output = execFileSync("pnpm", ["--recursive", "list", "--depth", "-1", "--json"], {
-      cwd: repositoryRoot,
-      encoding: "utf8",
-    });
+    const pnpmCli = process.env.npm_execpath;
+    if (!pnpmCli) throw new Error("pnpm executable path is unavailable");
+
+    const output = execFileSync(
+      process.execPath,
+      [pnpmCli, "--recursive", "list", "--depth", "-1", "--json"],
+      {
+        cwd: repositoryRoot,
+        encoding: "utf8",
+      },
+    );
     const discovered = (JSON.parse(output) as PackageManifest[])
       .map(({ name }) => name)
       .filter((name) => name.startsWith("@lpbot/"))
