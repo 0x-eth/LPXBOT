@@ -1,5 +1,4 @@
-import { buildApiApp } from "../../apps/api/src/app.js";
-import { PostgresSessionStore } from "../../apps/api/src/postgres-session-store.js";
+import { buildApiApp, PostgresSessionStore } from "../../apps/api/src/index.js";
 import { SessionIssuer } from "../../packages/security/src/index.js";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

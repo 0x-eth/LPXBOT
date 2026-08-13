@@ -6,8 +6,7 @@ import type {
   StoredSession,
 } from "../packages/security/src/index.js";
 import { SessionIssuer } from "../packages/security/src/index.js";
-import { buildApiApp } from "../apps/api/src/app.js";
-import { setBrowserSessionCookie } from "../apps/api/src/browser-session-cookie.js";
+import { buildApiApp, setBrowserSessionCookie } from "../apps/api/src/index.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 class MemorySessionStore implements SessionStore {
