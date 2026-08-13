@@ -86,17 +86,26 @@ describe("P01-02 web auth client", () => {
   });
 
   it("keeps generic 403 as a forbidden page state", async () => {
-    const client = new AuthClient(
-      vi.fn<AuthFetch>().mockResolvedValue(errorResponse(403, "FORBIDDEN")),
-    );
-    await expect(client.restore()).resolves.toEqual({
-      status: "active",
-      session: null,
-      page: {
-        kind: "forbidden",
-        code: "FORBIDDEN",
-        message: "Safe FORBIDDEN message",
-      },
+    const fetcher = vi
+      .fn<AuthFetch>()
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: { isAdmin: false, maintenance: null, user: session },
+          requestId: null,
+        }),
+      )
+      .mockResolvedValueOnce(errorResponse(403, "FORBIDDEN"));
+    const client = new AuthClient(fetcher);
+    await client.restore();
+
+    await client.request("/api/protected");
+
+    expect(client.state).toEqual({ status: "active", session });
+    expect(client.page).toEqual({
+      kind: "forbidden",
+      code: "FORBIDDEN",
+      message: "Safe FORBIDDEN message",
     });
   });
 
