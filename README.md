@@ -84,6 +84,7 @@ pnpm test:infra
 ## 常见故障
 
 - Docker 未启动：启动 Docker Desktop 或 Colima 后重试。
+- migration 报 `no migration files found`：确认仓库所在目录已共享给 Docker VM；Colima 默认不共享 macOS 的 `/tmp`，临时 worktree 应放在已共享的用户目录。
 - 端口冲突：在 `.env` 中修改对应 `*_PORT` 和同文件的宿主机 URL。
 - 健康检查超时：运行 `pnpm infra:status` 和 `pnpm infra:logs`；必要时在 `.env` 中增大 `INFRA_WAIT_TIMEOUT_SECONDS`。
 - migration 或 Seed 报 PostgreSQL 未运行：先运行 `pnpm infra:up`。

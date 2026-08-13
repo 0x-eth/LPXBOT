@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P00-06",
+  "phase": "P00",
+  "risk": "R0",
+  "status": "accepted-with-gaps",
+  "featureIds": [],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm check:all && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-06/command-output.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm infra:up && pnpm db:migrate && pnpm db:migrate && pnpm db:seed && pnpm db:seed && pnpm infra:verify && pnpm test:infra && pnpm infra:down && pnpm infra:reset",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-06/migration-and-cleanup.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm test:e2e",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-06/command-output.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "forge fmt --check && forge build && pnpm test:contracts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-06/command-output.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-06/security-and-boundaries.md"
+    },
+    {
+      "id": "T-UNIT",
+      "command": "gh run watch 31717321737 --exit-status",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-06/command-output.md"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E-OPS",
+      "path": "artifacts/acceptance/P00-06/command-output.md"
+    },
+    {
+      "id": "E-MIG",
+      "path": "artifacts/acceptance/P00-06/migration-and-cleanup.md"
+    },
+    {
+      "id": "E-SEC",
+      "path": "artifacts/acceptance/P00-06/security-and-boundaries.md"
+    }
+  ],
+  "assumptions": [
+    "P00-06 is R0 phase-closure infrastructure work and does not close a business feature ID.",
+    "P00-01 has no standalone acceptance package and P00-02 has no standalone acceptance package; no retrospective records were synthesized.",
+    "Current-state validation passed at 5a3d254438f416711f8aa17fc172bea2c9fd8079, while the missing historical work-item evidence remains an explicit gap.",
+    "No external RPC, signature, transaction broadcast, or funds operation was used."
+  ],
+  "completedAt": "2026-08-13T15:54:29.000Z",
+  "commit": null
+}
