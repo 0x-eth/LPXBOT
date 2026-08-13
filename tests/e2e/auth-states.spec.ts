@@ -177,3 +177,35 @@ test("a later 401 clears the active SessionView and returns to login", async ({ 
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
 });
+
+test("a later generic 403 renders a forbidden state without protected data", async ({ page }) => {
+  let calls = 0;
+  await page.route("**/api/auth/me", async (route) => {
+    calls += 1;
+    if (calls === 1) {
+      await fulfillAuth(route, "user");
+      return;
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        success: false,
+        error: {
+          code: "FORBIDDEN",
+          message: "This route is outside the authorized scope",
+          requestId: "req-e2e-forbidden",
+          retryable: false,
+        },
+      },
+      status: 403,
+    });
+  });
+  await page.goto("/tasks/running");
+
+  await page.getByRole("button", { name: "Refresh session" }).click();
+
+  await expect(page.getByRole("heading", { level: 1, name: "Access denied" })).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText("outside the authorized scope");
+  await expect(page.getByText("Session-backed task access is active.")).toHaveCount(0);
+  await expectNoSeriousAxeViolations(page);
+});

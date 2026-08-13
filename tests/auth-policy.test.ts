@@ -15,6 +15,21 @@ const activeUser: AccountAccessContext = {
 };
 
 describe("P01-02 server authorization policy", () => {
+  it("applies every account status to user, pro and admin without a role bypass", () => {
+    for (const role of ["user", "pro", "admin"] as const) {
+      expect(authorizeAccount({ ...activeUser, role })).toEqual({
+        allowed: true,
+        maintenanceBypass: false,
+      });
+      for (const accountStatus of ["pending", "rejected", "banned"] as const) {
+        expect(authorizeAccount({ ...activeUser, accountStatus, role })).toMatchObject({
+          allowed: false,
+          statusCode: 403,
+        });
+      }
+    }
+  });
+
   it("enforces the user/pro/admin role matrix and defaults to deny", () => {
     const levels: AccessLevel[] = ["authenticated", "pro", "admin"];
     const expected = {
@@ -28,6 +43,7 @@ describe("P01-02 server authorization policy", () => {
     }
 
     expect(roleCanAccess("user", null)).toBe(false);
+    expect(roleCanAccess("anonymous", "authenticated")).toBe(false);
     expect(roleCanAccess("admin", "unknown" as AccessLevel)).toBe(false);
   });
 

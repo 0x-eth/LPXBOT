@@ -392,6 +392,32 @@ describe("P01-02 Fastify auth API", () => {
     expect(statuses).toEqual(expected);
   });
 
+  it("defaults test guards to unauthenticated and omits them from production apps", async () => {
+    const store = new MemorySessionStore();
+    const testApp = buildApiApp({
+      maintenance: { enabled: false, message: null, until: null },
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: store,
+      testRoutes: true,
+    });
+    const productionApp = buildApiApp({
+      maintenance: { enabled: false, message: null, until: null },
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: store,
+    });
+    apps.push(testApp, productionApp);
+
+    const [anonymous, omitted] = await Promise.all([
+      testApp.inject({ method: "GET", url: "/__test/guard/authenticated" }),
+      productionApp.inject({ method: "GET", url: "/__test/guard/authenticated" }),
+    ]);
+
+    expect(anonymous.statusCode).toBe(401);
+    expect(anonymous.json().error.code).toBe("UNAUTHENTICATED");
+    expect(omitted.statusCode).toBe(404);
+    expect(omitted.json().error.code).toBe("NOT_FOUND");
+  });
+
   it("rejects cross-user fixture resources before the handler returns data", async () => {
     const store = new MemorySessionStore();
     const now = new Date("2026-08-14T02:00:00.000Z");
