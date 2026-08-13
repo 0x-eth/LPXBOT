@@ -10,10 +10,20 @@
   },
   "scripts": {
     "build": "turbo run build",
+    "db:migrate": "bash scripts/db.sh migrate",
+    "db:seed": "bash scripts/db.sh seed",
+    "db:status": "bash scripts/db.sh status",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
+    "infra:down": "bash scripts/infra.sh down",
+    "infra:logs": "bash scripts/infra.sh logs",
+    "infra:reset": "bash scripts/infra.sh reset",
+    "infra:status": "bash scripts/infra.sh status",
+    "infra:up": "bash scripts/infra.sh up",
+    "infra:verify": "bash scripts/infra.sh verify",
     "lint": "turbo run lint && eslint tests eslint.config.mjs prettier.config.mjs vitest.config.ts --max-warnings=0",
     "test": "turbo run build && vitest run",
+    "test:infra": "bash scripts/test-infra.sh",
     "typecheck": "turbo run typecheck && tsc -p tsconfig.json"
   },
   "devDependencies": {
