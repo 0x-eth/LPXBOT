@@ -260,9 +260,62 @@ test("rejects a frozen baseline file omitted from its artifact manifest", async 
     path.join(baselineDirectory, "sha256sums.txt"),
     `${manifestHash}  artifact-manifest.json\n${payloadHash}  payload.txt\n`,
   );
+  const checksumsHash = createHash("sha256")
+    .update(await import("node:fs/promises").then(({ readFile }) =>
+      readFile(path.join(baselineDirectory, "sha256sums.txt")),
+    ))
+    .digest("hex");
 
-  const result = run("scripts/check-baseline.mjs", ["--baseline-dir", baselineDirectory]);
+  const result = run("scripts/check-baseline.mjs", [
+    "--baseline-dir",
+    baselineDirectory,
+    "--expected-manifest-sha256",
+    manifestHash,
+    "--expected-checksums-sha256",
+    checksumsHash,
+  ]);
 
   assert.notEqual(result.status, 0);
   assert.match(output(result), /manifest.*missing file record.*payload\.txt/i);
+});
+
+test("rejects a self-consistent baseline that does not match its frozen anchor", async () => {
+  const baselineDirectory = await mkdtemp(path.join(tmpdir(), "lpbot-baseline-anchor-"));
+  const payload = "frozen fixture\n";
+  const payloadHash = createHash("sha256").update(payload).digest("hex");
+  await writeFile(path.join(baselineDirectory, "payload.txt"), payload);
+  await writeFile(
+    path.join(baselineDirectory, "artifact-manifest.json"),
+    `${JSON.stringify(
+      { files: [{ path: "payload.txt", bytes: Buffer.byteLength(payload), sha256: payloadHash }] },
+      null,
+      2,
+    )}\n`,
+  );
+  const manifestHash = createHash("sha256")
+    .update(await import("node:fs/promises").then(({ readFile }) =>
+      readFile(path.join(baselineDirectory, "artifact-manifest.json")),
+    ))
+    .digest("hex");
+  await writeFile(
+    path.join(baselineDirectory, "sha256sums.txt"),
+    `${manifestHash}  artifact-manifest.json\n${payloadHash}  payload.txt\n`,
+  );
+  const checksumsHash = createHash("sha256")
+    .update(await import("node:fs/promises").then(({ readFile }) =>
+      readFile(path.join(baselineDirectory, "sha256sums.txt")),
+    ))
+    .digest("hex");
+
+  const result = run("scripts/check-baseline.mjs", [
+    "--baseline-dir",
+    baselineDirectory,
+    "--expected-manifest-sha256",
+    "0".repeat(64),
+    "--expected-checksums-sha256",
+    checksumsHash,
+  ]);
+
+  assert.notEqual(result.status, 0);
+  assert.match(output(result), /frozen manifest anchor mismatch/i);
 });
