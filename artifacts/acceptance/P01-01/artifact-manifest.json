@@ -76,8 +76,8 @@
     },
     {
       "path": "contracts/p01-02-contract.json",
-      "bytes": 14773,
-      "sha256": "0fef61785b6482c80aa25e4405625d41c4fb2384b66831c25582fd322befd72c",
+      "bytes": 14793,
+      "sha256": "717b947749aee99ed1dae993746532e1116f03d86e8203a4425e67061f9c9695",
       "mediaType": "application/json",
       "category": "contract"
     },

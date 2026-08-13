@@ -40,7 +40,7 @@
       "Telegram initData is accepted only by the auth verifier and never persisted verbatim.",
       "Wallet nonces are one-time, address/domain/chain/time bound and consumed atomically.",
       "Bot login tokens are random, one-time and expire; status polling never returns a credential after consumption.",
-      "Bearer tokens are redacted from logs. Prefer an HttpOnly Secure SameSite cookie for the replica; if Bearer compatibility is required, keep it in memory and rotate it."
+      "Authorization-header tokens are redacted from logs. Prefer an HttpOnly Secure SameSite cookie for the replica; if header-token compatibility is required, keep it in memory and rotate it."
     ],
     "endpoints": [
       {
