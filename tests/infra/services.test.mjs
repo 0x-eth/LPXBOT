@@ -83,6 +83,7 @@ function query(sql) {
 }
 
 test("PostgreSQL exposes TimescaleDB, pgcrypto, and migration history", () => {
+  assert.match(query("SHOW server_version"), /^16\./u);
   assert.equal(
     query(
       "SELECT string_agg(extname, ',' ORDER BY extname) FROM pg_extension WHERE extname IN ('pgcrypto', 'timescaledb')",
@@ -203,4 +204,12 @@ test("Anvil uses chain 31337 and supports snapshot/revert", () => {
   );
 
   assert.equal(output, "0x7a69|true");
+});
+
+test("service logs do not expose configured local credentials", () => {
+  const logs = compose("logs", "--no-color", "postgres", "redis", "minio", "anvil");
+
+  for (const secret of secrets) {
+    assert.ok(!logs.includes(secret), "service logs exposed a configured credential");
+  }
 });
