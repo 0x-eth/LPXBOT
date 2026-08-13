@@ -2,7 +2,7 @@
 import { lstat, readdir } from "node:fs/promises";
 import path from "node:path";
 import { ROOT, parseOptions } from "./lib/governance.mjs";
-import { parseMarkdownFile, visit } from "./lib/markdown-ast.mjs";
+import { nodeText, parseMarkdownFile, visit } from "./lib/markdown-ast.mjs";
 
 async function markdownFiles(directory) {
   const files = [];
@@ -20,22 +20,44 @@ async function markdownFiles(directory) {
 function relativeTarget(url) {
   if (
     !url ||
-    url.startsWith("#") ||
     url.startsWith("/") ||
     url.startsWith("//") ||
     /^[a-z][a-z\d+.-]*:/i.test(url)
   ) {
     return null;
   }
-  const withoutFragment = url.split("#", 1)[0].split("?", 1)[0];
-  if (!withoutFragment) {
-    return null;
-  }
+  const hashIndex = url.indexOf("#");
+  const withoutFragment = hashIndex === -1 ? url : url.slice(0, hashIndex);
+  const rawFragment = hashIndex === -1 ? "" : url.slice(hashIndex + 1);
+  const pathname = withoutFragment.split("?", 1)[0];
   try {
-    return decodeURIComponent(withoutFragment);
+    return { pathname: decodeURIComponent(pathname), fragment: decodeURIComponent(rawFragment) };
   } catch {
-    return withoutFragment;
+    return { pathname, fragment: rawFragment };
   }
+}
+
+function headingSlug(value) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{M}\p{N}\s_-]/gu, "")
+    .replace(/\s+/g, "-");
+}
+
+function headingAnchors(ast) {
+  const anchors = new Set();
+  const occurrences = new Map();
+  visit(ast, (node) => {
+    if (node.type !== "heading") {
+      return;
+    }
+    const base = headingSlug(nodeText(node));
+    const occurrence = occurrences.get(base) ?? 0;
+    occurrences.set(base, occurrence + 1);
+    anchors.add(occurrence === 0 ? base : `${base}-${occurrence}`);
+  });
+  return anchors;
 }
 
 async function exists(target) {
@@ -55,10 +77,12 @@ async function main() {
   const docsDirectory = path.resolve(options["docs-dir"]);
   const files = await markdownFiles(docsDirectory);
   const broken = [];
+  const astByFile = new Map();
   let checked = 0;
 
   for (const file of files) {
     const ast = await parseMarkdownFile(file);
+    astByFile.set(file, ast);
     const links = [];
     visit(ast, (node) => {
       if (["link", "image", "definition"].includes(node.type) && typeof node.url === "string") {
@@ -67,13 +91,29 @@ async function main() {
     });
 
     for (const link of links) {
-      const target = relativeTarget(link.url);
-      if (!target) {
+      const relative = relativeTarget(link.url);
+      if (!relative) {
         continue;
       }
       checked += 1;
-      if (!(await exists(path.resolve(path.dirname(file), target)))) {
+      const target = relative.pathname
+        ? path.resolve(path.dirname(file), relative.pathname)
+        : file;
+      if (!(await exists(target))) {
         broken.push(`${path.relative(ROOT, file)}:${link.line} broken relative link ${link.url}`);
+        continue;
+      }
+      if (
+        relative.fragment &&
+        (target.toLowerCase().endsWith(".md") || target === file)
+      ) {
+        const targetAst = astByFile.get(target) ?? (await parseMarkdownFile(target));
+        astByFile.set(target, targetAst);
+        if (!headingAnchors(targetAst).has(relative.fragment)) {
+          broken.push(
+            `${path.relative(ROOT, file)}:${link.line} broken relative link ${link.url}: missing heading anchor #${relative.fragment}`,
+          );
+        }
       }
     }
   }
