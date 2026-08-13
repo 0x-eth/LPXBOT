@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { mkdir, readFile, rm } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 
@@ -10,15 +11,18 @@ function argument(name) {
   return path.resolve(value);
 }
 
+function optionalArgument(name) {
+  const index = process.argv.indexOf(`--${name}`);
+  const value = index === -1 ? null : process.argv[index + 1];
+  if (index !== -1 && !value) throw new Error(`--${name} requires a value`);
+  return value ? path.resolve(value) : null;
+}
+
 function clamp(value, minimum, maximum) {
   return Math.min(maximum, Math.max(minimum, Math.round(value)));
 }
 
-async function main() {
-  const input = argument("input");
-  const metadataPath = argument("metadata");
-  const output = argument("output");
-  const metadata = JSON.parse(await readFile(metadataPath, "utf8"));
+async function redact(input, output, metadata, removeInput = true) {
   const { width, height } = metadata.viewport;
   const rectangles = (metadata.redactions ?? [])
     .map((entry) => {
@@ -50,7 +54,28 @@ async function main() {
   if (result.status !== 0) {
     throw new Error(result.stderr.trim() || `ffmpeg exited with ${result.status}`);
   }
-  await rm(input, { force: true });
+  if (removeInput) await rm(input, { force: true });
+}
+
+async function main() {
+  const policyPath = optionalArgument("policy");
+  if (policyPath) {
+    const artifactDirectory = argument("artifact-dir");
+    const policy = JSON.parse(await readFile(policyPath, "utf8"));
+    for (const [index, entry] of policy.files.entries()) {
+      const output = path.resolve(artifactDirectory, entry.path);
+      const input = path.join(tmpdir(), `p0101-policy-${index}-${path.basename(entry.path)}`);
+      await copyFile(output, input);
+      await redact(input, output, { viewport: entry.viewport, redactions: entry.redactions });
+    }
+    return;
+  }
+
+  const input = argument("input");
+  const metadataPath = argument("metadata");
+  const output = argument("output");
+  const metadata = JSON.parse(await readFile(metadataPath, "utf8"));
+  await redact(input, output, metadata);
 }
 
 main().catch((error) => {

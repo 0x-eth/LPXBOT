@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-01",
+  "strategy": "opaque-rectangles-over-previously-redacted-png",
+  "files": [
+    {
+      "path": "screenshots/desktop-activity.png",
+      "viewport": { "width": 1440, "height": 900 },
+      "redactions": [
+        { "x": 145, "y": 118, "width": 520, "height": 742, "reason": "user-and-custom-task-labels" },
+        { "x": 675, "y": 118, "width": 655, "height": 742, "reason": "pool-nft-balance-and-wallet-identifiers" }
+      ]
+    },
+    {
+      "path": "screenshots/mobile-activity.png",
+      "viewport": { "width": 390, "height": 844 },
+      "redactions": [
+        { "x": 82, "y": 92, "width": 294, "height": 690, "reason": "user-custom-task-and-route-identifiers" }
+      ]
+    },
+    {
+      "path": "screenshots/desktop-wallets.png",
+      "viewport": { "width": 1440, "height": 900 },
+      "redactions": [
+        { "x": 205, "y": 78, "width": 515, "height": 45, "reason": "custom-wallet-labels" },
+        { "x": 220, "y": 150, "width": 585, "height": 135, "reason": "wallet-identity-and-total" },
+        { "x": 270, "y": 370, "width": 520, "height": 135, "reason": "wallet-token-balances" },
+        { "x": 1080, "y": 210, "width": 140, "height": 75, "reason": "swap-source-balance" },
+        { "x": 1080, "y": 375, "width": 140, "height": 75, "reason": "swap-destination-balance" }
+      ]
+    },
+    {
+      "path": "screenshots/mobile-wallets.png",
+      "viewport": { "width": 390, "height": 844 },
+      "redactions": [
+        { "x": 14, "y": 80, "width": 362, "height": 90, "reason": "custom-wallet-labels" },
+        { "x": 32, "y": 202, "width": 328, "height": 122, "reason": "wallet-identity-and-total" },
+        { "x": 72, "y": 418, "width": 268, "height": 125, "reason": "wallet-token-balances" },
+        { "x": 255, "y": 640, "width": 120, "height": 90, "reason": "swap-balance" }
+      ]
+    },
+    {
+      "path": "screenshots/desktop-tasks-running.png",
+      "viewport": { "width": 1440, "height": 900 },
+      "redactions": [
+        { "x": 515, "y": 139, "width": 82, "height": 33, "reason": "custom-task-label" },
+        { "x": 610, "y": 315, "width": 292, "height": 145, "reason": "wallet-position-and-fee-balances" }
+      ]
+    },
+    {
+      "path": "screenshots/desktop-tasks-paused.png",
+      "viewport": { "width": 1440, "height": 900 },
+      "redactions": [
+        { "x": 515, "y": 139, "width": 82, "height": 33, "reason": "custom-task-label" },
+        { "x": 610, "y": 315, "width": 292, "height": 145, "reason": "wallet-position-and-fee-balances" }
+      ]
+    },
+    {
+      "path": "screenshots/desktop-tasks-stopped.png",
+      "viewport": { "width": 1440, "height": 900 },
+      "redactions": [
+        { "x": 515, "y": 139, "width": 82, "height": 33, "reason": "custom-task-label" }
+      ]
+    },
+    {
+      "path": "screenshots/mobile-tasks-running.png",
+      "viewport": { "width": 390, "height": 844 },
+      "redactions": [
+        { "x": 57, "y": 142, "width": 70, "height": 31, "reason": "custom-task-label" },
+        { "x": 122, "y": 315, "width": 238, "height": 150, "reason": "wallet-position-and-fee-balances" }
+      ]
+    },
+    {
+      "path": "screenshots/mobile-tasks-paused.png",
+      "viewport": { "width": 390, "height": 844 },
+      "redactions": [
+        { "x": 57, "y": 142, "width": 70, "height": 31, "reason": "custom-task-label" },
+        { "x": 122, "y": 315, "width": 238, "height": 150, "reason": "wallet-position-and-fee-balances" }
+      ]
+    },
+    {
+      "path": "screenshots/mobile-tasks-stopped.png",
+      "viewport": { "width": 390, "height": 844 },
+      "redactions": [
+        { "x": 57, "y": 142, "width": 70, "height": 31, "reason": "custom-task-label" }
+      ]
+    },
+    {
+      "path": "screenshots/desktop-developer.png",
+      "viewport": { "width": 1440, "height": 900 },
+      "redactions": [
+        { "x": 45, "y": 183, "width": 210, "height": 35, "reason": "account-api-key-timestamp" }
+      ]
+    },
+    {
+      "path": "screenshots/mobile-developer.png",
+      "viewport": { "width": 390, "height": 844 },
+      "redactions": [
+        { "x": 18, "y": 153, "width": 220, "height": 38, "reason": "account-api-key-timestamp" }
+      ]
+    }
+  ]
+}
