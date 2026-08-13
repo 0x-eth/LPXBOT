@@ -135,13 +135,16 @@ async function fetchFollowingAllowedRedirects(initialUrl) {
   throw new Error(`Too many redirects for ${initialUrl.href}`);
 }
 
-function responseLooksInvalid(localPath, contentType, body) {
+function responseLooksInvalid(item, contentType, body) {
+  const { localPath, kind } = item;
   const prefix = body.subarray(0, 256).toString('utf8').trimStart().toLowerCase();
+  const moduleKinds = new Set(['dynamic-import', 'static-import', 'vite-map-dependency']);
+  if (moduleKinds.has(kind) && !/\.(?:m?js|css)$/i.test(localPath)) return true;
   if (/\.(?:m?js)$/i.test(localPath)) {
-    return contentType.includes('text/html') || prefix.startsWith('<!doctype html');
+    return !/(?:javascript|ecmascript)/i.test(contentType) || prefix.startsWith('<!doctype html');
   }
   if (/\.css$/i.test(localPath)) {
-    return contentType.includes('text/html') || prefix.startsWith('<!doctype html');
+    return !contentType.includes('text/css') || prefix.startsWith('<!doctype html');
   }
   if (/\.json$/i.test(localPath)) {
     try {
@@ -183,18 +186,20 @@ async function captureResource(item) {
       return null;
     }
 
-    await mkdir(path.dirname(path.join(OUTPUT, item.localPath)), { recursive: true });
-    await writeFile(path.join(OUTPUT, item.localPath), body);
-    if (responseLooksInvalid(item.localPath, contentType, body)) {
+    if (responseLooksInvalid(item, contentType, body)) {
       invalidResponses.push({
+        ...metadata,
         url: item.url.href,
         localPath: item.localPath,
         status: response.status,
         contentType,
         reason: 'response body does not match the expected static asset type',
       });
+      return null;
     }
 
+    await mkdir(path.dirname(path.join(OUTPUT, item.localPath)), { recursive: true });
+    await writeFile(path.join(OUTPUT, item.localPath), body);
     const result = { metadata, body };
     fetched.set(item.url.href, result);
     return result;
@@ -232,6 +237,10 @@ function addImportEdge(sourceUrl, specifier, referenceType) {
   };
   importEdges.push(edge);
   enqueue(resolved.href, sourceUrl, sourceUrl, referenceType);
+}
+
+function isLocalModuleSpecifier(specifier) {
+  return /^(?:\.\.?\/|\/|assets\/)[A-Za-z0-9_@.+,~!$&'();=:%/-]+\.(?:m?js|css)$/i.test(specifier);
 }
 
 function discoverHtml(text, sourceUrl) {
@@ -276,12 +285,14 @@ function discoverJavaScript(text, sourceUrl) {
   ];
 
   for (const { type, pattern } of modulePatterns) {
-    for (const match of text.matchAll(pattern)) addImportEdge(sourceUrl, match[2], type);
+    for (const match of text.matchAll(pattern)) {
+      if (isLocalModuleSpecifier(match[2])) addImportEdge(sourceUrl, match[2], type);
+    }
   }
 
   const viteDependency = /(["'])(assets\/[^"'?#]+\.(?:m?js|css))\1/g;
   for (const match of text.matchAll(viteDependency)) {
-    addImportEdge(sourceUrl, match[2], 'vite-map-dependency');
+    if (isLocalModuleSpecifier(match[2])) addImportEdge(sourceUrl, match[2], 'vite-map-dependency');
   }
 
   const localAsset = /(["'])((?:\.\.?\/|\/)?assets\/[^"'?#]+\.(?:m?js|css|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf))\1/g;
@@ -291,7 +302,9 @@ function discoverJavaScript(text, sourceUrl) {
 
   const serviceWorker = /serviceWorker[\s\S]{0,160}?\.register\s*\(\s*(["'])([^"']+)\1/g;
   for (const match of text.matchAll(serviceWorker)) {
-    addImportEdge(sourceUrl, match[2], 'service-worker');
+    if (/^(?:\.\.?\/|\/)[A-Za-z0-9_@.+,~!$&'();=:%/-]+\.(?:m?js)$/i.test(match[2])) {
+      addImportEdge(sourceUrl, match[2], 'service-worker');
+    }
   }
 }
 
