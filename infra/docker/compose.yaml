@@ -1,0 +1,170 @@
+name: lpbot-local
+
+services:
+  postgres:
+    image: timescale/timescaledb:2.21.3-pg16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - target: 5432
+        published: ${POSTGRES_PORT}
+        host_ip: 127.0.0.1
+        protocol: tcp
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'pg_isready --username "$${POSTGRES_USER}" --dbname "$${POSTGRES_DB}"',
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  redis:
+    image: redis:7.4.5-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --requirepass
+      - ${REDIS_PASSWORD}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - target: 6379
+        published: ${REDIS_PORT}
+        host_ip: 127.0.0.1
+        protocol: tcp
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'redis-cli --no-auth-warning -a "$${REDIS_PASSWORD}" ping | grep -qx PONG',
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    stop_grace_period: 10s
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - target: 9000
+        published: ${MINIO_API_PORT}
+        host_ip: 127.0.0.1
+        protocol: tcp
+      - target: 9001
+        published: ${MINIO_CONSOLE_PORT}
+        host_ip: 127.0.0.1
+        protocol: tcp
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+    stop_grace_period: 20s
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - >-
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}"
+        "$${MINIO_ROOT_PASSWORD}" >/dev/null && mc mb --ignore-existing
+        "local/$${MINIO_BUCKET}" >/dev/null
+    restart: "no"
+
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:v1.3.1
+    entrypoint: ["anvil"]
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8545"
+      - --chain-id
+      - "31337"
+      - --state
+      - /data/anvil-state.json
+      - --silent
+    ports:
+      - target: 8545
+        published: ${ANVIL_PORT}
+        host_ip: 127.0.0.1
+        protocol: tcp
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "cast chain-id --rpc-url http://127.0.0.1:8545 | grep -qx 31337",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+    volumes:
+      - anvil-data:/data
+    restart: unless-stopped
+    stop_grace_period: 20s
+
+  dbmate:
+    image: amacneil/dbmate:2.28.0
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+    volumes:
+      - ../migrations:/db/migrations:ro
+    working_dir: /db
+
+volumes:
+  postgres-data:
+    name: lpbot-local-postgres-data
+    labels:
+      io.lpbot.local-project: lpbot-local
+  redis-data:
+    name: lpbot-local-redis-data
+    labels:
+      io.lpbot.local-project: lpbot-local
+  minio-data:
+    name: lpbot-local-minio-data
+    labels:
+      io.lpbot.local-project: lpbot-local
+  anvil-data:
+    name: lpbot-local-anvil-data
+    labels:
+      io.lpbot.local-project: lpbot-local
+
+networks:
+  default:
+    name: lpbot-local-network
