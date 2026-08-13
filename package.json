@@ -29,11 +29,13 @@
     "infra:verify": "bash scripts/infra.sh verify",
     "lint": "turbo run lint && eslint scripts tests eslint.config.mjs prettier.config.mjs vitest.config.ts --max-warnings=0",
     "test": "turbo run build && vitest run && node --test tests/governance/*.test.mjs",
+    "test:e2e": "playwright test",
     "test:infra": "bash scripts/test-infra.sh",
     "typecheck": "turbo run typecheck && tsc -p tsconfig.json"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.62.1",
     "@types/node": "22.20.1",
     "ajv": "6.15.0",
     "eslint": "10.8.1",
