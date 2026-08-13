@@ -14,7 +14,7 @@ import {
 import { hashSessionToken, type SessionStore, type StoredSession } from "@lpbot/security";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 
-const sessionCookieName = "lpbot_session";
+import { sessionCookieName } from "./browser-session-cookie.js";
 
 export interface MaintenanceConfig {
   enabled: boolean;
@@ -89,6 +89,28 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     );
     done();
   });
+
+  app.setNotFoundHandler((request, reply) =>
+    reply.code(404).send(
+      createErrorEnvelope({
+        code: "NOT_FOUND",
+        message: "The requested endpoint does not exist",
+        requestId: request.id,
+        retryable: false,
+      }),
+    ),
+  );
+
+  app.setErrorHandler((_error, request, reply) =>
+    reply.code(500).send(
+      createErrorEnvelope({
+        code: "INTERNAL_ERROR",
+        message: "The request could not be completed",
+        requestId: request.id,
+        retryable: true,
+      }),
+    ),
+  );
 
   app.post("/api/auth/me", async (request, reply) => {
     const token = sessionToken(request);
