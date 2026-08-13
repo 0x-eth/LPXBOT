@@ -6,6 +6,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { parse as parseYaml } from "yaml";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -324,4 +325,47 @@ test("rejects a self-consistent baseline that does not match its frozen anchor",
 
   assert.notEqual(result.status, 0);
   assert.match(output(result), /frozen manifest anchor mismatch/i);
+});
+
+test("CI defines four pinned, bounded jobs with unconditional infrastructure cleanup", async () => {
+  const workflow = parseYaml(
+    await import("node:fs/promises").then(({ readFile }) =>
+      readFile(path.join(ROOT, ".github/workflows/ci.yml"), "utf8"),
+    ),
+  );
+  const jobs = workflow.jobs;
+
+  assert.deepEqual(Object.keys(jobs).sort(), [
+    "governance",
+    "infrastructure",
+    "quality",
+    "security",
+  ]);
+  assert.equal(workflow.permissions.contents, "read");
+  assert.equal(workflow.concurrency["cancel-in-progress"], true);
+  assert.ok(workflow.pull_request ?? workflow.on?.pull_request ?? workflow["on"]?.pull_request);
+  assert.ok(workflow.workflow_dispatch ?? workflow.on?.workflow_dispatch ?? workflow["on"]?.workflow_dispatch);
+  assert.deepEqual(workflow.on.push.branches, ["main"]);
+
+  const steps = Object.values(jobs).flatMap((job) => job.steps);
+  const actions = steps.map((step) => step.uses).filter(Boolean);
+  assert.equal(actions.length, 9);
+  assert.ok(actions.every((action) => /@[0-9a-f]{40}$/.test(action)));
+  assert.ok(Object.values(jobs).every((job) => Number.isInteger(job["timeout-minutes"])));
+
+  for (const job of Object.values(jobs)) {
+    assert.ok(
+      job.steps.some((step) => step.with?.["node-version"] === "22.23.1"),
+      `${job.name} must use Node 22.23.1`,
+    );
+    assert.ok(
+      job.steps.some((step) => step.run?.includes("pnpm@11.17.0")),
+      `${job.name} must use pnpm 11.17.0`,
+    );
+  }
+
+  const cleanupSteps = jobs.infrastructure.steps.filter((step) => step.if === "always()");
+  assert.equal(cleanupSteps.length, 2);
+  assert.match(cleanupSteps.map((step) => step.run).join("\n"), /infra:down/);
+  assert.match(cleanupSteps.map((step) => step.run).join("\n"), /infra:reset/);
 });
