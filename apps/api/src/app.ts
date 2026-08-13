@@ -210,9 +210,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   if (options.testRoutes) {
     const authenticateTestRequest = async (request: FastifyRequest) => {
       const token = sessionToken(request);
-      if (!token) return null;
+      if (!token) return { kind: "unauthenticated" as const, code: "UNAUTHENTICATED" };
       const resolved = await findValidSession(token, options.sessionStore, now());
-      if (!resolved) return null;
+      if (!resolved) return { kind: "unauthenticated" as const, code: "AUTH_EXPIRED" };
 
       const decision = authorizeAccount({
         accountStatus: resolved.session.account.status,
@@ -220,21 +220,36 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         region: options.regionPolicy(request),
         role: resolved.session.account.role,
       });
-      return decision.allowed ? resolved.session : null;
+      if (!decision.allowed) return { kind: "denied" as const, decision };
+      return { kind: "allowed" as const, session: resolved.session };
     };
 
     app.get<{ Params: { level: string } }>("/__test/guard/:level", async (request, reply) => {
-      const session = await authenticateTestRequest(request);
-      if (!session) {
+      const authentication = await authenticateTestRequest(request);
+      if (authentication.kind === "unauthenticated") {
         return reply.code(401).send(
           createErrorEnvelope({
-            code: "UNAUTHENTICATED",
-            message: "Authentication is required",
+            code: authentication.code,
+            message:
+              authentication.code === "AUTH_EXPIRED"
+                ? "Session is invalid or expired"
+                : "Authentication is required",
             requestId: request.id,
             retryable: false,
           }),
         );
       }
+      if (authentication.kind === "denied") {
+        return reply.code(authentication.decision.statusCode).send(
+          createErrorEnvelope({
+            code: authentication.decision.code,
+            message: authentication.decision.message,
+            requestId: request.id,
+            retryable: authentication.decision.retryable,
+          }),
+        );
+      }
+      const { session } = authentication;
 
       const level = request.params.level;
       const validLevel =
@@ -258,17 +273,31 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     app.get<{ Params: { ownerUserId: string } }>(
       "/__test/owned/:ownerUserId",
       async (request, reply) => {
-        const session = await authenticateTestRequest(request);
-        if (!session) {
+        const authentication = await authenticateTestRequest(request);
+        if (authentication.kind === "unauthenticated") {
           return reply.code(401).send(
             createErrorEnvelope({
-              code: "UNAUTHENTICATED",
-              message: "Authentication is required",
+              code: authentication.code,
+              message:
+                authentication.code === "AUTH_EXPIRED"
+                  ? "Session is invalid or expired"
+                  : "Authentication is required",
               requestId: request.id,
               retryable: false,
             }),
           );
         }
+        if (authentication.kind === "denied") {
+          return reply.code(authentication.decision.statusCode).send(
+            createErrorEnvelope({
+              code: authentication.decision.code,
+              message: authentication.decision.message,
+              requestId: request.id,
+              retryable: authentication.decision.retryable,
+            }),
+          );
+        }
+        const { session } = authentication;
 
         if (
           !canAccessOwnedResource(

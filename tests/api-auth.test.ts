@@ -417,6 +417,53 @@ describe("P01-02 Fastify auth API", () => {
     expect(omitted.json().error.code).toBe("NOT_FOUND");
   });
 
+  it.each([
+    ["pending", false, "user", 403, "ACCOUNT_PENDING"],
+    ["rejected", false, "pro", 403, "ACCOUNT_REJECTED"],
+    ["banned", false, "admin", 403, "ACCOUNT_BANNED"],
+    ["active", true, "user", 403, "REGION_BLOCKED"],
+    ["active", false, "user", 503, "MAINTENANCE"],
+    ["active", false, "admin", 200, null],
+  ] as const)(
+    "propagates %s/region=%s/%s account policy through guards",
+    async (status, regionBlocked, role, expectedStatus, expectedCode) => {
+      const store = new MemorySessionStore();
+      store.account = { ...store.account, role, status };
+      const now = new Date("2026-08-14T02:00:00.000Z");
+      const issued = await new SessionIssuer(store, { now: () => now }).issue({
+        expiresAt: new Date("2026-08-14T03:00:00.000Z"),
+        userId: store.account.id,
+      });
+      const maintenanceEnabled =
+        status === "active" && !regionBlocked && (role === "user" || role === "admin");
+      const app = buildApiApp({
+        maintenance: {
+          enabled: maintenanceEnabled,
+          message: "Scheduled maintenance",
+          until: null,
+        },
+        now: () => now,
+        regionPolicy: () => ({
+          blocked: regionBlocked,
+          code: regionBlocked ? "ZZ" : null,
+          message: regionBlocked ? "Region unavailable" : null,
+        }),
+        sessionStore: store,
+        testRoutes: true,
+      });
+      apps.push(app);
+
+      const response = await app.inject({
+        headers: { cookie: `lpbot_session=${issued.token}` },
+        method: "GET",
+        url: "/__test/guard/authenticated",
+      });
+
+      expect(response.statusCode).toBe(expectedStatus);
+      if (expectedCode) expect(response.json().error.code).toBe(expectedCode);
+    },
+  );
+
   it("rejects cross-user fixture resources before the handler returns data", async () => {
     const store = new MemorySessionStore();
     const now = new Date("2026-08-14T02:00:00.000Z");
