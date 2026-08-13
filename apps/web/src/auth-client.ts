@@ -196,3 +196,18 @@ export function canEnterRoute(path: string, state: AuthState): boolean {
   if (state.status !== "active") return false;
   return path !== "/users" || state.session.role === "admin";
 }
+
+export function authStatePath(state: AuthState): string | null {
+  switch (state.status) {
+    case "booting":
+    case "active":
+      return null;
+    case "anonymous":
+      return "/login";
+    case "blocked":
+    case "region-blocked":
+      return "/blocked";
+    case "maintenance":
+      return "/maintenance";
+  }
+}
