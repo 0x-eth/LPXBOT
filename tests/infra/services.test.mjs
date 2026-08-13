@@ -84,6 +84,7 @@ function query(sql) {
 
 test("PostgreSQL exposes TimescaleDB, pgcrypto, and migration history", () => {
   assert.match(query("SHOW server_version"), /^16\./u);
+  assert.equal(query("SHOW timescaledb.telemetry_level"), "off");
   assert.equal(
     query(
       "SELECT string_agg(extname, ',' ORDER BY extname) FROM pg_extension WHERE extname IN ('pgcrypto', 'timescaledb')",

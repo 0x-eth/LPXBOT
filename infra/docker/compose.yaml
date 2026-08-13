@@ -3,6 +3,7 @@ name: lpbot-p00-local
 services:
   postgres:
     image: timescale/timescaledb:2.21.3-pg16
+    command: ["postgres", "-c", "timescaledb.telemetry_level=off"]
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -87,7 +88,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET: ${MINIO_BUCKET}
-      INFRA_COMMAND_TIMEOUT_SECONDS: ${INFRA_COMMAND_TIMEOUT_SECONDS}
+      INFRA_COMMAND_TIMEOUT_SECONDS: ${INFRA_COMMAND_TIMEOUT_SECONDS:-30}
     entrypoint: ["/bin/sh", "-ec"]
     command:
       - >-
@@ -135,7 +136,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       DBMATE_MIGRATIONS_DIR: /db/migrations
       DBMATE_NO_DUMP_SCHEMA: "true"
-      INFRA_COMMAND_TIMEOUT_SECONDS: ${INFRA_COMMAND_TIMEOUT_SECONDS}
+      INFRA_COMMAND_TIMEOUT_SECONDS: ${INFRA_COMMAND_TIMEOUT_SECONDS:-30}
     volumes:
       - ../migrations:/db/migrations:ro
     working_dir: /db
