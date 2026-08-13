@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-01",
+  "categories": [
+    {
+      "id": "sidebar",
+      "status": "observed",
+      "evidenceLevel": "live-observed",
+      "observations": ["desktop horizontal shell navigation", "tasks, pools, strategies, activity, wallets and chat entries", "ordinary account has no users/admin entry"]
+    },
+    {
+      "id": "mobile-navigation",
+      "status": "observed",
+      "evidenceLevel": "live-observed",
+      "observations": ["fixed bottom navigation", "six entries: tasks, pools, strategies, activity, wallets and chat"]
+    },
+    {
+      "id": "bottom-status-bar",
+      "status": "observed",
+      "evidenceLevel": "live-observed",
+      "observations": ["online indicator", "running/paused/stopped counters", "recommended pool ticker", "Base and ETH gas", "FPS and ping"]
+    },
+    {
+      "id": "theme",
+      "status": "partially-observed",
+      "evidenceLevel": "live-observed",
+      "observations": ["light render", "light/dark/system controls", "accent color swatches"],
+      "unverified": ["dark render", "refresh persistence", "theme-color change after preference mutation"]
+    },
+    {
+      "id": "settings",
+      "status": "observed-read-only",
+      "evidenceLevel": "live-observed",
+      "observations": [
+        "theme mode and accent color", "grid/list task view", "side pool panel", "hot pool recommendation", "scan position tab",
+        "sortable/hideable navigation", "pool page reset and navigation", "cold-pool protection", "BSC/Base/ETH chain controls",
+        "browser-local RPC", "OKX key status", "unlock password", "wallet-login binding", "notifications", "feedback", "developer API", "activity log"
+      ]
+    },
+    {
+      "id": "empty",
+      "status": "observed",
+      "evidenceLevel": "live-observed",
+      "observations": ["strategies page empty state on desktop and mobile"]
+    },
+    {
+      "id": "loading",
+      "status": "unverified",
+      "evidenceLevel": "unverified",
+      "observations": [],
+      "candidate": "Bundle shell uses a null Suspense fallback; route-level loaders require controlled fixtures in P01-02."
+    },
+    {
+      "id": "error",
+      "status": "unverified",
+      "evidenceLevel": "unverified",
+      "observations": [],
+      "candidate": "Frozen Bundle contains a global load error alert with retry; no live error was induced."
+    },
+    {
+      "id": "permission",
+      "status": "partially-observed",
+      "evidenceLevel": "live-observed",
+      "observations": ["ordinary-user shell omits admin navigation", "account menu displayed ordinary role"],
+      "unverified": ["pro", "admin", "blocked", "maintenance", "region-blocked", "server-side 401/403/503 behavior"]
+    }
+  ]
+}

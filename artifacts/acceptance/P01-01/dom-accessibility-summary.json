@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-01",
+  "privacy": { "textSanitized": true, "accountIdentityStored": false, "addressesStored": false },
+  "global": {
+    "title": "LP Bot",
+    "lang": "zh-CN",
+    "desktopLandmarks": ["header", "nav", "main"],
+    "mobileLandmarks": ["header", "nav", "main"],
+    "theme": { "observedClassTokens": ["desktop", "light"], "colorScheme": "light", "metaThemeColor": "#171717" },
+    "navigationLabels": ["任务", "池子", "策略", "日志", "钱包", "聊天室"],
+    "accountRoleLabel": "普通",
+    "accountName": "[REDACTED]"
+  },
+  "routes": [
+    { "path": "/tasks/running", "heading": "任务", "controls": ["运行", "暂停", "停止", "观察", "扫描"], "state": "populated" },
+    { "path": "/tasks/paused", "heading": "任务", "controls": ["运行", "暂停", "停止", "观察", "扫描"], "state": "populated" },
+    { "path": "/tasks/stopped", "heading": "任务", "controls": ["运行", "暂停", "停止", "观察", "扫描"], "state": "populated" },
+    { "path": "/pools", "heading": "池子发现", "controls": ["chain selector", "time window", "filters", "search", "column preferences"], "state": "populated" },
+    { "path": "/strategies", "heading": "自动策略", "controls": ["import", "new"], "state": "empty" },
+    { "path": "/activity", "heading": "操作日志", "controls": [], "state": "populated-redacted" },
+    { "path": "/wallets", "heading": "钱包管理", "controls": ["wallet tabs", "receive", "token/LP tabs", "swap"], "state": "populated-redacted" },
+    { "path": "/developer", "heading": "开发者", "controls": ["copy", "download", "direct link", "endpoint categories", "expand/collapse"], "state": "populated-redacted" },
+    { "path": "/settings", "heading": "设置", "controls": ["light/dark/system", "accent swatches", "grid/list", "toggles", "navigation order", "chain controls", "linked setting pages"], "state": "populated" }
+  ],
+  "accessibilityNotes": [
+    "Desktop shell uses header/nav/main landmarks and mobile uses a fixed navigation landmark.",
+    "Several icon-only shell controls did not expose text in the sanitized DOM summary; P01-02 should require accessible names.",
+    "Route headings are inconsistent: activity and wallets did not expose semantic h1/h2 in the captured desktop DOM.",
+    "No axe scan was run against the target; P01-02 must run axe and keyboard tests against local fixtures."
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-01",
+  "ordinaryUserNoFundsRoutes": {
+    "expected": [
+      "/tasks/running",
+      "/tasks/paused",
+      "/tasks/stopped",
+      "/pools",
+      "/strategies",
+      "/activity",
+      "/wallets",
+      "/developer",
+      "/settings"
+    ],
+    "captured": [
+      "/tasks/running",
+      "/tasks/paused",
+      "/tasks/stopped",
+      "/pools",
+      "/strategies",
+      "/activity",
+      "/wallets",
+      "/developer",
+      "/settings"
+    ],
+    "missing": [],
+    "desktopScreenshots": 9,
+    "mobileScreenshots": 9
+  },
+  "featureReference": {
+    "ids": [
+      "AUTH-01", "AUTH-02", "AUTH-03", "AUTH-04", "AUTH-05", "AUTH-06", "AUTH-07", "AUTH-08", "AUTH-09", "AUTH-10",
+      "SHELL-01", "SHELL-02", "SHELL-03", "SHELL-04", "SHELL-05", "SHELL-06", "SET-01", "SET-02"
+    ],
+    "workItemFeatureIds": [],
+    "status": "reference-only",
+    "note": "This work item does not claim implementation, spec-ready, or parity-verified status for any feature ID."
+  },
+  "stateCoverage": {
+    "normal": "observed",
+    "empty": "observed-on-strategies",
+    "loading": "transient-indicator-not-captured",
+    "error": "unverified",
+    "permission": "ordinary-user-shell-observed; denied states unverified",
+    "lightTheme": "observed",
+    "darkTheme": "unverified-no-preference-write",
+    "systemThemeOption": "observed"
+  }
+}

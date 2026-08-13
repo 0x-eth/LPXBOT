@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-01",
+  "result": "passed",
+  "target": "https://www.lpbot.cc",
+  "allowed": ["claim existing authenticated tab", "read DOM", "set viewport", "capture screenshot", "click SPA navigation controls", "read browser-visible documentation"],
+  "navigationControlsUsed": [
+    "desktop shell: tasks, pools, strategies, activity, wallets, settings",
+    "task status tabs: running, paused, stopped",
+    "settings linked navigation: developer API",
+    "mobile bottom navigation: tasks, pools, strategies, activity, wallets",
+    "browser back navigation"
+  ],
+  "prohibitedControlsTriggered": [],
+  "formsSubmitted": 0,
+  "settingsChanged": 0,
+  "walletOperations": 0,
+  "signatures": 0,
+  "broadcasts": 0,
+  "fundsOperations": 0,
+  "targetFetchesInitiatedByAgent": 0,
+  "webmcpToolsCalled": 0,
+  "webmcpListResult": "capability-not-exposed",
+  "completeNetworkMethodTelemetry": false,
+  "assertion": "No agent action invoked a target write control or explicit target fetch. Background GET/SSE activity inherent to page navigation may have occurred."
+}

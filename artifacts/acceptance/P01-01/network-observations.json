@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-01",
+  "allowedMethods": ["GET"],
+  "headersStored": false,
+  "bodyValuesStored": false,
+  "queryValuesStored": false,
+  "methodTelemetryAvailable": false,
+  "methodBoundaryEvidence": "checks/read-only-audit.json",
+  "webmcp": {
+    "operation": "webmcp_list_tools",
+    "userApproval": "approved",
+    "result": "capability-not-exposed",
+    "toolsCalled": []
+  },
+  "requests": [
+    { "method": "GET", "path": "/api/user/preferences", "source": "frozen-bundle-candidate", "responseSchema": { "success": "boolean", "preferences": "object" } },
+    { "method": "GET", "path": "/api/tasks", "source": "live-doc-observed", "responseSchema": { "success": "boolean", "count": "number", "tasks": "array<object>", "timestamp": "string" } },
+    { "method": "GET", "path": "/api/tasks/running", "source": "live-doc-observed", "responseSchema": { "success": "boolean", "count": "number", "tasks": "array<object>", "timestamp": "string" } },
+    { "method": "GET", "path": "/api/tasks/stream", "source": "live-doc-observed", "responseSchema": { "transport": "sse", "events": "snapshot|diff|prices_snapshot|prices_diff|chain_data_snapshot|chain_data_diff" } },
+    { "method": "GET", "path": "/api/pools/top-fees/{minutes}", "source": "live-doc-observed", "responseSchema": { "success": "boolean", "data": "array<object>" } },
+    { "method": "GET", "path": "/api/activity-logs", "source": "live-doc-observed", "responseSchema": { "success": "boolean", "count": "number", "logs": "array" } },
+    { "method": "GET", "path": "/api/preset-keys", "source": "live-doc-observed", "responseSchema": { "success": "boolean", "keys": "array<object>" } },
+    { "method": "GET", "path": "/api/developer-keys", "source": "live-doc-observed", "responseSchema": { "success": "boolean", "keys": "array<object-with-prefix-only>" } },
+    { "method": "GET", "path": "/api/stats", "source": "live-doc-observed", "responseSchema": { "success": "boolean", "stats": "object" } },
+    { "method": "GET", "path": "/api/stats/stream", "source": "live-doc-observed", "responseSchema": { "transport": "sse", "events": "snapshot|update|rec_pools_snapshot" } },
+    { "method": "GET", "path": "/api/system-config/chains", "source": "frozen-bundle-candidate", "responseSchema": { "shape": "unverified" } },
+    { "method": "GET", "path": "/api/auth/login-status/{token}", "source": "frozen-bundle-candidate", "responseSchema": { "success": "boolean", "confirmed": "boolean", "token": "sensitive-not-stored", "user": "object" } },
+    { "method": "GET", "path": "/api/auth/wallet/links", "source": "frozen-bundle-candidate", "responseSchema": { "shape": "unverified" } }
+  ],
+  "excluded": [
+    "all request and response headers",
+    "authorization material",
+    "cookies and browser storage",
+    "request and response body values",
+    "query values and request identifiers",
+    "wallet addresses and account identifiers"
+  ],
+  "limitations": [
+    "The in-app Browser did not expose a complete HAR or request method event stream.",
+    "Entries marked live-doc-observed were visible in the authenticated developer documentation, not replayed by this work item.",
+    "Entries marked frozen-bundle-candidate are not live network facts."
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-01",
+  "items": [
+    { "subject": "role:pro", "status": "unverified", "reason": "current account is ordinary-user" },
+    { "subject": "role:admin", "status": "unverified", "reason": "current account is ordinary-user" },
+    { "subject": "state:blocked", "status": "unverified", "reason": "current account was approved and active" },
+    { "subject": "state:maintenance", "status": "unverified", "reason": "maintenance was not active and was not enabled" },
+    { "subject": "state:region-blocked", "status": "unverified", "reason": "no region block occurred" },
+    { "subject": "state:pending", "status": "unverified", "reason": "current account was already approved" },
+    { "subject": "state:rejected", "status": "unverified", "reason": "current account was already approved" },
+    { "subject": "theme:dark-render", "status": "unverified", "reason": "changing theme may synchronize a preference and was outside R0 capture" },
+    { "subject": "state:error", "status": "unverified", "reason": "no live error was induced" },
+    { "subject": "state:loading", "status": "unverified", "reason": "no stable loading frame was captured and no delay was induced" },
+    { "subject": "shell:toast-confirmation", "status": "unverified", "reason": "no action was submitted" },
+    { "subject": "webmcp:list-tools", "status": "unverified", "reason": "user approved the list operation, but the current Browser tab did not expose the webmcp capability" },
+    { "subject": "network:complete-method-har", "status": "unverified", "reason": "in-app Browser did not expose request-method telemetry or resource timing; no full HAR claim is made" },
+    { "subject": "access:/users", "status": "unverified", "reason": "admin-only route was not navigated" },
+    { "subject": "auth:credential-material", "status": "not-collected", "reason": "passwords, cookies, JWTs and Telegram initData were explicitly excluded" }
+  ],
+  "bundleBoundary": "Bundle-derived routes, RBAC and API calls are candidates only unless separately marked live-observed."
+}

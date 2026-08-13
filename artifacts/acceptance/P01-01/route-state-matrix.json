@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-01",
+  "capturedAt": "2026-08-13T17:08:33Z",
+  "account": { "role": "ordinary-user", "identityStored": false },
+  "routes": [
+    {
+      "path": "/tasks/running",
+      "canonical": true,
+      "access": "verified",
+      "evidenceLevel": "live-observed",
+      "pageState": "populated",
+      "viewports": {
+        "desktop": { "status": "observed", "screenshot": "screenshots/desktop-tasks-running.png" },
+        "mobile": { "status": "observed", "screenshot": "screenshots/mobile-tasks-running.png" }
+      }
+    },
+    {
+      "path": "/tasks/paused",
+      "canonical": true,
+      "access": "verified",
+      "evidenceLevel": "live-observed",
+      "pageState": "populated",
+      "viewports": {
+        "desktop": { "status": "observed", "screenshot": "screenshots/desktop-tasks-paused.png" },
+        "mobile": { "status": "observed", "screenshot": "screenshots/mobile-tasks-paused.png" }
+      }
+    },
+    {
+      "path": "/tasks/stopped",
+      "canonical": true,
+      "access": "verified",
+      "evidenceLevel": "live-observed",
+      "pageState": "populated",
+      "viewports": {
+        "desktop": { "status": "observed", "screenshot": "screenshots/desktop-tasks-stopped.png" },
+        "mobile": { "status": "observed", "screenshot": "screenshots/mobile-tasks-stopped.png" }
+      }
+    },
+    {
+      "path": "/pools",
+      "canonical": true,
+      "access": "verified",
+      "evidenceLevel": "live-observed",
+      "pageState": "populated",
+      "viewports": {
+        "desktop": { "status": "observed", "screenshot": "screenshots/desktop-pools.png" },
+        "mobile": { "status": "observed", "screenshot": "screenshots/mobile-pools.png" }
+      }
+    },
+    {
+      "path": "/strategies",
+      "canonical": true,
+      "access": "verified",
+      "evidenceLevel": "live-observed",
+      "pageState": "empty",
+      "viewports": {
+        "desktop": { "status": "observed", "screenshot": "screenshots/desktop-strategies.png" },
+        "mobile": { "status": "observed", "screenshot": "screenshots/mobile-strategies.png" }
+      }
+    },
+    {
+      "path": "/activity",
+      "canonical": true,
+      "access": "verified",
+      "evidenceLevel": "live-observed",
+      "pageState": "populated-redacted",
+      "viewports": {
+        "desktop": { "status": "observed", "screenshot": "screenshots/desktop-activity.png" },
+        "mobile": { "status": "observed", "screenshot": "screenshots/mobile-activity.png" }
+      }
+    },
+    {
+      "path": "/wallets",
+      "canonical": true,
+      "access": "verified",
+      "evidenceLevel": "live-observed",
+      "pageState": "populated-redacted",
+      "viewports": {
+        "desktop": { "status": "observed", "screenshot": "screenshots/desktop-wallets.png" },
+        "mobile": { "status": "observed", "screenshot": "screenshots/mobile-wallets.png" }
+      }
+    },
+    {
+      "path": "/developer",
+      "canonical": true,
+      "access": "verified",
+      "evidenceLevel": "live-observed",
+      "pageState": "populated-redacted",
+      "viewports": {
+        "desktop": { "status": "observed", "screenshot": "screenshots/desktop-developer.png" },
+        "mobile": { "status": "observed", "screenshot": "screenshots/mobile-developer.png" }
+      }
+    },
+    {
+      "path": "/settings",
+      "canonical": true,
+      "access": "verified",
+      "evidenceLevel": "live-observed",
+      "pageState": "populated",
+      "viewports": {
+        "desktop": { "status": "observed", "screenshot": "screenshots/desktop-settings.png" },
+        "mobile": { "status": "observed", "screenshot": "screenshots/mobile-settings.png" }
+      }
+    }
+  ],
+  "redirects": [
+    { "from": "/", "to": "/tasks/running", "status": "bundle-candidate", "evidenceLevel": "frozen-bundle-candidate" },
+    { "from": "/all/:status?", "to": "/tasks/:status", "status": "bundle-candidate", "evidenceLevel": "frozen-bundle-candidate" },
+    { "from": "/monitors", "to": "/pools", "status": "bundle-candidate", "evidenceLevel": "frozen-bundle-candidate" }
+  ],
+  "unverifiedRoutes": [
+    { "path": "/login", "reason": "active authenticated session was preserved" },
+    { "path": "/blocked", "reason": "current account was not blocked" },
+    { "path": "/maintenance", "reason": "maintenance mode was not active" },
+    { "path": "/region-blocked", "reason": "no region-blocked state was presented" },
+    { "path": "/users", "reason": "ordinary user is not an administrator" }
+  ]
+}
