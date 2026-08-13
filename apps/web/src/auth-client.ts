@@ -64,6 +64,7 @@ export class AuthClient {
   #bearerToken: string | null = null;
   readonly #fetcher: AuthFetch;
   #page: AuthPageState = { kind: "ready" };
+  #restorePromise: Promise<AuthState> | null = null;
   #state: AuthState = { status: "booting" };
 
   constructor(fetcher: AuthFetch = globalThis.fetch.bind(globalThis)) {
@@ -98,6 +99,16 @@ export class AuthClient {
   }
 
   async restore(): Promise<AuthState> {
+    if (this.#restorePromise) return this.#restorePromise;
+    this.#restorePromise = this.#performRestore();
+    try {
+      return await this.#restorePromise;
+    } finally {
+      this.#restorePromise = null;
+    }
+  }
+
+  async #performRestore(): Promise<AuthState> {
     const response = await this.request("/api/auth/me", { method: "POST" });
     if (response.ok) {
       const body: unknown = await response.json();

@@ -17,22 +17,30 @@ test("LPBot renders without browser runtime failures", async ({ page }) => {
     route.fulfill({
       contentType: "application/json",
       json: {
-        success: false,
-        error: {
-          code: "UNAUTHENTICATED",
-          message: "Authentication is required",
-          requestId: "req-smoke",
-          retryable: false,
+        success: true,
+        data: {
+          isAdmin: false,
+          maintenance: null,
+          user: {
+            allowedChainIds: [1, 56],
+            avatarUrl: null,
+            displayName: "Smoke User",
+            maintenanceBypass: false,
+            role: "user",
+            tier: "normal",
+            userId: "00000000-0000-4000-8000-000000000009",
+          },
         },
+        requestId: "req-smoke",
       },
-      status: 401,
+      status: 200,
     }),
   );
   const response = await page.goto("/");
 
   expect(response?.ok()).toBe(true);
   await expect(page).toHaveTitle("LPBot");
-  await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
   await expect(page.locator("#root")).not.toBeEmpty();
   expect(pageErrors, "uncaught page errors").toEqual([]);
   expect(requestFailures, "failed browser requests").toEqual([]);

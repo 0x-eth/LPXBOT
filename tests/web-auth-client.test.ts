@@ -55,6 +55,23 @@ describe("P01-02 web auth client", () => {
     );
   });
 
+  it("coalesces concurrent restore calls into one session request", async () => {
+    const fetcher = vi.fn<AuthFetch>().mockResolvedValue(
+      apiResponse(200, {
+        success: true,
+        data: { isAdmin: false, maintenance: null, user: session },
+        requestId: "req-client-1",
+      }),
+    );
+    const client = new AuthClient(fetcher);
+
+    const [first, second] = await Promise.all([client.restore(), client.restore()]);
+
+    expect(first).toEqual({ status: "active", session });
+    expect(second).toEqual(first);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
   it("clears SessionView and enters anonymous on 401", async () => {
     const fetcher = vi
       .fn<AuthFetch>()
