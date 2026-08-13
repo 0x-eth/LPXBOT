@@ -28,12 +28,15 @@ regexTarget = "match"
 regexes = ['''amplitudeApiKey:"[0-9a-f]{32}"''']
 
 [[allowlists]]
-description = "Immutable P00-01 documentation examples use token1 for a public token symbol, not an authentication token."
+description = "Immutable P00-01 documentation examples use token1 for a public token symbol or token contract address, not an authentication token."
 condition = "AND"
 targetRules = ["generic-api-key"]
 paths = ['''^artifacts/lpbot/2026-08-13/(?:api-calls\.json|api-docs\.json|api-docs\.md)$''']
 regexTarget = "match"
-regexes = ['''token1":\s*"[A-Z0-9._-]{1,32}"''']
+regexes = [
+  '''token1":\s*"[A-Z0-9._-]{1,32}"''',
+  '''token1":\s*"0x[0-9a-fA-F]{40}"''',
+]
 
 [[allowlists]]
 description = "Immutable P00-01 third-party client snapshot assigns a public TokenType enum; it is not a credential."
