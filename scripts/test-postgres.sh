@@ -22,4 +22,5 @@ fi
 
 export DATABASE_URL
 cd "$ROOT_DIR"
+pnpm --filter @lpbot/api^... build
 pnpm exec vitest run --config vitest.postgres.config.ts
