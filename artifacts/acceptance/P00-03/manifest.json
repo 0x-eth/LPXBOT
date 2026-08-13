@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P00-03",
+  "phase": "P00",
+  "risk": "R0",
+  "status": "accepted",
+  "featureIds": [],
+  "tests": [
+    {
+      "id": "T-MIG",
+      "command": "pnpm test:infra",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-03/01-tdd-red-green.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "pnpm test:infra",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-03/05-security-boundaries.md"
+    },
+    {
+      "id": "T-UNIT",
+      "command": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-03/06-quality-gates.md"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E-OPS",
+      "path": "artifacts/acceptance/P00-03/README.md"
+    },
+    {
+      "id": "E-OPS",
+      "path": "artifacts/acceptance/P00-03/03-infra-and-database.md"
+    },
+    {
+      "id": "E-REC",
+      "path": "artifacts/acceptance/P00-03/04-reset-rebuild.md"
+    },
+    {
+      "id": "E-SEC",
+      "path": "artifacts/acceptance/P00-03/05-security-boundaries.md"
+    }
+  ],
+  "assumptions": [
+    "P00-03 is infrastructure work and does not close a business feature ID.",
+    "The manifest records only results already present in the P00-03 evidence package."
+  ],
+  "completedAt": "2026-08-13T10:53:10.000Z",
+  "commit": "bdb0fb3ab4024e65fe899e12382faf894898fdbb"
+}

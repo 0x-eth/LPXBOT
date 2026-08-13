@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P00-04",
+  "phase": "P00",
+  "risk": "R0",
+  "status": "in-progress",
+  "featureIds": [],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "node --test tests/governance/governance-checkers.test.mjs",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-04/command-output.md"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E-OPS",
+      "path": "artifacts/acceptance/P00-04/command-output.md"
+    }
+  ],
+  "assumptions": [
+    "P00-04 is governance infrastructure and does not close a business feature ID.",
+    "Playwright and Foundry CI integration remains assigned to P00-05."
+  ],
+  "completedAt": null,
+  "commit": null
+}
