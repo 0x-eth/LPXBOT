@@ -518,6 +518,51 @@ function evidenceFor(corpus, term, maximum = 8) {
   return { term, occurrenceCount: count, evidence: result };
 }
 
+function exactLiteralEvidenceFor(corpus, literal, maximum = 8) {
+  const evidence = [];
+  let occurrenceCount = 0;
+  for (const file of corpus) {
+    for (const quote of ['"', "'", '`']) {
+      const needle = `${quote}${literal}${quote}`;
+      let offset = 0;
+      while (offset < file.text.length) {
+        const index = file.text.indexOf(needle, offset);
+        if (index < 0) break;
+        occurrenceCount += 1;
+        if (evidence.length < maximum) {
+          evidence.push({
+            file: file.localPath,
+            offset: index + 1,
+            snippet: compactSnippet(file.text, index, index + needle.length),
+          });
+        }
+        offset = index + needle.length;
+      }
+    }
+  }
+  return { literal, occurrenceCount, evidence };
+}
+
+function regexEvidenceFor(corpus, label, pattern, maximum = 8) {
+  const evidence = [];
+  let occurrenceCount = 0;
+  for (const file of corpus) {
+    const regex = new RegExp(pattern, 'g');
+    for (const match of file.text.matchAll(regex)) {
+      occurrenceCount += 1;
+      if (evidence.length < maximum) {
+        evidence.push({
+          file: file.localPath,
+          offset: match.index,
+          matched: match[0],
+          snippet: compactSnippet(file.text, match.index, match.index + match[0].length),
+        });
+      }
+    }
+  }
+  return { label, pattern, occurrenceCount, evidence };
+}
+
 function currentEntryPaths(indexHtml) {
   const moduleScript = [...indexHtml.matchAll(/<script\b[^>]*\btype=["']module["'][^>]*\bsrc=["']([^"']+)["']/gi)].at(-1)?.[1]
     || [...indexHtml.matchAll(/<script\b[^>]*\bsrc=["']([^"']+\.js)["']/gi)].at(-1)?.[1]
@@ -549,67 +594,127 @@ function normalizeOfficialApi(apiDocs) {
 }
 
 function bundleApiCandidates(corpus) {
-  const allowedPrefixes = [
-    '/api/', '/auth/', '/tasks', '/wallets', '/preset-keys', '/positions', '/pricing-positions',
-    '/pools', '/market', '/tokens', '/stats', '/activity-logs', '/cooldown', '/config-templates',
-    '/developer-keys', '/pool-monitors', '/pool-notifications', '/notifications', '/feedback',
-    '/auto-strategies', '/chat', '/notify-prefs', '/failure-notification-config', '/user', '/users',
-    '/system-config', '/admin', '/okx', '/address-book', '/address-remarks', '/social',
-  ];
+  const excludedLibraryPaths = /^\/api\/(?:WagmiProvider|glossary\/|human\/)/i;
+  const firstPartyOrigins = new Set(['https://api.lpbot.cc', 'https://m.lpbot.cc']);
   const candidates = [];
   for (const file of corpus) {
     for (const token of file.tokens) {
       const value = token.raw.replace(/\\\//g, '/');
-      const pathValue = value.startsWith('http')
-        ? (() => {
-            try {
-              return new URL(value).pathname;
-            } catch {
-              return null;
-            }
-          })()
-        : value;
-      if (!pathValue || !allowedPrefixes.some((prefix) => pathValue.startsWith(prefix))) continue;
+      let origin = 'https://api.lpbot.cc';
+      let pathValue = null;
+      let fullUrl = null;
+      if (/^https?:\/\//i.test(value)) {
+        try {
+          const parsed = new URL(value);
+          if (!firstPartyOrigins.has(parsed.origin)) continue;
+          origin = parsed.origin;
+          pathValue = parsed.pathname;
+          fullUrl = value;
+        } catch {
+          continue;
+        }
+      } else {
+        const apiOffset = value.indexOf('/api/');
+        if (apiOffset >= 0) pathValue = value.slice(apiOffset);
+      }
+      if (!pathValue || excludedLibraryPaths.test(pathValue)) continue;
       if (/\s/.test(pathValue) || pathValue.length > 300) continue;
+      const queryOffset = pathValue.indexOf('?');
+      const pathTemplate = queryOffset >= 0 ? pathValue.slice(0, queryOffset) : pathValue;
+      const queryTemplate = queryOffset >= 0 ? pathValue.slice(queryOffset + 1) : null;
       const context = compactSnippet(file.text, token.start, token.end, 220);
-      const methodMatches = [...context.matchAll(/method\s*:\s*["'](GET|POST|PUT|PATCH|DELETE)["']/gi)];
+      const functionBoundary = file.text.indexOf('}async function', token.end);
+      const forwardEnd = functionBoundary >= 0 && functionBoundary - token.end < 800
+        ? functionBoundary
+        : Math.min(file.text.length, token.end + 500);
+      const forwardContext = file.text.slice(token.end, forwardEnd);
+      const methodMatch = forwardContext.match(/method\s*:\s*["'](GET|POST|PUT|PATCH|DELETE)["']/i);
+      const method = methodMatch?.[1]?.toUpperCase() || 'GET';
       candidates.push({
-        pathLiteral: pathValue,
-        methodHint: methodMatches.length === 1 ? methodMatches[0][1].toUpperCase() : null,
-        methodConfidence: methodMatches.length === 1 ? 'nearby-literal-only' : 'unknown',
+        method,
+        methodEvidence: methodMatch ? 'explicit request option in the same client function' : 'client default GET (no method option before next client function)',
+        origin,
+        pathTemplate,
+        queryTemplate,
+        rawLiteral: value,
+        fullUrl,
         file: file.localPath,
         offset: token.start,
         snippet: context,
       });
     }
   }
-  return uniqueBy(candidates, (item) => `${item.pathLiteral}\u0000${item.file}\u0000${item.offset}`)
-    .sort((a, b) => `${a.pathLiteral} ${a.file} ${a.offset}`.localeCompare(`${b.pathLiteral} ${b.file} ${b.offset}`));
+  return uniqueBy(candidates, (item) => `${item.method}\u0000${item.origin}\u0000${item.pathTemplate}\u0000${item.file}\u0000${item.offset}`)
+    .sort((a, b) => `${a.origin} ${a.pathTemplate} ${a.method} ${a.file} ${a.offset}`.localeCompare(`${b.origin} ${b.pathTemplate} ${b.method} ${b.file} ${b.offset}`));
 }
 
-function observedRoutes(corpus, baselineRoutes) {
-  const baselinePaths = new Set(baselineRoutes.map((route) => route.path));
-  baselinePaths.add('/monitors');
+function observedRoutes(corpus, baselineRoutes, entryBundle) {
+  const expectedPaths = [...baselineRoutes.map((route) => route.path), '/monitors'];
   const rows = [];
-  for (const file of corpus) {
-    for (const token of file.tokens) {
-      const value = token.raw;
-      const routeContext = /(?:path|to|navigate|redirect|pathname)[\s\S]{0,80}$/i.test(
-        file.text.slice(Math.max(0, token.start - 100), token.start),
-      );
-      const plausible = baselinePaths.has(value)
-        || (routeContext && /^\/(?:login|blocked|maintenance|tasks|pools|strategies|activity|wallets|users|developer|settings|all|monitors)(?:\/[^\s]*)?$/.test(value));
-      if (!plausible) continue;
-      rows.push({
-        path: value,
-        file: file.localPath,
-        offset: token.start,
-        declarationContext: routeContext,
-        snippet: compactSnippet(file.text, token.start, token.end),
-      });
+  for (const routePath of expectedPaths) {
+    const evidence = [];
+    for (const file of corpus) {
+      for (const quote of ['"', "'", '`']) {
+        const needle = `${quote}${routePath}${quote}`;
+        let offset = 0;
+        while (offset < file.text.length) {
+          const index = file.text.indexOf(needle, offset);
+          if (index < 0) break;
+          const before = file.text.slice(Math.max(0, index - 40), index);
+          const contextType = /path\s*:\s*$/.test(before)
+            ? 'route-declaration'
+            : /to\s*:\s*$/.test(before)
+              ? 'redirect-target'
+              : /(?:navigate|pathname|startsWith|===|!==)\s*\(?\s*$/.test(before)
+                ? 'route-control-flow'
+                : 'route-reference';
+          evidence.push({
+            file: file.localPath,
+            offset: index + 1,
+            contextType,
+            snippet: compactSnippet(file.text, index, index + needle.length),
+          });
+          offset = index + needle.length;
+        }
+      }
     }
+    const contextRank = { 'route-declaration': 0, 'redirect-target': 1, 'route-control-flow': 2, 'route-reference': 3 };
+    evidence.sort((a, b) => (contextRank[a.contextType] - contextRank[b.contextType])
+      || (a.file === entryBundle ? -1 : b.file === entryBundle ? 1 : 0)
+      || a.file.localeCompare(b.file)
+      || a.offset - b.offset);
+    rows.push({
+      path: routePath,
+      observed: evidence.length > 0,
+      occurrenceCount: evidence.length,
+      declarationCount: evidence.filter((item) => item.contextType === 'route-declaration').length,
+      evidence: evidence.slice(0, 12),
+    });
   }
-  return rows.sort((a, b) => `${a.path} ${a.file} ${a.offset}`.localeCompare(`${b.path} ${b.file} ${b.offset}`));
+  return rows;
+}
+
+function extractChainRegistry(corpus, chains) {
+  return chains.map((chain) => {
+    const pattern = new RegExp(`(?:^|[,{])${chain.chainId}:\\{id:${chain.chainId},name:["']([^"']+)["'],displayName:["']([^"']+)["'][\\s\\S]{0,16000}?supportedPlatforms:\\[([^\\]]+)\\]`, 'g');
+    const evidence = [];
+    for (const file of corpus) {
+      for (const match of file.text.matchAll(pattern)) {
+        evidence.push({
+          file: file.localPath,
+          offset: match.index,
+          registryName: match[1],
+          displayName: match[2],
+          supportedPlatformSymbols: uniqueBy(
+            [...match[3].matchAll(/\.([A-Z][A-Z0-9_]+)/g)].map((item) => item[1]),
+            (item) => item,
+          ),
+          snippet: compactSnippet(file.text, match.index, match.index + Math.min(match[0].length, 500), 260),
+        });
+      }
+    }
+    return { ...chain, observed: evidence.length > 0, evidence };
+  });
 }
 
 async function listFiles(directory, prefix = '') {
@@ -677,8 +782,8 @@ async function main() {
   const entries = currentEntryPaths(indexHtml);
   const officialApi = normalizeOfficialApi(apiDocsJson);
   const bundleCandidates = bundleApiCandidates(corpus);
-  const routeEvidence = observedRoutes(corpus, baseline.routes);
-  const observedRouteSet = new Set(routeEvidence.map((item) => item.path));
+  const routeEvidence = observedRoutes(corpus, baseline.routes, entries.bundle);
+  const observedRouteSet = new Set(routeEvidence.filter((item) => item.observed).map((item) => item.path));
 
   const importValidation = uniqueBy(importEdges, (edge) => `${edge.sourceUrl}\u0000${edge.specifier}\u0000${edge.referenceType}`)
     .map((edge) => {
@@ -719,7 +824,7 @@ async function main() {
   const roles = ['user', 'pro', 'admin'].map((role) => ({
     id: role,
     source: 'docs/research/public-surface.md sections 6.1-6.2',
-    liveBundleEvidence: evidenceFor(corpus, role),
+    liveBundleEvidence: exactLiteralEvidenceFor(corpus, role),
   }));
   const chainAccessLevels = [
     { id: 'off', semantics: 'blocks new creation while monitoring/removal remains available according to the documented baseline' },
@@ -728,9 +833,15 @@ async function main() {
   ].map((level) => ({
     ...level,
     source: 'docs/FUNCTION_MATRIX.md AUTH-10 and docs/research/public-surface.md section 6',
-    liveBundleEvidence: evidenceFor(corpus, level.id),
+    liveBundleEvidence: exactLiteralEvidenceFor(corpus, level.id),
   }));
-  const gateTerms = ['allowedChains', 'tier', 'isAdmin', 'fee-hook', 'create-fee-hook', 'system-config/chains'];
+  const gateTerms = [
+    { label: 'allowedChains property', pattern: '\\ballowedChains\\b' },
+    { label: 'tier compared to pro', pattern: '\\btier(?:\\?\\.)?\s*={2,3}\s*["\']pro["\']' },
+    { label: 'administrator flag', pattern: '\\bisAdmin\\b' },
+    { label: 'fee hook API', pattern: '["\'`]\\/api\\/(?:pools\\/)?(?:create-fee-hook|fee-hook(?:-lp)?)[^"\'`]*["\'`]' },
+    { label: 'chain access configuration API', pattern: '["\'`]\\/api\\/system-config\\/chains["\'`]' },
+  ];
 
   const routesJson = {
     schemaVersion: 1,
@@ -747,9 +858,9 @@ async function main() {
     },
     comparison: {
       expectedCount: baseline.routes.length,
-      missingExactLiterals: baseline.routes.map((item) => item.path).filter((route) => !observedRouteSet.has(route)),
+      missingExpectedRoutes: baseline.routes.map((item) => item.path).filter((route) => !observedRouteSet.has(route)),
       additionalCandidates: [...observedRouteSet].filter((route) => !baseline.routes.some((item) => item.path === route) && route !== '/monitors').sort(),
-      note: 'Missing exact literals are extraction results, not proof that a route is unavailable; minified routers may compose paths.',
+      note: 'A route is observed when its exact quoted path literal exists in the captured bundle. contextType distinguishes route declarations from references.',
     },
   };
 
@@ -773,7 +884,7 @@ async function main() {
     bundleCandidates: {
       count: bundleCandidates.length,
       calls: bundleCandidates,
-      caveat: 'These are client string literals. Method hints are proximity-based and do not prove server availability or authorization.',
+      caveat: 'These are LPBot first-party client call candidates. GET is the client default when no explicit method option appears before the next client function. Presence does not prove server availability or authorization.',
     },
   };
 
@@ -784,18 +895,10 @@ async function main() {
     roles,
     chainAccessLevels,
     featureMatrix: baseline.featureGates,
-    liveGateTerms: gateTerms.map((term) => evidenceFor(corpus, term, 12)),
+    liveGateTerms: gateTerms.map(({ label, pattern }) => regexEvidenceFor(corpus, label, pattern, 12)),
   };
 
-  const observedChainIdCandidates = uniqueBy(
-    corpus.flatMap((file) => [...file.text.matchAll(/(?:chainId|chain_id)\s*[:=]\s*(\d{1,8})/g)].map((match) => ({
-      chainId: Number(match[1]),
-      file: file.localPath,
-      offset: match.index,
-      snippet: compactSnippet(file.text, match.index, match.index + match[0].length),
-    }))),
-    (item) => `${item.chainId}\u0000${item.file}\u0000${item.offset}`,
-  ).sort((a, b) => a.chainId - b.chainId || a.file.localeCompare(b.file) || a.offset - b.offset);
+  const liveChainRegistry = extractChainRegistry(corpus, baseline.chains);
   const chainsJson = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -810,13 +913,8 @@ async function main() {
         { id: 5, protocol: 'PancakeSwap V4' },
       ],
     },
-    liveBundleVerification: baseline.chains.map((chain) => ({
-      ...chain,
-      chainIdEvidence: evidenceFor(corpus, String(chain.chainId), 5),
-      nameEvidence: evidenceFor(corpus, chain.name, 5),
-    })),
-    observedChainIdCandidates,
-    caveat: 'Candidates are syntax-level chainId assignments; they may include defaults, test values, or third-party library data.',
+    liveBundleVerification: liveChainRegistry,
+    caveat: 'Live records are parsed from chain registry objects containing id, name, displayName, and supportedPlatforms in the captured bundle.',
   };
 
   const pwaConfig = {
