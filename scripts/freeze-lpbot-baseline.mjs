@@ -594,7 +594,7 @@ function normalizeOfficialApi(apiDocs) {
 }
 
 function bundleApiCandidates(corpus) {
-  const excludedLibraryPaths = /^\/api\/(?:WagmiProvider|glossary\/|human\/)/i;
+  const excludedLibraryPaths = /^\/api\/(?:WagmiProvider(?:\/|$)|glossary(?:\/|#)|human(?:\/|#))/i;
   const firstPartyOrigins = new Set(['https://api.lpbot.cc', 'https://m.lpbot.cc']);
   const candidates = [];
   for (const file of corpus) {
@@ -839,8 +839,8 @@ async function main() {
     { label: 'allowedChains property', pattern: '\\ballowedChains\\b' },
     { label: 'tier compared to pro', pattern: '\\btier(?:\\?\\.)?\\s*={2,3}\\s*["\']pro["\']' },
     { label: 'administrator flag', pattern: '\\bisAdmin\\b' },
-    { label: 'fee hook API', pattern: '["\'`]\\/api\\/(?:pools\\/)?(?:create-fee-hook|fee-hook(?:-lp)?)[^"\'`]*["\'`]' },
-    { label: 'chain access configuration API', pattern: '["\'`]\\/api\\/system-config\\/chains["\'`]' },
+    { label: 'fee hook API', pattern: '\\/api\\/(?:pools\\/)?(?:create-fee-hook|fee-hook(?:-lp)?|fee-hooks)' },
+    { label: 'chain access configuration API', pattern: '\\/api\\/system-config\\/chains' },
   ];
 
   const routesJson = {

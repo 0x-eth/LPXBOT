@@ -1,5 +1,0 @@
-$ node scripts/freeze-lpbot-baseline.mjs artifacts/lpbot/2026-08-13
-$ cd artifacts/lpbot/2026-08-13
-$ sha256sum --check sha256sums.txt
-$ for file in *.json; do jq empty "$file"; done
-$ find . -type f -print | LC_ALL=C sort
