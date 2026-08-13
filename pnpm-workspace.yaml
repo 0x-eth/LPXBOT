@@ -2,5 +2,8 @@ packages:
   - apps/*
   - packages/*
 
+minimumReleaseAgeExclude:
+  - globals@17.11.0
+
 onlyBuiltDependencies:
   - esbuild

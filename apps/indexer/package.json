@@ -1,0 +1,24 @@
+{
+  "name": "@lpbot/indexer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Chain indexing and market metric application boundary.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@lpbot/chain-registry": "workspace:*",
+    "@lpbot/market-metrics": "workspace:*",
+    "@lpbot/observability": "workspace:*"
+  }
+}
