@@ -473,7 +473,7 @@ async function main() {
     ["email address", /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi],
     ["Telegram initData", /\b(?:query_id|auth_date|hash)=[^&\s]+&(?:user|auth_date|hash)=/gi],
     ["cookie header", /["']?(?:set-cookie|cookie)["']?\s*:\s*["'][^"']+/gi],
-    ["password value", /["']?password["']?\s*[:=]\s*["'][^"'\[]+/gi]
+    ["password value", /["']?password["']?\s*[:=]\s*["'][^"'[]+/gi]
   ];
   for (const relativePath of actualFiles) {
     if (!TEXT_EXTENSIONS.has(path.extname(relativePath))) continue;
