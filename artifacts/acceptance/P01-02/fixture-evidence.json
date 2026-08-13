@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-02",
+  "evidenceLevel": "local-fixture-verified",
+  "states": [
+    "anonymous",
+    "active-user",
+    "active-pro",
+    "active-admin",
+    "account-pending",
+    "account-rejected",
+    "account-banned",
+    "maintenance-user",
+    "maintenance-admin-bypass",
+    "region-blocked",
+    "route-forbidden"
+  ],
+  "p01Reference": {
+    "artifactDirectory": "artifacts/acceptance/P01-01",
+    "modified": false,
+    "statusUpgrade": false,
+    "sha256sumsFileDigest": "d06301e91ba96b53de63e56f61b2f6ed76ae70f01fe7980e405876ad35b2b2cb"
+  },
+  "externalOperations": {
+    "targetSite": false,
+    "externalRpc": false,
+    "signature": false,
+    "broadcast": false,
+    "funds": false,
+    "productionWrite": false
+  }
+}

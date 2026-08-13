@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-02",
+  "phase": "P01",
+  "risk": "R1",
+  "status": "in-progress",
+  "featureIds": ["AUTH-05", "AUTH-06", "AUTH-07", "AUTH-08", "AUTH-09"],
+  "tests": [
+    {
+      "id": "T-API",
+      "command": "pnpm test",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-02/command-output.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm test:e2e",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-02/E-UI.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm test:infra && pnpm test:postgres",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-02/E-REC.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "pnpm exec vitest run tests/api-auth.test.ts tests/web-auth-client.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-02/E-REC.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-02/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P01-02/E-API.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P01-02/E-UI.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P01-02/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P01-02/E-SEC.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P01-02/E-REC.md" }
+  ],
+  "assumptions": [
+    "Pro/admin and blocked/maintenance/region states are local-fixture-verified only and are not live-observed.",
+    "P01-01 gaps and frozen artifacts remain unchanged; no prior evidence status is upgraded.",
+    "Telegram Mini App, Bot link, wallet login, and the complete application-shell visuals remain outside P01-02.",
+    "Region decisions are supplied by an injected server policy; a production geolocation provider is not part of this work item.",
+    "No external RPC, target-site request, signature, broadcast, funds action, or production write occurred."
+  ],
+  "completedAt": null,
+  "commit": null
+}
