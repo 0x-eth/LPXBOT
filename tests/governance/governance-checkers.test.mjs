@@ -261,9 +261,11 @@ test("rejects a frozen baseline file omitted from its artifact manifest", async 
     `${manifestHash}  artifact-manifest.json\n${payloadHash}  payload.txt\n`,
   );
   const checksumsHash = createHash("sha256")
-    .update(await import("node:fs/promises").then(({ readFile }) =>
-      readFile(path.join(baselineDirectory, "sha256sums.txt")),
-    ))
+    .update(
+      await import("node:fs/promises").then(({ readFile }) =>
+        readFile(path.join(baselineDirectory, "sha256sums.txt")),
+      ),
+    )
     .digest("hex");
 
   const result = run("scripts/check-baseline.mjs", [
@@ -293,18 +295,22 @@ test("rejects a self-consistent baseline that does not match its frozen anchor",
     )}\n`,
   );
   const manifestHash = createHash("sha256")
-    .update(await import("node:fs/promises").then(({ readFile }) =>
-      readFile(path.join(baselineDirectory, "artifact-manifest.json")),
-    ))
+    .update(
+      await import("node:fs/promises").then(({ readFile }) =>
+        readFile(path.join(baselineDirectory, "artifact-manifest.json")),
+      ),
+    )
     .digest("hex");
   await writeFile(
     path.join(baselineDirectory, "sha256sums.txt"),
     `${manifestHash}  artifact-manifest.json\n${payloadHash}  payload.txt\n`,
   );
   const checksumsHash = createHash("sha256")
-    .update(await import("node:fs/promises").then(({ readFile }) =>
-      readFile(path.join(baselineDirectory, "sha256sums.txt")),
-    ))
+    .update(
+      await import("node:fs/promises").then(({ readFile }) =>
+        readFile(path.join(baselineDirectory, "sha256sums.txt")),
+      ),
+    )
     .digest("hex");
 
   const result = run("scripts/check-baseline.mjs", [
