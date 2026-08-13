@@ -1,0 +1,22 @@
+{
+  "name": "@lpbot/market-metrics",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Versioned market metric boundary owned by the indexer.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@lpbot/domain": "workspace:*"
+  }
+}

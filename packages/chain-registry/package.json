@@ -1,0 +1,19 @@
+{
+  "name": "@lpbot/chain-registry",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Single source for future LPBot chain and protocol metadata.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
