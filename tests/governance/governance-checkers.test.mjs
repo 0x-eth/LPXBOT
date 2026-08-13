@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -224,4 +225,29 @@ test("accepts a valid P00 infrastructure manifest with no feature IDs", async ()
 
   assert.equal(result.status, 0, output(result));
   assert.match(output(result), /1 acceptance manifest.*valid/i);
+});
+
+test("rejects a frozen baseline file omitted from its artifact manifest", async () => {
+  const baselineDirectory = await mkdtemp(path.join(tmpdir(), "lpbot-baseline-"));
+  const payload = "frozen fixture\n";
+  const payloadHash = createHash("sha256").update(payload).digest("hex");
+  await writeFile(path.join(baselineDirectory, "payload.txt"), payload);
+  await writeFile(
+    path.join(baselineDirectory, "artifact-manifest.json"),
+    `${JSON.stringify({ files: [] }, null, 2)}\n`,
+  );
+  const manifestHash = createHash("sha256")
+    .update(await import("node:fs/promises").then(({ readFile }) =>
+      readFile(path.join(baselineDirectory, "artifact-manifest.json")),
+    ))
+    .digest("hex");
+  await writeFile(
+    path.join(baselineDirectory, "sha256sums.txt"),
+    `${manifestHash}  artifact-manifest.json\n${payloadHash}  payload.txt\n`,
+  );
+
+  const result = run("scripts/check-baseline.mjs", ["--baseline-dir", baselineDirectory]);
+
+  assert.notEqual(result.status, 0);
+  assert.match(output(result), /manifest.*missing file record.*payload\.txt/i);
 });
