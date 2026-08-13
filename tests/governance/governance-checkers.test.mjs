@@ -237,9 +237,11 @@ test("rejects a frozen baseline file omitted from its artifact manifest", async 
     `${JSON.stringify({ files: [] }, null, 2)}\n`,
   );
   const manifestHash = createHash("sha256")
-    .update(await import("node:fs/promises").then(({ readFile }) =>
-      readFile(path.join(baselineDirectory, "artifact-manifest.json")),
-    ))
+    .update(
+      await import("node:fs/promises").then(({ readFile }) =>
+        readFile(path.join(baselineDirectory, "artifact-manifest.json")),
+      ),
+    )
     .digest("hex");
   await writeFile(
     path.join(baselineDirectory, "sha256sums.txt"),

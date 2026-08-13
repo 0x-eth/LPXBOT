@@ -47,6 +47,7 @@ async function main() {
   const records = checksumRecords(await readFile(checksumPath, "utf8"));
   const errors = [];
   const checksumPaths = records.map((record) => record.relativePath);
+  const manifestPaths = (manifest.files ?? []).map((record) => record.path);
   const duplicatePaths = checksumPaths.filter((value, index) => checksumPaths.indexOf(value) !== index);
 
   if (!Array.isArray(manifest.files) || manifest.files.length === 0) {
@@ -101,6 +102,20 @@ async function main() {
   for (const file of expectedFiles) {
     if (!actualFiles.includes(file)) {
       errors.push(`checksum inventory references missing file: ${file}`);
+    }
+  }
+
+  const expectedManifestFiles = actualFiles.filter(
+    (file) => !["artifact-manifest.json", "sha256sums.txt"].includes(file),
+  );
+  for (const file of expectedManifestFiles) {
+    if (!manifestPaths.includes(file)) {
+      errors.push(`artifact manifest missing file record: ${file}`);
+    }
+  }
+  for (const file of manifestPaths) {
+    if (!expectedManifestFiles.includes(file)) {
+      errors.push(`artifact manifest has unexpected file record: ${file}`);
     }
   }
 
