@@ -3,12 +3,24 @@
   "workItemId": "P00-04",
   "phase": "P00",
   "risk": "R0",
-  "status": "in-progress",
+  "status": "accepted",
   "featureIds": [],
   "tests": [
     {
       "id": "T-UNIT",
-      "command": "node --test tests/governance/governance-checkers.test.mjs",
+      "command": "pnpm test",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-04/command-output.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm infra:up && pnpm test:infra && pnpm infra:down",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-04/command-output.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "pnpm audit:dependencies",
       "result": "passed",
       "evidencePath": "artifacts/acceptance/P00-04/command-output.md"
     }
@@ -23,6 +35,6 @@
     "P00-04 is governance infrastructure and does not close a business feature ID.",
     "Playwright and Foundry CI integration remains assigned to P00-05."
   ],
-  "completedAt": null,
+  "completedAt": "2026-08-13T11:45:57.000Z",
   "commit": null
 }
