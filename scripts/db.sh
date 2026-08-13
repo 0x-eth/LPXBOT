@@ -3,6 +3,7 @@ set -euo pipefail
 
 readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly COMPOSE_FILE="$ROOT_DIR/infra/docker/compose.yaml"
+readonly PROJECT_NAME="lpbot-p00-local"
 readonly SEED_FILE="$ROOT_DIR/infra/seed.sql"
 
 if [[ -n "${LPBOT_ENV_FILE:-}" ]]; then
@@ -14,7 +15,11 @@ else
 fi
 
 compose() {
-  docker compose --env-file "$ENV_FILE" --file "$COMPOSE_FILE" "$@"
+  docker compose \
+    --project-name "$PROJECT_NAME" \
+    --env-file "$ENV_FILE" \
+    --file "$COMPOSE_FILE" \
+    "$@"
 }
 
 require_postgres() {

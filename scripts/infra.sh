@@ -14,7 +14,11 @@ else
 fi
 
 compose() {
-  docker compose --env-file "$ENV_FILE" --file "$COMPOSE_FILE" "$@"
+  docker compose \
+    --project-name "$PROJECT_NAME" \
+    --env-file "$ENV_FILE" \
+    --file "$COMPOSE_FILE" \
+    "$@"
 }
 
 require_docker() {

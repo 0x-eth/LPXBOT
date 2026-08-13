@@ -7,6 +7,7 @@ import path from "node:path";
 
 const repoRoot = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const composeFile = path.join(repoRoot, "infra/docker/compose.yaml");
+const projectName = "lpbot-p00-local";
 const envFile = existsSync(path.join(repoRoot, ".env"))
   ? path.join(repoRoot, ".env")
   : path.join(repoRoot, ".env.example");
@@ -55,6 +56,8 @@ function run(command, args, options = {}) {
 function compose(...args) {
   return run("docker", [
     "compose",
+    "--project-name",
+    projectName,
     "--env-file",
     envFile,
     "--file",

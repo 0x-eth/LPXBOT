@@ -7,12 +7,15 @@ import path from "node:path";
 const repoRoot = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const composeFile = path.join(repoRoot, "infra/docker/compose.yaml");
 const envFile = path.join(repoRoot, ".env.example");
+const projectName = "lpbot-p00-local";
 
 function readComposeConfig() {
   const output = execFileSync(
     "docker",
     [
       "compose",
+      "--project-name",
+      projectName,
       "--env-file",
       envFile,
       "--file",
@@ -36,7 +39,7 @@ test("Compose defines an isolated, persistent local LPBot stack", () => {
     anvil: "ghcr.io/foundry-rs/foundry:v1.3.1",
   };
 
-  assert.equal(config.name, "lpbot-p00-local");
+  assert.equal(config.name, projectName);
 
   for (const [serviceName, image] of Object.entries(expectedImages)) {
     const service = config.services[serviceName];
