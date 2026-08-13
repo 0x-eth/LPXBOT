@@ -17,6 +17,7 @@
     "check:baseline": "node scripts/check-baseline.mjs",
     "check:docs": "node scripts/check-doc-links.mjs",
     "check:p00": "node scripts/check-p00.mjs",
+    "check:p01-reference": "node scripts/check-p01-reference-artifacts.mjs",
     "check:traceability": "node scripts/check-traceability.mjs",
     "changeset": "changeset",
     "changeset:status": "changeset status",

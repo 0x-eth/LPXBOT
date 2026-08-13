@@ -1,0 +1,135 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://lpbot.local/schemas/reference-baseline-manifest.schema.json",
+  "title": "LPBot read-only reference baseline manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "workItemId",
+    "phase",
+    "risk",
+    "status",
+    "featureIds",
+    "capturedAt",
+    "target",
+    "scope",
+    "viewports",
+    "routeCount",
+    "files",
+    "checks",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "workItemId": { "const": "P01-01" },
+    "phase": { "const": "P01" },
+    "risk": { "const": "R0" },
+    "status": { "enum": ["captured", "captured-with-unverified-states"] },
+    "featureIds": { "type": "array", "maxItems": 0 },
+    "capturedAt": { "type": "string", "format": "date-time" },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["application", "origin", "accountRole"],
+      "properties": {
+        "application": { "const": "LPBot" },
+        "origin": { "type": "string", "format": "uri" },
+        "accountRole": { "const": "ordinary-user" }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "allowedTargetMethods",
+        "credentialsStored",
+        "personalDataStored",
+        "fundsOperations",
+        "frozenBaseline"
+      ],
+      "properties": {
+        "mode": { "const": "read-only-reference" },
+        "allowedTargetMethods": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "const": "GET" }
+        },
+        "credentialsStored": { "const": false },
+        "personalDataStored": { "const": false },
+        "fundsOperations": { "const": false },
+        "frozenBaseline": { "const": "artifacts/lpbot/2026-08-13" }
+      }
+    },
+    "viewports": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "width", "height"],
+        "properties": {
+          "id": { "enum": ["desktop", "mobile"] },
+          "width": { "type": "integer", "minimum": 1 },
+          "height": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "routeCount": { "type": "integer", "minimum": 1 },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "bytes", "sha256", "mediaType", "category"],
+        "properties": {
+          "path": { "$ref": "#/definitions/artifactPath" },
+          "bytes": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "mediaType": { "type": "string", "minLength": 1 },
+          "category": {
+            "enum": ["screenshot", "matrix", "catalog", "contract", "report", "check"]
+          }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "result", "evidencePath"],
+        "properties": {
+          "id": {
+            "enum": [
+              "artifact-integrity",
+              "secret-scan",
+              "read-only-methods",
+              "frozen-baseline",
+              "repository-quality"
+            ]
+          },
+          "result": { "const": "passed" },
+          "evidencePath": { "$ref": "#/definitions/artifactPath" }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "definitions": {
+    "artifactPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!artifact-manifest\\.json$)(?!sha256sums\\.txt$).+$"
+    }
+  }
+}

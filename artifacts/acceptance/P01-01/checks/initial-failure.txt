@@ -1,0 +1,25 @@
+Command: pnpm check:p01-reference
+Executed: 2026-08-14 (Asia/Shanghai), before evidence capture
+Exit: 1 (expected)
+
+P01-01 reference artifact check failed with 17 error(s):
+- manifest schema validation failed: required phase, risk, status, featureIds, capturedAt, target, scope, viewports, routeCount, files, checks, and limitations were absent
+- missing required artifact: capture-methodology.md
+- missing required artifact: coverage.json
+- missing required artifact: gaps.json
+- missing required artifact: route-state-matrix.json
+- missing required artifact: network-observations.json
+- missing required artifact: dom-accessibility-summary.json
+- missing required artifact: state-catalog.json
+- missing required artifact: contracts/p01-02-contract.json
+- missing required artifact: checks/initial-failure.txt
+- missing required artifact: checks/read-only-audit.json
+- missing required artifact: checks/secret-scan.txt
+- missing required artifact: checks/frozen-baseline.txt
+- missing required artifact: checks/repository-quality.txt
+- missing required artifact: sha256sums.txt
+- desktop viewport must be 1440x900
+- mobile viewport must be 390x844
+
+This failure was the required red state. No target-site navigation or request had been
+performed by this work item when it was recorded.
