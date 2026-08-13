@@ -1,6 +1,6 @@
 import { defineConfig } from "@playwright/test";
 
-const port = 4173;
+const port = 43173;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -37,7 +37,7 @@ export default defineConfig({
   webServer: {
     command: `pnpm --filter @lpbot/web dev --host 127.0.0.1 --port ${port}`,
     url: `http://127.0.0.1:${port}`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });
