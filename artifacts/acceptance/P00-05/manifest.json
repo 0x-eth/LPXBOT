@@ -3,7 +3,7 @@
   "workItemId": "P00-05",
   "phase": "P00",
   "risk": "R0",
-  "status": "accepted-with-gaps",
+  "status": "accepted",
   "featureIds": [],
   "tests": [
     {
@@ -41,6 +41,12 @@
       "command": "pnpm audit:dependencies",
       "result": "passed",
       "evidencePath": "artifacts/acceptance/P00-05/command-output.md"
+    },
+    {
+      "id": "T-UNIT",
+      "command": "gh run watch 31701116003 --exit-status",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P00-05/command-output.md"
     }
   ],
   "evidence": [
@@ -52,8 +58,9 @@
   "assumptions": [
     "P00-05 is R0 test and CI infrastructure and does not close a business feature ID.",
     "No external RPC, mainnet fork, signature, or funds operation was used.",
-    "The GitHub-hosted Browser and Contracts jobs, Ubuntu dependency installation, failure-only report upload, and existing Gitleaks Action were configured and statically validated but were not run locally or observed in GitHub Actions."
+    "Ubuntu dependency installation, GitHub Action execution, Gitleaks, and artifact upload were not run on the local macOS host; their recorded results come from GitHub-hosted runs 31701116003 and 31700529976.",
+    "The final run emitted non-failing deprecation annotations for pinned Actions that target the Node.js 20 Action runtime."
   ],
-  "completedAt": "2026-08-13T12:35:45.000Z",
+  "completedAt": "2026-08-13T12:41:49.000Z",
   "commit": null
 }
