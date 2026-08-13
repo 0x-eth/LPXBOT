@@ -1,0 +1,10 @@
+P01-01 artifact integrity verification
+Executed: 2026-08-14 (Asia/Shanghai)
+Status: PASS
+
+The deterministic finalizer inventories every artifact except artifact-manifest.json and sha256sums.txt, records byte counts and SHA-256 values, writes the manifest, and then hashes every file except sha256sums.txt.
+
+The final checker validates the JSON Schema, exact inventory, byte counts, SHA-256 values, checksum inventory, canonical route list, 18 PNG dimensions, full screenshot redaction-policy coverage, route coverage, unverified-state declarations, GET-only network catalog, read-only action audit, P01-02 contract and sensitive-data patterns.
+
+Verification command: pnpm check:p01-reference
+Expected terminal result: P01-01 reference artifacts valid with zero errors.

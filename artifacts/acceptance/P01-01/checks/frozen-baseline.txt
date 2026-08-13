@@ -1,0 +1,12 @@
+P01-01 frozen baseline verification
+Executed: 2026-08-14 (Asia/Shanghai)
+Status: PASS
+
+Path: artifacts/lpbot/2026-08-13
+Git tree: 0b24a81889eb728477e583c43c9121fac7235113
+artifact-manifest.json SHA-256: 70cfa06dbbd4034d04ec3b2f663c9adcc6fb1e71831cb6f077d19ec22150295d
+sha256sums.txt SHA-256: 14a4ba87b588e666ef37780b24d58fa70f13d9545ce128b5751d8a1e14d85236
+
+Command: pnpm check:baseline
+Result: Frozen baseline valid: 248 checksums and 247 manifest records.
+Mutation check: no working-tree changes under artifacts/lpbot/2026-08-13.

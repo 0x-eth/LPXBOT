@@ -1,4 +1,294 @@
 {
   "schemaVersion": 1,
-  "workItemId": "P01-01"
+  "workItemId": "P01-01",
+  "phase": "P01",
+  "risk": "R0",
+  "status": "captured-with-unverified-states",
+  "featureIds": [],
+  "capturedAt": "2026-08-13T17:08:33Z",
+  "target": {
+    "application": "LPBot",
+    "origin": "https://www.lpbot.cc",
+    "accountRole": "ordinary-user"
+  },
+  "scope": {
+    "mode": "read-only-reference",
+    "allowedTargetMethods": ["GET"],
+    "credentialsStored": false,
+    "personalDataStored": false,
+    "fundsOperations": false,
+    "frozenBaseline": "artifacts/lpbot/2026-08-13"
+  },
+  "viewports": [
+    { "id": "desktop", "width": 1440, "height": 900 },
+    { "id": "mobile", "width": 390, "height": 844 }
+  ],
+  "routeCount": 9,
+  "files": [
+    {
+      "path": "capture-methodology.md",
+      "bytes": 2376,
+      "sha256": "393c673a69af3b1317053009d61d72ac2303063c6d18722df1e55b7078b9108b",
+      "mediaType": "text/markdown",
+      "category": "report"
+    },
+    {
+      "path": "checks/artifact-integrity.txt",
+      "bytes": 769,
+      "sha256": "0925e3a533152436251b1ed68ee01bb080290d3b6cbdc1b5c588a8c3fd87d20a",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "checks/frozen-baseline.txt",
+      "bytes": 532,
+      "sha256": "6c4b0765de9d39d51a7a77375302bcea908ba5c2994ad7cd2c5e2ac66ff79af9",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "checks/initial-failure.txt",
+      "bytes": 1287,
+      "sha256": "85e83854b3df1d1324cba3adeaadbf40d0c2f2727aca4519626c6fc0e1380d22",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "checks/read-only-audit.json",
+      "bytes": 1090,
+      "sha256": "367a21b69efed0f9f5ce13556886a9813730d817c07c23aff990d5ac807ceb3d",
+      "mediaType": "application/json",
+      "category": "check"
+    },
+    {
+      "path": "checks/repository-quality.txt",
+      "bytes": 760,
+      "sha256": "1231ff97c5709b6e7b6dbc0b432b46b696174342c4df2e7397f01dc46f2026cc",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "checks/secret-scan.txt",
+      "bytes": 1303,
+      "sha256": "18fe446a9023358156bed215bda4bb30e9cd0961102f3271df3d5b6019338ae2",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "contracts/p01-02-contract.json",
+      "bytes": 14773,
+      "sha256": "0fef61785b6482c80aa25e4405625d41c4fb2384b66831c25582fd322befd72c",
+      "mediaType": "application/json",
+      "category": "contract"
+    },
+    {
+      "path": "coverage.json",
+      "bytes": 1384,
+      "sha256": "3cc0ef060bb0a1f7728f0d18c12cb108abe7662c0c7bd1cc4c54855f6a3b1c28",
+      "mediaType": "application/json",
+      "category": "catalog"
+    },
+    {
+      "path": "dom-accessibility-summary.json",
+      "bytes": 2424,
+      "sha256": "0e950debd4530a04cb5eedf157067d701ace4a82188a0907ab7e389d9e9d3dba",
+      "mediaType": "application/json",
+      "category": "catalog"
+    },
+    {
+      "path": "gaps.json",
+      "bytes": 2079,
+      "sha256": "ad78a5b18c0f1b2e31471a5b0e506295c09ed2389dec473d76f9d1e7d76a1349",
+      "mediaType": "application/json",
+      "category": "catalog"
+    },
+    {
+      "path": "network-observations.json",
+      "bytes": 3257,
+      "sha256": "32b867a8f532a07280f334eded083b8a17cfaf820cd9cb605b8aa85117f73f11",
+      "mediaType": "application/json",
+      "category": "catalog"
+    },
+    {
+      "path": "route-state-matrix.json",
+      "bytes": 4480,
+      "sha256": "402868a21b8b9f295fcae6833ae2f640b31b94b780cbe5cceb8b348096c6080e",
+      "mediaType": "application/json",
+      "category": "matrix"
+    },
+    {
+      "path": "screenshot-redaction-policy.json",
+      "bytes": 5294,
+      "sha256": "b894f31a026ba72846ab9c022dc9cb41976631794f465ae106404dfdfde75236",
+      "mediaType": "application/json",
+      "category": "catalog"
+    },
+    {
+      "path": "screenshots/desktop-activity.png",
+      "bytes": 134403,
+      "sha256": "15020dfecd0818b8597ed1969880cb34fff2fca7f6a54a41a4d493afd58ed2c2",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/desktop-developer.png",
+      "bytes": 104347,
+      "sha256": "0dc9440d480777c7a000cb30175f2ae138d701cf767ecd208a27291ba07722af",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/desktop-pools.png",
+      "bytes": 466476,
+      "sha256": "65b4fbec1e6c710123d4cdaa9fa8daffa54408a929fbc4f5a88d370ded1729e5",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/desktop-settings.png",
+      "bytes": 175054,
+      "sha256": "a89be163f995b07dbc079a10660fe9f6576554fb3b3a49e1d69f4aa38e354a07",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/desktop-strategies.png",
+      "bytes": 127187,
+      "sha256": "85b091b53aaf6a4ad75029f0c010389a01976c8d988062e3adede1c4b39244cf",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/desktop-tasks-paused.png",
+      "bytes": 292559,
+      "sha256": "17585cd02b490882d925e13c7b33bd011af281f6973abdc49271a3e3509639a3",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/desktop-tasks-running.png",
+      "bytes": 293813,
+      "sha256": "b623d732d030099a9b0822d07ae46b1dbea7de0ecafd3488c1c2b24f555e2886",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/desktop-tasks-stopped.png",
+      "bytes": 263493,
+      "sha256": "3f2689c6d42adfe30b90ff63f539e1bd29b3f61aab39320f0f8ac016bdde4575",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/desktop-wallets.png",
+      "bytes": 106247,
+      "sha256": "9a063a36f2f8a8fa1a33041a3d032aec50e14dae857b3585b66143de38198408",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/mobile-activity.png",
+      "bytes": 60306,
+      "sha256": "341115b1787edfbe4761bdb60e650f70e25ab2a39116a12eb897d8fce9306db1",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/mobile-developer.png",
+      "bytes": 54684,
+      "sha256": "c5d1c750f5f9981b925a6208fa6e8c15ee6f40e2f6e789c357c1fe14473a7523",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/mobile-pools.png",
+      "bytes": 160587,
+      "sha256": "e72e3b8a0d5e2f032cfa6fc59d67717ea518fb8b172722face53be249b829e4a",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/mobile-settings.png",
+      "bytes": 96690,
+      "sha256": "050b5c0f4426f57c3aa95fadf41c7f3e0bc8190ff6a46c51debc09f5585bf44e",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/mobile-strategies.png",
+      "bytes": 66011,
+      "sha256": "c0c9f565c82c9ce91404041dcd6cf1a09ad7968e2117e1ede818363a078ada5f",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/mobile-tasks-paused.png",
+      "bytes": 81949,
+      "sha256": "80042679d29dc852440da95dca5916889770debc2592d1c3b4558273c83a3053",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/mobile-tasks-running.png",
+      "bytes": 85976,
+      "sha256": "0e3007869ddc2cc09eef7143712deb4f9804b6ec35d84be3edf29010d2147046",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/mobile-tasks-stopped.png",
+      "bytes": 60822,
+      "sha256": "6e51379a373444220ee0a2cd241f4a0b63a107af62807890a3c621a63254fa2d",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "screenshots/mobile-wallets.png",
+      "bytes": 59067,
+      "sha256": "f3f13203240ef368796ff0e1d676e27b85740118ae74f77d71c0894d183abb8b",
+      "mediaType": "image/png",
+      "category": "screenshot"
+    },
+    {
+      "path": "state-catalog.json",
+      "bytes": 2717,
+      "sha256": "b28487b9abe6704f53a1a42153516b11d0d266a9c1fbd207562235bde664896d",
+      "mediaType": "application/json",
+      "category": "catalog"
+    }
+  ],
+  "checks": [
+    {
+      "id": "artifact-integrity",
+      "result": "passed",
+      "evidencePath": "checks/artifact-integrity.txt"
+    },
+    {
+      "id": "secret-scan",
+      "result": "passed",
+      "evidencePath": "checks/secret-scan.txt"
+    },
+    {
+      "id": "read-only-methods",
+      "result": "passed",
+      "evidencePath": "checks/read-only-audit.json"
+    },
+    {
+      "id": "frozen-baseline",
+      "result": "passed",
+      "evidencePath": "checks/frozen-baseline.txt"
+    },
+    {
+      "id": "repository-quality",
+      "result": "passed",
+      "evidencePath": "checks/repository-quality.txt"
+    }
+  ],
+  "limitations": [
+    "Only the current ordinary-user account was observed; pro, admin, blocked, maintenance and region-blocked states remain unverified.",
+    "Complete request-method telemetry and a HAR were not exposed; documented endpoint schemas were not replayed.",
+    "Dark rendering, stable loading, errors and denied permission states were not induced by this R0 capture.",
+    "Frozen Bundle candidates are implementation inputs, not measured live behavior.",
+    "The approved webmcp_list_tools operation was not exposed as a capability on the authenticated tab."
+  ]
 }
