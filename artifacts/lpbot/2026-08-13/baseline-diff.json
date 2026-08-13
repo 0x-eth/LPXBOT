@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-13T07:44:23.943Z",
+  "baselineDate": "2026-08-13",
+  "baselineSource": "docs/research/public-surface.md",
+  "hasDifferences": true,
+  "contentHashes": [
+    {
+      "artifact": "index.html",
+      "expected": "af930df13d09a3ff69c2d46142759770be5ebd89fe4bb8d6f35adff3694c46cb",
+      "actual": "7d7e403ddb5be91d87ffd4586d6947f03fb672d59f906434362c83d45c81470c",
+      "matches": false
+    },
+    {
+      "artifact": "mainBundle",
+      "expected": "38b650657a7e02124eee52f1198e7479b3acdf43c0c6b82a47deb0c77d5bcd17",
+      "actual": "153f71e03ac9f17f84503476b2ebee05c973adfcd80da5c8d37b8e3d4b0dae5b",
+      "matches": false
+    },
+    {
+      "artifact": "mainCss",
+      "expected": "d87e7fc5fada9b418d43cb40ee74f654944f05cc2cc60a4797042e2be1391bf7",
+      "actual": "4dba2906ad1631a96618c6172efc6b86f5ed3dc489b7800bb2b43b11aa2e9c78",
+      "matches": false
+    },
+    {
+      "artifact": "api-docs.md",
+      "expected": "3601b2b59fb5294f209bbcae3aec3b587eb8a92e0ddf22393f534c0d5bded5fa",
+      "actual": "d53077b79abbecaa7dfad533baeccf21cc8e61c83ff8ed33fdad362a5fc9f889",
+      "matches": false
+    },
+    {
+      "artifact": "api-docs.json",
+      "expected": "7ffae6b1582d781693e26cf41cfabf9542258858723a8d426d16df5afc6a1fa0",
+      "actual": "0cc5692a373372cf3b8f0f584c31acb47dab8118f9eb7012770c1afca82ae332",
+      "matches": false
+    }
+  ],
+  "entryAssets": {
+    "bundle": {
+      "expected": "assets/index-CMScqdPv.js",
+      "actual": "assets/index-D0FmPqGc.js",
+      "changed": true
+    },
+    "css": {
+      "expected": "assets/index-D5EvLoZA.css",
+      "actual": "assets/index-WNtUAhDX.css",
+      "changed": true
+    }
+  },
+  "publicApi": {
+    "expectedCount": 59,
+    "actualCount": 61,
+    "countStill59": false,
+    "added": [
+      "DELETE /api/notifications",
+      "GET /api/notifications"
+    ],
+    "removed": [],
+    "severity": "P1"
+  },
+  "routes": {
+    "expectedCount": 16,
+    "missingExactLiterals": [
+      "/tasks/paused",
+      "/tasks/stopped",
+      "/all/:status?"
+    ],
+    "additionalCandidates": [],
+    "note": "Missing exact literals are extraction results, not proof that a route is unavailable; minified routers may compose paths."
+  },
+  "gates": {
+    "expectedRoles": [
+      "user",
+      "pro",
+      "admin"
+    ],
+    "expectedChainAccessLevels": [
+      "off",
+      "pro",
+      "all"
+    ],
+    "missingVocabularyInBundle": [],
+    "semanticComparison": "No prior machine-readable gate artifact exists; this capture preserves the documented matrix and live client evidence separately."
+  },
+  "chains": {
+    "expectedChainIds": [
+      56,
+      8453,
+      1,
+      4663,
+      196
+    ],
+    "missingChainIdVocabularyInBundle": [],
+    "semanticComparison": "No prior machine-readable chain artifact exists; exact vocabulary presence is reported without inferring server enablement."
+  },
+  "documentedChunkNames": {
+    "expected": [
+      "page-BPAnUeFz.js",
+      "page-C1lIAqW9.js",
+      "TopPoolsView-BMZTVRl8.js",
+      "LiquidityFlowSheet-CJQFRO9_.js",
+      "page-Crvypn-F.js",
+      "page-jcxXPk4w.js",
+      "page-B0Am6c6F.js",
+      "page-Cvb1NhIU.js",
+      "page-rWgRMJ4w.js",
+      "page-CKoF9uum.js",
+      "CreateTaskDialog-BIz9n2cm.js",
+      "QuickCreatePoolDialog-BqY5uf47.js",
+      "AdvancedSettingsForm-Dd4p-usE.js",
+      "RPCConfigDialog-Di2RtBc0.js",
+      "WalletLoginArea-i1JZ8X_N.js",
+      "WalletLinkArea-BCXKvEn_.js",
+      "AppKitProvider-CE-iOhLa.js",
+      "lightweight-charts.production-D92iNSL4.js"
+    ],
+    "missingExactNames": [
+      "page-BPAnUeFz.js",
+      "page-C1lIAqW9.js",
+      "TopPoolsView-BMZTVRl8.js",
+      "LiquidityFlowSheet-CJQFRO9_.js",
+      "page-Crvypn-F.js",
+      "page-jcxXPk4w.js",
+      "page-B0Am6c6F.js",
+      "page-Cvb1NhIU.js",
+      "page-rWgRMJ4w.js",
+      "page-CKoF9uum.js",
+      "CreateTaskDialog-BIz9n2cm.js",
+      "QuickCreatePoolDialog-BqY5uf47.js",
+      "AdvancedSettingsForm-Dd4p-usE.js",
+      "RPCConfigDialog-Di2RtBc0.js",
+      "WalletLoginArea-i1JZ8X_N.js",
+      "WalletLinkArea-BCXKvEn_.js",
+      "AppKitProvider-CE-iOhLa.js"
+    ],
+    "note": "Hashed chunk filename changes are expected after a rebuild; import-graph completeness is validated independently."
+  },
+  "notes": [
+    "The existing research documents were not modified.",
+    "Hash changes can include build-only changes; API method/path additions are reported separately as semantic drift."
+  ]
+}
