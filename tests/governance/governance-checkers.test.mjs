@@ -6,7 +6,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { parse as parseYaml } from "yaml";
+import { parsers as yamlParsers } from "prettier/plugins/yaml";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -19,6 +19,36 @@ function run(script, args) {
 
 function output(result) {
   return `${result.stdout}\n${result.stderr}`;
+}
+
+function yamlValue(node) {
+  if (!node) {
+    return null;
+  }
+  if (node.type === "root") {
+    return yamlValue(node.children[0]);
+  }
+  if (node.type === "document") {
+    return yamlValue(node.children.find((child) => child.type === "documentBody"));
+  }
+  if (["documentBody", "mappingKey", "mappingValue", "sequenceItem"].includes(node.type)) {
+    return yamlValue(node.children[0]);
+  }
+  if (node.type === "mapping") {
+    return Object.fromEntries(
+      node.children.map((item) => [
+        yamlValue(item.children.find((child) => child.type === "mappingKey")),
+        yamlValue(item.children.find((child) => child.type === "mappingValue")),
+      ]),
+    );
+  }
+  if (node.type === "sequence") {
+    return node.children.map(yamlValue);
+  }
+  if (typeof node.value === "string") {
+    return node.value;
+  }
+  throw new Error(`Unsupported YAML AST node: ${node.type}`);
 }
 
 function functionMatrix(ids) {
@@ -328,9 +358,11 @@ test("rejects a self-consistent baseline that does not match its frozen anchor",
 });
 
 test("CI defines four pinned, bounded jobs with unconditional infrastructure cleanup", async () => {
-  const workflow = parseYaml(
-    await import("node:fs/promises").then(({ readFile }) =>
-      readFile(path.join(ROOT, ".github/workflows/ci.yml"), "utf8"),
+  const workflowPath = path.join(ROOT, ".github/workflows/ci.yml");
+  const workflow = yamlValue(
+    await yamlParsers.yaml.parse(
+      await import("node:fs/promises").then(({ readFile }) => readFile(workflowPath, "utf8")),
+      { filepath: workflowPath },
     ),
   );
   const jobs = workflow.jobs;
@@ -342,7 +374,7 @@ test("CI defines four pinned, bounded jobs with unconditional infrastructure cle
     "security",
   ]);
   assert.equal(workflow.permissions.contents, "read");
-  assert.equal(workflow.concurrency["cancel-in-progress"], true);
+  assert.equal(workflow.concurrency["cancel-in-progress"], "true");
   assert.ok(Object.hasOwn(workflow.on, "pull_request"));
   assert.ok(Object.hasOwn(workflow.on, "workflow_dispatch"));
   assert.deepEqual(workflow.on.push.branches, ["main"]);
@@ -351,7 +383,7 @@ test("CI defines four pinned, bounded jobs with unconditional infrastructure cle
   const actions = steps.map((step) => step.uses).filter(Boolean);
   assert.equal(actions.length, 9);
   assert.ok(actions.every((action) => /@[0-9a-f]{40}$/.test(action)));
-  assert.ok(Object.values(jobs).every((job) => Number.isInteger(job["timeout-minutes"])));
+  assert.ok(Object.values(jobs).every((job) => /^\d+$/.test(job["timeout-minutes"])));
 
   for (const job of Object.values(jobs)) {
     assert.ok(
