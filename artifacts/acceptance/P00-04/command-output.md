@@ -19,7 +19,7 @@ Observed commands and results after implementation:
 
 ```text
 node --test tests/governance/governance-checkers.test.mjs
-  PASS  12 passed, 0 failed
+  PASS  13 passed, 0 failed
 
 node scripts/check-traceability.mjs
   PASS  196/196 unique feature IDs match
@@ -31,7 +31,7 @@ node scripts/check-baseline.mjs
   PASS  248 checksums and 247 manifest records
 ```
 
-The twelfth focused test was added during review to prove that a frozen baseline file omitted from `artifact-manifest.json` is rejected.
+Two focused tests were added during review: one proves that a frozen baseline file omitted from `artifact-manifest.json` is rejected, and one proves that a relative Markdown link with a missing heading anchor is rejected.
 
 ## Final Regression
 
@@ -44,7 +44,7 @@ pnpm audit:dependencies                 PASS  no known vulnerabilities
 pnpm format:check                       PASS
 pnpm lint                               PASS  13/13 workspace tasks
 pnpm typecheck                          PASS  19/19 workspace tasks
-pnpm test                               PASS  5 Vitest + 12 governance tests
+pnpm test                               PASS  5 Vitest + 13 governance tests
 pnpm build                              PASS  13/13 workspace tasks
 pnpm infra:up                           PASS  four services healthy
 pnpm test:infra                         PASS  8 passed, 0 failed
