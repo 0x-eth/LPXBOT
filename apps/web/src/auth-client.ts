@@ -86,6 +86,17 @@ export class AuthClient {
     this.#bearerToken = token;
   }
 
+  async logout(): Promise<AuthState> {
+    try {
+      await this.request("/api/auth/logout", { method: "POST" });
+    } finally {
+      this.#bearerToken = null;
+      this.#state = { status: "anonymous" };
+      this.#page = { kind: "ready" };
+    }
+    return this.#state;
+  }
+
   async restore(): Promise<AuthState> {
     const response = await this.request("/api/auth/me", { method: "POST" });
     if (response.ok) {

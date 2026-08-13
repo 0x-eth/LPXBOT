@@ -133,6 +133,42 @@ describe("P01-02 web auth client", () => {
     expect(storage.removeItem).not.toHaveBeenCalled();
   });
 
+  it("logs out and clears both SessionView and the in-memory bearer", async () => {
+    const fetcher = vi
+      .fn<AuthFetch>()
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: { isAdmin: false, maintenance: null, user: session },
+          requestId: null,
+        }),
+      )
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: { loggedOut: true, revoked: true },
+          requestId: null,
+        }),
+      )
+      .mockResolvedValueOnce(errorResponse(401, "UNAUTHENTICATED"));
+    const client = new AuthClient(fetcher);
+    await client.restore();
+    client.setBearerToken("memory-only-token");
+
+    await expect(client.logout()).resolves.toEqual({ status: "anonymous" });
+    await client.restore();
+
+    expect(fetcher.mock.calls[1]?.[0]).toBe("/api/auth/logout");
+    expect(fetcher.mock.calls[1]?.[1]).toMatchObject({
+      credentials: "include",
+      headers: { authorization: "Bearer memory-only-token" },
+      method: "POST",
+    });
+    expect(fetcher.mock.calls[2]?.[1]).toMatchObject({ headers: {} });
+    expect(client.session).toBeNull();
+    expect(client.state).toEqual({ status: "anonymous" });
+  });
+
   it("guards protected and admin routes on the client without replacing server checks", () => {
     expect(canEnterRoute("/tasks/running", { status: "anonymous" })).toBe(false);
     expect(canEnterRoute("/tasks/running", { status: "active", session })).toBe(true);
