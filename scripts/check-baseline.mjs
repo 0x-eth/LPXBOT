@@ -4,6 +4,9 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { ROOT, parseOptions, resolveInside } from "./lib/governance.mjs";
 
+const FROZEN_MANIFEST_SHA256 = "70cfa06dbbd4034d04ec3b2f663c9adcc6fb1e71831cb6f077d19ec22150295d";
+const FROZEN_CHECKSUMS_SHA256 = "14a4ba87b588e666ef37780b24d58fa70f13d9545ce128b5751d8a1e14d85236";
+
 async function filesBelow(directory, prefix = "") {
   const files = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -39,6 +42,8 @@ function checksumRecords(source) {
 async function main() {
   const options = parseOptions({
     "baseline-dir": path.join(ROOT, "artifacts/lpbot/2026-08-13"),
+    "expected-manifest-sha256": FROZEN_MANIFEST_SHA256,
+    "expected-checksums-sha256": FROZEN_CHECKSUMS_SHA256,
   });
   const baselineDirectory = path.resolve(options["baseline-dir"]);
   const manifestPath = path.join(baselineDirectory, "artifact-manifest.json");
@@ -52,6 +57,16 @@ async function main() {
 
   if (!Array.isArray(manifest.files) || manifest.files.length === 0) {
     errors.push("artifact-manifest.json has no file records");
+  }
+  const [manifestHash, checksumsHash] = await Promise.all([
+    digest(manifestPath),
+    digest(checksumPath),
+  ]);
+  if (manifestHash !== options["expected-manifest-sha256"]) {
+    errors.push("frozen manifest anchor mismatch");
+  }
+  if (checksumsHash !== options["expected-checksums-sha256"]) {
+    errors.push("frozen checksum inventory anchor mismatch");
   }
   for (const duplicate of new Set(duplicatePaths)) {
     errors.push(`duplicate checksum path: ${duplicate}`);
