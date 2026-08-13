@@ -4,7 +4,13 @@ import {
   createSuccessEnvelope,
   type SessionView,
 } from "@lpbot/api-contract";
-import { authorizeAccount, type AccountAccessContext } from "@lpbot/domain";
+import {
+  authorizeAccount,
+  canAccessOwnedResource,
+  roleCanAccess,
+  type AccessLevel,
+  type AccountAccessContext,
+} from "@lpbot/domain";
 import { hashSessionToken, type SessionStore, type StoredSession } from "@lpbot/security";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 
@@ -28,6 +34,7 @@ export interface ApiAppOptions {
   now?: () => Date;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
   sessionStore: SessionStore;
+  testRoutes?: boolean;
 }
 
 function bearerToken(header: string | undefined): string | null {
@@ -41,13 +48,10 @@ function sessionToken(request: FastifyRequest): string | null {
 }
 
 async function findValidSession(
-  request: FastifyRequest,
+  token: string,
   store: SessionStore,
   now: Date,
 ): Promise<{ session: StoredSession; tokenHash: string } | null> {
-  const token = sessionToken(request);
-  if (!token) return null;
-
   const tokenHash = hashSessionToken(token);
   const session = await store.findSessionByTokenHash(tokenHash);
   if (!session || session.revokedAt || session.expiresAt.getTime() <= now.getTime()) return null;
@@ -69,7 +73,6 @@ function toSessionView(session: StoredSession, maintenanceBypass: boolean): Sess
 export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   const now = options.now ?? (() => new Date());
   const app = Fastify({
-    disableRequestLogging: true,
     logger: false,
   });
 
@@ -88,7 +91,10 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   });
 
   app.post("/api/auth/me", async (request, reply) => {
-    const resolved = await findValidSession(request, options.sessionStore, now());
+    const token = sessionToken(request);
+    const resolved = token
+      ? await findValidSession(token, options.sessionStore, now())
+      : null;
     if (!resolved) {
       await options.sessionStore.recordAccessAudit({
         action: "session.access",
@@ -100,8 +106,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       });
       return reply.code(401).send(
         createErrorEnvelope({
-          code: "AUTH_EXPIRED",
-          message: "Session is missing or expired",
+          code: token ? "AUTH_EXPIRED" : "UNAUTHENTICATED",
+          message: token ? "Session is invalid or expired" : "Authentication is required",
           requestId: request.id,
           retryable: false,
         }),
@@ -155,6 +161,121 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       request.id,
     );
   });
+
+  app.post("/api/auth/logout", async (request, reply) => {
+    const token = sessionToken(request);
+    const revokedAt = now();
+    let session: StoredSession | null = null;
+    let revoked = false;
+
+    if (token) {
+      const tokenHash = hashSessionToken(token);
+      session = await options.sessionStore.findSessionByTokenHash(tokenHash);
+      revoked = await options.sessionStore.revokeSession(tokenHash, revokedAt);
+    }
+
+    await options.sessionStore.recordAccessAudit({
+      action: "session.logout",
+      createdAt: revokedAt,
+      outcome: "allowed",
+      requestId: request.id,
+      sessionId: session?.id ?? null,
+      userId: session?.userId ?? null,
+    });
+    reply.clearCookie(sessionCookieName, {
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+      secure: true,
+    });
+    return createSuccessEnvelope({ loggedOut: true, revoked }, request.id);
+  });
+
+  if (options.testRoutes) {
+    const authenticateTestRequest = async (request: FastifyRequest) => {
+      const token = sessionToken(request);
+      if (!token) return null;
+      const resolved = await findValidSession(token, options.sessionStore, now());
+      if (!resolved) return null;
+
+      const decision = authorizeAccount({
+        accountStatus: resolved.session.account.status,
+        maintenance: options.maintenance,
+        region: options.regionPolicy(request),
+        role: resolved.session.account.role,
+      });
+      return decision.allowed ? resolved.session : null;
+    };
+
+    app.get<{ Params: { level: string } }>("/__test/guard/:level", async (request, reply) => {
+      const session = await authenticateTestRequest(request);
+      if (!session) {
+        return reply.code(401).send(
+          createErrorEnvelope({
+            code: "UNAUTHENTICATED",
+            message: "Authentication is required",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+
+      const level = request.params.level;
+      const validLevel =
+        level === "authenticated" || level === "pro" || level === "admin"
+          ? (level satisfies AccessLevel)
+          : null;
+      if (!roleCanAccess(session.account.role, validLevel)) {
+        return reply.code(403).send(
+          createErrorEnvelope({
+            code: "FORBIDDEN",
+            message: "This role cannot access the requested resource",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+
+      return createSuccessEnvelope({ level }, request.id);
+    });
+
+    app.get<{ Params: { ownerUserId: string } }>(
+      "/__test/owned/:ownerUserId",
+      async (request, reply) => {
+        const session = await authenticateTestRequest(request);
+        if (!session) {
+          return reply.code(401).send(
+            createErrorEnvelope({
+              code: "UNAUTHENTICATED",
+              message: "Authentication is required",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+
+        if (
+          !canAccessOwnedResource(
+            session.userId,
+            request.params.ownerUserId,
+            session.account.role,
+            false,
+          )
+        ) {
+          return reply.code(403).send(
+            createErrorEnvelope({
+              code: "FORBIDDEN",
+              message: "The requested resource is outside the authorized scope",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+
+        return createSuccessEnvelope({ value: "fixture-resource" }, request.id);
+      },
+    );
+  }
 
   return app;
 }
