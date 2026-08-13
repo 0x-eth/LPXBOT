@@ -1,0 +1,57 @@
+# macOS and editor metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+.secrets/
+secrets/
+credentials/
+credentials*.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Dependencies and generated output
+node_modules/
+.pnpm-store/
+.yarn/
+vendor/
+dist/
+build/
+coverage/
+.next/
+.nuxt/
+.turbo/
+.cache/
+tmp/
+temp/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Test and local-chain state
+playwright-report/
+test-results/
+broadcast/
+cache/
+
