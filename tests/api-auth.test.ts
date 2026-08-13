@@ -7,7 +7,8 @@ import type {
 } from "../packages/security/src/index.js";
 import { SessionIssuer } from "../packages/security/src/index.js";
 import { buildApiApp } from "../apps/api/src/app.js";
-import { afterEach, describe, expect, it } from "vitest";
+import { setBrowserSessionCookie } from "../apps/api/src/browser-session-cookie.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 class MemorySessionStore implements SessionStore {
   readonly audits: AccessAuditEvent[] = [];
@@ -59,6 +60,28 @@ afterEach(async () => {
 });
 
 describe("P01-02 Fastify auth API", () => {
+  it("sets the browser credential with strict cookie attributes", () => {
+    const setCookie = vi.fn();
+    const expiresAt = new Date("2026-08-14T03:00:00.000Z");
+
+    setBrowserSessionCookie(
+      { setCookie },
+      {
+        expiresAt,
+        sessionId: "00000000-0000-4000-8000-000000000099",
+        token: "opaque-session-credential",
+      },
+    );
+
+    expect(setCookie).toHaveBeenCalledWith("lpbot_session", "opaque-session-credential", {
+      expires: expiresAt,
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+      secure: true,
+    });
+  });
+
   it("restores an active browser session while persisting only its hash", async () => {
     const store = new MemorySessionStore();
     const now = new Date("2026-08-14T02:00:00.000Z");
@@ -394,5 +417,66 @@ describe("P01-02 Fastify auth API", () => {
     expect(response.statusCode).toBe(403);
     expect(response.json().error.code).toBe("FORBIDDEN");
     expect(response.body).not.toContain("fixture-resource");
+  });
+
+  it("uses the error envelope for unknown routes", async () => {
+    const app = buildApiApp({
+      maintenance: { enabled: false, message: null, until: null },
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: new MemorySessionStore(),
+    });
+    apps.push(app);
+
+    const response = await app.inject({ method: "GET", url: "/api/not-registered" });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({
+      success: false,
+      error: {
+        code: "NOT_FOUND",
+        message: "The requested endpoint does not exist",
+        requestId: expect.any(String),
+        retryable: false,
+      },
+    });
+  });
+
+  it("redacts credentials and personal data from unexpected errors and logs", async () => {
+    const token = "credential-that-must-not-leak";
+    const displayName = "Sensitive Fixture Name";
+    const store = new MemorySessionStore();
+    store.findSessionByTokenHash = async () => {
+      throw new Error(`database failure ${token} ${displayName}`);
+    };
+    const logLines: string[] = [];
+    const app = buildApiApp({
+      logger: { write: (line) => logLines.push(line) },
+      maintenance: { enabled: false, message: null, until: null },
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: store,
+    });
+    apps.push(app);
+
+    const response = await app.inject({
+      headers: { authorization: `Bearer ${token}` },
+      method: "POST",
+      url: "/api/auth/me",
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toEqual({
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "The request could not be completed",
+        requestId: expect.any(String),
+        retryable: true,
+      },
+    });
+    expect(response.body).not.toContain(token);
+    expect(response.body).not.toContain(displayName);
+    expect(logLines.join("\n")).not.toContain(token);
+    expect(logLines.join("\n")).not.toContain(displayName);
+    expect(logLines.join("\n")).not.toContain("authorization");
   });
 });
