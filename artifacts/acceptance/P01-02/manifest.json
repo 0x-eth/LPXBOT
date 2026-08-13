@@ -3,7 +3,7 @@
   "workItemId": "P01-02",
   "phase": "P01",
   "risk": "R1",
-  "status": "in-progress",
+  "status": "accepted",
   "featureIds": ["AUTH-05", "AUTH-06", "AUTH-07", "AUTH-08", "AUTH-09"],
   "tests": [
     {
@@ -32,7 +32,7 @@
     },
     {
       "id": "T-SEC",
-      "command": "pnpm audit:dependencies",
+      "command": "pnpm audit:dependencies && gh run watch 31733295804 --exit-status",
       "result": "passed",
       "evidencePath": "artifacts/acceptance/P01-02/E-SEC.md"
     }
@@ -51,6 +51,6 @@
     "Region decisions are supplied by an injected server policy; a production geolocation provider is not part of this work item.",
     "No external RPC, target-site request, signature, broadcast, funds action, or production write occurred."
   ],
-  "completedAt": null,
+  "completedAt": "2026-08-13T18:59:08.000Z",
   "commit": null
 }

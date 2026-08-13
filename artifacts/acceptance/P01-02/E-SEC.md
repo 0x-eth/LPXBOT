@@ -17,6 +17,6 @@
 
 - `pnpm audit:dependencies` completed with no known vulnerabilities locally.
 - A local gitleaks binary was not installed, so no local secret-scan pass is claimed.
-- GitHub Actions Security is the authoritative gitleaks result and will be recorded in `command-output.md` and the final manifest only after the final acceptance SHA completes.
+- GitHub Actions run `31733295804` on `c638dad15c0c6d6a58777c6086d3ece318ceef48` passed the Security job. Its pinned gitleaks action completed `Scan repository secrets`, and `pnpm audit:dependencies` reported no known vulnerabilities.
 
 No external RPC, target site, signature, transaction broadcast, funds operation, or production write was used.

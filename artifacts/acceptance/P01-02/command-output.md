@@ -24,4 +24,15 @@ Before implementation, focused tests failed for missing auth contract exports, m
 
 ## CI result
 
-Pending final acceptance SHA. No CI pass is claimed in this draft section.
+`gh run watch 31733295804 --exit-status` returned success for commit `c638dad15c0c6d6a58777c6086d3ece318ceef48`.
+
+Run: <https://github.com/0x-eth/LPXBOT/actions/runs/31733295804>
+
+| Job | Result | Relevant gate |
+|---|---|---|
+| Quality | passed | format, lint, typecheck, unit/API, build |
+| Governance | passed | frozen baseline, traceability, acceptance, P01-01 integrity |
+| Browser | passed | Playwright desktop/mobile states, keyboard, axe |
+| Infrastructure | passed | repeatable migration/seed, service tests, PostgreSQL sessions, cleanup |
+| Security | passed | gitleaks repository scan and dependency audit |
+| Contracts | passed | Solidity format, build, and 3 Foundry tests |
