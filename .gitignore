@@ -57,3 +57,4 @@ playwright-report/
 test-results/
 broadcast/
 cache/
+contracts/out/
