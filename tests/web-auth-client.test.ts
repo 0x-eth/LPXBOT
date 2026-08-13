@@ -125,7 +125,7 @@ describe("P01-02 web auth client", () => {
     expect(fetcher).toHaveBeenCalledWith(
       "/api/auth/me",
       expect.objectContaining({
-        headers: { Authorization: "Bearer memory-only-token" },
+        headers: { authorization: "Bearer memory-only-token" },
       }),
     );
     expect(storage.getItem).not.toHaveBeenCalled();

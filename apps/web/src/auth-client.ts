@@ -5,7 +5,7 @@ import {
   type SessionView,
 } from "@lpbot/api-contract";
 
-export type AuthFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+export type AuthFetch = (input: Request | string | URL, init?: RequestInit) => Promise<Response>;
 
 export type AuthPageState =
   | { kind: "ready" }
@@ -106,7 +106,7 @@ export class AuthClient {
     return this.#state;
   }
 
-  async request(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  async request(input: Request | string | URL, init: RequestInit = {}): Promise<Response> {
     const headers = new Headers(init.headers);
     if (this.#bearerToken) headers.set("Authorization", `Bearer ${this.#bearerToken}`);
     const response = await this.#fetcher(input, {
