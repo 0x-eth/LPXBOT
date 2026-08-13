@@ -1,6 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { constants } from "node:fs";
-import { access, readFile, readdir, stat } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -25,14 +24,6 @@ async function json(relativePath) {
 function requireCondition(condition, message) {
   if (!condition) {
     throw new Error(message);
-  }
-}
-
-async function requireFile(relativePath) {
-  try {
-    await access(path.join(ROOT, relativePath), constants.R_OK);
-  } catch {
-    throw new Error(`missing ${relativePath}`);
   }
 }
 
