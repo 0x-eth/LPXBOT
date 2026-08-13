@@ -2,5 +2,8 @@ packages:
   - apps/*
   - packages/*
 
+minimumReleaseAgeExclude:
+  - fastify@5.12.0
+
 onlyBuiltDependencies:
   - esbuild

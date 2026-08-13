@@ -17,9 +17,15 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@fastify/cookie": "11.1.2",
     "@lpbot/api-contract": "workspace:*",
     "@lpbot/domain": "workspace:*",
     "@lpbot/observability": "workspace:*",
-    "@lpbot/security": "workspace:*"
+    "@lpbot/security": "workspace:*",
+    "fastify": "5.12.0",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/pg": "8.21.0"
   }
 }
