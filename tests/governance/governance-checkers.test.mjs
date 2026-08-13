@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -357,7 +357,53 @@ test("rejects a self-consistent baseline that does not match its frozen anchor",
   assert.match(output(result), /frozen manifest anchor mismatch/i);
 });
 
-test("CI defines four pinned, bounded jobs with unconditional infrastructure cleanup", async () => {
+test("repository exposes a real Playwright browser suite", async () => {
+  const packageJson = JSON.parse(await readFile(path.join(ROOT, "package.json"), "utf8"));
+  const config = await readFile(path.join(ROOT, "playwright.config.ts"), "utf8");
+  const browserTest = await readFile(
+    path.join(ROOT, "tests/e2e/web-rendering.spec.ts"),
+    "utf8",
+  );
+
+  assert.equal(packageJson.scripts["test:e2e"], "playwright test");
+  assert.match(packageJson.devDependencies["@playwright/test"], /^\d+\.\d+\.\d+$/);
+  assert.match(config, /pnpm --filter @lpbot\/web dev/);
+  assert.match(config, /reporter:[\s\S]*html/);
+  assert.match(config, /browserName:\s*["']chromium["']/);
+  assert.match(config, /viewport:\s*\{\s*width:\s*1440,\s*height:\s*900\s*\}/);
+  assert.match(config, /viewport:\s*\{\s*width:\s*390,\s*height:\s*844\s*\}/);
+  assert.match(browserTest, /page\.goto\(/);
+  assert.match(browserTest, /toBeVisible\(/);
+  assert.match(browserTest, /pageerror/);
+  assert.match(browserTest, /requestfailed/);
+  assert.match(browserTest, /console/);
+});
+
+test("repository exposes a real local Foundry contract suite", async () => {
+  const packageJson = JSON.parse(await readFile(path.join(ROOT, "package.json"), "utf8"));
+  const config = await readFile(path.join(ROOT, "foundry.toml"), "utf8");
+  const contract = await readFile(
+    path.join(ROOT, "contracts/src/TestOnlyCounter.sol"),
+    "utf8",
+  );
+  const contractTest = await readFile(
+    path.join(ROOT, "contracts/test/TestOnlyCounter.t.sol"),
+    "utf8",
+  );
+
+  assert.equal(packageJson.scripts["test:contracts"], "forge test -vvv");
+  assert.match(config, /src\s*=\s*["']contracts\/src["']/);
+  assert.match(config, /test\s*=\s*["']contracts\/test["']/);
+  assert.doesNotMatch(config, /rpc_endpoints|fork_url/i);
+  assert.match(contract, /contract\s+TestOnlyCounter\b/);
+  assert.match(contractTest, /contract\s+TestOnlyCounterTest\b/);
+  assert.match(contractTest, /new\s+TestOnlyCounter\s*\(/);
+  assert.match(contractTest, /test\w*(?:Deploy|Initial)/i);
+  assert.match(contractTest, /test\w*(?:Increment|State)/i);
+  assert.match(contractTest, /test\w*(?:Owner|Permission|Unauthorized|Revert|Fail)/i);
+});
+
+test("CI defines six pinned, bounded jobs with real browser and contract gates", async () => {
   const workflowPath = path.join(ROOT, ".github/workflows/ci.yml");
   const workflow = yamlValue(
     await yamlParsers.yaml.parse(
@@ -368,6 +414,8 @@ test("CI defines four pinned, bounded jobs with unconditional infrastructure cle
   const jobs = workflow.jobs;
 
   assert.deepEqual(Object.keys(jobs).sort(), [
+    "browser",
+    "contracts",
     "governance",
     "infrastructure",
     "quality",
@@ -381,11 +429,17 @@ test("CI defines four pinned, bounded jobs with unconditional infrastructure cle
 
   const steps = Object.values(jobs).flatMap((job) => job.steps);
   const actions = steps.map((step) => step.uses).filter(Boolean);
-  assert.equal(actions.length, 9);
+  assert.equal(actions.length, 14);
   assert.ok(actions.every((action) => /@[0-9a-f]{40}$/.test(action)));
   assert.ok(Object.values(jobs).every((job) => /^\d+$/.test(job["timeout-minutes"])));
 
-  for (const job of Object.values(jobs)) {
+  for (const job of [
+    jobs.quality,
+    jobs.governance,
+    jobs.infrastructure,
+    jobs.security,
+    jobs.browser,
+  ]) {
     assert.ok(
       job.steps.some((step) => step.with?.["node-version"] === "22.23.1"),
       `${job.name} must use Node 22.23.1`,
@@ -400,4 +454,28 @@ test("CI defines four pinned, bounded jobs with unconditional infrastructure cle
   assert.equal(cleanupSteps.length, 2);
   assert.match(cleanupSteps.map((step) => step.run).join("\n"), /infra:down/);
   assert.match(cleanupSteps.map((step) => step.run).join("\n"), /infra:reset/);
+
+  assert.equal(jobs.browser.name, "Browser");
+  assert.match(jobs.browser.steps.map((step) => step.run).join("\n"), /playwright install --with-deps chromium/);
+  assert.match(jobs.browser.steps.map((step) => step.run).join("\n"), /pnpm test:e2e/);
+  const reportUpload = jobs.browser.steps.find((step) => step.uses?.startsWith("actions/upload-artifact@"));
+  assert.equal(reportUpload?.if, "failure()");
+  assert.equal(reportUpload?.with?.path, "playwright-report/");
+
+  assert.equal(jobs.contracts.name, "Contracts");
+  assert.match(jobs.contracts.steps.map((step) => step.run).join("\n"), /forge fmt --check/);
+  assert.match(jobs.contracts.steps.map((step) => step.run).join("\n"), /forge build/);
+  assert.match(jobs.contracts.steps.map((step) => step.run).join("\n"), /forge test -vvv/);
+  assert.match(
+    jobs.contracts.steps.find((step) => step.uses?.startsWith("foundry-rs\/foundry-toolchain@"))
+      ?.with?.version,
+    /^v\d+\.\d+\.\d+$/,
+  );
+
+  const constantSuccessStep = steps.find((step) => {
+    if (!step.run) return false;
+    const command = step.run.trim();
+    return /^(?:true|:|exit\s+0|(?:echo|printf)\b[^;&|]*)$/s.test(command);
+  });
+  assert.equal(constantSuccessStep, undefined, "CI must not contain constant-success placeholders");
 });
