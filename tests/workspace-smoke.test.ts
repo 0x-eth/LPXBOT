@@ -47,9 +47,7 @@ function readManifest(workspacePath: string): PackageManifest {
 }
 
 function workspaceDependencies(manifest: PackageManifest): Map<string, string> {
-  return new Map(
-    dependencyFields.flatMap((field) => Object.entries(manifest[field] ?? {})),
-  );
+  return new Map(dependencyFields.flatMap((field) => Object.entries(manifest[field] ?? {})));
 }
 
 describe("LPBot workspace", () => {
@@ -64,11 +62,10 @@ describe("LPBot workspace", () => {
   });
 
   it("is discovered by pnpm with unique package names", () => {
-    const output = execFileSync(
-      "pnpm",
-      ["--recursive", "list", "--depth", "-1", "--json"],
-      { cwd: repositoryRoot, encoding: "utf8" },
-    );
+    const output = execFileSync("pnpm", ["--recursive", "list", "--depth", "-1", "--json"], {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+    });
     const discovered = (JSON.parse(output) as PackageManifest[])
       .map(({ name }) => name)
       .filter((name) => name.startsWith("@lpbot/"))
@@ -89,9 +86,7 @@ describe("LPBot workspace", () => {
       expect(manifest.private).toBe(true);
       expect(manifest.exports).toBeDefined();
       const resolvedEntry = workspaceRequire.resolve(expectedName);
-      expect(resolvedEntry.startsWith(`${resolve(repositoryRoot, workspacePath)}/`)).toBe(
-        true,
-      );
+      expect(resolvedEntry.startsWith(`${resolve(repositoryRoot, workspacePath)}/`)).toBe(true);
       expect(existsSync(resolvedEntry)).toBe(true);
     }
   });
@@ -106,8 +101,8 @@ describe("LPBot workspace", () => {
     const graph = new Map<string, string[]>();
 
     for (const [packageName, manifest] of manifests) {
-      const internalDependencies = [...workspaceDependencies(manifest)].filter(
-        ([dependency]) => manifests.has(dependency),
+      const internalDependencies = [...workspaceDependencies(manifest)].filter(([dependency]) =>
+        manifests.has(dependency),
       );
 
       for (const [dependency, version] of internalDependencies) {
@@ -147,11 +142,7 @@ describe("LPBot workspace", () => {
         .map(([, packageName]) => packageName),
     );
 
-    for (const packageName of [
-      "@lpbot/api-contract",
-      "@lpbot/domain",
-      "@lpbot/chain-registry",
-    ]) {
+    for (const packageName of ["@lpbot/api-contract", "@lpbot/domain", "@lpbot/chain-registry"]) {
       const dependencies = packageNames.get(packageName);
       expect(dependencies).toBeDefined();
       for (const appName of appNames) expect(dependencies?.has(appName)).toBe(false);
