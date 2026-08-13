@@ -85,6 +85,14 @@ h1 {
   line-height: 1.6;
 }
 
+.state-message p {
+  margin: 0;
+}
+
+.state-message p + p {
+  margin-top: 8px;
+}
+
 .reason,
 .role-label {
   display: inline-block;

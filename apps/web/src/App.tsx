@@ -1,6 +1,6 @@
 import type { AuthState } from "@lpbot/api-contract";
 import { LogOut, RefreshCw, ShieldAlert, Wrench } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
 import { AuthClient, authStatePath, canEnterRoute } from "./auth-client";
@@ -64,9 +64,10 @@ function MaintenancePage({ state }: { state: Extract<AuthState, { status: "maint
         </div>
         <p className="brand">LPBot service</p>
         <h1 id="maintenance-title">Maintenance</h1>
-        <p className="state-message" role="status">
-          {state.message ?? "The service is temporarily unavailable."}
-        </p>
+        <div className="state-message" role="status">
+          <p>The service is temporarily unavailable.</p>
+          {state.message ? <p>{state.message}</p> : null}
+        </div>
         {state.until ? <time dateTime={state.until}>Expected completion: {state.until}</time> : null}
       </section>
     </main>
@@ -98,7 +99,7 @@ function Shell({ client, onStateChange, state }: ShellProps) {
   return (
     <div className="app-frame">
       <header className="app-header">
-        <Link className="wordmark" to="/tasks/running" aria-label="LPBot tasks">
+        <Link className="wordmark" to="/tasks/running" aria-label="LPBot tasks" tabIndex={-1}>
           LPBot
         </Link>
         <nav aria-label="Primary">
@@ -150,13 +151,6 @@ function AuthRouter() {
   const client = useMemo(() => new AuthClient(), []);
   const [state, setState] = useState<AuthState>({ status: "booting" });
   const navigate = useNavigate();
-  const restore = useCallback(async () => {
-    const next = await client.restore();
-    setState(next);
-    const destination = authStatePath(next);
-    if (destination) navigate(destination, { replace: true });
-  }, [client, navigate]);
-
   useEffect(() => {
     let current = true;
     void client.restore().then((next) => {
