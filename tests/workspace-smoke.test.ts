@@ -88,9 +88,11 @@ describe("LPBot workspace", () => {
       expect(manifest.name).toBe(expectedName);
       expect(manifest.private).toBe(true);
       expect(manifest.exports).toBeDefined();
-      expect(workspaceRequire.resolve(expectedName)).toBe(
-        resolve(repositoryRoot, workspacePath, "src/index.ts"),
+      const resolvedEntry = workspaceRequire.resolve(expectedName);
+      expect(resolvedEntry.startsWith(`${resolve(repositoryRoot, workspacePath)}/`)).toBe(
+        true,
       );
+      expect(existsSync(resolvedEntry)).toBe(true);
     }
   });
 

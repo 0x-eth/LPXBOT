@@ -35,6 +35,9 @@ coverage/
 .next/
 .nuxt/
 .turbo/
+.vite/
+.eslintcache
+*.tsbuildinfo
 .cache/
 tmp/
 temp/
@@ -54,4 +57,3 @@ playwright-report/
 test-results/
 broadcast/
 cache/
-
