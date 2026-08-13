@@ -1,0 +1,28 @@
+title = "LPBot Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Local-only placeholder credentials in the exact development template; these values are never deployment credentials."
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = ['''^\.env\.example$''']
+regexTarget = "match"
+regexes = ['''(?i)(?:POSTGRES_PASSWORD|REDIS_PASSWORD|MINIO_ROOT_PASSWORD)=[a-z0-9_]*local_only''']
+
+[[allowlists]]
+description = "Immutable P00-01 third-party client snapshot containing public Vite configuration literals; not an LPBot repository credential."
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = ['''^artifacts/lpbot/2026-08-13/assets/vanilla-BG3-rOSy\.js$''']
+regexTarget = "match"
+regexes = ['''VITE_DEFAULT_(?:OKX_API_KEY|OKX_SECRET_KEY|WALLETCONNECT_PROJECT_ID):"[A-Za-z0-9.-]+"''']
+
+[[allowlists]]
+description = "Immutable P00-01 third-party analytics bundle containing a public client project identifier; not an LPBot repository credential."
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = ['''^artifacts/lpbot/2026-08-13/assets/index-CALbxsQk\.js$''']
+regexTarget = "match"
+regexes = ['''amplitudeApiKey:"[0-9a-f]{32}"''']

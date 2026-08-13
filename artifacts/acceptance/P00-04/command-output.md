@@ -52,3 +52,5 @@ pnpm infra:down                         PASS  containers and network removed
 ```
 
 The CI workflow was parsed as YAML and checked to contain exactly four jobs, nine full-SHA Action references, read-only contents permission, concurrency cancellation, and two `always()` infrastructure cleanup steps. The frozen baseline Git tree remained `0b24a81889eb728477e583c43c9121fac7235113`, identical to the pre-task tree.
+
+The host has no Gitleaks executable, so the Gitleaks Action itself was not run locally. CI runs the full scanner with default rules; the configuration contains only path-and-rule-specific exceptions for local placeholders and immutable public client-bundle literals, with a reason on each entry.

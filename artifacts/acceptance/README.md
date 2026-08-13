@@ -24,3 +24,5 @@ Run `pnpm check:acceptance` to validate every manifest and evidence path.
 ## Framework Boundary
 
 Playwright and Foundry are not installed in P00-04. P00-05 will connect real suites to CI after those frameworks and executable tests exist; CI does not include placeholder jobs that always pass.
+
+Gitleaks uses its default rules. Any exception must combine an exact path, a target rule, a narrow matching expression, and a reason in `.gitleaks.toml`; directory-wide artifact exclusions are prohibited.
