@@ -9,13 +9,17 @@
     "pnpm": ">=11.0.0 <12.0.0"
   },
   "scripts": {
+    "accept:p00": "bash scripts/accept-p00.sh",
     "audit:dependencies": "pnpm audit",
     "build": "turbo run build",
     "check:acceptance": "node scripts/check-acceptance.mjs",
-    "check:all": "pnpm check:baseline && pnpm check:traceability && pnpm check:docs && pnpm check:acceptance",
+    "check:all": "pnpm check:baseline && pnpm check:traceability && pnpm check:p00 && pnpm check:docs && pnpm check:acceptance",
     "check:baseline": "node scripts/check-baseline.mjs",
     "check:docs": "node scripts/check-doc-links.mjs",
+    "check:p00": "node scripts/check-p00.mjs",
     "check:traceability": "node scripts/check-traceability.mjs",
+    "changeset": "changeset",
+    "changeset:status": "changeset status",
     "db:migrate": "bash scripts/db.sh migrate",
     "db:seed": "bash scripts/db.sh seed",
     "db:status": "bash scripts/db.sh status",
@@ -32,7 +36,9 @@
     "test:contracts": "forge test -vvv",
     "test:e2e": "pnpm --filter @lpbot/web^... build && playwright test",
     "test:infra": "bash scripts/test-infra.sh",
-    "typecheck": "turbo run typecheck && tsc -p tsconfig.json"
+    "typecheck": "turbo run typecheck && tsc -p tsconfig.json",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.0",

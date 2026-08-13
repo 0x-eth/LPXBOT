@@ -63,6 +63,8 @@ jobs:
         run: pnpm check:baseline
       - name: Verify 196 feature IDs
         run: pnpm check:traceability
+      - name: Verify P00 completion definition
+        run: pnpm check:p00
       - name: Verify Markdown links
         run: pnpm check:docs
       - name: Verify acceptance manifests

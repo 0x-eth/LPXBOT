@@ -66,6 +66,7 @@ pnpm test:infra         # 独立运行全部 Docker 集成测试
 | [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md) | 可独立验收的分阶段开发计划、依赖、测试和完成定义 |
 | [VIBE_CODING_PLAYBOOK.md](./VIBE_CODING_PLAYBOOK.md) | Vibe Coding 协作规范、上下文包、逐模块提示词和验收循环 |
 | [TRACEABILITY_MATRIX.md](./TRACEABILITY_MATRIX.md) | 196 个功能 ID 到阶段、最低测试和验收证据的全量映射 |
+| [adr/README.md](./adr/README.md) | 已接受架构决策的索引、背景和约束 |
 
 ## 一手研究
 
