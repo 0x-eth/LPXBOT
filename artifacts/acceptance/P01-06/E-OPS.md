@@ -27,7 +27,7 @@
 | `pnpm test:e2e` | passed; 65 Chromium tests, 3 intentional project skips |
 | `pnpm test:pwa` | passed; 4/4 |
 | `forge fmt --check`, `forge build`, `pnpm test:contracts` | passed; 3/3 Foundry tests |
-| `pnpm check:all`, `pnpm check:p01-reference` | passed locally; re-run after the P01-06 manifest was added |
+| `pnpm check:all`, `pnpm check:p01-reference` | passed; 9 acceptance manifests and P01-01 reference artifacts valid |
 | Dockerized Gitleaks 8.30.0 | passed; 282 commits, about 18.46 MB, no leaks |
 | `pnpm audit:dependencies` | passed; no known vulnerabilities |
 
