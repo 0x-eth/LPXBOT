@@ -103,6 +103,52 @@ describe("P01-02 web auth client", () => {
     vi.useRealTimers();
   });
 
+  it.each([
+    ["ACCOUNT_PENDING", "pending"],
+    ["ACCOUNT_REJECTED", "rejected"],
+    ["ACCOUNT_BANNED", "banned"],
+  ] as const)(
+    "preserves the server-authoritative %s state after Bot consumption",
+    async (code, reason) => {
+      const token = "F".repeat(43);
+      const channel = {
+        addEventListener: vi.fn(),
+        close: vi.fn(),
+        postMessage: vi.fn(),
+        removeEventListener: vi.fn(),
+      };
+      const fetcher = vi
+        .fn<AuthFetch>()
+        .mockResolvedValueOnce(
+          apiResponse(200, {
+            success: true,
+            data: {
+              expiresAt: "2026-08-14T03:03:00.000Z",
+              loginUrl: `https://t.me/local_fixture_bot?start=${token}`,
+              token,
+            },
+            requestId: "req-create-blocked",
+          }),
+        )
+        .mockResolvedValueOnce(errorResponse(403, code));
+      const client = new AuthClient(fetcher, {
+        broadcastChannel: channel,
+        now: () => new Date("2026-08-14T03:00:00.000Z").getTime(),
+      });
+
+      await expect(client.startTelegramBotLogin()).resolves.toEqual({ status: "consumed" });
+
+      expect(client.state).toEqual({
+        status: "blocked",
+        reason,
+        message: `Safe ${code} message`,
+      });
+      expect(channel.postMessage).toHaveBeenCalledWith({ type: "auth-complete" });
+      expect(JSON.stringify(channel.postMessage.mock.calls)).not.toContain(token);
+      client.dispose();
+    },
+  );
+
   it("cancels the server intent when finite Bot polling times out", async () => {
     vi.useFakeTimers();
     const token = "C".repeat(43);

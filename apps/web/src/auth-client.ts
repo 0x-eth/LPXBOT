@@ -525,6 +525,17 @@ export class AuthClient {
     }
 
     if (!response.ok) {
+      if (
+        this.#state.status === "blocked" ||
+        this.#state.status === "maintenance" ||
+        this.#state.status === "region-blocked"
+      ) {
+        this.#botLogin = { status: "consumed" };
+        this.#stopBotFlow();
+        this.#broadcastChannel?.postMessage({ type: "auth-complete" });
+        this.#emit();
+        return;
+      }
       this.#state = { status: "anonymous" };
       this.#botLogin = {
         status: "error",
