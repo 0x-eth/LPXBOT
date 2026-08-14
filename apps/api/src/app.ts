@@ -159,6 +159,12 @@ const telegramAuthenticationMessages: Readonly<
   AUTH_REPLAYED: "Telegram authentication data was already used",
 };
 
+function isTelegramAuthenticationError(error: unknown): error is TelegramAuthenticationError {
+  if (!(error instanceof Error) || error.name !== "TelegramAuthenticationError") return false;
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "string" && Object.hasOwn(telegramAuthenticationMessages, code);
+}
+
 const telegramBotUsernamePattern = /^[A-Za-z][A-Za-z0-9_]{4,31}$/u;
 
 function telegramBotConfigured(
@@ -271,7 +277,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       try {
         login = await options.telegramMiniApp.authenticate(request.body, request.id);
       } catch (error) {
-        if (!(error instanceof TelegramAuthenticationError)) throw error;
+        if (!isTelegramAuthenticationError(error)) throw error;
         return reply.code(error.code === "AUTH_REPLAYED" ? 409 : 401).send(
           createErrorEnvelope({
             code: error.code,
