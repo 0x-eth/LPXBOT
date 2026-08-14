@@ -1205,22 +1205,22 @@ html[data-theme="dark"] .online-state[data-online="true"] {
 }
 
 .command-button {
-  color: #ffffff;
-  border: 1px solid #0f766e;
-  background: #0f766e;
+  color: var(--accent-foreground);
+  border: 1px solid var(--accent);
+  background: var(--accent);
   font-weight: 700;
 }
 
 .secondary-button {
-  color: #25292b;
-  border: 1px solid #b9c0c3;
-  background: #ffffff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .danger-command {
   color: #ffffff;
-  border: 1px solid #a63832;
-  background: #a63832;
+  border: 1px solid var(--danger);
+  background: var(--danger);
 }
 
 .command-button:disabled,
@@ -1231,7 +1231,7 @@ html[data-theme="dark"] .online-state[data-online="true"] {
 
 .login-wallet-list > p {
   margin: 24px 0;
-  color: #737b7f;
+  color: var(--muted-foreground);
 }
 
 .login-wallet-row {
@@ -1240,15 +1240,15 @@ html[data-theme="dark"] .online-state[data-online="true"] {
   grid-template-columns: 38px minmax(0, 1fr) auto 38px;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid #e1e5e6;
+  border-bottom: 1px solid var(--border);
 }
 
 .wallet-mark {
   display: grid;
   width: 34px;
   height: 34px;
-  color: #0f766e;
-  border: 1px solid #bdd9d5;
+  color: var(--focus-ring);
+  border: 1px solid var(--accent);
   border-radius: 6px;
   place-items: center;
 }
@@ -1265,18 +1265,18 @@ html[data-theme="dark"] .online-state[data-online="true"] {
 }
 
 .wallet-identity strong {
-  color: #202426;
+  color: var(--text);
   font-size: 0.9rem;
 }
 
 .wallet-identity code,
 .login-wallet-row time {
-  color: #71797d;
+  color: var(--muted-foreground);
   font-size: 0.78rem;
 }
 
 .danger-button {
-  color: #b5443e;
+  color: var(--danger);
 }
 
 .dialog-backdrop {
@@ -1296,16 +1296,16 @@ html[data-theme="dark"] .online-state[data-online="true"] {
   left: 50%;
   width: min(100%, 400px);
   padding: 22px;
-  border: 1px solid #d3d7d9;
+  border: 1px solid var(--border);
   border-radius: 7px;
-  background: #ffffff;
+  background: var(--surface);
   box-shadow: 0 18px 48px rgb(20 24 26 / 22%);
   transform: translate(-50%, -50%);
 }
 
 .confirm-dialog p {
   margin: 12px 0 20px;
-  color: #5f676b;
+  color: var(--muted-foreground);
   overflow-wrap: anywhere;
 }
 
@@ -1365,7 +1365,8 @@ html[data-theme="dark"] .online-state[data-online="true"] {
     padding: 44px 20px;
   }
 
-  .status-bar-reserved {
+  .status-bar-reserved,
+  .shell-status-bar {
     display: none;
   }
 
@@ -1384,14 +1385,14 @@ html[data-theme="dark"] .online-state[data-online="true"] {
     display: block;
     height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px));
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    border-top: 1px solid #e1e4e6;
-    background: rgb(255 255 255 / 98%);
+    border-top: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 98%, transparent);
   }
 
   .mobile-navigation-shell .primary-navigation {
     width: 100%;
     height: var(--mobile-nav-height);
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--navigation-count, 6), minmax(0, 1fr));
     padding: 0;
     border-radius: 0;
     background: transparent;
@@ -1478,6 +1479,50 @@ html[data-theme="dark"] .online-state[data-online="true"] {
 
   .bot-login-actions {
     justify-content: space-between;
+  }
+
+  .settings-workspace {
+    padding-top: 24px;
+  }
+
+  .interface-section-heading {
+    align-items: flex-start;
+  }
+
+  .settings-sync-state {
+    min-height: 24px;
+  }
+
+  .interface-setting-row {
+    min-height: 0;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 17px 16px;
+  }
+
+  .setting-control,
+  .color-setting-control {
+    justify-content: flex-start;
+    justify-items: start;
+  }
+
+  .color-swatches {
+    display: flex;
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .navigation-setting {
+    padding: 17px 16px;
+  }
+
+  .navigation-setting-heading {
+    align-items: flex-start;
+  }
+
+  .navigation-preference-list li {
+    min-height: 46px;
   }
 }
 

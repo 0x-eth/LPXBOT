@@ -11,7 +11,13 @@ import {
   RotateCcw,
   Sun,
 } from "lucide-react";
-import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 
 import { useUserPreferences } from "./preferences.js";
 import { accentColorPresets } from "./theme.js";
@@ -223,7 +229,7 @@ export function InterfaceSettings() {
                   key={preset.key}
                   onClick={() => chooseColor(preset.key)}
                   role="radio"
-                  style={{ "--swatch-color": preset.color } as React.CSSProperties}
+                  style={{ "--swatch-color": preset.color } as CSSProperties}
                   title={preset.label}
                   type="button"
                 >
@@ -250,7 +256,7 @@ export function InterfaceSettings() {
                   className="custom-color-preview"
                   style={
                     /^#[0-9A-F]{6}$/iu.test(customDraft)
-                      ? ({ "--swatch-color": customDraft } as React.CSSProperties)
+                      ? ({ "--swatch-color": customDraft } as CSSProperties)
                       : undefined
                   }
                 />
