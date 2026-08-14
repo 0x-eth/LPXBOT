@@ -95,6 +95,14 @@ interface WalletLoginSuccess {
   requestId: string | null;
 }
 
+export interface LoginWalletLinkView {
+  addressMasked: string;
+  createdAt: string;
+  label: string | null;
+  linkId: string;
+  updatedAt: string;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -182,6 +190,24 @@ function isWalletLoginSuccess(value: unknown): value is WalletLoginSuccess {
     value.success === true &&
     isRecord(value.data) &&
     isSessionView(value.data.session)
+  );
+}
+
+function isLoginWalletLinkView(value: unknown): value is LoginWalletLinkView {
+  if (!isRecord(value)) return false;
+  const { addressMasked, createdAt, label, linkId, updatedAt } = value;
+  return (
+    typeof addressMasked === "string" &&
+    /^0x[0-9a-f]{4}\.\.\.[0-9a-f]{4}$/u.test(addressMasked) &&
+    typeof createdAt === "string" &&
+    Number.isFinite(Date.parse(createdAt)) &&
+    (typeof label === "string" || label === null) &&
+    typeof linkId === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+      linkId,
+    ) &&
+    typeof updatedAt === "string" &&
+    Number.isFinite(Date.parse(updatedAt))
   );
 }
 
@@ -432,6 +458,115 @@ export class AuthClient {
     }
   }
 
+  async getLoginWalletLinks(): Promise<LoginWalletLinkView[]> {
+    const response = await this.request("/api/auth/wallet/links", { method: "GET" });
+    if (!response.ok) {
+      this.#emit();
+      return [];
+    }
+    const body: unknown = await response.json();
+    if (
+      !isRecord(body) ||
+      body.success !== true ||
+      !isRecord(body.data) ||
+      !Array.isArray(body.data.links) ||
+      !body.data.links.every(isLoginWalletLinkView)
+    ) {
+      this.#settingsFailure("INVALID_RESPONSE", "The login wallet list was invalid", true);
+      return [];
+    }
+    return body.data.links;
+  }
+
+  async linkLoginWallet(
+    adapter: LoginWalletProviderAdapter,
+    label: string | null,
+  ): Promise<LoginWalletLinkView | null> {
+    try {
+      const wallet = await adapter.connect();
+      const nonceResponse = await this.request("/api/auth/wallet/link-nonce", {
+        body: JSON.stringify(wallet),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      if (!nonceResponse.ok) {
+        this.#emit();
+        return null;
+      }
+      const nonceBody: unknown = await nonceResponse.json();
+      if (!isWalletNonceSuccess(nonceBody, this.#now())) {
+        this.#settingsFailure("INVALID_RESPONSE", "The link challenge response was invalid", true);
+        return null;
+      }
+      const signature = await adapter.signMessage({
+        ...wallet,
+        message: nonceBody.data.message,
+      });
+      const linkResponse = await this.request("/api/auth/wallet/link", {
+        body: JSON.stringify({
+          ...wallet,
+          label,
+          nonceId: nonceBody.data.nonceId,
+          signature,
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      if (!linkResponse.ok) {
+        this.#emit();
+        return null;
+      }
+      const linkBody: unknown = await linkResponse.json();
+      if (
+        !isRecord(linkBody) ||
+        linkBody.success !== true ||
+        !isRecord(linkBody.data) ||
+        !isLoginWalletLinkView(linkBody.data.link)
+      ) {
+        this.#settingsFailure("INVALID_RESPONSE", "The linked wallet response was invalid", true);
+        return null;
+      }
+      this.#page = { kind: "ready" };
+      this.#emit();
+      return linkBody.data.link;
+    } catch (error) {
+      if (error instanceof WalletProviderError) {
+        this.#settingsFailure(error.code, this.#walletProviderMessage(error.code), true);
+      } else {
+        this.#settingsFailure("NETWORK_ERROR", "The login wallet could not be linked", true);
+      }
+      return null;
+    }
+  }
+
+  async unlinkLoginWallet(linkId: string): Promise<boolean> {
+    try {
+      const response = await this.request(`/api/auth/wallet/link/${encodeURIComponent(linkId)}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        this.#emit();
+        return false;
+      }
+      const body: unknown = await response.json();
+      if (
+        !isRecord(body) ||
+        body.success !== true ||
+        !isRecord(body.data) ||
+        body.data.deleted !== true
+      ) {
+        this.#settingsFailure("INVALID_RESPONSE", "The unlink response was invalid", true);
+        return false;
+      }
+      this.#page = { kind: "ready" };
+      this.#emit();
+      return true;
+    } catch {
+      this.#settingsFailure("NETWORK_ERROR", "The login wallet could not be removed", true);
+      return false;
+    }
+  }
+
   async cancelTelegramBotLogin(): Promise<BotLoginView> {
     const flow = this.#botLoginFlow;
     if (!flow) {
@@ -658,6 +793,23 @@ export class AuthClient {
     this.#state = { status: "anonymous" };
     this.#page = { kind: "error", code, message, retryable };
     this.#emit();
+  }
+
+  #settingsFailure(code: string, message: string, retryable: boolean): void {
+    this.#page = { kind: "error", code, message, retryable };
+    this.#emit();
+  }
+
+  #walletProviderMessage(code: WalletProviderError["code"]): string {
+    const messages: Record<WalletProviderError["code"], string> = {
+      PROVIDER_INVALID_RESPONSE: "The wallet provider returned an invalid response",
+      PROVIDER_UNAVAILABLE: "No compatible wallet provider was found",
+      REQUEST_INTERRUPTED: "The wallet request was interrupted",
+      SIGNATURE_INVALID: "The wallet provider returned an invalid signature",
+      USER_REJECTED: "The wallet request was rejected",
+      WALLET_CONTEXT_CHANGED: "The wallet account or network changed",
+    };
+    return messages[code];
   }
 
   async #pollTelegramBotLogin(flow: BotLoginFlow): Promise<void> {
