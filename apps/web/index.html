@@ -3,7 +3,56 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#171717" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        let preference = "system";
+        let accent = "neutral";
+        let customColor = null;
+        try {
+          const parsed = JSON.parse(localStorage.getItem("lpbot-theme-bootstrap") || "null");
+          if (parsed && ["light", "dark", "system"].includes(parsed.theme)) {
+            preference = parsed.theme;
+          }
+          if (
+            parsed &&
+            [
+              "neutral",
+              "blue",
+              "violet",
+              "green",
+              "orange",
+              "red",
+              "cyan",
+              "pink",
+              "indigo",
+              "amber",
+              "teal",
+              "custom",
+            ].includes(parsed.colorTheme)
+          ) {
+            accent = parsed.colorTheme;
+          }
+          if (parsed && /^#[0-9A-F]{6}$/.test(parsed.customColor)) {
+            customColor = parsed.customColor;
+          }
+          if (accent === "custom" && !customColor) accent = "neutral";
+        } catch {
+          // Invalid or unavailable storage falls back to system theme.
+        }
+        const resolved = preference === "system" ? (systemDark ? "dark" : "light") : preference;
+        root.dataset.theme = resolved;
+        root.dataset.themePreference = preference;
+        root.dataset.accent = accent;
+        root.style.colorScheme = resolved;
+        if (customColor && accent === "custom") root.style.setProperty("--accent", customColor);
+        document
+          .querySelector('meta[name="theme-color"]')
+          .setAttribute("content", resolved === "dark" ? "#151719" : "#FFFFFF");
+      })();
+    </script>
     <title>LP Bot</title>
   </head>
   <body>

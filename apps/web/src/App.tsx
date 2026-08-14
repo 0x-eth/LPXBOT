@@ -1,4 +1,4 @@
-import type { AuthState } from "@lpbot/api-contract";
+import type { AuthState, NavigationKey } from "@lpbot/api-contract";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   Activity,
@@ -23,8 +23,17 @@ import {
   WalletCards,
   Wrench,
   X,
+  type LucideIcon,
 } from "lucide-react";
-import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  Component,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   BrowserRouter,
   Link,
@@ -47,7 +56,15 @@ import {
 } from "./auth-client";
 import { Eip1193WalletAdapter, browserEip1193Provider } from "./eip1193-wallet";
 import { ConfirmDialog, FeedbackProvider, useFeedback } from "./feedback";
+import { UserPreferencesProvider, useUserPreferences } from "./preferences";
 import { PwaUpdateBridge } from "./pwa-updates";
+import { InterfaceSettings } from "./settings-interface";
+import {
+  ShellStatsContextProvider,
+  ShellStatusBar,
+  useShellStats,
+} from "./shell-stats-react";
+import { shellStatsDisplay } from "./shell-stats";
 import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
 
 function BootingPage() {
@@ -186,7 +203,7 @@ function LoginPage({ botLogin, client, page, state }: LoginPageProps) {
   );
 }
 
-function LoginWalletSettings({ client }: { client: AuthClient }) {
+function LoginWalletSettingsSection({ client }: { client: AuthClient }) {
   const feedback = useFeedback();
   const [busy, setBusy] = useState(false);
   const [label, setLabel] = useState("");
@@ -255,13 +272,12 @@ function LoginWalletSettings({ client }: { client: AuthClient }) {
   };
 
   return (
-    <main className="workspace settings-workspace">
-      <p className="eyebrow">Account</p>
-      <h1>
-        <span aria-hidden="true">设置</span>
-        <span className="sr-only">Settings</span>
-      </h1>
-      <section className="settings-section" aria-labelledby="login-wallets-title">
+    <>
+      <section
+        aria-labelledby="login-wallets-title"
+        className="settings-section"
+        data-visual-mask="login-wallets"
+      >
         <div className="section-heading">
           <div>
             <SettingsIcon aria-hidden="true" size={18} />
@@ -341,6 +357,20 @@ function LoginWalletSettings({ client }: { client: AuthClient }) {
         open={pendingDelete !== null}
         title="Remove login wallet"
       />
+    </>
+  );
+}
+
+function SettingsPage({ client }: { client: AuthClient }) {
+  return (
+    <main className="workspace settings-workspace">
+      <p className="eyebrow">Preferences</p>
+      <h1>
+        <span aria-hidden="true">设置</span>
+        <span className="sr-only">Settings</span>
+      </h1>
+      <InterfaceSettings />
+      <LoginWalletSettingsSection client={client} />
     </main>
   );
 }
@@ -419,13 +449,40 @@ interface ShellProps {
   state: Extract<AuthState, { status: "active" }>;
 }
 
-const primaryNavigation = [
-  { icon: LayoutDashboard, label: "任务", path: "/tasks/running", section: "/tasks" },
-  { icon: Boxes, label: "池子", path: "/pools", section: "/pools" },
-  { icon: Bot, label: "策略", path: "/strategies", section: "/strategies" },
-  { icon: Activity, label: "日志", path: "/activity", section: "/activity" },
-  { icon: WalletCards, label: "钱包", path: "/wallets", section: "/wallets" },
-] as const;
+interface PrimaryNavigationDefinition {
+  icon: LucideIcon;
+  key: NavigationKey;
+  label: string;
+  path: string | null;
+  section: string | null;
+}
+
+const primaryNavigation: Readonly<Record<NavigationKey, PrimaryNavigationDefinition>> = {
+  activity: { icon: Activity, key: "activity", label: "日志", path: "/activity", section: "/activity" },
+  chat: { icon: MessageSquareText, key: "chat", label: "聊天室", path: null, section: null },
+  pools: { icon: Boxes, key: "pools", label: "池子", path: "/pools", section: "/pools" },
+  strategies: {
+    icon: Bot,
+    key: "strategies",
+    label: "策略",
+    path: "/strategies",
+    section: "/strategies",
+  },
+  tasks: {
+    icon: LayoutDashboard,
+    key: "tasks",
+    label: "任务",
+    path: "/tasks/running",
+    section: "/tasks",
+  },
+  wallets: {
+    icon: WalletCards,
+    key: "wallets",
+    label: "钱包",
+    path: "/wallets",
+    section: "/wallets",
+  },
+};
 
 function routeIsCurrent(pathname: string, section: string): boolean {
   return pathname === section || pathname.startsWith(`${section}/`);
@@ -433,31 +490,53 @@ function routeIsCurrent(pathname: string, section: string): boolean {
 
 function PrimaryNavigation({ onOpenChat }: { onOpenChat(trigger: HTMLButtonElement): void }) {
   const { pathname } = useLocation();
+  const { preferences } = useUserPreferences();
+  const stats = useShellStats();
+  const display = shellStatsDisplay(stats);
+  const items = preferences.navConfig
+    .filter(({ visible }) => visible)
+    .map(({ key }) => primaryNavigation[key]);
+
+  const badge = (key: NavigationKey) => (
+    <span aria-hidden="true" className="nav-badge-slot">
+      {key === "tasks" && stats.sequence >= 0 ? display.running : null}
+    </span>
+  );
 
   return (
-    <nav aria-label="主导航" className="primary-navigation">
-      {primaryNavigation.map(({ icon: Icon, label, path, section }) => (
-        <Link
-          aria-current={routeIsCurrent(pathname, section) ? "page" : undefined}
-          className="primary-navigation-item"
-          key={path}
-          to={path}
-        >
-          <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
-          <span>{label}</span>
-          <span aria-hidden="true" className="nav-badge-slot" />
-        </Link>
-      ))}
-      <button
-        aria-haspopup="dialog"
-        className="primary-navigation-item"
-        onClick={(event) => onOpenChat(event.currentTarget)}
-        type="button"
-      >
-        <MessageSquareText aria-hidden="true" size={18} strokeWidth={1.8} />
-        <span>聊天室</span>
-        <span aria-hidden="true" className="nav-badge-slot" />
-      </button>
+    <nav
+      aria-label="主导航"
+      className="primary-navigation"
+      style={{ "--navigation-count": items.length } as CSSProperties}
+    >
+      {items.map(({ icon: Icon, key, label, path, section }) =>
+        path && section ? (
+          <Link
+            aria-current={routeIsCurrent(pathname, section) ? "page" : undefined}
+            aria-label={label}
+            className="primary-navigation-item"
+            key={key}
+            to={path}
+          >
+            <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
+            <span>{label}</span>
+            {badge(key)}
+          </Link>
+        ) : (
+          <button
+            aria-haspopup="dialog"
+            aria-label={label}
+            className="primary-navigation-item"
+            key={key}
+            onClick={(event) => onOpenChat(event.currentTarget)}
+            type="button"
+          >
+            <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
+            <span>{label}</span>
+            {badge(key)}
+          </button>
+        ),
+      )}
     </nav>
   );
 }
@@ -511,6 +590,7 @@ function EmptyFixturePage({
   title: string;
 }) {
   const location = useLocation();
+  const { preferences } = useUserPreferences();
   if (
     import.meta.env.DEV &&
     title === "Developer" &&
@@ -520,7 +600,12 @@ function EmptyFixturePage({
   }
 
   return (
-    <main className="workspace route-workspace" data-fixture-state="empty">
+    <main
+      className="workspace route-workspace"
+      data-fixture-state="empty"
+      data-pools-panel={preferences.poolsPanelCollapsed ? "collapsed" : "expanded"}
+      data-task-view={preferences.taskViewMode}
+    >
       <p className="eyebrow">{eyebrow}</p>
       <h1>
         <span aria-hidden="true">{localizedTitle}</span>
@@ -717,7 +802,7 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
             <Route path="/all" element={<Navigate to="/tasks/running" replace />} />
             <Route path="/all/:status" element={<LegacyAllRedirect />} />
             <Route path="/monitors" element={<Navigate to="/pools" replace />} />
-            <Route path="/settings" element={<LoginWalletSettings client={client} />} />
+            <Route path="/settings" element={<SettingsPage client={client} />} />
             {routeFixtures.map((fixture) => (
               <Route
                 element={
@@ -755,7 +840,7 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
           </Routes>
         </RouteErrorBoundary>
       )}
-      <div aria-hidden="true" className="status-bar-reserved" />
+      <ShellStatusBar />
       <div className="mobile-navigation-shell">
         <PrimaryNavigation onOpenChat={openChat} />
       </div>
@@ -867,15 +952,19 @@ function AuthRouter() {
   const path = location.pathname;
   if (!canEnterRoute(path, state)) return <Navigate to="/tasks/running" replace />;
   return (
-    <Shell
-      client={client}
-      onClientChange={(nextState, nextPage) => {
-        setState(nextState);
-        setPage(nextPage);
-      }}
-      page={page}
-      state={state}
-    />
+    <UserPreferencesProvider>
+      <ShellStatsContextProvider>
+        <Shell
+          client={client}
+          onClientChange={(nextState, nextPage) => {
+            setState(nextState);
+            setPage(nextPage);
+          }}
+          page={page}
+          state={state}
+        />
+      </ShellStatsContextProvider>
+    </UserPreferencesProvider>
   );
 }
 
