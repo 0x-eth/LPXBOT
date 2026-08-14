@@ -64,4 +64,4 @@ The requested start commit is an ancestor of the implementation. The working tre
 
 ## CI status
 
-Local equivalents of all six CI jobs pass. No qualifying six-job GitHub Actions run is available for the final implementation. Run `31826424387` targeted an intermediate auto-sync commit and all six jobs ended before any step or log was produced. It is not acceptance evidence. The manifest therefore remains `in-progress`.
+Local equivalents of all six CI jobs pass. No qualifying six-job GitHub Actions run is available. [Run 31826761337](https://github.com/0x-eth/LPXBOT/actions/runs/31826761337) targets verified implementation commit `c399c836712c48344ffd0c460f9438f4e692ab69`; its initial attempt and explicit rerun both ended all six jobs in about two seconds with `steps: []` and no failure log. Repository code was not executed, so the run is not acceptance evidence. The manifest remains `in-progress`.
