@@ -224,4 +224,45 @@ describe("P01-04 login wallet authentication", () => {
     expect(JSON.stringify(store.challenges)).not.toContain(challenge.nonceId);
     expect(JSON.stringify(store.challenges)).not.toContain(challenge.message);
   });
+
+  it("verifies a link signature and returns only a masked login-wallet view", async () => {
+    const account = privateKeyToAccount(generatePrivateKey());
+    const now = new Date("2026-08-14T08:30:00.000Z");
+    const store = new MemoryLoginWalletStore();
+    const service = authenticationService(store, () => now);
+    const challenge = await service.createLinkChallenge({
+      address: account.address,
+      chainId: 56,
+      requestId: "req-wallet-link-nonce-valid",
+      userId: store.account.id,
+    });
+    const signature = await account.signMessage({ message: challenge.message });
+
+    const result = await service.link({
+      address: account.address,
+      chainId: 56,
+      label: "  Treasury login  ",
+      nonceId: challenge.nonceId,
+      requestId: "req-wallet-link-valid",
+      signature,
+      userId: store.account.id,
+    });
+
+    expect(result).toEqual({
+      addressMasked: `${account.address.slice(0, 6)}...${account.address.slice(-4)}`,
+      createdAt: now,
+      label: "Treasury login",
+      linkId: expect.any(String),
+      updatedAt: now,
+    });
+    expect(JSON.stringify(result)).not.toContain(account.address);
+    expect(JSON.stringify(result)).not.toContain(signature);
+    expect(store.links).toHaveLength(1);
+    expect(store.audits.at(-1)).toMatchObject({
+      action: "wallet.link.create",
+      outcome: "allowed",
+      requestId: "req-wallet-link-valid",
+      userId: store.account.id,
+    });
+  });
 });
