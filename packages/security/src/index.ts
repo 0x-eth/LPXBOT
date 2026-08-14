@@ -9,6 +9,18 @@ export type {
   TelegramInitDataVerifierOptions,
   VerifiedTelegramInitData,
 } from "./telegram-init-data.js";
+export {
+  TelegramAuthenticationError,
+  TelegramMiniAppLoginService,
+} from "./telegram-mini-app-login.js";
+export type {
+  InitDataReplay,
+  ResolveTelegramIdentityInput,
+  TelegramAuthenticationErrorCode,
+  TelegramMiniAppLoginOptions,
+  TelegramMiniAppLoginResult,
+  TelegramMiniAppStore,
+} from "./telegram-mini-app-login.js";
 
 export const securityPackage = {
   name: "@lpbot/security",
@@ -43,7 +55,14 @@ export interface StoredSession extends NewStoredSession {
 }
 
 export interface AccessAuditEvent {
-  action: "session.access" | "session.logout";
+  action:
+    | "session.access"
+    | "session.logout"
+    | "telegram.mini_app.login"
+    | "telegram.bot.intent.create"
+    | "telegram.bot.intent.confirm"
+    | "telegram.bot.intent.cancel"
+    | "telegram.bot.intent.consume";
   createdAt: Date;
   outcome: "allowed" | "denied";
   requestId: string;

@@ -59,6 +59,17 @@ export class TelegramInitDataVerifier {
     this.#now = options.now ?? (() => new Date());
   }
 
+  verifyRequestBody(body: unknown): VerifiedTelegramInitData {
+    if (typeof body !== "object" || body === null || !("initData" in body)) {
+      throw new TelegramInitDataError("AUTH_INVALID");
+    }
+    const initData = (body as { initData?: unknown }).initData;
+    if (typeof initData !== "string") {
+      throw new TelegramInitDataError("AUTH_INVALID");
+    }
+    return this.verify(initData);
+  }
+
   verify(initData: string): VerifiedTelegramInitData {
     if (typeof initData !== "string" || initData.length === 0) {
       throw new TelegramInitDataError("AUTH_INVALID");
