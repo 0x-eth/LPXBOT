@@ -273,12 +273,37 @@ export class AuthClient {
     this.#state = { status: "authenticating", method: "telegram-mini-app" };
     this.#page = { kind: "ready" };
     this.#emit();
-    const response = await this.request("/api/auth/me", {
-      body: JSON.stringify({ initData }),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-    });
+    let response: Response;
+    try {
+      response = await this.request("/api/auth/me", {
+        body: JSON.stringify({ initData }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+    } catch {
+      this.#state = { status: "anonymous" };
+      this.#page = {
+        kind: "error",
+        code: "NETWORK_ERROR",
+        message: "Telegram Mini App authentication failed",
+        retryable: true,
+      };
+      this.#emit();
+      return this.#state;
+    }
     if (response.ok) await this.#acceptAuthMeResponse(response);
+    else if (this.#state.status === "anonymous" && this.#page.kind === "ready") {
+      const body: unknown = await response.json();
+      if (isErrorEnvelope(body)) {
+        this.#page = {
+          kind: "error",
+          code: body.error.code,
+          message: body.error.message,
+          retryable: body.error.retryable,
+        };
+        this.#emit();
+      }
+    }
     return this.#state;
   }
 

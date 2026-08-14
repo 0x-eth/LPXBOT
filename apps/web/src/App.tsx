@@ -123,7 +123,7 @@ function LoginPage({ botLogin, client, page, state }: LoginPageProps) {
         {page.kind === "error" ? (
           <div className="login-error">
             <p role="alert">{page.message}</p>
-            {page.retryable ? (
+            {page.retryable && botLogin.status === "error" ? (
               <button
                 className="retry-button"
                 onClick={() => void client.retryTelegramBotLogin()}
@@ -131,6 +131,16 @@ function LoginPage({ botLogin, client, page, state }: LoginPageProps) {
               >
                 <RotateCw aria-hidden="true" size={17} />
                 Retry Telegram login
+              </button>
+            ) : null}
+            {page.retryable && botLogin.status !== "error" && miniAppAvailable ? (
+              <button
+                className="retry-button"
+                onClick={() => void client.loginWithTelegramMiniApp(browserTelegramMiniAppAdapter)}
+                type="button"
+              >
+                <RotateCw aria-hidden="true" size={17} />
+                Retry Mini App login
               </button>
             ) : null}
           </div>
