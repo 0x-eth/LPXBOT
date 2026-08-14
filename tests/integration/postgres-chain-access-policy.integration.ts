@@ -15,6 +15,7 @@ const migrationPath = fileURLToPath(
 const authorityMigrationPath = fileURLToPath(
   new URL("../../infra/migrations/20260815000200_remove_user_allowed_chain_ids.sql", import.meta.url),
 );
+const seedPath = fileURLToPath(new URL("../../infra/seed.sql", import.meta.url));
 
 afterAll(async () => {
   await pool.end();
@@ -97,10 +98,51 @@ describe("AUTH-10 PostgreSQL chain access migration", () => {
     expect(historyCount.rows[0]?.count).toBe("5");
   });
 
-  it("rejects history mutation and executes down/up against real PostgreSQL transactionally", async () => {
+  it("repeats the deterministic seed without changing policy revisions or history", async () => {
+    const snapshot = async () => {
+      const policies = await pool.query<{
+        access: string;
+        chain_id: string;
+        reason: string;
+        revision: string;
+      }>(
+        `SELECT chain_id::text, access, revision::text, reason
+           FROM chain_access_policies
+          ORDER BY chain_id`,
+      );
+      const history = await pool.query<{ count: string }>(
+        "SELECT count(*)::text AS count FROM chain_access_policy_history",
+      );
+      return { historyCount: history.rows[0]?.count, policies: policies.rows };
+    };
+
+    const before = await snapshot();
+    const seed = readFileSync(seedPath, "utf8");
+    await pool.query(seed);
+    await pool.query(seed);
+    expect(await snapshot()).toEqual(before);
+  });
+
+  it("rejects history and audit mutation and executes down/up against real PostgreSQL", async () => {
     await expect(
       pool.query(
         "UPDATE chain_access_policy_history SET reason = 'mutated' WHERE chain_id = 56 AND revision = 1",
+      ),
+    ).rejects.toThrow(/append-only/iu);
+
+    const audit = await pool.query<{ id: string }>(
+      `INSERT INTO chain_access_management_audit_events (
+         actor_user_id, session_id, request_id, outcome, result_code, reason,
+         before_state, after_state, created_at
+       ) VALUES (
+         NULL, NULL, 'req-append-only-proof', 'denied', 'LOCAL_PROOF', NULL,
+         NULL, NULL, TIMESTAMPTZ '2026-08-15 00:10:00+00'
+       ) RETURNING id::text`,
+    );
+    await expect(
+      pool.query(
+        "UPDATE chain_access_management_audit_events SET result_code = 'mutated' WHERE id = $1",
+        [audit.rows[0]!.id],
       ),
     ).rejects.toThrow(/append-only/iu);
 

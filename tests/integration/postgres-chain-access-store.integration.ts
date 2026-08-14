@@ -131,19 +131,49 @@ describe("AUTH-10 PostgreSQL chain policy store", () => {
     expect(history.rows[0]?.count).toBe("4");
     const audit = await fixturePool.query<{
       actor_user_id: string;
+      after_state: unknown;
+      before_state: unknown;
       outcome: string;
+      reason: string;
+      request_id: string;
       result_code: string;
       session_id: string;
     }>(
-      `SELECT actor_user_id::text, session_id::text, outcome, result_code
+      `SELECT actor_user_id::text,
+              session_id::text,
+              request_id,
+              outcome,
+              result_code,
+              reason,
+              before_state,
+              after_state
          FROM chain_access_management_audit_events
         ORDER BY id`,
     );
     expect(audit.rows).toEqual([
-      { actor_user_id: actorUserId, outcome: "allowed", result_code: "UPDATED", session_id: sessionId },
       {
         actor_user_id: actorUserId,
+        after_state: [
+          { access: "pro", chainId: 56, revision: 2 },
+          { access: "all", chainId: 1, revision: 2 },
+        ],
+        before_state: [
+          { access: "all", chainId: 56, revision: 1 },
+          { access: "off", chainId: 1, revision: 1 },
+        ],
         outcome: "allowed",
+        reason: "Local policy test change",
+        request_id: "req-chain-policy-store",
+        result_code: "UPDATED",
+        session_id: sessionId,
+      },
+      {
+        actor_user_id: actorUserId,
+        after_state: [],
+        before_state: [],
+        outcome: "allowed",
+        reason: "Local policy test change",
+        request_id: "req-chain-policy-idempotent",
         result_code: "UNCHANGED",
         session_id: sessionId,
       },
