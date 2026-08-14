@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-03",
+  "evidenceLevel": "local-fixture-verified",
+  "liveTelegramExecution": "not-executed",
+  "featureIds": ["AUTH-01", "AUTH-02"],
+  "verifiedStates": [
+    "telegram-mini-app-authenticating",
+    "telegram-bot-link-creating",
+    "telegram-bot-link-pending",
+    "telegram-bot-link-consumed",
+    "telegram-bot-link-cancelled",
+    "telegram-bot-link-expired",
+    "account-active",
+    "account-pending",
+    "account-rejected",
+    "account-banned"
+  ],
+  "database": {
+    "engine": "local Docker PostgreSQL",
+    "migrationCount": 3,
+    "telegramTables": [
+      "telegram_identities",
+      "telegram_init_data_replays",
+      "telegram_bot_login_intents"
+    ],
+    "plaintextCredentialColumns": false
+  },
+  "priorAcceptanceIntegrity": {
+    "baselineCommit": "55445a256c8912ed836a7f2528d7aab52c4561f7",
+    "p01_01TreeBefore": "85fcccb8e9858647f5237888967607767bd85a35",
+    "p01_01TreeAfter": "85fcccb8e9858647f5237888967607767bd85a35",
+    "p01_02TreeBefore": "97fe222b38b9635b17f5ae795e5c0c84b31d258b",
+    "p01_02TreeAfter": "97fe222b38b9635b17f5ae795e5c0c84b31d258b",
+    "modified": false
+  },
+  "ci": {
+    "runId": 31781761117,
+    "commit": "e452bec23a9ff061b441e97af75a22c7bbfad136",
+    "result": "passed",
+    "jobs": ["Quality", "Governance", "Browser", "Contracts", "Infrastructure", "Security"]
+  },
+  "externalOperations": {
+    "telegram": false,
+    "targetSite": false,
+    "externalRpc": false,
+    "signature": false,
+    "chainTransactionBroadcast": false,
+    "funds": false,
+    "productionWrite": false
+  }
+}

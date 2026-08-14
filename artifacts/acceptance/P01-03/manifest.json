@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-03",
+  "phase": "P01",
+  "risk": "R1",
+  "status": "accepted",
+  "featureIds": ["AUTH-01", "AUTH-02"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm test",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-03/command-output.md"
+    },
+    {
+      "id": "T-API",
+      "command": "pnpm exec vitest run tests/telegram-init-data.test.ts tests/telegram-mini-app-login.test.ts tests/telegram-bot-login.test.ts tests/telegram-bot-adapter.test.ts tests/web-auth-client.test.ts tests/telegram-auth-migration.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-03/E-API.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm test:e2e",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-03/E-UI.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "docker run --rm -v $PWD:/repo zricethezav/gitleaks:v8.30.0 git --config=/repo/.gitleaks.toml --redact --no-banner /repo; pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-03/E-SEC.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm infra:up && pnpm db:migrate && pnpm db:migrate && pnpm db:seed && pnpm db:seed && pnpm infra:verify && pnpm test:infra && pnpm test:postgres && pnpm infra:down && pnpm infra:reset",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-03/E-MIG.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P01-03/E-API.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P01-03/E-UI.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P01-03/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P01-03/E-SEC.md" },
+    { "id": "E-MIG", "path": "artifacts/acceptance/P01-03/E-MIG.md" }
+  ],
+  "assumptions": [
+    "Telegram Mini App and Bot behavior is local-fixture-verified; live Telegram execution was not performed.",
+    "Bot Token and username must be injected through deployment configuration; empty values fail closed.",
+    "No target-site request, external RPC, signature, chain transaction broadcast, funds action, or production write occurred.",
+    "P01-01 and P01-02 acceptance trees match their pre-P01-03 Git tree objects and no prior evidence status was upgraded."
+  ],
+  "completedAt": "2026-08-14T07:58:47.000Z",
+  "commit": "e452bec23a9ff061b441e97af75a22c7bbfad136"
+}
