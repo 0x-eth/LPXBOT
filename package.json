@@ -37,6 +37,7 @@
     "test": "turbo run build && vitest run && node --test tests/governance/*.test.mjs",
     "test:contracts": "forge test -vvv",
     "test:e2e": "pnpm --filter @lpbot/web^... build && playwright test",
+    "test:pwa": "playwright test --config=playwright.pwa.config.ts",
     "test:infra": "bash scripts/test-infra.sh",
     "test:postgres": "bash scripts/test-postgres.sh",
     "typecheck": "turbo run typecheck && tsc -p tsconfig.json",
