@@ -408,16 +408,14 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           );
         } catch (error) {
           if (!isWalletAuthenticationError(error)) throw error;
-          return reply
-            .code(error.code === "SIGNATURE_INVALID" ? 400 : walletErrorStatus(error.code))
-            .send(
+          return reply.code(walletErrorStatus(error.code)).send(
             createErrorEnvelope({
               code: error.code,
               message: walletErrorMessage(error.code),
               requestId: request.id,
               retryable: false,
             }),
-            );
+          );
         }
       },
     );
@@ -650,14 +648,16 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           );
         } catch (error) {
           if (!isWalletAuthenticationError(error)) throw error;
-          return reply.code(walletErrorStatus(error.code)).send(
-            createErrorEnvelope({
-              code: error.code,
-              message: walletErrorMessage(error.code),
-              requestId: request.id,
-              retryable: false,
-            }),
-          );
+          return reply
+            .code(error.code === "SIGNATURE_INVALID" ? 400 : walletErrorStatus(error.code))
+            .send(
+              createErrorEnvelope({
+                code: error.code,
+                message: walletErrorMessage(error.code),
+                requestId: request.id,
+                retryable: false,
+              }),
+            );
         }
       },
     );
