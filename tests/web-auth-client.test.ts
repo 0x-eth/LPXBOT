@@ -33,6 +33,49 @@ function errorResponse(status: number, code: string): Response {
 }
 
 describe("P01-02 web auth client", () => {
+  it("authenticates from the Mini App adapter without persisting initData", async () => {
+    const initData = "query_id=fixture&auth_date=1&hash=fixture&user=fixture";
+    let resolveRequest: ((response: Response) => void) | undefined;
+    const fetcher = vi.fn<AuthFetch>(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveRequest = resolve;
+        }),
+    );
+    const adapter = { getInitData: vi.fn(() => initData) };
+    const localStorage = { getItem: vi.fn(), removeItem: vi.fn(), setItem: vi.fn() };
+    const sessionStorage = { getItem: vi.fn(), removeItem: vi.fn(), setItem: vi.fn() };
+    Object.defineProperties(globalThis, {
+      localStorage: { configurable: true, value: localStorage },
+      sessionStorage: { configurable: true, value: sessionStorage },
+    });
+    const client = new AuthClient(fetcher);
+
+    const login = client.loginWithTelegramMiniApp(adapter);
+    expect(client.state).toEqual({ status: "authenticating", method: "telegram-mini-app" });
+    expect(adapter.getInitData).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledWith(
+      "/api/auth/me",
+      expect.objectContaining({
+        body: JSON.stringify({ initData }),
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }),
+    );
+
+    resolveRequest?.(
+      apiResponse(200, {
+        success: true,
+        data: { isAdmin: false, maintenance: null, user: session },
+        requestId: "req-mini-app",
+      }),
+    );
+    await expect(login).resolves.toEqual({ status: "active", session });
+    expect(localStorage.setItem).not.toHaveBeenCalled();
+    expect(sessionStorage.setItem).not.toHaveBeenCalled();
+  });
+
   it("starts booting and restores an active SessionView", async () => {
     const fetcher = vi.fn<AuthFetch>().mockResolvedValue(
       apiResponse(200, {

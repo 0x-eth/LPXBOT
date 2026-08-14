@@ -8,6 +8,26 @@ export const telegramBotCancelContract = {
   replicaInternal: true,
 } as const;
 
+export type TelegramBotLoginConfirmationStatus =
+  | "pending"
+  | "confirmed"
+  | "consumed"
+  | "cancelled"
+  | "expired"
+  | "invalid";
+
+export interface TelegramBotLoginConfirmationInput {
+  requestId: string;
+  telegramSubject: string;
+  token: string;
+}
+
+export interface TelegramBotLoginConfirmationPort {
+  confirmLogin(
+    input: TelegramBotLoginConfirmationInput,
+  ): Promise<{ status: TelegramBotLoginConfirmationStatus }>;
+}
+
 export type Role = "user" | "pro" | "admin";
 export type Tier = "normal" | "pro";
 export type AccountBlockReason = "pending" | "rejected" | "banned";
