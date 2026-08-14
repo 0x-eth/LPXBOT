@@ -461,6 +461,64 @@ describe("P01-02 web auth client", () => {
     expect(sessionStorage.setItem).not.toHaveBeenCalled();
   });
 
+  it("lists, links and deletes login wallets through typed settings operations", async () => {
+    const address = "0x0000000000000000000000000000000000000001" as const;
+    const message = "canonical link SIWE challenge";
+    const nonceId = "L".repeat(43);
+    const signature = `0x${"cd".repeat(65)}` as const;
+    const link = {
+      addressMasked: "0x0000...0001",
+      createdAt: "2026-08-14T08:00:00.000Z",
+      label: "Primary",
+      linkId: "00000000-0000-4000-8000-000000000081",
+      updatedAt: "2026-08-14T08:00:00.000Z",
+    };
+    const fetcher = vi
+      .fn<AuthFetch>()
+      .mockResolvedValueOnce(
+        apiResponse(200, { success: true, data: { links: [link] }, requestId: "req-list" }),
+      )
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: {
+            expiresAt: new Date(Date.now() + 60_000).toISOString(),
+            message,
+            nonceId,
+          },
+          requestId: "req-link-nonce",
+        }),
+      )
+      .mockResolvedValueOnce(
+        apiResponse(200, { success: true, data: { link }, requestId: "req-link" }),
+      )
+      .mockResolvedValueOnce(
+        apiResponse(200, { success: true, data: { deleted: true }, requestId: "req-delete" }),
+      );
+    const adapter: LoginWalletProviderAdapter = {
+      connect: vi.fn().mockResolvedValue({ address, chainId: 56 }),
+      signMessage: vi.fn().mockResolvedValue(signature),
+    };
+    const client = new AuthClient(fetcher, { broadcastChannel: null });
+
+    await expect(client.getLoginWalletLinks()).resolves.toEqual([link]);
+    await expect(client.linkLoginWallet(adapter, "Primary")).resolves.toEqual(link);
+    await expect(client.unlinkLoginWallet(link.linkId)).resolves.toBe(true);
+
+    expect(adapter.signMessage).toHaveBeenCalledWith({ address, chainId: 56, message });
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+      "/api/auth/wallet/links",
+      "/api/auth/wallet/link-nonce",
+      "/api/auth/wallet/link",
+      `/api/auth/wallet/link/${link.linkId}`,
+    ]);
+    expect(fetcher.mock.calls[2]?.[1]).toMatchObject({
+      body: JSON.stringify({ address, chainId: 56, label: "Primary", nonceId, signature }),
+      method: "POST",
+    });
+    expect(fetcher.mock.calls[3]?.[1]).toMatchObject({ method: "DELETE" });
+  });
+
   it("starts booting and restores an active SessionView", async () => {
     const fetcher = vi.fn<AuthFetch>().mockResolvedValue(
       apiResponse(200, {
