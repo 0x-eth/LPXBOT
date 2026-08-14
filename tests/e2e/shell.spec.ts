@@ -35,7 +35,7 @@ async function useUserSession(page: Page): Promise<void> {
   );
 }
 
-test("SHELL-01 keeps the observed application chrome stable", async ({ page }) => {
+test("SHELL-01 keeps the observed application chrome stable", async ({ page }, testInfo) => {
   await useUserSession(page);
   await page.goto("/tasks/running");
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
@@ -44,7 +44,13 @@ test("SHELL-01 keeps the observed application chrome stable", async ({ page }) =
     animations: "disabled",
     caret: "hide",
     mask: [page.locator("main"), page.locator("[data-visual-mask='account']")],
-    maxDiffPixelRatio: 0.005,
+    maxDiffPixelRatio: 0.001,
+  });
+  await page.screenshot({
+    animations: "disabled",
+    caret: "hide",
+    mask: [page.locator("main"), page.locator("[data-visual-mask='account']")],
+    path: `artifacts/acceptance/P01-05/visual/shell-${testInfo.project.name}-actual.png`,
   });
 });
 
@@ -52,11 +58,29 @@ test("SHELL-01 opens recent chats as an empty drawer", async ({ page }) => {
   await useUserSession(page);
   await page.goto("/tasks/running");
 
-  await page.getByRole("button", { name: "聊天室" }).click();
+  const chatTrigger = page.getByRole("button", { name: "聊天室" });
+  await chatTrigger.click();
 
   await expect(page.getByRole("dialog", { name: "最近聊天" })).toBeVisible();
   await expect(page.getByText("暂无最近聊天", { exact: true })).toBeVisible();
   await expect(page.locator("[data-chat-message]")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "最近聊天" })).toHaveCount(0);
+  await expect(chatTrigger).toBeFocused();
+});
+
+test("SHELL-01 preserves observed compatibility redirects", async ({ page }) => {
+  await useUserSession(page);
+  for (const [source, destination] of [
+    ["/", "/tasks/running"],
+    ["/all", "/tasks/running"],
+    ["/all/paused", "/tasks/paused"],
+    ["/all/stopped", "/tasks/stopped"],
+    ["/monitors", "/pools"],
+  ] as const) {
+    await page.goto(source);
+    await expect(page).toHaveURL(new RegExp(`${destination.replaceAll("/", "\\/")}$`, "u"));
+  }
 });
 
 test("SHELL-01 keeps localized route outlets and current navigation stable", async ({ page }) => {
