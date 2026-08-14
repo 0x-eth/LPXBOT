@@ -154,6 +154,75 @@ describe("P01-02 web auth client", () => {
     vi.useRealTimers();
   });
 
+  it("supports explicit cancellation and retry after a polling request failure", async () => {
+    vi.useFakeTimers();
+    const firstToken = "D".repeat(43);
+    const secondToken = "E".repeat(43);
+    const createEnvelope = (token: string, requestId: string) =>
+      apiResponse(200, {
+        success: true,
+        data: {
+          expiresAt: "2026-08-14T03:03:00.000Z",
+          loginUrl: `https://t.me/local_fixture_bot?start=${token}`,
+          token,
+        },
+        requestId,
+      });
+    const fetcher = vi
+      .fn<AuthFetch>()
+      .mockResolvedValueOnce(createEnvelope(firstToken, "req-create-cancel"))
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: { confirmed: false, session: null, status: "pending" },
+          requestId: "req-pending-cancel",
+        }),
+      )
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: { status: "cancelled" },
+          requestId: "req-cancel",
+        }),
+      )
+      .mockResolvedValueOnce(createEnvelope(secondToken, "req-create-retry"))
+      .mockRejectedValueOnce(new TypeError("fixture network down"))
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: { confirmed: true, session, status: "consumed" },
+          requestId: "req-recovered",
+        }),
+      );
+    const client = new AuthClient(fetcher, {
+      broadcastChannel: null,
+      now: () => new Date("2026-08-14T03:00:00.000Z").getTime(),
+      pollInitialDelayMs: 100,
+    });
+
+    await client.startTelegramBotLogin();
+    const firstSignal = fetcher.mock.calls[1]?.[1]?.signal as AbortSignal;
+    await expect(client.cancelTelegramBotLogin()).resolves.toEqual({ status: "cancelled" });
+    expect(firstSignal.aborted).toBe(true);
+    expect(fetcher.mock.calls[2]?.[0]).toBe(`/api/auth/login-token/${firstToken}/cancel`);
+    expect(client.state).toEqual({ status: "anonymous" });
+
+    await expect(client.startTelegramBotLogin()).resolves.toMatchObject({
+      status: "error",
+      retryable: true,
+    });
+    const failedSignal = fetcher.mock.calls[4]?.[1]?.signal as AbortSignal;
+    expect(failedSignal.aborted).toBe(false);
+    await expect(client.retryTelegramBotLogin()).resolves.toEqual({ status: "consumed" });
+    expect(failedSignal.aborted).toBe(true);
+    expect(fetcher.mock.calls[5]?.[0]).toBe(`/api/auth/login-status/${secondToken}`);
+    expect(fetcher).toHaveBeenCalledTimes(6);
+    expect(client.state).toEqual({ status: "active", session });
+
+    client.dispose();
+    vi.useRealTimers();
+  });
+
   it("authenticates from the Mini App adapter without persisting initData", async () => {
     const initData = "query_id=fixture&auth_date=1&hash=fixture&user=fixture";
     let resolveRequest: ((response: Response) => void) | undefined;

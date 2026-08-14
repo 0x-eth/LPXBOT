@@ -259,6 +259,62 @@ export class AuthClient {
     return this.#state;
   }
 
+  async cancelTelegramBotLogin(): Promise<BotLoginView> {
+    const flow = this.#botLoginFlow;
+    if (!flow) {
+      this.#state = { status: "anonymous" };
+      this.#page = { kind: "ready" };
+      this.#botLogin = { status: "cancelled" };
+      return this.#botLogin;
+    }
+
+    const token = flow.token;
+    this.#stopBotFlow();
+    this.#state = { status: "anonymous" };
+    this.#page = { kind: "ready" };
+    this.#botLogin = { status: "cancelled" };
+    const controller = new AbortController();
+    try {
+      const response = await this.request(`/api/auth/login-token/${token}/cancel`, {
+        method: "POST",
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        this.#botFailure(
+          "LOGIN_CANCEL_FAILED",
+          "The Telegram login could not be cancelled",
+          true,
+        );
+      }
+    } catch {
+      this.#botFailure("NETWORK_ERROR", "The Telegram login could not be cancelled", true);
+    }
+    return this.#botLogin;
+  }
+
+  async retryTelegramBotLogin(): Promise<BotLoginView> {
+    const flow = this.#botLoginFlow;
+    if (!flow || flow.token === "" || this.#now() >= flow.expiresAt) {
+      return this.startTelegramBotLogin();
+    }
+
+    if (flow.timer) {
+      clearTimeout(flow.timer);
+      flow.timer = null;
+    }
+    flow.controller.abort();
+    flow.controller = new AbortController();
+    this.#state = { status: "authenticating", method: "telegram-bot-link" };
+    this.#page = { kind: "ready" };
+    this.#botLogin = {
+      expiresAt: flow.expiresAtText,
+      loginUrl: flow.loginUrl,
+      status: "pending",
+    };
+    await this.#pollTelegramBotLogin(flow);
+    return this.#botLogin;
+  }
+
   async startTelegramBotLogin(): Promise<BotLoginView> {
     this.#stopBotFlow();
     const controller = new AbortController();
