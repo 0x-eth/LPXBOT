@@ -135,4 +135,43 @@ describe("P01-03 PostgreSQL Telegram authentication", () => {
     });
     expect(JSON.stringify(persisted.rows)).not.toContain(created.token);
   });
+
+  it("serializes cancellation against first consumption without issuing a losing session", async () => {
+    const store = new PostgresSessionStore(pool);
+    const service = new TelegramBotLoginService(store, {
+      intentTtlSeconds: 180,
+      now: () => now,
+      sessionTtlSeconds: 3_600,
+    });
+    const created = await service.create("postgres-race-create");
+    await service.confirmLogin({
+      requestId: "postgres-race-confirm",
+      telegramSubject: fixtureSubjects[0],
+      token: created.token,
+    });
+
+    const [cancelled, polled] = await Promise.all([
+      service.cancel(created.token, "postgres-race-cancel"),
+      service.poll(created.token, "postgres-race-poll"),
+    ]);
+    const persisted = await pool.query<{ intent_status: string; session_count: number }>(
+      `SELECT i.status AS intent_status, count(s.id)::int AS session_count
+         FROM telegram_bot_login_intents i
+         LEFT JOIN sessions s ON s.user_id = i.user_id AND s.created_at = i.consumed_at
+        WHERE i.token_hash = decode($1, 'hex')
+        GROUP BY i.status`,
+      [hashSessionToken(created.token)],
+    );
+
+    if (persisted.rows[0]?.intent_status === "consumed") {
+      expect(cancelled.status).toBe("consumed");
+      expect(polled.login).not.toBeNull();
+      expect(persisted.rows[0].session_count).toBe(1);
+    } else {
+      expect(persisted.rows[0]).toEqual({ intent_status: "cancelled", session_count: 0 });
+      expect(cancelled.status).toBe("cancelled");
+      expect(polled.login).toBeNull();
+    }
+    expect(JSON.stringify(persisted.rows)).not.toContain(created.token);
+  });
 });
