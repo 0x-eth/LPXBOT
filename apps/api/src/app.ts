@@ -1,9 +1,17 @@
 import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
-import { createErrorEnvelope, createSuccessEnvelope, type SessionView } from "@lpbot/api-contract";
+import {
+  createErrorEnvelope,
+  createSuccessEnvelope,
+  type ManagedChainView,
+  type SessionView,
+} from "@lpbot/api-contract";
 import {
   authorizeAccount,
+  authorizeChainOperation,
   canAccessOwnedResource,
+  chainOperationCategory,
+  effectiveAllowedChainIds,
   roleCanAccess,
   type AccessLevel,
   type AccountAccessContext,
@@ -22,6 +30,11 @@ import {
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 
 import { sessionCookieName, setBrowserSessionCookie } from "./browser-session-cookie.js";
+import {
+  ChainPolicyStoreError,
+  type ChainAccessPolicyStore,
+  type ChainAccessPolicyView,
+} from "./chain-access-policies.js";
 import type { ShellStatsProvider } from "./shell-stats.js";
 import {
   defaultVersionedUserPreferences,
@@ -44,8 +57,12 @@ export interface RegionPolicyResult {
 
 export interface ApiAppOptions {
   authRateLimits?: AuthRateLimits;
+  chainActivityProvider?: ChainActivityProvider;
+  chainManagementRateLimit?: ChainManagementRateLimit;
+  chainPolicyStore?: ChainAccessPolicyStore;
   logger?: { write(line: string): void };
   maintenance: MaintenanceConfig;
+  managementOrigin?: string;
   now?: () => Date;
   preferencesStore?: UserPreferencesStore;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
@@ -56,6 +73,15 @@ export interface ApiAppOptions {
   telegramMiniApp?: TelegramMiniAppAuthenticator;
   testRoutes?: boolean;
   walletAuth?: LoginWalletAuthenticationApplication;
+}
+
+export interface ChainActivityProvider {
+  getActivePositionCounts(chainIds: readonly number[]): Promise<ReadonlyMap<number, number>>;
+}
+
+export interface ChainManagementRateLimit {
+  max: number;
+  timeWindowMs: number;
 }
 
 export interface AuthRateLimits {
@@ -123,6 +149,29 @@ class AtomicMemoryRateLimitStore {
   }
 }
 
+class FixedWindowRateLimiter {
+  readonly #counters = new Map<string, RateLimitCounter>();
+
+  consume(key: string, max: number, timeWindowMs: number, currentTime: number): boolean {
+    const existing = this.#counters.get(key);
+    if (!existing && this.#counters.size >= rateLimitCacheCapacity) {
+      for (const [storedKey, counter] of this.#counters) {
+        if (counter.resetAt <= currentTime) this.#counters.delete(storedKey);
+      }
+      if (this.#counters.size >= rateLimitCacheCapacity) {
+        const oldestKey = this.#counters.keys().next().value;
+        if (oldestKey !== undefined) this.#counters.delete(oldestKey);
+      }
+    }
+    const counter =
+      !existing || existing.resetAt <= currentTime
+        ? { current: 1, resetAt: currentTime + timeWindowMs }
+        : { current: existing.current + 1, resetAt: existing.resetAt };
+    this.#counters.set(key, counter);
+    return counter.current <= max;
+  }
+}
+
 function bearerToken(header: string | undefined): string | null {
   if (!header) return null;
   const match = /^Bearer ([A-Za-z0-9_-]+)$/.exec(header);
@@ -144,9 +193,19 @@ async function findValidSession(
   return { session, tokenHash };
 }
 
-function accountToSessionView(account: StoredAccount, maintenanceBypass: boolean): SessionView {
+async function accountToSessionView(
+  account: StoredAccount,
+  maintenanceBypass: boolean,
+  chainPolicyStore: ChainAccessPolicyStore | undefined,
+): Promise<SessionView> {
+  let policies: ChainAccessPolicyView[] = [];
+  try {
+    policies = (await chainPolicyStore?.list()) ?? [];
+  } catch {
+    policies = [];
+  }
   return {
-    allowedChainIds: account.allowedChainIds,
+    allowedChainIds: effectiveAllowedChainIds(policies, account.role, account.tier),
     avatarUrl: account.avatarUrl,
     displayName: account.displayName,
     maintenanceBypass,
@@ -156,8 +215,12 @@ function accountToSessionView(account: StoredAccount, maintenanceBypass: boolean
   };
 }
 
-function toSessionView(session: StoredSession, maintenanceBypass: boolean): SessionView {
-  return accountToSessionView(session.account, maintenanceBypass);
+function toSessionView(
+  session: StoredSession,
+  maintenanceBypass: boolean,
+  chainPolicyStore: ChainAccessPolicyStore | undefined,
+): Promise<SessionView> {
+  return accountToSessionView(session.account, maintenanceBypass, chainPolicyStore);
 }
 
 const telegramAuthenticationMessages: Readonly<
@@ -182,6 +245,73 @@ function isWalletAuthenticationError(error: unknown): error is WalletAuthenticat
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return isRecord(value) && !Array.isArray(value);
+}
+
+function parseChainAccessUpdateBody(value: unknown) {
+  if (!isPlainRecord(value)) throw new ChainPolicyStoreError("CONFIG_INVALID");
+  const topLevelKeys = Object.keys(value).sort();
+  if (
+    topLevelKeys.length !== 3 ||
+    topLevelKeys[0] !== "access" ||
+    topLevelKeys[1] !== "expectedRevision" ||
+    topLevelKeys[2] !== "reason" ||
+    !isPlainRecord(value.access) ||
+    !isPlainRecord(value.expectedRevision) ||
+    typeof value.reason !== "string" ||
+    value.reason.trim() === "" ||
+    value.reason.length > 500
+  ) {
+    throw new ChainPolicyStoreError("CONFIG_INVALID");
+  }
+
+  const accessKeys = Object.keys(value.access).sort();
+  const revisionKeys = Object.keys(value.expectedRevision).sort();
+  if (
+    accessKeys.length === 0 ||
+    accessKeys.length !== revisionKeys.length ||
+    accessKeys.some((key, index) => key !== revisionKeys[index])
+  ) {
+    throw new ChainPolicyStoreError("CONFIG_INVALID");
+  }
+
+  const changes = accessKeys.map((key) => {
+    if (!/^[1-9][0-9]*$/u.test(key)) throw new ChainPolicyStoreError("CONFIG_INVALID");
+    const chainId = Number(key);
+    const access = value.access[key];
+    const expectedRevision = value.expectedRevision[key];
+    if (
+      !Number.isSafeInteger(chainId) ||
+      (access !== "off" && access !== "pro" && access !== "all") ||
+      !Number.isSafeInteger(expectedRevision) ||
+      (expectedRevision as number) < 0
+    ) {
+      throw new ChainPolicyStoreError("CONFIG_INVALID");
+    }
+    return { access, chainId, expectedRevision: expectedRevision as number };
+  });
+
+  return { changes, reason: value.reason.trim() };
+}
+
+function chainPolicyErrorStatus(code: ChainPolicyStoreError["code"]): 400 | 404 | 409 {
+  if (code === "CHAIN_UNKNOWN") return 404;
+  if (code === "CONFIG_INVALID") return 400;
+  return 409;
+}
+
+function chainPolicyErrorMessage(code: ChainPolicyStoreError["code"]): string {
+  const messages: Record<ChainPolicyStoreError["code"], string> = {
+    CHAIN_NOT_READY: "The chain configuration is incomplete",
+    CHAIN_UNKNOWN: "The chain is not registered",
+    CONFIG_CONFLICT: "Chain configuration changed in another session",
+    CONFIG_INVALID: "Chain configuration request is invalid",
+    DEFAULT_CHAIN_REQUIRED: "The default chain must remain available",
+  };
+  return messages[code];
 }
 
 function walletErrorStatus(code: WalletAuthenticationError["code"]): 400 | 401 | 404 | 409 | 410 {
