@@ -157,6 +157,8 @@ test("admin can enter /users and all navigation is keyboard reachable", async ({
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Tasks", exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Settings" })).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Users" })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/users$/);
