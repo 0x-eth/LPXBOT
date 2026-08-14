@@ -398,6 +398,27 @@ function MaintenancePage({ state }: { state: Extract<AuthState, { status: "maint
   );
 }
 
+function ConnectionUnavailablePage({ onRetry }: { onRetry(): void }) {
+  return (
+    <main className="state-page">
+      <section className="state-content" aria-labelledby="connection-title">
+        <div className="state-icon state-icon-warning" aria-hidden="true">
+          <RotateCw size={26} strokeWidth={1.8} />
+        </div>
+        <p className="brand">LP Bot</p>
+        <h1 id="connection-title">Connection unavailable</h1>
+        <p className="state-message" role="alert">
+          The application could not reach the service.
+        </p>
+        <button className="retry-button" onClick={onRetry} type="button">
+          <RotateCw aria-hidden="true" size={17} />
+          Retry connection
+        </button>
+      </section>
+    </main>
+  );
+}
+
 interface ShellProps {
   client: AuthClient;
   onClientChange(state: AuthState, page: AuthPageState): void;
@@ -773,6 +794,7 @@ function AuthRouter() {
   const [page, setPage] = useState<AuthPageState>({ kind: "ready" });
   const [state, setState] = useState<AuthState>({ status: "booting" });
   const [botLogin, setBotLogin] = useState<BotLoginView>({ status: "idle" });
+  const [connectionUnavailable, setConnectionUnavailable] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   useEffect(
@@ -795,6 +817,9 @@ function AuthRouter() {
       if (!current) return;
       setState(next);
       setPage(client.page);
+      setConnectionUnavailable(false);
+    }).catch(() => {
+      if (current) setConnectionUnavailable(true);
     });
     return () => {
       current = false;
@@ -802,6 +827,21 @@ function AuthRouter() {
     };
   }, [client]);
 
+  const retryConnection = async () => {
+    setConnectionUnavailable(false);
+    setState({ status: "booting" });
+    try {
+      const next = await client.restore();
+      setState(next);
+      setPage(client.page);
+    } catch {
+      setConnectionUnavailable(true);
+    }
+  };
+
+  if (connectionUnavailable) {
+    return <ConnectionUnavailablePage onRetry={() => void retryConnection()} />;
+  }
   if (state.status === "booting") return <BootingPage />;
   const destination = authStatePath(state);
   if (destination && location.pathname !== destination) {

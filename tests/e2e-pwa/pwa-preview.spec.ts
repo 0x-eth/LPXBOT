@@ -49,3 +49,38 @@ test("SHELL-06 build preview exposes the local manifest and active service worke
   });
   expect(scriptUrl).toMatch(/\/sw\.js$/u);
 });
+
+test("SHELL-06 offline navigation falls back to a safe unauthenticated shell", async ({
+  context,
+  page,
+}) => {
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      json: {
+        success: false,
+        error: {
+          code: "UNAUTHENTICATED",
+          message: "Authentication is required",
+          requestId: "req-pwa-install",
+          retryable: false,
+        },
+      },
+      status: 401,
+    }),
+  );
+  await page.goto("/");
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await page.unroute("**/api/auth/me");
+
+  await context.setOffline(true);
+  await page.goto("/pools");
+
+  await expect(page.getByRole("heading", { level: 1, name: "Connection unavailable" })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveText("The application could not reach the service.");
+  await expect(page.getByRole("heading", { level: 1, name: "Pools" })).toHaveCount(0);
+  await expect(page.getByText(/signed in|session restored/iu)).toHaveCount(0);
+  expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
+});
