@@ -80,6 +80,9 @@ importers:
       '@lpbot/api-contract':
         specifier: workspace:*
         version: link:../../packages/api-contract
+      '@lpbot/chain-registry':
+        specifier: workspace:*
+        version: link:../../packages/chain-registry
       '@lpbot/domain':
         specifier: workspace:*
         version: link:../../packages/domain

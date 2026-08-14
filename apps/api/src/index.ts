@@ -14,7 +14,18 @@ export { sessionCookieName, setBrowserSessionCookie } from "./browser-session-co
 export { createLoginWalletAuthenticationFromEnvironment } from "./login-wallet-auth-config.js";
 export type { LoginWalletAuthEnvironment } from "./login-wallet-auth-config.js";
 export { PostgresSessionStore } from "./postgres-session-store.js";
+export { PostgresChainAccessPolicyStore } from "./postgres-chain-access-policy-store.js";
 export { PostgresUserPreferencesStore } from "./postgres-user-preferences-store.js";
+export { ChainPolicyStoreError } from "./chain-access-policies.js";
+export type {
+  ChainAccessPolicyChange,
+  ChainAccessPolicyStore,
+  ChainAccessPolicyUpdateInput,
+  ChainAccessPolicyUpdateResult,
+  ChainAccessPolicyView,
+  ChainManagementAuditInput,
+  ChainPolicyStoreErrorCode,
+} from "./chain-access-policies.js";
 export { UnavailableShellStatsProvider } from "./shell-stats.js";
 export type {
   ShellStatsContext,
