@@ -17,8 +17,15 @@ if (!databaseUrl) throw new Error("DATABASE_URL is required for PostgreSQL integ
 const now = new Date("2026-08-14T10:00:00.000Z");
 const pool = new Pool({ connectionString: databaseUrl, max: 8 });
 const account = privateKeyToAccount(generatePrivateKey());
+const linkAccount = privateKeyToAccount(generatePrivateKey());
+const linkUserIds = [
+  "30000000-0000-4000-8000-000000000071",
+  "30000000-0000-4000-8000-000000000072",
+] as const;
+const telegramSubject = "430000000071";
 
 beforeAll(async () => {
+  await pool.query("DELETE FROM users WHERE id = ANY($1::uuid[])", [linkUserIds]);
   await pool.query(
     `DELETE FROM users
       WHERE id IN (
@@ -26,9 +33,18 @@ beforeAll(async () => {
       )`,
     [account.address.slice(2).toLowerCase()],
   );
+  await pool.query(
+    `INSERT INTO users (
+       id, role, tier, status, allowed_chain_ids, display_name, avatar_url, created_at, updated_at
+     ) VALUES
+       ($1, 'user', 'normal', 'active', ARRAY[56], 'Link User A', NULL, $3, $3),
+       ($2, 'user', 'normal', 'active', ARRAY[56], 'Link User B', NULL, $3, $3)`,
+    [...linkUserIds, now],
+  );
 });
 
 afterAll(async () => {
+  await pool.query("DELETE FROM users WHERE id = ANY($1::uuid[])", [linkUserIds]);
   await pool.query(
     `DELETE FROM users
       WHERE id IN (
@@ -130,5 +146,84 @@ describe("P01-04 PostgreSQL login wallet authentication", () => {
       session_count: 1,
       user_count: 1,
     });
+  });
+
+  it("isolates link challenges, unique addresses, owned deletion and last-login protection", async () => {
+    const store = new PostgresSessionStore(pool);
+    const service = new LoginWalletAuthenticationService(store, {
+      challengeKey: randomBytes(32),
+      challengeTtlSeconds: 300,
+      domain: "lpbot.local",
+      now: () => now,
+      sessionTtlSeconds: 3_600,
+      uri: "https://lpbot.local/login",
+    });
+    const challenge = await service.createLinkChallenge({
+      address: linkAccount.address,
+      chainId: 56,
+      requestId: "postgres-link-nonce-a",
+      userId: linkUserIds[0],
+    });
+    const signature = await linkAccount.signMessage({ message: challenge.message });
+
+    await expect(
+      service.link({
+        address: linkAccount.address,
+        chainId: 56,
+        label: "Primary login",
+        nonceId: challenge.nonceId,
+        requestId: "postgres-cross-user-link",
+        signature,
+        userId: linkUserIds[1],
+      }),
+    ).rejects.toMatchObject({ code: "NONCE_MISMATCH" });
+    const linked = await service.link({
+      address: linkAccount.address,
+      chainId: 56,
+      label: "Primary login",
+      nonceId: challenge.nonceId,
+      requestId: "postgres-link-valid",
+      signature,
+      userId: linkUserIds[0],
+    });
+    expect(await service.listLinks(linkUserIds[0])).toEqual([linked]);
+    expect(await service.listLinks(linkUserIds[1])).toEqual([]);
+
+    await expect(
+      service.createLinkChallenge({
+        address: linkAccount.address,
+        chainId: 56,
+        requestId: "postgres-link-duplicate",
+        userId: linkUserIds[1],
+      }),
+    ).rejects.toMatchObject({ code: "ADDRESS_ALREADY_LINKED" });
+    await expect(
+      service.unlink({
+        linkId: linked.linkId,
+        requestId: "postgres-link-delete-cross-user",
+        userId: linkUserIds[1],
+      }),
+    ).rejects.toMatchObject({ code: "LINK_NOT_FOUND" });
+    await expect(
+      service.unlink({
+        linkId: linked.linkId,
+        requestId: "postgres-link-delete-last",
+        userId: linkUserIds[0],
+      }),
+    ).rejects.toMatchObject({ code: "LAST_LOGIN_METHOD" });
+
+    await pool.query(
+      `INSERT INTO telegram_identities (telegram_user_id, user_id, created_at)
+       VALUES ($1, $2, $3)`,
+      [telegramSubject, linkUserIds[0], now],
+    );
+    await expect(
+      service.unlink({
+        linkId: linked.linkId,
+        requestId: "postgres-link-delete-valid",
+        userId: linkUserIds[0],
+      }),
+    ).resolves.toEqual({ deleted: true });
+    expect(await service.listLinks(linkUserIds[0])).toEqual([]);
   });
 });
