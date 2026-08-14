@@ -105,7 +105,7 @@ test("PostgreSQL exposes TimescaleDB, pgcrypto, and migration history", () => {
     query(
       "SELECT string_agg(tablename, ',' ORDER BY tablename) FROM pg_tables WHERE schemaname = 'public'",
     ),
-    "access_audit_events,app_metadata,auth_login_wallets,auth_wallet_challenges,schema_migrations,sessions,telegram_bot_login_intents,telegram_identities,telegram_init_data_replays,user_preferences,users",
+    "access_audit_events,app_metadata,auth_login_wallets,auth_wallet_challenges,chain_access_management_audit_events,chain_access_policies,chain_access_policy_history,schema_migrations,sessions,telegram_bot_login_intents,telegram_identities,telegram_init_data_replays,user_preferences,users",
   );
 });
 
@@ -143,6 +143,13 @@ test("running the deterministic seed twice preserves the same tuple", () => {
     query("SELECT count(*) FROM app_metadata WHERE metadata_key = 'fixture_version'"),
     "1",
   );
+  assert.equal(
+    query(
+      "SELECT string_agg(chain_id::text || ':' || access || ':' || revision::text, ',' ORDER BY array_position(ARRAY[56,8453,1,4663,196]::bigint[], chain_id)) FROM chain_access_policies",
+    ),
+    "56:all:1,8453:off:1,1:off:1,4663:off:1,196:off:1",
+  );
+  assert.equal(query("SELECT count(*) FROM chain_access_policy_history"), "5");
 });
 
 test("Redis supports PING, expiring SET/GET, and TTL", () => {
