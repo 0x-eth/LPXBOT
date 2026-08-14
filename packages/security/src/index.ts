@@ -34,6 +34,15 @@ export type {
   TelegramBotLoginApplication,
   TelegramBotLoginStore,
 } from "./telegram-bot-login.js";
+export { LoginWalletAuthenticationService } from "./login-wallet-auth.js";
+export type {
+  AuthWalletChallengePurpose,
+  CreatedLoginWalletChallenge,
+  CreateLoginWalletChallengeInput,
+  LoginWalletAuthenticationOptions,
+  LoginWalletAuthStore,
+  NewAuthWalletChallenge,
+} from "./login-wallet-auth.js";
 
 export const securityPackage = {
   name: "@lpbot/security",
