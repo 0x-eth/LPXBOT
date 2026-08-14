@@ -356,12 +356,14 @@ export class AuthClient {
       return this.#botLogin;
     }
     if (!response.ok) {
+      const page = this.#page as AuthPageState;
       this.#state = { status: "anonymous" };
       this.#botLogin = {
         status: "error",
-        message: this.#page.kind === "error" ? this.#page.message : "Telegram login is unavailable",
-        retryable: this.#page.kind === "error" ? this.#page.retryable : false,
+        message: page.kind === "error" ? page.message : "Telegram login is unavailable",
+        retryable: page.kind === "error" ? page.retryable : false,
       };
+      this.#emit();
       return this.#botLogin;
     }
 
