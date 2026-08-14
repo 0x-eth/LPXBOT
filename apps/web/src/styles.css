@@ -548,12 +548,22 @@ input:focus-visible,
 }
 
 .status-bar-reserved {
+  position: fixed;
+  z-index: 15;
+  right: 0;
+  bottom: 0;
+  left: 0;
   min-height: var(--shell-status-height);
   border-top: 1px solid var(--border);
   background: var(--surface);
 }
 
 .shell-status-bar {
+  position: fixed;
+  z-index: 15;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: grid;
   min-width: 0;
   min-height: var(--shell-status-height);
