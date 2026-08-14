@@ -200,7 +200,7 @@ async function accountToSessionView(
   maintenanceBypass: boolean,
   chainPolicyStore: ChainAccessPolicyStore | undefined,
 ): Promise<SessionView> {
-  let policies: ChainAccessPolicyView[] = [];
+  let policies: ChainAccessPolicyView[];
   try {
     policies = (await chainPolicyStore?.list()) ?? [];
   } catch {
