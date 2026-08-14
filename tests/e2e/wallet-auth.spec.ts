@@ -225,8 +225,20 @@ test("settings lists, labels, binds and confirms deletion of login wallets", asy
   expect(await page.locator("script").count()).toBe(scriptCount);
   expect(await page.locator("script", { hasText: "Login only" }).count()).toBe(0);
 
-  await page.getByRole("button", { name: "Remove Primary" }).click();
+  const removePrimary = page.getByRole("button", { name: "Remove Primary" });
+  await removePrimary.click();
   await expect(page.getByRole("dialog", { name: "Remove login wallet" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Remove login wallet" })).toHaveCount(0);
+  await expect(removePrimary).toBeFocused();
+
+  await removePrimary.click();
+  await expect(page.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Confirm remove" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Cancel" })).toBeFocused();
   await page.getByRole("button", { name: "Confirm remove" }).click();
   await expect(page.getByText("0x1111...1111")).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: "登录钱包已移除" })).toBeVisible();
