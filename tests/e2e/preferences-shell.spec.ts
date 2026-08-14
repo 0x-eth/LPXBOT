@@ -20,6 +20,7 @@ interface PreferenceFixture {
 
 interface FixtureState {
   failNextPatch?: boolean;
+  getDelayMs?: number;
   preferences: PreferenceFixture;
   revision: number;
 }
@@ -58,6 +59,7 @@ function cloneDefaults(): PreferenceFixture {
 
 async function fulfillPreferences(route: Route, state: FixtureState): Promise<void> {
   if (route.request().method() === "GET") {
+    if (state.getDelayMs) await new Promise((resolve) => setTimeout(resolve, state.getDelayMs));
     await route.fulfill({
       contentType: "application/json",
       headers: { "Cache-Control": "no-store" },
@@ -276,12 +278,14 @@ test("SET-01 and SET-02 update optimistically, roll back, retry and validate cus
 }) => {
   const state: FixtureState = {
     failNextPatch: true,
+    getDelayMs: 250,
     preferences: cloneDefaults(),
     revision: 0,
   };
   await installFixture(context, state);
-  await page.goto("/settings");
+  await page.goto("/settings", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("status", { name: "界面设置状态" })).toContainText("正在加载");
   await expect(page.getByRole("status", { name: "界面设置状态" })).toContainText("已同步");
 
   const hotPools = page.getByRole("switch", { name: "热门池子推荐" });
@@ -335,6 +339,16 @@ test("SHELL-04 reorders and hides both navigation surfaces with keyboard and cro
     /日志/u,
     /聊天室/u,
   ]);
+  await page.setViewportSize({ height: 844, width: 390 });
+  const mobileNav = page.locator(".mobile-navigation-shell .primary-navigation");
+  await expect(mobileNav.getByText("策略", { exact: true })).toHaveCount(0);
+  await expect(mobileNav.locator(".primary-navigation-item")).toHaveText([
+    /任务/u,
+    /池子/u,
+    /钱包/u,
+    /日志/u,
+    /聊天室/u,
+  ]);
   await expect(page.getByRole("link", { name: "管理" })).toHaveCount(0);
 
   await page.reload();
@@ -356,6 +370,50 @@ test("SHELL-04 reorders and hides both navigation surfaces with keyboard and cro
   } finally {
     await secondContext.close();
   }
+});
+
+test("SET-01 and SET-02 remain non-overlapping and accessible at boundary widths", async ({
+  context,
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "The settings width matrix runs once.");
+  const state: FixtureState = {
+    preferences: { ...cloneDefaults(), colorTheme: "custom", customColor: "#0F766E" },
+    revision: 2,
+  };
+  await installFixture(context, state);
+  await page.goto("/settings");
+
+  for (const width of [320, 768, 1024]) {
+    await page.setViewportSize({ height: width === 1024 ? 900 : 844, width });
+    await expect(page.getByRole("heading", { level: 2, name: "界面" })).toBeVisible();
+    const metrics = await page.evaluate(() => {
+      const panel = document.querySelector(".interface-settings-panel")?.getBoundingClientRect();
+      const controls = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          ".segmented-control, .color-swatches, .navigation-preference-list",
+        ),
+      );
+      return {
+        controlsInsidePanel:
+          panel !== undefined &&
+          controls.every((control) => {
+            const rect = control.getBoundingClientRect();
+            return rect.left >= panel.left - 0.5 && rect.right <= panel.right + 0.5;
+          }),
+        rootOverflow: document.documentElement.scrollWidth > window.innerWidth,
+      };
+    });
+    expect(metrics.rootOverflow, `${width}px root overflow`).toBe(false);
+    expect(metrics.controlsInsidePanel, `${width}px settings control overflow`).toBe(true);
+    await expectNoSeriousAxeViolations(page);
+  }
+
+  const walletRow = page.getByRole("listitem").filter({ hasText: "钱包" });
+  await walletRow.focus();
+  expect(await walletRow.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe(
+    "none",
+  );
 });
 
 test("SHELL-02 renders real fixture values on desktop and compact stable badges on mobile", async ({

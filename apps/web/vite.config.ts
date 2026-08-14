@@ -32,7 +32,7 @@ export default defineConfig({
         scope: "/",
         short_name: "LP Bot",
         start_url: "/",
-        theme_color: "#171717",
+        theme_color: "#ffffff",
       },
       registerType: "prompt",
       srcDir: "src",

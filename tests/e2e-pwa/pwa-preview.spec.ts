@@ -14,7 +14,7 @@ test("SHELL-06 build preview exposes the local manifest and active service worke
     name: "LP Bot",
     short_name: "LP Bot",
     start_url: "/",
-    theme_color: "#171717",
+    theme_color: "#ffffff",
   });
   expect(manifest.icons).toEqual([
     { sizes: "192x192", src: "/pwa-192x192.png", type: "image/png" },

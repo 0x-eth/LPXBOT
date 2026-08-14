@@ -11,7 +11,7 @@ declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ revision: string | null; url: string }>;
 };
 
-const cacheVersion = "p01-05-v1";
+const cacheVersion = "p01-06-v1";
 setCacheNameDetails({ prefix: "lpbot", suffix: cacheVersion });
 
 precacheAndRoute(self.__WB_MANIFEST);
