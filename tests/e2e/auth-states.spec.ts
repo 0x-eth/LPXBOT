@@ -147,21 +147,48 @@ test("user and pro are denied /users without rendering protected data", async ({
   await expect(page.getByText("User administration")).toHaveCount(0);
 });
 
-test("admin can enter /users and all navigation is keyboard reachable", async ({ page }) => {
+test("admin can enter /users and all navigation is keyboard reachable", async ({
+  page,
+}, testInfo) => {
   await useFixture(page, "admin");
   await page.goto("/users");
 
   await expect(page).toHaveURL(/\/users$/);
   await expect(page.getByRole("heading", { level: 1, name: "Users" })).toBeVisible();
-  await expect(page.getByText("User administration")).toBeVisible();
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("link", { name: "Tasks", exact: true })).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("link", { name: "Settings" })).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("link", { name: "Users" })).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/users$/);
+  await expect(page.getByText("暂无内容")).toBeVisible();
+  const desktopOrder = [
+    ["link", "任务"],
+    ["link", "池子"],
+    ["link", "策略"],
+    ["link", "日志"],
+    ["link", "钱包"],
+    ["button", "聊天室"],
+    ["button", "刷新"],
+    ["button", "通知"],
+    ["link", "设置"],
+    ["button", "账户"],
+    ["button", "退出"],
+    ["link", "管理"],
+  ] as const;
+  const mobileOrder = [
+    ["button", "刷新"],
+    ["button", "通知"],
+    ["link", "设置"],
+    ["button", "账户"],
+    ["button", "退出"],
+    ["link", "管理"],
+    ["link", "任务"],
+    ["link", "池子"],
+    ["link", "策略"],
+    ["link", "日志"],
+    ["link", "钱包"],
+    ["button", "聊天室"],
+  ] as const;
+  const order = testInfo.project.name === "chromium-mobile" ? mobileOrder : desktopOrder;
+  for (const [role, name] of order) {
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole(role, { name })).toBeFocused();
+  }
   await expectNoSeriousAxeViolations(page);
 });
 
@@ -174,7 +201,7 @@ test("a later 401 clears the active SessionView and returns to login", async ({ 
   await page.goto("/tasks/running");
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Refresh session" }).click();
+  await page.getByRole("button", { name: "刷新" }).click();
 
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
@@ -204,10 +231,12 @@ test("a later generic 403 renders a forbidden state without protected data", asy
   });
   await page.goto("/tasks/running");
 
-  await page.getByRole("button", { name: "Refresh session" }).click();
+  await page.getByRole("button", { name: "刷新" }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Access denied" })).toBeVisible();
-  await expect(page.getByRole("alert")).toContainText("outside the authorized scope");
+  await expect(page.getByRole("alert")).toHaveText(
+    "You do not have permission to complete this request.",
+  );
   await expect(page.getByText("Session-backed task access is active.")).toHaveCount(0);
   await expectNoSeriousAxeViolations(page);
 });

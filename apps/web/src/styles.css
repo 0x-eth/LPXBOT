@@ -94,11 +94,16 @@ input:focus-visible {
 .brand,
 .eyebrow {
   margin: 0 0 10px;
-  color: #737b7f;
+  color: #60686c;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
+}
+
+.state-page .brand,
+.state-page .eyebrow {
+  color: #98a3a8;
 }
 
 .state-page h1,
@@ -440,7 +445,7 @@ input:focus-visible {
   align-items: center;
   gap: 10px;
   margin-top: 32px;
-  color: #7a8286;
+  color: #60686c;
   border-top: 1px solid #e3e6e7;
   border-bottom: 1px solid #e3e6e7;
 }
