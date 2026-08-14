@@ -34,14 +34,23 @@ export type {
   TelegramBotLoginApplication,
   TelegramBotLoginStore,
 } from "./telegram-bot-login.js";
-export { LoginWalletAuthenticationService } from "./login-wallet-auth.js";
+export {
+  LoginWalletAuthenticationService,
+  WalletAuthenticationError,
+} from "./login-wallet-auth.js";
 export type {
   AuthWalletChallengePurpose,
+  ConsumeAuthWalletLoginInput,
+  ConsumeAuthWalletLoginResult,
   CreatedLoginWalletChallenge,
   CreateLoginWalletChallengeInput,
+  LoginWithWalletInput,
+  LoginWithWalletResult,
   LoginWalletAuthenticationOptions,
   LoginWalletAuthStore,
   NewAuthWalletChallenge,
+  StoredAuthWalletChallenge,
+  WalletAuthenticationErrorCode,
 } from "./login-wallet-auth.js";
 
 export const securityPackage = {
@@ -84,7 +93,8 @@ export interface AccessAuditEvent {
     | "telegram.bot.intent.create"
     | "telegram.bot.intent.confirm"
     | "telegram.bot.intent.cancel"
-    | "telegram.bot.intent.consume";
+    | "telegram.bot.intent.consume"
+    | "wallet.login";
   createdAt: Date;
   outcome: "allowed" | "denied";
   requestId: string;
