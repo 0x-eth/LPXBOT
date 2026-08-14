@@ -6,6 +6,10 @@ import {
 } from "@lpbot/api-contract";
 
 import type { TelegramMiniAppAdapter } from "./telegram-mini-app.js";
+import {
+  WalletProviderError,
+  type LoginWalletProviderAdapter,
+} from "./eip1193-wallet.js";
 
 export type AuthFetch = (input: Request | string | URL, init?: RequestInit) => Promise<Response>;
 
@@ -79,6 +83,18 @@ interface BotLoginFlow {
   token: string;
 }
 
+interface WalletNonceSuccess {
+  success: true;
+  data: { expiresAt: string; message: string; nonceId: string };
+  requestId: string | null;
+}
+
+interface WalletLoginSuccess {
+  success: true;
+  data: { session: SessionView };
+  requestId: string | null;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -141,6 +157,30 @@ function isBotLoginStatusSuccess(value: unknown): value is BotLoginStatusSuccess
   return (
     value.data.status === "consumed" &&
     value.data.confirmed === true &&
+    isSessionView(value.data.session)
+  );
+}
+
+function isWalletNonceSuccess(value: unknown, now: number): value is WalletNonceSuccess {
+  if (!isRecord(value) || value.success !== true || !isRecord(value.data)) return false;
+  const { expiresAt, message, nonceId } = value.data;
+  return (
+    typeof expiresAt === "string" &&
+    Number.isFinite(Date.parse(expiresAt)) &&
+    Date.parse(expiresAt) > now &&
+    typeof message === "string" &&
+    message.length > 0 &&
+    message.length <= 8_192 &&
+    typeof nonceId === "string" &&
+    /^[A-Za-z0-9_-]{43}$/u.test(nonceId)
+  );
+}
+
+function isWalletLoginSuccess(value: unknown): value is WalletLoginSuccess {
+  return (
+    isRecord(value) &&
+    value.success === true &&
+    isRecord(value.data) &&
     isSessionView(value.data.session)
   );
 }
@@ -305,6 +345,91 @@ export class AuthClient {
       }
     }
     return this.#state;
+  }
+
+  async loginWithWallet(adapter: LoginWalletProviderAdapter): Promise<AuthState> {
+    this.#state = { status: "authenticating", method: "wallet" };
+    this.#page = { kind: "ready" };
+    this.#emit();
+
+    try {
+      const wallet = await adapter.connect();
+      const nonceResponse = await this.request("/api/auth/wallet/nonce", {
+        body: JSON.stringify(wallet),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      if (!nonceResponse.ok) {
+        if (this.#state.status === "authenticating") this.#state = { status: "anonymous" };
+        this.#emit();
+        return this.#state;
+      }
+      const nonceBody: unknown = await nonceResponse.json();
+      if (!isWalletNonceSuccess(nonceBody, this.#now())) {
+        this.#walletFailure("INVALID_RESPONSE", "The wallet challenge response was invalid", true);
+        return this.#state;
+      }
+
+      const signature = await adapter.signMessage({
+        ...wallet,
+        message: nonceBody.data.message,
+      });
+      const loginResponse = await this.request("/api/auth/wallet/login", {
+        body: JSON.stringify({
+          ...wallet,
+          nonceId: nonceBody.data.nonceId,
+          signature,
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      if (!loginResponse.ok) {
+        if (this.#state.status === "authenticating") this.#state = { status: "anonymous" };
+        if (this.#page.kind === "ready") {
+          const body: unknown = await loginResponse.json();
+          if (isErrorEnvelope(body)) {
+            this.#page = {
+              kind: "error",
+              code: body.error.code,
+              message: body.error.message,
+              retryable: body.error.retryable,
+            };
+          }
+        }
+        this.#emit();
+        return this.#state;
+      }
+      const loginBody: unknown = await loginResponse.json();
+      if (!isWalletLoginSuccess(loginBody)) {
+        this.#walletFailure("INVALID_RESPONSE", "The wallet login response was invalid", true);
+        return this.#state;
+      }
+
+      this.#state = { status: "active", session: loginBody.data.session };
+      this.#page = { kind: "ready" };
+      this.#broadcastChannel?.postMessage({ type: "auth-complete" });
+      this.#emit();
+      return this.#state;
+    } catch (error) {
+      if (error instanceof WalletProviderError) {
+        const messages: Record<WalletProviderError["code"], string> = {
+          PROVIDER_INVALID_RESPONSE: "The wallet provider returned an invalid response",
+          PROVIDER_UNAVAILABLE: "No compatible wallet provider was found",
+          REQUEST_INTERRUPTED: "The wallet request was interrupted",
+          SIGNATURE_INVALID: "The wallet provider returned an invalid signature",
+          USER_REJECTED: "The wallet request was rejected",
+          WALLET_CONTEXT_CHANGED: "The wallet account or network changed",
+        };
+        this.#walletFailure(
+          error.code,
+          messages[error.code],
+          error.code !== "PROVIDER_UNAVAILABLE",
+        );
+      } else {
+        this.#walletFailure("NETWORK_ERROR", "Wallet authentication failed", true);
+      }
+      return this.#state;
+    }
   }
 
   async cancelTelegramBotLogin(): Promise<BotLoginView> {
@@ -526,6 +651,12 @@ export class AuthClient {
     this.#state = { status: "anonymous" };
     this.#page = { kind: "error", code, message, retryable };
     this.#botLogin = { status: "error", message, retryable };
+    this.#emit();
+  }
+
+  #walletFailure(code: string, message: string, retryable: boolean): void {
+    this.#state = { status: "anonymous" };
+    this.#page = { kind: "error", code, message, retryable };
     this.#emit();
   }
 

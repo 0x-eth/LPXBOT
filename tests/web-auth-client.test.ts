@@ -1,5 +1,6 @@
 import type { ErrorEnvelope, SessionView } from "../packages/api-contract/src/index.js";
 import { AuthClient, canEnterRoute, type AuthFetch } from "../apps/web/src/auth-client.js";
+import type { LoginWalletProviderAdapter } from "../apps/web/src/eip1193-wallet.js";
 import { describe, expect, it, vi } from "vitest";
 
 const session: SessionView = {
@@ -396,6 +397,68 @@ describe("P01-02 web auth client", () => {
       message: "Safe AUTH_INVALID message",
       retryable: false,
     });
+  });
+
+  it("completes wallet nonce, personal-sign and cookie-session login without storage", async () => {
+    const address = "0x0000000000000000000000000000000000000001" as const;
+    const message = "canonical local SIWE challenge";
+    const nonceId = "N".repeat(43);
+    const signature = `0x${"ab".repeat(65)}` as const;
+    const fetcher = vi
+      .fn<AuthFetch>()
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: {
+            expiresAt: new Date(Date.now() + 60_000).toISOString(),
+            message,
+            nonceId,
+          },
+          requestId: "req-wallet-nonce",
+        }),
+      )
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: { session },
+          requestId: "req-wallet-login",
+        }),
+      );
+    const adapter: LoginWalletProviderAdapter = {
+      connect: vi.fn().mockResolvedValue({ address, chainId: 56 }),
+      signMessage: vi.fn().mockResolvedValue(signature),
+    };
+    const localStorage = { getItem: vi.fn(), removeItem: vi.fn(), setItem: vi.fn() };
+    const sessionStorage = { getItem: vi.fn(), removeItem: vi.fn(), setItem: vi.fn() };
+    Object.defineProperties(globalThis, {
+      localStorage: { configurable: true, value: localStorage },
+      sessionStorage: { configurable: true, value: sessionStorage },
+    });
+    const client = new AuthClient(fetcher, { broadcastChannel: null });
+
+    const login = client.loginWithWallet(adapter);
+    expect(client.state).toEqual({ status: "authenticating", method: "wallet" });
+    await expect(login).resolves.toEqual({ status: "active", session });
+
+    expect(fetcher.mock.calls[0]).toEqual([
+      "/api/auth/wallet/nonce",
+      expect.objectContaining({
+        body: JSON.stringify({ address, chainId: 56 }),
+        credentials: "include",
+        method: "POST",
+      }),
+    ]);
+    expect(adapter.signMessage).toHaveBeenCalledWith({ address, chainId: 56, message });
+    expect(fetcher.mock.calls[1]).toEqual([
+      "/api/auth/wallet/login",
+      expect.objectContaining({
+        body: JSON.stringify({ address, chainId: 56, nonceId, signature }),
+        credentials: "include",
+        method: "POST",
+      }),
+    ]);
+    expect(localStorage.setItem).not.toHaveBeenCalled();
+    expect(sessionStorage.setItem).not.toHaveBeenCalled();
   });
 
   it("starts booting and restores an active SessionView", async () => {
