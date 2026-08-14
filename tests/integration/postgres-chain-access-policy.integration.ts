@@ -12,6 +12,9 @@ const pool = new Pool({ connectionString: databaseUrl, max: 2 });
 const migrationPath = fileURLToPath(
   new URL("../../infra/migrations/20260815000100_create_chain_access_policies.sql", import.meta.url),
 );
+const authorityMigrationPath = fileURLToPath(
+  new URL("../../infra/migrations/20260815000200_remove_user_allowed_chain_ids.sql", import.meta.url),
+);
 
 afterAll(async () => {
   await pool.end();
@@ -117,6 +120,50 @@ describe("AUTH-10 PostgreSQL chain access migration", () => {
         "SELECT to_regclass('public.chain_access_policies') IS NOT NULL AS present",
       );
       expect(restored.rows[0]?.present).toBe(true);
+    } finally {
+      await client.query("ROLLBACK");
+      client.release();
+    }
+  });
+
+  it("removes the legacy per-user chain authority and rolls that migration down/up", async () => {
+    const current = await pool.query<{ present: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1
+           FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'users'
+            AND column_name = 'allowed_chain_ids'
+       ) AS present`,
+    );
+    expect(current.rows[0]?.present).toBe(false);
+
+    const source = readFileSync(authorityMigrationPath, "utf8");
+    const [, upAndDown] = source.split("-- migrate:up");
+    const [upSql, downSql] = upAndDown!.split("-- migrate:down");
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(downSql!);
+      const restored = await client.query<{ present: boolean }>(
+        `SELECT EXISTS (
+           SELECT 1 FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'users'
+              AND column_name = 'allowed_chain_ids'
+         ) AS present`,
+      );
+      expect(restored.rows[0]?.present).toBe(true);
+      await client.query(upSql!);
+      const removed = await client.query<{ present: boolean }>(
+        `SELECT EXISTS (
+           SELECT 1 FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'users'
+              AND column_name = 'allowed_chain_ids'
+         ) AS present`,
+      );
+      expect(removed.rows[0]?.present).toBe(false);
     } finally {
       await client.query("ROLLBACK");
       client.release();

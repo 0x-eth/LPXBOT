@@ -3,6 +3,7 @@ import rateLimit from "@fastify/rate-limit";
 import {
   createErrorEnvelope,
   createSuccessEnvelope,
+  type ChainAccessMode,
   type ManagedChainView,
   type SessionView,
 } from "@lpbot/api-contract";
@@ -293,7 +294,11 @@ function parseChainAccessUpdateBody(value: unknown) {
     ) {
       throw new ChainPolicyStoreError("CONFIG_INVALID");
     }
-    return { access, chainId, expectedRevision: expectedRevision as number };
+    return {
+      access: access as ChainAccessMode,
+      chainId,
+      expectedRevision: expectedRevision as number,
+    };
   });
 
   return { changes, reason: value.reason.trim() };
