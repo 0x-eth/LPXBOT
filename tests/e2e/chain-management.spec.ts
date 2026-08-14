@@ -412,7 +412,9 @@ test("AUTH-10 admin previews, confirms, resolves conflict, saves and rolls back"
   });
 
   await page.setViewportSize({ height: 844, width: 320 });
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth,
+  );
   expect(overflow).toBe(false);
   await expectNoSeriousAxeViolations(page);
   await page.getByRole("button", { name: "关闭链管理" }).click();

@@ -7,9 +7,7 @@ import { describe, expect, it } from "vitest";
 
 describe("AUTH-10 chain registry", () => {
   it("registers the five frozen-candidate chain identities in deterministic order", () => {
-    expect(
-      chainRegistry.map(({ chainId, displayName }) => ({ chainId, displayName })),
-    ).toEqual([
+    expect(chainRegistry.map(({ chainId, displayName }) => ({ chainId, displayName }))).toEqual([
       { chainId: 56, displayName: "BNB Smart Chain" },
       { chainId: 8453, displayName: "Base" },
       { chainId: 1, displayName: "Ethereum" },
@@ -19,9 +17,9 @@ describe("AUTH-10 chain registry", () => {
   });
 
   it("marks one local default and reports configuration completeness without exposing values", () => {
-    expect(chainRegistry.filter(({ isDefault }) => isDefault).map(({ chainId }) => chainId)).toEqual([
-      56,
-    ]);
+    expect(
+      chainRegistry.filter(({ isDefault }) => isDefault).map(({ chainId }) => chainId),
+    ).toEqual([56]);
     expect(
       chainRegistry.map(({ chainId, configurationComplete, missingConfiguration }) => ({
         chainId,

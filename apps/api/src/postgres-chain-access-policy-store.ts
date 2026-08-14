@@ -225,7 +225,9 @@ export class PostgresChainAccessPolicyStore implements ChainAccessPolicyStore {
     }
   }
 
-  async #list(queryable: Pick<Pool, "query"> | Pick<PoolClient, "query">): Promise<ChainAccessPolicyView[]> {
+  async #list(
+    queryable: Pick<Pool, "query"> | Pick<PoolClient, "query">,
+  ): Promise<ChainAccessPolicyView[]> {
     const result = await queryable.query<ChainPolicyRow>(
       `SELECT p.chain_id::text,
               p.access,
