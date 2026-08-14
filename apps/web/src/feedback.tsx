@@ -123,6 +123,7 @@ export function ConfirmDialog({
   disabled = false,
   onConfirm,
   onOpenChange,
+  onReturnFocus,
   open,
   title,
 }: {
@@ -133,6 +134,7 @@ export function ConfirmDialog({
   disabled?: boolean;
   onConfirm(): void;
   onOpenChange(open: boolean): void;
+  onReturnFocus?(): void;
   open: boolean;
   title: string;
 }) {
@@ -144,6 +146,11 @@ export function ConfirmDialog({
         <AlertDialog.Overlay className="dialog-backdrop" />
         <AlertDialog.Content
           className="confirm-dialog"
+          onCloseAutoFocus={(event) => {
+            if (!onReturnFocus) return;
+            event.preventDefault();
+            onReturnFocus();
+          }}
           onOpenAutoFocus={(event) => {
             event.preventDefault();
             cancelRef.current?.focus();

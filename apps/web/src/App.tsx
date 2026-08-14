@@ -24,7 +24,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BrowserRouter,
   Link,
@@ -192,6 +192,7 @@ function LoginWalletSettings({ client }: { client: AuthClient }) {
   const [links, setLinks] = useState<LoginWalletLinkView[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingDelete, setPendingDelete] = useState<LoginWalletLinkView | null>(null);
+  const removeTrigger = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     let current = true;
@@ -311,7 +312,10 @@ function LoginWalletSettings({ client }: { client: AuthClient }) {
                 aria-label={`Remove ${link.label ?? link.addressMasked}`}
                 className="icon-button danger-button"
                 disabled={busy}
-                onClick={() => setPendingDelete(link)}
+                onClick={(event) => {
+                  removeTrigger.current = event.currentTarget;
+                  setPendingDelete(link);
+                }}
                 title="Remove login wallet"
                 type="button"
               >
@@ -332,6 +336,7 @@ function LoginWalletSettings({ client }: { client: AuthClient }) {
         onOpenChange={(open) => {
           if (!open) setPendingDelete(null);
         }}
+        onReturnFocus={() => removeTrigger.current?.focus()}
         open={pendingDelete !== null}
         title="Remove login wallet"
       />
