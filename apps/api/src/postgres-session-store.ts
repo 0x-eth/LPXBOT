@@ -4,6 +4,10 @@ import type {
   ConfirmBotLoginIntentInput,
   ConsumeAuthWalletLoginInput,
   ConsumeAuthWalletLoginResult,
+  ConsumeAuthWalletLinkInput,
+  ConsumeAuthWalletLinkResult,
+  DeleteOwnedLoginWalletLinkInput,
+  DeleteOwnedLoginWalletLinkResult,
   ConsumeBotLoginIntentInput,
   InitDataReplay,
   NewBotLoginIntent,
@@ -12,6 +16,7 @@ import type {
   ResolveTelegramIdentityInput,
   SessionStore,
   StoredAuthWalletChallenge,
+  StoredLoginWalletLink,
   StoredAccount,
   StoredAccountStatus,
   StoredRole,
@@ -78,6 +83,15 @@ interface AuthWalletChallengeRow {
   nonce_hash: string;
   purpose: StoredAuthWalletChallenge["purpose"];
   user_id: string | null;
+}
+
+interface LoginWalletLinkRow {
+  address: string;
+  created_at: Date;
+  id: string;
+  label: string | null;
+  updated_at: Date;
+  user_id: string;
 }
 
 function toStoredAccount(row: AccountRow): StoredAccount {
@@ -212,6 +226,72 @@ export class PostgresSessionStore
     });
   }
 
+  async consumeAuthWalletLink(
+    input: ConsumeAuthWalletLinkInput,
+  ): Promise<ConsumeAuthWalletLinkResult> {
+    return this.#transaction(async (client) => {
+      await client.query(
+        `SELECT id_hash
+           FROM auth_wallet_challenges
+          WHERE id_hash = decode($1, 'hex')
+          FOR UPDATE`,
+        [input.idHash],
+      );
+      const challenge = await this.#findAuthWalletChallenge(client, input.idHash);
+      if (!challenge) return { link: null, status: "invalid" };
+      if (challenge.consumedAt) return { link: null, status: "replayed" };
+      if (challenge.expiresAt.getTime() <= input.consumedAt.getTime()) {
+        return { link: null, status: "expired" };
+      }
+      if (
+        challenge.purpose !== "link" ||
+        challenge.userId !== input.userId ||
+        challenge.address !== input.address ||
+        challenge.chainId !== input.chainId ||
+        challenge.messageHash !== input.messageHash ||
+        challenge.nonceHash !== input.nonceHash
+      ) {
+        return { link: null, status: "invalid" };
+      }
+
+      const addressHex = input.address.slice(2);
+      await client.query("SELECT id FROM users WHERE id = $1 FOR UPDATE", [input.userId]);
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+        `auth-login-wallet:${addressHex}`,
+      ]);
+      if (await this.#findLoginWalletByAddress(client, input.address)) {
+        return { link: null, status: "already-linked" };
+      }
+
+      const consumed = await client.query(
+        `UPDATE auth_wallet_challenges
+            SET consumed_at = $2
+          WHERE id_hash = decode($1, 'hex')
+            AND consumed_at IS NULL
+            AND expires_at > $2
+            AND purpose = 'link'
+            AND user_id = $3
+            AND address = decode($4, 'hex')`,
+        [input.idHash, input.consumedAt, input.userId, addressHex],
+      );
+      if (consumed.rowCount !== 1) return { link: null, status: "replayed" };
+
+      const inserted = await client.query<LoginWalletLinkRow>(
+        `INSERT INTO auth_login_wallets (
+           id, user_id, address, label, created_at, updated_at
+         ) VALUES ($1, $2, decode($3, 'hex'), $4, $5, $5)
+         RETURNING id::text,
+                   user_id::text,
+                   concat('0x', encode(address, 'hex')) AS address,
+                   label,
+                   created_at,
+                   updated_at`,
+        [input.linkId, input.userId, addressHex, input.label, input.consumedAt],
+      );
+      return { link: this.#toLoginWalletLink(inserted.rows[0]!), status: "consumed" };
+    });
+  }
+
   async createAuthWalletChallenge(challenge: NewAuthWalletChallenge): Promise<void> {
     await this.#pool.query(
       `INSERT INTO auth_wallet_challenges (
@@ -235,8 +315,57 @@ export class PostgresSessionStore
     );
   }
 
+  async deleteOwnedLoginWalletLink(
+    input: DeleteOwnedLoginWalletLinkInput,
+  ): Promise<DeleteOwnedLoginWalletLinkResult> {
+    return this.#transaction(async (client) => {
+      await client.query("SELECT id FROM users WHERE id = $1 FOR UPDATE", [input.userId]);
+      const deleted = await client.query(
+        `DELETE FROM auth_login_wallets w
+          WHERE w.id = $1
+            AND w.user_id = $2
+            AND (
+              EXISTS (SELECT 1 FROM telegram_identities t WHERE t.user_id = $2)
+              OR (SELECT count(*) FROM auth_login_wallets own WHERE own.user_id = $2) > 1
+            )
+          RETURNING w.id`,
+        [input.linkId, input.userId],
+      );
+      if (deleted.rowCount === 1) return "deleted";
+
+      const owned = await client.query(
+        `SELECT 1
+           FROM auth_login_wallets
+          WHERE id = $1
+            AND user_id = $2`,
+        [input.linkId, input.userId],
+      );
+      return owned.rowCount === 1 ? "last-method" : "not-found";
+    });
+  }
+
   async findAuthWalletChallenge(idHash: string): Promise<StoredAuthWalletChallenge | null> {
     return this.#findAuthWalletChallenge(this.#pool, idHash);
+  }
+
+  async findLoginWalletByAddress(address: string): Promise<StoredLoginWalletLink | null> {
+    return this.#findLoginWalletByAddress(this.#pool, address);
+  }
+
+  async listLoginWalletLinks(userId: string): Promise<StoredLoginWalletLink[]> {
+    const result = await this.#pool.query<LoginWalletLinkRow>(
+      `SELECT id::text,
+              user_id::text,
+              concat('0x', encode(address, 'hex')) AS address,
+              label,
+              created_at,
+              updated_at
+         FROM auth_login_wallets
+        WHERE user_id = $1
+        ORDER BY created_at, id`,
+      [userId],
+    );
+    return result.rows.map((row) => this.#toLoginWalletLink(row));
   }
 
   async cancelBotLoginIntent(tokenHash: string, at: Date): Promise<BotLoginIntent | null> {
@@ -493,6 +622,36 @@ export class PostgresSessionStore
       messageHash: row.message_hash,
       nonceHash: row.nonce_hash,
       purpose: row.purpose,
+      userId: row.user_id,
+    };
+  }
+
+  async #findLoginWalletByAddress(
+    client: Pick<Pool, "query"> | Pick<PoolClient, "query">,
+    address: string,
+  ): Promise<StoredLoginWalletLink | null> {
+    const result = await client.query<LoginWalletLinkRow>(
+      `SELECT id::text,
+              user_id::text,
+              concat('0x', encode(address, 'hex')) AS address,
+              label,
+              created_at,
+              updated_at
+         FROM auth_login_wallets
+        WHERE address = decode($1, 'hex')`,
+      [address.slice(2)],
+    );
+    const row = result.rows[0];
+    return row ? this.#toLoginWalletLink(row) : null;
+  }
+
+  #toLoginWalletLink(row: LoginWalletLinkRow): StoredLoginWalletLink {
+    return {
+      address: row.address,
+      createdAt: row.created_at,
+      id: row.id,
+      label: row.label,
+      updatedAt: row.updated_at,
       userId: row.user_id,
     };
   }

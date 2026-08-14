@@ -2,15 +2,35 @@ import {
   type AccessAuditEvent,
   type NewStoredSession,
   type SessionStore,
+  SessionIssuer,
+  type StoredAccount,
   type StoredSession,
 } from "../packages/security/src/index.js";
 import { buildApiApp } from "../apps/api/src/index.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 class EmptySessionStore implements SessionStore {
-  async createSession(_session: NewStoredSession): Promise<void> {}
-  async findSessionByTokenHash(_tokenHash: string): Promise<StoredSession | null> {
-    return null;
+  readonly account: StoredAccount = {
+    allowedChainIds: [56],
+    avatarUrl: null,
+    displayName: "Wallet User",
+    id: "00000000-0000-4000-8000-000000000040",
+    role: "user",
+    status: "active",
+    tier: "normal",
+  };
+  readonly sessions = new Map<string, StoredSession>();
+
+  async createSession(session: NewStoredSession): Promise<void> {
+    this.sessions.set(session.tokenHash, {
+      ...session,
+      account: this.account,
+      lastSeenAt: null,
+      revokedAt: null,
+    });
+  }
+  async findSessionByTokenHash(tokenHash: string): Promise<StoredSession | null> {
+    return this.sessions.get(tokenHash) ?? null;
   }
   async recordAccessAudit(_event: AccessAuditEvent): Promise<void> {}
   async revokeSession(_tokenHash: string, _revokedAt: Date): Promise<boolean> {
@@ -134,5 +154,84 @@ describe("P01-04 login wallet HTTP API", () => {
     });
     expect(response.body).not.toContain(token);
     expect(response.body).not.toContain(signature);
+  });
+
+  it("binds authenticated wallet-link endpoints to the session user", async () => {
+    const now = new Date("2026-08-14T08:00:00.000Z");
+    const store = new EmptySessionStore();
+    const issued = await new SessionIssuer(store, { now: () => now }).issue({
+      expiresAt: new Date("2026-08-14T09:00:00.000Z"),
+      userId: store.account.id,
+    });
+    const link = {
+      addressMasked: "0x1234...5678",
+      createdAt: now,
+      label: "Primary",
+      linkId: "00000000-0000-4000-8000-000000000080",
+      updatedAt: now,
+    };
+    const walletAuth = {
+      createLinkChallenge: vi.fn().mockResolvedValue({
+        expiresAt: new Date("2026-08-14T08:05:00.000Z"),
+        message: "link-siwe-message",
+        nonceId: "B".repeat(43),
+      }),
+      createLoginChallenge: vi.fn(),
+      link: vi.fn().mockResolvedValue(link),
+      listLinks: vi.fn().mockResolvedValue([link]),
+      login: vi.fn(),
+      unlink: vi.fn().mockResolvedValue({ deleted: true }),
+    };
+    const app = buildApiApp({
+      maintenance: { enabled: false, message: null, until: null },
+      now: () => now,
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: store,
+      walletAuth,
+    });
+    apps.push(app);
+    const headers = { cookie: `lpbot_session=${issued.token}` };
+
+    const listed = await app.inject({ headers, method: "GET", url: "/api/auth/wallet/links" });
+    const nonce = await app.inject({
+      headers,
+      method: "POST",
+      payload: { address: "0x1234567890123456789012345678901234565678", chainId: 56 },
+      url: "/api/auth/wallet/link-nonce",
+    });
+    const linked = await app.inject({
+      headers,
+      method: "POST",
+      payload: {
+        address: "0x1234567890123456789012345678901234565678",
+        chainId: 56,
+        label: "Primary",
+        nonceId: "B".repeat(43),
+        signature: `0x${"ab".repeat(65)}`,
+        userId: "attacker-controlled-user-id",
+      },
+      url: "/api/auth/wallet/link",
+    });
+    const removed = await app.inject({
+      headers,
+      method: "DELETE",
+      url: `/api/auth/wallet/link/${link.linkId}`,
+    });
+
+    expect([listed.statusCode, nonce.statusCode, linked.statusCode, removed.statusCode]).toEqual([
+      200, 200, 200, 200,
+    ]);
+    expect(listed.json().data.links).toEqual([
+      { ...link, createdAt: now.toISOString(), updatedAt: now.toISOString() },
+    ]);
+    expect(walletAuth.createLinkChallenge).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: store.account.id }),
+    );
+    expect(walletAuth.link).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: store.account.id }),
+    );
+    expect(walletAuth.unlink).toHaveBeenCalledWith(
+      expect.objectContaining({ linkId: link.linkId, userId: store.account.id }),
+    );
   });
 });
