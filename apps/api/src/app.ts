@@ -70,13 +70,13 @@ interface RateLimitCounter {
   resetAt: number;
 }
 
+const rateLimitCacheCapacity = 5_000;
+
 class AtomicMemoryRateLimitStore {
   readonly #counters = new Map<string, RateLimitCounter>();
 
-  constructor(_options: unknown) {}
-
   child(): AtomicMemoryRateLimitStore {
-    return new AtomicMemoryRateLimitStore({});
+    return new AtomicMemoryRateLimitStore();
   }
 
   incr(
@@ -90,6 +90,15 @@ class AtomicMemoryRateLimitStore {
   ): void {
     const currentTime = Date.now();
     const existing = this.#counters.get(key);
+    if (!existing && this.#counters.size >= rateLimitCacheCapacity) {
+      for (const [storedKey, storedCounter] of this.#counters) {
+        if (storedCounter.resetAt <= currentTime) this.#counters.delete(storedKey);
+      }
+      if (this.#counters.size >= rateLimitCacheCapacity) {
+        const oldestKey = this.#counters.keys().next().value;
+        if (oldestKey !== undefined) this.#counters.delete(oldestKey);
+      }
+    }
     const counter =
       !existing || existing.resetAt <= currentTime
         ? { current: 1, resetAt: currentTime + timeWindow }

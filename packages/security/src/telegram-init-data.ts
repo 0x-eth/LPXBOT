@@ -112,9 +112,14 @@ export class TelegramInitDataVerifier {
       throw new TelegramInitDataError("AUTH_EXPIRED");
     }
 
+    const replayParameters = new URLSearchParams(parameters);
+    replayParameters.sort();
+
     return {
       authDate,
-      replayDigest: createHash("sha256").update(initData, "utf8").digest("hex"),
+      replayDigest: createHash("sha256")
+        .update(replayParameters.toString(), "utf8")
+        .digest("hex"),
       subject: String(subject),
     };
   }
