@@ -276,7 +276,6 @@ function AuthRouter() {
   const [page, setPage] = useState<AuthPageState>({ kind: "ready" });
   const [state, setState] = useState<AuthState>({ status: "booting" });
   const [botLogin, setBotLogin] = useState<BotLoginView>({ status: "idle" });
-  const navigate = useNavigate();
   useEffect(() => {
     let current = true;
     const unsubscribe = client.subscribe((nextState, nextPage, nextBotLogin) => {
@@ -284,23 +283,23 @@ function AuthRouter() {
       setState(nextState);
       setPage(nextPage);
       setBotLogin(nextBotLogin);
-      const destination = authStatePath(nextState);
-      if (destination) navigate(destination, { replace: true });
     });
     void client.restore().then((next) => {
       if (!current) return;
       setState(next);
       setPage(client.page);
-      const destination = authStatePath(next);
-      if (destination) navigate(destination, { replace: true });
     });
     return () => {
       current = false;
       unsubscribe();
     };
-  }, [client, navigate]);
+  }, [client]);
 
   if (state.status === "booting") return <BootingPage />;
+  const destination = authStatePath(state);
+  if (destination && globalThis.location.pathname !== destination) {
+    return <Navigate to={destination} replace />;
+  }
   if (
     state.status === "anonymous" ||
     (state.status === "authenticating" && state.method === "telegram-bot-link")
