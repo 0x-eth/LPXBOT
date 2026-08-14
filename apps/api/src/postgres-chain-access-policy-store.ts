@@ -204,9 +204,13 @@ export class PostgresChainAccessPolicyStore implements ChainAccessPolicyStore {
           input.requestId,
           changed.length === 0 ? "UNCHANGED" : "UPDATED",
           input.reason.trim(),
-          auditState(changed.map(({ current }) => current)),
-          auditState(
-            changed.map(({ change }) => policies.find(({ chainId }) => chainId === change.chainId)!),
+          JSON.stringify(auditState(changed.map(({ current }) => current))),
+          JSON.stringify(
+            auditState(
+              changed.map(({ change }) =>
+                policies.find(({ chainId }) => chainId === change.chainId),
+              ) as ChainAccessPolicyView[],
+            ),
           ),
           input.updatedAt,
         ],

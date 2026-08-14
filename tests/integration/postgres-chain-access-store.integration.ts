@@ -195,11 +195,10 @@ describe("AUTH-10 PostgreSQL chain policy store", () => {
     ]);
     expect(contenders.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
     expect(contenders.filter(({ status }) => status === "rejected")).toHaveLength(1);
-    expect(
-      contenders.find(({ status }) => status === "rejected")?.status === "rejected"
-        ? contenders.find(({ status }) => status === "rejected")!.reason
-        : null,
-    ).toMatchObject({ code: "CONFIG_CONFLICT" });
+    const rejected = contenders.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    expect(rejected?.reason).toMatchObject({ code: "CONFIG_CONFLICT" });
 
     const current = (await store.list()).find(({ chainId }) => chainId === 1)!;
     expect(current.revision).toBe(3);
