@@ -42,8 +42,11 @@ export type {
   AuthWalletChallengePurpose,
   ConsumeAuthWalletLoginInput,
   ConsumeAuthWalletLoginResult,
+  ConsumeAuthWalletLinkInput,
+  ConsumeAuthWalletLinkResult,
   CreatedLoginWalletChallenge,
   CreateLoginWalletChallengeInput,
+  CreateLinkWalletChallengeInput,
   LoginWithWalletInput,
   LoginWithWalletResult,
   LoginWalletAuthenticationApplication,
@@ -51,6 +54,7 @@ export type {
   LoginWalletAuthStore,
   NewAuthWalletChallenge,
   StoredAuthWalletChallenge,
+  StoredLoginWalletLink,
   WalletAuthenticationErrorCode,
 } from "./login-wallet-auth.js";
 
@@ -95,7 +99,10 @@ export interface AccessAuditEvent {
     | "telegram.bot.intent.confirm"
     | "telegram.bot.intent.cancel"
     | "telegram.bot.intent.consume"
-    | "wallet.login";
+    | "wallet.login"
+    | "wallet.link.challenge"
+    | "wallet.link.create"
+    | "wallet.link.delete";
   createdAt: Date;
   outcome: "allowed" | "denied";
   requestId: string;

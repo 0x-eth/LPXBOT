@@ -43,10 +43,40 @@ export type ConsumeAuthWalletLoginResult =
   | { account: StoredAccount; status: "consumed" }
   | { account: null; status: "expired" | "invalid" | "replayed" };
 
+export interface StoredLoginWalletLink {
+  address: string;
+  createdAt: Date;
+  id: string;
+  label: string | null;
+  updatedAt: Date;
+  userId: string;
+}
+
+export interface ConsumeAuthWalletLinkInput {
+  address: string;
+  chainId: number;
+  consumedAt: Date;
+  idHash: string;
+  label: string | null;
+  linkId: string;
+  messageHash: string;
+  nonceHash: string;
+  userId: string;
+}
+
+export type ConsumeAuthWalletLinkResult =
+  | { link: StoredLoginWalletLink; status: "consumed" }
+  | {
+      link: null;
+      status: "already-linked" | "expired" | "invalid" | "replayed";
+    };
+
 export interface LoginWalletAuthStore extends SessionStore {
   consumeAuthWalletLogin(input: ConsumeAuthWalletLoginInput): Promise<ConsumeAuthWalletLoginResult>;
+  consumeAuthWalletLink(input: ConsumeAuthWalletLinkInput): Promise<ConsumeAuthWalletLinkResult>;
   createAuthWalletChallenge(challenge: NewAuthWalletChallenge): Promise<void>;
   findAuthWalletChallenge(idHash: string): Promise<StoredAuthWalletChallenge | null>;
+  findLoginWalletByAddress(address: string): Promise<StoredLoginWalletLink | null>;
 }
 
 export interface LoginWalletAuthenticationOptions {
@@ -70,6 +100,10 @@ export interface CreatedLoginWalletChallenge {
   nonceId: string;
 }
 
+export interface CreateLinkWalletChallengeInput extends CreateLoginWalletChallengeInput {
+  userId: string;
+}
+
 export interface LoginWithWalletInput {
   address: string;
   chainId: number;
@@ -87,10 +121,14 @@ export interface LoginWalletAuthenticationApplication {
   createLoginChallenge(
     input: CreateLoginWalletChallengeInput,
   ): Promise<CreatedLoginWalletChallenge>;
+  createLinkChallenge(
+    input: CreateLinkWalletChallengeInput,
+  ): Promise<CreatedLoginWalletChallenge>;
   login(input: LoginWithWalletInput): Promise<LoginWithWalletResult>;
 }
 
 export type WalletAuthenticationErrorCode =
+  | "ADDRESS_ALREADY_LINKED"
   | "ADDRESS_INVALID"
   | "CHAIN_INVALID"
   | "NONCE_EXPIRED"
@@ -186,6 +224,53 @@ export class LoginWalletAuthenticationService implements LoginWalletAuthenticati
       purpose: "login",
       userId: null,
     });
+    return { expiresAt, message, nonceId };
+  }
+
+  async createLinkChallenge(
+    input: CreateLinkWalletChallengeInput,
+  ): Promise<CreatedLoginWalletChallenge> {
+    const issuedAt = this.#now();
+    let address: `0x${string}`;
+    try {
+      address = getAddress(input.address);
+    } catch {
+      await this.#auditLinkChallenge("denied", input.requestId, issuedAt, input.userId);
+      throw new WalletAuthenticationError("ADDRESS_INVALID");
+    }
+    if (!Number.isSafeInteger(input.chainId) || input.chainId <= 0) {
+      await this.#auditLinkChallenge("denied", input.requestId, issuedAt, input.userId);
+      throw new WalletAuthenticationError("CHAIN_INVALID");
+    }
+    if (await this.#store.findLoginWalletByAddress(address.toLowerCase())) {
+      await this.#auditLinkChallenge("denied", input.requestId, issuedAt, input.userId);
+      throw new WalletAuthenticationError("ADDRESS_ALREADY_LINKED");
+    }
+
+    const expiresAt = new Date(issuedAt.getTime() + this.#challengeTtlMilliseconds);
+    const nonceId = randomBytes(32).toString("base64url");
+    const nonce = this.#nonce(nonceId);
+    const message = this.#message({
+      address,
+      chainId: input.chainId,
+      expiresAt,
+      issuedAt,
+      nonce,
+      purpose: "link",
+      userId: input.userId,
+    });
+    await this.#store.createAuthWalletChallenge({
+      address: address.toLowerCase(),
+      chainId: input.chainId,
+      expiresAt,
+      idHash: sha256(nonceId),
+      issuedAt,
+      messageHash: sha256(message),
+      nonceHash: sha256(nonce),
+      purpose: "link",
+      userId: input.userId,
+    });
+    await this.#auditLinkChallenge("allowed", input.requestId, issuedAt, input.userId);
     return { expiresAt, message, nonceId };
   }
 
@@ -360,6 +445,22 @@ export class LoginWalletAuthenticationService implements LoginWalletAuthenticati
       outcome,
       requestId,
       sessionId,
+      userId,
+    });
+  }
+
+  async #auditLinkChallenge(
+    outcome: AccessAuditEvent["outcome"],
+    requestId: string,
+    createdAt: Date,
+    userId: string,
+  ): Promise<void> {
+    await this.#store.recordAccessAudit({
+      action: "wallet.link.challenge",
+      createdAt,
+      outcome,
+      requestId,
+      sessionId: null,
       userId,
     });
   }

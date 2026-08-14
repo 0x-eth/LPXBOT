@@ -4,10 +4,12 @@ import {
   LoginWalletAuthenticationService,
   type AccessAuditEvent,
   type ConsumeAuthWalletLoginInput,
+  type ConsumeAuthWalletLinkInput,
   type NewAuthWalletChallenge,
   type NewStoredSession,
   type StoredAccount,
   type StoredAuthWalletChallenge,
+  type StoredLoginWalletLink,
   type StoredSession,
 } from "../packages/security/src/index.js";
 import { parseSiweMessage } from "viem/siwe";
@@ -26,6 +28,7 @@ class MemoryLoginWalletStore {
   };
   readonly audits: AccessAuditEvent[] = [];
   readonly challenges: StoredAuthWalletChallenge[] = [];
+  readonly links: StoredLoginWalletLink[] = [];
   readonly sessions = new Map<string, StoredSession>();
 
   async consumeAuthWalletLogin(
@@ -50,12 +53,39 @@ class MemoryLoginWalletStore {
     });
   }
 
+  async consumeAuthWalletLink(input: ConsumeAuthWalletLinkInput) {
+    const challenge = this.challenges.find(({ idHash }) => idHash === input.idHash);
+    if (!challenge || challenge.consumedAt) return { link: null, status: "replayed" as const };
+    if (this.links.some(({ address }) => address === input.address)) {
+      return { link: null, status: "already-linked" as const };
+    }
+    challenge.consumedAt = input.consumedAt;
+    const link: StoredLoginWalletLink = {
+      address: input.address,
+      createdAt: input.consumedAt,
+      id: input.linkId,
+      label: input.label,
+      updatedAt: input.consumedAt,
+      userId: input.userId,
+    };
+    this.links.push(link);
+    return { link, status: "consumed" as const };
+  }
+
   async findAuthWalletChallenge(idHash: string): Promise<StoredAuthWalletChallenge | null> {
     return this.challenges.find((challenge) => challenge.idHash === idHash) ?? null;
   }
 
   async findSessionByTokenHash(tokenHash: string): Promise<StoredSession | null> {
     return this.sessions.get(tokenHash) ?? null;
+  }
+
+  async findLoginWalletByAddress(address: string): Promise<StoredLoginWalletLink | null> {
+    return this.links.find((link) => link.address === address) ?? null;
+  }
+
+  async listLoginWalletLinks(userId: string): Promise<StoredLoginWalletLink[]> {
+    return this.links.filter((link) => link.userId === userId);
   }
 
   async recordAccessAudit(event: AccessAuditEvent): Promise<void> {
@@ -67,6 +97,10 @@ class MemoryLoginWalletStore {
   }
 
   async touchSession(): Promise<void> {}
+
+  async deleteOwnedLoginWalletLink() {
+    return "not-found" as const;
+  }
 }
 
 function authenticationService(store: MemoryLoginWalletStore, now: () => Date) {
@@ -159,5 +193,35 @@ describe("P01-04 login wallet authentication", () => {
       sessionId: result.session.sessionId,
       userId: store.account.id,
     });
+  });
+
+  it("issues a link challenge bound to the authenticated user and link purpose", async () => {
+    const account = privateKeyToAccount(generatePrivateKey());
+    const now = new Date("2026-08-14T08:20:00.000Z");
+    const store = new MemoryLoginWalletStore();
+    const service = authenticationService(store, () => now);
+
+    const challenge = await service.createLinkChallenge({
+      address: account.address,
+      chainId: 56,
+      requestId: "req-wallet-link-nonce",
+      userId: store.account.id,
+    });
+
+    expect(parseSiweMessage(challenge.message)).toMatchObject({
+      address: account.address,
+      chainId: 56,
+      resources: [
+        "urn:lpbot:auth-purpose:link",
+        `urn:lpbot:auth-user:${store.account.id}`,
+      ],
+    });
+    expect(store.challenges.at(-1)).toMatchObject({
+      address: account.address.toLowerCase(),
+      purpose: "link",
+      userId: store.account.id,
+    });
+    expect(JSON.stringify(store.challenges)).not.toContain(challenge.nonceId);
+    expect(JSON.stringify(store.challenges)).not.toContain(challenge.message);
   });
 });

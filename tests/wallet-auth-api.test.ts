@@ -29,6 +29,7 @@ describe("P01-04 login wallet HTTP API", () => {
   it("returns the server-issued SIWE challenge from POST /api/auth/wallet/nonce", async () => {
     const expiresAt = new Date("2026-08-14T08:05:00.000Z");
     const walletAuth = {
+      createLinkChallenge: vi.fn(),
       createLoginChallenge: vi.fn().mockResolvedValue({
         expiresAt,
         message: "canonical-siwe-message",
@@ -72,6 +73,7 @@ describe("P01-04 login wallet HTTP API", () => {
     const signature = `0x${"ab".repeat(65)}`;
     const expiresAt = new Date("2026-08-14T09:00:00.000Z");
     const walletAuth = {
+      createLinkChallenge: vi.fn(),
       createLoginChallenge: vi.fn(),
       login: vi.fn().mockResolvedValue({
         account: {

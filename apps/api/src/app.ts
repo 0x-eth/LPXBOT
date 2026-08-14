@@ -183,6 +183,7 @@ function walletErrorStatus(code: WalletAuthenticationError["code"]): 400 | 401 |
 
 function walletErrorMessage(code: WalletAuthenticationError["code"]): string {
   const messages: Record<WalletAuthenticationError["code"], string> = {
+    ADDRESS_ALREADY_LINKED: "Wallet address is already linked",
     ADDRESS_INVALID: "Wallet address is invalid",
     CHAIN_INVALID: "Wallet chain ID is invalid",
     NONCE_EXPIRED: "Wallet challenge has expired",
