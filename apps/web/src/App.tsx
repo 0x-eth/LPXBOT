@@ -524,23 +524,23 @@ class RouteErrorBoundary extends Component<
   { children: ReactNode; onRetry(): void; resetKey: string },
   { failed: boolean }
 > {
-  state = { failed: false };
+  override state = { failed: false };
 
   static getDerivedStateFromError(): { failed: boolean } {
     return { failed: true };
   }
 
-  componentDidCatch(_error: unknown, _info: ErrorInfo): void {
+  override componentDidCatch(_error: unknown, _info: ErrorInfo): void {
     // The boundary intentionally keeps exception details out of UI and telemetry in P01-05.
   }
 
-  componentDidUpdate(previous: Readonly<{ resetKey: string }>): void {
+  override componentDidUpdate(previous: Readonly<{ resetKey: string }>): void {
     if (previous.resetKey !== this.props.resetKey && this.state.failed) {
       this.setState({ failed: false });
     }
   }
 
-  render() {
+  override render() {
     if (!this.state.failed) return this.props.children;
     return (
       <main className="workspace">
