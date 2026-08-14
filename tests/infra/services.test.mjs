@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -7,6 +7,10 @@ import path from "node:path";
 
 const repoRoot = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const composeFile = path.join(repoRoot, "infra/docker/compose.yaml");
+const migrationVersions = readdirSync(path.join(repoRoot, "infra/migrations"))
+  .filter((name) => /^\d+_.+\.sql$/u.test(name))
+  .map((name) => name.slice(0, name.indexOf("_")))
+  .sort();
 const projectName = "lpbot-p00-local";
 const envFile = existsSync(path.join(repoRoot, ".env"))
   ? path.join(repoRoot, ".env")
@@ -92,12 +96,16 @@ test("PostgreSQL exposes TimescaleDB, pgcrypto, and migration history", () => {
     "pgcrypto,timescaledb",
   );
   assert.equal(query("SELECT to_regclass('public.schema_migrations') IS NOT NULL"), "t");
-  assert.equal(query("SELECT count(*) FROM schema_migrations"), "4");
+  assert.equal(
+    query("SELECT string_agg(version, ',' ORDER BY version) FROM schema_migrations"),
+    migrationVersions.join(","),
+  );
+  assert.equal(query("SELECT count(*) FROM schema_migrations"), String(migrationVersions.length));
   assert.equal(
     query(
       "SELECT string_agg(tablename, ',' ORDER BY tablename) FROM pg_tables WHERE schemaname = 'public'",
     ),
-    "access_audit_events,app_metadata,auth_login_wallets,auth_wallet_challenges,schema_migrations,sessions,telegram_bot_login_intents,telegram_identities,telegram_init_data_replays,users",
+    "access_audit_events,app_metadata,auth_login_wallets,auth_wallet_challenges,schema_migrations,sessions,telegram_bot_login_intents,telegram_identities,telegram_init_data_replays,user_preferences,users",
   );
 });
 
