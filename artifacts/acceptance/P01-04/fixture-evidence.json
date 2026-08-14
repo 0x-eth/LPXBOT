@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-04",
+  "evidenceLevel": "local-fixture-verified",
+  "featureIds": ["AUTH-03", "AUTH-04"],
+  "signatureCapabilities": {
+    "eoa": "verified",
+    "eip1271": "not-implemented/not-verified"
+  },
+  "verifiedStates": [
+    "wallet-challenge-issued",
+    "wallet-eoa-login",
+    "wallet-signature-rejected",
+    "wallet-challenge-expired",
+    "wallet-challenge-replayed",
+    "wallet-concurrent-single-consumer",
+    "wallet-account-changed",
+    "wallet-chain-changed",
+    "wallet-provider-missing",
+    "wallet-request-rejected",
+    "wallet-request-interrupted",
+    "wallet-link-created",
+    "wallet-link-duplicate-rejected",
+    "wallet-link-cross-user-rejected",
+    "wallet-link-owned-delete",
+    "wallet-link-last-method-protected"
+  ],
+  "database": {
+    "engine": "local Docker PostgreSQL",
+    "migrationCount": 4,
+    "walletAuthTables": ["auth_wallet_challenges", "auth_login_wallets"],
+    "addressByteLength": 20,
+    "challengeHashByteLength": 32,
+    "plaintextNonceColumn": false,
+    "plaintextMessageColumn": false,
+    "signatureColumn": false,
+    "signerOrTransactionWalletTable": false
+  },
+  "priorAcceptanceIntegrity": {
+    "frozenFixtureTreeBefore": "0b24a81889eb728477e583c43c9121fac7235113",
+    "frozenFixtureTreeAfter": "0b24a81889eb728477e583c43c9121fac7235113",
+    "p01_01TreeBefore": "85fcccb8e9858647f5237888967607767bd85a35",
+    "p01_01TreeAfter": "85fcccb8e9858647f5237888967607767bd85a35",
+    "p01_02TreeBefore": "97fe222b38b9635b17f5ae795e5c0c84b31d258b",
+    "p01_02TreeAfter": "97fe222b38b9635b17f5ae795e5c0c84b31d258b",
+    "p01_03TreeBefore": "3ce5c7bc9d67f1f4b50c0da23085b65fe200b5f5",
+    "p01_03TreeAfter": "3ce5c7bc9d67f1f4b50c0da23085b65fe200b5f5",
+    "modified": false
+  },
+  "ci": {
+    "runId": 31787475239,
+    "commit": "8f55a611002c31e30ec07c5da9a0cfd345b1f444",
+    "result": "passed",
+    "jobs": ["Quality", "Governance", "Browser", "Contracts", "Infrastructure", "Security"]
+  },
+  "externalOperations": {
+    "realWallet": false,
+    "userPrivateKeyOrMnemonic": false,
+    "productionSignature": false,
+    "targetSite": false,
+    "externalRpc": false,
+    "tokenAuthorization": false,
+    "chainTransactionBroadcast": false,
+    "funds": false,
+    "productionWrite": false
+  }
+}

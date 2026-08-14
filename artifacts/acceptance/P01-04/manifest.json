@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-04",
+  "phase": "P01",
+  "risk": "R1",
+  "status": "accepted",
+  "featureIds": ["AUTH-03", "AUTH-04"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm test",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-04/command-output.md"
+    },
+    {
+      "id": "T-API",
+      "command": "pnpm exec vitest run tests/wallet-auth.test.ts tests/wallet-auth-api.test.ts tests/wallet-auth-config.test.ts tests/eip1193-wallet.test.ts tests/wallet-domain-boundary.test.ts tests/wallet-auth-migration.test.ts tests/web-auth-client.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-04/E-API.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm test:e2e",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-04/E-UI.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "docker run --rm -v $PWD:/repo zricethezav/gitleaks:v8.30.0 git --config=/repo/.gitleaks.toml --redact --no-banner /repo; pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-04/E-SEC.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm infra:up; pnpm db:migrate twice; pnpm db:seed twice; pnpm infra:verify; pnpm test:infra; pnpm test:postgres",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-04/E-MIG.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P01-04/E-API.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P01-04/E-UI.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P01-04/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P01-04/E-SEC.md" },
+    { "id": "E-MIG", "path": "artifacts/acceptance/P01-04/E-MIG.md" }
+  ],
+  "assumptions": [
+    "EOA authentication is local-fixture-verified with runtime-generated Viem accounts; EIP-1271 is not implemented and not verified in P01-04.",
+    "Login-wallet identity grants authentication only and does not grant signer, transaction, token, or funds authority.",
+    "No real wallet, user key or mnemonic, production signature, target-site request, external RPC, chain broadcast, token authorization, funds action, or production write occurred.",
+    "The frozen reference fixture and P01-01 through P01-03 acceptance trees match their pre-P01-04 Git tree objects."
+  ],
+  "completedAt": "2026-08-14T09:23:22.000Z",
+  "commit": "8f55a611002c31e30ec07c5da9a0cfd345b1f444"
+}
