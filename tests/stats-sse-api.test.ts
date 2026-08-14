@@ -69,6 +69,7 @@ async function fixture() {
   const statsProvider = new FiniteStatsProvider();
   const app = buildApiApp({
     maintenance: { enabled: false, message: null, until: null },
+    now: () => new Date("2026-08-14T02:00:00.000Z"),
     regionPolicy: () => ({ blocked: false, code: null, message: null }),
     sessionStore,
     statsProvider,
