@@ -36,3 +36,14 @@ test("SHELL-01 keeps the observed application chrome stable", async ({ page }, t
     maxDiffPixelRatio: 0.005,
   });
 });
+
+test("SHELL-01 opens recent chats as an empty drawer", async ({ page }) => {
+  await useUserSession(page);
+  await page.goto("/tasks/running");
+
+  await page.getByRole("button", { name: "聊天室" }).click();
+
+  await expect(page.getByRole("dialog", { name: "最近聊天" })).toBeVisible();
+  await expect(page.getByText("暂无最近聊天", { exact: true })).toBeVisible();
+  await expect(page.locator("[data-chat-message]")).toHaveCount(0);
+});
