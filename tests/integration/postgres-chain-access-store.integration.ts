@@ -1,10 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import {
-  ChainPolicyStoreError,
-  PostgresChainAccessPolicyStore,
-} from "../../apps/api/src/index.js";
+import { ChainPolicyStoreError, PostgresChainAccessPolicyStore } from "../../apps/api/src/index.js";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -34,8 +31,12 @@ beforeAll(async () => {
   await adminPool.query(`CREATE DATABASE ${databaseName}`);
 
   const migrationDirectory = path.join(repositoryRoot, "infra/migrations");
-  for (const filename of readdirSync(migrationDirectory).filter((name) => name.endsWith(".sql")).sort()) {
-    await fixturePool.query(migrationUp(readFileSync(path.join(migrationDirectory, filename), "utf8")));
+  for (const filename of readdirSync(migrationDirectory)
+    .filter((name) => name.endsWith(".sql"))
+    .sort()) {
+    await fixturePool.query(
+      migrationUp(readFileSync(path.join(migrationDirectory, filename), "utf8")),
+    );
   }
   await fixturePool.query(readFileSync(path.join(repositoryRoot, "infra/seed.sql"), "utf8"));
   await fixturePool.query(
@@ -86,7 +87,9 @@ describe("AUTH-10 PostgreSQL chain policy store", () => {
     const store = new PostgresChainAccessPolicyStore(fixturePool);
     const policies = await store.list();
 
-    expect(policies.map(({ chainId, access, revision }) => ({ chainId, access, revision }))).toEqual([
+    expect(
+      policies.map(({ chainId, access, revision }) => ({ chainId, access, revision })),
+    ).toEqual([
       { access: "all", chainId: 56, revision: 1 },
       { access: "off", chainId: 8453, revision: 1 },
       { access: "off", chainId: 1, revision: 1 },
@@ -196,7 +199,10 @@ describe("AUTH-10 PostgreSQL chain policy store", () => {
   it("enforces default-chain, readiness and optimistic concurrency constraints", async () => {
     const store = new PostgresChainAccessPolicyStore(fixturePool);
     const cases = [
-      [updateInput([{ access: "off", chainId: 56, expectedRevision: 2 }]), "DEFAULT_CHAIN_REQUIRED"],
+      [
+        updateInput([{ access: "off", chainId: 56, expectedRevision: 2 }]),
+        "DEFAULT_CHAIN_REQUIRED",
+      ],
       [updateInput([{ access: "pro", chainId: 4663, expectedRevision: 1 }]), "CHAIN_NOT_READY"],
       [updateInput([{ access: "pro", chainId: 1, expectedRevision: 1 }]), "CONFIG_CONFLICT"],
     ] as const;

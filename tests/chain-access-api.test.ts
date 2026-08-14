@@ -388,7 +388,69 @@ describe("AUTH-10 chain configuration API and server guard", () => {
     expect(limited.statusCode).toBe(429);
     expect(limited.json().error.code).toBe("RATE_LIMITED");
 
-    const { app: bodyApp, tokens: bodyTokens } = await fixture();
+    expect(
+      chainPolicyStore.audits.map(
+        ({ actorUserId, createdAt, outcome, requestId, resultCode, sessionId }) => ({
+          actorUserId,
+          createdAt,
+          outcome,
+          requestId,
+          resultCode,
+          sessionId,
+        }),
+      ),
+    ).toEqual([
+      {
+        actorUserId: null,
+        createdAt: now,
+        outcome: "denied",
+        requestId: expect.any(String),
+        resultCode: "UNAUTHENTICATED",
+        sessionId: null,
+      },
+      ...(["user", "pro"] as const).map((role) => ({
+        actorUserId: accounts[role].id,
+        createdAt: now,
+        outcome: "denied" as const,
+        requestId: expect.any(String),
+        resultCode: "FORBIDDEN",
+        sessionId: expect.any(String),
+      })),
+      {
+        actorUserId: accounts.admin.id,
+        createdAt: now,
+        outcome: "denied",
+        requestId: expect.any(String),
+        resultCode: "CSRF_INVALID",
+        sessionId: expect.any(String),
+      },
+      {
+        actorUserId: accounts.admin.id,
+        createdAt: now,
+        outcome: "denied",
+        requestId: expect.any(String),
+        resultCode: "CONFIG_INVALID",
+        sessionId: expect.any(String),
+      },
+      {
+        actorUserId: accounts.admin.id,
+        createdAt: now,
+        outcome: "allowed",
+        requestId: expect.any(String),
+        resultCode: "UPDATED",
+        sessionId: expect.any(String),
+      },
+      {
+        actorUserId: accounts.admin.id,
+        createdAt: now,
+        outcome: "denied",
+        requestId: expect.any(String),
+        resultCode: "RATE_LIMITED",
+        sessionId: expect.any(String),
+      },
+    ]);
+
+    const { app: bodyApp, chainPolicyStore: bodyPolicyStore, tokens: bodyTokens } = await fixture();
     const oversized = await bodyApp.inject({
       headers: headers(bodyTokens.admin),
       method: "POST",
@@ -401,6 +463,16 @@ describe("AUTH-10 chain configuration API and server guard", () => {
     });
     expect(oversized.statusCode).toBe(413);
     expect(oversized.json().error.code).toBe("REQUEST_TOO_LARGE");
+    expect(bodyPolicyStore.audits).toEqual([
+      expect.objectContaining({
+        actorUserId: accounts.admin.id,
+        createdAt: now,
+        outcome: "denied",
+        requestId: expect.any(String),
+        resultCode: "REQUEST_TOO_LARGE",
+        sessionId: expect.any(String),
+      }),
+    ]);
   });
 
   it("updates, idempotently retries, conflicts and rolls back through the same POST path", async () => {
@@ -539,6 +611,9 @@ describe("AUTH-10 chain configuration API and server guard", () => {
     expect((await call("admin", "position.read", 999_999)).json().error.code).toBe("CHAIN_UNKNOWN");
     expect((await call("user", "position.teleport")).json().error.code).toBe("FORBIDDEN");
     expect((await call("user", "position.read", 56, accounts.pro.id)).json().error.code).toBe(
+      "FORBIDDEN",
+    );
+    expect((await call("admin", "position.read", 56, accounts.user.id)).json().error.code).toBe(
       "FORBIDDEN",
     );
 

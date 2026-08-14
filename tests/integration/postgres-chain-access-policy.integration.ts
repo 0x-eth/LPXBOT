@@ -10,10 +10,16 @@ if (!databaseUrl) throw new Error("DATABASE_URL is required for PostgreSQL integ
 
 const pool = new Pool({ connectionString: databaseUrl, max: 2 });
 const migrationPath = fileURLToPath(
-  new URL("../../infra/migrations/20260815000100_create_chain_access_policies.sql", import.meta.url),
+  new URL(
+    "../../infra/migrations/20260815000100_create_chain_access_policies.sql",
+    import.meta.url,
+  ),
 );
 const authorityMigrationPath = fileURLToPath(
-  new URL("../../infra/migrations/20260815000200_remove_user_allowed_chain_ids.sql", import.meta.url),
+  new URL(
+    "../../infra/migrations/20260815000200_remove_user_allowed_chain_ids.sql",
+    import.meta.url,
+  ),
 );
 const seedPath = fileURLToPath(new URL("../../infra/seed.sql", import.meta.url));
 
