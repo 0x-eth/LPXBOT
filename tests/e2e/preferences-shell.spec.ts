@@ -232,7 +232,9 @@ test("SHELL-03 applies cached theme before first paint and follows live system c
       "lpbot-theme-bootstrap",
       JSON.stringify({ colorTheme: "teal", customColor: null, theme: "system" }),
     );
-    const browser = globalThis as typeof globalThis & { __themeAtDomReady?: string };
+    const browser = globalThis as typeof globalThis & {
+      __themeAtDomReady: string | undefined;
+    };
     document.addEventListener("DOMContentLoaded", () => {
       browser.__themeAtDomReady = document.documentElement.dataset.theme;
     });

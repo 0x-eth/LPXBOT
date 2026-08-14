@@ -170,7 +170,7 @@ export function normalizeStoredUserPreferences(value: unknown): UserPreferences 
   const colorTheme = isColorTheme(raw.colorTheme)
     ? raw.colorTheme
     : defaultUserPreferences.colorTheme;
-  let customColor: string | null = null;
+  let customColor: string | null;
   try {
     customColor = normalizeCustomColor(raw.customColor ?? null);
   } catch {

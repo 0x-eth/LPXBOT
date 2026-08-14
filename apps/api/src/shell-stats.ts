@@ -30,7 +30,13 @@ export class UnavailableShellStatsProvider implements ShellStatsProvider {
     };
   }
 
-  async *subscribe(): AsyncIterable<ShellStatsEvent> {
-    return;
+  subscribe(): AsyncIterable<ShellStatsEvent> {
+    return {
+      [Symbol.asyncIterator](): AsyncIterator<ShellStatsEvent> {
+        return {
+          next: () => Promise.resolve({ done: true, value: undefined }),
+        };
+      },
+    };
   }
 }

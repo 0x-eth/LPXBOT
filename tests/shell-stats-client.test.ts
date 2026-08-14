@@ -102,6 +102,7 @@ describe("P01-06 API shell stats provider", () => {
       },
     });
     let thirdSignal: AbortSignal | null = null;
+    const getThirdSignal = (): AbortSignal | null => thirdSignal;
     const fetcher = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(
@@ -133,7 +134,7 @@ describe("P01-06 API shell stats provider", () => {
     expect(states.some((state) => state.connected && state.sequence === 10)).toBe(true);
     expect(states.at(-1)?.connected).toBe(false);
     stop();
-    expect(thirdSignal?.aborted).toBe(true);
+    expect(getThirdSignal()?.aborted).toBe(true);
     await Promise.resolve();
     expect(fetcher).toHaveBeenCalledTimes(3);
     expect(fetcher.mock.calls[0]).toEqual([
