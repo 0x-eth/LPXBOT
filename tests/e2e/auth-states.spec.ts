@@ -211,3 +211,39 @@ test("a later generic 403 renders a forbidden state without protected data", asy
   await expect(page.getByText("Session-backed task access is active.")).toHaveCount(0);
   await expectNoSeriousAxeViolations(page);
 });
+
+test("a retryable route error hides internal details and retries the failed command", async ({
+  page,
+}) => {
+  let calls = 0;
+  await page.route("**/api/auth/me", async (route) => {
+    calls += 1;
+    if (calls !== 2) {
+      await fulfillAuth(route, "user");
+      return;
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        success: false,
+        error: {
+          code: "INTERNAL_FAILURE",
+          message: "DatabaseError TOKEN_FIXTURE_VALUE requestBody={fixture}",
+          requestId: "req-route-error",
+          retryable: true,
+        },
+      },
+      status: 500,
+    });
+  });
+  await page.goto("/tasks/running");
+
+  await page.getByRole("button", { name: "刷新" }).click();
+
+  await expect(page.getByRole("heading", { level: 1, name: "Request failed" })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveText("The request could not be completed.");
+  await expect(page.getByText(/DatabaseError|TOKEN_FIXTURE_VALUE|requestBody/u)).toHaveCount(0);
+  await page.getByRole("button", { name: "Retry request" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
+  expect(calls).toBe(3);
+});
