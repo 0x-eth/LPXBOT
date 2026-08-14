@@ -26,6 +26,40 @@ export interface TelegramBotLoginConfirmationPort {
 export type Role = "user" | "pro" | "admin";
 export type Tier = "normal" | "pro";
 export type AccountBlockReason = "pending" | "rejected" | "banned";
+export type ChainAccessMode = "off" | "pro" | "all";
+
+export interface EffectiveChainView {
+  chainId: number;
+  displayName: string;
+}
+
+export interface ManagedChainView extends EffectiveChainView {
+  access: ChainAccessMode;
+  activePositionCount: number | null;
+  configurationComplete: boolean;
+  isDefault: boolean;
+  missingConfiguration: string[];
+  previousAccess: ChainAccessMode | null;
+  reason: string | null;
+  revision: number;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+export interface ChainConfigView<TChain extends EffectiveChainView = EffectiveChainView> {
+  chains: TChain[];
+}
+
+export interface UpdateChainAccessRequest {
+  access: Record<string, ChainAccessMode>;
+  expectedRevision: Record<string, number>;
+  reason: string;
+}
+
+export const chainSystemConfigContracts = {
+  get: { method: "GET", path: "/api/system-config/chains" },
+  post: { method: "POST", path: "/api/system-config/chains" },
+} as const;
 
 export interface SessionView {
   allowedChainIds: number[];
