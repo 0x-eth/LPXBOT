@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-05",
+  "evidenceLevel": "local-fixture-verified",
+  "featureIds": ["SHELL-01", "SHELL-05", "SHELL-06"],
+  "shell": {
+    "desktopNavigation": "horizontal-top",
+    "mobileNavigation": "fixed-bottom-six-track",
+    "labels": ["任务", "池子", "策略", "日志", "钱包", "聊天室"],
+    "adminEntry": {
+      "ordinary": false,
+      "pro": false,
+      "admin": true
+    },
+    "redirects": {
+      "/": "/tasks/running",
+      "/all": "/tasks/running",
+      "/all/paused": "/tasks/paused",
+      "/all/stopped": "/tasks/stopped",
+      "/monitors": "/pools"
+    },
+    "stableOutlets": [
+      "/tasks/*",
+      "/pools",
+      "/strategies",
+      "/activity",
+      "/wallets",
+      "/developer",
+      "/settings",
+      "/users"
+    ],
+    "chatFixture": "empty-recent-chat-drawer",
+    "fabricatedBusinessRecords": false,
+    "statusBarDataRendered": false
+  },
+  "feedback": {
+    "queueLimit": 4,
+    "deduplicated": true,
+    "transientAutoClose": true,
+    "persistentLongTasks": true,
+    "successLiveRegion": "polite-status",
+    "errorLiveRegion": "alert",
+    "confirmDialogLibrary": "@radix-ui/react-alert-dialog",
+    "dangerInitialFocus": "cancel",
+    "escapeAndFocusReturnVerified": true,
+    "rawServerErrorsRendered": false
+  },
+  "responsive": {
+    "testedWidths": [320, 390, 768, 1024, 1440],
+    "horizontalOverflow": false,
+    "mobileContentCovered": false,
+    "stableNavigationTracks": true,
+    "singleH1": true,
+    "ariaCurrent": true,
+    "seriousOrCriticalAxeViolations": 0
+  },
+  "pwa": {
+    "plugin": "vite-plugin-pwa@1.3.0",
+    "strategy": "injectManifest",
+    "display": "standalone",
+    "startUrl": "/",
+    "serviceWorker": "sw.js",
+    "precache": "revisioned-static-assets-only",
+    "runtimeNavigation": "network-only-with-offline-index-shell",
+    "apiAuthSseWrites": "network-only",
+    "crossOrigin": "network-only",
+    "runtimeUserDataCached": false,
+    "obsoleteCacheCleanupVerified": true,
+    "explicitUpdateReloadVerified": true,
+    "updateFailureRetryVerified": true
+  },
+  "telegram": {
+    "ready": true,
+    "expand": true,
+    "viewportChange": true,
+    "themeChange": true,
+    "backButton": true,
+    "browserFallback": true,
+    "externalSdkLoaded": false
+  },
+  "visual": {
+    "threshold": 0.001,
+    "desktop": "1440x900",
+    "mobile": "390x844",
+    "businessContentMasked": true,
+    "accountMasked": true,
+    "darwinActualMatchesExpected": true,
+    "linuxBaselinesCommitted": true,
+    "manualReview": "passed"
+  },
+  "priorAcceptanceIntegrity": {
+    "frozenFixtureTreeBefore": "0b24a81889eb728477e583c43c9121fac7235113",
+    "frozenFixtureTreeAfter": "0b24a81889eb728477e583c43c9121fac7235113",
+    "p01_01TreeBefore": "85fcccb8e9858647f5237888967607767bd85a35",
+    "p01_01TreeAfter": "85fcccb8e9858647f5237888967607767bd85a35",
+    "p01_02TreeBefore": "97fe222b38b9635b17f5ae795e5c0c84b31d258b",
+    "p01_02TreeAfter": "97fe222b38b9635b17f5ae795e5c0c84b31d258b",
+    "p01_03TreeBefore": "3ce5c7bc9d67f1f4b50c0da23085b65fe200b5f5",
+    "p01_03TreeAfter": "3ce5c7bc9d67f1f4b50c0da23085b65fe200b5f5",
+    "p01_04TreeBefore": "74719d2183628ef6982cf85cb96afbd46274ad86",
+    "p01_04TreeAfter": "74719d2183628ef6982cf85cb96afbd46274ad86",
+    "modified": false
+  },
+  "ci": {
+    "runId": 31800845957,
+    "commit": "70fe133c1b00fffaad7d174440f585fbad668831",
+    "result": "passed",
+    "jobs": ["Quality", "Governance", "Browser", "Contracts", "Infrastructure", "Security"]
+  },
+  "externalOperations": {
+    "targetSite": false,
+    "telegramService": false,
+    "externalRpc": false,
+    "productionService": false,
+    "productionCredential": false,
+    "transaction": false,
+    "businessWrite": false
+  }
+}

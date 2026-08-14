@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-05",
+  "phase": "P01",
+  "risk": "R0",
+  "status": "accepted",
+  "featureIds": ["SHELL-01", "SHELL-05", "SHELL-06"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm test",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-05/command-output.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm test:e2e",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-05/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "pnpm exec playwright test tests/e2e/shell.spec.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-05/E-VIS.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm test:pwa",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-05/E-OPS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "dockerized gitleaks full-history scan; pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-05/E-OPS.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-UI", "path": "artifacts/acceptance/P01-05/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P01-05/E-VIS.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P01-05/E-OPS.md" }
+  ],
+  "assumptions": [
+    "P01-01 live-observed screenshots and DOM evidence take precedence over the older FUNCTION_MATRIX desktop-sidebar shorthand, so desktop uses horizontal top navigation.",
+    "The reserved status row contains no SHELL-02 data; SHELL-02 through SHELL-04, SET-01 through SET-02, and business-page behavior remain outside P01-05.",
+    "All UI, Telegram, PWA, offline, wallet-regression, and cache observations are deterministic local fixtures; no target site or production service was contacted.",
+    "The frozen reference fixture and P01-01 through P01-04 acceptance trees match their pre-P01-05 Git tree objects."
+  ],
+  "completedAt": "2026-08-14T12:37:10.000Z",
+  "commit": "70fe133c1b00fffaad7d174440f585fbad668831"
+}
