@@ -12,6 +12,9 @@ export default defineConfig({
         "pwa-maskable-512x512.png",
         "pwa-icon-provenance.json",
       ],
+      injectManifest: {
+        globPatterns: ["**/*.{css,html,js,json,png}"],
+      },
       manifest: {
         background_color: "#ffffff",
         display: "standalone",
@@ -32,12 +35,8 @@ export default defineConfig({
         theme_color: "#171717",
       },
       registerType: "prompt",
-      workbox: {
-        cleanupOutdatedCaches: true,
-        globPatterns: ["**/*.{css,html,js,json,png}"],
-        navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//u],
-      },
+      srcDir: "src",
+      strategies: "injectManifest",
     }),
   ],
 });
