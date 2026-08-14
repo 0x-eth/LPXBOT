@@ -24,7 +24,15 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Component,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ErrorInfo,
+  type ReactNode,
+} from "react";
 import {
   BrowserRouter,
   Link,
@@ -488,6 +496,15 @@ function EmptyFixturePage({
   localizedTitle: string;
   title: string;
 }) {
+  const location = useLocation();
+  if (
+    import.meta.env.DEV &&
+    title === "Developer" &&
+    new URLSearchParams(location.search).get("fixture") === "route-error"
+  ) {
+    throw new Error("INTERNAL_FIXTURE_TOKEN requestBody={fixture}");
+  }
+
   return (
     <main className="workspace route-workspace" data-fixture-state="empty">
       <p className="eyebrow">{eyebrow}</p>
@@ -501,6 +518,42 @@ function EmptyFixturePage({
       </div>
     </main>
   );
+}
+
+class RouteErrorBoundary extends Component<
+  { children: ReactNode; onRetry(): void; resetKey: string },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true };
+  }
+
+  componentDidCatch(_error: unknown, _info: ErrorInfo): void {
+    // The boundary intentionally keeps exception details out of UI and telemetry in P01-05.
+  }
+
+  componentDidUpdate(previous: Readonly<{ resetKey: string }>): void {
+    if (previous.resetKey !== this.props.resetKey && this.state.failed) {
+      this.setState({ failed: false });
+    }
+  }
+
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <main className="workspace">
+        <p className="eyebrow">Route error</p>
+        <h1>Page unavailable</h1>
+        <p role="alert">This page could not be displayed safely.</p>
+        <button className="retry-button route-retry" onClick={this.props.onRetry} type="button">
+          <RotateCw aria-hidden="true" size={17} />
+          Retry page
+        </button>
+      </main>
+    );
+  }
 }
 
 function LegacyAllRedirect() {
@@ -631,47 +684,56 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
           ) : null}
         </main>
       ) : (
-        <Routes>
-          <Route path="/" element={<Navigate to="/tasks/running" replace />} />
-          <Route path="/all" element={<Navigate to="/tasks/running" replace />} />
-          <Route path="/all/:status" element={<LegacyAllRedirect />} />
-          <Route path="/monitors" element={<Navigate to="/pools" replace />} />
-          <Route path="/settings" element={<LoginWalletSettings client={client} />} />
-          {routeFixtures.map((fixture) => (
+        <RouteErrorBoundary
+          onRetry={() => {
+            const url = new URL(window.location.href);
+            if (import.meta.env.DEV) url.searchParams.delete("fixture");
+            window.location.replace(`${url.pathname}${url.search}${url.hash}`);
+          }}
+          resetKey={`${location.pathname}${location.search}`}
+        >
+          <Routes>
+            <Route path="/" element={<Navigate to="/tasks/running" replace />} />
+            <Route path="/all" element={<Navigate to="/tasks/running" replace />} />
+            <Route path="/all/:status" element={<LegacyAllRedirect />} />
+            <Route path="/monitors" element={<Navigate to="/pools" replace />} />
+            <Route path="/settings" element={<LoginWalletSettings client={client} />} />
+            {routeFixtures.map((fixture) => (
+              <Route
+                element={
+                  <EmptyFixturePage
+                    eyebrow={fixture.eyebrow}
+                    localizedTitle={fixture.localizedTitle}
+                    title={fixture.title}
+                  />
+                }
+                key={fixture.path}
+                path={fixture.path}
+              />
+            ))}
             <Route
               element={
-                <EmptyFixturePage
-                  eyebrow={fixture.eyebrow}
-                  localizedTitle={fixture.localizedTitle}
-                  title={fixture.title}
-                />
+                state.session.role === "admin" ? (
+                  <main className="workspace">
+                    <p className="eyebrow">Admin only</p>
+                    <h1>
+                      <span aria-hidden="true">用户管理</span>
+                      <span className="sr-only">Users</span>
+                    </h1>
+                    <div className="empty-fixture" role="status">
+                      <Code2 aria-hidden="true" size={22} />
+                      <p>暂无内容</p>
+                    </div>
+                  </main>
+                ) : (
+                  <Navigate to="/tasks/running" replace />
+                )
               }
-              key={fixture.path}
-              path={fixture.path}
+              path="/users"
             />
-          ))}
-          <Route
-            path="/users"
-            element={
-              state.session.role === "admin" ? (
-                <main className="workspace">
-                  <p className="eyebrow">Admin only</p>
-                  <h1>
-                    <span aria-hidden="true">用户管理</span>
-                    <span className="sr-only">Users</span>
-                  </h1>
-                  <div className="empty-fixture" role="status">
-                    <Code2 aria-hidden="true" size={22} />
-                    <p>暂无内容</p>
-                  </div>
-                </main>
-              ) : (
-                <Navigate to="/tasks/running" replace />
-              )
-            }
-          />
-          <Route path="*" element={<Navigate to="/tasks/running" replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/tasks/running" replace />} />
+          </Routes>
+        </RouteErrorBoundary>
       )}
       <div aria-hidden="true" className="status-bar-reserved" />
       <div className="mobile-navigation-shell">
