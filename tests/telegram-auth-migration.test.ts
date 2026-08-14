@@ -2,8 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-const migrationPath =
-  "infra/migrations/20260814000200_create_telegram_auth.sql";
+const migrationPath = "infra/migrations/20260814000200_create_telegram_auth.sql";
 
 function migration(): string {
   return readFileSync(new URL(`../${migrationPath}`, import.meta.url), "utf8");
@@ -27,7 +26,9 @@ describe("P01-03 Telegram authentication migration", () => {
   it("stores only 32-byte credential digests and constrains all five intent states", () => {
     const sql = migration();
 
-    expect(sql).toMatch(/token_hash bytea NOT NULL UNIQUE CHECK \(octet_length\(token_hash\) = 32\)/u);
+    expect(sql).toMatch(
+      /token_hash bytea NOT NULL UNIQUE CHECK \(octet_length\(token_hash\) = 32\)/u,
+    );
     expect(sql).toMatch(/digest bytea PRIMARY KEY CHECK \(octet_length\(digest\) = 32\)/u);
     for (const state of ["pending", "confirmed", "consumed", "cancelled", "expired"]) {
       expect(sql).toContain(`'${state}'`);

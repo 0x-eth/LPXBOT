@@ -226,11 +226,9 @@ describe("P01-02 web auth client", () => {
   it("restores from a credential-free BroadcastChannel event and rejects enriched messages", async () => {
     let onMessage: ((event: { data: unknown }) => void) | undefined;
     const channel = {
-      addEventListener: vi.fn(
-        (_type: "message", listener: (event: { data: unknown }) => void) => {
-          onMessage = listener;
-        },
-      ),
+      addEventListener: vi.fn((_type: "message", listener: (event: { data: unknown }) => void) => {
+        onMessage = listener;
+      }),
       close: vi.fn(),
       postMessage: vi.fn(),
       removeEventListener: vi.fn(),

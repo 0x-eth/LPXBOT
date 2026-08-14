@@ -307,10 +307,7 @@ export class PostgresSessionStore
     );
   }
 
-  async #findBotLoginIntent(
-    client: PoolClient,
-    tokenHash: string,
-  ): Promise<BotLoginIntent | null> {
+  async #findBotLoginIntent(client: PoolClient, tokenHash: string): Promise<BotLoginIntent | null> {
     const result = await client.query<BotLoginIntentRow>(
       `SELECT i.id::text,
               encode(i.token_hash, 'hex') AS token_hash,

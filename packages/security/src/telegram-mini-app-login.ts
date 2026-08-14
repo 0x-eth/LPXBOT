@@ -7,10 +7,7 @@ import {
   type SessionStore,
   type StoredAccount,
 } from "./index.js";
-import {
-  TelegramInitDataError,
-  type TelegramInitDataVerifier,
-} from "./telegram-init-data.js";
+import { TelegramInitDataError, type TelegramInitDataVerifier } from "./telegram-init-data.js";
 
 export interface InitDataReplay {
   consumedAt: Date;
@@ -29,11 +26,7 @@ export interface TelegramMiniAppStore extends SessionStore {
 }
 
 export type TelegramAuthenticationErrorCode =
-  | "AUTH_DUPLICATE_FIELD"
-  | "AUTH_EXPIRED"
-  | "AUTH_FUTURE"
-  | "AUTH_INVALID"
-  | "AUTH_REPLAYED";
+  "AUTH_DUPLICATE_FIELD" | "AUTH_EXPIRED" | "AUTH_FUTURE" | "AUTH_INVALID" | "AUTH_REPLAYED";
 
 export class TelegramAuthenticationError extends Error {
   readonly code: TelegramAuthenticationErrorCode;

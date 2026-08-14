@@ -5,7 +5,7 @@ import {
   type SessionView,
 } from "@lpbot/api-contract";
 
-import type { TelegramMiniAppAdapter } from "./telegram-mini-app";
+import type { TelegramMiniAppAdapter } from "./telegram-mini-app.js";
 
 export type AuthFetch = (input: Request | string | URL, init?: RequestInit) => Promise<Response>;
 
@@ -146,8 +146,13 @@ function isBotLoginStatusSuccess(value: unknown): value is BotLoginStatusSuccess
 }
 
 function defaultBroadcastChannel(): AuthBroadcastChannel | null {
-  if (typeof window === "undefined" || typeof window.BroadcastChannel !== "function") return null;
-  return new window.BroadcastChannel("lpbot-auth");
+  const browser = globalThis as typeof globalThis & {
+    window?: {
+      BroadcastChannel?: new (name: string) => AuthBroadcastChannel;
+    };
+  };
+  const BroadcastChannel = browser.window?.BroadcastChannel;
+  return BroadcastChannel ? new BroadcastChannel("lpbot-auth") : null;
 }
 
 function blockedReason(code: string): "pending" | "rejected" | "banned" | null {
@@ -300,11 +305,7 @@ export class AuthClient {
         signal: controller.signal,
       });
       if (!response.ok) {
-        this.#botFailure(
-          "LOGIN_CANCEL_FAILED",
-          "The Telegram login could not be cancelled",
-          true,
-        );
+        this.#botFailure("LOGIN_CANCEL_FAILED", "The Telegram login could not be cancelled", true);
       }
     } catch {
       this.#botFailure("NETWORK_ERROR", "The Telegram login could not be cancelled", true);

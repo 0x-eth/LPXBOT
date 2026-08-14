@@ -1,8 +1,5 @@
 import type { TelegramBotLoginConfirmationPort } from "../packages/api-contract/src/index.js";
-import {
-  handleTelegramStart,
-  loadTelegramBotConfig,
-} from "../apps/telegram-bot/src/index.js";
+import { handleTelegramStart, loadTelegramBotConfig } from "../apps/telegram-bot/src/index.js";
 import { describe, expect, it, vi } from "vitest";
 
 const token = "A".repeat(43);

@@ -39,7 +39,7 @@ async function anonymous(route: Route): Promise<void> {
 test("Mini App adapter signs in on mobile without browser storage", async ({ page }) => {
   await page.setViewportSize({ height: 844, width: 390 });
   await page.addInitScript(() => {
-    Object.defineProperty(window, "Telegram", {
+    Object.defineProperty(globalThis, "Telegram", {
       configurable: true,
       value: { WebApp: { initData: "signed-mini-app-fixture", ready() {} } },
     });
@@ -196,7 +196,7 @@ test("two pages converge through a credential-free BroadcastChannel message", as
     timeout: 5_000,
   });
   const messages = await first.evaluate(
-    () => (window as unknown as { __authMessages: unknown[] }).__authMessages,
+    () => (globalThis as unknown as { __authMessages: unknown[] }).__authMessages,
   );
   expect(messages).toEqual([{ type: "auth-complete" }]);
   expect(JSON.stringify(messages)).not.toContain(token);
@@ -205,11 +205,19 @@ test("two pages converge through a credential-free BroadcastChannel message", as
 
 async function captureBroadcastMessages(context: BrowserContext): Promise<void> {
   await context.addInitScript(() => {
-    const NativeBroadcastChannel = window.BroadcastChannel;
+    interface FixtureBroadcastChannel {
+      postMessage(message: unknown): void;
+    }
+    interface FixtureBrowserGlobal {
+      BroadcastChannel: new (name: string) => FixtureBroadcastChannel;
+      __authMessages: unknown[];
+    }
+    const browser = globalThis as unknown as FixtureBrowserGlobal;
+    const NativeBroadcastChannel = browser.BroadcastChannel;
     const messages: unknown[] = [];
-    (window as unknown as { __authMessages: unknown[] }).__authMessages = messages;
-    window.BroadcastChannel = class extends NativeBroadcastChannel {
-      override postMessage(message: unknown): void {
+    browser.__authMessages = messages;
+    browser.BroadcastChannel = class extends NativeBroadcastChannel {
+      postMessage(message: unknown): void {
         messages.push(message);
         super.postMessage(message);
       }

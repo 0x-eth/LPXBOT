@@ -10,12 +10,7 @@ import {
   type StoredAccount,
 } from "./index.js";
 
-export type BotLoginIntentStatus =
-  | "pending"
-  | "confirmed"
-  | "consumed"
-  | "cancelled"
-  | "expired";
+export type BotLoginIntentStatus = "pending" | "confirmed" | "consumed" | "cancelled" | "expired";
 
 export interface NewBotLoginIntent {
   createdAt: Date;
@@ -127,7 +122,10 @@ export class TelegramBotLoginService implements TelegramBotLoginApplication {
 
   async confirmLogin(input: ConfirmBotLoginInput): Promise<ConfirmBotLoginResult> {
     const confirmedAt = this.#now();
-    if (!oneTimeTokenPattern.test(input.token) || !telegramSubjectPattern.test(input.telegramSubject)) {
+    if (
+      !oneTimeTokenPattern.test(input.token) ||
+      !telegramSubjectPattern.test(input.telegramSubject)
+    ) {
       await this.#audit(
         "telegram.bot.intent.confirm",
         "denied",
@@ -160,14 +158,7 @@ export class TelegramBotLoginService implements TelegramBotLoginApplication {
   async poll(token: string, requestId: string): Promise<PollBotLoginResult> {
     const polledAt = this.#now();
     if (!oneTimeTokenPattern.test(token)) {
-      await this.#audit(
-        "telegram.bot.intent.consume",
-        "denied",
-        requestId,
-        polledAt,
-        null,
-        null,
-      );
+      await this.#audit("telegram.bot.intent.consume", "denied", requestId, polledAt, null, null);
       return { login: null, status: "invalid" };
     }
 
@@ -227,14 +218,7 @@ export class TelegramBotLoginService implements TelegramBotLoginApplication {
   async cancel(token: string, requestId: string): Promise<ConfirmBotLoginResult> {
     const cancelledAt = this.#now();
     if (!oneTimeTokenPattern.test(token)) {
-      await this.#audit(
-        "telegram.bot.intent.cancel",
-        "denied",
-        requestId,
-        cancelledAt,
-        null,
-        null,
-      );
+      await this.#audit("telegram.bot.intent.cancel", "denied", requestId, cancelledAt, null, null);
       return { status: "invalid" };
     }
     const intent = await this.#store.cancelBotLoginIntent(hashSessionToken(token), cancelledAt);

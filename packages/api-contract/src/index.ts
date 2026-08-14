@@ -9,12 +9,7 @@ export const telegramBotCancelContract = {
 } as const;
 
 export type TelegramBotLoginConfirmationStatus =
-  | "pending"
-  | "confirmed"
-  | "consumed"
-  | "cancelled"
-  | "expired"
-  | "invalid";
+  "pending" | "confirmed" | "consumed" | "cancelled" | "expired" | "invalid";
 
 export interface TelegramBotLoginConfirmationInput {
   requestId: string;

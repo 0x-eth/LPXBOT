@@ -83,7 +83,6 @@ class AtomicMemoryRateLimitStore {
     key: string,
     callback: (error: Error | null, result?: { current: number; ttl: number }) => void,
     timeWindow: number,
-    _max: number,
   ): void {
     const currentTime = Date.now();
     const existing = this.#counters.get(key);

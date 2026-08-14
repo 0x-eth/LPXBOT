@@ -1,9 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
-export {
-  TelegramInitDataError,
-  TelegramInitDataVerifier,
-} from "./telegram-init-data.js";
+export { TelegramInitDataError, TelegramInitDataVerifier } from "./telegram-init-data.js";
 export type {
   TelegramInitDataErrorCode,
   TelegramInitDataVerifierOptions,
