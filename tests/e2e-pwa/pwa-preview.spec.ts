@@ -114,3 +114,61 @@ test("SHELL-06 activation removes obsolete LP Bot caches", async ({ page }) => {
     .poll(() => page.evaluate(async () => (await caches.keys()).includes("lpbot-navigation-obsolete")))
     .toBe(false);
 });
+
+test("SHELL-06 never stores API, auth, SSE, writes or runtime navigation responses", async ({
+  page,
+}) => {
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      json: {
+        success: false,
+        error: {
+          code: "UNAUTHENTICATED",
+          message: "Authentication is required",
+          requestId: "req-pwa-network-only",
+          retryable: false,
+        },
+      },
+      status: 401,
+    }),
+  );
+  await page.goto("/");
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+
+  const paths = [
+    "/api/cache-fixture",
+    "/authorization-cache-fixture",
+    "/sse-cache-fixture",
+    "/write-cache-fixture",
+  ];
+  const cached = await page.evaluate(async ([api, authorization, sse, write]) => {
+    await Promise.allSettled([
+      fetch(api),
+      fetch(authorization, { headers: { Authorization: "Bearer LOCAL_FIXTURE" } }),
+      fetch(sse, { headers: { Accept: "text/event-stream" } }),
+      fetch(write, { method: "POST" }),
+    ]);
+    const cacheNames = await caches.keys();
+    return Promise.all(
+      [api, authorization, sse, write].map(async (path) => {
+        for (const cacheName of cacheNames) {
+          if (await (await caches.open(cacheName)).match(path)) return true;
+        }
+        return false;
+      }),
+    );
+  }, paths);
+  expect(cached).toEqual([false, false, false, false]);
+
+  await page.goto("/runtime-navigation-fixture");
+  const runtimeNavigationCached = await page.evaluate(async () => {
+    for (const cacheName of await caches.keys()) {
+      if (await (await caches.open(cacheName)).match("/runtime-navigation-fixture")) return true;
+    }
+    return false;
+  });
+  expect(runtimeNavigationCached).toBe(false);
+});
