@@ -34,6 +34,7 @@ describe("P01-04 login wallet HTTP API", () => {
         message: "canonical-siwe-message",
         nonceId: "A".repeat(43),
       }),
+      login: vi.fn(),
     };
     const app = buildApiApp({
       maintenance: { enabled: false, message: null, until: null },
@@ -64,5 +65,66 @@ describe("P01-04 login wallet HTTP API", () => {
       chainId: 56,
       requestId: expect.any(String),
     });
+  });
+
+  it("sets an HttpOnly session cookie after wallet login without returning credentials", async () => {
+    const token = "session-token-that-must-not-enter-the-response";
+    const signature = `0x${"ab".repeat(65)}`;
+    const expiresAt = new Date("2026-08-14T09:00:00.000Z");
+    const walletAuth = {
+      createLoginChallenge: vi.fn(),
+      login: vi.fn().mockResolvedValue({
+        account: {
+          allowedChainIds: [56],
+          avatarUrl: null,
+          displayName: "Wallet User",
+          id: "00000000-0000-4000-8000-000000000040",
+          role: "user",
+          status: "active",
+          tier: "normal",
+        },
+        session: {
+          expiresAt,
+          sessionId: "00000000-0000-4000-8000-000000000041",
+          token,
+        },
+      }),
+    };
+    const app = buildApiApp({
+      maintenance: { enabled: false, message: null, until: null },
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: new EmptySessionStore(),
+      walletAuth,
+    });
+    apps.push(app);
+
+    const response = await app.inject({
+      method: "POST",
+      payload: {
+        address: "0x0000000000000000000000000000000000000001",
+        chainId: 56,
+        nonceId: "A".repeat(43),
+        signature,
+      },
+      url: "/api/auth/wallet/login",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["set-cookie"]).toContain("lpbot_session=");
+    expect(response.headers["set-cookie"]).toContain("HttpOnly");
+    expect(response.headers["set-cookie"]).toContain("Secure");
+    expect(response.headers["set-cookie"]).toContain("SameSite=Lax");
+    expect(response.json()).toMatchObject({
+      data: {
+        session: {
+          maintenanceBypass: false,
+          role: "user",
+          userId: "00000000-0000-4000-8000-000000000040",
+        },
+      },
+      success: true,
+    });
+    expect(response.body).not.toContain(token);
+    expect(response.body).not.toContain(signature);
   });
 });

@@ -344,6 +344,82 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     );
 
     app.post(
+      "/api/auth/wallet/login",
+      {
+        config: {
+          rateLimit: {
+            max: authRateLimits.walletLogin,
+            timeWindow: authRateLimits.timeWindowMs,
+          },
+        },
+      },
+      async (request, reply) => {
+        if (!options.walletAuth) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "WALLET_AUTH_UNAVAILABLE",
+              message: "Wallet authentication is not configured",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!isRecord(request.body)) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "NONCE_INVALID",
+              message: "Wallet challenge is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+
+        try {
+          const login = await options.walletAuth.login({
+            address: typeof request.body.address === "string" ? request.body.address : "",
+            chainId: typeof request.body.chainId === "number" ? request.body.chainId : 0,
+            nonceId: typeof request.body.nonceId === "string" ? request.body.nonceId : "",
+            requestId: request.id,
+            signature: typeof request.body.signature === "string" ? request.body.signature : "",
+          });
+          setBrowserSessionCookie(reply, login.session);
+          const decision = authorizeAccount({
+            accountStatus: login.account.status,
+            maintenance: options.maintenance,
+            region: options.regionPolicy(request),
+            role: login.account.role,
+          });
+          if (!decision.allowed) {
+            return reply.code(decision.statusCode).send(
+              createErrorEnvelope({
+                code: decision.code,
+                message: decision.message,
+                requestId: request.id,
+                retryable: decision.retryable,
+              }),
+            );
+          }
+
+          return createSuccessEnvelope(
+            { session: accountToSessionView(login.account, decision.maintenanceBypass) },
+            request.id,
+          );
+        } catch (error) {
+          if (!isWalletAuthenticationError(error)) throw error;
+          return reply.code(walletErrorStatus(error.code)).send(
+            createErrorEnvelope({
+              code: error.code,
+              message: walletErrorMessage(error.code),
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+      },
+    );
+
+    app.post(
       "/api/auth/me",
       {
         config: {
