@@ -152,7 +152,8 @@ test("Bot login recovers from link creation failure", async ({ page }) => {
 
   await page.goto("/login");
   await page.getByRole("button", { name: "Telegram Bot" }).click();
-  await expect(page.getByRole("alert")).toContainText("timed out");
+  await expect(page.getByRole("alert")).toHaveText("The request could not be completed.");
+  await expect(page.getByText("Login link creation timed out", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Retry Telegram login" }).click();
 
   const openTelegram = page.getByRole("link", { name: "Open Telegram" });

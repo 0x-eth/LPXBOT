@@ -39,7 +39,7 @@ test("LPBot renders without browser runtime failures", async ({ page }) => {
   const response = await page.goto("/");
 
   expect(response?.ok()).toBe(true);
-  await expect(page).toHaveTitle("LPBot");
+  await expect(page).toHaveTitle("LP Bot");
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
   await expect(page.locator("#root")).not.toBeEmpty();
   expect(pageErrors, "uncaught page errors").toEqual([]);
