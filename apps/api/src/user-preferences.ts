@@ -1,5 +1,6 @@
 import {
   colorThemeKeys,
+  defaultUserPreferences as contractDefaultUserPreferences,
   navigationKeys,
   userPreferenceSchemaVersion,
   type ColorTheme,
@@ -10,16 +11,7 @@ import {
   type VersionedUserPreferences,
 } from "@lpbot/api-contract";
 
-export const defaultUserPreferences: Readonly<UserPreferences> = Object.freeze({
-  colorTheme: "neutral",
-  customColor: null,
-  navConfig: navigationKeys.map((key) => ({ key, visible: true })),
-  poolsPanelCollapsed: false,
-  showHotPools: false,
-  showScanTab: true,
-  taskViewMode: "grid",
-  theme: "system",
-});
+export const defaultUserPreferences = contractDefaultUserPreferences;
 
 export interface UpdateUserPreferencesInput {
   expectedRevision: number;

@@ -86,6 +86,17 @@ export interface UserPreferences {
   theme: ThemePreference;
 }
 
+export const defaultUserPreferences: Readonly<UserPreferences> = Object.freeze({
+  colorTheme: "neutral",
+  customColor: null,
+  navConfig: navigationKeys.map((key) => ({ key, visible: true })),
+  poolsPanelCollapsed: false,
+  showHotPools: false,
+  showScanTab: true,
+  taskViewMode: "grid",
+  theme: "system",
+});
+
 export interface VersionedUserPreferences {
   preferences: UserPreferences;
   revision: number;
