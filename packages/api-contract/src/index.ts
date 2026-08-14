@@ -37,6 +37,45 @@ export interface SessionView {
   userId: string;
 }
 
+export type EvmAddress = `0x${string}`;
+
+export interface WalletChallengeRequest {
+  address: EvmAddress;
+  chainId: number;
+}
+
+export interface WalletChallengeView {
+  expiresAt: string;
+  message: string;
+  nonceId: string;
+}
+
+export interface WalletLoginRequest extends WalletChallengeRequest {
+  nonceId: string;
+  signature: `0x${string}`;
+}
+
+export interface LoginWalletLinkRequest extends WalletLoginRequest {
+  label: string | null;
+}
+
+export interface LoginWalletLinkView {
+  addressMasked: string;
+  createdAt: string;
+  label: string | null;
+  linkId: string;
+  updatedAt: string;
+}
+
+export const loginWalletAuthContracts = {
+  link: { method: "POST", path: "/api/auth/wallet/link" },
+  linkNonce: { method: "POST", path: "/api/auth/wallet/link-nonce" },
+  links: { method: "GET", path: "/api/auth/wallet/links" },
+  login: { method: "POST", path: "/api/auth/wallet/login" },
+  nonce: { method: "POST", path: "/api/auth/wallet/nonce" },
+  unlink: { method: "DELETE", path: "/api/auth/wallet/link/{linkId}" },
+} as const;
+
 export type AuthState =
   | { status: "booting" }
   | { status: "anonymous" }

@@ -11,6 +11,8 @@ export type {
   RegionPolicyResult,
 } from "./app.js";
 export { sessionCookieName, setBrowserSessionCookie } from "./browser-session-cookie.js";
+export { createLoginWalletAuthenticationFromEnvironment } from "./login-wallet-auth-config.js";
+export type { LoginWalletAuthEnvironment } from "./login-wallet-auth-config.js";
 export { PostgresSessionStore } from "./postgres-session-store.js";
 
 export const apiApp = {
