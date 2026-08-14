@@ -104,16 +104,84 @@ h1 {
   text-transform: uppercase;
 }
 
-.method-list {
+.auth-methods {
   display: grid;
-  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
   margin-top: 28px;
 }
 
-.method-list span {
-  padding: 12px 14px;
-  color: #8e9a9f;
+.auth-method {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 10px 12px;
+  color: #e9eef0;
+  border: 1px solid #354044;
+  border-radius: 6px;
+  background: #1d2224;
+  cursor: pointer;
+}
+
+.auth-method:hover:not(:disabled) {
+  border-color: #64d4bc;
+  background: #22292b;
+}
+
+.auth-method:disabled {
+  color: #6f7b80;
+  cursor: not-allowed;
+}
+
+.bot-login-status,
+.login-error {
+  margin-top: 18px;
+  padding: 16px 0;
+  color: #c5ced1;
   border-top: 1px solid #2d3437;
+  border-bottom: 1px solid #2d3437;
+}
+
+.bot-login-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  text-align: left;
+}
+
+.bot-login-actions,
+.bot-login-actions a,
+.retry-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bot-login-actions a {
+  min-height: 38px;
+  padding: 8px 10px;
+  color: #77dfc7;
+  text-decoration: none;
+}
+
+.login-error p {
+  margin: 0;
+  color: #f3aaa5;
+  line-height: 1.5;
+}
+
+.retry-button {
+  min-height: 40px;
+  margin: 14px auto 0;
+  padding: 8px 12px;
+  color: #e9eef0;
+  border: 1px solid #526064;
+  border-radius: 6px;
+  background: #1d2224;
+  cursor: pointer;
 }
 
 .spinner {
@@ -123,6 +191,12 @@ h1 {
   border-top-color: #64d4bc;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+}
+
+.spinner-small {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
 }
 
 .state-page[aria-busy="true"] p {
@@ -208,6 +282,19 @@ h1 {
 }
 
 @media (max-width: 640px) {
+  .auth-methods {
+    grid-template-columns: 1fr;
+  }
+
+  .bot-login-status {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .bot-login-actions {
+    justify-content: space-between;
+  }
+
   .app-header {
     grid-template-columns: auto 1fr;
     gap: 12px;

@@ -1,9 +1,25 @@
 import type { AuthState } from "@lpbot/api-contract";
-import { LogOut, RefreshCw, ShieldAlert, Wrench } from "lucide-react";
+import {
+  ExternalLink,
+  LogOut,
+  MessageCircle,
+  RefreshCw,
+  RotateCw,
+  ShieldAlert,
+  Wrench,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
-import { AuthClient, authStatePath, canEnterRoute, type AuthPageState } from "./auth-client";
+import {
+  AuthClient,
+  authStatePath,
+  canEnterRoute,
+  type AuthPageState,
+  type BotLoginView,
+} from "./auth-client";
+import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
 
 function BootingPage() {
   return (
@@ -29,7 +45,17 @@ function AuthenticatingPage({
   );
 }
 
-function LoginPage() {
+interface LoginPageProps {
+  botLogin: BotLoginView;
+  client: AuthClient;
+  page: AuthPageState;
+  state: Extract<AuthState, { status: "anonymous" | "authenticating" }>;
+}
+
+function LoginPage({ botLogin, client, page, state }: LoginPageProps) {
+  const miniAppAvailable = browserTelegramMiniAppAdapter.isAvailable?.() ?? false;
+  const busy = state.status === "authenticating";
+
   return (
     <main className="state-page">
       <section className="state-content" aria-labelledby="login-title">
@@ -39,11 +65,68 @@ function LoginPage() {
         <p className="brand">LPBot</p>
         <h1 id="login-title">Sign in</h1>
         <p className="state-message">Choose a sign-in method</p>
-        <div className="method-list" aria-label="Sign-in methods">
-          <span>Telegram Mini App</span>
-          <span>Telegram Bot</span>
-          <span>Wallet signature</span>
+        <div className="auth-methods" aria-label="Sign-in methods">
+          <button
+            className="auth-method"
+            disabled={!miniAppAvailable || busy}
+            onClick={() => void client.loginWithTelegramMiniApp(browserTelegramMiniAppAdapter)}
+            type="button"
+          >
+            <MessageCircle aria-hidden="true" size={20} />
+            <span>Telegram Mini App</span>
+          </button>
+          <button
+            className="auth-method"
+            disabled={busy}
+            onClick={() => void client.startTelegramBotLogin()}
+            type="button"
+          >
+            <MessageCircle aria-hidden="true" size={20} />
+            <span>Telegram Bot</span>
+          </button>
         </div>
+
+        {botLogin.status === "creating" ? (
+          <div className="bot-login-status" aria-busy="true" role="status">
+            <span className="spinner spinner-small" aria-hidden="true" />
+            Preparing login link
+          </div>
+        ) : null}
+        {botLogin.status === "pending" ? (
+          <div className="bot-login-status" role="status">
+            <span>Waiting for confirmation</span>
+            <div className="bot-login-actions">
+              <a href={botLogin.loginUrl} rel="noreferrer" target="_blank">
+                <ExternalLink aria-hidden="true" size={17} />
+                Open Telegram
+              </a>
+              <button
+                aria-label="Cancel Telegram login"
+                className="icon-button"
+                onClick={() => void client.cancelTelegramBotLogin()}
+                title="Cancel Telegram login"
+                type="button"
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
+            </div>
+          </div>
+        ) : null}
+        {page.kind === "error" ? (
+          <div className="login-error">
+            <p role="alert">{page.message}</p>
+            {page.retryable ? (
+              <button
+                className="retry-button"
+                onClick={() => void client.retryTelegramBotLogin()}
+                type="button"
+              >
+                <RotateCw aria-hidden="true" size={17} />
+                Retry Telegram login
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </section>
     </main>
   );
@@ -192,9 +275,18 @@ function AuthRouter() {
   const client = useMemo(() => new AuthClient(), []);
   const [page, setPage] = useState<AuthPageState>({ kind: "ready" });
   const [state, setState] = useState<AuthState>({ status: "booting" });
+  const [botLogin, setBotLogin] = useState<BotLoginView>({ status: "idle" });
   const navigate = useNavigate();
   useEffect(() => {
     let current = true;
+    const unsubscribe = client.subscribe((nextState, nextPage, nextBotLogin) => {
+      if (!current) return;
+      setState(nextState);
+      setPage(nextPage);
+      setBotLogin(nextBotLogin);
+      const destination = authStatePath(nextState);
+      if (destination) navigate(destination, { replace: true });
+    });
     void client.restore().then((next) => {
       if (!current) return;
       setState(next);
@@ -204,11 +296,17 @@ function AuthRouter() {
     });
     return () => {
       current = false;
+      unsubscribe();
     };
   }, [client, navigate]);
 
   if (state.status === "booting") return <BootingPage />;
-  if (state.status === "anonymous") return <LoginPage />;
+  if (
+    state.status === "anonymous" ||
+    (state.status === "authenticating" && state.method === "telegram-bot-link")
+  ) {
+    return <LoginPage botLogin={botLogin} client={client} page={page} state={state} />;
+  }
   if (state.status === "authenticating") return <AuthenticatingPage state={state} />;
   if (state.status === "blocked" || state.status === "region-blocked") {
     return <BlockedPage state={state} />;

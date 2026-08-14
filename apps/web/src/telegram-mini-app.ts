@@ -1,5 +1,6 @@
 export interface TelegramMiniAppAdapter {
   getInitData(): string | null;
+  isAvailable?(): boolean;
 }
 
 interface TelegramWebApp {
@@ -20,5 +21,8 @@ export const browserTelegramMiniAppAdapter: TelegramMiniAppAdapter = {
     if (initData === "") return null;
     webApp?.ready?.();
     return initData;
+  },
+  isAvailable(): boolean {
+    return (globalThis.window?.Telegram?.WebApp?.initData.trim() ?? "") !== "";
   },
 };
