@@ -278,9 +278,9 @@ describe("Telegram Bot one-time login application service", () => {
       error: { code: "LOGIN_TOKEN_CONSUMED" },
       success: false,
     });
-    expect(
-      (await app.inject({ method: "POST", url: "/api/auth/dev-confirm" })).statusCode,
-    ).toBe(404);
+    expect((await app.inject({ method: "POST", url: "/api/auth/dev-confirm" })).statusCode).toBe(
+      404,
+    );
 
     await app.close();
   });

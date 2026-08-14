@@ -125,8 +125,12 @@ describe("Telegram Mini App login application service", () => {
     expect(login.account.status).toBe("active");
     expect(login.session.token).toMatch(/^[A-Za-z0-9_-]{43}$/u);
     expect([...store.sessions.keys()]).toEqual([expect.stringMatching(/^[a-f0-9]{64}$/u)]);
-    expect(JSON.stringify({ replays: [...store.replays.values()], sessions: [...store.sessions.values()] }))
-      .not.toContain(initData);
+    expect(
+      JSON.stringify({
+        replays: [...store.replays.values()],
+        sessions: [...store.sessions.values()],
+      }),
+    ).not.toContain(initData);
     expect(JSON.stringify([...store.sessions.values()])).not.toContain(login.session.token);
     expect(store.audits).toContainEqual(
       expect.objectContaining({

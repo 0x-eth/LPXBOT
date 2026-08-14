@@ -1,8 +1,5 @@
 import { PostgresSessionStore } from "../../apps/api/src/index.js";
-import {
-  TelegramBotLoginService,
-  hashSessionToken,
-} from "../../packages/security/src/index.js";
+import { TelegramBotLoginService, hashSessionToken } from "../../packages/security/src/index.js";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 

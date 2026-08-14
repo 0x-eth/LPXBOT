@@ -3,10 +3,7 @@ import { createHash } from "node:crypto";
 import { parse, validate } from "@tma.js/init-data-node";
 
 export type TelegramInitDataErrorCode =
-  | "AUTH_DUPLICATE_FIELD"
-  | "AUTH_EXPIRED"
-  | "AUTH_FUTURE"
-  | "AUTH_INVALID";
+  "AUTH_DUPLICATE_FIELD" | "AUTH_EXPIRED" | "AUTH_FUTURE" | "AUTH_INVALID";
 
 export class TelegramInitDataError extends Error {
   readonly code: TelegramInitDataErrorCode;
@@ -46,10 +43,7 @@ export class TelegramInitDataVerifier {
     if (!Number.isSafeInteger(options.maxAgeSeconds) || options.maxAgeSeconds <= 0) {
       throw new RangeError("Telegram initData max age must be a positive integer");
     }
-    if (
-      !Number.isSafeInteger(options.maxFutureSkewSeconds) ||
-      options.maxFutureSkewSeconds < 0
-    ) {
+    if (!Number.isSafeInteger(options.maxFutureSkewSeconds) || options.maxFutureSkewSeconds < 0) {
       throw new RangeError("Telegram future clock skew must be a non-negative integer");
     }
 
@@ -117,9 +111,7 @@ export class TelegramInitDataVerifier {
 
     return {
       authDate,
-      replayDigest: createHash("sha256")
-        .update(replayParameters.toString(), "utf8")
-        .digest("hex"),
+      replayDigest: createHash("sha256").update(replayParameters.toString(), "utf8").digest("hex"),
       subject: String(subject),
     };
   }

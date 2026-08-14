@@ -9,10 +9,7 @@ import { describe, expect, it } from "vitest";
 const fixtureToken = "123456789:LOCAL_FIXTURE_TELEGRAM_TOKEN";
 const now = new Date("2026-08-14T03:00:00.000Z");
 
-function signInitData(
-  fields: Readonly<Record<string, string>>,
-  token = fixtureToken,
-): string {
+function signInitData(fields: Readonly<Record<string, string>>, token = fixtureToken): string {
   const dataCheckString = Object.entries(fields)
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([key, value]) => `${key}=${value}`)
@@ -54,10 +51,7 @@ function expectCode(run: () => unknown, code: TelegramInitDataError["code"]): vo
 describe("Telegram Mini App initData verifier", () => {
   it("accepts Telegram's independently published HMAC test vector", () => {
     // Telegram documentation publishes this inactive sample as two token components.
-    const documentationToken = [
-      "5768337691",
-      "AAH5YkoiEuPk8-FZa32hStHTqXiLPtAEhx8",
-    ].join(":");
+    const documentationToken = ["5768337691", "AAH5YkoiEuPk8-FZa32hStHTqXiLPtAEhx8"].join(":");
     const initData =
       "query_id=AAHdF6IQAAAAAN0XohDhrOrc" +
       "&user=%7B%22id%22%3A279058397%2C%22first_name%22%3A%22Vladislav%22%2C%22last_name%22%3A%22Kibenko%22%2C%22username%22%3A%22vdkfrost%22%2C%22language_code%22%3A%22ru%22%2C%22is_premium%22%3Atrue%7D" +
@@ -121,10 +115,7 @@ describe("Telegram Mini App initData verifier", () => {
       user: JSON.stringify({ first_name: "Fixture", id: 279_058_397 }),
     };
     if (field === "hash") {
-      expectCode(
-        () => verifier().verify(new URLSearchParams(entries).toString()),
-        "AUTH_INVALID",
-      );
+      expectCode(() => verifier().verify(new URLSearchParams(entries).toString()), "AUTH_INVALID");
       return;
     }
     delete entries[field as keyof typeof entries];
