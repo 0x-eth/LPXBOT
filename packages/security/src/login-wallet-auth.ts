@@ -77,6 +77,7 @@ export interface LoginWalletAuthStore extends SessionStore {
   createAuthWalletChallenge(challenge: NewAuthWalletChallenge): Promise<void>;
   findAuthWalletChallenge(idHash: string): Promise<StoredAuthWalletChallenge | null>;
   findLoginWalletByAddress(address: string): Promise<StoredLoginWalletLink | null>;
+  listLoginWalletLinks(userId: string): Promise<StoredLoginWalletLink[]>;
 }
 
 export interface LoginWalletAuthenticationOptions {
@@ -138,6 +139,7 @@ export interface LoginWalletAuthenticationApplication {
     input: CreateLinkWalletChallengeInput,
   ): Promise<CreatedLoginWalletChallenge>;
   link(input: LinkLoginWalletInput): Promise<LoginWalletLinkView>;
+  listLinks(userId: string): Promise<LoginWalletLinkView[]>;
   login(input: LoginWithWalletInput): Promise<LoginWithWalletResult>;
 }
 
@@ -543,6 +545,10 @@ export class LoginWalletAuthenticationService implements LoginWalletAuthenticati
     }
     await this.#auditLinkCreate("allowed", input.requestId, attemptedAt, input.userId);
     return this.#linkView(consumed.link);
+  }
+
+  async listLinks(userId: string): Promise<LoginWalletLinkView[]> {
+    return (await this.#store.listLoginWalletLinks(userId)).map((link) => this.#linkView(link));
   }
 
   #message(input: {

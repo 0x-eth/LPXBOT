@@ -5,6 +5,7 @@ import {
   type AccessAuditEvent,
   type ConsumeAuthWalletLoginInput,
   type ConsumeAuthWalletLinkInput,
+  type DeleteOwnedLoginWalletLinkInput,
   type NewAuthWalletChallenge,
   type NewStoredSession,
   type StoredAccount,
@@ -29,6 +30,7 @@ class MemoryLoginWalletStore {
   readonly audits: AccessAuditEvent[] = [];
   readonly challenges: StoredAuthWalletChallenge[] = [];
   readonly links: StoredLoginWalletLink[] = [];
+  hasTelegramIdentity = false;
   readonly sessions = new Map<string, StoredSession>();
 
   async consumeAuthWalletLogin(
@@ -98,8 +100,15 @@ class MemoryLoginWalletStore {
 
   async touchSession(): Promise<void> {}
 
-  async deleteOwnedLoginWalletLink() {
-    return "not-found" as const;
+  async deleteOwnedLoginWalletLink(input: DeleteOwnedLoginWalletLinkInput) {
+    const index = this.links.findIndex(
+      (link) => link.id === input.linkId && link.userId === input.userId,
+    );
+    if (index < 0) return "not-found" as const;
+    const loginWalletCount = this.links.filter((link) => link.userId === input.userId).length;
+    if (!this.hasTelegramIdentity && loginWalletCount <= 1) return "last-method" as const;
+    this.links.splice(index, 1);
+    return "deleted" as const;
   }
 }
 
@@ -249,7 +258,7 @@ describe("P01-04 login wallet authentication", () => {
     });
 
     expect(result).toEqual({
-      addressMasked: `${account.address.slice(0, 6)}...${account.address.slice(-4)}`,
+      addressMasked: `${account.address.toLowerCase().slice(0, 6)}...${account.address.toLowerCase().slice(-4)}`,
       createdAt: now,
       label: "Treasury login",
       linkId: expect.any(String),
@@ -302,5 +311,51 @@ describe("P01-04 login wallet authentication", () => {
     ]);
     expect(JSON.stringify(links)).not.toContain("0x1111111111111111111111111111111111111111");
     expect(JSON.stringify(links)).not.toContain("Other user");
+  });
+
+  it("enforces ownership and last-login-method protection when unlinking", async () => {
+    const now = new Date("2026-08-14T08:50:00.000Z");
+    const store = new MemoryLoginWalletStore();
+    const ownedLink: StoredLoginWalletLink = {
+      address: "0x1111111111111111111111111111111111111111",
+      createdAt: now,
+      id: "00000000-0000-4000-8000-000000000061",
+      label: null,
+      updatedAt: now,
+      userId: store.account.id,
+    };
+    store.links.push(ownedLink);
+    const service = authenticationService(store, () => now);
+
+    await expect(
+      service.unlink({
+        linkId: ownedLink.id,
+        requestId: "req-wallet-unlink-last",
+        userId: store.account.id,
+      }),
+    ).rejects.toMatchObject({ code: "LAST_LOGIN_METHOD" });
+    await expect(
+      service.unlink({
+        linkId: ownedLink.id,
+        requestId: "req-wallet-unlink-cross-user",
+        userId: "00000000-0000-4000-8000-000000000099",
+      }),
+    ).rejects.toMatchObject({ code: "LINK_NOT_FOUND" });
+
+    store.links.push({
+      ...ownedLink,
+      address: "0x2222222222222222222222222222222222222222",
+      id: "00000000-0000-4000-8000-000000000062",
+    });
+    await expect(
+      service.unlink({
+        linkId: ownedLink.id,
+        requestId: "req-wallet-unlink-valid",
+        userId: store.account.id,
+      }),
+    ).resolves.toEqual({ deleted: true });
+    expect(store.links.map(({ id }) => id)).toEqual([
+      "00000000-0000-4000-8000-000000000062",
+    ]);
   });
 });

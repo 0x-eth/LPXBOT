@@ -37,6 +37,7 @@ describe("P01-04 login wallet HTTP API", () => {
       }),
       login: vi.fn(),
       link: vi.fn(),
+      listLinks: vi.fn(),
     };
     const app = buildApiApp({
       maintenance: { enabled: false, message: null, until: null },
@@ -93,6 +94,7 @@ describe("P01-04 login wallet HTTP API", () => {
         },
       }),
       link: vi.fn(),
+      listLinks: vi.fn(),
     };
     const app = buildApiApp({
       maintenance: { enabled: false, message: null, until: null },
