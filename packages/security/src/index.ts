@@ -21,6 +21,20 @@ export type {
   TelegramMiniAppLoginResult,
   TelegramMiniAppStore,
 } from "./telegram-mini-app-login.js";
+export { TelegramBotLoginService } from "./telegram-bot-login.js";
+export type {
+  BotLoginIntent,
+  BotLoginIntentStatus,
+  ConfirmBotLoginInput,
+  ConfirmBotLoginIntentInput,
+  ConfirmBotLoginResult,
+  ConsumeBotLoginIntentInput,
+  CreatedBotLogin,
+  NewBotLoginIntent,
+  PollBotLoginResult,
+  TelegramBotLoginOptions,
+  TelegramBotLoginStore,
+} from "./telegram-bot-login.js";
 
 export const securityPackage = {
   name: "@lpbot/security",
@@ -103,6 +117,23 @@ export class SessionIssuer {
   }
 
   async issue(input: IssueSessionInput): Promise<IssuedSession> {
+    const { issued, stored } = this.#prepare(input);
+    await this.#store.createSession(stored);
+    return issued;
+  }
+
+  async issueIf(
+    input: IssueSessionInput,
+    persist: (session: NewStoredSession) => Promise<boolean>,
+  ): Promise<IssuedSession | null> {
+    const { issued, stored } = this.#prepare(input);
+    return (await persist(stored)) ? issued : null;
+  }
+
+  #prepare(input: IssueSessionInput): {
+    issued: IssuedSession;
+    stored: NewStoredSession;
+  } {
     const createdAt = this.#now();
     if (input.expiresAt.getTime() <= createdAt.getTime()) {
       throw new RangeError("Session expiry must be in the future");
@@ -110,14 +141,17 @@ export class SessionIssuer {
 
     const token = randomBytes(32).toString("base64url");
     const sessionId = randomUUID();
-    await this.#store.createSession({
+    const stored = {
       createdAt,
       expiresAt: input.expiresAt,
       id: sessionId,
       tokenHash: hashSessionToken(token),
       userId: input.userId,
-    });
+    };
 
-    return { expiresAt: input.expiresAt, sessionId, token };
+    return {
+      issued: { expiresAt: input.expiresAt, sessionId, token },
+      stored,
+    };
   }
 }
