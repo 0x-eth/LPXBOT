@@ -46,7 +46,13 @@ beforeAll(async () => {
   );
   await fixturePool.query(
     `INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at)
-     VALUES ($1, $2, decode(repeat('ab', 32), 'hex'), $3, $3 + INTERVAL '1 hour')`,
+     VALUES (
+       $1,
+       $2,
+       decode(repeat('ab', 32), 'hex'),
+       $3::timestamptz,
+       $3::timestamptz + INTERVAL '1 hour'
+     )`,
     [sessionId, actorUserId, firstUpdateAt],
   );
 }, 30_000);
