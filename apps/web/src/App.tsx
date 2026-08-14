@@ -1,14 +1,25 @@
 import type { AuthState } from "@lpbot/api-contract";
 import {
+  Activity,
+  Bell,
+  Bot,
+  Boxes,
+  CircleUserRound,
+  Code2,
   ExternalLink,
+  Inbox,
+  LayoutDashboard,
   LogOut,
   MessageCircle,
+  MessageSquareText,
   RefreshCw,
   RotateCw,
   Settings as SettingsIcon,
+  ShieldCheck,
   ShieldAlert,
   Trash2,
   Wallet,
+  WalletCards,
   Wrench,
   X,
 } from "lucide-react";
@@ -17,10 +28,12 @@ import {
   BrowserRouter,
   Link,
   Navigate,
+  NavLink,
   Route,
   Routes,
   useLocation,
   useNavigate,
+  useParams,
 } from "react-router-dom";
 
 import {

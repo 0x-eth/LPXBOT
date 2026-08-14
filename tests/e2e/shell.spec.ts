@@ -29,7 +29,7 @@ test("SHELL-01 keeps the observed application chrome stable", async ({ page }, t
   await page.goto("/tasks/running");
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
 
-  await expect(page).toHaveScreenshot(`shell-${testInfo.project.name}.png`, {
+  await expect(page).toHaveScreenshot("shell.png", {
     animations: "disabled",
     caret: "hide",
     mask: [page.locator("main"), page.locator("[data-visual-mask='account']")],
