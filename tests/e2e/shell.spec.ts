@@ -89,3 +89,57 @@ test("SHELL-05 route errors stay safe and expose a real retry command", async ({
   await expect(page).toHaveURL(/\/developer$/u);
   await expect(page.getByRole("heading", { level: 1, name: "Developer" })).toBeVisible();
 });
+
+test("SHELL-06 mounts Telegram lifecycle hooks and delegates BackButton navigation", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const browser = globalThis as typeof globalThis & {
+      __telegramFixture: {
+        back?: () => void;
+        expanded: number;
+        hidden: number;
+        ready: number;
+        shown: number;
+      };
+      Telegram: { WebApp: unknown };
+    };
+    browser.__telegramFixture = { expanded: 0, hidden: 0, ready: 0, shown: 0 };
+    browser.Telegram = {
+      WebApp: {
+        BackButton: {
+          hide: () => (browser.__telegramFixture.hidden += 1),
+          offClick: () => undefined,
+          onClick: (callback: () => void) => (browser.__telegramFixture.back = callback),
+          show: () => (browser.__telegramFixture.shown += 1),
+        },
+        expand: () => (browser.__telegramFixture.expanded += 1),
+        initData: "telegram-shell-fixture",
+        offEvent: () => undefined,
+        onEvent: () => undefined,
+        ready: () => (browser.__telegramFixture.ready += 1),
+        themeParams: { bg_color: "#ffffff" },
+        viewportHeight: 760,
+        viewportStableHeight: 744,
+      },
+    };
+  });
+  await useUserSession(page);
+  await page.goto("/tasks/running");
+
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue("--telegram-viewport-height")))
+    .toBe("760px");
+  await page.getByRole("link", { name: "池子" }).click();
+  await expect(page).toHaveURL(/\/pools$/u);
+  await expect.poll(() => page.evaluate(() => globalThis.__telegramFixture.shown)).toBeGreaterThan(0);
+
+  await page.evaluate(() => globalThis.__telegramFixture.back?.());
+  await expect(page).toHaveURL(/\/tasks\/running$/u);
+  expect(
+    await page.evaluate(() => ({
+      expanded: globalThis.__telegramFixture.expanded,
+      ready: globalThis.__telegramFixture.ready,
+    })),
+  ).toEqual({ expanded: 1, ready: 1 });
+});

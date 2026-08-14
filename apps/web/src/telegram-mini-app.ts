@@ -63,6 +63,7 @@ function validThemeColor(value: string | undefined): value is string {
 export function createTelegramMiniAppAdapter(
   options: TelegramMiniAppFactoryOptions,
 ): TelegramMiniAppAdapter {
+  const initializedWebApps = new WeakSet<object>();
   let mountedWebApp: TelegramWebApp | undefined;
 
   const syncViewport = (webApp: TelegramWebApp) => {
@@ -103,8 +104,11 @@ export function createTelegramMiniAppAdapter(
       const themeChanged = () => syncTheme(webApp);
       const backClicked = () => onBack?.();
 
-      webApp.ready?.();
-      webApp.expand?.();
+      if (!initializedWebApps.has(webApp)) {
+        webApp.ready?.();
+        webApp.expand?.();
+        initializedWebApps.add(webApp);
+      }
       viewportChanged();
       themeChanged();
       webApp.onEvent?.("viewportChanged", viewportChanged);

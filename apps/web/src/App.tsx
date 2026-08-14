@@ -774,6 +774,15 @@ function AuthRouter() {
   const [state, setState] = useState<AuthState>({ status: "booting" });
   const [botLogin, setBotLogin] = useState<BotLoginView>({ status: "idle" });
   const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(
+    () => browserTelegramMiniAppAdapter.mount({ onBack: () => navigate(-1) }),
+    [navigate],
+  );
+  useEffect(() => {
+    const atRoot = location.pathname === "/tasks/running" || location.pathname === "/login";
+    browserTelegramMiniAppAdapter.setBackButtonVisible(!atRoot);
+  }, [location.pathname]);
   useEffect(() => {
     let current = true;
     const unsubscribe = client.subscribe((nextState, nextPage, nextBotLogin) => {
