@@ -24,7 +24,7 @@ async function useUserSession(page: Page): Promise<void> {
   );
 }
 
-test("SHELL-01 keeps the observed application chrome stable", async ({ page }, testInfo) => {
+test("SHELL-01 keeps the observed application chrome stable", async ({ page }) => {
   await useUserSession(page);
   await page.goto("/tasks/running");
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
@@ -46,4 +46,33 @@ test("SHELL-01 opens recent chats as an empty drawer", async ({ page }) => {
   await expect(page.getByRole("dialog", { name: "最近聊天" })).toBeVisible();
   await expect(page.getByText("暂无最近聊天", { exact: true })).toBeVisible();
   await expect(page.locator("[data-chat-message]")).toHaveCount(0);
+});
+
+test("SHELL-01 keeps localized route outlets and current navigation stable", async ({ page }) => {
+  await useUserSession(page);
+  const routes = [
+    ["/tasks/running", "任务", "任务"],
+    ["/tasks/paused", "任务", "任务"],
+    ["/tasks/stopped", "任务", "任务"],
+    ["/pools", "池子发现", "池子"],
+    ["/strategies", "自动策略", "策略"],
+    ["/activity", "操作日志", "日志"],
+    ["/wallets", "钱包管理", "钱包"],
+    ["/developer", "开发者", null],
+    ["/settings", "设置", null],
+  ] as const;
+
+  for (const [path, heading, navigation] of routes) {
+    await page.goto(path);
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator("h1")).toContainText(heading);
+    if (navigation) {
+      await expect(page.getByRole("link", { name: navigation })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+    }
+  }
+
+  await expect(page.getByRole("link", { name: "管理" })).toHaveCount(0);
 });

@@ -1,4 +1,5 @@
 import type { AuthState } from "@lpbot/api-contract";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   Activity,
   Bell,
@@ -457,6 +458,7 @@ function mobileRouteTitle(pathname: string): string {
 function Shell({ client, onClientChange, page, state }: ShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [chatOpen, setChatOpen] = useState(false);
 
   const refresh = async () => {
     const next = await client.restore();
@@ -479,7 +481,7 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
           <span>LP Bot</span>
         </Link>
         <p className="mobile-route-title">{mobileRouteTitle(location.pathname)}</p>
-        <PrimaryNavigation onOpenChat={() => undefined} />
+        <PrimaryNavigation onOpenChat={() => setChatOpen(true)} />
         <div className="header-actions">
           <button
             aria-label="刷新"
@@ -592,8 +594,33 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
       )}
       <div aria-hidden="true" className="status-bar-reserved" />
       <div className="mobile-navigation-shell">
-        <PrimaryNavigation onOpenChat={() => undefined} />
+        <PrimaryNavigation onOpenChat={() => setChatOpen(true)} />
       </div>
+      <Dialog.Root onOpenChange={setChatOpen} open={chatOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="drawer-overlay" />
+          <Dialog.Content className="chat-drawer">
+            <div className="drawer-heading">
+              <Dialog.Title>最近聊天</Dialog.Title>
+              <Dialog.Close asChild>
+                <button
+                  aria-label="关闭最近聊天"
+                  className="icon-button tooltip-control"
+                  data-tooltip="关闭"
+                  title="关闭"
+                  type="button"
+                >
+                  <X aria-hidden="true" size={18} />
+                </button>
+              </Dialog.Close>
+            </div>
+            <Dialog.Description className="drawer-empty">
+              <MessageSquareText aria-hidden="true" size={22} strokeWidth={1.7} />
+              <span>暂无最近聊天</span>
+            </Dialog.Description>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }

@@ -451,6 +451,53 @@ input:focus-visible {
   display: none;
 }
 
+.drawer-overlay {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  background: rgb(18 22 24 / 32%);
+}
+
+.chat-drawer {
+  position: fixed;
+  z-index: 51;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(100%, 360px);
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 20px
+    calc(20px + env(safe-area-inset-bottom, 0px));
+  color: #17191b;
+  border-left: 1px solid #dfe3e4;
+  background: #ffffff;
+  box-shadow: -18px 0 44px rgb(24 28 30 / 14%);
+}
+
+.drawer-heading {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #e2e5e6;
+}
+
+.drawer-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.drawer-empty {
+  display: flex;
+  min-height: 120px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  color: #747c80;
+}
+
 .settings-workspace {
   max-width: 920px;
 }
