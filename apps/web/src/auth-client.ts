@@ -292,7 +292,7 @@ export class AuthClient {
       return this.#state;
     }
     if (response.ok) await this.#acceptAuthMeResponse(response);
-    else if (this.#state.status === "anonymous" && this.#page.kind === "ready") {
+    else if (this.state.status === "anonymous" && this.#page.kind === "ready") {
       const body: unknown = await response.json();
       if (isErrorEnvelope(body)) {
         this.#page = {
