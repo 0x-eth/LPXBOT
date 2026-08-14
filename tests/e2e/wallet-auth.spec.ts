@@ -229,5 +229,6 @@ test("settings lists, labels, binds and confirms deletion of login wallets", asy
   await expect(page.getByRole("dialog", { name: "Remove login wallet" })).toBeVisible();
   await page.getByRole("button", { name: "Confirm remove" }).click();
   await expect(page.getByText("0x1111...1111")).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: "登录钱包已移除" })).toBeVisible();
   await expectNoForbiddenRpc(page);
 });
