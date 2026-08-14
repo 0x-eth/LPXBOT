@@ -1,4 +1,4 @@
-import type { AuthState, NavigationKey } from "@lpbot/api-contract";
+import type { AuthState, NavigationKey, SessionView } from "@lpbot/api-contract";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   Activity,
@@ -54,6 +54,7 @@ import {
   type BotLoginView,
   type LoginWalletLinkView,
 } from "./auth-client";
+import { AdminChainManagementSection } from "./chain-management";
 import { Eip1193WalletAdapter, browserEip1193Provider } from "./eip1193-wallet";
 import { ConfirmDialog, FeedbackProvider, useFeedback } from "./feedback";
 import { UserPreferencesProvider, useUserPreferences } from "./preferences";
@@ -357,7 +358,7 @@ function LoginWalletSettingsSection({ client }: { client: AuthClient }) {
   );
 }
 
-function SettingsPage({ client }: { client: AuthClient }) {
+function SettingsPage({ client, session }: { client: AuthClient; session: SessionView }) {
   return (
     <main className="workspace settings-workspace">
       <h1 className="settings-title">
@@ -367,6 +368,7 @@ function SettingsPage({ client }: { client: AuthClient }) {
       </h1>
       <InterfaceSettings />
       <LoginWalletSettingsSection client={client} />
+      {session.role === "admin" ? <AdminChainManagementSection /> : null}
     </main>
   );
 }
@@ -808,7 +810,10 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
             <Route path="/all" element={<Navigate to="/tasks/running" replace />} />
             <Route path="/all/:status" element={<LegacyAllRedirect />} />
             <Route path="/monitors" element={<Navigate to="/pools" replace />} />
-            <Route path="/settings" element={<SettingsPage client={client} />} />
+            <Route
+              path="/settings"
+              element={<SettingsPage client={client} session={state.session} />}
+            />
             {routeFixtures.map((fixture) => (
               <Route
                 element={
