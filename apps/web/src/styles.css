@@ -106,7 +106,7 @@ h1 {
 
 .auth-methods {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 28px;
 }
@@ -123,6 +123,8 @@ h1 {
   border-radius: 6px;
   background: #1d2224;
   cursor: pointer;
+  line-height: 1.25;
+  text-align: left;
 }
 
 .auth-method:hover:not(:disabled) {
@@ -275,6 +277,195 @@ h1 {
   font-size: 1.75rem;
 }
 
+.settings-workspace {
+  max-width: 920px;
+}
+
+.settings-section {
+  margin-top: 38px;
+  border-top: 1px solid #2d3437;
+}
+
+.section-heading {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #2d3437;
+}
+
+.section-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-heading h2,
+.confirm-dialog h2 {
+  margin: 0;
+  color: #f7fafb;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.item-count {
+  min-width: 24px;
+  color: #9aa6aa;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.wallet-link-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 22px 0;
+  border-bottom: 1px solid #2d3437;
+}
+
+.wallet-link-form label {
+  display: grid;
+  gap: 7px;
+  color: #aab4b8;
+  font-size: 0.8rem;
+}
+
+.wallet-link-form input {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 11px;
+  color: #f7fafb;
+  border: 1px solid #414b4f;
+  border-radius: 5px;
+  background: #14181a;
+}
+
+.wallet-link-form input:focus-visible {
+  outline: 3px solid #64d4bc;
+  outline-offset: 2px;
+}
+
+.command-button,
+.secondary-button,
+.danger-command {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 13px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.command-button {
+  color: #0c1714;
+  border: 1px solid #70d9c1;
+  background: #70d9c1;
+  font-weight: 700;
+}
+
+.secondary-button {
+  color: #e9eef0;
+  border: 1px solid #526064;
+  background: #202628;
+}
+
+.danger-command {
+  color: #fff;
+  border: 1px solid #d9625b;
+  background: #a43e39;
+}
+
+.command-button:disabled,
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.login-wallet-list > p {
+  margin: 24px 0;
+  color: #9aa6aa;
+}
+
+.login-wallet-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto 38px;
+  min-height: 68px;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #2d3437;
+}
+
+.wallet-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  color: #70d9c1;
+  border: 1px solid #3b474a;
+  border-radius: 6px;
+  place-items: center;
+}
+
+.wallet-identity {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.wallet-identity strong,
+.wallet-identity code {
+  overflow-wrap: anywhere;
+}
+
+.wallet-identity strong {
+  color: #e9eef0;
+  font-size: 0.9rem;
+}
+
+.wallet-identity code,
+.login-wallet-row time {
+  color: #94a0a4;
+  font-size: 0.78rem;
+}
+
+.danger-button {
+  color: #ef8d87;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  z-index: 20;
+  display: grid;
+  inset: 0;
+  padding: 20px;
+  background: rgb(4 7 8 / 72%);
+  place-items: center;
+}
+
+.confirm-dialog {
+  width: min(100%, 400px);
+  padding: 22px;
+  border: 1px solid #4a5559;
+  border-radius: 7px;
+  background: #181d1f;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 40%);
+}
+
+.confirm-dialog p {
+  margin: 12px 0 20px;
+  color: #b8c1c4;
+  overflow-wrap: anywhere;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -316,6 +507,25 @@ h1 {
 
   .workspace {
     padding: 48px 20px;
+  }
+
+  .wallet-link-form {
+    grid-template-columns: 1fr;
+  }
+
+  .login-wallet-row {
+    grid-template-columns: 38px minmax(0, 1fr) 38px;
+    padding: 12px 0;
+  }
+
+  .login-wallet-row time {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .login-wallet-row .danger-button {
+    grid-column: 3;
+    grid-row: 1 / span 2;
   }
 }
 

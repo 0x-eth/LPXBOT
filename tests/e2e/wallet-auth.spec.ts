@@ -198,10 +198,12 @@ test("settings lists, labels, binds and confirms deletion of login wallets", asy
   await page.goto("/settings");
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
   await expect(page.getByText("0x1111...1111")).toBeVisible();
+  const scriptCount = await page.locator("script").count();
   await page.getByLabel("Wallet label").fill("<script>Login only</script>");
   await page.getByRole("button", { name: "Link wallet" }).click();
   await expect(page.getByText("<script>Login only</script>", { exact: true })).toBeVisible();
-  expect(await page.locator("script").count()).toBe(1);
+  expect(await page.locator("script").count()).toBe(scriptCount);
+  expect(await page.locator("script", { hasText: "Login only" }).count()).toBe(0);
 
   await page.getByRole("button", { name: "Remove Primary" }).click();
   await expect(page.getByRole("dialog", { name: "Remove login wallet" })).toBeVisible();

@@ -5,7 +5,10 @@ import {
   MessageCircle,
   RefreshCw,
   RotateCw,
+  Settings as SettingsIcon,
   ShieldAlert,
+  Trash2,
+  Wallet,
   Wrench,
   X,
 } from "lucide-react";
@@ -26,7 +29,9 @@ import {
   canEnterRoute,
   type AuthPageState,
   type BotLoginView,
+  type LoginWalletLinkView,
 } from "./auth-client";
+import { Eip1193WalletAdapter, browserEip1193Provider } from "./eip1193-wallet";
 import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
 
 function BootingPage() {
@@ -47,7 +52,11 @@ function AuthenticatingPage({
     <main className="state-page" aria-busy="true">
       <div className="spinner" aria-hidden="true" />
       <p role="status">
-        {state.method === "telegram-mini-app" ? "Signing in with Telegram" : "Waiting for Telegram"}
+        {state.method === "wallet"
+          ? "Waiting for wallet signature"
+          : state.method === "telegram-mini-app"
+            ? "Signing in with Telegram"
+            : "Waiting for Telegram"}
       </p>
     </main>
   );
@@ -91,6 +100,17 @@ function LoginPage({ botLogin, client, page, state }: LoginPageProps) {
           >
             <MessageCircle aria-hidden="true" size={20} />
             <span>Telegram Bot</span>
+          </button>
+          <button
+            className="auth-method"
+            disabled={busy}
+            onClick={() =>
+              void client.loginWithWallet(new Eip1193WalletAdapter(browserEip1193Provider()))
+            }
+            type="button"
+          >
+            <Wallet aria-hidden="true" size={20} />
+            <span>Wallet</span>
           </button>
         </div>
 
@@ -146,6 +166,141 @@ function LoginPage({ botLogin, client, page, state }: LoginPageProps) {
           </div>
         ) : null}
       </section>
+    </main>
+  );
+}
+
+function LoginWalletSettings({ client }: { client: AuthClient }) {
+  const [busy, setBusy] = useState(false);
+  const [label, setLabel] = useState("");
+  const [links, setLinks] = useState<LoginWalletLinkView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pendingDelete, setPendingDelete] = useState<LoginWalletLinkView | null>(null);
+
+  useEffect(() => {
+    let current = true;
+    void client.getLoginWalletLinks().then((nextLinks) => {
+      if (!current) return;
+      setLinks(nextLinks);
+      setLoading(false);
+    });
+    return () => {
+      current = false;
+    };
+  }, [client]);
+
+  const bind = async () => {
+    setBusy(true);
+    const linked = await client.linkLoginWallet(
+      new Eip1193WalletAdapter(browserEip1193Provider()),
+      label.trim() === "" ? null : label,
+    );
+    if (linked) {
+      setLinks((current) => [...current, linked]);
+      setLabel("");
+    }
+    setBusy(false);
+  };
+
+  const remove = async () => {
+    if (!pendingDelete) return;
+    setBusy(true);
+    const linkId = pendingDelete.linkId;
+    const deleted = await client.unlinkLoginWallet(linkId);
+    if (deleted) setLinks((current) => current.filter((link) => link.linkId !== linkId));
+    setPendingDelete(null);
+    setBusy(false);
+  };
+
+  return (
+    <main className="workspace settings-workspace">
+      <p className="eyebrow">Account</p>
+      <h1>Settings</h1>
+      <section className="settings-section" aria-labelledby="login-wallets-title">
+        <div className="section-heading">
+          <div>
+            <SettingsIcon aria-hidden="true" size={18} />
+            <h2 id="login-wallets-title">Login wallets</h2>
+          </div>
+          <span className="item-count" aria-label={`${links.length} linked wallets`}>
+            {links.length}
+          </span>
+        </div>
+
+        <form
+          className="wallet-link-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void bind();
+          }}
+        >
+          <label>
+            <span>Label</span>
+            <input
+              aria-label="Wallet label"
+              disabled={busy}
+              maxLength={64}
+              onChange={(event) => setLabel(event.target.value)}
+              type="text"
+              value={label}
+            />
+          </label>
+          <button className="command-button" disabled={busy} type="submit">
+            <Wallet aria-hidden="true" size={17} />
+            Link wallet
+          </button>
+        </form>
+
+        <div className="login-wallet-list" aria-busy={loading}>
+          {loading ? <p role="status">Loading login wallets</p> : null}
+          {!loading && links.length === 0 ? <p className="empty-line">No login wallets</p> : null}
+          {links.map((link) => (
+            <article className="login-wallet-row" key={link.linkId}>
+              <div className="wallet-mark" aria-hidden="true">
+                <Wallet size={18} />
+              </div>
+              <div className="wallet-identity">
+                <strong>{link.label ?? "Unlabeled"}</strong>
+                <code>{link.addressMasked}</code>
+              </div>
+              <time dateTime={link.createdAt}>{new Date(link.createdAt).toLocaleDateString()}</time>
+              <button
+                aria-label={`Remove ${link.label ?? link.addressMasked}`}
+                className="icon-button danger-button"
+                disabled={busy}
+                onClick={() => setPendingDelete(link)}
+                title="Remove login wallet"
+                type="button"
+              >
+                <Trash2 aria-hidden="true" size={17} />
+              </button>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {pendingDelete ? (
+        <div className="dialog-backdrop">
+          <div
+            aria-labelledby="remove-wallet-title"
+            aria-modal="true"
+            className="confirm-dialog"
+            role="dialog"
+          >
+            <h2 id="remove-wallet-title">Remove login wallet</h2>
+            <p>{pendingDelete.label ?? pendingDelete.addressMasked}</p>
+            <div className="dialog-actions">
+              <button autoFocus className="secondary-button" onClick={() => setPendingDelete(null)}>
+                Cancel
+              </button>
+              <button className="danger-command" onClick={() => void remove()}>
+                <Trash2 aria-hidden="true" size={17} />
+                Confirm remove
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
@@ -227,6 +382,7 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
         </Link>
         <nav aria-label="Primary">
           <Link to="/tasks/running">Tasks</Link>
+          <Link to="/settings">Settings</Link>
           {state.session.role === "admin" ? <Link to="/users">Users</Link> : null}
         </nav>
         <div className="header-actions">
@@ -258,6 +414,10 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
         </main>
       ) : (
         <Routes>
+          <Route
+            path="/settings"
+            element={<LoginWalletSettings client={client} />}
+          />
           <Route
             path="/tasks/:status"
             element={
