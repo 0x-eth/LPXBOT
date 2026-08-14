@@ -371,8 +371,92 @@ interface ShellProps {
   state: Extract<AuthState, { status: "active" }>;
 }
 
+const primaryNavigation = [
+  { icon: LayoutDashboard, label: "任务", path: "/tasks/running", section: "/tasks" },
+  { icon: Boxes, label: "池子", path: "/pools", section: "/pools" },
+  { icon: Bot, label: "策略", path: "/strategies", section: "/strategies" },
+  { icon: Activity, label: "日志", path: "/activity", section: "/activity" },
+  { icon: WalletCards, label: "钱包", path: "/wallets", section: "/wallets" },
+] as const;
+
+function routeIsCurrent(pathname: string, section: string): boolean {
+  return pathname === section || pathname.startsWith(`${section}/`);
+}
+
+function PrimaryNavigation({ onOpenChat }: { onOpenChat(): void }) {
+  const { pathname } = useLocation();
+
+  return (
+    <nav aria-label="主导航" className="primary-navigation">
+      {primaryNavigation.map(({ icon: Icon, label, path, section }) => (
+        <Link
+          aria-current={routeIsCurrent(pathname, section) ? "page" : undefined}
+          className="primary-navigation-item"
+          key={path}
+          to={path}
+        >
+          <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
+          <span>{label}</span>
+          <span aria-hidden="true" className="nav-badge-slot" />
+        </Link>
+      ))}
+      <button
+        aria-haspopup="dialog"
+        className="primary-navigation-item"
+        onClick={onOpenChat}
+        type="button"
+      >
+        <MessageSquareText aria-hidden="true" size={18} strokeWidth={1.8} />
+        <span>聊天室</span>
+        <span aria-hidden="true" className="nav-badge-slot" />
+      </button>
+    </nav>
+  );
+}
+
+const routeFixtures = [
+  { eyebrow: "Protected workspace", path: "/tasks/*", title: "Tasks" },
+  { eyebrow: "Local empty fixture", path: "/pools", title: "Pools" },
+  { eyebrow: "Local empty fixture", path: "/strategies", title: "Strategies" },
+  { eyebrow: "Local empty fixture", path: "/activity", title: "Activity" },
+  { eyebrow: "Local empty fixture", path: "/wallets", title: "Wallets" },
+  { eyebrow: "Local empty fixture", path: "/developer", title: "Developer" },
+] as const;
+
+function EmptyFixturePage({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <main className="workspace route-workspace" data-fixture-state="empty">
+      <p className="eyebrow">{eyebrow}</p>
+      <h1>{title}</h1>
+      <div className="empty-fixture" role="status">
+        <Inbox aria-hidden="true" size={22} strokeWidth={1.7} />
+        <p>暂无内容</p>
+      </div>
+    </main>
+  );
+}
+
+function LegacyAllRedirect() {
+  const { status } = useParams();
+  const allowed = status === "paused" || status === "stopped" ? status : "running";
+  return <Navigate replace to={`/tasks/${allowed}`} />;
+}
+
+function mobileRouteTitle(pathname: string): string {
+  if (pathname.startsWith("/tasks")) return "任务";
+  if (pathname.startsWith("/pools")) return "池子";
+  if (pathname.startsWith("/strategies")) return "策略";
+  if (pathname.startsWith("/activity")) return "日志";
+  if (pathname.startsWith("/wallets")) return "钱包";
+  if (pathname.startsWith("/developer")) return "开发者";
+  if (pathname.startsWith("/settings")) return "设置";
+  if (pathname.startsWith("/users")) return "管理";
+  return "LP Bot";
+}
+
 function Shell({ client, onClientChange, page, state }: ShellProps) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const refresh = async () => {
     const next = await client.restore();
@@ -390,27 +474,74 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
   return (
     <div className="app-frame">
       <header className="app-header">
-        <Link className="wordmark" to="/tasks/running" aria-label="LPBot tasks" tabIndex={-1}>
-          LPBot
+        <Link className="wordmark" to="/tasks/running" aria-label="LP Bot" tabIndex={-1}>
+          <img alt="" height="28" src="/pwa-192x192.png" width="28" />
+          <span>LP Bot</span>
         </Link>
-        <nav aria-label="Primary">
-          <Link to="/tasks/running">Tasks</Link>
-          <Link to="/settings">Settings</Link>
-          {state.session.role === "admin" ? <Link to="/users">Users</Link> : null}
-        </nav>
+        <p className="mobile-route-title">{mobileRouteTitle(location.pathname)}</p>
+        <PrimaryNavigation onOpenChat={() => undefined} />
         <div className="header-actions">
-          <span className="role-label">{state.session.role}</span>
           <button
-            className="icon-button"
+            aria-label="刷新"
+            className="icon-button tooltip-control"
+            data-tooltip="刷新"
+            title="刷新"
             type="button"
             onClick={refresh}
-            aria-label="Refresh session"
           >
             <RefreshCw size={18} aria-hidden="true" />
           </button>
-          <button className="icon-button" type="button" onClick={logout} aria-label="Sign out">
+          <button
+            aria-label="通知"
+            className="icon-button tooltip-control"
+            data-tooltip="通知"
+            title="通知"
+            type="button"
+          >
+            <Bell size={18} aria-hidden="true" />
+          </button>
+          <NavLink
+            aria-label="设置"
+            className="icon-button tooltip-control"
+            data-tooltip="设置"
+            title="设置"
+            to="/settings"
+          >
+            <SettingsIcon size={18} aria-hidden="true" />
+          </NavLink>
+          <button
+            aria-label="账户"
+            className="icon-button tooltip-control account-action"
+            data-tooltip="账户"
+            data-visual-mask="account"
+            title="账户"
+            type="button"
+          >
+            <CircleUserRound size={18} aria-hidden="true" />
+          </button>
+          <button
+            aria-label="退出"
+            className="icon-button tooltip-control"
+            data-tooltip="退出"
+            title="退出"
+            type="button"
+            onClick={logout}
+          >
             <LogOut size={18} aria-hidden="true" />
           </button>
+          {state.session.role === "admin" ? (
+            <NavLink
+              aria-label="管理"
+              className="icon-button tooltip-control admin-action"
+              data-tooltip="管理"
+              title="管理"
+              to="/users"
+            >
+              <ShieldCheck aria-hidden="true" size={18} />
+            </NavLink>
+          ) : (
+            <span aria-hidden="true" className="admin-action admin-action-placeholder" />
+          )}
         </div>
       </header>
       {page.kind === "forbidden" ? (
@@ -427,17 +558,18 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
         </main>
       ) : (
         <Routes>
+          <Route path="/" element={<Navigate to="/tasks/running" replace />} />
+          <Route path="/all" element={<Navigate to="/tasks/running" replace />} />
+          <Route path="/all/:status" element={<LegacyAllRedirect />} />
+          <Route path="/monitors" element={<Navigate to="/pools" replace />} />
           <Route path="/settings" element={<LoginWalletSettings client={client} />} />
-          <Route
-            path="/tasks/:status"
-            element={
-              <main className="workspace">
-                <p className="eyebrow">Protected workspace</p>
-                <h1>Tasks</h1>
-                <p>Session-backed task access is active.</p>
-              </main>
-            }
-          />
+          {routeFixtures.map((fixture) => (
+            <Route
+              element={<EmptyFixturePage eyebrow={fixture.eyebrow} title={fixture.title} />}
+              key={fixture.path}
+              path={fixture.path}
+            />
+          ))}
           <Route
             path="/users"
             element={
@@ -445,7 +577,10 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
                 <main className="workspace">
                   <p className="eyebrow">Admin only</p>
                   <h1>Users</h1>
-                  <p>User administration</p>
+                  <div className="empty-fixture" role="status">
+                    <Code2 aria-hidden="true" size={22} />
+                    <p>暂无内容</p>
+                  </div>
                 </main>
               ) : (
                 <Navigate to="/tasks/running" replace />
@@ -455,6 +590,10 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
           <Route path="*" element={<Navigate to="/tasks/running" replace />} />
         </Routes>
       )}
+      <div aria-hidden="true" className="status-bar-reserved" />
+      <div className="mobile-navigation-shell">
+        <PrimaryNavigation onOpenChat={() => undefined} />
+      </div>
     </div>
   );
 }
