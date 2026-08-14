@@ -11,11 +11,12 @@ function isApiPath(pathname: string): boolean {
 
 export function isPwaNetworkOnlyRequest(
   request: ServiceWorkerRequest,
-  _scopeOrigin: string,
+  scopeOrigin: string,
 ): boolean {
   const method = request.method.toUpperCase();
   if (method !== "GET" && method !== "HEAD") return true;
   const url = new URL(request.url);
+  if (url.origin !== scopeOrigin) return true;
   if (isApiPath(url.pathname)) return true;
   if (request.headers.has("Authorization")) return true;
   return request.headers.get("Accept")?.toLowerCase().includes("text/event-stream") ?? false;

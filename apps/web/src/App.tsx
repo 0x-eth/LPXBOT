@@ -30,7 +30,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ErrorInfo,
   type ReactNode,
 } from "react";
 import {
@@ -550,10 +549,6 @@ class RouteErrorBoundary extends Component<
 
   static getDerivedStateFromError(): { failed: boolean } {
     return { failed: true };
-  }
-
-  override componentDidCatch(_error: unknown, _info: ErrorInfo): void {
-    // The boundary intentionally keeps exception details out of UI and telemetry in P01-05.
   }
 
   override componentDidUpdate(previous: Readonly<{ resetKey: string }>): void {

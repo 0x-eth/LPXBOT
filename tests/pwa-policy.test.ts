@@ -26,6 +26,12 @@ describe("PWA service worker request policy", () => {
     expect(isPwaNetworkOnlyRequest(request("/api/auth/me"), "https://local.fixture")).toBe(true);
     expect(
       isPwaNetworkOnlyRequest(
+        request("/asset.js", { url: "https://external.fixture/asset.js" }),
+        "https://local.fixture",
+      ),
+    ).toBe(true);
+    expect(
+      isPwaNetworkOnlyRequest(
         request("/private", { headers: authorization }),
         "https://local.fixture",
       ),

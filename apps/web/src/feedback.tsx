@@ -109,6 +109,8 @@ export function FeedbackProvider({
   );
 }
 
+// The provider and its hook intentionally share this module and context instance.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useFeedback(): FeedbackController {
   const controller = useContext(FeedbackContext);
   if (!controller) throw new Error("FeedbackProvider is missing");
