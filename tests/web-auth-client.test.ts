@@ -33,6 +33,76 @@ function errorResponse(status: number, code: string): Response {
 }
 
 describe("P01-02 web auth client", () => {
+  it("polls Bot login with abortable backoff and broadcasts only session availability", async () => {
+    vi.useFakeTimers();
+    const token = "B".repeat(43);
+    const messages: unknown[] = [];
+    const channel = {
+      addEventListener: vi.fn(),
+      close: vi.fn(),
+      postMessage: vi.fn((message: unknown) => messages.push(message)),
+      removeEventListener: vi.fn(),
+    };
+    const fetcher = vi
+      .fn<AuthFetch>()
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: {
+            expiresAt: "2026-08-14T03:03:00.000Z",
+            loginUrl: `https://t.me/local_fixture_bot?start=${token}`,
+            token,
+          },
+          requestId: "req-create",
+        }),
+      )
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: { confirmed: false, session: null, status: "pending" },
+          requestId: "req-pending",
+        }),
+      )
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: { confirmed: true, session, status: "consumed" },
+          requestId: "req-consumed",
+        }),
+      );
+    const storage = { getItem: vi.fn(), removeItem: vi.fn(), setItem: vi.fn() };
+    Object.defineProperties(globalThis, {
+      localStorage: { configurable: true, value: storage },
+      sessionStorage: { configurable: true, value: storage },
+    });
+    const client = new AuthClient(fetcher, {
+      broadcastChannel: channel,
+      now: () => new Date("2026-08-14T03:00:00.000Z").getTime(),
+      pollInitialDelayMs: 100,
+    });
+
+    await expect(client.startTelegramBotLogin()).resolves.toMatchObject({
+      expiresAt: "2026-08-14T03:03:00.000Z",
+      loginUrl: expect.stringContaining("https://t.me/local_fixture_bot"),
+      status: "pending",
+    });
+    expect(client.state).toEqual({ status: "authenticating", method: "telegram-bot-link" });
+    expect(fetcher.mock.calls[1]?.[1]?.signal).toBeInstanceOf(AbortSignal);
+
+    await vi.advanceTimersByTimeAsync(99);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(client.state).toEqual({ status: "active", session });
+    expect(messages).toEqual([{ type: "auth-complete" }]);
+    expect(JSON.stringify(messages)).not.toContain(token);
+    expect(JSON.stringify(messages)).not.toContain(session.userId);
+    expect(storage.setItem).not.toHaveBeenCalled();
+    client.dispose();
+    expect(channel.close).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
   it("authenticates from the Mini App adapter without persisting initData", async () => {
     const initData = "query_id=fixture&auth_date=1&hash=fixture&user=fixture";
     let resolveRequest: ((response: Response) => void) | undefined;
