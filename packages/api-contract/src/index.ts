@@ -39,6 +39,70 @@ export interface SessionView {
 
 export type EvmAddress = `0x${string}`;
 
+export const userPreferenceSchemaVersion = 2 as const;
+
+export const navigationKeys = [
+  "tasks",
+  "pools",
+  "strategies",
+  "activity",
+  "wallets",
+  "chat",
+] as const;
+
+export const colorThemeKeys = [
+  "neutral",
+  "blue",
+  "violet",
+  "green",
+  "orange",
+  "red",
+  "cyan",
+  "pink",
+  "indigo",
+  "amber",
+  "teal",
+  "custom",
+] as const;
+
+export type NavigationKey = (typeof navigationKeys)[number];
+export type ColorTheme = (typeof colorThemeKeys)[number];
+export type ThemePreference = "light" | "dark" | "system";
+export type TaskViewMode = "grid" | "list";
+
+export interface NavigationPreference {
+  key: NavigationKey;
+  visible: boolean;
+}
+
+export interface UserPreferences {
+  colorTheme: ColorTheme;
+  customColor: string | null;
+  navConfig: NavigationPreference[];
+  poolsPanelCollapsed: boolean;
+  showHotPools: boolean;
+  showScanTab: boolean;
+  taskViewMode: TaskViewMode;
+  theme: ThemePreference;
+}
+
+export interface VersionedUserPreferences {
+  preferences: UserPreferences;
+  revision: number;
+  schemaVersion: typeof userPreferenceSchemaVersion;
+  updatedAt: string | null;
+}
+
+export interface UpdateUserPreferencesRequest {
+  changes: Partial<UserPreferences>;
+  expectedRevision: number;
+}
+
+export const userPreferencesContracts = {
+  get: { method: "GET", path: "/api/user/preferences" },
+  patch: { method: "PATCH", path: "/api/user/preferences" },
+} as const;
+
 export interface WalletChallengeRequest {
   address: EvmAddress;
   chainId: number;
