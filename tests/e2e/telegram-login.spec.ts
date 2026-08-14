@@ -72,6 +72,37 @@ test("Mini App adapter signs in on mobile without browser storage", async ({ pag
   ).toEqual([]);
 });
 
+test("Mini App login recovers from an interrupted authentication request", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(globalThis, "Telegram", {
+      configurable: true,
+      value: { WebApp: { initData: "signed-mini-app-retry-fixture", ready() {} } },
+    });
+  });
+  let attempts = 0;
+  await page.route("**/api/auth/me", async (route) => {
+    if (!route.request().postData()) {
+      await anonymous(route);
+      return;
+    }
+    attempts += 1;
+    if (attempts === 1) {
+      await route.abort("failed");
+      return;
+    }
+    await route.fulfill({ contentType: "application/json", json: activeEnvelope(), status: 200 });
+  });
+
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Telegram Mini App" }).click();
+  await expect(page.getByRole("alert")).toContainText("authentication failed");
+  await page.getByRole("button", { name: "Retry Mini App login" }).click();
+
+  await expect(page).toHaveURL(/\/tasks\/running$/u);
+  await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
+  expect(attempts).toBe(2);
+});
+
 test("Bot login recovers from link creation failure", async ({ page }) => {
   await page.route("**/api/auth/me", anonymous);
   let creates = 0;
