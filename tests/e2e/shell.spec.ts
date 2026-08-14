@@ -35,7 +35,7 @@ async function useUserSession(page: Page): Promise<void> {
   );
 }
 
-test("SHELL-01 keeps the observed application chrome stable", async ({ page }, testInfo) => {
+test("SHELL-01 keeps the observed application chrome stable", async ({ page }) => {
   await useUserSession(page);
   await page.goto("/tasks/running");
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
@@ -45,12 +45,6 @@ test("SHELL-01 keeps the observed application chrome stable", async ({ page }, t
     caret: "hide",
     mask: [page.locator("main"), page.locator("[data-visual-mask='account']")],
     maxDiffPixelRatio: 0.001,
-  });
-  await page.screenshot({
-    animations: "disabled",
-    caret: "hide",
-    mask: [page.locator("main"), page.locator("[data-visual-mask='account']")],
-    path: `artifacts/acceptance/P01-05/visual/shell-${testInfo.project.name}-actual.png`,
   });
 });
 
