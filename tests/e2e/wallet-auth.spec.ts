@@ -106,7 +106,10 @@ test("wallet login works on desktop and mobile without transaction RPC or browse
   await page.goto("/login");
   await page.screenshot({
     fullPage: true,
-    path: `artifacts/acceptance/P01-04/ui/wallet-login-${testInfo.project.name}.png`,
+    path:
+      process.env.UPDATE_P01_04_EVIDENCE === "1"
+        ? `artifacts/acceptance/P01-04/ui/wallet-login-${testInfo.project.name}.png`
+        : testInfo.outputPath("wallet-login.png"),
   });
 
   await page.getByRole("button", { name: "Wallet" }).click();
@@ -216,7 +219,10 @@ test("settings lists, labels, binds and confirms deletion of login wallets", asy
   await expect(page.getByText("0x1111...1111")).toBeVisible();
   await page.screenshot({
     fullPage: true,
-    path: `artifacts/acceptance/P01-04/ui/settings-${testInfo.project.name}.png`,
+    path:
+      process.env.UPDATE_P01_04_EVIDENCE === "1"
+        ? `artifacts/acceptance/P01-04/ui/settings-${testInfo.project.name}.png`
+        : testInfo.outputPath("settings.png"),
   });
   const scriptCount = await page.locator("script").count();
   await page.getByLabel("Wallet label").fill("<script>Login only</script>");
