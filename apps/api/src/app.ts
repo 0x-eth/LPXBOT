@@ -13,6 +13,7 @@ import {
   type SessionStore,
   type StoredAccount,
   type StoredSession,
+  type TelegramBotLoginService,
   type TelegramMiniAppLoginService,
 } from "@lpbot/security";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
@@ -37,6 +38,8 @@ export interface ApiAppOptions {
   now?: () => Date;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
   sessionStore: SessionStore;
+  telegramBot?: TelegramBotLoginService;
+  telegramBotUsername?: string;
   telegramMiniApp?: TelegramMiniAppLoginService;
   testRoutes?: boolean;
 }
@@ -87,6 +90,18 @@ const telegramAuthenticationMessages: Readonly<
   AUTH_INVALID: "Telegram authentication data is invalid",
   AUTH_REPLAYED: "Telegram authentication data was already used",
 };
+
+const telegramBotUsernamePattern = /^[A-Za-z][A-Za-z0-9_]{4,31}$/u;
+
+function telegramBotConfigured(
+  options: ApiAppOptions,
+): options is ApiAppOptions & { telegramBot: TelegramBotLoginService; telegramBotUsername: string } {
+  return (
+    options.telegramBot !== undefined &&
+    typeof options.telegramBotUsername === "string" &&
+    telegramBotUsernamePattern.test(options.telegramBotUsername)
+  );
+}
 
 export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   const now = options.now ?? (() => new Date());
@@ -284,6 +299,111 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     });
     return createSuccessEnvelope({ loggedOut: true, revoked }, request.id);
   });
+
+  app.post("/api/auth/login-token", async (request, reply) => {
+    if (!telegramBotConfigured(options)) {
+      return reply.code(503).send(
+        createErrorEnvelope({
+          code: "TELEGRAM_BOT_UNAVAILABLE",
+          message: "Telegram Bot login is not configured",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+    }
+
+    const created = await options.telegramBot.create(request.id);
+    return createSuccessEnvelope(
+      {
+        expiresAt: created.expiresAt.toISOString(),
+        loginUrl: `https://t.me/${options.telegramBotUsername}?start=${created.token}`,
+        token: created.token,
+      },
+      request.id,
+    );
+  });
+
+  app.get<{ Params: { token: string } }>(
+    "/api/auth/login-status/:token",
+    async (request, reply) => {
+      if (!telegramBotConfigured(options)) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "TELEGRAM_BOT_UNAVAILABLE",
+            message: "Telegram Bot login is not configured",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+
+      const result = await options.telegramBot.poll(request.params.token, request.id);
+      if (result.status === "pending") {
+        return createSuccessEnvelope(
+          { confirmed: false, session: null, status: "pending" as const },
+          request.id,
+        );
+      }
+      if (!result.login) {
+        const error =
+          result.status === "expired"
+            ? {
+                code: "LOGIN_TOKEN_EXPIRED",
+                message: "The Telegram login link has expired",
+                statusCode: 410,
+              }
+            : result.status === "cancelled"
+              ? {
+                  code: "LOGIN_TOKEN_CANCELLED",
+                  message: "The Telegram login was cancelled",
+                  statusCode: 409,
+                }
+              : result.status === "consumed"
+                ? {
+                    code: "LOGIN_TOKEN_CONSUMED",
+                    message: "The Telegram login link was already used",
+                    statusCode: 409,
+                  }
+                : {
+                    code: "LOGIN_TOKEN_INVALID",
+                    message: "The Telegram login link is invalid",
+                    statusCode: 404,
+                  };
+        return reply.code(error.statusCode).send(
+          createErrorEnvelope({
+            code: error.code,
+            message: error.message,
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+
+      setBrowserSessionCookie(reply, result.login.session);
+      const decision = authorizeAccount({
+        accountStatus: result.login.account.status,
+        maintenance: options.maintenance,
+        region: options.regionPolicy(request),
+        role: result.login.account.role,
+      });
+      if (!decision.allowed) {
+        return reply.code(decision.statusCode).send(
+          createErrorEnvelope({
+            code: decision.code,
+            message: decision.message,
+            requestId: request.id,
+            retryable: decision.retryable,
+          }),
+        );
+      }
+
+      const user = accountToSessionView(result.login.account, decision.maintenanceBypass);
+      return createSuccessEnvelope(
+        { confirmed: true, session: user, status: "consumed" as const },
+        request.id,
+      );
+    },
+  );
 
   if (options.testRoutes) {
     const authenticateTestRequest = async (request: FastifyRequest) => {

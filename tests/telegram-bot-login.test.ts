@@ -11,6 +11,7 @@ import {
   type StoredSession,
   type TelegramBotLoginStore,
 } from "../packages/security/src/index.js";
+import { buildApiApp } from "../apps/api/src/index.js";
 import { describe, expect, it } from "vitest";
 
 const now = new Date("2026-08-14T03:00:00.000Z");
@@ -207,5 +208,79 @@ describe("Telegram Bot one-time login application service", () => {
     expect(loser).toEqual({ login: null, status: "consumed" });
     expect(store.sessions).toHaveProperty("size", 1);
     expect(store.intents.get(hashSessionToken(created.token))?.status).toBe("consumed");
+  });
+
+  it("exposes create and one-winner polling endpoints without returning a credential", async () => {
+    const store = new MemoryBotLoginStore();
+    store.identities.set("42", {
+      allowedChainIds: [1, 56],
+      avatarUrl: null,
+      displayName: "Fixture User",
+      id: "00000000-0000-4000-8000-000000000042",
+      role: "user",
+      status: "active",
+      tier: "normal",
+    });
+    const botLogin = service(store);
+    const app = buildApiApp({
+      maintenance: { enabled: false, message: null, until: null },
+      now: () => now,
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: store,
+      telegramBot: botLogin,
+      telegramBotUsername: "local_fixture_bot",
+    });
+
+    const create = await app.inject({ method: "POST", url: "/api/auth/login-token" });
+    expect(create.statusCode).toBe(200);
+    expect(create.json()).toMatchObject({
+      data: {
+        expiresAt: "2026-08-14T03:03:00.000Z",
+        loginUrl: expect.stringMatching(/^https:\/\/t\.me\/local_fixture_bot\?start=/u),
+        token: expect.stringMatching(/^[A-Za-z0-9_-]{43}$/u),
+      },
+      success: true,
+    });
+    const token = create.json().data.token as string;
+
+    const pending = await app.inject({
+      method: "GET",
+      url: `/api/auth/login-status/${token}`,
+    });
+    expect(pending.statusCode).toBe(200);
+    expect(pending.json().data).toEqual({ confirmed: false, session: null, status: "pending" });
+
+    await botLogin.confirmLogin({
+      requestId: "telegram-update-200",
+      telegramSubject: "42",
+      token,
+    });
+    const [first, second] = await Promise.all([
+      app.inject({ method: "GET", url: `/api/auth/login-status/${token}` }),
+      app.inject({ method: "GET", url: `/api/auth/login-status/${token}` }),
+    ]);
+    const success = [first, second].find(({ statusCode }) => statusCode === 200);
+    const consumed = [first, second].find(({ statusCode }) => statusCode === 409);
+
+    expect(success?.headers["set-cookie"]).toContain("lpbot_session=");
+    expect(success?.json()).toMatchObject({
+      data: {
+        confirmed: true,
+        session: { userId: "00000000-0000-4000-8000-000000000042" },
+        status: "consumed",
+      },
+      success: true,
+    });
+    expect(JSON.stringify(success?.json())).not.toContain("credential");
+    expect(JSON.stringify(success?.json())).not.toContain(token);
+    expect(consumed?.json()).toMatchObject({
+      error: { code: "LOGIN_TOKEN_CONSUMED" },
+      success: false,
+    });
+    expect(
+      (await app.inject({ method: "POST", url: "/api/auth/dev-confirm" })).statusCode,
+    ).toBe(404);
+
+    await app.close();
   });
 });
