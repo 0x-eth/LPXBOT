@@ -9,10 +9,10 @@ Recorded on 2026-08-14 (Asia/Shanghai).
 | `pnpm format:check` | passed; all matched files use Prettier |
 | `pnpm lint` | passed; 13 workspace lint tasks plus root lint |
 | `pnpm typecheck` | passed; 19 Turbo tasks plus root TypeScript |
-| `pnpm test` | passed without Docker dependency; 11 Vitest files / 93 tests and 19 governance tests |
+| `pnpm test` | passed without Docker dependency; 11 Vitest files / 98 tests and 19 governance tests |
 | `pnpm build` | passed; 13 workspace build tasks |
 | focused Telegram unit/API suites | passed; verifier, Mini App, Bot service/API, Bot adapter, Web AuthClient, and migration coverage |
-| `pnpm test:e2e` | passed; 28 Chromium tests across desktop/mobile |
+| `pnpm test:e2e` | passed; 30 Chromium tests across desktop/mobile |
 | `pnpm infra:up` | passed; PostgreSQL, Redis, MinIO, and Anvil healthy |
 | `pnpm db:migrate` twice | passed; repeatable 3-migration schema |
 | `pnpm db:seed` twice | passed; deterministic local seed |
@@ -33,7 +33,7 @@ Recorded on 2026-08-14 (Asia/Shanghai).
 
 ## CI result
 
-GitHub Actions run [31781761117](https://github.com/0x-eth/LPXBOT/actions/runs/31781761117) passed for code commit `e452bec23a9ff061b441e97af75a22c7bbfad136`.
+GitHub Actions run [31782759368](https://github.com/0x-eth/LPXBOT/actions/runs/31782759368) passed for code commit `2651eee4a919ad995cc4f398dfe0ebbf00c2043e`.
 
 | Job | Result | Relevant gate |
 |---|---|---|

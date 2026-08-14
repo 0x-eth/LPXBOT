@@ -34,4 +34,4 @@
 - The local fixed-window store returns immutable counter snapshots under concurrent requests and bounds each route cache at 5,000 keys.
 - The focused concurrency test observes two successful token creations and one `429 RATE_LIMITED` response for a limit of two.
 
-`pnpm test` passed 93 Vitest tests, including all Telegram API and application cases. No request contacted Telegram or the target site.
+`pnpm test` passed 98 Vitest tests, including all Telegram API and application cases. No request contacted Telegram or the target site.

@@ -16,7 +16,7 @@
 | rejected | 403 `ACCOUNT_REJECTED` | `/blocked` rejected state |
 | banned | 403 `ACCOUNT_BANNED` | `/blocked` banned state |
 
-The Mini App API test exercises all four rows after valid Telegram verification. Bot consumption uses the same `authorizeAccount` policy before returning a session view.
+The Mini App API test exercises all four rows after valid Telegram verification. Bot consumption uses the same `authorizeAccount` policy before returning a session view, and parameterized client tests preserve pending/rejected/banned instead of replacing them with a generic login error.
 
 ## Server authority
 

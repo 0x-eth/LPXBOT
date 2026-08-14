@@ -25,7 +25,7 @@
 
 - Dockerized Gitleaks 8.30.0 scanned 164 commits and approximately 17.81 MB with no leaks found.
 - `pnpm audit:dependencies` reported no known vulnerabilities.
-- CI run `31781761117` passed the pinned Security job, including repository history scanning and dependency audit.
+- CI run `31782759368` passed the pinned Security job, including repository history scanning and dependency audit.
 - Telegram, the target site, and external RPC services were not contacted by application tests. No signature, chain transaction broadcast, funds action, or production write occurred.
 
 Evidence level is `local-fixture-verified`. Live Telegram execution was not performed.

@@ -29,6 +29,6 @@ The intent table constrains all five states and their timestamp/user invariants.
 - Two consecutive migration runs and two consecutive seed runs passed.
 - `pnpm test:infra` passed 8 infrastructure tests with 3 migration records and the three Telegram tables in the expected public schema.
 - `pnpm test:postgres` passed 4 tests across 2 files, covering concurrent replay, concurrent unknown identity mapping, one-winner polling, hash-only persistence, and cancellation/consumption serialization.
-- CI run `31781761117` passed the Infrastructure job including cleanup.
+- CI run `31782759368` passed the Infrastructure job including cleanup.
 
 All database activity used the isolated local Docker PostgreSQL fixture.
