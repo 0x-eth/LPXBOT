@@ -7,6 +7,8 @@ export { buildApiApp } from "./app.js";
 export type {
   ApiAppOptions,
   AuthRateLimits,
+  ChainActivityProvider,
+  ChainManagementRateLimit,
   MaintenanceConfig,
   RegionPolicyResult,
 } from "./app.js";
