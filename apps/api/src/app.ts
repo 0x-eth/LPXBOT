@@ -181,7 +181,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     ),
   );
 
-  app.post(
+  app.after(() => {
+    app.post(
     "/api/auth/me",
     {
       config: {
@@ -517,7 +518,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     },
   );
 
-  if (options.testRoutes) {
+    if (options.testRoutes) {
     const authenticateTestRequest = async (request: FastifyRequest) => {
       const token = sessionToken(request);
       if (!token) return { kind: "unauthenticated" as const, code: "UNAUTHENTICATED" };
@@ -630,7 +631,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         return createSuccessEnvelope({ value: "fixture-resource" }, request.id);
       },
     );
-  }
+    }
+  });
 
   return app;
 }
