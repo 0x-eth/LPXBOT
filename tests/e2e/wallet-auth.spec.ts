@@ -130,6 +130,16 @@ test("a rejected wallet signature returns to login and succeeds on retry", async
   await expectNoForbiddenRpc(page);
 });
 
+test("wallet login reports a missing EIP-1193 provider after the user clicks", async ({ page }) => {
+  await page.route("**/api/auth/me", anonymous);
+  await page.goto("/login");
+
+  await page.getByRole("button", { name: "Wallet" }).click();
+
+  await expect(page.getByRole("alert")).toContainText("No compatible wallet provider");
+  await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
+});
+
 test("settings lists, labels, binds and confirms deletion of login wallets", async ({ page }) => {
   await installProvider(page);
   await page.route("**/api/auth/me", (route) =>

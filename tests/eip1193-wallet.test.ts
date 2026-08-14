@@ -86,5 +86,21 @@ describe("P01-04 EIP-1193 login wallet adapter", () => {
     await expect(
       changed.signMessage({ address: account.address, chainId: 56, message: "fixture" }),
     ).rejects.toMatchObject({ code: "WALLET_CONTEXT_CHANGED" });
+
+    let chainChecks = 0;
+    const changedChain = new Eip1193WalletAdapter({
+      request: vi.fn(async ({ method }) => {
+        if (method === "eth_accounts") return [account.address];
+        if (method === "eth_chainId") {
+          chainChecks += 1;
+          return chainChecks === 1 ? "0x38" : "0x1";
+        }
+        if (method === "personal_sign") return `0x${"ab".repeat(65)}`;
+        return [account.address];
+      }),
+    });
+    await expect(
+      changedChain.signMessage({ address: account.address, chainId: 56, message: "fixture" }),
+    ).rejects.toMatchObject({ code: "WALLET_CONTEXT_CHANGED" });
   });
 });
