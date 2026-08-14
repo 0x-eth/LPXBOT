@@ -421,6 +421,7 @@ test("repository exposes a real local Foundry contract suite", async () => {
 });
 
 test("CI defines six pinned, bounded jobs with real browser and contract gates", async () => {
+  const packageJson = JSON.parse(await readFile(path.join(ROOT, "package.json"), "utf8"));
   const workflowPath = path.join(ROOT, ".github/workflows/ci.yml");
   const workflow = yamlValue(
     await yamlParsers.yaml.parse(
@@ -473,11 +474,13 @@ test("CI defines six pinned, bounded jobs with real browser and contract gates",
   assert.match(cleanupSteps.map((step) => step.run).join("\n"), /infra:reset/);
 
   assert.equal(jobs.browser.name, "Browser");
-  assert.match(
-    jobs.browser.steps.map((step) => step.run).join("\n"),
-    /playwright install --with-deps chromium/,
+  assert.equal(
+    jobs.browser.container,
+    `mcr.microsoft.com/playwright:v${packageJson.devDependencies["@playwright/test"]}-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e`,
   );
-  assert.match(jobs.browser.steps.map((step) => step.run).join("\n"), /pnpm test:e2e/);
+  const browserCommands = jobs.browser.steps.map((step) => step.run).join("\n");
+  assert.doesNotMatch(browserCommands, /playwright install/);
+  assert.match(browserCommands, /pnpm test:e2e/);
   const reportUpload = jobs.browser.steps.find((step) =>
     step.uses?.startsWith("actions/upload-artifact@"),
   );

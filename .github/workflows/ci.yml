@@ -75,6 +75,7 @@ jobs:
   browser:
     name: Browser
     runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
     timeout-minutes: 20
     steps:
       - name: Check out repository
@@ -87,8 +88,6 @@ jobs:
         run: corepack enable && corepack prepare pnpm@11.17.0 --activate
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Install Chromium and system dependencies
-        run: pnpm exec playwright install --with-deps chromium
       - name: Run browser tests
         run: pnpm test:e2e
       - name: Upload Playwright HTML report
