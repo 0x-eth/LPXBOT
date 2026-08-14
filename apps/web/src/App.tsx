@@ -10,7 +10,15 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Link,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import {
   AuthClient,
@@ -276,6 +284,7 @@ function AuthRouter() {
   const [page, setPage] = useState<AuthPageState>({ kind: "ready" });
   const [state, setState] = useState<AuthState>({ status: "booting" });
   const [botLogin, setBotLogin] = useState<BotLoginView>({ status: "idle" });
+  const location = useLocation();
   useEffect(() => {
     let current = true;
     const unsubscribe = client.subscribe((nextState, nextPage, nextBotLogin) => {
@@ -297,7 +306,7 @@ function AuthRouter() {
 
   if (state.status === "booting") return <BootingPage />;
   const destination = authStatePath(state);
-  if (destination && globalThis.location.pathname !== destination) {
+  if (destination && location.pathname !== destination) {
     return <Navigate to={destination} replace />;
   }
   if (
@@ -312,7 +321,7 @@ function AuthRouter() {
   }
   if (state.status === "maintenance") return <MaintenancePage state={state} />;
 
-  const path = globalThis.location.pathname;
+  const path = location.pathname;
   if (!canEnterRoute(path, state)) return <Navigate to="/tasks/running" replace />;
   return (
     <Shell
