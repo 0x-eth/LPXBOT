@@ -22,6 +22,12 @@ import {
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 
 import { sessionCookieName, setBrowserSessionCookie } from "./browser-session-cookie.js";
+import {
+  defaultVersionedUserPreferences,
+  parseUserPreferencesPatch,
+  UserPreferencesValidationError,
+  type UserPreferencesStore,
+} from "./user-preferences.js";
 
 export interface MaintenanceConfig {
   enabled: boolean;
@@ -40,6 +46,7 @@ export interface ApiAppOptions {
   logger?: { write(line: string): void };
   maintenance: MaintenanceConfig;
   now?: () => Date;
+  preferencesStore?: UserPreferencesStore;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
   sessionStore: SessionStore;
   telegramBot?: TelegramBotLoginApplication;
@@ -356,6 +363,76 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   };
 
   app.after(() => {
+    app.get("/api/user/preferences", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.preferencesStore) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "PREFERENCES_UNAVAILABLE",
+            message: "User preferences are not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      const value =
+        (await options.preferencesStore.get(session.userId)) ?? defaultVersionedUserPreferences();
+      return createSuccessEnvelope(value, request.id);
+    });
+
+    app.patch("/api/user/preferences", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.preferencesStore) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "PREFERENCES_UNAVAILABLE",
+            message: "User preferences are not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+
+      const current =
+        (await options.preferencesStore.get(session.userId)) ?? defaultVersionedUserPreferences();
+      let patch;
+      try {
+        patch = parseUserPreferencesPatch(request.body, current.preferences);
+      } catch (error) {
+        if (!(error instanceof UserPreferencesValidationError)) throw error;
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "PREFERENCES_INVALID",
+            message: "User preferences are invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+
+      const result = await options.preferencesStore.update({
+        expectedRevision: patch.expectedRevision,
+        preferences: patch.preferences,
+        updatedAt: now(),
+        userId: session.userId,
+      });
+      if (result.status === "conflict") {
+        return reply.code(409).send(
+          createErrorEnvelope({
+            code: "PREFERENCES_CONFLICT",
+            message: "User preferences changed in another session",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      return createSuccessEnvelope(result.value, request.id);
+    });
+
     app.post(
       "/api/auth/wallet/nonce",
       {

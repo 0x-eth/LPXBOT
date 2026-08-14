@@ -98,7 +98,10 @@ function validateNavigation(value: unknown): NavigationPreference[] {
     seen.add(item.key);
     return { key: item.key, visible: item.visible };
   });
-  if (seen.size !== navigationKeys.length || !normalized.find(({ key }) => key === "tasks")?.visible) {
+  if (
+    seen.size !== navigationKeys.length ||
+    !normalized.find(({ key }) => key === "tasks")?.visible
+  ) {
     throw new UserPreferencesValidationError();
   }
   return normalized;
@@ -169,14 +172,17 @@ export function parseUserPreferencesPatch(
 
 export function normalizeStoredUserPreferences(value: unknown): UserPreferences {
   const raw = isRecord(value) ? value : {};
-  const colorTheme = isColorTheme(raw.colorTheme) ? raw.colorTheme : defaultUserPreferences.colorTheme;
+  const colorTheme = isColorTheme(raw.colorTheme)
+    ? raw.colorTheme
+    : defaultUserPreferences.colorTheme;
   let customColor: string | null = null;
   try {
     customColor = normalizeCustomColor(raw.customColor ?? null);
   } catch {
     customColor = null;
   }
-  const normalizedColorTheme = colorTheme === "custom" && customColor === null ? "neutral" : colorTheme;
+  const normalizedColorTheme =
+    colorTheme === "custom" && customColor === null ? "neutral" : colorTheme;
 
   const ordered = new Map<NavigationKey, boolean>();
   if (Array.isArray(raw.navConfig)) {
@@ -206,7 +212,9 @@ export function normalizeStoredUserPreferences(value: unknown): UserPreferences 
         ? raw.poolsPanelCollapsed
         : defaultUserPreferences.poolsPanelCollapsed,
     showHotPools:
-      typeof raw.showHotPools === "boolean" ? raw.showHotPools : defaultUserPreferences.showHotPools,
+      typeof raw.showHotPools === "boolean"
+        ? raw.showHotPools
+        : defaultUserPreferences.showHotPools,
     showScanTab:
       typeof raw.showScanTab === "boolean" ? raw.showScanTab : defaultUserPreferences.showScanTab,
     taskViewMode: raw.taskViewMode === "list" ? "list" : "grid",
