@@ -7,10 +7,17 @@ import {
   type AccessLevel,
   type AccountAccessContext,
 } from "@lpbot/domain";
-import { hashSessionToken, type SessionStore, type StoredSession } from "@lpbot/security";
+import {
+  hashSessionToken,
+  TelegramAuthenticationError,
+  type SessionStore,
+  type StoredAccount,
+  type StoredSession,
+  type TelegramMiniAppLoginService,
+} from "@lpbot/security";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 
-import { sessionCookieName } from "./browser-session-cookie.js";
+import { sessionCookieName, setBrowserSessionCookie } from "./browser-session-cookie.js";
 
 export interface MaintenanceConfig {
   enabled: boolean;
@@ -30,6 +37,7 @@ export interface ApiAppOptions {
   now?: () => Date;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
   sessionStore: SessionStore;
+  telegramMiniApp?: TelegramMiniAppLoginService;
   testRoutes?: boolean;
 }
 
@@ -54,17 +62,31 @@ async function findValidSession(
   return { session, tokenHash };
 }
 
-function toSessionView(session: StoredSession, maintenanceBypass: boolean): SessionView {
+function accountToSessionView(account: StoredAccount, maintenanceBypass: boolean): SessionView {
   return {
-    allowedChainIds: session.account.allowedChainIds,
-    avatarUrl: session.account.avatarUrl,
-    displayName: session.account.displayName,
+    allowedChainIds: account.allowedChainIds,
+    avatarUrl: account.avatarUrl,
+    displayName: account.displayName,
     maintenanceBypass,
-    role: session.account.role,
-    tier: session.account.tier,
-    userId: session.account.id,
+    role: account.role,
+    tier: account.tier,
+    userId: account.id,
   };
 }
+
+function toSessionView(session: StoredSession, maintenanceBypass: boolean): SessionView {
+  return accountToSessionView(session.account, maintenanceBypass);
+}
+
+const telegramAuthenticationMessages: Readonly<
+  Record<TelegramAuthenticationError["code"], string>
+> = {
+  AUTH_DUPLICATE_FIELD: "Telegram authentication data contains a repeated field",
+  AUTH_EXPIRED: "Telegram authentication data has expired",
+  AUTH_FUTURE: "Telegram authentication data has an invalid timestamp",
+  AUTH_INVALID: "Telegram authentication data is invalid",
+  AUTH_REPLAYED: "Telegram authentication data was already used",
+};
 
 export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   const now = options.now ?? (() => new Date());
@@ -109,6 +131,62 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   );
 
   app.post("/api/auth/me", async (request, reply) => {
+    if (request.body !== undefined) {
+      if (!options.telegramMiniApp) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "TELEGRAM_AUTH_UNAVAILABLE",
+            message: "Telegram authentication is not configured",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+
+      let login;
+      try {
+        login = await options.telegramMiniApp.authenticate(request.body, request.id);
+      } catch (error) {
+        if (!(error instanceof TelegramAuthenticationError)) throw error;
+        return reply.code(error.code === "AUTH_REPLAYED" ? 409 : 401).send(
+          createErrorEnvelope({
+            code: error.code,
+            message: telegramAuthenticationMessages[error.code],
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+
+      setBrowserSessionCookie(reply, login.session);
+      const decision = authorizeAccount({
+        accountStatus: login.account.status,
+        maintenance: options.maintenance,
+        region: options.regionPolicy(request),
+        role: login.account.role,
+      });
+      if (!decision.allowed) {
+        return reply.code(decision.statusCode).send(
+          createErrorEnvelope({
+            code: decision.code,
+            message: decision.message,
+            requestId: request.id,
+            retryable: decision.retryable,
+          }),
+        );
+      }
+
+      const user = accountToSessionView(login.account, decision.maintenanceBypass);
+      return createSuccessEnvelope(
+        {
+          isAdmin: user.role === "admin",
+          maintenance: options.maintenance.enabled ? options.maintenance : null,
+          user,
+        },
+        request.id,
+      );
+    }
+
     const token = sessionToken(request);
     const resolved = token ? await findValidSession(token, options.sessionStore, now()) : null;
     if (!resolved) {

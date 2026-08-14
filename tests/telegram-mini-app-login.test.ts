@@ -1,5 +1,6 @@
 import { createHmac } from "node:crypto";
 
+import { buildApiApp } from "../apps/api/src/index.js";
 import {
   TelegramAuthenticationError,
   TelegramInitDataVerifier,
@@ -154,5 +155,53 @@ describe("Telegram Mini App login application service", () => {
     });
     expect(store.sessions).toHaveProperty("size", 1);
     expect(store.identities.get("99")?.status).toBe("pending");
+  });
+
+  it("extends POST /api/auth/me with a Cookie-only Mini App login response", async () => {
+    const store = new MemoryMiniAppStore();
+    store.identities.set("42", {
+      allowedChainIds: [1, 56],
+      avatarUrl: null,
+      displayName: "Fixture User",
+      id: "00000000-0000-4000-8000-000000000042",
+      role: "user",
+      status: "active",
+      tier: "normal",
+    });
+    const logLines: string[] = [];
+    const initData = signedInitData();
+    const app = buildApiApp({
+      logger: { write: (line) => logLines.push(line) },
+      maintenance: { enabled: false, message: null, until: null },
+      now: () => now,
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: store,
+      telegramMiniApp: service(store),
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      payload: { initData },
+      url: "/api/auth/me",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["set-cookie"]).toContain("lpbot_session=");
+    expect(response.headers["set-cookie"]).toContain("HttpOnly");
+    expect(response.headers["set-cookie"]).toContain("SameSite=Lax");
+    expect(response.json()).toMatchObject({
+      data: {
+        isAdmin: false,
+        user: { role: "user", userId: "00000000-0000-4000-8000-000000000042" },
+      },
+      success: true,
+    });
+    const credential = [...store.sessions.values()][0]?.tokenHash;
+    expect(JSON.stringify(response.json())).not.toContain("token");
+    expect(JSON.stringify(response.json())).not.toContain(initData);
+    expect(logLines.join("\n")).not.toContain(initData);
+    expect(logLines.join("\n")).not.toContain(credential);
+
+    await app.close();
   });
 });
