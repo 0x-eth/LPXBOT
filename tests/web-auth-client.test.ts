@@ -105,12 +105,12 @@ describe("P01-02 web auth client", () => {
   });
 
   it.each([
-    ["ACCOUNT_PENDING", "pending"],
-    ["ACCOUNT_REJECTED", "rejected"],
-    ["ACCOUNT_BANNED", "banned"],
+    ["ACCOUNT_PENDING", "pending", "Account approval is pending."],
+    ["ACCOUNT_REJECTED", "rejected", "This account request was not approved."],
+    ["ACCOUNT_BANNED", "banned", "This account is currently unavailable."],
   ] as const)(
     "preserves the server-authoritative %s state after Bot consumption",
-    async (code, reason) => {
+    async (code, reason, message) => {
       const token = "F".repeat(43);
       const channel = {
         addEventListener: vi.fn(),
@@ -142,8 +142,9 @@ describe("P01-02 web auth client", () => {
       expect(client.state).toEqual({
         status: "blocked",
         reason,
-        message: `Safe ${code} message`,
+        message,
       });
+      expect(JSON.stringify(client.state)).not.toContain(`Safe ${code} message`);
       expect(channel.postMessage).toHaveBeenCalledWith({ type: "auth-complete" });
       expect(JSON.stringify(channel.postMessage.mock.calls)).not.toContain(token);
       client.dispose();
@@ -606,8 +607,9 @@ describe("P01-02 web auth client", () => {
     expect(client.page).toEqual({
       kind: "forbidden",
       code: "FORBIDDEN",
-      message: "Safe FORBIDDEN message",
+      message: "You do not have permission to complete this request.",
     });
+    expect(JSON.stringify(client.page)).not.toContain("Safe FORBIDDEN message");
   });
 
   it("keeps bearer compatibility in memory and never writes localStorage", async () => {
