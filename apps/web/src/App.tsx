@@ -439,7 +439,11 @@ function routeIsCurrent(pathname: string, section: string): boolean {
   return pathname === section || pathname.startsWith(`${section}/`);
 }
 
-function PrimaryNavigation({ onOpenChat }: { onOpenChat(): void }) {
+function PrimaryNavigation({
+  onOpenChat,
+}: {
+  onOpenChat(trigger: HTMLButtonElement): void;
+}) {
   const { pathname } = useLocation();
 
   return (
@@ -459,7 +463,7 @@ function PrimaryNavigation({ onOpenChat }: { onOpenChat(): void }) {
       <button
         aria-haspopup="dialog"
         className="primary-navigation-item"
-        onClick={onOpenChat}
+        onClick={(event) => onOpenChat(event.currentTarget)}
         type="button"
       >
         <MessageSquareText aria-hidden="true" size={18} strokeWidth={1.8} />
@@ -600,6 +604,12 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [chatOpen, setChatOpen] = useState(false);
+  const chatTrigger = useRef<HTMLButtonElement | null>(null);
+
+  const openChat = (trigger: HTMLButtonElement) => {
+    chatTrigger.current = trigger;
+    setChatOpen(true);
+  };
 
   const refresh = async () => {
     const next = await client.restore();
@@ -622,7 +632,7 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
           <span>LP Bot</span>
         </Link>
         <p className="mobile-route-title">{mobileRouteTitle(location.pathname)}</p>
-        <PrimaryNavigation onOpenChat={() => setChatOpen(true)} />
+        <PrimaryNavigation onOpenChat={openChat} />
         <div className="header-actions">
           <button
             aria-label="刷新"
@@ -759,12 +769,18 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
       )}
       <div aria-hidden="true" className="status-bar-reserved" />
       <div className="mobile-navigation-shell">
-        <PrimaryNavigation onOpenChat={() => setChatOpen(true)} />
+        <PrimaryNavigation onOpenChat={openChat} />
       </div>
       <Dialog.Root onOpenChange={setChatOpen} open={chatOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className="drawer-overlay" />
-          <Dialog.Content className="chat-drawer">
+          <Dialog.Content
+            className="chat-drawer"
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              chatTrigger.current?.focus();
+            }}
+          >
             <div className="drawer-heading">
               <Dialog.Title>最近聊天</Dialog.Title>
               <Dialog.Close asChild>
