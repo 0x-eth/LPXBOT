@@ -20,7 +20,6 @@ import { describe, expect, it, vi } from "vitest";
 
 class MemoryLoginWalletStore {
   readonly account: StoredAccount = {
-    allowedChainIds: [56],
     avatarUrl: null,
     displayName: "Wallet User",
     id: "00000000-0000-4000-8000-000000000040",

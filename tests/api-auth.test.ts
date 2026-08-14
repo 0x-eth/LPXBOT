@@ -13,7 +13,6 @@ class MemorySessionStore implements SessionStore {
   readonly audits: AccessAuditEvent[] = [];
   readonly sessions = new Map<string, StoredSession>();
   account: StoredAccount = {
-    allowedChainIds: [1, 56],
     avatarUrl: null,
     displayName: "Local User",
     id: "00000000-0000-4000-8000-000000000001",
@@ -112,7 +111,7 @@ describe("P01-02 Fastify auth API", () => {
         isAdmin: false,
         maintenance: null,
         user: {
-          allowedChainIds: [1, 56],
+          allowedChainIds: [],
           avatarUrl: null,
           displayName: "Local User",
           maintenanceBypass: false,

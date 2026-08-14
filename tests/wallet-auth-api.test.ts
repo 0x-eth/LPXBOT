@@ -10,7 +10,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 class EmptySessionStore implements SessionStore {
   readonly account: StoredAccount = {
-    allowedChainIds: [56],
     avatarUrl: null,
     displayName: "Wallet User",
     id: "00000000-0000-4000-8000-000000000040",
@@ -99,7 +98,6 @@ describe("P01-04 login wallet HTTP API", () => {
       createLoginChallenge: vi.fn(),
       login: vi.fn().mockResolvedValue({
         account: {
-          allowedChainIds: [56],
           avatarUrl: null,
           displayName: "Wallet User",
           id: "00000000-0000-4000-8000-000000000040",
@@ -291,7 +289,6 @@ describe("P01-04 login wallet HTTP API", () => {
       listLinks: vi.fn(),
       login: vi.fn().mockResolvedValue({
         account: {
-          allowedChainIds: [],
           avatarUrl: null,
           displayName: null,
           id: "00000000-0000-4000-8000-000000000090",

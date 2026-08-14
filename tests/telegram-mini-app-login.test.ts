@@ -68,7 +68,6 @@ class MemoryMiniAppStore implements TelegramMiniAppStore {
     const existing = this.identities.get(input.subject);
     if (existing) return existing;
     const account: StoredAccount = {
-      allowedChainIds: [],
       avatarUrl: null,
       displayName: null,
       id: input.candidateUserId,
@@ -110,7 +109,6 @@ describe("Telegram Mini App login application service", () => {
   it("atomically consumes verified initData and issues a hashed local session", async () => {
     const store = new MemoryMiniAppStore();
     store.identities.set("42", {
-      allowedChainIds: [1, 56],
       avatarUrl: null,
       displayName: "Fixture User",
       id: "00000000-0000-4000-8000-000000000042",
@@ -167,7 +165,6 @@ describe("Telegram Mini App login application service", () => {
   it("extends POST /api/auth/me with a Cookie-only Mini App login response", async () => {
     const store = new MemoryMiniAppStore();
     store.identities.set("42", {
-      allowedChainIds: [1, 56],
       avatarUrl: null,
       displayName: "Fixture User",
       id: "00000000-0000-4000-8000-000000000042",
@@ -215,7 +212,6 @@ describe("Telegram Mini App login application service", () => {
   it("allows only one API request to consume equivalent initData concurrently", async () => {
     const store = new MemoryMiniAppStore();
     store.identities.set("42", {
-      allowedChainIds: [1, 56],
       avatarUrl: null,
       displayName: "Fixture User",
       id: "00000000-0000-4000-8000-000000000042",
@@ -257,7 +253,6 @@ describe("Telegram Mini App login application service", () => {
     async (status, expectedStatus, expectedCode) => {
       const store = new MemoryMiniAppStore();
       store.identities.set("42", {
-        allowedChainIds: [],
         avatarUrl: null,
         displayName: null,
         id: "00000000-0000-4000-8000-000000000042",

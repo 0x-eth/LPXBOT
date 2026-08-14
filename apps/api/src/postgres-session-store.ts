@@ -29,7 +29,6 @@ import type {
 import type { Pool, PoolClient } from "pg";
 
 interface SessionRow {
-  allowed_chain_ids: number[];
   avatar_url: string | null;
   created_at: Date;
   display_name: string | null;
@@ -45,7 +44,6 @@ interface SessionRow {
 }
 
 interface AccountRow {
-  allowed_chain_ids: number[];
   avatar_url: string | null;
   display_name: string | null;
   id: string;
@@ -55,7 +53,6 @@ interface AccountRow {
 }
 
 interface BotLoginIntentRow {
-  allowed_chain_ids: number[] | null;
   avatar_url: string | null;
   cancelled_at: Date | null;
   confirmed_at: Date | null;
@@ -96,7 +93,6 @@ interface LoginWalletLinkRow {
 
 function toStoredAccount(row: AccountRow): StoredAccount {
   return {
-    allowedChainIds: row.allowed_chain_ids,
     avatarUrl: row.avatar_url,
     displayName: row.display_name,
     id: row.id,
@@ -108,9 +104,8 @@ function toStoredAccount(row: AccountRow): StoredAccount {
 
 function toBotLoginIntent(row: BotLoginIntentRow): BotLoginIntent {
   const account =
-    row.user_id && row.role && row.tier && row.user_status && row.allowed_chain_ids
+    row.user_id && row.role && row.tier && row.user_status
       ? {
-          allowedChainIds: row.allowed_chain_ids,
           avatarUrl: row.avatar_url,
           displayName: row.display_name,
           id: row.user_id,
@@ -189,7 +184,6 @@ export class PostgresSessionStore
                 u.role,
                 u.tier,
                 u.status,
-                u.allowed_chain_ids,
                 u.display_name,
                 u.avatar_url
            FROM auth_login_wallets w
@@ -202,8 +196,8 @@ export class PostgresSessionStore
 
       await client.query(
         `INSERT INTO users (
-           id, role, tier, status, allowed_chain_ids, display_name, avatar_url, created_at, updated_at
-         ) VALUES ($1, 'user', 'normal', 'pending', '{}', NULL, NULL, $2, $2)`,
+           id, role, tier, status, display_name, avatar_url, created_at, updated_at
+         ) VALUES ($1, 'user', 'normal', 'pending', NULL, NULL, $2, $2)`,
         [input.candidateUserId, input.consumedAt],
       );
       await client.query(
@@ -213,7 +207,6 @@ export class PostgresSessionStore
       );
       return {
         account: {
-          allowedChainIds: [],
           avatarUrl: null,
           displayName: null,
           id: input.candidateUserId,
@@ -475,7 +468,6 @@ export class PostgresSessionStore
               u.role,
               u.tier,
               u.status,
-              u.allowed_chain_ids,
               u.display_name,
               u.avatar_url
          FROM sessions s
@@ -488,7 +480,6 @@ export class PostgresSessionStore
 
     return {
       account: {
-        allowedChainIds: row.allowed_chain_ids,
         avatarUrl: row.avatar_url,
         displayName: row.display_name,
         id: row.user_id,
@@ -579,7 +570,6 @@ export class PostgresSessionStore
               u.role,
               u.tier,
               u.status AS user_status,
-              u.allowed_chain_ids,
               u.display_name,
               u.avatar_url
          FROM telegram_bot_login_intents i
@@ -676,7 +666,6 @@ export class PostgresSessionStore
               u.role,
               u.tier,
               u.status,
-              u.allowed_chain_ids,
               u.display_name,
               u.avatar_url
          FROM telegram_identities ti
@@ -689,8 +678,8 @@ export class PostgresSessionStore
 
     await client.query(
       `INSERT INTO users (
-         id, role, tier, status, allowed_chain_ids, display_name, avatar_url, created_at, updated_at
-       ) VALUES ($1, 'user', 'normal', 'pending', '{}', NULL, NULL, $2, $2)`,
+         id, role, tier, status, display_name, avatar_url, created_at, updated_at
+       ) VALUES ($1, 'user', 'normal', 'pending', NULL, NULL, $2, $2)`,
       [input.candidateUserId, input.createdAt],
     );
     await client.query(
@@ -699,7 +688,6 @@ export class PostgresSessionStore
       [input.subject, input.candidateUserId, input.createdAt],
     );
     return {
-      allowedChainIds: [],
       avatarUrl: null,
       displayName: null,
       id: input.candidateUserId,

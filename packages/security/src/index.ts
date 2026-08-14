@@ -72,7 +72,6 @@ export type StoredTier = "normal" | "pro";
 export type StoredAccountStatus = "active" | "pending" | "rejected" | "banned";
 
 export interface StoredAccount {
-  allowedChainIds: number[];
   avatarUrl: string | null;
   displayName: string | null;
   id: string;

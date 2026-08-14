@@ -49,7 +49,6 @@ class MemoryBotLoginStore implements TelegramBotLoginStore {
       let account = this.identities.get(input.subject);
       if (!account) {
         account = {
-          allowedChainIds: [],
           avatarUrl: null,
           displayName: null,
           id: input.candidateUserId,
@@ -169,7 +168,6 @@ describe("Telegram Bot one-time login application service", () => {
   it("confirms through a Telegram subject and gives exactly one concurrent poll a session", async () => {
     const store = new MemoryBotLoginStore();
     store.identities.set("42", {
-      allowedChainIds: [1, 56],
       avatarUrl: null,
       displayName: "Fixture User",
       id: "00000000-0000-4000-8000-000000000042",
@@ -214,7 +212,6 @@ describe("Telegram Bot one-time login application service", () => {
   it("exposes create and one-winner polling endpoints without returning a credential", async () => {
     const store = new MemoryBotLoginStore();
     store.identities.set("42", {
-      allowedChainIds: [1, 56],
       avatarUrl: null,
       displayName: "Fixture User",
       id: "00000000-0000-4000-8000-000000000042",

@@ -42,7 +42,6 @@ export class SessionFixtureStore implements SessionStore {
 
   private account(userId: string): StoredAccount {
     return {
-      allowedChainIds: [1, 56],
       avatarUrl: null,
       displayName: `Fixture ${userId.slice(-4)}`,
       id: userId,

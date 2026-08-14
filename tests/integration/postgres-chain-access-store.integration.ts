@@ -40,8 +40,8 @@ beforeAll(async () => {
   await fixturePool.query(readFileSync(path.join(repositoryRoot, "infra/seed.sql"), "utf8"));
   await fixturePool.query(
     `INSERT INTO users (
-       id, role, tier, status, allowed_chain_ids, display_name, avatar_url, created_at, updated_at
-     ) VALUES ($1, 'admin', 'normal', 'active', ARRAY[999999], NULL, NULL, $2, $2)`,
+       id, role, tier, status, display_name, avatar_url, created_at, updated_at
+     ) VALUES ($1, 'admin', 'normal', 'active', NULL, NULL, $2, $2)`,
     [actorUserId, firstUpdateAt],
   );
   await fixturePool.query(

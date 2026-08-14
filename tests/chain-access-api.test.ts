@@ -22,7 +22,6 @@ const origin = "https://local.fixture";
 
 const accounts = {
   admin: {
-    allowedChainIds: [999_999],
     avatarUrl: null,
     displayName: "Fixture Admin",
     id: "29000000-0000-4000-8000-000000000003",
@@ -31,7 +30,6 @@ const accounts = {
     tier: "normal",
   },
   pro: {
-    allowedChainIds: [999_999],
     avatarUrl: null,
     displayName: "Fixture Pro",
     id: "29000000-0000-4000-8000-000000000002",
@@ -40,7 +38,6 @@ const accounts = {
     tier: "pro",
   },
   user: {
-    allowedChainIds: [999_999],
     avatarUrl: null,
     displayName: "Fixture User",
     id: "29000000-0000-4000-8000-000000000001",
@@ -291,7 +288,6 @@ describe("AUTH-10 chain configuration API and server guard", () => {
       url: "/api/auth/me",
     });
     expect(first.json().data.user.allowedChainIds).toEqual([56]);
-    expect(first.body).not.toContain("999999");
 
     chainPolicyStore.policies[0]!.access = "off";
     chainPolicyStore.policies[1]!.access = "all";

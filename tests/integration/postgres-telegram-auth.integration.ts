@@ -27,8 +27,8 @@ beforeAll(async () => {
   ]);
   await pool.query(
     `INSERT INTO users (
-       id, role, tier, status, allowed_chain_ids, display_name, avatar_url, created_at, updated_at
-     ) VALUES ($1, 'user', 'normal', 'active', ARRAY[1, 56], 'Postgres Fixture', NULL, $2, $2)`,
+       id, role, tier, status, display_name, avatar_url, created_at, updated_at
+     ) VALUES ($1, 'user', 'normal', 'active', 'Postgres Fixture', NULL, $2, $2)`,
     [fixtureUserId, now],
   );
   await pool.query(

@@ -23,10 +23,10 @@ beforeAll(async () => {
   await pool.query("DELETE FROM users WHERE id = ANY($1::uuid[])", [userIds]);
   await pool.query(
     `INSERT INTO users (
-       id, role, tier, status, allowed_chain_ids, display_name, avatar_url, created_at, updated_at
+       id, role, tier, status, display_name, avatar_url, created_at, updated_at
      ) VALUES
-       ($1, 'user', 'normal', 'active', ARRAY[1, 56], 'Preference A', NULL, $3, $3),
-       ($2, 'user', 'normal', 'active', ARRAY[1, 56], 'Preference B', NULL, $3, $3)`,
+       ($1, 'user', 'normal', 'active', 'Preference A', NULL, $3, $3),
+       ($2, 'user', 'normal', 'active', 'Preference B', NULL, $3, $3)`,
     [...userIds, now],
   );
 });
