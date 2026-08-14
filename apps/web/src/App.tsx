@@ -24,14 +24,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import {
-  Component,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   BrowserRouter,
   Link,
