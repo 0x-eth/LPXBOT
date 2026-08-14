@@ -223,6 +223,46 @@ describe("P01-02 web auth client", () => {
     vi.useRealTimers();
   });
 
+  it("restores from a credential-free BroadcastChannel event and rejects enriched messages", async () => {
+    let onMessage: ((event: { data: unknown }) => void) | undefined;
+    const channel = {
+      addEventListener: vi.fn(
+        (_type: "message", listener: (event: { data: unknown }) => void) => {
+          onMessage = listener;
+        },
+      ),
+      close: vi.fn(),
+      postMessage: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+    const fetcher = vi.fn<AuthFetch>().mockResolvedValue(
+      apiResponse(200, {
+        success: true,
+        data: { isAdmin: false, maintenance: null, user: session },
+        requestId: "req-cross-tab",
+      }),
+    );
+    const client = new AuthClient(fetcher, { broadcastChannel: channel });
+    const subscriber = vi.fn();
+    const unsubscribe = client.subscribe(subscriber);
+
+    onMessage?.({ data: { token: "must-not-cross-tabs", type: "auth-complete" } });
+    await Promise.resolve();
+    expect(fetcher).not.toHaveBeenCalled();
+
+    onMessage?.({ data: { type: "auth-complete" } });
+    await vi.waitFor(() => expect(client.state).toEqual({ status: "active", session }));
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(subscriber).toHaveBeenCalledWith(
+      { status: "active", session },
+      { kind: "ready" },
+      { status: "idle" },
+    );
+
+    unsubscribe();
+    client.dispose();
+  });
+
   it("authenticates from the Mini App adapter without persisting initData", async () => {
     const initData = "query_id=fixture&auth_date=1&hash=fixture&user=fixture";
     let resolveRequest: ((response: Response) => void) | undefined;

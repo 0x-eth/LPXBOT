@@ -23,6 +23,12 @@ export interface AuthClientOptions {
   pollInitialDelayMs?: number;
 }
 
+export type AuthClientListener = (
+  state: AuthState,
+  page: AuthPageState,
+  botLogin: BotLoginView,
+) => void;
+
 export type BotLoginView =
   | { status: "idle" }
   | { status: "creating" }
@@ -164,6 +170,7 @@ export class AuthClient {
   readonly #broadcastChannel: AuthBroadcastChannel | null;
   readonly #broadcastListener: (event: { data: unknown }) => void;
   readonly #fetcher: AuthFetch;
+  readonly #listeners = new Set<AuthClientListener>();
   readonly #maxPollAttempts: number;
   readonly #now: () => number;
   #page: AuthPageState = { kind: "ready" };
@@ -192,7 +199,9 @@ export class AuthClient {
         event.data.type === "auth-complete" &&
         Object.keys(event.data).length === 1
       ) {
-        void this.restore();
+        void this.restore().catch(() => {
+          this.#botFailure("NETWORK_ERROR", "The session could not be restored", true);
+        });
       }
     };
     this.#broadcastChannel?.addEventListener("message", this.#broadcastListener);
@@ -218,6 +227,12 @@ export class AuthClient {
     this.#stopBotFlow();
     this.#broadcastChannel?.removeEventListener("message", this.#broadcastListener);
     this.#broadcastChannel?.close();
+    this.#listeners.clear();
+  }
+
+  subscribe(listener: AuthClientListener): () => void {
+    this.#listeners.add(listener);
+    return () => this.#listeners.delete(listener);
   }
 
   setBearerToken(token: string | null): void {
@@ -231,6 +246,7 @@ export class AuthClient {
       this.#bearerToken = null;
       this.#state = { status: "anonymous" };
       this.#page = { kind: "ready" };
+      this.#emit();
     }
     return this.#state;
   }
@@ -245,11 +261,13 @@ export class AuthClient {
         message: "Telegram Mini App authentication is unavailable",
         retryable: false,
       };
+      this.#emit();
       return this.#state;
     }
 
     this.#state = { status: "authenticating", method: "telegram-mini-app" };
     this.#page = { kind: "ready" };
+    this.#emit();
     const response = await this.request("/api/auth/me", {
       body: JSON.stringify({ initData }),
       headers: { "Content-Type": "application/json" },
@@ -265,6 +283,7 @@ export class AuthClient {
       this.#state = { status: "anonymous" };
       this.#page = { kind: "ready" };
       this.#botLogin = { status: "cancelled" };
+      this.#emit();
       return this.#botLogin;
     }
 
@@ -273,6 +292,7 @@ export class AuthClient {
     this.#state = { status: "anonymous" };
     this.#page = { kind: "ready" };
     this.#botLogin = { status: "cancelled" };
+    this.#emit();
     const controller = new AbortController();
     try {
       const response = await this.request(`/api/auth/login-token/${token}/cancel`, {
@@ -311,6 +331,7 @@ export class AuthClient {
       loginUrl: flow.loginUrl,
       status: "pending",
     };
+    this.#emit();
     await this.#pollTelegramBotLogin(flow);
     return this.#botLogin;
   }
@@ -321,6 +342,7 @@ export class AuthClient {
     this.#state = { status: "authenticating", method: "telegram-bot-link" };
     this.#page = { kind: "ready" };
     this.#botLogin = { status: "creating" };
+    this.#emit();
 
     let response: Response;
     try {
@@ -364,6 +386,7 @@ export class AuthClient {
       loginUrl: flow.loginUrl,
       status: "pending",
     };
+    this.#emit();
     await this.#pollTelegramBotLogin(flow);
     return this.#botLogin;
   }
@@ -394,10 +417,12 @@ export class AuthClient {
         message: "The session response was invalid",
         retryable: true,
       };
+      this.#emit();
       return;
     }
     this.#state = { status: "active", session: body.data.user };
     this.#page = { kind: "ready" };
+    this.#emit();
   }
 
   async request(input: Request | string | URL, init: RequestInit = {}): Promise<Response> {
@@ -473,6 +498,7 @@ export class AuthClient {
     this.#state = { status: "anonymous" };
     this.#page = { kind: "error", code, message, retryable };
     this.#botLogin = { status: "error", message, retryable };
+    this.#emit();
   }
 
   async #pollTelegramBotLogin(flow: BotLoginFlow): Promise<void> {
@@ -503,6 +529,7 @@ export class AuthClient {
         retryable: this.#page.kind === "error" ? this.#page.retryable : false,
       };
       this.#stopBotFlow();
+      this.#emit();
       return;
     }
     const body: unknown = await response.json();
@@ -517,6 +544,7 @@ export class AuthClient {
       this.#botLogin = { status: "consumed" };
       this.#stopBotFlow();
       this.#broadcastChannel?.postMessage({ type: "auth-complete" });
+      this.#emit();
       return;
     }
 
@@ -539,6 +567,12 @@ export class AuthClient {
     flow.controller.abort();
   }
 
+  #emit(): void {
+    for (const listener of this.#listeners) {
+      listener(this.#state, this.#page, this.#botLogin);
+    }
+  }
+
   async #expireBotLoginFlow(flow: BotLoginFlow): Promise<void> {
     const token = flow.token;
     this.#stopBotFlow();
@@ -550,6 +584,7 @@ export class AuthClient {
       retryable: true,
     };
     this.#botLogin = { status: "expired" };
+    this.#emit();
     const controller = new AbortController();
     try {
       await this.request(`/api/auth/login-token/${token}/cancel`, {
