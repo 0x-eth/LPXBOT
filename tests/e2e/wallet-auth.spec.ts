@@ -112,9 +112,9 @@ test("wallet login works on desktop and mobile without transaction RPC or browse
   expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
   await expectNoForbiddenRpc(page);
   const axe = await new AxeBuilder({ page }).analyze();
-  expect(axe.violations.filter(({ impact }) => impact === "serious" || impact === "critical")).toEqual(
-    [],
-  );
+  expect(
+    axe.violations.filter(({ impact }) => impact === "serious" || impact === "critical"),
+  ).toEqual([]);
 });
 
 test("a rejected wallet signature returns to login and succeeds on retry", async ({ page }) => {

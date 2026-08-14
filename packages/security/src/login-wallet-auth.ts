@@ -149,9 +149,7 @@ export interface LoginWalletAuthenticationApplication {
   createLoginChallenge(
     input: CreateLoginWalletChallengeInput,
   ): Promise<CreatedLoginWalletChallenge>;
-  createLinkChallenge(
-    input: CreateLinkWalletChallengeInput,
-  ): Promise<CreatedLoginWalletChallenge>;
+  createLinkChallenge(input: CreateLinkWalletChallengeInput): Promise<CreatedLoginWalletChallenge>;
   link(input: LinkLoginWalletInput): Promise<LoginWalletLinkView>;
   listLinks(userId: string): Promise<LoginWalletLinkView[]>;
   login(input: LoginWithWalletInput): Promise<LoginWithWalletResult>;
@@ -386,7 +384,7 @@ export class LoginWalletAuthenticationService implements LoginWalletAuthenticati
       throw new WalletAuthenticationError("NONCE_INVALID");
     }
 
-    let validSignature = false;
+    let validSignature: boolean;
     try {
       validSignature = await verifyMessage({
         address,
@@ -522,7 +520,7 @@ export class LoginWalletAuthenticationService implements LoginWalletAuthenticati
       throw new WalletAuthenticationError("NONCE_INVALID");
     }
 
-    let validSignature = false;
+    let validSignature: boolean;
     try {
       validSignature = await verifyMessage({
         address,
@@ -618,11 +616,7 @@ export class LoginWalletAuthenticationService implements LoginWalletAuthenticati
   #label(value: string | null): string | null {
     if (value === null) return null;
     const label = value.normalize("NFC").trim();
-    if (
-      label.length === 0 ||
-      [...label].length > 64 ||
-      /[\p{Cc}\p{Cf}]/u.test(label)
-    ) {
+    if (label.length === 0 || [...label].length > 64 || /[\p{Cc}\p{Cf}]/u.test(label)) {
       throw new TypeError("Login wallet label is invalid");
     }
     return label;

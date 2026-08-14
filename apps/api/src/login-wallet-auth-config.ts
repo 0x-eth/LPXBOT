@@ -1,7 +1,4 @@
-import {
-  LoginWalletAuthenticationService,
-  type LoginWalletAuthStore,
-} from "@lpbot/security";
+import { LoginWalletAuthenticationService, type LoginWalletAuthStore } from "@lpbot/security";
 
 export interface LoginWalletAuthEnvironment {
   AUTH_SESSION_TTL_SECONDS?: string;

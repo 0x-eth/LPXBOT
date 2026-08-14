@@ -6,10 +6,7 @@ import {
 } from "@lpbot/api-contract";
 
 import type { TelegramMiniAppAdapter } from "./telegram-mini-app.js";
-import {
-  WalletProviderError,
-  type LoginWalletProviderAdapter,
-} from "./eip1193-wallet.js";
+import { WalletProviderError, type LoginWalletProviderAdapter } from "./eip1193-wallet.js";
 
 export type AuthFetch = (input: Request | string | URL, init?: RequestInit) => Promise<Response>;
 
@@ -203,9 +200,7 @@ function isLoginWalletLinkView(value: unknown): value is LoginWalletLinkView {
     Number.isFinite(Date.parse(createdAt)) &&
     (typeof label === "string" || label === null) &&
     typeof linkId === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
-      linkId,
-    ) &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(linkId) &&
     typeof updatedAt === "string" &&
     Number.isFinite(Date.parse(updatedAt))
   );

@@ -414,10 +414,7 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
         </main>
       ) : (
         <Routes>
-          <Route
-            path="/settings"
-            element={<LoginWalletSettings client={client} />}
-          />
+          <Route path="/settings" element={<LoginWalletSettings client={client} />} />
           <Route
             path="/tasks/:status"
             element={

@@ -220,10 +220,7 @@ describe("P01-04 login wallet authentication", () => {
     expect(parseSiweMessage(challenge.message)).toMatchObject({
       address: account.address,
       chainId: 56,
-      resources: [
-        "urn:lpbot:auth-purpose:link",
-        `urn:lpbot:auth-user:${store.account.id}`,
-      ],
+      resources: ["urn:lpbot:auth-purpose:link", `urn:lpbot:auth-user:${store.account.id}`],
     });
     expect(store.challenges.at(-1)).toMatchObject({
       address: account.address.toLowerCase(),
@@ -354,9 +351,7 @@ describe("P01-04 login wallet authentication", () => {
         userId: store.account.id,
       }),
     ).resolves.toEqual({ deleted: true });
-    expect(store.links.map(({ id }) => id)).toEqual([
-      "00000000-0000-4000-8000-000000000062",
-    ]);
+    expect(store.links.map(({ id }) => id)).toEqual(["00000000-0000-4000-8000-000000000062"]);
   });
 
   it("rejects wrong signer, address, chain, domain, URI and purpose without consuming", async () => {

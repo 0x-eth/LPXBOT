@@ -96,10 +96,7 @@ export class Eip1193WalletAdapter implements LoginWalletProviderAdapter {
     }
   }
 
-  async #assertContext(
-    provider: Eip1193Provider,
-    expected: ConnectedLoginWallet,
-  ): Promise<void> {
+  async #assertContext(provider: Eip1193Provider, expected: ConnectedLoginWallet): Promise<void> {
     const address = await this.#requestAddress(provider, "eth_accounts");
     const chainId = await this.#requestChainId(provider);
     if (address.toLowerCase() !== expected.address.toLowerCase() || chainId !== expected.chainId) {

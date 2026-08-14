@@ -19,11 +19,7 @@ import {
   type TelegramBotLoginApplication,
   type TelegramMiniAppAuthenticator,
 } from "@lpbot/security";
-import Fastify, {
-  type FastifyInstance,
-  type FastifyReply,
-  type FastifyRequest,
-} from "fastify";
+import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 
 import { sessionCookieName, setBrowserSessionCookie } from "./browser-session-cookie.js";
 
