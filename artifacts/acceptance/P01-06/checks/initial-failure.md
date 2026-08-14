@@ -1,7 +1,7 @@
 # P01-06 initial failing tests
 
 - Evidence level: `local-fixture-verified`.
-- Pre-test repository anchor: `d950cad283a6731475df33ed35cc07fe636a9b52`.
+- Pre-test repository anchor: `d950cad8ef60dd8d714bb89b197ef7b1fedaef35`.
 - Red-test commits: `62cc50f` through `8a61597` (repository auto-sync).
 - Test seams: authenticated HTTP API, real PostgreSQL, authenticated SSE, browser theme/navigation/settings UI, strict Playwright screenshots.
 
