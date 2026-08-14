@@ -6,6 +6,7 @@
 - Viewports are fixed at desktop 1440 x 900 and mobile 390 x 844. Each viewport has separate light and dark screenshots.
 - Animations are disabled and the caret is hidden. Dynamic account, stats and login-wallet regions use explicit Playwright masks.
 - P01-06 comparisons use the fixed `maxDiffPixels: 60` threshold. Platform-specific Darwin and Linux baselines are committed; Linux baselines were generated and then re-run without update in `mcr.microsoft.com/playwright:v1.62.1-noble`.
+- CI pins that rendering environment to digest `sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e`. A clean local container rerun passed desktop/mobile 2/2, and CI run 31816356438 passed the complete Browser suite without changing the threshold or masks.
 - The P01-05 shell contract remains independent at `maxDiffPixelRatio: 0.001`; its test no longer rewrites historical acceptance actuals.
 
 ## P01-06 pixel results

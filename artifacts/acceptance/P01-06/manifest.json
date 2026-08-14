@@ -3,7 +3,7 @@
   "workItemId": "P01-06",
   "phase": "P01",
   "risk": "R1",
-  "status": "in-progress",
+  "status": "accepted",
   "featureIds": ["SHELL-02", "SHELL-03", "SHELL-04", "SET-01", "SET-02"],
   "tests": [
     {
@@ -64,8 +64,8 @@
     "AUTH-10, P02 data services, P06 task business pages and later settings remain outside P01-06.",
     "No target site, Telegram service, production API, production credential, transaction, signature, broadcast or funds action was used.",
     "The frozen reference fixture and P01-01 through P01-05 acceptance trees match their pre-P01-06 Git tree objects.",
-    "Acceptance remains in-progress until all six CI jobs pass for a stable implementation and evidence commit."
+    "Acceptance is based on successful six-job CI run 31816356438 for stable implementation commit f5d537c909499e22d65a0dfbb98f4f4a95473eb0."
   ],
-  "completedAt": null,
-  "commit": null
+  "completedAt": "2026-08-14T15:53:43.000Z",
+  "commit": "f5d537c909499e22d65a0dfbb98f4f4a95473eb0"
 }

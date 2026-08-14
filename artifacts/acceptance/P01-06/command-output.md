@@ -44,4 +44,4 @@ The full run covers light, dark, system-light, system-dark, representative prese
 
 ## CI result
 
-Pending. The manifest is intentionally `in-progress` until one stable commit has all six CI jobs green.
+[Run 31816356438](https://github.com/0x-eth/LPXBOT/actions/runs/31816356438) passed all six jobs for commit `f5d537c909499e22d65a0dfbb98f4f4a95473eb0`: Quality, Governance, Browser, Contracts, Infrastructure and Security. Browser passed 65 tests with 3 intentional project skips in the digest-pinned Playwright 1.62.1 Noble image. The manifest is accepted as of `2026-08-14T15:53:43Z`.

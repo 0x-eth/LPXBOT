@@ -190,10 +190,21 @@
     "modified": false
   },
   "ci": {
-    "status": "pending",
-    "runId": null,
-    "commit": null,
-    "jobs": ["Quality", "Governance", "Browser", "Contracts", "Infrastructure", "Security"]
+    "status": "passed",
+    "runId": 31816356438,
+    "commit": "f5d537c909499e22d65a0dfbb98f4f4a95473eb0",
+    "completedAt": "2026-08-14T15:53:43.000Z",
+    "url": "https://github.com/0x-eth/LPXBOT/actions/runs/31816356438",
+    "jobs": ["Quality", "Governance", "Browser", "Contracts", "Infrastructure", "Security"],
+    "results": {
+      "Quality": "passed",
+      "Governance": "passed",
+      "Browser": "passed",
+      "Contracts": "passed",
+      "Infrastructure": "passed",
+      "Security": "passed"
+    },
+    "browserImage": "mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e"
   },
   "externalOperations": {
     "targetSite": false,

@@ -35,7 +35,18 @@ Linux P01-06 visual baselines were generated in a clean external clone using `mc
 
 ## CI status
 
-The acceptance manifest remains `in-progress` until a stable implementation/evidence commit completes all six GitHub Actions jobs: Quality, Governance, Browser, Contracts, Infrastructure and Security. A cancelled run caused by auto-sync is not accepted as evidence.
+[GitHub Actions run 31816356438](https://github.com/0x-eth/LPXBOT/actions/runs/31816356438) completed successfully for stable implementation commit `f5d537c909499e22d65a0dfbb98f4f4a95473eb0` at `2026-08-14T15:53:43Z`.
+
+| Job | Result |
+|---|---|
+| Quality | passed |
+| Governance | passed |
+| Browser | passed; 65 tests and 3 intentional project skips |
+| Contracts | passed |
+| Infrastructure | passed |
+| Security | passed |
+
+The Browser job runs in `mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e`, the same pinned rendering environment used to generate and re-check the Linux baselines. A prior host-rendered run was rejected after reproducibly exposing font and icon antialiasing differences; no threshold or mask was widened. Cancelled auto-sync runs are not acceptance evidence.
 
 ## Frozen and prior acceptance integrity
 
