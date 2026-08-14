@@ -229,7 +229,10 @@ function LoginWalletSettings({ client }: { client: AuthClient }) {
   return (
     <main className="workspace settings-workspace">
       <p className="eyebrow">Account</p>
-      <h1>Settings</h1>
+      <h1>
+        <span aria-hidden="true">设置</span>
+        <span className="sr-only">Settings</span>
+      </h1>
       <section className="settings-section" aria-labelledby="login-wallets-title">
         <div className="section-heading">
           <div>
@@ -416,19 +419,60 @@ function PrimaryNavigation({ onOpenChat }: { onOpenChat(): void }) {
 }
 
 const routeFixtures = [
-  { eyebrow: "Protected workspace", path: "/tasks/*", title: "Tasks" },
-  { eyebrow: "Local empty fixture", path: "/pools", title: "Pools" },
-  { eyebrow: "Local empty fixture", path: "/strategies", title: "Strategies" },
-  { eyebrow: "Local empty fixture", path: "/activity", title: "Activity" },
-  { eyebrow: "Local empty fixture", path: "/wallets", title: "Wallets" },
-  { eyebrow: "Local empty fixture", path: "/developer", title: "Developer" },
+  {
+    eyebrow: "Protected workspace",
+    localizedTitle: "任务",
+    path: "/tasks/*",
+    title: "Tasks",
+  },
+  {
+    eyebrow: "Local empty fixture",
+    localizedTitle: "池子发现",
+    path: "/pools",
+    title: "Pools",
+  },
+  {
+    eyebrow: "Local empty fixture",
+    localizedTitle: "自动策略",
+    path: "/strategies",
+    title: "Strategies",
+  },
+  {
+    eyebrow: "Local empty fixture",
+    localizedTitle: "操作日志",
+    path: "/activity",
+    title: "Activity",
+  },
+  {
+    eyebrow: "Local empty fixture",
+    localizedTitle: "钱包管理",
+    path: "/wallets",
+    title: "Wallets",
+  },
+  {
+    eyebrow: "Local empty fixture",
+    localizedTitle: "开发者",
+    path: "/developer",
+    title: "Developer",
+  },
 ] as const;
 
-function EmptyFixturePage({ eyebrow, title }: { eyebrow: string; title: string }) {
+function EmptyFixturePage({
+  eyebrow,
+  localizedTitle,
+  title,
+}: {
+  eyebrow: string;
+  localizedTitle: string;
+  title: string;
+}) {
   return (
     <main className="workspace route-workspace" data-fixture-state="empty">
       <p className="eyebrow">{eyebrow}</p>
-      <h1>{title}</h1>
+      <h1>
+        <span aria-hidden="true">{localizedTitle}</span>
+        <span className="sr-only">{title}</span>
+      </h1>
       <div className="empty-fixture" role="status">
         <Inbox aria-hidden="true" size={22} strokeWidth={1.7} />
         <p>暂无内容</p>
@@ -567,7 +611,13 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
           <Route path="/settings" element={<LoginWalletSettings client={client} />} />
           {routeFixtures.map((fixture) => (
             <Route
-              element={<EmptyFixturePage eyebrow={fixture.eyebrow} title={fixture.title} />}
+              element={
+                <EmptyFixturePage
+                  eyebrow={fixture.eyebrow}
+                  localizedTitle={fixture.localizedTitle}
+                  title={fixture.title}
+                />
+              }
               key={fixture.path}
               path={fixture.path}
             />
@@ -578,7 +628,10 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
               state.session.role === "admin" ? (
                 <main className="workspace">
                   <p className="eyebrow">Admin only</p>
-                  <h1>Users</h1>
+                  <h1>
+                    <span aria-hidden="true">用户管理</span>
+                    <span className="sr-only">Users</span>
+                  </h1>
                   <div className="empty-fixture" role="status">
                     <Code2 aria-hidden="true" size={22} />
                     <p>暂无内容</p>
