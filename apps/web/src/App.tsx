@@ -14,6 +14,21 @@ function BootingPage() {
   );
 }
 
+function AuthenticatingPage({
+  state,
+}: {
+  state: Extract<AuthState, { status: "authenticating" }>;
+}) {
+  return (
+    <main className="state-page" aria-busy="true">
+      <div className="spinner" aria-hidden="true" />
+      <p role="status">
+        {state.method === "telegram-mini-app" ? "Signing in with Telegram" : "Waiting for Telegram"}
+      </p>
+    </main>
+  );
+}
+
 function LoginPage() {
   return (
     <main className="state-page">
@@ -194,6 +209,7 @@ function AuthRouter() {
 
   if (state.status === "booting") return <BootingPage />;
   if (state.status === "anonymous") return <LoginPage />;
+  if (state.status === "authenticating") return <AuthenticatingPage state={state} />;
   if (state.status === "blocked" || state.status === "region-blocked") {
     return <BlockedPage state={state} />;
   }

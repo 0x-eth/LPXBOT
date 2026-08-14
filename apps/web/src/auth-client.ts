@@ -5,6 +5,8 @@ import {
   type SessionView,
 } from "@lpbot/api-contract";
 
+import type { TelegramMiniAppAdapter } from "./telegram-mini-app";
+
 export type AuthFetch = (input: Request | string | URL, init?: RequestInit) => Promise<Response>;
 
 export type AuthPageState =
@@ -98,6 +100,30 @@ export class AuthClient {
     return this.#state;
   }
 
+  async loginWithTelegramMiniApp(adapter: TelegramMiniAppAdapter): Promise<AuthState> {
+    const initData = adapter.getInitData();
+    if (!initData) {
+      this.#state = { status: "anonymous" };
+      this.#page = {
+        kind: "error",
+        code: "TELEGRAM_MINI_APP_UNAVAILABLE",
+        message: "Telegram Mini App authentication is unavailable",
+        retryable: false,
+      };
+      return this.#state;
+    }
+
+    this.#state = { status: "authenticating", method: "telegram-mini-app" };
+    this.#page = { kind: "ready" };
+    const response = await this.request("/api/auth/me", {
+      body: JSON.stringify({ initData }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    });
+    if (response.ok) await this.#acceptAuthMeResponse(response);
+    return this.#state;
+  }
+
   async restore(): Promise<AuthState> {
     if (this.#restorePromise) return this.#restorePromise;
     this.#restorePromise = this.#performRestore();
@@ -110,22 +136,24 @@ export class AuthClient {
 
   async #performRestore(): Promise<AuthState> {
     const response = await this.request("/api/auth/me", { method: "POST" });
-    if (response.ok) {
-      const body: unknown = await response.json();
-      if (!isAuthMeSuccess(body)) {
-        this.#state = { status: "anonymous" };
-        this.#page = {
-          kind: "error",
-          code: "INVALID_RESPONSE",
-          message: "The session response was invalid",
-          retryable: true,
-        };
-      } else {
-        this.#state = { status: "active", session: body.data.user };
-        this.#page = { kind: "ready" };
-      }
-    }
+    if (response.ok) await this.#acceptAuthMeResponse(response);
     return this.#state;
+  }
+
+  async #acceptAuthMeResponse(response: Response): Promise<void> {
+    const body: unknown = await response.json();
+    if (!isAuthMeSuccess(body)) {
+      this.#state = { status: "anonymous" };
+      this.#page = {
+        kind: "error",
+        code: "INVALID_RESPONSE",
+        message: "The session response was invalid",
+        retryable: true,
+      };
+      return;
+    }
+    this.#state = { status: "active", session: body.data.user };
+    this.#page = { kind: "ready" };
   }
 
   async request(input: Request | string | URL, init: RequestInit = {}): Promise<Response> {
@@ -214,6 +242,7 @@ export function authStatePath(state: AuthState): string | null {
     case "active":
       return null;
     case "anonymous":
+    case "authenticating":
       return "/login";
     case "blocked":
     case "region-blocked":

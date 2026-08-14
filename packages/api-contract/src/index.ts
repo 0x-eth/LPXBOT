@@ -45,6 +45,10 @@ export interface SessionView {
 export type AuthState =
   | { status: "booting" }
   | { status: "anonymous" }
+  | {
+      status: "authenticating";
+      method: "telegram-mini-app" | "telegram-bot-link" | "wallet";
+    }
   | { status: "active"; session: SessionView }
   | { status: "blocked"; reason: AccountBlockReason; message: string | null }
   | { status: "maintenance"; message: string | null; until: string | null }
@@ -101,6 +105,7 @@ export function authStateDestination(state: AuthState): string | null {
     case "active":
       return null;
     case "anonymous":
+    case "authenticating":
       return "/login";
     case "blocked":
     case "region-blocked":
