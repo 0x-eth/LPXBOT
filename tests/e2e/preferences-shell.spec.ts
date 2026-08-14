@@ -1,0 +1,407 @@
+import { AxeBuilder } from "@axe-core/playwright";
+import {
+  expect,
+  test,
+  type BrowserContext,
+  type Page,
+  type Route,
+} from "@playwright/test";
+
+type ThemeMode = "light" | "dark" | "system";
+
+interface PreferenceFixture {
+  colorTheme: string;
+  customColor: string | null;
+  navConfig: Array<{ key: string; visible: boolean }>;
+  poolsPanelCollapsed: boolean;
+  showHotPools: boolean;
+  showScanTab: boolean;
+  taskViewMode: "grid" | "list";
+  theme: ThemeMode;
+}
+
+interface FixtureState {
+  failNextPatch?: boolean;
+  preferences: PreferenceFixture;
+  revision: number;
+}
+
+const defaultPreferences: PreferenceFixture = {
+  colorTheme: "neutral",
+  customColor: null,
+  navConfig: [
+    { key: "tasks", visible: true },
+    { key: "pools", visible: true },
+    { key: "strategies", visible: true },
+    { key: "activity", visible: true },
+    { key: "wallets", visible: true },
+    { key: "chat", visible: true },
+  ],
+  poolsPanelCollapsed: false,
+  showHotPools: false,
+  showScanTab: true,
+  taskViewMode: "grid",
+  theme: "system",
+};
+
+const session = {
+  allowedChainIds: [1, 56],
+  avatarUrl: null,
+  displayName: "Preference Fixture",
+  maintenanceBypass: false,
+  role: "user",
+  tier: "normal",
+  userId: "28000000-0000-4000-8000-000000000001",
+};
+
+function cloneDefaults(): PreferenceFixture {
+  return structuredClone(defaultPreferences);
+}
+
+async function fulfillPreferences(route: Route, state: FixtureState): Promise<void> {
+  if (route.request().method() === "GET") {
+    await route.fulfill({
+      contentType: "application/json",
+      headers: { "Cache-Control": "no-store" },
+      json: {
+        data: {
+          preferences: state.preferences,
+          revision: state.revision,
+          schemaVersion: 2,
+          updatedAt: state.revision === 0 ? null : "2026-08-14T09:30:00.000Z",
+        },
+        requestId: "req-preferences-e2e",
+        success: true,
+      },
+      status: 200,
+    });
+    return;
+  }
+
+  const body = route.request().postDataJSON() as {
+    changes: Partial<PreferenceFixture>;
+    expectedRevision: number;
+  };
+  if (state.failNextPatch) {
+    state.failNextPatch = false;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Fixture internals must not render",
+          requestId: "req-preferences-failed",
+          retryable: true,
+        },
+        success: false,
+      },
+      status: 500,
+    });
+    return;
+  }
+  if (body.expectedRevision !== state.revision) {
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        error: {
+          code: "PREFERENCES_CONFLICT",
+          message: "Preferences changed",
+          requestId: "req-preferences-conflict",
+          retryable: true,
+        },
+        success: false,
+      },
+      status: 409,
+    });
+    return;
+  }
+  state.preferences = { ...state.preferences, ...structuredClone(body.changes) };
+  state.revision += 1;
+  await route.fulfill({
+    contentType: "application/json",
+    headers: { "Cache-Control": "no-store" },
+    json: {
+      data: {
+        preferences: state.preferences,
+        revision: state.revision,
+        schemaVersion: 2,
+        updatedAt: "2026-08-14T09:30:00.000Z",
+      },
+      requestId: "req-preferences-saved",
+      success: true,
+    },
+    status: 200,
+  });
+}
+
+async function installFixture(context: BrowserContext, state: FixtureState): Promise<void> {
+  await context.route("**/api/auth/me", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      json: {
+        data: { isAdmin: false, maintenance: null, user: session },
+        requestId: "req-preferences-auth",
+        success: true,
+      },
+      status: 200,
+    }),
+  );
+  await context.route("**/api/user/preferences", (route) => fulfillPreferences(route, state));
+  await context.route("**/api/auth/wallet/links", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      json: { data: { links: [] }, requestId: "req-wallet-empty", success: true },
+      status: 200,
+    }),
+  );
+  await context.route("**/api/stats", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      headers: { "Cache-Control": "no-store" },
+      json: {
+        data: {
+          observedAt: "2026-08-14T09:30:00.000Z",
+          sequence: 20,
+          stats: {
+            fps: 60,
+            gas: { baseGwei: 0.006, ethereumGwei: 0.232 },
+            online: true,
+            pingMs: 84,
+            recommendedPools: ["USDT / utility", "USDT / WBNB"],
+            taskCounts: { paused: 1, running: 1, stopped: 1 },
+          },
+        },
+        requestId: "req-stats-snapshot",
+        success: true,
+      },
+      status: 200,
+    }),
+  );
+  await context.route("**/api/stats/stream", (route) =>
+    route.fulfill({
+      body:
+        'id: 20\nevent: snapshot\ndata: {"type":"snapshot","observedAt":"2026-08-14T09:30:00.000Z","sequence":20,"stats":{"fps":60,"gas":{"baseGwei":0.006,"ethereumGwei":0.232},"online":true,"pingMs":84,"recommendedPools":["USDT / utility","USDT / WBNB"],"taskCounts":{"paused":1,"running":1,"stopped":1}}}\n\n' +
+        'id: 21\nevent: heartbeat\ndata: {"type":"heartbeat","observedAt":"2026-08-14T09:30:01.000Z","sequence":21}\n\n',
+      contentType: "text/event-stream",
+      headers: { "Cache-Control": "no-cache, no-store, must-revalidate" },
+      status: 200,
+    }),
+  );
+}
+
+async function expectNoSeriousAxeViolations(page: Page): Promise<void> {
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(
+    results.violations.filter(({ impact }) => impact === "serious" || impact === "critical"),
+  ).toEqual([]);
+}
+
+test("SHELL-03 applies cached theme before first paint and follows live system changes", async ({
+  context,
+  page,
+}) => {
+  const state: FixtureState = {
+    preferences: { ...cloneDefaults(), colorTheme: "teal", theme: "system" },
+    revision: 4,
+  };
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "lpbot-theme-bootstrap",
+      JSON.stringify({ colorTheme: "teal", customColor: null, theme: "system" }),
+    );
+    const browser = globalThis as typeof globalThis & { __themeAtDomReady?: string };
+    document.addEventListener("DOMContentLoaded", () => {
+      browser.__themeAtDomReady = document.documentElement.dataset.theme;
+    });
+  });
+  await page.emulateMedia({ colorScheme: "light" });
+  await installFixture(context, state);
+  await page.goto("/settings");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  expect(await page.evaluate(() => globalThis.__themeAtDomReady)).toBe("light");
+  await expect(page.locator("meta[name='theme-color']")).toHaveAttribute("content", "#FFFFFF");
+  expect(await page.evaluate(() => document.documentElement.style.colorScheme)).toBe("light");
+
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("meta[name='theme-color']")).toHaveAttribute("content", "#151719");
+  expect(await page.evaluate(() => document.documentElement.style.colorScheme)).toBe("dark");
+});
+
+test("SHELL-03 covers light, dark, system-light and system-dark with a representative accent", async ({
+  context,
+  page,
+}) => {
+  const state: FixtureState = { preferences: cloneDefaults(), revision: 0 };
+  await installFixture(context, state);
+  for (const fixture of [
+    { expected: "light", mode: "light", system: "dark" },
+    { expected: "dark", mode: "dark", system: "light" },
+    { expected: "light", mode: "system", system: "light" },
+    { expected: "dark", mode: "system", system: "dark" },
+  ] as const) {
+    state.preferences = { ...cloneDefaults(), colorTheme: "blue", theme: fixture.mode };
+    await page.emulateMedia({ colorScheme: fixture.system });
+    await page.goto("/settings");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", fixture.expected);
+    await expect(page.locator("html")).toHaveAttribute("data-accent", "blue");
+    await expect(page.getByRole("heading", { level: 2, name: "界面" })).toBeVisible();
+  }
+});
+
+test("SET-01 and SET-02 update optimistically, roll back, retry and validate custom color", async ({
+  context,
+  page,
+}) => {
+  const state: FixtureState = {
+    failNextPatch: true,
+    preferences: cloneDefaults(),
+    revision: 0,
+  };
+  await installFixture(context, state);
+  await page.goto("/settings");
+  await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("status", { name: "界面设置状态" })).toContainText("已同步");
+
+  const hotPools = page.getByRole("switch", { name: "热门池子推荐" });
+  await hotPools.click();
+  await expect(hotPools).toBeChecked();
+  await expect(page.getByRole("status", { name: "界面设置状态" })).toContainText("正在保存");
+  await expect(page.getByRole("alert").filter({ hasText: "界面设置保存失败" })).toBeVisible();
+  await expect(hotPools).not.toBeChecked();
+  await expect(page.getByText("Fixture internals must not render")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "重试" }).click();
+  await expect(hotPools).toBeChecked();
+  await expect(page.getByRole("status").filter({ hasText: "界面设置已保存" })).toBeVisible();
+
+  await page.getByRole("radio", { name: "自定义颜色" }).click();
+  const customColor = page.getByLabel("自定义强调色");
+  await customColor.fill("red");
+  await customColor.press("Enter");
+  await expect(page.getByRole("alert").filter({ hasText: "请输入六位十六进制颜色" })).toBeVisible();
+  await customColor.fill("#0F766E");
+  await customColor.press("Enter");
+  await expect(page.locator("html")).toHaveAttribute("data-accent", "custom");
+  await expectNoSeriousAxeViolations(page);
+});
+
+test("SHELL-04 reorders and hides both navigation surfaces with keyboard and cross-context persistence", async ({
+  browser,
+  context,
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "Cross-context navigation runs once.");
+  const state: FixtureState = { preferences: cloneDefaults(), revision: 0 };
+  await installFixture(context, state);
+  await page.goto("/settings");
+
+  const taskVisibility = page.getByRole("switch", { name: "显示任务" });
+  await expect(taskVisibility).toBeChecked();
+  await expect(taskVisibility).toBeDisabled();
+  await page.getByRole("switch", { name: "显示策略" }).click();
+  const walletRow = page.getByRole("listitem").filter({ hasText: "钱包" });
+  await walletRow.focus();
+  await walletRow.press("Alt+ArrowUp");
+  await expect(page.getByRole("status").filter({ hasText: "界面设置已保存" })).toBeVisible();
+
+  const desktopNav = page.locator(".app-header > .primary-navigation");
+  await expect(desktopNav.getByText("策略", { exact: true })).toHaveCount(0);
+  await expect(desktopNav.locator(".primary-navigation-item")).toHaveText([
+    /任务/u,
+    /池子/u,
+    /钱包/u,
+    /日志/u,
+    /聊天室/u,
+  ]);
+  await expect(page.getByRole("link", { name: "管理" })).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.locator(".app-header > .primary-navigation").getByText("策略")).toHaveCount(0);
+  const secondContext = await browser.newContext({ viewport: { height: 900, width: 1440 } });
+  try {
+    await installFixture(secondContext, state);
+    const secondPage = await secondContext.newPage();
+    await secondPage.goto("/tasks/running");
+    const secondNav = secondPage.locator(".app-header > .primary-navigation");
+    await expect(secondNav.getByText("策略", { exact: true })).toHaveCount(0);
+    await expect(secondNav.locator(".primary-navigation-item")).toHaveText([
+      /任务/u,
+      /池子/u,
+      /钱包/u,
+      /日志/u,
+      /聊天室/u,
+    ]);
+  } finally {
+    await secondContext.close();
+  }
+});
+
+test("SHELL-02 renders real fixture values on desktop and compact stable badges on mobile", async ({
+  context,
+  page,
+}) => {
+  const state: FixtureState = { preferences: cloneDefaults(), revision: 0 };
+  await installFixture(context, state);
+  await page.goto("/tasks/running");
+  await expect(page.getByRole("status", { name: "实时状态" })).toContainText("在线");
+  await expect(page.getByRole("status", { name: "实时状态" })).toContainText("Base 0.006");
+  await expect(page.getByRole("status", { name: "实时状态" })).toContainText("ETH 0.232");
+  await expect(page.getByRole("status", { name: "实时状态" })).toContainText("FPS 60");
+  await expect(page.getByRole("status", { name: "实时状态" })).toContainText("PING 84ms");
+  await expect(page.locator(".nav-badge-slot").filter({ hasText: "1" }).first()).toBeVisible();
+});
+
+test("P01-06 settings visual contract matches the observed responsive interface", async ({
+  context,
+  page,
+}, testInfo) => {
+  const state: FixtureState = {
+    preferences: { ...cloneDefaults(), colorTheme: "teal", theme: "light" },
+    revision: 3,
+  };
+  await installFixture(context, state);
+  await page.goto("/settings");
+  await expect(page.getByRole("heading", { level: 2, name: "界面" })).toBeVisible();
+  const masks = [
+    page.locator("[data-visual-mask='account']"),
+    page.locator("[data-visual-mask='stats']"),
+    page.locator("[data-visual-mask='login-wallets']"),
+  ];
+  await expect(page).toHaveScreenshot("settings-light.png", {
+    animations: "disabled",
+    caret: "hide",
+    mask: masks,
+    maxDiffPixels: 60,
+  });
+  await page.screenshot({
+    animations: "disabled",
+    caret: "hide",
+    fullPage: true,
+    mask: masks,
+    path: `artifacts/acceptance/P01-06/visual/settings-light-${testInfo.project.name}-actual.png`,
+  });
+
+  state.preferences = {
+    ...state.preferences,
+    colorTheme: "custom",
+    customColor: "#0F766E",
+    theme: "dark",
+  };
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page).toHaveScreenshot("settings-dark.png", {
+    animations: "disabled",
+    caret: "hide",
+    mask: masks,
+    maxDiffPixels: 60,
+  });
+  await page.screenshot({
+    animations: "disabled",
+    caret: "hide",
+    fullPage: true,
+    mask: masks,
+    path: `artifacts/acceptance/P01-06/visual/settings-dark-${testInfo.project.name}-actual.png`,
+  });
+});
