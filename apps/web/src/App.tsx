@@ -360,8 +360,8 @@ function LoginWalletSettingsSection({ client }: { client: AuthClient }) {
 function SettingsPage({ client }: { client: AuthClient }) {
   return (
     <main className="workspace settings-workspace">
-      <p className="eyebrow">Preferences</p>
-      <h1>
+      <h1 className="settings-title">
+        <SettingsIcon aria-hidden="true" size={19} />
         <span aria-hidden="true">设置</span>
         <span className="sr-only">Settings</span>
       </h1>
@@ -500,7 +500,11 @@ function PrimaryNavigation({ onOpenChat }: { onOpenChat(trigger: HTMLButtonEleme
     .map(({ key }) => primaryNavigation[key]);
 
   const badge = (key: NavigationKey) => (
-    <span aria-hidden="true" className="nav-badge-slot">
+    <span
+      aria-hidden="true"
+      className="nav-badge-slot"
+      data-visual-mask={key === "tasks" && stats.sequence >= 0 ? "stats" : undefined}
+    >
       {key === "tasks" && stats.sequence >= 0 ? display.running : null}
     </span>
   );

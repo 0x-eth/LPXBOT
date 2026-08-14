@@ -814,6 +814,15 @@ html[data-theme="dark"] .online-state[data-online="true"] {
   padding-bottom: 80px;
 }
 
+.workspace .settings-title {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 9px;
+  font-size: 1.05rem;
+  font-weight: 750;
+}
+
 .interface-settings {
   margin-top: 28px;
 }
