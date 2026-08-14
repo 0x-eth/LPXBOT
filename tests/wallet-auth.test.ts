@@ -358,4 +358,173 @@ describe("P01-04 login wallet authentication", () => {
       "00000000-0000-4000-8000-000000000062",
     ]);
   });
+
+  it("rejects wrong signer, address, chain, domain, URI and purpose without consuming", async () => {
+    const account = privateKeyToAccount(generatePrivateKey());
+    const other = privateKeyToAccount(generatePrivateKey());
+    const now = new Date("2026-08-14T09:00:00.000Z");
+
+    for (const variant of ["signer", "address", "chain", "domain", "uri", "purpose"] as const) {
+      const store = new MemoryLoginWalletStore();
+      const service = authenticationService(store, () => now);
+      const challenge = await service.createLoginChallenge({
+        address: account.address,
+        chainId: 56,
+        requestId: `req-${variant}-nonce`,
+      });
+      const signedMessage =
+        variant === "domain"
+          ? challenge.message.replace("lpbot.local wants", "evil.local wants")
+          : variant === "uri"
+            ? challenge.message.replace(
+                "URI: https://lpbot.local/login",
+                "URI: https://evil.local/login",
+              )
+            : variant === "purpose"
+              ? challenge.message.replace("auth-purpose:login", "auth-purpose:link")
+              : challenge.message;
+      const signer = variant === "signer" ? other : account;
+      const signature = await signer.signMessage({ message: signedMessage });
+
+      await expect(
+        service.login({
+          address: variant === "address" ? other.address : account.address,
+          chainId: variant === "chain" ? 1 : 56,
+          nonceId: challenge.nonceId,
+          requestId: `req-${variant}-login`,
+          signature,
+        }),
+      ).rejects.toMatchObject({
+        code: variant === "address" || variant === "chain" ? "NONCE_MISMATCH" : "SIGNATURE_INVALID",
+      });
+      expect(store.challenges[0]?.consumedAt).toBeNull();
+    }
+  });
+
+  it("rejects expired and replayed challenges and allows one concurrent consumption", async () => {
+    const account = privateKeyToAccount(generatePrivateKey());
+    let now = new Date("2026-08-14T09:10:00.000Z");
+    const expiredStore = new MemoryLoginWalletStore();
+    const expiredService = authenticationService(expiredStore, () => now);
+    const expired = await expiredService.createLoginChallenge({
+      address: account.address,
+      chainId: 56,
+      requestId: "req-expired-nonce",
+    });
+    const expiredSignature = await account.signMessage({ message: expired.message });
+    now = new Date("2026-08-14T09:15:00.001Z");
+    await expect(
+      expiredService.login({
+        address: account.address,
+        chainId: 56,
+        nonceId: expired.nonceId,
+        requestId: "req-expired-login",
+        signature: expiredSignature,
+      }),
+    ).rejects.toMatchObject({ code: "NONCE_EXPIRED" });
+
+    now = new Date("2026-08-14T09:20:00.000Z");
+    const raceStore = new MemoryLoginWalletStore();
+    const raceService = authenticationService(raceStore, () => now);
+    const race = await raceService.createLoginChallenge({
+      address: account.address,
+      chainId: 56,
+      requestId: "req-race-nonce",
+    });
+    const raceSignature = await account.signMessage({ message: race.message });
+    const results = await Promise.allSettled(
+      ["a", "b"].map((suffix) =>
+        raceService.login({
+          address: account.address,
+          chainId: 56,
+          nonceId: race.nonceId,
+          requestId: `req-race-${suffix}`,
+          signature: raceSignature,
+        }),
+      ),
+    );
+    expect(results.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
+    expect(results.filter(({ status }) => status === "rejected")).toHaveLength(1);
+    await expect(
+      raceService.login({
+        address: account.address,
+        chainId: 56,
+        nonceId: race.nonceId,
+        requestId: "req-race-replay",
+        signature: raceSignature,
+      }),
+    ).rejects.toMatchObject({ code: "NONCE_REPLAYED" });
+  });
+
+  it("keeps login and link challenges purpose- and user-isolated", async () => {
+    const account = privateKeyToAccount(generatePrivateKey());
+    const now = new Date("2026-08-14T09:30:00.000Z");
+    const store = new MemoryLoginWalletStore();
+    const service = authenticationService(store, () => now);
+    const loginChallenge = await service.createLoginChallenge({
+      address: account.address,
+      chainId: 56,
+      requestId: "req-purpose-login-nonce",
+    });
+    const loginSignature = await account.signMessage({ message: loginChallenge.message });
+    await expect(
+      service.link({
+        address: account.address,
+        chainId: 56,
+        label: null,
+        nonceId: loginChallenge.nonceId,
+        requestId: "req-login-used-for-link",
+        signature: loginSignature,
+        userId: store.account.id,
+      }),
+    ).rejects.toMatchObject({ code: "NONCE_MISMATCH" });
+
+    const linkChallenge = await service.createLinkChallenge({
+      address: account.address,
+      chainId: 56,
+      requestId: "req-purpose-link-nonce",
+      userId: store.account.id,
+    });
+    const linkSignature = await account.signMessage({ message: linkChallenge.message });
+    await expect(
+      service.login({
+        address: account.address,
+        chainId: 56,
+        nonceId: linkChallenge.nonceId,
+        requestId: "req-link-used-for-login",
+        signature: linkSignature,
+      }),
+    ).rejects.toMatchObject({ code: "NONCE_MISMATCH" });
+    await expect(
+      service.link({
+        address: account.address,
+        chainId: 56,
+        label: null,
+        nonceId: linkChallenge.nonceId,
+        requestId: "req-link-cross-user",
+        signature: linkSignature,
+        userId: "00000000-0000-4000-8000-000000000099",
+      }),
+    ).rejects.toMatchObject({ code: "NONCE_MISMATCH" });
+  });
+
+  it.each(["", " ", "line\nbreak", `x${"a".repeat(64)}`])(
+    "rejects an invalid login-wallet label %j before consuming a challenge",
+    async (label) => {
+      const store = new MemoryLoginWalletStore();
+      const service = authenticationService(store, () => new Date("2026-08-14T09:40:00.000Z"));
+      await expect(
+        service.link({
+          address: "0x0000000000000000000000000000000000000001",
+          chainId: 56,
+          label,
+          nonceId: "L".repeat(43),
+          requestId: "req-label-invalid",
+          signature: `0x${"ab".repeat(65)}`,
+          userId: store.account.id,
+        }),
+      ).rejects.toMatchObject({ code: "LABEL_INVALID" });
+      expect(store.challenges).toEqual([]);
+    },
+  );
 });
