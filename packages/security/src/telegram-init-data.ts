@@ -79,7 +79,9 @@ export class TelegramInitDataVerifier {
     let parsed: ReturnType<typeof parse>;
     try {
       validate(initData, this.#botToken, { expiresIn: 0 });
-      parsed = parse(initData);
+      const parseParameters = new URLSearchParams(parameters);
+      if (!parseParameters.has("signature")) parseParameters.set("signature", "");
+      parsed = parse(parseParameters);
     } catch {
       throw new TelegramInitDataError("AUTH_INVALID");
     }

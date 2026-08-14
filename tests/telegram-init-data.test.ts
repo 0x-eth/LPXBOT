@@ -68,11 +68,11 @@ describe("Telegram Mini App initData verifier", () => {
       botToken: documentationToken,
       maxAgeSeconds: 300,
       maxFutureSkewSeconds: 30,
-      now: () => new Date("2022-09-10T00:08:00.000Z"),
+      now: () => new Date("2022-09-10T01:02:00.000Z"),
     }).verify(initData);
 
     expect(result).toMatchObject({
-      authDate: new Date("2022-09-10T00:07:28.000Z"),
+      authDate: new Date("2022-09-10T01:00:48.000Z"),
       subject: "279058397",
     });
     expect(result.replayDigest).toMatch(/^[a-f0-9]{64}$/u);
