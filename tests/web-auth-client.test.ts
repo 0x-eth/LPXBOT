@@ -103,6 +103,57 @@ describe("P01-02 web auth client", () => {
     vi.useRealTimers();
   });
 
+  it("cancels the server intent when finite Bot polling times out", async () => {
+    vi.useFakeTimers();
+    const token = "C".repeat(43);
+    const fetcher = vi
+      .fn<AuthFetch>()
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: {
+            expiresAt: "2026-08-14T03:03:00.000Z",
+            loginUrl: `https://t.me/local_fixture_bot?start=${token}`,
+            token,
+          },
+          requestId: "req-create-timeout",
+        }),
+      )
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: { confirmed: false, session: null, status: "pending" },
+          requestId: "req-pending-timeout",
+        }),
+      )
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: { status: "cancelled" },
+          requestId: "req-cancel-timeout",
+        }),
+      );
+    const client = new AuthClient(fetcher, {
+      broadcastChannel: null,
+      maxPollAttempts: 1,
+      now: () => new Date("2026-08-14T03:00:00.000Z").getTime(),
+      pollInitialDelayMs: 100,
+    });
+
+    await client.startTelegramBotLogin();
+    const pollingSignal = fetcher.mock.calls[1]?.[1]?.signal as AbortSignal;
+    expect(pollingSignal.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(pollingSignal.aborted).toBe(true);
+    expect(fetcher.mock.calls[2]?.[0]).toBe(`/api/auth/login-token/${token}/cancel`);
+    expect(fetcher.mock.calls[2]?.[1]).toMatchObject({ method: "POST" });
+    expect(client.botLogin).toEqual({ status: "expired" });
+    expect(client.state).toEqual({ status: "anonymous" });
+    client.dispose();
+    vi.useRealTimers();
+  });
+
   it("authenticates from the Mini App adapter without persisting initData", async () => {
     const initData = "query_id=fixture&auth_date=1&hash=fixture&user=fixture";
     let resolveRequest: ((response: Response) => void) | undefined;

@@ -422,15 +422,7 @@ export class AuthClient {
   async #pollTelegramBotLogin(flow: BotLoginFlow): Promise<void> {
     if (this.#botLoginFlow !== flow || flow.controller.signal.aborted) return;
     if (flow.attempts >= this.#maxPollAttempts || this.#now() >= flow.expiresAt) {
-      this.#state = { status: "anonymous" };
-      this.#page = {
-        kind: "error",
-        code: "LOGIN_TOKEN_EXPIRED",
-        message: "The Telegram login link expired",
-        retryable: true,
-      };
-      this.#botLogin = { status: "expired" };
-      this.#stopBotFlow();
+      await this.#expireBotLoginFlow(flow);
       return;
     }
 
@@ -489,6 +481,28 @@ export class AuthClient {
     if (flow.timer) clearTimeout(flow.timer);
     flow.token = "";
     flow.controller.abort();
+  }
+
+  async #expireBotLoginFlow(flow: BotLoginFlow): Promise<void> {
+    const token = flow.token;
+    this.#stopBotFlow();
+    this.#state = { status: "anonymous" };
+    this.#page = {
+      kind: "error",
+      code: "LOGIN_TOKEN_EXPIRED",
+      message: "The Telegram login link expired",
+      retryable: true,
+    };
+    this.#botLogin = { status: "expired" };
+    const controller = new AbortController();
+    try {
+      await this.request(`/api/auth/login-token/${token}/cancel`, {
+        method: "POST",
+        signal: controller.signal,
+      });
+    } catch {
+      // The local flow remains closed even if the best-effort server cancellation fails.
+    }
   }
 }
 
