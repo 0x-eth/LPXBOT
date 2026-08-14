@@ -36,6 +36,7 @@ describe("P01-04 login wallet HTTP API", () => {
         nonceId: "A".repeat(43),
       }),
       login: vi.fn(),
+      link: vi.fn(),
     };
     const app = buildApiApp({
       maintenance: { enabled: false, message: null, until: null },
@@ -91,6 +92,7 @@ describe("P01-04 login wallet HTTP API", () => {
           token,
         },
       }),
+      link: vi.fn(),
     };
     const app = buildApiApp({
       maintenance: { enabled: false, message: null, until: null },

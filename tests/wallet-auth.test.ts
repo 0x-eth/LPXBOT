@@ -265,4 +265,42 @@ describe("P01-04 login wallet authentication", () => {
       userId: store.account.id,
     });
   });
+
+  it("lists only the current user's login wallets as masked views", async () => {
+    const now = new Date("2026-08-14T08:40:00.000Z");
+    const store = new MemoryLoginWalletStore();
+    store.links.push(
+      {
+        address: "0x1111111111111111111111111111111111111111",
+        createdAt: now,
+        id: "00000000-0000-4000-8000-000000000051",
+        label: "Primary",
+        updatedAt: now,
+        userId: store.account.id,
+      },
+      {
+        address: "0x2222222222222222222222222222222222222222",
+        createdAt: now,
+        id: "00000000-0000-4000-8000-000000000052",
+        label: "Other user",
+        updatedAt: now,
+        userId: "00000000-0000-4000-8000-000000000099",
+      },
+    );
+    const service = authenticationService(store, () => now);
+
+    const links = await service.listLinks(store.account.id);
+
+    expect(links).toEqual([
+      {
+        addressMasked: "0x1111...1111",
+        createdAt: now,
+        label: "Primary",
+        linkId: "00000000-0000-4000-8000-000000000051",
+        updatedAt: now,
+      },
+    ]);
+    expect(JSON.stringify(links)).not.toContain("0x1111111111111111111111111111111111111111");
+    expect(JSON.stringify(links)).not.toContain("Other user");
+  });
 });

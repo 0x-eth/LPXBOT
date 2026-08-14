@@ -117,6 +117,19 @@ export interface LoginWithWalletResult {
   session: IssuedSession;
 }
 
+export interface LinkLoginWalletInput extends LoginWithWalletInput {
+  label: string | null;
+  userId: string;
+}
+
+export interface LoginWalletLinkView {
+  addressMasked: string;
+  createdAt: Date;
+  label: string | null;
+  linkId: string;
+  updatedAt: Date;
+}
+
 export interface LoginWalletAuthenticationApplication {
   createLoginChallenge(
     input: CreateLoginWalletChallengeInput,
@@ -124,6 +137,7 @@ export interface LoginWalletAuthenticationApplication {
   createLinkChallenge(
     input: CreateLinkWalletChallengeInput,
   ): Promise<CreatedLoginWalletChallenge>;
+  link(input: LinkLoginWalletInput): Promise<LoginWalletLinkView>;
   login(input: LoginWithWalletInput): Promise<LoginWithWalletResult>;
 }
 
@@ -131,6 +145,7 @@ export type WalletAuthenticationErrorCode =
   | "ADDRESS_ALREADY_LINKED"
   | "ADDRESS_INVALID"
   | "CHAIN_INVALID"
+  | "LABEL_INVALID"
   | "NONCE_EXPIRED"
   | "NONCE_INVALID"
   | "NONCE_MISMATCH"
@@ -401,6 +416,135 @@ export class LoginWalletAuthenticationService implements LoginWalletAuthenticati
     return { account: consumed.account, session };
   }
 
+  async link(input: LinkLoginWalletInput): Promise<LoginWalletLinkView> {
+    const attemptedAt = this.#now();
+    let label: string | null;
+    try {
+      label = this.#label(input.label);
+    } catch {
+      await this.#auditLinkCreate("denied", input.requestId, attemptedAt, input.userId);
+      throw new WalletAuthenticationError("LABEL_INVALID");
+    }
+
+    let address: `0x${string}`;
+    try {
+      address = getAddress(input.address);
+    } catch {
+      await this.#auditLinkCreate("denied", input.requestId, attemptedAt, input.userId);
+      throw new WalletAuthenticationError("ADDRESS_INVALID");
+    }
+    if (!Number.isSafeInteger(input.chainId) || input.chainId <= 0) {
+      await this.#auditLinkCreate("denied", input.requestId, attemptedAt, input.userId);
+      throw new WalletAuthenticationError("CHAIN_INVALID");
+    }
+    if (!/^[A-Za-z0-9_-]{43}$/u.test(input.nonceId)) {
+      await this.#auditLinkCreate("denied", input.requestId, attemptedAt, input.userId);
+      throw new WalletAuthenticationError("NONCE_INVALID");
+    }
+    if (!/^0x(?:[0-9a-fA-F]{128}|[0-9a-fA-F]{130})$/u.test(input.signature)) {
+      await this.#auditLinkCreate("denied", input.requestId, attemptedAt, input.userId);
+      throw new WalletAuthenticationError("SIGNATURE_INVALID");
+    }
+
+    const idHash = sha256(input.nonceId);
+    const challenge = await this.#store.findAuthWalletChallenge(idHash);
+    if (!challenge) {
+      await this.#auditLinkCreate("denied", input.requestId, attemptedAt, input.userId);
+      throw new WalletAuthenticationError("NONCE_INVALID");
+    }
+    if (challenge.consumedAt) {
+      await this.#auditLinkCreate("denied", input.requestId, attemptedAt, input.userId);
+      throw new WalletAuthenticationError("NONCE_REPLAYED");
+    }
+    if (challenge.expiresAt.getTime() <= attemptedAt.getTime()) {
+      await this.#auditLinkCreate("denied", input.requestId, attemptedAt, input.userId);
+      throw new WalletAuthenticationError("NONCE_EXPIRED");
+    }
+    if (
+      challenge.purpose !== "link" ||
+      challenge.userId !== input.userId ||
+      challenge.address !== address.toLowerCase() ||
+      challenge.chainId !== input.chainId
+    ) {
+      await this.#auditLinkCreate("denied", input.requestId, attemptedAt, input.userId);
+      throw new WalletAuthenticationError("NONCE_MISMATCH");
+    }
+
+    const nonce = this.#nonce(input.nonceId);
+    const message = this.#message({
+      address,
+      chainId: challenge.chainId,
+      expiresAt: challenge.expiresAt,
+      issuedAt: challenge.issuedAt,
+      nonce,
+      purpose: "link",
+      userId: input.userId,
+    });
+    const parsed = parseSiweMessage(message);
+    const messageHash = sha256(message);
+    const nonceHash = sha256(nonce);
+    if (
+      challenge.messageHash !== messageHash ||
+      challenge.nonceHash !== nonceHash ||
+      parsed.chainId !== challenge.chainId ||
+      parsed.uri !== this.#uri ||
+      parsed.resources?.length !== 2 ||
+      parsed.resources[0] !== "urn:lpbot:auth-purpose:link" ||
+      parsed.resources[1] !== `urn:lpbot:auth-user:${input.userId}` ||
+      !validateSiweMessage({
+        address,
+        domain: this.#domain,
+        message: parsed,
+        nonce,
+        time: attemptedAt,
+      })
+    ) {
+      await this.#auditLinkCreate("denied", input.requestId, attemptedAt, input.userId);
+      throw new WalletAuthenticationError("NONCE_INVALID");
+    }
+
+    let validSignature = false;
+    try {
+      validSignature = await verifyMessage({
+        address,
+        message,
+        signature: input.signature as Hex,
+      });
+    } catch {
+      validSignature = false;
+    }
+    if (!validSignature) {
+      await this.#auditLinkCreate("denied", input.requestId, attemptedAt, input.userId);
+      throw new WalletAuthenticationError("SIGNATURE_INVALID");
+    }
+
+    const consumed = await this.#store.consumeAuthWalletLink({
+      address: address.toLowerCase(),
+      chainId: input.chainId,
+      consumedAt: attemptedAt,
+      idHash,
+      label,
+      linkId: randomUUID(),
+      messageHash,
+      nonceHash,
+      userId: input.userId,
+    });
+    if (consumed.status !== "consumed") {
+      const code =
+        consumed.status === "already-linked"
+          ? "ADDRESS_ALREADY_LINKED"
+          : consumed.status === "expired"
+            ? "NONCE_EXPIRED"
+            : consumed.status === "replayed"
+              ? "NONCE_REPLAYED"
+              : "NONCE_INVALID";
+      await this.#auditLinkCreate("denied", input.requestId, attemptedAt, input.userId);
+      throw new WalletAuthenticationError(code);
+    }
+    await this.#auditLinkCreate("allowed", input.requestId, attemptedAt, input.userId);
+    return this.#linkView(consumed.link);
+  }
+
   #message(input: {
     address: `0x${string}`;
     chainId: number;
@@ -432,6 +576,29 @@ export class LoginWalletAuthenticationService implements LoginWalletAuthenticati
       .digest("hex");
   }
 
+  #label(value: string | null): string | null {
+    if (value === null) return null;
+    const label = value.normalize("NFC").trim();
+    if (
+      label.length === 0 ||
+      [...label].length > 64 ||
+      /[\p{Cc}\p{Cf}]/u.test(label)
+    ) {
+      throw new TypeError("Login wallet label is invalid");
+    }
+    return label;
+  }
+
+  #linkView(link: StoredLoginWalletLink): LoginWalletLinkView {
+    return {
+      addressMasked: `${link.address.slice(0, 6)}...${link.address.slice(-4)}`,
+      createdAt: link.createdAt,
+      label: link.label,
+      linkId: link.id,
+      updatedAt: link.updatedAt,
+    };
+  }
+
   async #audit(
     outcome: AccessAuditEvent["outcome"],
     requestId: string,
@@ -457,6 +624,22 @@ export class LoginWalletAuthenticationService implements LoginWalletAuthenticati
   ): Promise<void> {
     await this.#store.recordAccessAudit({
       action: "wallet.link.challenge",
+      createdAt,
+      outcome,
+      requestId,
+      sessionId: null,
+      userId,
+    });
+  }
+
+  async #auditLinkCreate(
+    outcome: AccessAuditEvent["outcome"],
+    requestId: string,
+    createdAt: Date,
+    userId: string,
+  ): Promise<void> {
+    await this.#store.recordAccessAudit({
+      action: "wallet.link.create",
       createdAt,
       outcome,
       requestId,

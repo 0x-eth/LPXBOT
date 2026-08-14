@@ -186,6 +186,7 @@ function walletErrorMessage(code: WalletAuthenticationError["code"]): string {
     ADDRESS_ALREADY_LINKED: "Wallet address is already linked",
     ADDRESS_INVALID: "Wallet address is invalid",
     CHAIN_INVALID: "Wallet chain ID is invalid",
+    LABEL_INVALID: "Login wallet label is invalid",
     NONCE_EXPIRED: "Wallet challenge has expired",
     NONCE_INVALID: "Wallet challenge is invalid",
     NONCE_MISMATCH: "Wallet challenge does not match the request",
