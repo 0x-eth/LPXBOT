@@ -1,3 +1,4 @@
+import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 declare global {
@@ -152,4 +153,55 @@ test("SHELL-06 mounts Telegram lifecycle hooks and delegates BackButton navigati
       ready: globalThis.__telegramFixture.ready,
     })),
   ).toEqual({ expanded: 1, ready: 1 });
+});
+
+test("SHELL-01 stays non-overlapping from 320px through desktop", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "The width matrix runs once.");
+  await useUserSession(page);
+  await page.goto("/tasks/running");
+
+  for (const width of [320, 390, 768, 1024, 1440]) {
+    await page.setViewportSize({ height: width < 900 ? 844 : 900, width });
+    await expect(page.locator("h1")).toHaveCount(1);
+    const metrics = await page.evaluate(() => {
+      const visible = (element: Element | null) =>
+        element instanceof HTMLElement && getComputedStyle(element).display !== "none";
+      const desktopNavigation = document.querySelector(".app-header > .primary-navigation");
+      const mobileShell = document.querySelector(".mobile-navigation-shell");
+      const activeNavigation = visible(mobileShell)
+        ? mobileShell?.querySelector(".primary-navigation")
+        : desktopNavigation;
+      const itemWidths = Array.from(
+        activeNavigation?.querySelectorAll(".primary-navigation-item") ?? [],
+      ).map((element) => element.getBoundingClientRect().width);
+      const main = document.querySelector("main")?.getBoundingClientRect();
+      const mobile = mobileShell?.getBoundingClientRect();
+      const actions = document.querySelector(".header-actions") as HTMLElement | null;
+      return {
+        actionOverflow: actions ? actions.scrollWidth > actions.clientWidth : true,
+        desktopNavigationVisible: visible(desktopNavigation),
+        itemWidthSpread:
+          itemWidths.length > 0 ? Math.max(...itemWidths) - Math.min(...itemWidths) : 999,
+        mainCoveredByMobileNavigation:
+          visible(mobileShell) && main && mobile ? main.bottom > mobile.top + 0.5 : false,
+        mobileNavigationVisible: visible(mobileShell),
+        rootOverflow: document.documentElement.scrollWidth > window.innerWidth,
+      };
+    });
+
+    expect(metrics.rootOverflow, `${width}px root overflow`).toBe(false);
+    expect(metrics.actionOverflow, `${width}px action overflow`).toBe(false);
+    expect(metrics.itemWidthSpread, `${width}px navigation track spread`).toBeLessThanOrEqual(1);
+    expect(metrics.mainCoveredByMobileNavigation, `${width}px mobile content overlap`).toBe(false);
+    expect(metrics.mobileNavigationVisible).toBe(width < 900);
+    expect(metrics.desktopNavigationVisible).toBe(width >= 900);
+
+    const axe = await new AxeBuilder({ page }).analyze();
+    expect(
+      axe.violations.filter(({ impact }) => impact === "serious" || impact === "critical"),
+      `${width}px axe violations`,
+    ).toEqual([]);
+  }
 });
