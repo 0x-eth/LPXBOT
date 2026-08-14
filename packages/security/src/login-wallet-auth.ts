@@ -83,6 +83,13 @@ export interface LoginWithWalletResult {
   session: IssuedSession;
 }
 
+export interface LoginWalletAuthenticationApplication {
+  createLoginChallenge(
+    input: CreateLoginWalletChallengeInput,
+  ): Promise<CreatedLoginWalletChallenge>;
+  login(input: LoginWithWalletInput): Promise<LoginWithWalletResult>;
+}
+
 export type WalletAuthenticationErrorCode =
   | "ADDRESS_INVALID"
   | "CHAIN_INVALID"
@@ -106,7 +113,7 @@ function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
-export class LoginWalletAuthenticationService {
+export class LoginWalletAuthenticationService implements LoginWalletAuthenticationApplication {
   readonly #challengeKey: Uint8Array;
   readonly #challengeTtlMilliseconds: number;
   readonly #domain: string;
@@ -144,9 +151,14 @@ export class LoginWalletAuthenticationService {
   async createLoginChallenge(
     input: CreateLoginWalletChallengeInput,
   ): Promise<CreatedLoginWalletChallenge> {
-    const address = getAddress(input.address);
+    let address: `0x${string}`;
+    try {
+      address = getAddress(input.address);
+    } catch {
+      throw new WalletAuthenticationError("ADDRESS_INVALID");
+    }
     if (!Number.isSafeInteger(input.chainId) || input.chainId <= 0) {
-      throw new TypeError("Wallet chain ID must be a positive integer");
+      throw new WalletAuthenticationError("CHAIN_INVALID");
     }
 
     const issuedAt = this.#now();

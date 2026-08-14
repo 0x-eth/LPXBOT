@@ -11,6 +11,8 @@ import {
 import {
   hashSessionToken,
   TelegramAuthenticationError,
+  WalletAuthenticationError,
+  type LoginWalletAuthenticationApplication,
   type SessionStore,
   type StoredAccount,
   type StoredSession,
@@ -44,6 +46,7 @@ export interface ApiAppOptions {
   telegramBotUsername?: string;
   telegramMiniApp?: TelegramMiniAppAuthenticator;
   testRoutes?: boolean;
+  walletAuth?: LoginWalletAuthenticationApplication;
 }
 
 export interface AuthRateLimits {
@@ -52,6 +55,8 @@ export interface AuthRateLimits {
   miniApp: number;
   status: number;
   timeWindowMs: number;
+  walletLogin?: number;
+  walletNonce?: number;
 }
 
 class AuthenticationRateLimitError extends Error {
@@ -161,6 +166,34 @@ function isTelegramAuthenticationError(error: unknown): error is TelegramAuthent
   return typeof code === "string" && Object.hasOwn(telegramAuthenticationMessages, code);
 }
 
+function isWalletAuthenticationError(error: unknown): error is WalletAuthenticationError {
+  return error instanceof Error && error.name === "WalletAuthenticationError";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function walletErrorStatus(code: WalletAuthenticationError["code"]): 400 | 401 | 409 | 410 {
+  if (code === "NONCE_REPLAYED") return 409;
+  if (code === "NONCE_EXPIRED") return 410;
+  if (code === "SIGNATURE_INVALID") return 401;
+  return 400;
+}
+
+function walletErrorMessage(code: WalletAuthenticationError["code"]): string {
+  const messages: Record<WalletAuthenticationError["code"], string> = {
+    ADDRESS_INVALID: "Wallet address is invalid",
+    CHAIN_INVALID: "Wallet chain ID is invalid",
+    NONCE_EXPIRED: "Wallet challenge has expired",
+    NONCE_INVALID: "Wallet challenge is invalid",
+    NONCE_MISMATCH: "Wallet challenge does not match the request",
+    NONCE_REPLAYED: "Wallet challenge was already used",
+    SIGNATURE_INVALID: "Wallet signature is invalid",
+  };
+  return messages[code];
+}
+
 const telegramBotUsernamePattern = /^[A-Za-z][A-Za-z0-9_]{4,31}$/u;
 
 function telegramBotConfigured(options: ApiAppOptions): options is ApiAppOptions & {
@@ -176,12 +209,15 @@ function telegramBotConfigured(options: ApiAppOptions): options is ApiAppOptions
 
 export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   const now = options.now ?? (() => new Date());
-  const authRateLimits: AuthRateLimits = options.authRateLimits ?? {
+  const authRateLimits: Required<AuthRateLimits> = {
     cancel: 20,
     loginToken: 5,
     miniApp: 120,
     status: 120,
     timeWindowMs: 60_000,
+    walletLogin: 10,
+    walletNonce: 10,
+    ...options.authRateLimits,
   };
   for (const value of Object.values(authRateLimits)) {
     if (!Number.isSafeInteger(value) || value <= 0) {
@@ -247,6 +283,66 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   });
 
   app.after(() => {
+    app.post(
+      "/api/auth/wallet/nonce",
+      {
+        config: {
+          rateLimit: {
+            max: authRateLimits.walletNonce,
+            timeWindow: authRateLimits.timeWindowMs,
+          },
+        },
+      },
+      async (request, reply) => {
+        if (!options.walletAuth) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "WALLET_AUTH_UNAVAILABLE",
+              message: "Wallet authentication is not configured",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!isRecord(request.body)) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "ADDRESS_INVALID",
+              message: "Wallet address is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+
+        try {
+          const challenge = await options.walletAuth.createLoginChallenge({
+            address: typeof request.body.address === "string" ? request.body.address : "",
+            chainId: typeof request.body.chainId === "number" ? request.body.chainId : 0,
+            requestId: request.id,
+          });
+          return createSuccessEnvelope(
+            {
+              expiresAt: challenge.expiresAt.toISOString(),
+              message: challenge.message,
+              nonceId: challenge.nonceId,
+            },
+            request.id,
+          );
+        } catch (error) {
+          if (!isWalletAuthenticationError(error)) throw error;
+          return reply.code(walletErrorStatus(error.code)).send(
+            createErrorEnvelope({
+              code: error.code,
+              message: walletErrorMessage(error.code),
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+      },
+    );
+
     app.post(
       "/api/auth/me",
       {

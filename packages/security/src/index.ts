@@ -46,6 +46,7 @@ export type {
   CreateLoginWalletChallengeInput,
   LoginWithWalletInput,
   LoginWithWalletResult,
+  LoginWalletAuthenticationApplication,
   LoginWalletAuthenticationOptions,
   LoginWalletAuthStore,
   NewAuthWalletChallenge,
