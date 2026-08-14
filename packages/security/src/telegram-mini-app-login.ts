@@ -50,12 +50,16 @@ export interface TelegramMiniAppLoginResult {
   session: IssuedSession;
 }
 
+export interface TelegramMiniAppAuthenticator {
+  authenticate(body: unknown, requestId: string): Promise<TelegramMiniAppLoginResult>;
+}
+
 export interface TelegramMiniAppLoginOptions {
   now?: () => Date;
   sessionTtlSeconds: number;
 }
 
-export class TelegramMiniAppLoginService {
+export class TelegramMiniAppLoginService implements TelegramMiniAppAuthenticator {
   readonly #issuer: SessionIssuer;
   readonly #now: () => Date;
   readonly #sessionTtlMilliseconds: number;

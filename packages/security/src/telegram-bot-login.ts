@@ -80,10 +80,17 @@ export interface PollBotLoginResult {
   status: BotLoginIntentStatus | "invalid";
 }
 
+export interface TelegramBotLoginApplication {
+  cancel(token: string, requestId: string): Promise<ConfirmBotLoginResult>;
+  confirmLogin(input: ConfirmBotLoginInput): Promise<ConfirmBotLoginResult>;
+  create(requestId: string): Promise<CreatedBotLogin>;
+  poll(token: string, requestId: string): Promise<PollBotLoginResult>;
+}
+
 const oneTimeTokenPattern = /^[A-Za-z0-9_-]{43}$/u;
 const telegramSubjectPattern = /^[1-9][0-9]{0,15}$/u;
 
-export class TelegramBotLoginService {
+export class TelegramBotLoginService implements TelegramBotLoginApplication {
   readonly #intentTtlMilliseconds: number;
   readonly #issuer: SessionIssuer;
   readonly #now: () => Date;

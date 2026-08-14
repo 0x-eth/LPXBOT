@@ -150,9 +150,12 @@ describe("Telegram Mini App login application service", () => {
     expect(attempts.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
     const rejected = attempts.find(({ status }) => status === "rejected");
     expect(rejected).toMatchObject({
-      reason: expect.objectContaining<TelegramAuthenticationError>({ code: "AUTH_REPLAYED" }),
+      reason: expect.objectContaining({ code: "AUTH_REPLAYED" }),
       status: "rejected",
     });
+    expect((rejected as PromiseRejectedResult | undefined)?.reason).toBeInstanceOf(
+      TelegramAuthenticationError,
+    );
     expect(store.sessions).toHaveProperty("size", 1);
     expect(store.identities.get("99")?.status).toBe("pending");
   });

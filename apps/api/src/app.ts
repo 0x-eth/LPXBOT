@@ -13,8 +13,8 @@ import {
   type SessionStore,
   type StoredAccount,
   type StoredSession,
-  type TelegramBotLoginService,
-  type TelegramMiniAppLoginService,
+  type TelegramBotLoginApplication,
+  type TelegramMiniAppAuthenticator,
 } from "@lpbot/security";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 
@@ -38,9 +38,9 @@ export interface ApiAppOptions {
   now?: () => Date;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
   sessionStore: SessionStore;
-  telegramBot?: TelegramBotLoginService;
+  telegramBot?: TelegramBotLoginApplication;
   telegramBotUsername?: string;
-  telegramMiniApp?: TelegramMiniAppLoginService;
+  telegramMiniApp?: TelegramMiniAppAuthenticator;
   testRoutes?: boolean;
 }
 
@@ -95,7 +95,10 @@ const telegramBotUsernamePattern = /^[A-Za-z][A-Za-z0-9_]{4,31}$/u;
 
 function telegramBotConfigured(
   options: ApiAppOptions,
-): options is ApiAppOptions & { telegramBot: TelegramBotLoginService; telegramBotUsername: string } {
+): options is ApiAppOptions & {
+  telegramBot: TelegramBotLoginApplication;
+  telegramBotUsername: string;
+} {
   return (
     options.telegramBot !== undefined &&
     typeof options.telegramBotUsername === "string" &&

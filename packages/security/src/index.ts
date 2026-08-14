@@ -19,6 +19,7 @@ export type {
   TelegramAuthenticationErrorCode,
   TelegramMiniAppLoginOptions,
   TelegramMiniAppLoginResult,
+  TelegramMiniAppAuthenticator,
   TelegramMiniAppStore,
 } from "./telegram-mini-app-login.js";
 export { TelegramBotLoginService } from "./telegram-bot-login.js";
@@ -33,6 +34,7 @@ export type {
   NewBotLoginIntent,
   PollBotLoginResult,
   TelegramBotLoginOptions,
+  TelegramBotLoginApplication,
   TelegramBotLoginStore,
 } from "./telegram-bot-login.js";
 
