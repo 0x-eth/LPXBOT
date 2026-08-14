@@ -451,6 +451,127 @@ input:focus-visible {
   display: none;
 }
 
+.feedback-viewport {
+  position: fixed;
+  z-index: 70;
+  right: 18px;
+  bottom: calc(var(--shell-status-height) + 14px);
+  display: grid;
+  width: min(360px, calc(100vw - 36px));
+  gap: 8px;
+  pointer-events: none;
+}
+
+.feedback-toast {
+  display: grid;
+  min-height: 58px;
+  grid-template-columns: 24px minmax(0, 1fr) 28px;
+  align-items: start;
+  gap: 9px;
+  padding: 12px;
+  color: #202426;
+  border: 1px solid #dce1e2;
+  border-left: 3px solid #697276;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgb(25 29 31 / 16%);
+  pointer-events: auto;
+}
+
+.feedback-toast[data-feedback-kind="success"] {
+  border-left-color: #0f8a72;
+}
+
+.feedback-toast[data-feedback-kind="error"] {
+  border-left-color: #b5413b;
+}
+
+.feedback-toast[data-feedback-kind="progress"] {
+  border-left-color: #2563a6;
+}
+
+.feedback-icon {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  color: #687176;
+  place-items: center;
+}
+
+[data-feedback-kind="success"] .feedback-icon {
+  color: #0f8a72;
+}
+
+[data-feedback-kind="error"] .feedback-icon {
+  color: #b5413b;
+}
+
+[data-feedback-kind="progress"] .feedback-icon {
+  color: #2563a6;
+}
+
+.feedback-copy {
+  min-width: 0;
+}
+
+.feedback-copy strong,
+.feedback-copy p {
+  overflow-wrap: anywhere;
+}
+
+.feedback-copy strong {
+  display: block;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.feedback-copy p {
+  margin: 3px 0 0;
+  color: #666f73;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.feedback-action {
+  min-height: 30px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  color: #0f766e;
+  border: 1px solid #afd5cf;
+  border-radius: 5px;
+  background: #f4fbfa;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.feedback-close {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: #737b7f;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  place-items: center;
+}
+
+.feedback-close:hover {
+  color: #202426;
+  background: #eff1f2;
+}
+
+.feedback-close-placeholder {
+  width: 28px;
+  height: 28px;
+}
+
+.feedback-spinner {
+  animation: spin 0.8s linear infinite;
+}
+
 .drawer-overlay {
   position: fixed;
   z-index: 50;
@@ -734,6 +855,12 @@ input:focus-visible {
 
   .status-bar-reserved {
     display: none;
+  }
+
+  .feedback-viewport {
+    right: 12px;
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px) + 12px);
+    width: calc(100vw - 24px);
   }
 
   .mobile-navigation-shell {

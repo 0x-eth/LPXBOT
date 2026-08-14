@@ -50,6 +50,7 @@ const defaultDurations: Record<Exclude<FeedbackKind, "progress">, number> = {
 
 export class FeedbackController {
   readonly #limit: number;
+  readonly #listeners = new Set<(records: readonly FeedbackRecord[]) => void>();
   #nextId = 1;
   #records: FeedbackRecord[] = [];
   readonly #timers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -67,6 +68,7 @@ export class FeedbackController {
       if (!current) throw new Error("Feedback queue index is invalid");
       this.#records[duplicateIndex] = { ...input, id: current.id };
       this.#scheduleClose(this.#records[duplicateIndex]);
+      this.#emit();
       return current.id;
     }
 
@@ -78,6 +80,7 @@ export class FeedbackController {
       for (const item of removed) this.#cancelClose(item.id);
     }
     this.#scheduleClose(record);
+    this.#emit();
     return id;
   }
 
@@ -86,6 +89,7 @@ export class FeedbackController {
     if (index < 0) return;
     this.#records.splice(index, 1);
     this.#cancelClose(id);
+    this.#emit();
   }
 
   startTask(input: FeedbackTaskInput): FeedbackTask {
@@ -116,6 +120,12 @@ export class FeedbackController {
     return [...this.#records];
   }
 
+  subscribe(listener: (records: readonly FeedbackRecord[]) => void): () => void {
+    this.#listeners.add(listener);
+    listener(this.snapshot());
+    return () => this.#listeners.delete(listener);
+  }
+
   #cancelClose(id: string): void {
     const timer = this.#timers.get(id);
     if (timer) clearTimeout(timer);
@@ -131,5 +141,10 @@ export class FeedbackController {
       record.id,
       setTimeout(() => this.dismiss(record.id), duration),
     );
+  }
+
+  #emit(): void {
+    const snapshot = this.snapshot();
+    for (const listener of this.#listeners) listener(snapshot);
   }
 }

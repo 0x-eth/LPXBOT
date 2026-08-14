@@ -46,6 +46,7 @@ import {
   type LoginWalletLinkView,
 } from "./auth-client";
 import { Eip1193WalletAdapter, browserEip1193Provider } from "./eip1193-wallet";
+import { FeedbackProvider, useFeedback } from "./feedback";
 import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
 
 function BootingPage() {
@@ -185,6 +186,7 @@ function LoginPage({ botLogin, client, page, state }: LoginPageProps) {
 }
 
 function LoginWalletSettings({ client }: { client: AuthClient }) {
+  const feedback = useFeedback();
   const [busy, setBusy] = useState(false);
   const [label, setLabel] = useState("");
   const [links, setLinks] = useState<LoginWalletLinkView[]>([]);
@@ -212,6 +214,17 @@ function LoginWalletSettings({ client }: { client: AuthClient }) {
     if (linked) {
       setLinks((current) => [...current, linked]);
       setLabel("");
+      feedback.show({
+        dedupeKey: "login-wallet-linked",
+        kind: "success",
+        title: "登录钱包已绑定",
+      });
+    } else {
+      feedback.show({
+        dedupeKey: "login-wallet-link-failed",
+        kind: "error",
+        title: "登录钱包绑定失败，请重试",
+      });
     }
     setBusy(false);
   };
@@ -221,7 +234,20 @@ function LoginWalletSettings({ client }: { client: AuthClient }) {
     setBusy(true);
     const linkId = pendingDelete.linkId;
     const deleted = await client.unlinkLoginWallet(linkId);
-    if (deleted) setLinks((current) => current.filter((link) => link.linkId !== linkId));
+    if (deleted) {
+      setLinks((current) => current.filter((link) => link.linkId !== linkId));
+      feedback.show({
+        dedupeKey: `login-wallet-removed:${linkId}`,
+        kind: "success",
+        title: "登录钱包已移除",
+      });
+    } else {
+      feedback.show({
+        dedupeKey: `login-wallet-remove-failed:${linkId}`,
+        kind: "error",
+        title: "登录钱包移除失败，请重试",
+      });
+    }
     setPendingDelete(null);
     setBusy(false);
   };
@@ -737,8 +763,10 @@ function AuthRouter() {
 
 export function App() {
   return (
-    <BrowserRouter>
-      <AuthRouter />
-    </BrowserRouter>
+    <FeedbackProvider>
+      <BrowserRouter>
+        <AuthRouter />
+      </BrowserRouter>
+    </FeedbackProvider>
   );
 }
