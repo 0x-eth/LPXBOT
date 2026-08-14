@@ -405,6 +405,53 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     },
   );
 
+  app.post<{ Params: { token: string } }>(
+    "/api/auth/login-token/:token/cancel",
+    async (request, reply) => {
+      if (!telegramBotConfigured(options)) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "TELEGRAM_BOT_UNAVAILABLE",
+            message: "Telegram Bot login is not configured",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+
+      const result = await options.telegramBot.cancel(request.params.token, request.id);
+      if (result.status === "cancelled") {
+        return createSuccessEnvelope({ status: "cancelled" as const }, request.id);
+      }
+      const error =
+        result.status === "expired"
+          ? {
+              code: "LOGIN_TOKEN_EXPIRED",
+              message: "The Telegram login link has expired",
+              statusCode: 410,
+            }
+          : result.status === "consumed"
+            ? {
+                code: "LOGIN_TOKEN_CONSUMED",
+                message: "The Telegram login link was already used",
+                statusCode: 409,
+              }
+            : {
+                code: "LOGIN_TOKEN_INVALID",
+                message: "The Telegram login link is invalid",
+                statusCode: 404,
+              };
+      return reply.code(error.statusCode).send(
+        createErrorEnvelope({
+          code: error.code,
+          message: error.message,
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+    },
+  );
+
   if (options.testRoutes) {
     const authenticateTestRequest = async (request: FastifyRequest) => {
       const token = sessionToken(request);

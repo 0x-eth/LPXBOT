@@ -12,6 +12,7 @@ import {
   type TelegramBotLoginStore,
 } from "../packages/security/src/index.js";
 import { buildApiApp } from "../apps/api/src/index.js";
+import { telegramBotCancelContract } from "../packages/api-contract/src/index.js";
 import { describe, expect, it } from "vitest";
 
 const now = new Date("2026-08-14T03:00:00.000Z");
@@ -280,6 +281,48 @@ describe("Telegram Bot one-time login application service", () => {
     expect(
       (await app.inject({ method: "POST", url: "/api/auth/dev-confirm" })).statusCode,
     ).toBe(404);
+
+    await app.close();
+  });
+
+  it("cancels an open intent through an explicitly replica-internal contract", async () => {
+    expect(telegramBotCancelContract).toMatchObject({
+      method: "POST",
+      path: "/api/auth/login-token/{token}/cancel",
+      replicaInternal: true,
+    });
+    const store = new MemoryBotLoginStore();
+    const botLogin = service(store);
+    const app = buildApiApp({
+      maintenance: { enabled: false, message: null, until: null },
+      now: () => now,
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: store,
+      telegramBot: botLogin,
+      telegramBotUsername: "local_fixture_bot",
+    });
+    const created = await app.inject({ method: "POST", url: "/api/auth/login-token" });
+    const token = created.json().data.token as string;
+
+    await botLogin.confirmLogin({
+      requestId: "telegram-update-cancel",
+      telegramSubject: "77",
+      token,
+    });
+    const cancelled = await app.inject({
+      method: "POST",
+      url: `/api/auth/login-token/${token}/cancel`,
+    });
+    const polled = await app.inject({
+      method: "GET",
+      url: `/api/auth/login-status/${token}`,
+    });
+
+    expect(cancelled.statusCode).toBe(200);
+    expect(cancelled.json().data).toEqual({ status: "cancelled" });
+    expect(polled.statusCode).toBe(409);
+    expect(polled.json().error.code).toBe("LOGIN_TOKEN_CANCELLED");
+    expect(store.sessions).toHaveProperty("size", 0);
 
     await app.close();
   });

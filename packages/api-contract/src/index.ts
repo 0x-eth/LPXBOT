@@ -2,6 +2,12 @@ export const apiContractPackage = {
   name: "@lpbot/api-contract",
 } as const;
 
+export const telegramBotCancelContract = {
+  method: "POST",
+  path: "/api/auth/login-token/{token}/cancel",
+  replicaInternal: true,
+} as const;
+
 export type Role = "user" | "pro" | "admin";
 export type Tier = "normal" | "pro";
 export type AccountBlockReason = "pending" | "rejected" | "banned";
