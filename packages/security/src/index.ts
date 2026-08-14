@@ -1,5 +1,15 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
+export {
+  TelegramInitDataError,
+  TelegramInitDataVerifier,
+} from "./telegram-init-data.js";
+export type {
+  TelegramInitDataErrorCode,
+  TelegramInitDataVerifierOptions,
+  VerifiedTelegramInitData,
+} from "./telegram-init-data.js";
+
 export const securityPackage = {
   name: "@lpbot/security",
 } as const;
