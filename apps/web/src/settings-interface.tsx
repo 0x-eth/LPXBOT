@@ -11,7 +11,7 @@ import {
   RotateCcw,
   Sun,
 } from "lucide-react";
-import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { useUserPreferences } from "./preferences.js";
 import { accentColorPresets } from "./theme.js";
@@ -102,23 +102,21 @@ function SettingRow({
 
 export function InterfaceSettings() {
   const { preferences, resetNavigation, retryLoad, status, update } = useUserPreferences();
-  const [customDraft, setCustomDraft] = useState(preferences.customColor ?? "#0F766E");
-  const [customEditing, setCustomEditing] = useState(preferences.colorTheme === "custom");
+  const [customDraftInput, setCustomDraftInput] = useState<string | null>(null);
+  const [customEditorRequested, setCustomEditorRequested] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const customDraft = customDraftInput ?? preferences.customColor ?? "#0F766E";
+  const customEditing = customEditorRequested || preferences.colorTheme === "custom";
   const loading = status === "loading";
-
-  useEffect(() => {
-    if (preferences.customColor) setCustomDraft(preferences.customColor);
-    setCustomEditing(preferences.colorTheme === "custom");
-  }, [preferences.colorTheme, preferences.customColor]);
 
   const chooseColor = (colorTheme: ColorTheme) => {
     setValidationError(null);
     if (colorTheme === "custom") {
-      setCustomEditing(true);
+      setCustomEditorRequested(true);
       return;
     }
-    setCustomEditing(false);
+    setCustomDraftInput(null);
+    setCustomEditorRequested(false);
     void update({ colorTheme });
   };
 
@@ -129,7 +127,8 @@ export function InterfaceSettings() {
       return;
     }
     setValidationError(null);
-    setCustomDraft(normalized);
+    setCustomDraftInput(null);
+    setCustomEditorRequested(false);
     void update({ colorTheme: "custom", customColor: normalized });
   };
 
@@ -259,7 +258,7 @@ export function InterfaceSettings() {
                   aria-label="自定义强调色"
                   disabled={loading}
                   maxLength={7}
-                  onChange={(event) => setCustomDraft(event.target.value)}
+                  onChange={(event) => setCustomDraftInput(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") saveCustomColor();
                   }}
