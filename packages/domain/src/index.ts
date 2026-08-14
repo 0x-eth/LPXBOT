@@ -3,8 +3,96 @@ export const domainPackage = {
 } as const;
 
 export type Role = "user" | "pro" | "admin";
+export type Tier = "normal" | "pro";
 export type AccountStatus = "active" | "pending" | "rejected" | "banned";
 export type AccessLevel = "authenticated" | "pro" | "admin";
+export type ChainAccessMode = "off" | "pro" | "all";
+export type ChainOperationCategory = "read" | "monitor" | "unwind" | "new-exposure";
+
+export type ChainAccessDecision =
+  | { allowed: true }
+  | {
+      allowed: false;
+      code: "CHAIN_ACCESS_DENIED" | "CHAIN_CREATION_DISABLED" | "CHAIN_PRO_REQUIRED";
+    };
+
+export interface ChainAccessPolicyValue {
+  access: string;
+  chainId: number;
+}
+
+const chainOperationCategories = {
+  "pool.create": "new-exposure",
+  "pool.withdraw": "unwind",
+  "position.close": "unwind",
+  "position.compound": "new-exposure",
+  "position.emergency_exit": "unwind",
+  "position.increase": "new-exposure",
+  "position.monitor": "monitor",
+  "position.read": "read",
+  "position.switch_pool": "new-exposure",
+  "task.create": "new-exposure",
+  "task.stop": "unwind",
+} as const satisfies Readonly<Record<string, ChainOperationCategory>>;
+
+export function chainOperationCategory(action: string): ChainOperationCategory | null {
+  if (!Object.hasOwn(chainOperationCategories, action)) return null;
+  return chainOperationCategories[action as keyof typeof chainOperationCategories];
+}
+
+function trustedChainRole(role: string, tier: string): Role | null {
+  if (role === "user" && tier === "normal") return role;
+  if (role === "pro" && tier === "pro") return role;
+  if (role === "admin" && (tier === "normal" || tier === "pro")) return role;
+  return null;
+}
+
+function isChainAccessMode(value: string): value is ChainAccessMode {
+  return value === "off" || value === "pro" || value === "all";
+}
+
+function isChainOperationCategory(value: string): value is ChainOperationCategory {
+  return value === "read" || value === "monitor" || value === "unwind" || value === "new-exposure";
+}
+
+export function authorizeChainOperation(input: {
+  access: string;
+  operation: string;
+  role: string;
+  tier: string;
+}): ChainAccessDecision {
+  const role = trustedChainRole(input.role, input.tier);
+  if (!role || !isChainAccessMode(input.access) || !isChainOperationCategory(input.operation)) {
+    return { allowed: false, code: "CHAIN_ACCESS_DENIED" };
+  }
+
+  if (input.operation !== "new-exposure") return { allowed: true };
+  if (input.access === "off") {
+    return { allowed: false, code: "CHAIN_CREATION_DISABLED" };
+  }
+  if (input.access === "pro" && role === "user") {
+    return { allowed: false, code: "CHAIN_PRO_REQUIRED" };
+  }
+  return { allowed: true };
+}
+
+export function effectiveAllowedChainIds(
+  policies: readonly ChainAccessPolicyValue[],
+  role: string,
+  tier: string,
+): number[] {
+  const trustedRole = trustedChainRole(role, tier);
+  if (!trustedRole) return [];
+
+  const allowed = new Set<number>();
+  for (const policy of policies) {
+    if (!Number.isSafeInteger(policy.chainId) || policy.chainId <= 0) continue;
+    if (policy.access === "all" || (policy.access === "pro" && trustedRole !== "user")) {
+      allowed.add(policy.chainId);
+    }
+  }
+  return [...allowed];
+}
 
 export interface AccountAccessContext {
   accountStatus: AccountStatus;
