@@ -55,6 +55,7 @@ import {
 } from "./auth-client";
 import { Eip1193WalletAdapter, browserEip1193Provider } from "./eip1193-wallet";
 import { ConfirmDialog, FeedbackProvider, useFeedback } from "./feedback";
+import { PwaUpdateBridge } from "./pwa-updates";
 import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
 
 function BootingPage() {
@@ -877,6 +878,7 @@ function AuthRouter() {
 export function App() {
   return (
     <FeedbackProvider>
+      <PwaUpdateBridge />
       <BrowserRouter>
         <AuthRouter />
       </BrowserRouter>
