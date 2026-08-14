@@ -230,7 +230,7 @@ export class UserPreferencesClient {
           ? body.error
           : null;
       throw new PreferencesRequestError(
-        error?.code ?? "REQUEST_FAILED",
+        error ? (error.code as string) : "REQUEST_FAILED",
         error?.retryable === true,
         response.status,
       );
@@ -339,7 +339,12 @@ export function UserPreferencesProvider({
             }
           }
           feedback.show({
-            action: { label: "重试", run: () => update(changes) },
+            action: {
+              label: "重试",
+              run: async () => {
+                await update(changes);
+              },
+            },
             dedupeKey: "preferences-save-failed",
             kind: "error",
             title: "界面设置保存失败，请重试",
@@ -364,7 +369,8 @@ export function UserPreferencesProvider({
   const value = useMemo<UserPreferencesContextValue>(
     () => ({
       preferences: view.preferences,
-      resetNavigation: () => update({ navConfig: structuredClone(defaultUserPreferences.navConfig) }),
+      resetNavigation: () =>
+        update({ navConfig: structuredClone(defaultUserPreferences.navConfig) }),
       retryLoad: load,
       status,
       update,
@@ -372,7 +378,9 @@ export function UserPreferencesProvider({
     }),
     [load, status, update, view],
   );
-  return <UserPreferencesContext.Provider value={value}>{children}</UserPreferencesContext.Provider>;
+  return (
+    <UserPreferencesContext.Provider value={value}>{children}</UserPreferencesContext.Provider>
+  );
 }
 
 // The provider and hook intentionally share a single context instance.

@@ -117,13 +117,16 @@ function validateCompletePreferences(value: Record<string, unknown>): UserPrefer
   for (const key of ["poolsPanelCollapsed", "showHotPools", "showScanTab"] as const) {
     if (typeof value[key] !== "boolean") throw new UserPreferencesValidationError();
   }
+  const poolsPanelCollapsed = value.poolsPanelCollapsed as boolean;
+  const showHotPools = value.showHotPools as boolean;
+  const showScanTab = value.showScanTab as boolean;
   return {
     colorTheme: value.colorTheme,
     customColor,
     navConfig: validateNavigation(value.navConfig),
-    poolsPanelCollapsed: value.poolsPanelCollapsed,
-    showHotPools: value.showHotPools,
-    showScanTab: value.showScanTab,
+    poolsPanelCollapsed,
+    showHotPools,
+    showScanTab,
     taskViewMode: value.taskViewMode,
     theme: value.theme,
   };

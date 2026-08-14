@@ -52,7 +52,10 @@ export function ShellStatusBar() {
       role="status"
     >
       <div className="status-primary">
-        <span className="online-state" data-online={state.connected && state.stats?.online === true}>
+        <span
+          className="online-state"
+          data-online={state.connected && state.stats?.online === true}
+        >
           <span aria-hidden="true" className="online-dot" />
           {display.online}
         </span>

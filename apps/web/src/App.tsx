@@ -59,11 +59,7 @@ import { ConfirmDialog, FeedbackProvider, useFeedback } from "./feedback";
 import { UserPreferencesProvider, useUserPreferences } from "./preferences";
 import { PwaUpdateBridge } from "./pwa-updates";
 import { InterfaceSettings } from "./settings-interface";
-import {
-  ShellStatsContextProvider,
-  ShellStatusBar,
-  useShellStats,
-} from "./shell-stats-react";
+import { ShellStatsContextProvider, ShellStatusBar, useShellStats } from "./shell-stats-react";
 import { shellStatsDisplay } from "./shell-stats";
 import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
 
@@ -458,7 +454,13 @@ interface PrimaryNavigationDefinition {
 }
 
 const primaryNavigation: Readonly<Record<NavigationKey, PrimaryNavigationDefinition>> = {
-  activity: { icon: Activity, key: "activity", label: "日志", path: "/activity", section: "/activity" },
+  activity: {
+    icon: Activity,
+    key: "activity",
+    label: "日志",
+    path: "/activity",
+    section: "/activity",
+  },
   chat: { icon: MessageSquareText, key: "chat", label: "聊天室", path: null, section: null },
   pools: { icon: Boxes, key: "pools", label: "池子", path: "/pools", section: "/pools" },
   strategies: {

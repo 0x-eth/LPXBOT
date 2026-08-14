@@ -1,4 +1,4 @@
-import type { ColorTheme, NavigationKey, UserPreferences } from "@lpbot/api-contract";
+import type { ColorTheme, NavigationKey } from "@lpbot/api-contract";
 import {
   ChevronDown,
   ChevronUp,
@@ -11,13 +11,7 @@ import {
   RotateCcw,
   Sun,
 } from "lucide-react";
-import {
-  useEffect,
-  useState,
-  type CSSProperties,
-  type KeyboardEvent,
-  type ReactNode,
-} from "react";
+import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { useUserPreferences } from "./preferences.js";
 import { accentColorPresets } from "./theme.js";
