@@ -72,13 +72,17 @@ test("SHELL-06 offline navigation falls back to a safe unauthenticated shell", a
   await page.goto("/");
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
-  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await expect
+    .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
+    .toBe(true);
   await page.unroute("**/api/auth/me");
 
   await context.setOffline(true);
   await page.goto("/pools");
 
-  await expect(page.getByRole("heading", { level: 1, name: "Connection unavailable" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Connection unavailable" }),
+  ).toBeVisible();
   await expect(page.getByRole("alert")).toHaveText("The application could not reach the service.");
   await expect(page.getByRole("heading", { level: 1, name: "Pools" })).toHaveCount(0);
   await expect(page.getByText(/signed in|session restored/iu)).toHaveCount(0);
@@ -111,7 +115,9 @@ test("SHELL-06 activation removes obsolete LP Bot caches", async ({ page }) => {
   await page.evaluate(() => navigator.serviceWorker.ready);
 
   await expect
-    .poll(() => page.evaluate(async () => (await caches.keys()).includes("lpbot-navigation-obsolete")))
+    .poll(() =>
+      page.evaluate(async () => (await caches.keys()).includes("lpbot-navigation-obsolete")),
+    )
     .toBe(false);
 });
 
@@ -136,7 +142,9 @@ test("SHELL-06 never stores API, auth, SSE, writes or runtime navigation respons
   await page.goto("/");
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
-  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await expect
+    .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
+    .toBe(true);
 
   const paths: [string, string, string, string] = [
     "/api/cache-fixture",

@@ -25,10 +25,16 @@ describe("PWA service worker request policy", () => {
 
     expect(isPwaNetworkOnlyRequest(request("/api/auth/me"), "https://local.fixture")).toBe(true);
     expect(
-      isPwaNetworkOnlyRequest(request("/private", { headers: authorization }), "https://local.fixture"),
+      isPwaNetworkOnlyRequest(
+        request("/private", { headers: authorization }),
+        "https://local.fixture",
+      ),
     ).toBe(true);
     expect(
-      isPwaNetworkOnlyRequest(request("/events", { headers: eventStream }), "https://local.fixture"),
+      isPwaNetworkOnlyRequest(
+        request("/events", { headers: eventStream }),
+        "https://local.fixture",
+      ),
     ).toBe(true);
     for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
       expect(
@@ -39,10 +45,7 @@ describe("PWA service worker request policy", () => {
 
   it("allows only same-origin non-API GET navigations to use the offline shell", () => {
     expect(
-      isOfflineShellNavigation(
-        request("/pools", { mode: "navigate" }),
-        "https://local.fixture",
-      ),
+      isOfflineShellNavigation(request("/pools", { mode: "navigate" }), "https://local.fixture"),
     ).toBe(true);
     expect(
       isOfflineShellNavigation(

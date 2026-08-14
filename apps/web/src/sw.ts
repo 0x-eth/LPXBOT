@@ -29,11 +29,7 @@ for (const method of ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"] as const)
   );
 }
 
-registerRoute(
-  ({ request }) => isOfflineShellNavigation(request, scopeOrigin),
-  networkOnly,
-  "GET",
-);
+registerRoute(({ request }) => isOfflineShellNavigation(request, scopeOrigin), networkOnly, "GET");
 
 setCatchHandler(async ({ request }) => {
   if (isOfflineShellNavigation(request, scopeOrigin)) {

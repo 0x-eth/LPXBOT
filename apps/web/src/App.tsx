@@ -439,11 +439,7 @@ function routeIsCurrent(pathname: string, section: string): boolean {
   return pathname === section || pathname.startsWith(`${section}/`);
 }
 
-function PrimaryNavigation({
-  onOpenChat,
-}: {
-  onOpenChat(trigger: HTMLButtonElement): void;
-}) {
+function PrimaryNavigation({ onOpenChat }: { onOpenChat(trigger: HTMLButtonElement): void }) {
   const { pathname } = useLocation();
 
   return (
@@ -709,7 +705,11 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
           <h1>Request failed</h1>
           <p role="alert">{page.message}</p>
           {page.retryable ? (
-            <button className="retry-button route-retry" onClick={() => void refresh()} type="button">
+            <button
+              className="retry-button route-retry"
+              onClick={() => void refresh()}
+              type="button"
+            >
               <RotateCw aria-hidden="true" size={17} />
               Retry request
             </button>
@@ -814,10 +814,7 @@ function AuthRouter() {
   const [connectionUnavailable, setConnectionUnavailable] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  useEffect(
-    () => browserTelegramMiniAppAdapter.mount({ onBack: () => navigate(-1) }),
-    [navigate],
-  );
+  useEffect(() => browserTelegramMiniAppAdapter.mount({ onBack: () => navigate(-1) }), [navigate]);
   useEffect(() => {
     const atRoot = location.pathname === "/tasks/running" || location.pathname === "/login";
     browserTelegramMiniAppAdapter.setBackButtonVisible(!atRoot);
@@ -830,14 +827,17 @@ function AuthRouter() {
       setPage(nextPage);
       setBotLogin(nextBotLogin);
     });
-    void client.restore().then((next) => {
-      if (!current) return;
-      setState(next);
-      setPage(client.page);
-      setConnectionUnavailable(false);
-    }).catch(() => {
-      if (current) setConnectionUnavailable(true);
-    });
+    void client
+      .restore()
+      .then((next) => {
+        if (!current) return;
+        setState(next);
+        setPage(client.page);
+        setConnectionUnavailable(false);
+      })
+      .catch(() => {
+        if (current) setConnectionUnavailable(true);
+      });
     return () => {
       current = false;
       unsubscribe();

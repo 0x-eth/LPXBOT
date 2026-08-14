@@ -25,12 +25,10 @@ describe("global feedback controller", () => {
 
     expect(duplicateId).toBe(firstId);
     expect(feedback.snapshot()).toHaveLength(3);
-    expect(feedback.snapshot().map(({ title }) => title)).toEqual([
-      "同步一",
-      "同步二",
-      "同步失败",
-    ]);
-    expect(feedback.snapshot()).not.toContain(expect.objectContaining({ error: expect.anything() }));
+    expect(feedback.snapshot().map(({ title }) => title)).toEqual(["同步一", "同步二", "同步失败"]);
+    expect(feedback.snapshot()).not.toContain(
+      expect.objectContaining({ error: expect.anything() }),
+    );
   });
 
   it("auto-closes transient feedback while long tasks remain persistent", () => {

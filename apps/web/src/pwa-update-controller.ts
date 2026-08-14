@@ -11,9 +11,7 @@ export interface PwaRegisterOptions {
   onRegisteredSW?(scriptUrl: string, registration: PwaServiceWorkerRegistration | undefined): void;
 }
 
-export type PwaRegister = (
-  options: PwaRegisterOptions,
-) => (reloadPage?: boolean) => Promise<void>;
+export type PwaRegister = (options: PwaRegisterOptions) => (reloadPage?: boolean) => Promise<void>;
 
 export function setupPwaUpdateFeedback({
   feedback,

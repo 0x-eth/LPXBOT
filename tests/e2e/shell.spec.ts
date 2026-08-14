@@ -163,11 +163,17 @@ test("SHELL-06 mounts Telegram lifecycle hooks and delegates BackButton navigati
   await page.goto("/tasks/running");
 
   await expect
-    .poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue("--telegram-viewport-height")))
+    .poll(() =>
+      page.evaluate(() =>
+        document.documentElement.style.getPropertyValue("--telegram-viewport-height"),
+      ),
+    )
     .toBe("760px");
   await page.getByRole("link", { name: "池子" }).click();
   await expect(page).toHaveURL(/\/pools$/u);
-  await expect.poll(() => page.evaluate(() => globalThis.__telegramFixture.shown)).toBeGreaterThan(0);
+  await expect
+    .poll(() => page.evaluate(() => globalThis.__telegramFixture.shown))
+    .toBeGreaterThan(0);
 
   await page.evaluate(() => globalThis.__telegramFixture.back?.());
   await expect(page).toHaveURL(/\/tasks\/running$/u);
@@ -179,9 +185,7 @@ test("SHELL-06 mounts Telegram lifecycle hooks and delegates BackButton navigati
   ).toEqual({ expanded: 1, ready: 1 });
 });
 
-test("SHELL-01 stays non-overlapping from 320px through desktop", async ({
-  page,
-}, testInfo) => {
+test("SHELL-01 stays non-overlapping from 320px through desktop", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop", "The width matrix runs once.");
   await useUserSession(page);
   await page.goto("/tasks/running");
