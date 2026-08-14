@@ -355,6 +355,20 @@ function telegramBotConfigured(options: ApiAppOptions): options is ApiAppOptions
 
 export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   const now = options.now ?? (() => new Date());
+  const chainManagementRateLimit: ChainManagementRateLimit = {
+    max: 10,
+    timeWindowMs: 60_000,
+    ...options.chainManagementRateLimit,
+  };
+  if (
+    !Number.isSafeInteger(chainManagementRateLimit.max) ||
+    chainManagementRateLimit.max <= 0 ||
+    !Number.isSafeInteger(chainManagementRateLimit.timeWindowMs) ||
+    chainManagementRateLimit.timeWindowMs <= 0
+  ) {
+    throw new RangeError("Chain management rate limits must be positive integers");
+  }
+  const chainManagementLimiter = new FixedWindowRateLimiter();
   const authRateLimits: Required<AuthRateLimits> = {
     cancel: 20,
     loginToken: 5,
@@ -407,7 +421,34 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     ),
   );
 
-  app.setErrorHandler((error, request, reply) => {
+  app.setErrorHandler(async (error, request, reply) => {
+    const errorCode = (error as { code?: unknown }).code;
+    if (
+      errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
+      request.url.split("?", 1)[0] === "/api/system-config/chains"
+    ) {
+      reply.header("Cache-Control", "no-store");
+      const token = sessionToken(request);
+      const resolved = token ? await findValidSession(token, options.sessionStore, now()) : null;
+      await options.chainPolicyStore?.recordManagementAudit({
+        actorUserId: resolved?.session.userId ?? null,
+        createdAt: now(),
+        outcome: "denied",
+        reason: null,
+        requestId: request.id,
+        resultCode: "REQUEST_TOO_LARGE",
+        sessionId: resolved?.session.id ?? null,
+      });
+      return reply.code(413).send(
+        createErrorEnvelope({
+          code: "REQUEST_TOO_LARGE",
+          message: "The request body is too large",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+    }
+
     if (error instanceof AuthenticationRateLimitError) {
       return reply.code(error.statusCode).send(
         createErrorEnvelope({
