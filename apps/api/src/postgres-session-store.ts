@@ -2,12 +2,16 @@ import type {
   AccessAuditEvent,
   BotLoginIntent,
   ConfirmBotLoginIntentInput,
+  ConsumeAuthWalletLoginInput,
+  ConsumeAuthWalletLoginResult,
   ConsumeBotLoginIntentInput,
   InitDataReplay,
   NewBotLoginIntent,
+  NewAuthWalletChallenge,
   NewStoredSession,
   ResolveTelegramIdentityInput,
   SessionStore,
+  StoredAuthWalletChallenge,
   StoredAccount,
   StoredAccountStatus,
   StoredRole,
@@ -15,6 +19,7 @@ import type {
   StoredTier,
   TelegramBotLoginStore,
   TelegramMiniAppStore,
+  LoginWalletAuthStore,
 } from "@lpbot/security";
 import type { Pool, PoolClient } from "pg";
 
@@ -62,6 +67,19 @@ interface BotLoginIntentRow {
   user_status: StoredAccountStatus | null;
 }
 
+interface AuthWalletChallengeRow {
+  address: string;
+  chain_id: string;
+  consumed_at: Date | null;
+  expires_at: Date;
+  id_hash: string;
+  issued_at: Date;
+  message_hash: string;
+  nonce_hash: string;
+  purpose: StoredAuthWalletChallenge["purpose"];
+  user_id: string | null;
+}
+
 function toStoredAccount(row: AccountRow): StoredAccount {
   return {
     allowedChainIds: row.allowed_chain_ids,
@@ -102,12 +120,123 @@ function toBotLoginIntent(row: BotLoginIntentRow): BotLoginIntent {
 }
 
 export class PostgresSessionStore
-  implements SessionStore, TelegramMiniAppStore, TelegramBotLoginStore
+  implements SessionStore, TelegramMiniAppStore, TelegramBotLoginStore, LoginWalletAuthStore
 {
   readonly #pool: Pool;
 
   constructor(pool: Pool) {
     this.#pool = pool;
+  }
+
+  async consumeAuthWalletLogin(
+    input: ConsumeAuthWalletLoginInput,
+  ): Promise<ConsumeAuthWalletLoginResult> {
+    return this.#transaction(async (client) => {
+      await client.query(
+        `SELECT id_hash
+           FROM auth_wallet_challenges
+          WHERE id_hash = decode($1, 'hex')
+          FOR UPDATE`,
+        [input.idHash],
+      );
+      const challenge = await this.#findAuthWalletChallenge(client, input.idHash);
+      if (!challenge) return { account: null, status: "invalid" };
+      if (challenge.consumedAt) return { account: null, status: "replayed" };
+      if (challenge.expiresAt.getTime() <= input.consumedAt.getTime()) {
+        return { account: null, status: "expired" };
+      }
+      if (
+        challenge.purpose !== "login" ||
+        challenge.userId !== null ||
+        challenge.address !== input.address ||
+        challenge.chainId !== input.chainId ||
+        challenge.messageHash !== input.messageHash ||
+        challenge.nonceHash !== input.nonceHash
+      ) {
+        return { account: null, status: "invalid" };
+      }
+
+      const consumed = await client.query(
+        `UPDATE auth_wallet_challenges
+            SET consumed_at = $2
+          WHERE id_hash = decode($1, 'hex')
+            AND consumed_at IS NULL
+            AND expires_at > $2`,
+        [input.idHash, input.consumedAt],
+      );
+      if (consumed.rowCount !== 1) return { account: null, status: "replayed" };
+
+      const addressHex = input.address.slice(2);
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+        `auth-login-wallet:${addressHex}`,
+      ]);
+      const existing = await client.query<AccountRow>(
+        `SELECT u.id::text,
+                u.role,
+                u.tier,
+                u.status,
+                u.allowed_chain_ids,
+                u.display_name,
+                u.avatar_url
+           FROM auth_login_wallets w
+           JOIN users u ON u.id = w.user_id
+          WHERE w.address = decode($1, 'hex')`,
+        [addressHex],
+      );
+      const existingAccount = existing.rows[0];
+      if (existingAccount) return { account: toStoredAccount(existingAccount), status: "consumed" };
+
+      await client.query(
+        `INSERT INTO users (
+           id, role, tier, status, allowed_chain_ids, display_name, avatar_url, created_at, updated_at
+         ) VALUES ($1, 'user', 'normal', 'pending', '{}', NULL, NULL, $2, $2)`,
+        [input.candidateUserId, input.consumedAt],
+      );
+      await client.query(
+        `INSERT INTO auth_login_wallets (id, user_id, address, label, created_at, updated_at)
+         VALUES ($1, $2, decode($3, 'hex'), NULL, $4, $4)`,
+        [input.candidateUserId, input.candidateUserId, addressHex, input.consumedAt],
+      );
+      return {
+        account: {
+          allowedChainIds: [],
+          avatarUrl: null,
+          displayName: null,
+          id: input.candidateUserId,
+          role: "user",
+          status: "pending",
+          tier: "normal",
+        },
+        status: "consumed",
+      };
+    });
+  }
+
+  async createAuthWalletChallenge(challenge: NewAuthWalletChallenge): Promise<void> {
+    await this.#pool.query(
+      `INSERT INTO auth_wallet_challenges (
+         id_hash, nonce_hash, message_hash, address, chain_id, purpose, user_id,
+         issued_at, expires_at, consumed_at
+       ) VALUES (
+         decode($1, 'hex'), decode($2, 'hex'), decode($3, 'hex'), decode($4, 'hex'),
+         $5, $6, $7, $8, $9, NULL
+       )`,
+      [
+        challenge.idHash,
+        challenge.nonceHash,
+        challenge.messageHash,
+        challenge.address.slice(2),
+        challenge.chainId,
+        challenge.purpose,
+        challenge.userId,
+        challenge.issuedAt,
+        challenge.expiresAt,
+      ],
+    );
+  }
+
+  async findAuthWalletChallenge(idHash: string): Promise<StoredAuthWalletChallenge | null> {
+    return this.#findAuthWalletChallenge(this.#pool, idHash);
   }
 
   async cancelBotLoginIntent(tokenHash: string, at: Date): Promise<BotLoginIntent | null> {
@@ -331,6 +460,41 @@ export class PostgresSessionStore
     );
     const row = result.rows[0];
     return row ? toBotLoginIntent(row) : null;
+  }
+
+  async #findAuthWalletChallenge(
+    client: Pick<Pool, "query"> | Pick<PoolClient, "query">,
+    idHash: string,
+  ): Promise<StoredAuthWalletChallenge | null> {
+    const result = await client.query<AuthWalletChallengeRow>(
+      `SELECT encode(id_hash, 'hex') AS id_hash,
+              encode(nonce_hash, 'hex') AS nonce_hash,
+              encode(message_hash, 'hex') AS message_hash,
+              concat('0x', encode(address, 'hex')) AS address,
+              chain_id::text,
+              purpose,
+              user_id::text,
+              issued_at,
+              expires_at,
+              consumed_at
+         FROM auth_wallet_challenges
+        WHERE id_hash = decode($1, 'hex')`,
+      [idHash],
+    );
+    const row = result.rows[0];
+    if (!row) return null;
+    return {
+      address: row.address,
+      chainId: Number(row.chain_id),
+      consumedAt: row.consumed_at,
+      expiresAt: row.expires_at,
+      idHash: row.id_hash,
+      issuedAt: row.issued_at,
+      messageHash: row.message_hash,
+      nonceHash: row.nonce_hash,
+      purpose: row.purpose,
+      userId: row.user_id,
+    };
   }
 
   async #lockBotLoginIntent(client: PoolClient, tokenHash: string): Promise<void> {
