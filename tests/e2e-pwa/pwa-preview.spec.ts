@@ -138,7 +138,7 @@ test("SHELL-06 never stores API, auth, SSE, writes or runtime navigation respons
   await page.reload();
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
 
-  const paths = [
+  const paths: [string, string, string, string] = [
     "/api/cache-fixture",
     "/authorization-cache-fixture",
     "/sse-cache-fixture",

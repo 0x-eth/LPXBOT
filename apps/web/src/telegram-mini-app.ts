@@ -32,6 +32,9 @@ interface TelegramMiniAppFactoryOptions {
 export interface TelegramMiniAppAdapter {
   getInitData(): string | null;
   isAvailable?(): boolean;
+}
+
+export interface TelegramWebAppAdapter extends TelegramMiniAppAdapter {
   mount(options?: { onBack?(): void }): () => void;
   setBackButtonVisible(visible: boolean): void;
 }
@@ -62,7 +65,7 @@ function validThemeColor(value: string | undefined): value is string {
 
 export function createTelegramMiniAppAdapter(
   options: TelegramMiniAppFactoryOptions,
-): TelegramMiniAppAdapter {
+): TelegramWebAppAdapter {
   const initializedWebApps = new WeakSet<object>();
   let mountedWebApp: TelegramWebApp | undefined;
 
@@ -133,6 +136,7 @@ export function createTelegramMiniAppAdapter(
 }
 
 interface TelegramBrowserGlobal {
+  document?: { documentElement: { style: TelegramStyleTarget } };
   window?: {
     Telegram?: { WebApp?: TelegramWebApp };
   };
@@ -143,7 +147,7 @@ function telegramWebApp(): TelegramWebApp | undefined {
 }
 
 function browserStyle(): TelegramStyleTarget | null {
-  return typeof document === "undefined" ? null : document.documentElement.style;
+  return (globalThis as TelegramBrowserGlobal).document?.documentElement.style ?? null;
 }
 
 export const browserTelegramMiniAppAdapter = createTelegramMiniAppAdapter({

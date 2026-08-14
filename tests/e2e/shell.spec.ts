@@ -1,5 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
 
+declare global {
+  var __telegramFixture: {
+    back?: () => void;
+    expanded: number;
+    hidden: number;
+    ready: number;
+    shown: number;
+  };
+}
+
 const userSession = {
   allowedChainIds: [56],
   avatarUrl: null,

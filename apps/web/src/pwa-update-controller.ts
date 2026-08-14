@@ -18,7 +18,8 @@ export type PwaRegister = (
 export function setupPwaUpdateFeedback({
   feedback,
   register,
-  reload = () => window.location.reload(),
+  reload = () =>
+    (globalThis as typeof globalThis & { location?: { reload(): void } }).location?.reload(),
 }: {
   feedback: FeedbackController;
   register: PwaRegister;
