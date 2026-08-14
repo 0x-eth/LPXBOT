@@ -45,7 +45,7 @@ export function createLoginWalletAuthenticationFromEnvironment(
       "WALLET_AUTH_CHALLENGE_TTL_SECONDS",
     ),
     domain: environment.WALLET_AUTH_DOMAIN,
-    now: options.now,
+    ...(options.now ? { now: options.now } : {}),
     sessionTtlSeconds: positiveInteger(
       environment.AUTH_SESSION_TTL_SECONDS,
       3_600,

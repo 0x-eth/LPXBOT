@@ -234,4 +234,109 @@ describe("P01-04 login wallet HTTP API", () => {
       expect.objectContaining({ linkId: link.linkId, userId: store.account.id }),
     );
   });
+
+  it("rate limits wallet challenge creation with a stable envelope", async () => {
+    const walletAuth = {
+      createLinkChallenge: vi.fn(),
+      createLoginChallenge: vi.fn().mockResolvedValue({
+        expiresAt: new Date("2026-08-14T08:05:00.000Z"),
+        message: "rate-limited-siwe-message",
+        nonceId: "R".repeat(43),
+      }),
+      link: vi.fn(),
+      listLinks: vi.fn(),
+      login: vi.fn(),
+      unlink: vi.fn(),
+    };
+    const app = buildApiApp({
+      authRateLimits: {
+        cancel: 100,
+        loginToken: 100,
+        miniApp: 100,
+        status: 100,
+        timeWindowMs: 60_000,
+        walletLinks: 100,
+        walletLogin: 100,
+        walletNonce: 1,
+      },
+      maintenance: { enabled: false, message: null, until: null },
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: new EmptySessionStore(),
+      walletAuth,
+    });
+    apps.push(app);
+    const request = {
+      method: "POST" as const,
+      payload: { address: "0x0000000000000000000000000000000000000001", chainId: 56 },
+      url: "/api/auth/wallet/nonce",
+    };
+
+    expect((await app.inject(request)).statusCode).toBe(200);
+    const limited = await app.inject(request);
+    expect(limited.statusCode).toBe(429);
+    expect(limited.json()).toMatchObject({
+      error: { code: "RATE_LIMITED", retryable: true },
+      success: false,
+    });
+  });
+
+  it("keeps pending wallet credentials out of JSON responses and logs", async () => {
+    const token = "pending-session-token-sensitive";
+    const signature = `0x${"ef".repeat(65)}`;
+    const nonceId = "P".repeat(43);
+    const logLines: string[] = [];
+    const walletAuth = {
+      createLinkChallenge: vi.fn(),
+      createLoginChallenge: vi.fn(),
+      link: vi.fn(),
+      listLinks: vi.fn(),
+      login: vi.fn().mockResolvedValue({
+        account: {
+          allowedChainIds: [],
+          avatarUrl: null,
+          displayName: null,
+          id: "00000000-0000-4000-8000-000000000090",
+          role: "user",
+          status: "pending",
+          tier: "normal",
+        },
+        session: {
+          expiresAt: new Date("2026-08-14T09:00:00.000Z"),
+          sessionId: "00000000-0000-4000-8000-000000000091",
+          token,
+        },
+      }),
+      unlink: vi.fn(),
+    };
+    const app = buildApiApp({
+      logger: { write: (line) => logLines.push(line) },
+      maintenance: { enabled: false, message: null, until: null },
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: new EmptySessionStore(),
+      walletAuth,
+    });
+    apps.push(app);
+
+    const response = await app.inject({
+      method: "POST",
+      payload: {
+        address: "0x0000000000000000000000000000000000000001",
+        chainId: 56,
+        nonceId,
+        signature,
+      },
+      url: "/api/auth/wallet/login",
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json()).toMatchObject({
+      error: { code: "ACCOUNT_PENDING" },
+      success: false,
+    });
+    expect(response.headers["set-cookie"]).toContain("HttpOnly");
+    for (const sensitive of [token, signature, nonceId]) {
+      expect(response.body).not.toContain(sensitive);
+      expect(logLines.join("\n")).not.toContain(sensitive);
+    }
+  });
 });
