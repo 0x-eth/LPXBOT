@@ -286,14 +286,8 @@ export function UserPreferencesProvider({
       setStatus("ready");
     } catch {
       setStatus("error");
-      feedback.show({
-        action: { label: "重试", run: () => load() },
-        dedupeKey: "preferences-load-failed",
-        kind: "error",
-        title: "界面设置加载失败",
-      });
     }
-  }, [client, feedback]);
+  }, [client]);
 
   useEffect(() => {
     void load();

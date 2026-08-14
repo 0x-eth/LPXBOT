@@ -323,6 +323,8 @@ export class ApiShellStatsProvider {
   async #consume(response: Response, signal: AbortSignal): Promise<void> {
     if (!response.body) throw new Error("Stats stream body is missing");
     const reader = response.body.getReader();
+    const cancel = () => void reader.cancel();
+    signal.addEventListener("abort", cancel, { once: true });
     const decoder = new TextDecoder();
     let buffer = "";
     try {
@@ -339,6 +341,7 @@ export class ApiShellStatsProvider {
         if (done) break;
       }
     } finally {
+      signal.removeEventListener("abort", cancel);
       reader.releaseLock();
     }
   }

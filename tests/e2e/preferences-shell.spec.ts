@@ -195,6 +195,28 @@ async function expectNoSeriousAxeViolations(page: Page): Promise<void> {
   ).toEqual([]);
 }
 
+async function installPersistentStatsStream(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const nativeFetch = globalThis.fetch.bind(globalThis);
+    globalThis.fetch = (input, init) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (!url.endsWith("/api/stats/stream")) return nativeFetch(input, init);
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(
+            new TextEncoder().encode(
+              'id: 20\nevent: snapshot\ndata: {"type":"snapshot","observedAt":"2026-08-14T09:30:00.000Z","sequence":20,"stats":{"fps":60,"gas":{"baseGwei":0.006,"ethereumGwei":0.232},"online":true,"pingMs":84,"recommendedPools":["USDT / utility","USDT / WBNB"],"taskCounts":{"paused":1,"running":1,"stopped":1}}}\n\n',
+            ),
+          );
+        },
+      });
+      return Promise.resolve(
+        new Response(stream, { headers: { "Content-Type": "text/event-stream" }, status: 200 }),
+      );
+    };
+  });
+}
+
 test("SHELL-03 applies cached theme before first paint and follows live system changes", async ({
   context,
   page,
@@ -339,16 +361,26 @@ test("SHELL-04 reorders and hides both navigation surfaces with keyboard and cro
 test("SHELL-02 renders real fixture values on desktop and compact stable badges on mobile", async ({
   context,
   page,
-}) => {
+}, testInfo) => {
   const state: FixtureState = { preferences: cloneDefaults(), revision: 0 };
+  await installPersistentStatsStream(page);
   await installFixture(context, state);
   await page.goto("/tasks/running");
-  await expect(page.getByRole("status", { name: "实时状态" })).toContainText("在线");
-  await expect(page.getByRole("status", { name: "实时状态" })).toContainText("Base 0.006");
-  await expect(page.getByRole("status", { name: "实时状态" })).toContainText("ETH 0.232");
-  await expect(page.getByRole("status", { name: "实时状态" })).toContainText("FPS 60");
-  await expect(page.getByRole("status", { name: "实时状态" })).toContainText("PING 84ms");
-  await expect(page.locator(".nav-badge-slot").filter({ hasText: "1" }).first()).toBeVisible();
+  if (testInfo.project.name === "chromium-mobile") {
+    await expect(page.getByRole("status", { name: "实时状态" })).toHaveCount(0);
+    await expect(
+      page.locator(".mobile-navigation-shell .nav-badge-slot").filter({ hasText: "1" }).first(),
+    ).toBeVisible();
+  } else {
+    await expect(page.getByRole("status", { name: "实时状态" })).toContainText("在线");
+    await expect(page.getByRole("status", { name: "实时状态" })).toContainText("Base 0.006");
+    await expect(page.getByRole("status", { name: "实时状态" })).toContainText("ETH 0.232");
+    await expect(page.getByRole("status", { name: "实时状态" })).toContainText("FPS 60");
+    await expect(page.getByRole("status", { name: "实时状态" })).toContainText("PING 84ms");
+    await expect(
+      page.locator(".app-header .nav-badge-slot").filter({ hasText: "1" }).first(),
+    ).toBeVisible();
+  }
 });
 
 test("P01-06 settings visual contract matches the observed responsive interface", async ({
