@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-07",
+  "levels": {
+    "live-observed": {
+      "newClaims": [],
+      "note": "No live target, production service, external RPC, or production configuration was observed in P01-07."
+    },
+    "frozen-bundle-candidate": {
+      "sources": [
+        "artifacts/lpbot/2026-08-13/feature-gates.json",
+        "artifacts/lpbot/2026-08-13/api-calls.json",
+        "artifacts/lpbot/2026-08-13/assets/page-CM8SqSqG.js"
+      ],
+      "claims": [
+        "The compatible system-config response container is { chains: [...] }.",
+        "The frozen bundle contains chain-management surface evidence."
+      ],
+      "promotion": "none"
+    },
+    "local-fixture-verified": {
+      "claims": [
+        "Chain access truth table and server guard",
+        "Five-chain local registry and deterministic seed",
+        "Versioned PostgreSQL policy, append-only history, and management audit",
+        "Role-effective GET and admin-only POST contracts",
+        "Dynamic SessionView.allowedChainIds",
+        "Accessible administrator chain-management dialog",
+        "Local all-to-pro-to-rollback operations drill"
+      ]
+    }
+  }
+}
