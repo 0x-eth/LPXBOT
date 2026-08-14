@@ -19,7 +19,11 @@ import {
   type TelegramBotLoginApplication,
   type TelegramMiniAppAuthenticator,
 } from "@lpbot/security";
-import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
+import Fastify, {
+  type FastifyInstance,
+  type FastifyReply,
+  type FastifyRequest,
+} from "fastify";
 
 import { sessionCookieName, setBrowserSessionCookie } from "./browser-session-cookie.js";
 
@@ -56,6 +60,7 @@ export interface AuthRateLimits {
   status: number;
   timeWindowMs: number;
   walletLogin?: number;
+  walletLinks?: number;
   walletNonce?: number;
 }
 
@@ -176,6 +181,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function walletErrorStatus(code: WalletAuthenticationError["code"]): 400 | 401 | 404 | 409 | 410 {
   if (code === "NONCE_REPLAYED") return 409;
+  if (code === "ADDRESS_ALREADY_LINKED" || code === "LAST_LOGIN_METHOD") return 409;
   if (code === "NONCE_EXPIRED") return 410;
   if (code === "SIGNATURE_INVALID") return 401;
   if (code === "LINK_NOT_FOUND") return 404;
@@ -221,6 +227,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     status: 120,
     timeWindowMs: 60_000,
     walletLogin: 10,
+    walletLinks: 30,
     walletNonce: 10,
     ...options.authRateLimits,
   };
@@ -286,6 +293,71 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       }),
     );
   });
+
+  const authenticateSessionRequest = async (
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<StoredSession | null> => {
+    const token = sessionToken(request);
+    const resolved = token ? await findValidSession(token, options.sessionStore, now()) : null;
+    if (!resolved) {
+      await options.sessionStore.recordAccessAudit({
+        action: "session.access",
+        createdAt: now(),
+        outcome: "denied",
+        requestId: request.id,
+        sessionId: null,
+        userId: null,
+      });
+      reply.code(401).send(
+        createErrorEnvelope({
+          code: token ? "AUTH_EXPIRED" : "UNAUTHENTICATED",
+          message: token ? "Session is invalid or expired" : "Authentication is required",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+      return null;
+    }
+
+    const decision = authorizeAccount({
+      accountStatus: resolved.session.account.status,
+      maintenance: options.maintenance,
+      region: options.regionPolicy(request),
+      role: resolved.session.account.role,
+    });
+    if (!decision.allowed) {
+      await options.sessionStore.recordAccessAudit({
+        action: "session.access",
+        createdAt: now(),
+        outcome: "denied",
+        requestId: request.id,
+        sessionId: resolved.session.id,
+        userId: resolved.session.userId,
+      });
+      reply.code(decision.statusCode).send(
+        createErrorEnvelope({
+          code: decision.code,
+          message: decision.message,
+          requestId: request.id,
+          retryable: decision.retryable,
+        }),
+      );
+      return null;
+    }
+
+    const accessedAt = now();
+    await options.sessionStore.touchSession(resolved.tokenHash, accessedAt);
+    await options.sessionStore.recordAccessAudit({
+      action: "session.access",
+      createdAt: accessedAt,
+      outcome: "allowed",
+      requestId: request.id,
+      sessionId: resolved.session.id,
+      userId: resolved.session.userId,
+    });
+    return resolved.session;
+  };
 
   app.after(() => {
     app.post(
@@ -410,6 +482,206 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             { session: accountToSessionView(login.account, decision.maintenanceBypass) },
             request.id,
           );
+        } catch (error) {
+          if (!isWalletAuthenticationError(error)) throw error;
+          return reply.code(walletErrorStatus(error.code)).send(
+            createErrorEnvelope({
+              code: error.code,
+              message: walletErrorMessage(error.code),
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+      },
+    );
+
+    app.get(
+      "/api/auth/wallet/links",
+      {
+        config: {
+          rateLimit: {
+            max: authRateLimits.walletLinks,
+            timeWindow: authRateLimits.timeWindowMs,
+          },
+        },
+      },
+      async (request, reply) => {
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletAuth) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "WALLET_AUTH_UNAVAILABLE",
+              message: "Wallet authentication is not configured",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        const links = (await options.walletAuth.listLinks(session.userId)).map((link) => ({
+          ...link,
+          createdAt: link.createdAt.toISOString(),
+          updatedAt: link.updatedAt.toISOString(),
+        }));
+        return createSuccessEnvelope({ links }, request.id);
+      },
+    );
+
+    app.post(
+      "/api/auth/wallet/link-nonce",
+      {
+        config: {
+          rateLimit: {
+            max: authRateLimits.walletNonce,
+            timeWindow: authRateLimits.timeWindowMs,
+          },
+        },
+      },
+      async (request, reply) => {
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletAuth) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "WALLET_AUTH_UNAVAILABLE",
+              message: "Wallet authentication is not configured",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!isRecord(request.body)) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "ADDRESS_INVALID",
+              message: "Wallet address is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        try {
+          const challenge = await options.walletAuth.createLinkChallenge({
+            address: typeof request.body.address === "string" ? request.body.address : "",
+            chainId: typeof request.body.chainId === "number" ? request.body.chainId : 0,
+            requestId: request.id,
+            userId: session.userId,
+          });
+          return createSuccessEnvelope(
+            {
+              expiresAt: challenge.expiresAt.toISOString(),
+              message: challenge.message,
+              nonceId: challenge.nonceId,
+            },
+            request.id,
+          );
+        } catch (error) {
+          if (!isWalletAuthenticationError(error)) throw error;
+          return reply.code(walletErrorStatus(error.code)).send(
+            createErrorEnvelope({
+              code: error.code,
+              message: walletErrorMessage(error.code),
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+      },
+    );
+
+    app.post(
+      "/api/auth/wallet/link",
+      {
+        config: {
+          rateLimit: {
+            max: authRateLimits.walletLogin,
+            timeWindow: authRateLimits.timeWindowMs,
+          },
+        },
+      },
+      async (request, reply) => {
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletAuth) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "WALLET_AUTH_UNAVAILABLE",
+              message: "Wallet authentication is not configured",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!isRecord(request.body)) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "NONCE_INVALID",
+              message: "Wallet challenge is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        try {
+          const link = await options.walletAuth.link({
+            address: typeof request.body.address === "string" ? request.body.address : "",
+            chainId: typeof request.body.chainId === "number" ? request.body.chainId : 0,
+            label:
+              typeof request.body.label === "string" || request.body.label === null
+                ? request.body.label
+                : "\u0000",
+            nonceId: typeof request.body.nonceId === "string" ? request.body.nonceId : "",
+            requestId: request.id,
+            signature: typeof request.body.signature === "string" ? request.body.signature : "",
+            userId: session.userId,
+          });
+          return createSuccessEnvelope(
+            {
+              link: {
+                ...link,
+                createdAt: link.createdAt.toISOString(),
+                updatedAt: link.updatedAt.toISOString(),
+              },
+            },
+            request.id,
+          );
+        } catch (error) {
+          if (!isWalletAuthenticationError(error)) throw error;
+          return reply.code(walletErrorStatus(error.code)).send(
+            createErrorEnvelope({
+              code: error.code,
+              message: walletErrorMessage(error.code),
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+      },
+    );
+
+    app.delete<{ Params: { linkId: string } }>(
+      "/api/auth/wallet/link/:linkId",
+      async (request, reply) => {
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletAuth) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "WALLET_AUTH_UNAVAILABLE",
+              message: "Wallet authentication is not configured",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        try {
+          const result = await options.walletAuth.unlink({
+            linkId: request.params.linkId,
+            requestId: request.id,
+            userId: session.userId,
+          });
+          return createSuccessEnvelope(result, request.id);
         } catch (error) {
           if (!isWalletAuthenticationError(error)) throw error;
           return reply.code(walletErrorStatus(error.code)).send(
