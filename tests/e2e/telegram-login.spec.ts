@@ -217,7 +217,7 @@ async function captureBroadcastMessages(context: BrowserContext): Promise<void> 
     const messages: unknown[] = [];
     browser.__authMessages = messages;
     browser.BroadcastChannel = class extends NativeBroadcastChannel {
-      postMessage(message: unknown): void {
+      override postMessage(message: unknown): void {
         messages.push(message);
         super.postMessage(message);
       }

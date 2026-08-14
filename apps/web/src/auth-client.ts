@@ -351,7 +351,7 @@ export class AuthClient {
         method: "POST",
         signal: controller.signal,
       });
-    } catch (error) {
+    } catch {
       if (controller.signal.aborted) return this.#botLogin;
       this.#botFailure("NETWORK_ERROR", "The Telegram login link could not be created", true);
       return this.#botLogin;

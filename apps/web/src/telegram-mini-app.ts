@@ -8,21 +8,25 @@ interface TelegramWebApp {
   ready?(): void;
 }
 
-declare global {
-  interface Window {
+interface TelegramBrowserGlobal {
+  window?: {
     Telegram?: { WebApp?: TelegramWebApp };
-  }
+  };
+}
+
+function telegramWebApp(): TelegramWebApp | undefined {
+  return (globalThis as TelegramBrowserGlobal).window?.Telegram?.WebApp;
 }
 
 export const browserTelegramMiniAppAdapter: TelegramMiniAppAdapter = {
   getInitData(): string | null {
-    const webApp = globalThis.window?.Telegram?.WebApp;
+    const webApp = telegramWebApp();
     const initData = webApp?.initData.trim() ?? "";
     if (initData === "") return null;
     webApp?.ready?.();
     return initData;
   },
   isAvailable(): boolean {
-    return (globalThis.window?.Telegram?.WebApp?.initData.trim() ?? "") !== "";
+    return (telegramWebApp()?.initData.trim() ?? "") !== "";
   },
 };
