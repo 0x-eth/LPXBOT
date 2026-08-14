@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-05",
+  "source": {
+    "path": "artifacts/lpbot/2026-08-13/icon.png",
+    "sha256": "e6db884077c7a4986d835469a44cc7031dc0fb196fd9eb8674714a1fabdd8cf9"
+  },
+  "maskableSource": {
+    "path": "artifacts/lpbot/2026-08-13/logo-maskable.png",
+    "sha256": "81c9ddd38558eb05cf8a7899b0929f3a5608401725f2febbd4c965feb6cd9a71"
+  },
+  "derivatives": [
+    {
+      "path": "apps/web/public/pwa-192x192.png",
+      "dimensions": "192x192",
+      "sha256": "bd538549af8b293a6786c41ebc2ac674873c9176ea902428894f18be37e43c8a"
+    },
+    {
+      "path": "apps/web/public/pwa-512x512.png",
+      "dimensions": "512x512",
+      "sha256": "fd7729bfe2225fb8ee49a175f6cb90505a5f293f33ae414dcc6e544ea5c6ef5f"
+    },
+    {
+      "path": "apps/web/public/pwa-maskable-512x512.png",
+      "dimensions": "512x512",
+      "sha256": "9eb8772b005bbe06c097ee6799a299b2607c50db6c1b3a2fbda768f0e932bd04"
+    }
+  ],
+  "derivation": "sips resize from frozen bitmap sources; no source artifact was modified"
+}
