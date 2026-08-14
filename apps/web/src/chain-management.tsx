@@ -4,21 +4,10 @@ import type {
   UpdateChainAccessRequest,
 } from "@lpbot/api-contract";
 import * as Dialog from "@radix-ui/react-dialog";
-import {
-  LoaderCircle,
-  RefreshCw,
-  RotateCcw,
-  Save,
-  Settings2,
-  ShieldCheck,
-  X,
-} from "lucide-react";
+import { LoaderCircle, RefreshCw, RotateCcw, Save, Settings2, ShieldCheck, X } from "lucide-react";
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 
-import {
-  ChainConfigClient,
-  ChainConfigRequestError,
-} from "./chain-config-client.js";
+import { ChainConfigClient, ChainConfigRequestError } from "./chain-config-client.js";
 import { ConfirmDialog } from "./feedback.js";
 
 const accessModes = ["off", "pro", "all"] as const;
@@ -69,10 +58,7 @@ function ChainAccessGroup({
   onRollback(): void;
   value: ChainAccessMode;
 }) {
-  const selectFromKeyboard = (
-    event: KeyboardEvent<HTMLButtonElement>,
-    mode: ChainAccessMode,
-  ) => {
+  const selectFromKeyboard = (event: KeyboardEvent<HTMLButtonElement>, mode: ChainAccessMode) => {
     const direction =
       event.key === "ArrowLeft" || event.key === "ArrowUp"
         ? -1
@@ -251,7 +237,10 @@ export function AdminChainManagementSection({
         }}
         open={open}
       >
-        <section aria-labelledby="site-operations-title" className="settings-section operations-section">
+        <section
+          aria-labelledby="site-operations-title"
+          className="settings-section operations-section"
+        >
           <div className="section-heading">
             <div>
               <ShieldCheck aria-hidden="true" size={18} />
@@ -398,7 +387,11 @@ export function AdminChainManagementSection({
                     <div className="chain-operation-error" role="alert">
                       <span>{operationError}</span>
                       {operationState === "conflict" ? (
-                        <button className="secondary-button" onClick={() => void load()} type="button">
+                        <button
+                          className="secondary-button"
+                          onClick={() => void load()}
+                          type="button"
+                        >
                           <RefreshCw aria-hidden="true" size={16} />
                           重新加载
                         </button>

@@ -142,11 +142,7 @@ export class ChainConfigClient {
       method: "POST",
     });
     const chains = parseChains(data);
-    if (
-      !chains ||
-      !isRecord(data) ||
-      (data.status !== "unchanged" && data.status !== "updated")
-    ) {
+    if (!chains || !isRecord(data) || (data.status !== "unchanged" && data.status !== "updated")) {
       throw new ChainConfigRequestError("INVALID_RESPONSE", true, 200);
     }
     return { chains, status: data.status };
