@@ -100,10 +100,14 @@ async function expectNoForbiddenRpc(page: Page): Promise<void> {
 
 test("wallet login works on desktop and mobile without transaction RPC or browser storage", async ({
   page,
-}) => {
+}, testInfo) => {
   await installProvider(page);
   await routeWalletLogin(page);
   await page.goto("/login");
+  await page.screenshot({
+    fullPage: true,
+    path: `artifacts/acceptance/P01-04/ui/wallet-login-${testInfo.project.name}.png`,
+  });
 
   await page.getByRole("button", { name: "Wallet" }).click();
 
@@ -140,7 +144,9 @@ test("wallet login reports a missing EIP-1193 provider after the user clicks", a
   await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
 });
 
-test("settings lists, labels, binds and confirms deletion of login wallets", async ({ page }) => {
+test("settings lists, labels, binds and confirms deletion of login wallets", async ({
+  page,
+}, testInfo) => {
   await installProvider(page);
   await page.route("**/api/auth/me", (route) =>
     route.fulfill({
@@ -208,6 +214,10 @@ test("settings lists, labels, binds and confirms deletion of login wallets", asy
   await page.goto("/settings");
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
   await expect(page.getByText("0x1111...1111")).toBeVisible();
+  await page.screenshot({
+    fullPage: true,
+    path: `artifacts/acceptance/P01-04/ui/settings-${testInfo.project.name}.png`,
+  });
   const scriptCount = await page.locator("script").count();
   await page.getByLabel("Wallet label").fill("<script>Login only</script>");
   await page.getByRole("button", { name: "Link wallet" }).click();
