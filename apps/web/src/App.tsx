@@ -46,7 +46,7 @@ import {
   type LoginWalletLinkView,
 } from "./auth-client";
 import { Eip1193WalletAdapter, browserEip1193Provider } from "./eip1193-wallet";
-import { FeedbackProvider, useFeedback } from "./feedback";
+import { ConfirmDialog, FeedbackProvider, useFeedback } from "./feedback";
 import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
 
 function BootingPage() {
@@ -322,28 +322,19 @@ function LoginWalletSettings({ client }: { client: AuthClient }) {
         </div>
       </section>
 
-      {pendingDelete ? (
-        <div className="dialog-backdrop">
-          <div
-            aria-labelledby="remove-wallet-title"
-            aria-modal="true"
-            className="confirm-dialog"
-            role="dialog"
-          >
-            <h2 id="remove-wallet-title">Remove login wallet</h2>
-            <p>{pendingDelete.label ?? pendingDelete.addressMasked}</p>
-            <div className="dialog-actions">
-              <button autoFocus className="secondary-button" onClick={() => setPendingDelete(null)}>
-                Cancel
-              </button>
-              <button className="danger-command" onClick={() => void remove()}>
-                <Trash2 aria-hidden="true" size={17} />
-                Confirm remove
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        cancelLabel="Cancel"
+        confirmIcon={<Trash2 aria-hidden="true" size={17} />}
+        confirmLabel="Confirm remove"
+        description={pendingDelete?.label ?? pendingDelete?.addressMasked ?? ""}
+        disabled={busy}
+        onConfirm={() => void remove()}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        open={pendingDelete !== null}
+        title="Remove login wallet"
+      />
     </main>
   );
 }

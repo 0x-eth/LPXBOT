@@ -227,10 +227,10 @@ test("settings lists, labels, binds and confirms deletion of login wallets", asy
 
   const removePrimary = page.getByRole("button", { name: "Remove Primary" });
   await removePrimary.click();
-  await expect(page.getByRole("dialog", { name: "Remove login wallet" })).toBeVisible();
+  await expect(page.getByRole("alertdialog", { name: "Remove login wallet" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Cancel" })).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: "Remove login wallet" })).toHaveCount(0);
+  await expect(page.getByRole("alertdialog", { name: "Remove login wallet" })).toHaveCount(0);
   await expect(removePrimary).toBeFocused();
 
   await removePrimary.click();

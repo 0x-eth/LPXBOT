@@ -1,5 +1,14 @@
+import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import { CheckCircle2, CircleAlert, Info, LoaderCircle, X } from "lucide-react";
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import {
   FeedbackController,
@@ -104,4 +113,64 @@ export function useFeedback(): FeedbackController {
   const controller = useContext(FeedbackContext);
   if (!controller) throw new Error("FeedbackProvider is missing");
   return controller;
+}
+
+export function ConfirmDialog({
+  cancelLabel = "取消",
+  confirmIcon,
+  confirmLabel,
+  description,
+  disabled = false,
+  onConfirm,
+  onOpenChange,
+  open,
+  title,
+}: {
+  cancelLabel?: string;
+  confirmIcon?: ReactNode;
+  confirmLabel: string;
+  description: ReactNode;
+  disabled?: boolean;
+  onConfirm(): void;
+  onOpenChange(open: boolean): void;
+  open: boolean;
+  title: string;
+}) {
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  return (
+    <AlertDialog.Root onOpenChange={onOpenChange} open={open}>
+      <AlertDialog.Portal>
+        <AlertDialog.Overlay className="dialog-backdrop" />
+        <AlertDialog.Content
+          className="confirm-dialog"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            cancelRef.current?.focus();
+          }}
+        >
+          <AlertDialog.Title>{title}</AlertDialog.Title>
+          <AlertDialog.Description>{description}</AlertDialog.Description>
+          <div className="dialog-actions">
+            <AlertDialog.Cancel asChild>
+              <button className="secondary-button" ref={cancelRef} type="button">
+                {cancelLabel}
+              </button>
+            </AlertDialog.Cancel>
+            <AlertDialog.Action asChild>
+              <button
+                className="danger-command"
+                disabled={disabled}
+                onClick={onConfirm}
+                type="button"
+              >
+                {confirmIcon}
+                {confirmLabel}
+              </button>
+            </AlertDialog.Action>
+          </div>
+        </AlertDialog.Content>
+      </AlertDialog.Portal>
+    </AlertDialog.Root>
+  );
 }
