@@ -20,6 +20,7 @@
     "@types/node": "22.20.1"
   },
   "dependencies": {
-    "@tma.js/init-data-node": "2.0.8"
+    "@tma.js/init-data-node": "2.0.8",
+    "viem": "2.55.16"
   }
 }
