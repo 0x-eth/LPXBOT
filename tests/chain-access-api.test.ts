@@ -138,6 +138,12 @@ class MemoryChainPolicyStore implements ChainAccessPolicyStore {
     for (const change of input.changes) {
       const current = this.policies.find(({ chainId }) => chainId === change.chainId);
       if (!current) throw new ChainPolicyStoreError("CHAIN_UNKNOWN");
+      if (current.isDefault && change.access === "off") {
+        throw new ChainPolicyStoreError("DEFAULT_CHAIN_REQUIRED");
+      }
+      if (!current.configurationComplete && change.access !== "off") {
+        throw new ChainPolicyStoreError("CHAIN_NOT_READY");
+      }
       if (current.access === change.access) continue;
       if (current.revision !== change.expectedRevision) {
         throw new ChainPolicyStoreError("CONFIG_CONFLICT");
@@ -433,12 +439,62 @@ describe("AUTH-10 chain configuration API and server guard", () => {
       previousAccess: "pro",
       revision: 3,
     });
-    expect(chainPolicyStore.audits.map(({ outcome, resultCode }) => ({ outcome, resultCode }))).toEqual([
+    expect(
+      chainPolicyStore.audits.map(({ outcome, resultCode }) => ({ outcome, resultCode })),
+    ).toEqual([
       { outcome: "allowed", resultCode: "UPDATED" },
       { outcome: "allowed", resultCode: "UNCHANGED" },
       { outcome: "denied", resultCode: "CONFIG_CONFLICT" },
       { outcome: "allowed", resultCode: "UPDATED" },
     ]);
+  });
+
+  it("returns stable safe errors for unknown, incomplete and required default chains", async () => {
+    const cases = [
+      {
+        access: "all",
+        chainId: 999_999,
+        code: "CHAIN_UNKNOWN",
+        expectedRevision: 0,
+        status: 404,
+      },
+      {
+        access: "pro",
+        chainId: 4663,
+        code: "CHAIN_NOT_READY",
+        expectedRevision: 1,
+        status: 409,
+      },
+      {
+        access: "off",
+        chainId: 56,
+        code: "DEFAULT_CHAIN_REQUIRED",
+        expectedRevision: 1,
+        status: 409,
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      const { app, tokens } = await fixture();
+      const response = await app.inject({
+        headers: headers(tokens.admin),
+        method: "POST",
+        payload: {
+          access: { [testCase.chainId]: testCase.access },
+          expectedRevision: { [testCase.chainId]: testCase.expectedRevision },
+          reason: "Local validation boundary",
+        },
+        url: "/api/system-config/chains",
+      });
+
+      expect(response.statusCode, testCase.code).toBe(testCase.status);
+      expect(response.headers["cache-control"], testCase.code).toBe("no-store");
+      expect(response.json().error, testCase.code).toMatchObject({
+        code: testCase.code,
+        retryable: false,
+      });
+      expect(response.body, testCase.code).not.toContain("PRIVATE_");
+    }
   });
 
   it("uses the test-only handler to prove chain policy without creating business APIs", async () => {
@@ -481,12 +537,10 @@ describe("AUTH-10 chain configuration API and server guard", () => {
     }
 
     expect((await call("admin", "position.read", 999_999)).json().error.code).toBe("CHAIN_UNKNOWN");
-    expect(
-      (await call("user", "position.teleport")).json().error.code,
-    ).toBe("FORBIDDEN");
-    expect(
-      (await call("user", "position.read", 56, accounts.pro.id)).json().error.code,
-    ).toBe("FORBIDDEN");
+    expect((await call("user", "position.teleport")).json().error.code).toBe("FORBIDDEN");
+    expect((await call("user", "position.read", 56, accounts.pro.id)).json().error.code).toBe(
+      "FORBIDDEN",
+    );
 
     const productionApp = buildApiApp({
       chainPolicyStore,
@@ -497,7 +551,8 @@ describe("AUTH-10 chain configuration API and server guard", () => {
     });
     apps.push(productionApp);
     expect(
-      (await productionApp.inject({ method: "POST", url: "/api/test/chain-access" })).json().error.code,
+      (await productionApp.inject({ method: "POST", url: "/api/test/chain-access" })).json().error
+        .code,
     ).toBe("NOT_FOUND");
   });
 
