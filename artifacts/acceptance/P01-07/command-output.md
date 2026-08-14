@@ -22,4 +22,4 @@
 
 The full browser run rewrote one P01-06 generated `actual` screenshot. It was restored from `9ad094654659f9eab98319d48f59d2c7e18978ed`; the final historical-path diff is empty.
 
-GitHub Actions is not recorded as passed. [Run 31826761337](https://github.com/0x-eth/LPXBOT/actions/runs/31826761337) targets verified implementation commit `c399c836712c48344ffd0c460f9438f4e692ab69`; both its initial attempt and explicit rerun ended all six jobs with no executed steps or available failure log. It cannot qualify the work item for acceptance.
+GitHub Actions is not recorded as passed. [Run 31826761337](https://github.com/0x-eth/LPXBOT/actions/runs/31826761337) targets verified implementation commit `c399c836712c48344ffd0c460f9438f4e692ab69`; both its initial attempt and explicit rerun ended all six jobs with no executed steps, `runner_id: 0`, and no failure log. The Check Run annotation attributes this to failed account payments or a spending limit. It cannot qualify the work item for acceptance.
