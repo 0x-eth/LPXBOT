@@ -54,6 +54,55 @@ export interface AuthRateLimits {
   timeWindowMs: number;
 }
 
+class AuthenticationRateLimitError extends Error {
+  readonly code = "RATE_LIMITED";
+  readonly statusCode: number;
+
+  constructor(statusCode: number) {
+    super("Too many authentication requests");
+    this.name = "AuthenticationRateLimitError";
+    this.statusCode = statusCode;
+  }
+}
+
+interface RateLimitCounter {
+  current: number;
+  resetAt: number;
+}
+
+class AtomicMemoryRateLimitStore {
+  readonly #counters = new Map<string, RateLimitCounter>();
+
+  constructor(_options: unknown) {}
+
+  child(): AtomicMemoryRateLimitStore {
+    return new AtomicMemoryRateLimitStore({});
+  }
+
+  incr(
+    key: string,
+    callback: (
+      error: Error | null,
+      result?: { current: number; ttl: number },
+    ) => void,
+    timeWindow: number,
+    _max: number,
+  ): void {
+    const currentTime = Date.now();
+    const existing = this.#counters.get(key);
+    const counter =
+      !existing || existing.resetAt <= currentTime
+        ? { current: 1, resetAt: currentTime + timeWindow }
+        : { current: existing.current + 1, resetAt: existing.resetAt };
+
+    this.#counters.set(key, counter);
+    callback(null, {
+      current: counter.current,
+      ttl: Math.max(0, counter.resetAt - currentTime),
+    });
+  }
+}
+
 function bearerToken(header: string | undefined): string | null {
   if (!header) return null;
   const match = /^Bearer ([A-Za-z0-9_-]+)$/.exec(header);
@@ -136,15 +185,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
 
   void app.register(cookie);
   void app.register(rateLimit, {
-    errorResponseBuilder(request) {
-      return createErrorEnvelope({
-        code: "RATE_LIMITED",
-        message: "Too many authentication requests",
-        requestId: request.id,
-        retryable: true,
-      });
+    errorResponseBuilder(_request, context) {
+      return new AuthenticationRateLimitError(context.statusCode);
     },
     global: false,
+    store: AtomicMemoryRateLimitStore,
   });
 
   app.addHook("onResponse", (request, reply, done) => {
@@ -170,16 +215,27 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     ),
   );
 
-  app.setErrorHandler((_error, request, reply) =>
-    reply.code(500).send(
+  app.setErrorHandler((error, request, reply) => {
+    if (error instanceof AuthenticationRateLimitError) {
+      return reply.code(error.statusCode).send(
+        createErrorEnvelope({
+          code: error.code,
+          message: error.message,
+          requestId: request.id,
+          retryable: true,
+        }),
+      );
+    }
+
+    return reply.code(500).send(
       createErrorEnvelope({
         code: "INTERNAL_ERROR",
         message: "The request could not be completed",
         requestId: request.id,
         retryable: true,
       }),
-    ),
-  );
+    );
+  });
 
   app.after(() => {
     app.post(
