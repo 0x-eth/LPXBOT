@@ -623,6 +623,12 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
           <p className="eyebrow">Request error</p>
           <h1>Request failed</h1>
           <p role="alert">{page.message}</p>
+          {page.retryable ? (
+            <button className="retry-button route-retry" onClick={() => void refresh()} type="button">
+              <RotateCw aria-hidden="true" size={17} />
+              Retry request
+            </button>
+          ) : null}
         </main>
       ) : (
         <Routes>

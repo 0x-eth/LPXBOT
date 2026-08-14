@@ -200,6 +200,14 @@ input:focus-visible {
   gap: 8px;
 }
 
+.route-retry {
+  margin-right: 0;
+  margin-left: 0;
+  color: #202426;
+  border-color: #aeb6b9;
+  background: #ffffff;
+}
+
 .bot-login-actions a {
   min-height: 38px;
   padding: 8px 10px;

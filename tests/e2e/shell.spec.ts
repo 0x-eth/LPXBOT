@@ -76,3 +76,16 @@ test("SHELL-01 keeps localized route outlets and current navigation stable", asy
 
   await expect(page.getByRole("link", { name: "管理" })).toHaveCount(0);
 });
+
+test("SHELL-05 route errors stay safe and expose a real retry command", async ({ page }) => {
+  await useUserSession(page);
+  await page.goto("/developer?fixture=route-error");
+
+  await expect(page.getByRole("heading", { level: 1, name: "Page unavailable" })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveText("This page could not be displayed safely.");
+  await expect(page.getByText(/INTERNAL_FIXTURE_TOKEN|requestBody/u)).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Retry page" }).click();
+  await expect(page).toHaveURL(/\/developer$/u);
+  await expect(page.getByRole("heading", { level: 1, name: "Developer" })).toBeVisible();
+});

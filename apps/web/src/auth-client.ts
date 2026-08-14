@@ -229,6 +229,23 @@ function blockedReason(code: string): "pending" | "rejected" | "banned" | null {
   }
 }
 
+function safeResponseMessage(status: number, code: string): string {
+  if (status === 403) {
+    const messages: Record<string, string> = {
+      ACCOUNT_BANNED: "This account is currently unavailable.",
+      ACCOUNT_PENDING: "Account approval is pending.",
+      ACCOUNT_REJECTED: "This account request was not approved.",
+      FORBIDDEN: "You do not have permission to complete this request.",
+      REGION_BLOCKED: "Access is unavailable in this region.",
+    };
+    return messages[code] ?? "You do not have permission to complete this request.";
+  }
+  if (status === 503 && code === "MAINTENANCE") {
+    return "The service is temporarily unavailable.";
+  }
+  return "The request could not be completed.";
+}
+
 export class AuthClient {
   #bearerToken: string | null = null;
   #botLogin: BotLoginView = { status: "idle" };
@@ -742,20 +759,21 @@ export class AuthClient {
     }
 
     const reason = response.status === 403 ? blockedReason(body.error.code) : null;
+    const safeMessage = safeResponseMessage(response.status, body.error.code);
     if (reason) {
-      this.#state = { status: "blocked", reason, message: body.error.message };
+      this.#state = { status: "blocked", reason, message: safeMessage };
       this.#page = { kind: "ready" };
     } else if (response.status === 403 && body.error.code === "REGION_BLOCKED") {
       this.#state = {
         status: "region-blocked",
         region: null,
-        message: body.error.message,
+        message: safeMessage,
       };
       this.#page = { kind: "ready" };
     } else if (response.status === 503 && body.error.code === "MAINTENANCE") {
       this.#state = {
         status: "maintenance",
-        message: body.error.message,
+        message: safeMessage,
         until: null,
       };
       this.#page = { kind: "ready" };
@@ -763,13 +781,13 @@ export class AuthClient {
       this.#page = {
         kind: "forbidden",
         code: "FORBIDDEN",
-        message: body.error.message,
+        message: safeMessage,
       };
     } else {
       this.#page = {
         kind: "error",
         code: body.error.code,
-        message: body.error.message,
+        message: safeMessage,
         retryable: body.error.retryable,
       };
     }
