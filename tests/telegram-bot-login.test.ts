@@ -326,4 +326,46 @@ describe("Telegram Bot one-time login application service", () => {
 
     await app.close();
   });
+
+  it("rate limits token creation without logging or persisting plaintext tokens", async () => {
+    const store = new MemoryBotLoginStore();
+    const logLines: string[] = [];
+    const app = buildApiApp({
+      authRateLimits: {
+        cancel: 10,
+        loginToken: 2,
+        miniApp: 10,
+        status: 10,
+        timeWindowMs: 60_000,
+      },
+      logger: { write: (line) => logLines.push(line) },
+      maintenance: { enabled: false, message: null, until: null },
+      now: () => now,
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: store,
+      telegramBot: service(store),
+      telegramBotUsername: "local_fixture_bot",
+    });
+
+    const responses = await Promise.all([
+      app.inject({ method: "POST", url: "/api/auth/login-token" }),
+      app.inject({ method: "POST", url: "/api/auth/login-token" }),
+      app.inject({ method: "POST", url: "/api/auth/login-token" }),
+    ]);
+
+    expect(responses.map(({ statusCode }) => statusCode).sort()).toEqual([200, 200, 429]);
+    const limited = responses.find(({ statusCode }) => statusCode === 429);
+    expect(limited?.json()).toMatchObject({
+      error: { code: "RATE_LIMITED", retryable: true },
+      success: false,
+    });
+    expect(store.intents).toHaveProperty("size", 2);
+    for (const response of responses.filter(({ statusCode }) => statusCode === 200)) {
+      const issuedToken = response.json().data.token as string;
+      expect(JSON.stringify([...store.intents.values()])).not.toContain(issuedToken);
+      expect(logLines.join("\n")).not.toContain(issuedToken);
+    }
+
+    await app.close();
+  });
 });

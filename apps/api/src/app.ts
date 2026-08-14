@@ -1,4 +1,5 @@
 import cookie from "@fastify/cookie";
+import rateLimit from "@fastify/rate-limit";
 import { createErrorEnvelope, createSuccessEnvelope, type SessionView } from "@lpbot/api-contract";
 import {
   authorizeAccount,
@@ -33,6 +34,7 @@ export interface RegionPolicyResult {
 }
 
 export interface ApiAppOptions {
+  authRateLimits?: AuthRateLimits;
   logger?: { write(line: string): void };
   maintenance: MaintenanceConfig;
   now?: () => Date;
@@ -42,6 +44,14 @@ export interface ApiAppOptions {
   telegramBotUsername?: string;
   telegramMiniApp?: TelegramMiniAppAuthenticator;
   testRoutes?: boolean;
+}
+
+export interface AuthRateLimits {
+  cancel: number;
+  loginToken: number;
+  miniApp: number;
+  status: number;
+  timeWindowMs: number;
 }
 
 function bearerToken(header: string | undefined): string | null {
@@ -108,11 +118,34 @@ function telegramBotConfigured(
 
 export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   const now = options.now ?? (() => new Date());
+  const authRateLimits: AuthRateLimits = options.authRateLimits ?? {
+    cancel: 20,
+    loginToken: 5,
+    miniApp: 120,
+    status: 120,
+    timeWindowMs: 60_000,
+  };
+  for (const value of Object.values(authRateLimits)) {
+    if (!Number.isSafeInteger(value) || value <= 0) {
+      throw new RangeError("Authentication rate limits must be positive integers");
+    }
+  }
   const app = Fastify({
     logger: false,
   });
 
   void app.register(cookie);
+  void app.register(rateLimit, {
+    errorResponseBuilder(request) {
+      return createErrorEnvelope({
+        code: "RATE_LIMITED",
+        message: "Too many authentication requests",
+        requestId: request.id,
+        retryable: true,
+      });
+    },
+    global: false,
+  });
 
   app.addHook("onResponse", (request, reply, done) => {
     options.logger?.write(
@@ -148,7 +181,14 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     ),
   );
 
-  app.post("/api/auth/me", async (request, reply) => {
+  app.post(
+    "/api/auth/me",
+    {
+      config: {
+        rateLimit: { max: authRateLimits.miniApp, timeWindow: authRateLimits.timeWindowMs },
+      },
+    },
+    async (request, reply) => {
     if (request.body !== undefined) {
       if (!options.telegramMiniApp) {
         return reply.code(503).send(
@@ -272,7 +312,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       },
       request.id,
     );
-  });
+    },
+  );
 
   app.post("/api/auth/logout", async (request, reply) => {
     const token = sessionToken(request);
@@ -303,7 +344,17 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     return createSuccessEnvelope({ loggedOut: true, revoked }, request.id);
   });
 
-  app.post("/api/auth/login-token", async (request, reply) => {
+  app.post(
+    "/api/auth/login-token",
+    {
+      config: {
+        rateLimit: {
+          max: authRateLimits.loginToken,
+          timeWindow: authRateLimits.timeWindowMs,
+        },
+      },
+    },
+    async (request, reply) => {
     if (!telegramBotConfigured(options)) {
       return reply.code(503).send(
         createErrorEnvelope({
@@ -324,10 +375,16 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       },
       request.id,
     );
-  });
+    },
+  );
 
   app.get<{ Params: { token: string } }>(
     "/api/auth/login-status/:token",
+    {
+      config: {
+        rateLimit: { max: authRateLimits.status, timeWindow: authRateLimits.timeWindowMs },
+      },
+    },
     async (request, reply) => {
       if (!telegramBotConfigured(options)) {
         return reply.code(503).send(
@@ -410,6 +467,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
 
   app.post<{ Params: { token: string } }>(
     "/api/auth/login-token/:token/cancel",
+    {
+      config: {
+        rateLimit: { max: authRateLimits.cancel, timeWindow: authRateLimits.timeWindowMs },
+      },
+    },
     async (request, reply) => {
       if (!telegramBotConfigured(options)) {
         return reply.code(503).send(
