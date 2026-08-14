@@ -103,6 +103,57 @@ export const userPreferencesContracts = {
   patch: { method: "PATCH", path: "/api/user/preferences" },
 } as const;
 
+export interface ShellTaskCounts {
+  paused: number | null;
+  running: number | null;
+  stopped: number | null;
+}
+
+export interface ShellGasStats {
+  baseGwei: number | null;
+  ethereumGwei: number | null;
+}
+
+export interface ShellStats {
+  fps: number | null;
+  gas: ShellGasStats;
+  online: boolean | null;
+  pingMs: number | null;
+  recommendedPools: string[] | null;
+  taskCounts: ShellTaskCounts;
+}
+
+export interface ShellStatsSnapshot {
+  observedAt: string;
+  sequence: number;
+  stats: ShellStats;
+}
+
+export interface ShellStatsPatch {
+  fps?: number | null;
+  gas?: Partial<ShellGasStats>;
+  online?: boolean | null;
+  pingMs?: number | null;
+  recommendedPools?: string[] | null;
+  taskCounts?: Partial<ShellTaskCounts>;
+}
+
+export type ShellStatsEvent =
+  | (ShellStatsSnapshot & { type: "snapshot" })
+  | { observedAt: string; sequence: number; stats: ShellStatsPatch; type: "update" }
+  | {
+      observedAt: string;
+      recommendedPools: string[] | null;
+      sequence: number;
+      type: "rec_pools_snapshot";
+    }
+  | { observedAt: string; sequence: number; type: "heartbeat" };
+
+export const shellStatsContracts = {
+  snapshot: { method: "GET", path: "/api/stats" },
+  stream: { method: "GET", path: "/api/stats/stream" },
+} as const;
+
 export interface WalletChallengeRequest {
   address: EvmAddress;
   chainId: number;

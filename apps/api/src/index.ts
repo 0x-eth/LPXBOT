@@ -15,6 +15,12 @@ export { createLoginWalletAuthenticationFromEnvironment } from "./login-wallet-a
 export type { LoginWalletAuthEnvironment } from "./login-wallet-auth-config.js";
 export { PostgresSessionStore } from "./postgres-session-store.js";
 export { PostgresUserPreferencesStore } from "./postgres-user-preferences-store.js";
+export { UnavailableShellStatsProvider } from "./shell-stats.js";
+export type {
+  ShellStatsContext,
+  ShellStatsProvider,
+  ShellStatsSubscriptionContext,
+} from "./shell-stats.js";
 export {
   defaultUserPreferences,
   defaultVersionedUserPreferences,

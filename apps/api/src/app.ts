@@ -22,6 +22,7 @@ import {
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 
 import { sessionCookieName, setBrowserSessionCookie } from "./browser-session-cookie.js";
+import type { ShellStatsProvider } from "./shell-stats.js";
 import {
   defaultVersionedUserPreferences,
   parseUserPreferencesPatch,
@@ -49,6 +50,7 @@ export interface ApiAppOptions {
   preferencesStore?: UserPreferencesStore;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
   sessionStore: SessionStore;
+  statsProvider?: ShellStatsProvider;
   telegramBot?: TelegramBotLoginApplication;
   telegramBotUsername?: string;
   telegramMiniApp?: TelegramMiniAppAuthenticator;
@@ -363,6 +365,75 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   };
 
   app.after(() => {
+    app.get("/api/stats", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.statsProvider) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "STATS_UNAVAILABLE",
+            message: "Shell statistics are not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      const snapshot = await options.statsProvider.getSnapshot({ userId: session.userId });
+      return createSuccessEnvelope(snapshot, request.id);
+    });
+
+    app.get("/api/stats/stream", async (request, reply) => {
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.statsProvider) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "STATS_UNAVAILABLE",
+            message: "Shell statistics are not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+
+      const snapshot = await options.statsProvider.getSnapshot({ userId: session.userId });
+      const controller = new AbortController();
+      reply.hijack();
+      reply.raw.writeHead(200, {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Connection: "keep-alive",
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "X-Accel-Buffering": "no",
+      });
+      reply.raw.flushHeaders?.();
+      reply.raw.on("close", () => controller.abort());
+
+      const writeEvent = (event: { sequence: number; type: string }) => {
+        reply.raw.write(`id: ${event.sequence}\n`);
+        reply.raw.write(`event: ${event.type}\n`);
+        reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
+      };
+      reply.raw.write("retry: 1000\n\n");
+      writeEvent({ ...snapshot, type: "snapshot" });
+      let sequence = snapshot.sequence;
+      try {
+        for await (const event of options.statsProvider.subscribe({
+          afterSequence: sequence,
+          signal: controller.signal,
+          userId: session.userId,
+        })) {
+          if (controller.signal.aborted) break;
+          if (event.sequence <= sequence) continue;
+          writeEvent(event);
+          sequence = event.sequence;
+        }
+      } finally {
+        if (!reply.raw.destroyed) reply.raw.end();
+      }
+      return reply;
+    });
+
     app.get("/api/user/preferences", async (request, reply) => {
       reply.header("Cache-Control", "no-store");
       const session = await authenticateSessionRequest(request, reply);
