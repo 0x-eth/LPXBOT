@@ -84,3 +84,33 @@ test("SHELL-06 offline navigation falls back to a safe unauthenticated shell", a
   await expect(page.getByText(/signed in|session restored/iu)).toHaveCount(0);
   expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
 });
+
+test("SHELL-06 activation removes obsolete LP Bot caches", async ({ page }) => {
+  await page.goto("/manifest.webmanifest");
+  await page.evaluate(async () => {
+    const cache = await caches.open("lpbot-navigation-obsolete");
+    await cache.put("/stale-shell", new Response("stale local shell"));
+  });
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      json: {
+        success: false,
+        error: {
+          code: "UNAUTHENTICATED",
+          message: "Authentication is required",
+          requestId: "req-pwa-cache-cleanup",
+          retryable: false,
+        },
+      },
+      status: 401,
+    }),
+  );
+
+  await page.goto("/");
+  await page.evaluate(() => navigator.serviceWorker.ready);
+
+  await expect
+    .poll(() => page.evaluate(async () => (await caches.keys()).includes("lpbot-navigation-obsolete")))
+    .toBe(false);
+});
