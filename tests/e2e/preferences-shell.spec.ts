@@ -466,7 +466,6 @@ test("P01-06 settings visual contract matches the observed responsive interface"
   await page.screenshot({
     animations: "disabled",
     caret: "hide",
-    fullPage: true,
     mask: masks,
     path: `artifacts/acceptance/P01-06/visual/settings-light-${testInfo.project.name}-actual.png`,
   });
@@ -488,7 +487,6 @@ test("P01-06 settings visual contract matches the observed responsive interface"
   await page.screenshot({
     animations: "disabled",
     caret: "hide",
-    fullPage: true,
     mask: masks,
     path: `artifacts/acceptance/P01-06/visual/settings-dark-${testInfo.project.name}-actual.png`,
   });

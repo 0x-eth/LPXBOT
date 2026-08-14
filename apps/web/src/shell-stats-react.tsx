@@ -48,39 +48,43 @@ export function ShellStatusBar() {
       aria-label="实时状态"
       className="shell-status-bar"
       data-connected={state.connected}
-      data-visual-mask="stats"
       role="status"
     >
       <div className="status-primary">
         <span
           className="online-state"
           data-online={state.connected && state.stats?.online === true}
+          data-visual-mask="stats"
         >
           <span aria-hidden="true" className="online-dot" />
           {display.online}
         </span>
         <span>
-          运行 <strong>{display.running}</strong>
+          运行 <strong data-visual-mask="stats">{display.running}</strong>
         </span>
         <span>
-          暂停 <strong>{display.paused}</strong>
+          暂停 <strong data-visual-mask="stats">{display.paused}</strong>
         </span>
         <span>
-          停止 <strong>{display.stopped}</strong>
+          停止 <strong data-visual-mask="stats">{display.stopped}</strong>
         </span>
       </div>
       <div aria-label="推荐池" className="status-pools">
         {display.recommendedPools.length > 0 ? (
-          display.recommendedPools.map((pool) => <span key={pool}>{pool}</span>)
+          display.recommendedPools.map((pool) => (
+            <span data-visual-mask="stats" key={pool}>
+              {pool}
+            </span>
+          ))
         ) : (
           <span>推荐池 --</span>
         )}
       </div>
       <div className="status-metrics">
-        <span>Base {display.baseGas}</span>
-        <span>ETH {display.ethereumGas}</span>
-        <span>FPS {display.fps}</span>
-        <span>PING {display.ping}</span>
+        <span data-visual-mask="stats">Base {display.baseGas}</span>
+        <span data-visual-mask="stats">ETH {display.ethereumGas}</span>
+        <span data-visual-mask="stats">FPS {display.fps}</span>
+        <span data-visual-mask="stats">PING {display.ping}</span>
       </div>
     </div>
   );
