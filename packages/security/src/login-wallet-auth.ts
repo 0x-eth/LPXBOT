@@ -71,10 +71,20 @@ export type ConsumeAuthWalletLinkResult =
       status: "already-linked" | "expired" | "invalid" | "replayed";
     };
 
+export interface DeleteOwnedLoginWalletLinkInput {
+  linkId: string;
+  userId: string;
+}
+
+export type DeleteOwnedLoginWalletLinkResult = "deleted" | "last-method" | "not-found";
+
 export interface LoginWalletAuthStore extends SessionStore {
   consumeAuthWalletLogin(input: ConsumeAuthWalletLoginInput): Promise<ConsumeAuthWalletLoginResult>;
   consumeAuthWalletLink(input: ConsumeAuthWalletLinkInput): Promise<ConsumeAuthWalletLinkResult>;
   createAuthWalletChallenge(challenge: NewAuthWalletChallenge): Promise<void>;
+  deleteOwnedLoginWalletLink(
+    input: DeleteOwnedLoginWalletLinkInput,
+  ): Promise<DeleteOwnedLoginWalletLinkResult>;
   findAuthWalletChallenge(idHash: string): Promise<StoredAuthWalletChallenge | null>;
   findLoginWalletByAddress(address: string): Promise<StoredLoginWalletLink | null>;
   listLoginWalletLinks(userId: string): Promise<StoredLoginWalletLink[]>;
@@ -131,6 +141,10 @@ export interface LoginWalletLinkView {
   updatedAt: Date;
 }
 
+export interface UnlinkLoginWalletInput extends DeleteOwnedLoginWalletLinkInput {
+  requestId: string;
+}
+
 export interface LoginWalletAuthenticationApplication {
   createLoginChallenge(
     input: CreateLoginWalletChallengeInput,
@@ -141,6 +155,7 @@ export interface LoginWalletAuthenticationApplication {
   link(input: LinkLoginWalletInput): Promise<LoginWalletLinkView>;
   listLinks(userId: string): Promise<LoginWalletLinkView[]>;
   login(input: LoginWithWalletInput): Promise<LoginWithWalletResult>;
+  unlink(input: UnlinkLoginWalletInput): Promise<{ deleted: true }>;
 }
 
 export type WalletAuthenticationErrorCode =
@@ -148,6 +163,8 @@ export type WalletAuthenticationErrorCode =
   | "ADDRESS_INVALID"
   | "CHAIN_INVALID"
   | "LABEL_INVALID"
+  | "LAST_LOGIN_METHOD"
+  | "LINK_NOT_FOUND"
   | "NONCE_EXPIRED"
   | "NONCE_INVALID"
   | "NONCE_MISMATCH"
@@ -551,6 +568,22 @@ export class LoginWalletAuthenticationService implements LoginWalletAuthenticati
     return (await this.#store.listLoginWalletLinks(userId)).map((link) => this.#linkView(link));
   }
 
+  async unlink(input: UnlinkLoginWalletInput): Promise<{ deleted: true }> {
+    const deletedAt = this.#now();
+    const result = await this.#store.deleteOwnedLoginWalletLink({
+      linkId: input.linkId,
+      userId: input.userId,
+    });
+    if (result !== "deleted") {
+      await this.#auditLinkDelete("denied", input.requestId, deletedAt, input.userId);
+      throw new WalletAuthenticationError(
+        result === "last-method" ? "LAST_LOGIN_METHOD" : "LINK_NOT_FOUND",
+      );
+    }
+    await this.#auditLinkDelete("allowed", input.requestId, deletedAt, input.userId);
+    return { deleted: true };
+  }
+
   #message(input: {
     address: `0x${string}`;
     chainId: number;
@@ -646,6 +679,22 @@ export class LoginWalletAuthenticationService implements LoginWalletAuthenticati
   ): Promise<void> {
     await this.#store.recordAccessAudit({
       action: "wallet.link.create",
+      createdAt,
+      outcome,
+      requestId,
+      sessionId: null,
+      userId,
+    });
+  }
+
+  async #auditLinkDelete(
+    outcome: AccessAuditEvent["outcome"],
+    requestId: string,
+    createdAt: Date,
+    userId: string,
+  ): Promise<void> {
+    await this.#store.recordAccessAudit({
+      action: "wallet.link.delete",
       createdAt,
       outcome,
       requestId,

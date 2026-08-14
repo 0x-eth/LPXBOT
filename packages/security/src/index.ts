@@ -47,6 +47,8 @@ export type {
   CreatedLoginWalletChallenge,
   CreateLoginWalletChallengeInput,
   CreateLinkWalletChallengeInput,
+  DeleteOwnedLoginWalletLinkInput,
+  DeleteOwnedLoginWalletLinkResult,
   LinkLoginWalletInput,
   LoginWithWalletInput,
   LoginWithWalletResult,
@@ -57,6 +59,7 @@ export type {
   NewAuthWalletChallenge,
   StoredAuthWalletChallenge,
   StoredLoginWalletLink,
+  UnlinkLoginWalletInput,
   WalletAuthenticationErrorCode,
 } from "./login-wallet-auth.js";
 

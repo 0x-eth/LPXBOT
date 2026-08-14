@@ -174,10 +174,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function walletErrorStatus(code: WalletAuthenticationError["code"]): 400 | 401 | 409 | 410 {
+function walletErrorStatus(code: WalletAuthenticationError["code"]): 400 | 401 | 404 | 409 | 410 {
   if (code === "NONCE_REPLAYED") return 409;
   if (code === "NONCE_EXPIRED") return 410;
   if (code === "SIGNATURE_INVALID") return 401;
+  if (code === "LINK_NOT_FOUND") return 404;
   return 400;
 }
 
@@ -187,6 +188,8 @@ function walletErrorMessage(code: WalletAuthenticationError["code"]): string {
     ADDRESS_INVALID: "Wallet address is invalid",
     CHAIN_INVALID: "Wallet chain ID is invalid",
     LABEL_INVALID: "Login wallet label is invalid",
+    LAST_LOGIN_METHOD: "At least one login method must remain linked",
+    LINK_NOT_FOUND: "Login wallet link was not found",
     NONCE_EXPIRED: "Wallet challenge has expired",
     NONCE_INVALID: "Wallet challenge is invalid",
     NONCE_MISMATCH: "Wallet challenge does not match the request",
