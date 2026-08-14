@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-06",
+  "risk": "R1",
+  "featureIds": ["SHELL-02", "SHELL-03", "SHELL-04", "SET-01", "SET-02"],
+  "evidenceClassification": {
+    "live-observed": {
+      "source": "artifacts/acceptance/P01-01",
+      "claims": [
+        "light settings layout and controls",
+        "ordinary account omits management",
+        "desktop status field set"
+      ]
+    },
+    "frozen-bundle-candidate": {
+      "source": "artifacts/acceptance/P01-01/contracts/p01-02-contract.json",
+      "claims": ["preference field candidates", "GET /api/user/preferences candidate"]
+    },
+    "local-fixture-verified": {
+      "claims": [
+        "versioned preference GET and PATCH",
+        "PostgreSQL persistence and migration",
+        "dark and system themes",
+        "pre-paint theme bootstrap and persistence",
+        "navigation mutation and cross-context consistency",
+        "stats snapshot/SSE/reconnect",
+        "all P01-06 browser and screenshot results"
+      ]
+    }
+  },
+  "preferences": {
+    "schemaVersion": 2,
+    "fields": [
+      "theme",
+      "colorTheme",
+      "customColor",
+      "taskViewMode",
+      "poolsPanelCollapsed",
+      "showHotPools",
+      "showScanTab",
+      "navConfig"
+    ],
+    "endpoints": {
+      "get": "GET /api/user/preferences",
+      "patch": "PATCH /api/user/preferences",
+      "cacheControl": "no-store"
+    },
+    "identity": "server-session-user-id-only",
+    "anonymousStatus": 401,
+    "storage": {
+      "migration": "infra/migrations/20260814000400_create_user_preferences.sql",
+      "engine": "PostgreSQL",
+      "primaryKey": "user_id",
+      "foreignKey": "users(id) ON DELETE CASCADE",
+      "payload": "jsonb",
+      "optimisticConcurrency": "user_id + revision"
+    },
+    "serverDefaults": true,
+    "fieldWhitelist": true,
+    "legacyV1Migration": true,
+    "crossUserIsolation": true,
+    "optimisticUi": true,
+    "failureRollback": true,
+    "toastRetry": true,
+    "refreshPersistence": true,
+    "secondContextPersistence": true
+  },
+  "theme": {
+    "modes": ["light", "dark", "system"],
+    "systemMediaListener": true,
+    "prePaintBootstrap": true,
+    "serverAuthoritative": true,
+    "localStorageFields": ["theme", "colorTheme", "customColor"],
+    "semanticCssVariables": true,
+    "colorSchemeSynchronized": true,
+    "themeColorMetaSynchronized": true,
+    "pwaDefaultSynchronized": true,
+    "presets": [
+      "neutral",
+      "blue",
+      "violet",
+      "green",
+      "orange",
+      "red",
+      "cyan",
+      "pink",
+      "indigo",
+      "amber",
+      "teal"
+    ],
+    "customColorFormat": "#RRGGBB",
+    "minimumAccentTextContrast": 4.5,
+    "minimumFocusContrast": 3
+  },
+  "navigation": {
+    "keys": ["tasks", "pools", "strategies", "activity", "wallets", "chat"],
+    "tasksLockedVisible": true,
+    "unknownDuplicateMissingRejected": true,
+    "desktopAndMobileSharedConfig": true,
+    "moveButtons": true,
+    "keyboardReorder": "Alt+ArrowUp|Alt+ArrowDown",
+    "restoreDefault": true,
+    "managementInPreferences": false,
+    "managementRoleDerived": true,
+    "stableTracksAndBadgeSlots": true
+  },
+  "stats": {
+    "provider": "replaceable ShellStatsProvider",
+    "snapshotEndpoint": "GET /api/stats",
+    "streamEndpoint": "GET /api/stats/stream",
+    "authenticated": true,
+    "cacheControl": "no-store",
+    "events": ["snapshot", "update", "rec_pools_snapshot", "heartbeat"],
+    "sequenceDeduplication": true,
+    "splitFrameParsing": true,
+    "boundedExponentialBackoff": true,
+    "abortCleanup": true,
+    "nullAndDisconnected": "unavailable-not-zero",
+    "desktopStatusBar": true,
+    "mobileCompactTaskBadge": true,
+    "externalDataSource": false
+  },
+  "settings": {
+    "states": [
+      "loading",
+      "saving",
+      "success",
+      "validation-error",
+      "server-error",
+      "retry"
+    ],
+    "controls": ["segmented-control", "color-swatch", "switch", "sortable-list"],
+    "walletRegressionPreserved": true,
+    "fabricatedBusinessRecords": false
+  },
+  "responsiveAndAccessibility": {
+    "viewports": ["1440x900", "390x844"],
+    "boundaryWidths": [320, 768, 1024],
+    "horizontalOverflow": false,
+    "visibleFocus": true,
+    "keyboardComplete": true,
+    "axeSeriousOrCritical": 0
+  },
+  "visual": {
+    "threshold": { "type": "maxDiffPixels", "value": 60 },
+    "dynamicMasks": ["account", "stats", "login-wallets"],
+    "darwinActualMatchesBaseline": true,
+    "linuxBaselinesCommitted": true,
+    "manualReview": "passed",
+    "actualSha256": {
+      "lightDesktop": "6455314ccb3a1b7c9b2435afe8a9116248c563b79148d40a5d392b29c5ab059f",
+      "darkDesktop": "71a9391cb7375da8ae5c5658c61c1a0ed735384482436acb2a53190474fef4c2",
+      "lightMobile": "ff3024baececd47ae4555a49eeb14c24bbeea8eac33840e6b8504822cc0d336c",
+      "darkMobile": "e1b423d9102dc01d49080ebd28ea9cca0c5919493ce6d116f4fe28b62d24cd1d"
+    },
+    "zeroDiffSha256": {
+      "desktop": "59a804d390137ac87e768ded1707d42ea2a483b3ce6a94f1f261462aacb1b868",
+      "mobile": "527cc7abd48fcccf8176d360c802d90b87f431c9b151db911e1ab04117eca9b1"
+    }
+  },
+  "pwa": {
+    "manifestThemeColor": "#ffffff",
+    "manifestBackgroundColor": "#ffffff",
+    "serviceWorkerVersion": "p01-06-v1",
+    "apiAuthSseWrites": "network-only",
+    "runtimeUserDataCached": false,
+    "testsPassed": 4
+  },
+  "tests": {
+    "focusedUnitFiles": 4,
+    "focusedUnitTests": 13,
+    "allVitestFiles": 25,
+    "allVitestTests": 145,
+    "governanceTests": 19,
+    "postgresFiles": 4,
+    "postgresTests": 8,
+    "infraTests": 8,
+    "browserPassed": 65,
+    "browserIntentionalSkips": 3,
+    "contractTests": 3
+  },
+  "priorAcceptanceIntegrity": {
+    "frozenFixtureTreeBefore": "0b24a81889eb728477e583c43c9121fac7235113",
+    "frozenFixtureTreeAfter": "0b24a81889eb728477e583c43c9121fac7235113",
+    "p01_01Tree": "85fcccb8e9858647f5237888967607767bd85a35",
+    "p01_02Tree": "97fe222b38b9635b17f5ae795e5c0c84b31d258b",
+    "p01_03Tree": "3ce5c7bc9d67f1f4b50c0da23085b65fe200b5f5",
+    "p01_04Tree": "74719d2183628ef6982cf85cb96afbd46274ad86",
+    "p01_05Tree": "fbe95b3c6dbfe8ec898502a7d5f120800eb63ffc",
+    "modified": false
+  },
+  "ci": {
+    "status": "pending",
+    "runId": null,
+    "commit": null,
+    "jobs": ["Quality", "Governance", "Browser", "Contracts", "Infrastructure", "Security"]
+  },
+  "externalOperations": {
+    "targetSite": false,
+    "telegramService": false,
+    "externalRpc": false,
+    "marketService": false,
+    "productionService": false,
+    "productionCredential": false,
+    "transaction": false,
+    "signature": false,
+    "broadcast": false,
+    "fundsAction": false,
+    "businessWrite": false
+  },
+  "outOfScope": ["AUTH-10", "P02 indexer and market data", "real gas source", "P06 task pages"]
+}

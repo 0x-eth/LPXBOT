@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-06",
+  "phase": "P01",
+  "risk": "R1",
+  "status": "in-progress",
+  "featureIds": ["SHELL-02", "SHELL-03", "SHELL-04", "SET-01", "SET-02"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm test",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-06/command-output.md"
+    },
+    {
+      "id": "T-API",
+      "command": "pnpm exec vitest run tests/user-preferences-api.test.ts; pnpm test:postgres",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-06/E-API.md"
+    },
+    {
+      "id": "T-SSE",
+      "command": "pnpm exec vitest run tests/stats-sse-api.test.ts tests/shell-stats-client.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-06/E-SSE.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "LPBOT_PLAYWRIGHT_PORT=43175 pnpm test:e2e",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-06/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "Playwright Darwin and Linux no-update settings screenshots; P01-05 shell screenshots",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-06/E-VIS.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm db:migrate twice; pnpm db:seed twice; pnpm infra:verify; pnpm test:infra; pnpm test:postgres; pnpm test:pwa",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-06/E-OPS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "dockerized gitleaks full-history scan; pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-06/E-OPS.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P01-06/E-API.md" },
+    { "id": "E-SSE", "path": "artifacts/acceptance/P01-06/E-SSE.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P01-06/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P01-06/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P01-06/E-RBAC.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P01-06/E-OPS.md" }
+  ],
+  "assumptions": [
+    "P01-01 light settings controls and status field labels are live-observed; its GET preference shape is frozen-bundle-candidate; all new behavior is local-fixture-verified.",
+    "Dark rendering, theme persistence, preference writes and stats SSE are not promoted to live-observed evidence.",
+    "Missing stats data remains unavailable and no external RPC, indexer, market or gas source is configured in normal local or CI operation.",
+    "AUTH-10, P02 data services, P06 task business pages and later settings remain outside P01-06.",
+    "No target site, Telegram service, production API, production credential, transaction, signature, broadcast or funds action was used.",
+    "The frozen reference fixture and P01-01 through P01-05 acceptance trees match their pre-P01-06 Git tree objects.",
+    "Acceptance remains in-progress until all six CI jobs pass for a stable implementation and evidence commit."
+  ],
+  "completedAt": null,
+  "commit": null
+}
