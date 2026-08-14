@@ -327,6 +327,68 @@ describe("Telegram Bot one-time login application service", () => {
     await app.close();
   });
 
+  it("expires an unconsumed token and denies later confirmation, polling, and cancellation", async () => {
+    const store = new MemoryBotLoginStore();
+    let currentTime = now;
+    const botLogin = service(store, () => currentTime);
+    const app = buildApiApp({
+      maintenance: { enabled: false, message: null, until: null },
+      now: () => currentTime,
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: store,
+      telegramBot: botLogin,
+      telegramBotUsername: "local_fixture_bot",
+    });
+    const created = await app.inject({ method: "POST", url: "/api/auth/login-token" });
+    const token = created.json().data.token as string;
+    currentTime = new Date(now.getTime() + 181_000);
+
+    await expect(
+      botLogin.confirmLogin({
+        requestId: "telegram-update-expired",
+        telegramSubject: "42",
+        token,
+      }),
+    ).resolves.toEqual({ status: "expired" });
+    const polled = await app.inject({ method: "GET", url: `/api/auth/login-status/${token}` });
+    const cancelled = await app.inject({
+      method: "POST",
+      url: `/api/auth/login-token/${token}/cancel`,
+    });
+
+    expect(polled.statusCode).toBe(410);
+    expect(polled.json().error.code).toBe("LOGIN_TOKEN_EXPIRED");
+    expect(cancelled.statusCode).toBe(410);
+    expect(cancelled.json().error.code).toBe("LOGIN_TOKEN_EXPIRED");
+    expect(store.sessions).toHaveProperty("size", 0);
+    await app.close();
+  });
+
+  it("fails closed on every Bot login endpoint when application or username config is missing", async () => {
+    const store = new MemoryBotLoginStore();
+    const app = buildApiApp({
+      maintenance: { enabled: false, message: null, until: null },
+      now: () => now,
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: store,
+      telegramBot: service(store),
+    });
+    const fixtureToken = "A".repeat(43);
+
+    const responses = await Promise.all([
+      app.inject({ method: "POST", url: "/api/auth/login-token" }),
+      app.inject({ method: "GET", url: `/api/auth/login-status/${fixtureToken}` }),
+      app.inject({ method: "POST", url: `/api/auth/login-token/${fixtureToken}/cancel` }),
+    ]);
+
+    expect(responses.map(({ statusCode }) => statusCode).sort()).toEqual([503, 503, 503]);
+    for (const response of responses) {
+      expect(response.json().error.code).toBe("TELEGRAM_BOT_UNAVAILABLE");
+    }
+    expect(store.intents).toHaveProperty("size", 0);
+    await app.close();
+  });
+
   it("rate limits token creation without logging or persisting plaintext tokens", async () => {
     const store = new MemoryBotLoginStore();
     const logLines: string[] = [];

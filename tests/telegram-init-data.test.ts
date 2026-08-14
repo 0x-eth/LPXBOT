@@ -86,6 +86,18 @@ describe("Telegram Mini App initData verifier", () => {
     });
   });
 
+  it("uses one replay digest for equivalent parameter order and encoding", () => {
+    const original = currentFixture();
+    const reordered = [...new URLSearchParams(original).entries()]
+      .reverse()
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      .join("&");
+
+    expect(verifier().verify(reordered).replayDigest).toBe(
+      verifier().verify(original).replayDigest,
+    );
+  });
+
   it("rejects a tampered signature", () => {
     const tampered = currentFixture().replace("Fixture", "Changed");
     expectCode(() => verifier().verify(tampered), "AUTH_INVALID");

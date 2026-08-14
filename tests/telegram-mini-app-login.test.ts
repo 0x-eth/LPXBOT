@@ -207,4 +207,80 @@ describe("Telegram Mini App login application service", () => {
 
     await app.close();
   });
+
+  it("allows only one API request to consume equivalent initData concurrently", async () => {
+    const store = new MemoryMiniAppStore();
+    store.identities.set("42", {
+      allowedChainIds: [1, 56],
+      avatarUrl: null,
+      displayName: "Fixture User",
+      id: "00000000-0000-4000-8000-000000000042",
+      role: "user",
+      status: "active",
+      tier: "normal",
+    });
+    const initData = signedInitData();
+    const reordered = [...new URLSearchParams(initData).entries()]
+      .reverse()
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      .join("&");
+    const app = buildApiApp({
+      maintenance: { enabled: false, message: null, until: null },
+      now: () => now,
+      regionPolicy: () => ({ blocked: false, code: null, message: null }),
+      sessionStore: store,
+      telegramMiniApp: service(store),
+    });
+
+    const responses = await Promise.all([
+      app.inject({ method: "POST", payload: { initData }, url: "/api/auth/me" }),
+      app.inject({ method: "POST", payload: { initData: reordered }, url: "/api/auth/me" }),
+    ]);
+
+    expect(responses.map(({ statusCode }) => statusCode).sort()).toEqual([200, 409]);
+    expect(store.sessions).toHaveProperty("size", 1);
+    expect(store.replays).toHaveProperty("size", 1);
+    await app.close();
+  });
+
+  it.each([
+    ["active", 200, null],
+    ["pending", 403, "ACCOUNT_PENDING"],
+    ["rejected", 403, "ACCOUNT_REJECTED"],
+    ["banned", 403, "ACCOUNT_BANNED"],
+  ] as const)(
+    "applies the %s account policy after verified Mini App login",
+    async (status, expectedStatus, expectedCode) => {
+      const store = new MemoryMiniAppStore();
+      store.identities.set("42", {
+        allowedChainIds: [],
+        avatarUrl: null,
+        displayName: null,
+        id: "00000000-0000-4000-8000-000000000042",
+        role: "user",
+        status,
+        tier: "normal",
+      });
+      const app = buildApiApp({
+        maintenance: { enabled: false, message: null, until: null },
+        now: () => now,
+        regionPolicy: () => ({ blocked: false, code: null, message: null }),
+        sessionStore: store,
+        telegramMiniApp: service(store),
+      });
+
+      const response = await app.inject({
+        method: "POST",
+        payload: { initData: signedInitData() },
+        url: "/api/auth/me",
+      });
+
+      expect(response.statusCode).toBe(expectedStatus);
+      expect(response.headers["set-cookie"]).toContain("lpbot_session=");
+      if (expectedCode) expect(response.json().error.code).toBe(expectedCode);
+      else expect(response.json().success).toBe(true);
+      expect(JSON.stringify(response.json())).not.toContain("token");
+      await app.close();
+    },
+  );
 });
