@@ -85,10 +85,21 @@ function parseSse(body: string): Array<{ event: string; id: number; payload: She
     .map((block) => {
       const lines = block.split("\n");
       return {
-        event: lines.find((line) => line.startsWith("event:"))!.slice(6).trim(),
-        id: Number(lines.find((line) => line.startsWith("id:"))!.slice(3).trim()),
+        event: lines
+          .find((line) => line.startsWith("event:"))!
+          .slice(6)
+          .trim(),
+        id: Number(
+          lines
+            .find((line) => line.startsWith("id:"))!
+            .slice(3)
+            .trim(),
+        ),
         payload: JSON.parse(
-          lines.find((line) => line.startsWith("data:"))!.slice(5).trim(),
+          lines
+            .find((line) => line.startsWith("data:"))!
+            .slice(5)
+            .trim(),
         ) as ShellStatsEvent,
       };
     });

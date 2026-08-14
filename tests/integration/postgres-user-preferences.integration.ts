@@ -114,9 +114,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         WHERE user_id = $1`,
       [userIds[0]],
     );
-    expect(stored.rows).toEqual([
-      { owner: userIds[0], revision: "1", schema_version: 2 },
-    ]);
+    expect(stored.rows).toEqual([{ owner: userIds[0], revision: "1", schema_version: 2 }]);
     await app.close();
 
     const restoredApp = createApp();

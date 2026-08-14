@@ -96,9 +96,7 @@ describe("P01-06 API shell stats provider", () => {
           ),
         );
         controller.enqueue(
-          encoder.encode(
-            '"gas":{"baseGwei":null,"ethereumGwei":null},"fps":60,"pingMs":84}}\n\n',
-          ),
+          encoder.encode('"gas":{"baseGwei":null,"ethereumGwei":null},"fps":60,"pingMs":84}}\n\n'),
         );
         controller.close();
       },
@@ -113,7 +111,9 @@ describe("P01-06 API shell stats provider", () => {
       .mockImplementationOnce((_input, init) => {
         thirdSignal = init?.signal ?? null;
         return new Promise<Response>((_resolve, reject) => {
-          thirdSignal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+          thirdSignal?.addEventListener("abort", () =>
+            reject(new DOMException("Aborted", "AbortError")),
+          );
         });
       });
     const delays: number[] = [];

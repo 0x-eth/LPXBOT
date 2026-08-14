@@ -1,11 +1,9 @@
 import { AxeBuilder } from "@axe-core/playwright";
-import {
-  expect,
-  test,
-  type BrowserContext,
-  type Page,
-  type Route,
-} from "@playwright/test";
+import { expect, test, type BrowserContext, type Page, type Route } from "@playwright/test";
+
+declare global {
+  var __themeAtDomReady: string | undefined;
+}
 
 type ThemeMode = "light" | "dark" | "system";
 
