@@ -350,6 +350,54 @@ describe("P01-02 web auth client", () => {
     expect(sessionStorage.setItem).not.toHaveBeenCalled();
   });
 
+  it("surfaces Mini App request failures and recovers on a later attempt", async () => {
+    const initData = "query_id=fixture&auth_date=1&hash=fixture&user=fixture";
+    const fetcher = vi
+      .fn<AuthFetch>()
+      .mockRejectedValueOnce(new TypeError("fixture network down"))
+      .mockResolvedValueOnce(
+        apiResponse(200, {
+          success: true,
+          data: { isAdmin: false, maintenance: null, user: session },
+          requestId: "req-mini-app-recovered",
+        }),
+      );
+    const client = new AuthClient(fetcher, { broadcastChannel: null });
+    const adapter = { getInitData: () => initData };
+
+    await expect(client.loginWithTelegramMiniApp(adapter)).resolves.toEqual({
+      status: "anonymous",
+    });
+    expect(client.page).toEqual({
+      kind: "error",
+      code: "NETWORK_ERROR",
+      message: "Telegram Mini App authentication failed",
+      retryable: true,
+    });
+
+    await expect(client.loginWithTelegramMiniApp(adapter)).resolves.toEqual({
+      status: "active",
+      session,
+    });
+  });
+
+  it("surfaces a safe verifier error for rejected Mini App initData", async () => {
+    const client = new AuthClient(
+      vi.fn<AuthFetch>().mockResolvedValue(errorResponse(401, "AUTH_INVALID")),
+      { broadcastChannel: null },
+    );
+
+    await expect(
+      client.loginWithTelegramMiniApp({ getInitData: () => "invalid-init-data" }),
+    ).resolves.toEqual({ status: "anonymous" });
+    expect(client.page).toEqual({
+      kind: "error",
+      code: "AUTH_INVALID",
+      message: "Safe AUTH_INVALID message",
+      retryable: false,
+    });
+  });
+
   it("starts booting and restores an active SessionView", async () => {
     const fetcher = vi.fn<AuthFetch>().mockResolvedValue(
       apiResponse(200, {
