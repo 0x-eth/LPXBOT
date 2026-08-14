@@ -4,6 +4,7 @@ import {
   LoginWalletAuthenticationService,
   type AccessAuditEvent,
   type ConsumeAuthWalletLoginInput,
+  type ConsumeAuthWalletLoginResult,
   type ConsumeAuthWalletLinkInput,
   type DeleteOwnedLoginWalletLinkInput,
   type NewAuthWalletChallenge,
@@ -35,7 +36,7 @@ class MemoryLoginWalletStore {
 
   async consumeAuthWalletLogin(
     input: ConsumeAuthWalletLoginInput,
-  ): Promise<{ account: StoredAccount | null; status: "consumed" | "replayed" }> {
+  ): Promise<ConsumeAuthWalletLoginResult> {
     const challenge = this.challenges.find(({ idHash }) => idHash === input.idHash);
     if (!challenge || challenge.consumedAt) return { account: null, status: "replayed" };
     challenge.consumedAt = input.consumedAt;

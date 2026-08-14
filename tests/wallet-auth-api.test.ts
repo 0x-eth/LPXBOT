@@ -1,5 +1,4 @@
 import {
-  type AccessAuditEvent,
   type NewStoredSession,
   type SessionStore,
   SessionIssuer,
@@ -32,11 +31,11 @@ class EmptySessionStore implements SessionStore {
   async findSessionByTokenHash(tokenHash: string): Promise<StoredSession | null> {
     return this.sessions.get(tokenHash) ?? null;
   }
-  async recordAccessAudit(_event: AccessAuditEvent): Promise<void> {}
-  async revokeSession(_tokenHash: string, _revokedAt: Date): Promise<boolean> {
+  async recordAccessAudit(): Promise<void> {}
+  async revokeSession(): Promise<boolean> {
     return false;
   }
-  async touchSession(_tokenHash: string, _lastSeenAt: Date): Promise<void> {}
+  async touchSession(): Promise<void> {}
 }
 
 const apps: Array<{ close(): Promise<void> }> = [];
