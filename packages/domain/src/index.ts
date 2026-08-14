@@ -40,7 +40,7 @@ export function chainOperationCategory(action: string): ChainOperationCategory |
   return chainOperationCategories[action as keyof typeof chainOperationCategories];
 }
 
-function trustedChainRole(role: string, tier: string): Role | null {
+export function trustedRoleForTier(role: string, tier: string): Role | null {
   if (role === "user" && tier === "normal") return role;
   if (role === "pro" && tier === "pro") return role;
   if (role === "admin" && (tier === "normal" || tier === "pro")) return role;
@@ -61,7 +61,7 @@ export function authorizeChainOperation(input: {
   role: string;
   tier: string;
 }): ChainAccessDecision {
-  const role = trustedChainRole(input.role, input.tier);
+  const role = trustedRoleForTier(input.role, input.tier);
   if (!role || !isChainAccessMode(input.access) || !isChainOperationCategory(input.operation)) {
     return { allowed: false, code: "CHAIN_ACCESS_DENIED" };
   }
@@ -81,7 +81,7 @@ export function effectiveAllowedChainIds(
   role: string,
   tier: string,
 ): number[] {
-  const trustedRole = trustedChainRole(role, tier);
+  const trustedRole = trustedRoleForTier(role, tier);
   if (!trustedRole) return [];
 
   const allowed = new Set<number>();

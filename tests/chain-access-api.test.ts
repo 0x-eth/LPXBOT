@@ -324,6 +324,45 @@ describe("AUTH-10 chain configuration API and server guard", () => {
     expect(deniedElevation.json().data.user.allowedChainIds).toEqual([]);
   });
 
+  it("does not grant chain management to an inconsistent admin role and tier", async () => {
+    const { app, chainPolicyStore, sessionStore } = await fixture();
+    const mismatchedAdmin: StoredAccount = {
+      ...accounts.admin,
+      id: "29000000-0000-4000-8000-000000000005",
+      tier: "enterprise" as StoredAccount["tier"],
+    };
+    sessionStore.accounts.set(mismatchedAdmin.id, mismatchedAdmin);
+    const token = (
+      await new SessionIssuer(sessionStore, { now: () => now }).issue({
+        expiresAt: new Date(now.getTime() + 60 * 60 * 1_000),
+        userId: mismatchedAdmin.id,
+      })
+    ).token;
+
+    const read = await app.inject({
+      headers: headers(token),
+      method: "GET",
+      url: "/api/system-config/chains",
+    });
+    expect(read.statusCode).toBe(200);
+    expect(read.json().data).toEqual({ chains: [] });
+    expect(read.body).not.toMatch(/revision|updatedBy|reason|missingConfiguration/u);
+
+    const write = await app.inject({
+      headers: headers(token),
+      method: "POST",
+      payload: {
+        access: { "56": "pro" },
+        expectedRevision: { "56": 1 },
+        reason: "Attempted mismatched-admin elevation",
+      },
+      url: "/api/system-config/chains",
+    });
+    expect(write.statusCode).toBe(403);
+    expect(write.json().error.code).toBe("FORBIDDEN");
+    expect(chainPolicyStore.updateCalls).toBe(0);
+  });
+
   it("enforces admin, same-origin, whitelist, body limit and rate limit before writes", async () => {
     const { app, chainPolicyStore, tokens } = await fixture({ managementRateLimit: 1 });
     const request = {

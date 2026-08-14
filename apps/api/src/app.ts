@@ -14,6 +14,7 @@ import {
   chainOperationCategory,
   effectiveAllowedChainIds,
   roleCanAccess,
+  trustedRoleForTier,
   type AccessLevel,
   type AccountAccessContext,
 } from "@lpbot/domain";
@@ -596,7 +597,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       }
 
       const policies = await options.chainPolicyStore.list();
-      if (session.account.role === "admin") {
+      const trustedRole = trustedRoleForTier(session.account.role, session.account.tier);
+      if (trustedRole === "admin") {
         return createSuccessEnvelope({ chains: await managedChainViews(policies) }, request.id);
       }
       const allowedChainIds = new Set(
@@ -612,122 +614,121 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       );
     });
 
-    app.post(
-      "/api/system-config/chains",
-      { bodyLimit: 4_096 },
-      async (request, reply) => {
-        reply.header("Cache-Control", "no-store");
-        const presentedToken = sessionToken(request);
-        const session = await authenticateSessionRequest(request, reply);
-        if (!session) {
-          await recordDeniedChainManagement(
-            request,
-            null,
-            presentedToken ? "AUTH_EXPIRED" : "UNAUTHENTICATED",
-          );
-          return reply;
-        }
-        if (!roleCanAccess(session.account.role, "admin")) {
-          await recordDeniedChainManagement(request, session, "FORBIDDEN");
-          return reply.code(403).send(
-            createErrorEnvelope({
-              code: "FORBIDDEN",
-              message: "Administrator access is required",
-              requestId: request.id,
-              retryable: false,
-            }),
-          );
-        }
-
-        const expectedOrigin =
-          options.managementOrigin ?? `http://${request.headers.host ?? "localhost"}`;
-        if (request.headers.origin !== expectedOrigin) {
-          await recordDeniedChainManagement(request, session, "CSRF_INVALID");
-          return reply.code(403).send(
-            createErrorEnvelope({
-              code: "CSRF_INVALID",
-              message: "The management request origin is invalid",
-              requestId: request.id,
-              retryable: false,
-            }),
-          );
-        }
-        if (!options.chainPolicyStore) {
-          return reply.code(503).send(
-            createErrorEnvelope({
-              code: "CHAIN_CONFIG_UNAVAILABLE",
-              message: "Chain configuration is not available",
-              requestId: request.id,
-              retryable: true,
-            }),
-          );
-        }
-
-        let parsed: ReturnType<typeof parseChainAccessUpdateBody>;
-        try {
-          parsed = parseChainAccessUpdateBody(request.body);
-        } catch (error) {
-          if (!(error instanceof ChainPolicyStoreError)) throw error;
-          await recordDeniedChainManagement(request, session, error.code);
-          return reply.code(chainPolicyErrorStatus(error.code)).send(
-            createErrorEnvelope({
-              code: error.code,
-              message: chainPolicyErrorMessage(error.code),
-              requestId: request.id,
-              retryable: false,
-            }),
-          );
-        }
-
-        if (
-          !chainManagementLimiter.consume(
-            session.id,
-            chainManagementRateLimit.max,
-            chainManagementRateLimit.timeWindowMs,
-            now().getTime(),
-          )
-        ) {
-          await recordDeniedChainManagement(request, session, "RATE_LIMITED", parsed.reason);
-          return reply.code(429).send(
-            createErrorEnvelope({
-              code: "RATE_LIMITED",
-              message: "Too many chain configuration requests",
-              requestId: request.id,
-              retryable: true,
-            }),
-          );
-        }
-
-        try {
-          const result = await options.chainPolicyStore.update({
-            actorUserId: session.userId,
-            changes: parsed.changes,
-            reason: parsed.reason,
+    app.post("/api/system-config/chains", { bodyLimit: 4_096 }, async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const presentedToken = sessionToken(request);
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) {
+        await recordDeniedChainManagement(
+          request,
+          null,
+          presentedToken ? "AUTH_EXPIRED" : "UNAUTHENTICATED",
+        );
+        return reply;
+      }
+      if (
+        trustedRoleForTier(session.account.role, session.account.tier) !== "admin" ||
+        !roleCanAccess(session.account.role, "admin")
+      ) {
+        await recordDeniedChainManagement(request, session, "FORBIDDEN");
+        return reply.code(403).send(
+          createErrorEnvelope({
+            code: "FORBIDDEN",
+            message: "Administrator access is required",
             requestId: request.id,
-            sessionId: session.id,
-            updatedAt: now(),
-          });
-          return createSuccessEnvelope(
-            { chains: await managedChainViews(result.policies), status: result.status },
-            request.id,
-          );
-        } catch (error) {
-          if (!(error instanceof ChainPolicyStoreError)) {
-            await recordDeniedChainManagement(request, session, "INTERNAL_ERROR", parsed.reason);
-            throw error;
-          }
-          await recordDeniedChainManagement(request, session, error.code, parsed.reason);
-          return reply.code(chainPolicyErrorStatus(error.code)).send(
-            createErrorEnvelope({
-              code: error.code,
-              message: chainPolicyErrorMessage(error.code),
-              requestId: request.id,
-              retryable: error.code === "CONFIG_CONFLICT",
-            }),
-          );
+            retryable: false,
+          }),
+        );
+      }
+
+      const expectedOrigin =
+        options.managementOrigin ?? `http://${request.headers.host ?? "localhost"}`;
+      if (request.headers.origin !== expectedOrigin) {
+        await recordDeniedChainManagement(request, session, "CSRF_INVALID");
+        return reply.code(403).send(
+          createErrorEnvelope({
+            code: "CSRF_INVALID",
+            message: "The management request origin is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!options.chainPolicyStore) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "CHAIN_CONFIG_UNAVAILABLE",
+            message: "Chain configuration is not available",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+
+      let parsed: ReturnType<typeof parseChainAccessUpdateBody>;
+      try {
+        parsed = parseChainAccessUpdateBody(request.body);
+      } catch (error) {
+        if (!(error instanceof ChainPolicyStoreError)) throw error;
+        await recordDeniedChainManagement(request, session, error.code);
+        return reply.code(chainPolicyErrorStatus(error.code)).send(
+          createErrorEnvelope({
+            code: error.code,
+            message: chainPolicyErrorMessage(error.code),
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+
+      if (
+        !chainManagementLimiter.consume(
+          session.id,
+          chainManagementRateLimit.max,
+          chainManagementRateLimit.timeWindowMs,
+          now().getTime(),
+        )
+      ) {
+        await recordDeniedChainManagement(request, session, "RATE_LIMITED", parsed.reason);
+        return reply.code(429).send(
+          createErrorEnvelope({
+            code: "RATE_LIMITED",
+            message: "Too many chain configuration requests",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+
+      try {
+        const result = await options.chainPolicyStore.update({
+          actorUserId: session.userId,
+          changes: parsed.changes,
+          reason: parsed.reason,
+          requestId: request.id,
+          sessionId: session.id,
+          updatedAt: now(),
+        });
+        return createSuccessEnvelope(
+          { chains: await managedChainViews(result.policies), status: result.status },
+          request.id,
+        );
+      } catch (error) {
+        if (!(error instanceof ChainPolicyStoreError)) {
+          await recordDeniedChainManagement(request, session, "INTERNAL_ERROR", parsed.reason);
+          throw error;
         }
-      },
-    );
+        await recordDeniedChainManagement(request, session, error.code, parsed.reason);
+        return reply.code(chainPolicyErrorStatus(error.code)).send(
+          createErrorEnvelope({
+            code: error.code,
+            message: chainPolicyErrorMessage(error.code),
+            requestId: request.id,
+            retryable: error.code === "CONFIG_CONFLICT",
+          }),
+        );
+      }
+    });
 
     if (options.testRoutes) {
       app.post("/api/test/chain-access", async (request, reply) => {
@@ -779,12 +780,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         const operation = chainOperationCategory(action);
         if (
           !operation ||
-          !canAccessOwnedResource(
-            session.userId,
-            ownerUserId,
-            session.account.role,
-            false,
-          )
+          !canAccessOwnedResource(session.userId, ownerUserId, session.account.role, false)
         ) {
           return reply.code(403).send(
             createErrorEnvelope({
