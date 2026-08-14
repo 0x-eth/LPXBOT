@@ -73,7 +73,7 @@ function parseManagedChain(value: unknown): ManagedChainView | null {
     !(previousAccess === null || isAccessMode(previousAccess)) ||
     reason === undefined ||
     !Number.isSafeInteger(value.revision) ||
-    (value.revision as number) < 1 ||
+    (value.revision as number) < 0 ||
     updatedAt === undefined ||
     updatedBy === undefined
   ) {
