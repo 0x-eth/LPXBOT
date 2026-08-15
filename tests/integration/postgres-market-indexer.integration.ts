@@ -464,6 +464,55 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     expect(durable.rows).toEqual([{ count: "1" }]);
   });
 
+  it("uses the replay index and paginates retained events in bounded 500-row reads", async () => {
+    await pool.query(
+      `INSERT INTO market_stream_outbox (
+         stream_key, chain_id, window_minutes, epoch, sequence, cursor,
+         event_type, mode, envelope, created_at
+       )
+       SELECT
+         'top-fees:56:5', 56, 5, 1, value, 'perf-' || value::text,
+         'heartbeat', 'diff',
+         jsonb_build_object(
+           'cursor', 'perf-' || value::text,
+           'data', NULL,
+           'emittedAt', '2026-08-16T00:00:00.000Z',
+           'epoch', '1',
+           'eventType', 'heartbeat',
+           'mode', 'diff',
+           'schemaVersion', '1.0.0',
+           'sequence', value::text,
+           'streamKey', 'top-fees:56:5'
+         ),
+         '2026-08-16T00:00:00.000Z'::timestamptz + value * interval '1 millisecond'
+       FROM generate_series(1, 600) AS value`,
+    );
+    await pool.query("ANALYZE market_stream_outbox");
+    await pool.query("SET enable_seqscan = off");
+    try {
+      const plan = await pool.query(
+        `EXPLAIN (FORMAT JSON)
+         SELECT epoch::text, sequence::text, envelope
+           FROM market_stream_outbox
+          WHERE stream_key = $1
+            AND (epoch > $2 OR (epoch = $2 AND sequence > $3))
+          ORDER BY epoch, sequence
+          LIMIT 500`,
+        ["top-fees:56:5", "1", "1"],
+      );
+      expect(JSON.stringify(plan.rows)).toContain("market_stream_outbox_replay");
+    } finally {
+      await pool.query("RESET enable_seqscan");
+    }
+
+    const provider = new PostgresMarketPoolsProvider(pool, { pollMilliseconds: 1 });
+    const replay = await takeStreamEvents(provider, 501, "perf-1");
+    expect(replay).toHaveLength(501);
+    expect(replay[0]?.sequence).toBe("2");
+    expect(replay.at(-1)?.sequence).toBe("502");
+    expect(new Set(replay.map(({ cursor }) => cursor)).size).toBe(501);
+  });
+
   it("matches the committed reorg vertical-slice golden artifacts", async () => {
     const normal = readP02Fixture("normal");
     const reorg = readP02Fixture("reorg");
