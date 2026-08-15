@@ -199,6 +199,63 @@ export const shellStatsContracts = {
   stream: { method: "GET", path: "/api/stats/stream" },
 } as const;
 
+export const marketWindowMinutes = [1, 5, 15, 30, 60] as const;
+
+export type MarketWindowMinutes = (typeof marketWindowMinutes)[number];
+export type MarketProtocol = "pcsv3" | "univ3" | "pcsv4" | "univ4";
+
+export interface MarketPoolRow {
+  activeTvlUsd: null;
+  chainId: 56;
+  fdvUsd: string | null;
+  feeActiveTvl: null;
+  feesUsd: string | null;
+  feeTvl: string | null;
+  poolAddress: EvmAddress | null;
+  poolId: `0x${string}` | null;
+  protocol: MarketProtocol;
+  token0Symbol: string | null;
+  token1Symbol: string | null;
+  transactionCount: string;
+  tvlUsd: string | null;
+  volumeUsd: string | null;
+}
+
+export interface MarketPoolSnapshot {
+  chainId: 56;
+  generatedAt: string;
+  minutes: MarketWindowMinutes;
+  rows: MarketPoolRow[];
+  version: string;
+  windowEnd: string;
+  windowStart: string;
+}
+
+export interface MarketPoolDiff {
+  tombstones: string[];
+  upserts: MarketPoolRow[];
+  version: string;
+}
+
+export type MarketStreamEventType = "pools.snapshot" | "pools.diff" | "heartbeat";
+
+export interface MarketStreamEnvelope {
+  cursor: string;
+  data: MarketPoolSnapshot | MarketPoolDiff | null;
+  emittedAt: string;
+  epoch: string;
+  eventType: MarketStreamEventType;
+  mode: "snapshot" | "diff";
+  schemaVersion: "1.0.0";
+  sequence: string;
+  streamKey: string;
+}
+
+export const marketPoolsContracts = {
+  snapshot: { method: "GET", path: "/api/pools/top-fees/{minutes}" },
+  stream: { method: "GET", path: "/api/pools/top-fees/{minutes}/stream" },
+} as const;
+
 export interface WalletChallengeRequest {
   address: EvmAddress;
   chainId: number;

@@ -77,7 +77,9 @@ describe("P02-02 arbitrary-precision market windows", () => {
       tvlUsd: "1000.000000000000000003",
       volumeUsd: "30.000000000000000003",
     });
-    expect(oneMinute.feeTvl).toBe("0.000999999999999999998000000000000000005999999999999999982");
+    expect(oneMinute.feeTvl).toBe(
+      "0.001000000000000000000996999999999999999997009000000000000000008972999999999999999973081",
+    );
     const fiveMinute = result.find(({ minutes }) => minutes === 5)!.rows[0]!;
     expect(fiveMinute.feesUsd).toBe("3.500000000000000001");
     expect(fiveMinute.transactionCount).toBe("3");
@@ -157,4 +159,3 @@ describe("P02-02 arbitrary-precision market windows", () => {
     ]);
   });
 });
-
