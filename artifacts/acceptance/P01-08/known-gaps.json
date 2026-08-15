@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-08",
+  "acceptanceStatus": "accepted-with-gaps",
+  "blockingGaps": [
+    {
+      "id": "P01-GAP-TELEGRAM-LIVE",
+      "summary": "Telegram Mini App and Bot flows have not been executed against the real Telegram clients or service.",
+      "affectedFeatureIds": ["AUTH-01", "AUTH-02", "SHELL-06"],
+      "blocks": ["parity-verified", "released"],
+      "doesNotBlock": ["implemented-assumed", "accepted-with-gaps"],
+      "currentEvidence": "deterministic local fixtures only",
+      "requiredFollowUp": "Execute signed initData and one-time Bot flows with approved non-production accounts and retain request/UI evidence."
+    },
+    {
+      "id": "P01-GAP-TARGET-ROLE-STATE",
+      "summary": "P01-01 did not live-observe Pro/admin, abnormal account states, dark rendering or preference writes.",
+      "affectedFeatureIds": ["AUTH-06", "AUTH-07", "AUTH-08", "AUTH-09", "AUTH-10", "SHELL-03", "SHELL-04", "SET-01", "SET-02"],
+      "blocks": ["parity-verified", "released"],
+      "doesNotBlock": ["implemented-assumed", "accepted-with-gaps"],
+      "currentEvidence": "frozen bundle candidates and deterministic local user/pro/admin fixtures",
+      "requiredFollowUp": "Capture complete target comparisons for each role/state/theme/write with approved read-only or test accounts."
+    },
+    {
+      "id": "P01-GAP-STAGING-OPS",
+      "summary": "Current P01 behavior has no staging deployment, monitoring window or deployment rollback exercise.",
+      "affectedFeatureIds": ["AUTH-01", "AUTH-02", "AUTH-03", "AUTH-04", "AUTH-05", "AUTH-06", "AUTH-07", "AUTH-08", "AUTH-09", "AUTH-10", "SHELL-01", "SHELL-02", "SHELL-03", "SHELL-04", "SHELL-05", "SHELL-06", "SET-01", "SET-02"],
+      "blocks": ["released"],
+      "doesNotBlock": ["implemented-assumed", "accepted-with-gaps"],
+      "currentEvidence": "local build/preview, database rollback and CI only",
+      "requiredFollowUp": "Complete staging deploy, monitoring and deployment rollback gates in the release phase."
+    }
+  ],
+  "followUpValidationGaps": [
+    {
+      "id": "P01-GAP-P01-02-COMMIT",
+      "summary": "The historical P01-02 manifest commit is null.",
+      "affectedFeatureIds": ["AUTH-05", "AUTH-06", "AUTH-07", "AUTH-08", "AUTH-09"],
+      "handling": "Preserve null; do not synthesize or backfill a historical commit."
+    },
+    {
+      "id": "P01-GAP-BUNDLE-CANDIDATES",
+      "summary": "Bundle-derived endpoint, preference and chain-management claims remain candidates rather than current live observations.",
+      "affectedFeatureIds": ["AUTH-01", "AUTH-02", "AUTH-03", "AUTH-04", "AUTH-05", "AUTH-06", "AUTH-07", "AUTH-08", "AUTH-09", "AUTH-10", "SHELL-02", "SHELL-04", "SHELL-06", "SET-01", "SET-02"],
+      "handling": "Keep frozen-bundle-candidate classification until a complete current target comparison exists."
+    },
+    {
+      "id": "P01-GAP-EXTERNAL-DATA",
+      "summary": "Shell statistics use a replaceable local provider; no real Telegram, RPC, market, gas or production service was used.",
+      "affectedFeatureIds": ["SHELL-02", "SHELL-06"],
+      "handling": "Validate external adapters in their owning later phases without upgrading P01 fixture evidence."
+    }
+  ],
+  "explicitOutOfScope": [
+    {
+      "id": "P01-OOS-EIP1271",
+      "summary": "EIP-1271 contract-wallet signature verification is not implemented or verified.",
+      "claimBoundary": "AUTH-03 acceptance remains EOA-only."
+    },
+    {
+      "id": "P01-OOS-LATER-PHASES",
+      "summary": "P02 market data, P04 signer/funds, P06 task business data and all other later-phase capabilities remain planned.",
+      "claimBoundary": "P01 routes expose only no-funds shell/fixture states and must not be treated as later feature implementations."
+    },
+    {
+      "id": "P01-OOS-EXTERNAL-CONNECTIONS",
+      "summary": "Target site, Telegram service, external RPC and production services were intentionally not contacted.",
+      "claimBoundary": "No live result is inferred or manufactured from local fixtures."
+    }
+  ]
+}

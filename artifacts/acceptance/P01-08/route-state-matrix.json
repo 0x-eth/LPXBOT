@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-08",
+  "evidenceLevel": "local-fixture-verified",
+  "test": "tests/e2e/p01-completion.spec.ts",
+  "viewports": {
+    "projects": [
+      { "name": "chromium-desktop", "width": 1440, "height": 900 },
+      { "name": "chromium-mobile", "width": 390, "height": 844 }
+    ],
+    "boundaryWidths": [320, 390, 768, 1024, 1440]
+  },
+  "themes": [
+    { "preference": "light", "resolved": "light" },
+    { "preference": "dark", "resolved": "dark" },
+    { "preference": "system", "systemPreference": "dark", "resolved": "dark" }
+  ],
+  "states": ["loading", "empty", "error", "forbidden"],
+  "routes": [
+    {
+      "path": "/tasks/running",
+      "accessibleTitle": "Tasks",
+      "ordinaryUserAccess": true,
+      "businessCapability": "empty shell only; P06 task data is not implemented",
+      "verifiedStates": ["loading", "empty", "error", "forbidden"],
+      "verifiedThemes": ["light", "dark", "system"],
+      "verifiedProjects": ["chromium-desktop", "chromium-mobile"]
+    },
+    {
+      "path": "/tasks/paused",
+      "accessibleTitle": "Tasks",
+      "ordinaryUserAccess": true,
+      "businessCapability": "empty shell only; P06 task data is not implemented",
+      "verifiedStates": ["loading", "empty", "error", "forbidden"],
+      "verifiedThemes": ["light", "dark", "system"],
+      "verifiedProjects": ["chromium-desktop", "chromium-mobile"]
+    },
+    {
+      "path": "/tasks/stopped",
+      "accessibleTitle": "Tasks",
+      "ordinaryUserAccess": true,
+      "businessCapability": "empty shell only; P06 task data is not implemented",
+      "verifiedStates": ["loading", "empty", "error", "forbidden"],
+      "verifiedThemes": ["light", "dark", "system"],
+      "verifiedProjects": ["chromium-desktop", "chromium-mobile"]
+    },
+    {
+      "path": "/pools",
+      "accessibleTitle": "Pools",
+      "ordinaryUserAccess": true,
+      "businessCapability": "empty shell only; P02 market data is not implemented",
+      "verifiedStates": ["loading", "empty", "error", "forbidden"],
+      "verifiedThemes": ["light", "dark", "system"],
+      "verifiedProjects": ["chromium-desktop", "chromium-mobile"]
+    },
+    {
+      "path": "/strategies",
+      "accessibleTitle": "Strategies",
+      "ordinaryUserAccess": true,
+      "businessCapability": "empty shell only; P08 strategy data is not implemented",
+      "verifiedStates": ["loading", "empty", "error", "forbidden"],
+      "verifiedThemes": ["light", "dark", "system"],
+      "verifiedProjects": ["chromium-desktop", "chromium-mobile"]
+    },
+    {
+      "path": "/activity",
+      "accessibleTitle": "Activity",
+      "ordinaryUserAccess": true,
+      "businessCapability": "empty shell only; P11 activity data is not implemented",
+      "verifiedStates": ["loading", "empty", "error", "forbidden"],
+      "verifiedThemes": ["light", "dark", "system"],
+      "verifiedProjects": ["chromium-desktop", "chromium-mobile"]
+    },
+    {
+      "path": "/wallets",
+      "accessibleTitle": "Wallets",
+      "ordinaryUserAccess": true,
+      "businessCapability": "empty shell only; no P04 signer, funds or transaction wallet capability",
+      "verifiedStates": ["loading", "empty", "error", "forbidden"],
+      "verifiedThemes": ["light", "dark", "system"],
+      "verifiedProjects": ["chromium-desktop", "chromium-mobile"]
+    },
+    {
+      "path": "/developer",
+      "accessibleTitle": "Developer",
+      "ordinaryUserAccess": true,
+      "businessCapability": "empty shell only; P11 developer API capability is not implemented",
+      "verifiedStates": ["loading", "empty", "error", "forbidden"],
+      "verifiedThemes": ["light", "dark", "system"],
+      "verifiedProjects": ["chromium-desktop", "chromium-mobile"]
+    },
+    {
+      "path": "/settings",
+      "accessibleTitle": "Settings",
+      "ordinaryUserAccess": true,
+      "businessCapability": "P01 interface and login-wallet settings; chain management remains admin-only",
+      "verifiedStates": ["loading", "empty", "error", "forbidden"],
+      "verifiedThemes": ["light", "dark", "system"],
+      "verifiedProjects": ["chromium-desktop", "chromium-mobile"]
+    }
+  ],
+  "rbacNavigation": {
+    "user": {
+      "primary": ["tasks", "pools", "strategies", "activity", "wallets", "chat"],
+      "settings": true,
+      "chainManagement": false,
+      "users": false
+    },
+    "pro": {
+      "primary": ["tasks", "pools", "strategies", "activity", "wallets", "chat"],
+      "settings": true,
+      "chainManagement": false,
+      "users": false
+    },
+    "admin": {
+      "primary": ["tasks", "pools", "strategies", "activity", "wallets", "chat"],
+      "settings": true,
+      "chainManagement": true,
+      "users": true
+    }
+  },
+  "assertions": {
+    "oneH1PerState": true,
+    "keyboardPath": "passed in shell, auth-state, settings and chain-management suites",
+    "visibleFocus": true,
+    "horizontalOverflow": false,
+    "mobileNavigationOverlap": false,
+    "axeSeriousOrCritical": 0,
+    "historicalSnapshotsUpdated": false,
+    "historicalThresholdsOrMasksChanged": false
+  },
+  "screenshots": [
+    "artifacts/acceptance/P01-08/ui/loading-chromium-desktop.png",
+    "artifacts/acceptance/P01-08/ui/loading-chromium-mobile.png",
+    "artifacts/acceptance/P01-08/ui/empty-chromium-desktop.png",
+    "artifacts/acceptance/P01-08/ui/empty-chromium-mobile.png",
+    "artifacts/acceptance/P01-08/ui/error-chromium-desktop.png",
+    "artifacts/acceptance/P01-08/ui/error-chromium-mobile.png",
+    "artifacts/acceptance/P01-08/ui/forbidden-chromium-desktop.png",
+    "artifacts/acceptance/P01-08/ui/forbidden-chromium-mobile.png",
+    "artifacts/acceptance/P01-08/ui/theme-light-chromium-desktop.png",
+    "artifacts/acceptance/P01-08/ui/theme-light-chromium-mobile.png",
+    "artifacts/acceptance/P01-08/ui/theme-dark-chromium-desktop.png",
+    "artifacts/acceptance/P01-08/ui/theme-dark-chromium-mobile.png",
+    "artifacts/acceptance/P01-08/ui/theme-system-chromium-desktop.png",
+    "artifacts/acceptance/P01-08/ui/theme-system-chromium-mobile.png"
+  ]
+}
