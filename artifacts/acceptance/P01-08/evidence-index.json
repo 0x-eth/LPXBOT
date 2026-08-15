@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-08",
+  "verificationStatus": "in-progress",
+  "classificationPolicy": {
+    "acceptedWorkItemDoesNotImplyParity": true,
+    "parityRequiresCompleteTargetComparison": true,
+    "releasedRequiresStagingMonitoringRollback": true,
+    "newEvidenceLevel": "local-fixture-verified"
+  },
+  "entries": [
+    {
+      "id": "E-API",
+      "path": "artifacts/acceptance/P01-08/E-API.md",
+      "level": "local-fixture-verified",
+      "claims": ["17 runtime endpoints inventoried", "role/state/error contracts re-executed", "no later-phase business endpoint added"],
+      "structuredEvidence": "artifacts/acceptance/P01-08/endpoint-rbac-matrix.json"
+    },
+    {
+      "id": "E-UI",
+      "path": "artifacts/acceptance/P01-08/E-UI.md",
+      "level": "local-fixture-verified",
+      "claims": ["nine ordinary-user no-funds routes", "four route states", "role-aware navigation and settings entry", "one h1 and keyboard path"]
+    },
+    {
+      "id": "E-VIS",
+      "path": "artifacts/acceptance/P01-08/E-VIS.md",
+      "level": "local-fixture-verified",
+      "claims": ["desktop/mobile", "light/dark/system", "320/390/768/1024/1440", "axe serious/critical zero"],
+      "structuredEvidence": "artifacts/acceptance/P01-08/route-state-matrix.json"
+    },
+    {
+      "id": "E-RBAC",
+      "path": "artifacts/acceptance/P01-08/E-RBAC.md",
+      "level": "local-fixture-verified",
+      "claims": ["anonymous/user/pro/admin endpoint matrix", "blocked/maintenance/region decisions", "ownership and chain truth table"]
+    },
+    {
+      "id": "E-SEC",
+      "path": "artifacts/acceptance/P01-08/E-SEC.md",
+      "level": "local-fixture-verified",
+      "claims": ["AUTH-10 R2 review retained", "stable safe errors", "credential and internal-detail redaction", "Service Worker network-only boundaries"]
+    },
+    {
+      "id": "E-MIG",
+      "path": "artifacts/acceptance/P01-08/E-MIG.md",
+      "level": "local-fixture-verified",
+      "claims": ["empty database migration/seed replay", "complete reverse down/up", "preference concurrency", "chain history and rollback"]
+    },
+    {
+      "id": "E-OPS",
+      "path": "artifacts/acceptance/P01-08/E-OPS.md",
+      "level": "local-fixture-verified",
+      "claims": ["build/preview PWA", "local quality gates", "frozen and historical tree integrity", "CI evidence classified by commit"]
+    }
+  ],
+  "historicalEvidence": [
+    {
+      "level": "live-observed",
+      "path": "artifacts/acceptance/P01-01",
+      "handling": "reference-only; no files changed and no incomplete claim promoted"
+    },
+    {
+      "level": "frozen-bundle-candidate",
+      "path": "artifacts/lpbot/2026-08-13",
+      "handling": "frozen tree; candidates remain candidates"
+    },
+    {
+      "level": "local-fixture-verified",
+      "paths": [
+        "artifacts/acceptance/P01-02",
+        "artifacts/acceptance/P01-03",
+        "artifacts/acceptance/P01-04",
+        "artifacts/acceptance/P01-05",
+        "artifacts/acceptance/P01-06",
+        "artifacts/acceptance/P01-07",
+        "artifacts/acceptance/P01-08"
+      ],
+      "handling": "accepted work-item evidence supports implemented-assumed unless full target parity exists"
+    }
+  ],
+  "screenshots": {
+    "directory": "artifacts/acceptance/P01-08/ui",
+    "count": 14,
+    "level": "local-fixture-verified",
+    "historicalSnapshotsChanged": false
+  }
+}
