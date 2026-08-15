@@ -34,10 +34,10 @@ test("POOL-01/02/04/16 render the usable local tracer row", async ({ page }) => 
   await expect(page.getByRole("heading", { level: 1, name: "热门池" })).toBeVisible();
   await expect(page.getByRole("radiogroup", { name: "时间窗" })).toBeVisible();
   for (const minutes of [1, 5, 15, 30, 60]) {
-    await expect(page.getByRole("radio", { name: `${minutes} 分钟` })).toBeVisible();
+    await expect(page.getByRole("radio", { exact: true, name: `${minutes} 分钟` })).toBeVisible();
   }
-  await page.getByRole("radio", { name: "15 分钟" }).click();
-  await expect(page.getByRole("radio", { name: "15 分钟" })).toBeChecked();
+  await page.getByRole("radio", { exact: true, name: "15 分钟" }).click();
+  await expect(page.getByRole("radio", { exact: true, name: "15 分钟" })).toBeChecked();
   await expect(page.getByRole("status", { name: "市场数据连接状态" })).toContainText("实时");
   const table = page.getByRole("table", { name: "BSC 热门池" });
   await expect(table).toBeVisible();
@@ -77,9 +77,9 @@ test("pools is keyboard accessible, non-overflowing, and axe-clean on mobile and
     { height: 900, width: 1440 },
   ]) {
     await page.setViewportSize(viewport);
-    await page.getByRole("radio", { name: "1 分钟" }).focus();
+    await page.getByRole("radio", { exact: true, name: "1 分钟" }).focus();
     await page.keyboard.press("ArrowRight");
-    await expect(page.getByRole("radio", { name: "5 分钟" })).toBeChecked();
+    await expect(page.getByRole("radio", { exact: true, name: "5 分钟" })).toBeChecked();
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
       `${viewport.width}px root overflow`,
@@ -90,4 +90,3 @@ test("pools is keyboard accessible, non-overflowing, and axe-clean on mobile and
     ).toEqual([]);
   }
 });
-
