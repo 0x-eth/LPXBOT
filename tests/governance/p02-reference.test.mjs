@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { access, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -72,6 +73,28 @@ function assertGap(gaps, id) {
   assert.equal(gap.status, "unresolved", `${id} must remain unresolved`);
   assert.equal(typeof gap.reason, "string", `${id} reason is required`);
   assert.ok(gap.reason.length > 0, `${id} reason must not be empty`);
+}
+
+function readBaselineReference(commit, relativePath) {
+  assert.match(commit, /^[0-9a-f]{40}$/, "referenceBaseline must be a full Git commit");
+  assert.equal(path.isAbsolute(relativePath), false, `${relativePath} must be repository-relative`);
+  assert.equal(
+    relativePath.includes(".."),
+    false,
+    `${relativePath} must remain inside the repository`,
+  );
+
+  const result = spawnSync("git", ["show", `${commit}:${relativePath}`], {
+    cwd: ROOT,
+    encoding: null,
+    maxBuffer: 2 * 1024 * 1024,
+  });
+  assert.equal(
+    result.status,
+    0,
+    `${relativePath} is unavailable at ${commit}: ${result.stderr?.toString("utf8") ?? ""}`,
+  );
+  return result.stdout;
 }
 
 test("P02-01 required reference artifacts exist", async () => {
@@ -346,7 +369,7 @@ test("all unresolved fields, formulas, events, and algorithms are closed through
   assert.ok(gapFile.items.some(({ category }) => category === "event"));
 });
 
-test("manifest inventory and sha256sums cover every reference artifact byte-for-byte", async () => {
+test("manifest inventory and sha256sums cover artifacts and frozen references byte-for-byte", async () => {
   const manifest = await readJson("artifact-manifest.json");
   const checksumText = await readFile(path.join(ACCEPTANCE, "sha256sums.txt"), "utf8");
   const checksumRows = checksumText
@@ -380,7 +403,7 @@ test("manifest inventory and sha256sums cover every reference artifact byte-for-
     sorted(EXPECTED_REFERENCE_PATHS),
   );
   for (const reference of manifest.references) {
-    const bytes = await readFile(path.join(ROOT, reference.path));
+    const bytes = readBaselineReference(manifest.referenceBaseline, reference.path);
     assert.equal(reference.bytes, bytes.length, `${reference.path} reference bytes`);
     assert.equal(
       createHash("sha256").update(bytes).digest("hex"),
