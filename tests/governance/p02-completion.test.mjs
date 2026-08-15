@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const TRACEABILITY_PATH = path.join(ROOT, "docs/TRACEABILITY_MATRIX.md");
 const MANIFEST_PATH = path.join(ROOT, "artifacts/acceptance/P02-02/manifest.json");
+const EXPECTED_ACCEPTED_COMMIT = "73998c6f22e499f7063207ec1d497766b6714d29";
 const EXPECTED_FEATURE_IDS = [
   ...Array.from({ length: 16 }, (_, index) => `POOL-${String(index + 1).padStart(2, "0")}`),
   ...Array.from({ length: 5 }, (_, index) => `FLOW-${String(index + 1).padStart(2, "0")}`),
@@ -121,6 +122,10 @@ test("P02-02 manifest owns only the tracer slice and local fixture evidence", as
   assert.equal(manifest.workItemId, "P02-02");
   assert.equal(manifest.phase, "P02");
   assert.equal(manifest.risk, "R1");
+  assert.equal(manifest.status, "accepted-with-gaps");
+  assert.match(manifest.completedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+  assert.equal(Number.isNaN(Date.parse(manifest.completedAt)), false);
+  assert.equal(manifest.commit, EXPECTED_ACCEPTED_COMMIT);
   assert.deepEqual(sorted(manifest.featureIds), sorted(IMPLEMENTED_FEATURE_IDS));
   assert.deepEqual(sorted(manifest.evidence.map(({ id }) => id)), sorted(REQUIRED_EVIDENCE_IDS));
 

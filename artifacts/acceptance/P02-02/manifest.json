@@ -3,7 +3,7 @@
   "workItemId": "P02-02",
   "phase": "P02",
   "risk": "R1",
-  "status": "in-progress",
+  "status": "accepted-with-gaps",
   "featureIds": [
     "POOL-01",
     "POOL-02",
@@ -83,8 +83,9 @@
     "aTVL and Fee/aTVL remain null and unresolved, so POOL-05 remains planned.",
     "The other 19 P02 feature IDs remain planned and have no P02-02 implementation ownership.",
     "GAP-EVENT-ABI-TOPICS, GAP-EVENT-PROTOCOL-ADDRESSES, GAP-EVENT-AMOUNT-SIGNS, GAP-FINALITY-DEPTH, GAP-BLOCK-TIMESTAMP-SOURCE, and target data-source gaps remain unresolved.",
-    "No external RPC, target endpoint, production secret, signature, broadcast, or funds operation is used."
+    "No external RPC, target endpoint, production secret, signature, broadcast, or funds operation is used.",
+    "GitHub Actions run 31912348949 executed all six jobs successfully for stable commit 73998c6f22e499f7063207ec1d497766b6714d29; the subsequent acceptance-only update records that immutable result."
   ],
-  "completedAt": null,
-  "commit": null
+  "completedAt": "2026-08-15T22:39:58.000Z",
+  "commit": "73998c6f22e499f7063207ec1d497766b6714d29"
 }

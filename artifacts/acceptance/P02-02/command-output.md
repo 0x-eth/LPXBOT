@@ -47,4 +47,19 @@ The first focused run failed because the indexer modules, market implementation,
 | Gitleaks full-history scan | passed; 385 commits, no leaks |
 | `pnpm audit:dependencies` | passed; no known vulnerabilities |
 
-The local shell used Node.js 26.5.0 and emitted the expected engine warning; CI uses the repository-pinned Node.js 22.23.1. Six-job GitHub Actions evidence is added only after a stable commit completes.
+The local shell used Node.js 26.5.0 and emitted the expected engine warning; CI uses the repository-pinned Node.js 22.23.1.
+
+## Stable-commit GitHub Actions
+
+[Run 31912348949](https://github.com/0x-eth/LPXBOT/actions/runs/31912348949) tested stable commit `73998c6f22e499f7063207ec1d497766b6714d29` and completed successfully at `2026-08-15T22:39:58Z`.
+
+| Job | Job ID | Result | Completed |
+|---|---:|---|---|
+| Quality | 95079267390 | passed | 2026-08-15T22:32:44Z |
+| Governance | 95079267401 | passed | 2026-08-15T22:32:04Z |
+| Browser | 95079267392 | passed; 92 tests and 4 project-specific skips | 2026-08-15T22:39:57Z |
+| Contracts | 95079267371 | passed; 3/3 tests | 2026-08-15T22:31:49Z |
+| Infrastructure | 95079267359 | passed; PostgreSQL session integration included | 2026-08-15T22:32:48Z |
+| Security | 95079267374 | passed; Gitleaks and dependency audit included | 2026-08-15T22:31:57Z |
+
+All six jobs received runners and executed their configured gates. The acceptance-only update after this run records the immutable result; it does not substitute a different code commit for the tested SHA.
