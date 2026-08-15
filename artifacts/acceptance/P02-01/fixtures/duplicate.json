@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "scenario": "duplicate",
+  "description": "The identical synthetic raw log is delivered twice.",
+  "fixtureOnly": true,
+  "input": [
+    {
+      "delivery": 1,
+      "decoderFixtureId": "fixture://univ3/swap/v1",
+      "rawLog": {
+        "chainId": 56,
+        "blockNumber": "105",
+        "blockHash": "0x1515151515151515151515151515151515151515151515151515151515151515",
+        "transactionHash": "0xb0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+        "transactionIndex": 0,
+        "logIndex": 0,
+        "address": "0x3232323232323232323232323232323232323232",
+        "topics": ["0xf1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1"],
+        "data": "0x00",
+        "removed": false
+      },
+      "fixtureDecoded": {
+        "protocol": "univ3",
+        "protocolGeneration": "v3",
+        "kind": "swap",
+        "pool": { "poolAddress": "0x4242424242424242424242424242424242424242", "poolId": null },
+        "payload": { "amount0": "10", "amount1": "-20" }
+      }
+    },
+    {
+      "delivery": 2,
+      "decoderFixtureId": "fixture://univ3/swap/v1",
+      "rawLog": {
+        "chainId": 56,
+        "blockNumber": "105",
+        "blockHash": "0x1515151515151515151515151515151515151515151515151515151515151515",
+        "transactionHash": "0xb0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0",
+        "transactionIndex": 0,
+        "logIndex": 0,
+        "address": "0x3232323232323232323232323232323232323232",
+        "topics": ["0xf1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1"],
+        "data": "0x00",
+        "removed": false
+      },
+      "fixtureDecoded": {
+        "protocol": "univ3",
+        "protocolGeneration": "v3",
+        "kind": "swap",
+        "pool": { "poolAddress": "0x4242424242424242424242424242424242424242", "poolId": null },
+        "payload": { "amount0": "10", "amount1": "-20" }
+      }
+    }
+  ],
+  "expected": {
+    "acceptedCount": 1,
+    "duplicateCount": 1,
+    "aggregateApplications": 1,
+    "eventId": "6e58531c6e1dc2009cc6f8326805acd2aa224be8a7389237e5e47373841aa4be",
+    "cursor": "v1:56:105:0:0:0x1515151515151515151515151515151515151515151515151515151515151515",
+    "secondDeliveryResult": "no-op-and-acknowledge"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-01",
+  "networkPolicy": "offline-only",
+  "decoderPolicy": "tests-only synthetic decoderFixtureId; no topic is production evidence",
+  "coverage": {
+    "chainIds": [56],
+    "protocols": ["pcsv3", "univ3", "pcsv4", "univ4"],
+    "eventKinds": ["pool.created", "swap", "liquidity.add", "liquidity.remove", "collect"],
+    "lifecycle": ["normal", "duplicate", "out-of-order", "reorg"]
+  },
+  "fixtures": [
+    {
+      "scenario": "normal",
+      "path": "fixtures/normal.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bytes": 0,
+      "expectedSemantics": "canonical-accept"
+    },
+    {
+      "scenario": "duplicate",
+      "path": "fixtures/duplicate.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bytes": 0,
+      "expectedSemantics": "deduplicate-idempotently"
+    },
+    {
+      "scenario": "out-of-order",
+      "path": "fixtures/out-of-order.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bytes": 0,
+      "expectedSemantics": "canonical-order"
+    },
+    {
+      "scenario": "reorg",
+      "path": "fixtures/reorg.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bytes": 0,
+      "expectedSemantics": "rollback-and-replay"
+    }
+  ]
+}

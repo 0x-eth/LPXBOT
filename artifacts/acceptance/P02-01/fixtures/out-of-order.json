@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "scenario": "out-of-order",
+  "description": "Blocks 108, 106, and 107 arrive in that order and are committed in canonical order after buffering.",
+  "fixtureOnly": true,
+  "input": [
+    {
+      "arrival": 1,
+      "decoderFixtureId": "fixture://pcsv4/swap/v1",
+      "rawLog": { "chainId": 56, "blockNumber": "108", "blockHash": "0x1818181818181818181818181818181818181818181818181818181818181818", "transactionHash": "0xb3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3", "transactionIndex": 0, "logIndex": 0, "address": "0x3333333333333333333333333333333333333333", "topics": ["0xf1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1"], "data": "0x08", "removed": false },
+      "fixtureDecoded": { "protocol": "pcsv4", "protocolGeneration": "v4", "kind": "swap", "pool": { "poolAddress": null, "poolId": "0x4343434343434343434343434343434343434343434343434343434343434343" }, "payload": { "amount0": "8", "amount1": "-16" } }
+    },
+    {
+      "arrival": 2,
+      "decoderFixtureId": "fixture://pcsv4/swap/v1",
+      "rawLog": { "chainId": 56, "blockNumber": "106", "blockHash": "0x1616161616161616161616161616161616161616161616161616161616161616", "transactionHash": "0xb1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "transactionIndex": 0, "logIndex": 0, "address": "0x3333333333333333333333333333333333333333", "topics": ["0xf1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1"], "data": "0x06", "removed": false },
+      "fixtureDecoded": { "protocol": "pcsv4", "protocolGeneration": "v4", "kind": "swap", "pool": { "poolAddress": null, "poolId": "0x4343434343434343434343434343434343434343434343434343434343434343" }, "payload": { "amount0": "6", "amount1": "-12" } }
+    },
+    {
+      "arrival": 3,
+      "decoderFixtureId": "fixture://pcsv4/swap/v1",
+      "rawLog": { "chainId": 56, "blockNumber": "107", "blockHash": "0x1717171717171717171717171717171717171717171717171717171717171717", "transactionHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2", "transactionIndex": 0, "logIndex": 0, "address": "0x3333333333333333333333333333333333333333", "topics": ["0xf1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1"], "data": "0x07", "removed": false },
+      "fixtureDecoded": { "protocol": "pcsv4", "protocolGeneration": "v4", "kind": "swap", "pool": { "poolAddress": null, "poolId": "0x4343434343434343434343434343434343434343434343434343434343434343" }, "payload": { "amount0": "7", "amount1": "-14" } }
+    }
+  ],
+  "expected": {
+    "acceptedCount": 3,
+    "arrivalBlockOrder": ["108", "106", "107"],
+    "committedBlockOrder": ["106", "107", "108"],
+    "eventIdsInCanonicalOrder": ["2949b36dcacab703e6c2a3c89c4adc272c7056ee86f006c9fcee6434fa5dee6d", "55790897e5712108bb26cb2f31eb7e98f7178e1b8eb576de6146af38bac1db8e", "f7e355f497790530fa5af1fa5403f976cc8bc9739a8462ab8482c496160eaf70"],
+    "lastCursor": "v1:56:108:0:0:0x1818181818181818181818181818181818181818181818181818181818181818",
+    "aggregateApplications": 3
+  }
+}
