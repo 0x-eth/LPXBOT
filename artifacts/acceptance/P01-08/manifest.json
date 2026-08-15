@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-08",
+  "phase": "P01",
+  "risk": "R2",
+  "status": "accepted-with-gaps",
+  "featureIds": [],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm format:check; pnpm lint; pnpm typecheck; pnpm build; Vitest 29 files; governance 20 tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-08/command-output.md"
+    },
+    {
+      "id": "T-API",
+      "command": "focused P01 Vitest suites covering auth, session, ownership, preferences, SSE, chain policy, stable errors and redaction",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-08/E-API.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "LPBOT_PLAYWRIGHT_PORT=43180 pnpm test:e2e",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-08/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "P01 route-state desktop/mobile, light/dark/system, five-width and axe matrix",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-08/E-VIS.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "empty local volumes; migrate twice; seed twice; pnpm test:infra; pnpm test:postgres twice; pnpm test:pwa",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-08/E-MIG.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "forge fmt --check && forge build && pnpm test:contracts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-08/E-OPS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "Dockerized Gitleaks v8.30.0 full-history scan; pnpm audit:dependencies; AUTH-10 R2 review",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-08/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P01-08/E-API.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P01-08/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P01-08/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P01-08/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P01-08/E-SEC.md" },
+    { "id": "E-MIG", "path": "artifacts/acceptance/P01-08/E-MIG.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P01-08/E-OPS.md" }
+  ],
+  "assumptions": [
+    "P01-08 is a featureless phase-completion audit; P01-01 remains reference-only and P01-02 through P01-07 retain sole implementation ownership of the 18 P01 feature IDs.",
+    "All 18 P01 features remain implemented-assumed. Accepted work items do not imply parity-verified, and no feature is released without staging, monitoring and deployment rollback evidence.",
+    "Real Telegram Mini App and Bot execution, and complete target Pro/admin/abnormal-state/dark/write comparisons, remain explicit blocking evidence gaps.",
+    "AUTH-03 acceptance is EOA-only; EIP-1271 contract-wallet verification is not implemented or verified.",
+    "P01-02's historical commit remains null and no retrospective value was synthesized.",
+    "The target site, Telegram, external RPC and production services were not contacted; no later-phase market, signer, funds or business-data capability was added."
+  ],
+  "completedAt": null,
+  "commit": null
+}
