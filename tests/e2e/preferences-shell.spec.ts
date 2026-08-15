@@ -1,6 +1,8 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type BrowserContext, type Page, type Route } from "@playwright/test";
 
+const captureP0106Evidence = process.env.LPBOT_CAPTURE_P01_06 === "1";
+
 declare global {
   var __themeAtDomReady: string | undefined;
 }
@@ -465,12 +467,14 @@ test("P01-06 settings visual contract matches the observed responsive interface"
     mask: masks,
     maxDiffPixels: 60,
   });
-  await page.screenshot({
-    animations: "disabled",
-    caret: "hide",
-    mask: masks,
-    path: `artifacts/acceptance/P01-06/visual/settings-light-${testInfo.project.name}-actual.png`,
-  });
+  if (captureP0106Evidence) {
+    await page.screenshot({
+      animations: "disabled",
+      caret: "hide",
+      mask: masks,
+      path: `artifacts/acceptance/P01-06/visual/settings-light-${testInfo.project.name}-actual.png`,
+    });
+  }
 
   state.preferences = {
     ...state.preferences,
@@ -486,10 +490,12 @@ test("P01-06 settings visual contract matches the observed responsive interface"
     mask: masks,
     maxDiffPixels: 60,
   });
-  await page.screenshot({
-    animations: "disabled",
-    caret: "hide",
-    mask: masks,
-    path: `artifacts/acceptance/P01-06/visual/settings-dark-${testInfo.project.name}-actual.png`,
-  });
+  if (captureP0106Evidence) {
+    await page.screenshot({
+      animations: "disabled",
+      caret: "hide",
+      mask: masks,
+      path: `artifacts/acceptance/P01-06/visual/settings-dark-${testInfo.project.name}-actual.png`,
+    });
+  }
 });

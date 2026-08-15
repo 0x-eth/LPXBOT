@@ -64,6 +64,12 @@ not ok - P01 route matrix stays non-overlapping at all required widths
 - Finding: `postgres-chain-access-store.integration.ts` closed its fixture pool and then used `DROP DATABASE ... WITH (FORCE)` during normal teardown, allowing PostgreSQL to terminate a client that was already ending.
 - Resolution boundary: retain `WITH (FORCE)` only in `beforeAll` to clean residue from interrupted runs; after an orderly `fixturePool.end()`, use plain `DROP DATABASE` so teardown proves that no fixture connection remains.
 
+## Historical visual artifact write
+
+- Command: full `pnpm test:e2e` re-execution.
+- Result: the strict P01-06 `toHaveScreenshot` assertions passed, but the test then unconditionally rewrote tracked `*-actual.png` evidence and changed the frozen P01-06 Git tree.
+- Resolution boundary: keep the existing masks, `maxDiffPixels: 60` threshold and snapshot assertions unchanged; require `LPBOT_CAPTURE_P01_06=1` only for the separate historical evidence-write step. Restore the affected PNG from the requested start commit and keep new captures under P01-08.
+
 ## Acceptance checker red run
 
 - Command: `node --test --test-name-pattern='accepts only the P01-08' tests/governance/governance-checkers.test.mjs`
