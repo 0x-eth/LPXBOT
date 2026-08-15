@@ -113,7 +113,10 @@ test("API contracts freeze every requested endpoint and evidence boundary", asyn
     assert.ok(Array.isArray(endpoint.parameters), `${endpointPath} parameters`);
     assert.ok(endpoint.response?.schema, `${endpointPath} response schema`);
     assert.ok(endpoint.nullability, `${endpointPath} nullability`);
-    assert.ok(Array.isArray(endpoint.errors) && endpoint.errors.length > 0, `${endpointPath} errors`);
+    assert.ok(
+      Array.isArray(endpoint.errors) && endpoint.errors.length > 0,
+      `${endpointPath} errors`,
+    );
     assertEvidence(endpoint, endpointPath);
   }
   assert.equal(endpoints.get("/api/stats/stream").transport, "text/event-stream");
@@ -124,11 +127,19 @@ test("chain event contract freezes BSC normalization and ingestion semantics", a
   assert.equal(contract.chain.chainId, 56);
   assert.equal(contract.chain.name, "BSC");
   assert.equal(contract.sourcePolicy.externalRpc, false);
-  assert.deepEqual(sorted(contract.protocols.map(({ id }) => id)), ["pcsv3", "pcsv4", "univ3", "univ4"]);
-  assert.deepEqual(
-    sorted(contract.eventKinds.map(({ kind }) => kind)),
-    ["collect", "liquidity.add", "liquidity.remove", "pool.created", "swap"],
-  );
+  assert.deepEqual(sorted(contract.protocols.map(({ id }) => id)), [
+    "pcsv3",
+    "pcsv4",
+    "univ3",
+    "univ4",
+  ]);
+  assert.deepEqual(sorted(contract.eventKinds.map(({ kind }) => kind)), [
+    "collect",
+    "liquidity.add",
+    "liquidity.remove",
+    "pool.created",
+    "swap",
+  ]);
   assert.deepEqual(contract.normalizedEvent.deduplicationKey, [
     "chainId",
     "blockHash",
@@ -169,7 +180,10 @@ test("local fixtures cover normal, duplicate, out-of-order, and reorg determinis
 
 test("metric contract defines windows, units, arithmetic, nulls, rounding, and stable sort", async () => {
   const contract = await readJson("metric-contracts.json");
-  assert.deepEqual(contract.windows.map(({ minutes }) => minutes), [1, 5, 15, 30, 60]);
+  assert.deepEqual(
+    contract.windows.map(({ minutes }) => minutes),
+    [1, 5, 15, 30, 60],
+  );
   assert.equal(contract.windowBoundary.interval, "[start,end)");
   assert.equal(contract.windowBoundary.timezone, "UTC");
   const metrics = by(contract.metrics, "id");
@@ -230,10 +244,13 @@ test("/pools UI catalog covers features and operational states without claiming 
       "liquidity-flow",
     ]),
   );
-  assert.deepEqual(
-    sorted(catalog.operationalStates.map(({ id }) => id)),
-    ["empty", "error", "loading", "reconnecting", "stale"],
-  );
+  assert.deepEqual(sorted(catalog.operationalStates.map(({ id }) => id)), [
+    "empty",
+    "error",
+    "loading",
+    "reconnecting",
+    "stale",
+  ]);
 });
 
 test("all unresolved fields, formulas, events, and algorithms are closed through gaps", async () => {
@@ -245,7 +262,10 @@ test("all unresolved fields, formulas, events, and algorithms are closed through
     readJson("gaps.json"),
   ]);
   const gaps = by(gapFile.items, "id");
-  unique(gapFile.items.map(({ id }) => id), "gap IDs");
+  unique(
+    gapFile.items.map(({ id }) => id),
+    "gap IDs",
+  );
 
   const references = [
     ...api.unresolvedRefs,
@@ -272,7 +292,10 @@ test("manifest inventory and sha256sums cover every reference artifact byte-for-
       assert.ok(match, "invalid sha256sums row");
       return { sha256: match[1], path: match[2] };
     });
-  unique(checksumRows.map(({ path: relativePath }) => relativePath), "checksum paths");
+  unique(
+    checksumRows.map(({ path: relativePath }) => relativePath),
+    "checksum paths",
+  );
   const checksums = by(checksumRows, "path");
   const records = by(manifest.files, "path");
   assert.deepEqual(sorted(checksums.keys()), sorted(records.keys()));
@@ -289,7 +312,11 @@ test("manifest inventory and sha256sums cover every reference artifact byte-for-
 
   for (const reference of manifest.references) {
     const bytes = await readFile(path.join(ROOT, reference.path));
-    assert.equal(createHash("sha256").update(bytes).digest("hex"), reference.sha256, reference.path);
+    assert.equal(
+      createHash("sha256").update(bytes).digest("hex"),
+      reference.sha256,
+      reference.path,
+    );
     assertEvidence(reference, `reference ${reference.path}`);
   }
 });

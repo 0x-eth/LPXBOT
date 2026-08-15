@@ -71,6 +71,8 @@ jobs:
         run: pnpm check:acceptance
       - name: Verify P01-01 reference artifacts
         run: pnpm check:p01-reference
+      - name: Verify P02-01 reference artifacts
+        run: pnpm check:p02-reference
 
   browser:
     name: Browser

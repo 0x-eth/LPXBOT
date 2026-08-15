@@ -97,7 +97,9 @@
           "bytes": { "type": "integer", "minimum": 1 },
           "sha256": { "$ref": "#/definitions/sha256" },
           "source": { "type": "string", "minLength": 1 },
-          "evidenceLevel": { "enum": ["observed", "bundle-derived", "documented", "locally-defined", "unresolved"] }
+          "evidenceLevel": {
+            "enum": ["observed", "bundle-derived", "documented", "locally-defined", "unresolved"]
+          }
         }
       }
     },
@@ -109,7 +111,17 @@
         "additionalProperties": false,
         "required": ["id", "result", "evidencePath"],
         "properties": {
-          "id": { "enum": ["initial-red", "governance-test", "artifact-schema", "quality-gates", "baseline-integrity", "secret-scan", "dependency-audit"] },
+          "id": {
+            "enum": [
+              "initial-red",
+              "governance-test",
+              "artifact-schema",
+              "quality-gates",
+              "baseline-integrity",
+              "secret-scan",
+              "dependency-audit"
+            ]
+          },
           "result": { "enum": ["expected-failure", "passed"] },
           "evidencePath": { "$ref": "#/definitions/artifactPath" }
         }

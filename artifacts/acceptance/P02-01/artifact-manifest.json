@@ -1,0 +1,261 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P02-01",
+  "phase": "P02",
+  "risk": "R0",
+  "status": "contract-frozen-with-unresolved-gaps",
+  "featureIds": [],
+  "capturedAt": "2026-08-16T03:20:47+08:00",
+  "referenceBaseline": "3ff4eb9ed84e1d459671695618a67a2932f5abd6",
+  "scope": {
+    "mode": "read-only-reference",
+    "chainIds": [
+      56
+    ],
+    "externalRpc": false,
+    "targetWrites": false,
+    "productionSecrets": false,
+    "signing": false,
+    "broadcasting": false,
+    "fundsOperations": false,
+    "implementationOwnership": "none"
+  },
+  "checksumScope": {
+    "algorithm": "SHA-256",
+    "excludedSelfReferentialFiles": [
+      "artifact-manifest.json",
+      "sha256sums.txt"
+    ]
+  },
+  "files": [
+    {
+      "path": "api-contracts.json",
+      "bytes": 11480,
+      "sha256": "dbdf8f8df442ee54897b8e2bcb7e6f2c962a6d80ef6406ef78c26112ef676d4c",
+      "mediaType": "application/json",
+      "category": "contract"
+    },
+    {
+      "path": "chain-event-contracts.json",
+      "bytes": 10919,
+      "sha256": "3b5d08ff3697e3582d7e2f289482f96ef5495f41f8be646d25fad04c5b561b1e",
+      "mediaType": "application/json",
+      "category": "contract"
+    },
+    {
+      "path": "checks/initial-failure.txt",
+      "bytes": 1098,
+      "sha256": "7a78edbf46e06cb54d14e87bde0a67cb3f660537cfd3ec32884a76c219db1c32",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "coverage.json",
+      "bytes": 2630,
+      "sha256": "e596d77656837b5ec408acd4532785e14478d9a03c7782d72a3a1076aafced70",
+      "mediaType": "application/json",
+      "category": "catalog"
+    },
+    {
+      "path": "fixture-index.json",
+      "bytes": 1509,
+      "sha256": "2a91fc9bf9d346f528aa82589e9cbdcb5d1430a9c91419d6ab3054f148524953",
+      "mediaType": "application/json",
+      "category": "catalog"
+    },
+    {
+      "path": "fixtures/duplicate.json",
+      "bytes": 2255,
+      "sha256": "5bc09eb5bc432a9f9eaa3e7cc3a73f1434655c349c432058767bd41a67e45299",
+      "mediaType": "application/json",
+      "category": "fixture"
+    },
+    {
+      "path": "fixtures/normal.json",
+      "bytes": 8516,
+      "sha256": "876f3f23796014926de836b243f21afc2c2baf2af20673433579ce333819c67a",
+      "mediaType": "application/json",
+      "category": "fixture"
+    },
+    {
+      "path": "fixtures/out-of-order.json",
+      "bytes": 3033,
+      "sha256": "221ec1417a94428c1618592a6a974e80fb6b318d4dc46983f4e2bf8cfa807b5a",
+      "mediaType": "application/json",
+      "category": "fixture"
+    },
+    {
+      "path": "fixtures/reorg.json",
+      "bytes": 3273,
+      "sha256": "64b1639fa86ab48d76114b39498eeb2f6ea5b656e3a6c7b0fdd8afd09333a654",
+      "mediaType": "application/json",
+      "category": "fixture"
+    },
+    {
+      "path": "gaps.json",
+      "bytes": 6160,
+      "sha256": "bb043d63634c1e0944bd62b7864e3353dfbfe92e17efbfc176175c6ba8a4f505",
+      "mediaType": "application/json",
+      "category": "catalog"
+    },
+    {
+      "path": "metric-contracts.json",
+      "bytes": 7064,
+      "sha256": "9d1d0a68ead3bc2361410098d652ba4b64f363d0062ab44d3362d511f908d4d1",
+      "mediaType": "application/json",
+      "category": "contract"
+    },
+    {
+      "path": "sse-contracts.json",
+      "bytes": 5556,
+      "sha256": "b432f2fb7d984d2b2f175ad03cd06a92fa4c6cdc75aae939df5ef5abc5838f7c",
+      "mediaType": "application/json",
+      "category": "contract"
+    },
+    {
+      "path": "ui-state-catalog.json",
+      "bytes": 5086,
+      "sha256": "9ba8a61b6b527af86cd67d417f8dbacdd63d2a72aa3efb46613f989014318c61",
+      "mediaType": "application/json",
+      "category": "catalog"
+    }
+  ],
+  "references": [
+    {
+      "path": "artifacts/lpbot/2026-08-13/artifact-manifest.json",
+      "bytes": 253044,
+      "sha256": "70cfa06dbbd4034d04ec3b2f663c9adcc6fb1e71831cb6f077d19ec22150295d",
+      "source": "Frozen P00-01 baseline inventory",
+      "evidenceLevel": "documented"
+    },
+    {
+      "path": "artifacts/lpbot/2026-08-13/api-calls.json",
+      "bytes": 238813,
+      "sha256": "7c44ce0b952258172cbcb07b65c862931b3556b906dbd8e23f9fee905382915b",
+      "source": "Frozen Bundle static extraction",
+      "evidenceLevel": "bundle-derived"
+    },
+    {
+      "path": "artifacts/lpbot/2026-08-13/api-docs.json",
+      "bytes": 27591,
+      "sha256": "0cc5692a373372cf3b8f0f584c31acb47dab8118f9eb7012770c1afca82ae332",
+      "source": "Frozen API documentation capture",
+      "evidenceLevel": "documented"
+    },
+    {
+      "path": "artifacts/lpbot/2026-08-13/api-docs.md",
+      "bytes": 27389,
+      "sha256": "d53077b79abbecaa7dfad533baeccf21cc8e61c83ff8ed33fdad362a5fc9f889",
+      "source": "Frozen API documentation capture",
+      "evidenceLevel": "documented"
+    },
+    {
+      "path": "artifacts/lpbot/2026-08-13/assets/index-D0FmPqGc.js",
+      "bytes": 944727,
+      "sha256": "153f71e03ac9f17f84503476b2ebee05c973adfcd80da5c8d37b8e3d4b0dae5b",
+      "source": "Frozen application Bundle containing stats SSE client candidates",
+      "evidenceLevel": "bundle-derived"
+    },
+    {
+      "path": "artifacts/lpbot/2026-08-13/assets/TopPoolsView-BmMrLEMA.js",
+      "bytes": 120984,
+      "sha256": "d68f1b52897c390195a6fe1a5b3becf8a2950b252c9244a67ae9c557228548f6",
+      "source": "Frozen /pools Bundle chunk",
+      "evidenceLevel": "bundle-derived"
+    },
+    {
+      "path": "artifacts/lpbot/2026-08-13/assets/LiquidityFlowSheet-DEk34LQj.js",
+      "bytes": 43299,
+      "sha256": "dbb5e376cd52c79f266523a6ab694bf0c30bd0d732d0cac9371c3e5ac95de2c6",
+      "source": "Frozen liquidity-flow Bundle chunk",
+      "evidenceLevel": "bundle-derived"
+    },
+    {
+      "path": "artifacts/lpbot/2026-08-13/assets/KlineLiquidityChart-0xvlAqf1.js",
+      "bytes": 12164,
+      "sha256": "c5d28dc8cdec415fb963dca09505f8596a890d623cadec65c45bb6f7d0d4b2ba",
+      "source": "Frozen K-line and tick-liquidity Bundle chunk",
+      "evidenceLevel": "bundle-derived"
+    },
+    {
+      "path": "artifacts/acceptance/P01-01/screenshots/desktop-pools.png",
+      "bytes": 466476,
+      "sha256": "65b4fbec1e6c710123d4cdaa9fa8daffa54408a929fbc4f5a88d370ded1729e5",
+      "source": "P01-01 read-only desktop /pools observation",
+      "evidenceLevel": "observed"
+    },
+    {
+      "path": "artifacts/acceptance/P01-01/screenshots/mobile-pools.png",
+      "bytes": 160587,
+      "sha256": "e72e3b8a0d5e2f032cfa6fc59d67717ea518fb8b172722face53be249b829e4a",
+      "source": "P01-01 read-only mobile /pools observation",
+      "evidenceLevel": "observed"
+    },
+    {
+      "path": "docs/FUNCTION_MATRIX.md",
+      "bytes": 29742,
+      "sha256": "dff0b5f08c9317fe02782605b80603ff1c2cd9ad7f3844e50f3439b1e8b7458b",
+      "source": "Repository feature scope and acceptance notes",
+      "evidenceLevel": "documented"
+    },
+    {
+      "path": "docs/DEVELOPMENT_ROADMAP.md",
+      "bytes": 21684,
+      "sha256": "bfc0cc685d915129dc7ca0950a0c883d8e408ff3ab19666bacfa38657c9458bb",
+      "source": "Repository P02 work and completion definition",
+      "evidenceLevel": "documented"
+    },
+    {
+      "path": "docs/TRACEABILITY_MATRIX.md",
+      "bytes": 24672,
+      "sha256": "9c16ae8fcbc9f2ea2f77deeec062af6b798f932290b0607a7109b6d4ce12bc01",
+      "source": "Repository P02 test and evidence requirements",
+      "evidenceLevel": "documented"
+    }
+  ],
+  "checks": [
+    {
+      "id": "initial-red",
+      "result": "expected-failure",
+      "evidencePath": "checks/initial-failure.txt"
+    },
+    {
+      "id": "governance-test",
+      "result": "passed",
+      "evidencePath": "checks/governance-test.txt"
+    },
+    {
+      "id": "artifact-schema",
+      "result": "passed",
+      "evidencePath": "checks/artifact-schema.txt"
+    },
+    {
+      "id": "quality-gates",
+      "result": "passed",
+      "evidencePath": "checks/quality-gates.txt"
+    },
+    {
+      "id": "baseline-integrity",
+      "result": "passed",
+      "evidencePath": "checks/baseline-integrity.txt"
+    },
+    {
+      "id": "secret-scan",
+      "result": "passed",
+      "evidencePath": "checks/security-audit.txt"
+    },
+    {
+      "id": "dependency-audit",
+      "result": "passed",
+      "evidencePath": "checks/security-audit.txt"
+    }
+  ],
+  "limitations": [
+    "No external RPC or target endpoint was contacted by P02-01.",
+    "Protocol ABI topics and chain-56 deployment addresses remain unresolved.",
+    "aTVL, Fee/aTVL, FDV/TVL provenance details, and pool label algorithms remain unresolved.",
+    "SSE sequence/cursor/replay fields are a frozen local compatibility contract until target transcripts are available.",
+    "All 23 referenced feature IDs remain planned and P02-01 claims no implementation ownership."
+  ]
+}

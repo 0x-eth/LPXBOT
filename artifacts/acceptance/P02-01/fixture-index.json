@@ -4,38 +4,56 @@
   "networkPolicy": "offline-only",
   "decoderPolicy": "tests-only synthetic decoderFixtureId; no topic is production evidence",
   "coverage": {
-    "chainIds": [56],
-    "protocols": ["pcsv3", "univ3", "pcsv4", "univ4"],
-    "eventKinds": ["pool.created", "swap", "liquidity.add", "liquidity.remove", "collect"],
-    "lifecycle": ["normal", "duplicate", "out-of-order", "reorg"]
+    "chainIds": [
+      56
+    ],
+    "protocols": [
+      "pcsv3",
+      "univ3",
+      "pcsv4",
+      "univ4"
+    ],
+    "eventKinds": [
+      "pool.created",
+      "swap",
+      "liquidity.add",
+      "liquidity.remove",
+      "collect"
+    ],
+    "lifecycle": [
+      "normal",
+      "duplicate",
+      "out-of-order",
+      "reorg"
+    ]
   },
   "fixtures": [
     {
       "scenario": "normal",
       "path": "fixtures/normal.json",
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-      "bytes": 0,
+      "sha256": "876f3f23796014926de836b243f21afc2c2baf2af20673433579ce333819c67a",
+      "bytes": 8516,
       "expectedSemantics": "canonical-accept"
     },
     {
       "scenario": "duplicate",
       "path": "fixtures/duplicate.json",
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-      "bytes": 0,
+      "sha256": "5bc09eb5bc432a9f9eaa3e7cc3a73f1434655c349c432058767bd41a67e45299",
+      "bytes": 2255,
       "expectedSemantics": "deduplicate-idempotently"
     },
     {
       "scenario": "out-of-order",
       "path": "fixtures/out-of-order.json",
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-      "bytes": 0,
+      "sha256": "221ec1417a94428c1618592a6a974e80fb6b318d4dc46983f4e2bf8cfa807b5a",
+      "bytes": 3033,
       "expectedSemantics": "canonical-order"
     },
     {
       "scenario": "reorg",
       "path": "fixtures/reorg.json",
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-      "bytes": 0,
+      "sha256": "64b1639fa86ab48d76114b39498eeb2f6ea5b656e3a6c7b0fdd8afd09333a654",
+      "bytes": 3273,
       "expectedSemantics": "rollback-and-replay"
     }
   ]
