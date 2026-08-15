@@ -57,6 +57,13 @@ not ok - P01 route matrix stays non-overlapping at all required widths
 - Finding: the new route-state and theme matrices each perform 27-36 navigation plus axe combinations per browser project and exceeded Playwright's default 30-second per-test timeout during the full parallel suite. Focused assertions had already passed, and the failures contained no visual, accessibility or overlap assertion mismatch.
 - Resolution boundary: assign each finite combination matrix the same explicit 90-second budget already used by the five-width matrix; do not relax assertions, screenshot thresholds or masks.
 
+## PostgreSQL cleanup red run
+
+- Command: reset local volumes, run migration twice, seed twice, then `pnpm test:infra && pnpm test:postgres`.
+- Result: empty-database migration/seed and 8 infra tests passed; all 8 PostgreSQL files and 20 assertions passed, but Vitest rejected the run for one unhandled `57P01` connection termination.
+- Finding: `postgres-chain-access-store.integration.ts` closed its fixture pool and then used `DROP DATABASE ... WITH (FORCE)` during normal teardown, allowing PostgreSQL to terminate a client that was already ending.
+- Resolution boundary: retain `WITH (FORCE)` only in `beforeAll` to clean residue from interrupted runs; after an orderly `fixturePool.end()`, use plain `DROP DATABASE` so teardown proves that no fixture connection remains.
+
 ## Acceptance checker red run
 
 - Command: `node --test --test-name-pattern='accepts only the P01-08' tests/governance/governance-checkers.test.mjs`

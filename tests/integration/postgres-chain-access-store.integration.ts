@@ -60,7 +60,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await fixturePool.end();
-  await adminPool.query(`DROP DATABASE IF EXISTS ${databaseName} WITH (FORCE)`);
+  await adminPool.query(`DROP DATABASE IF EXISTS ${databaseName}`);
   await adminPool.end();
 });
 
