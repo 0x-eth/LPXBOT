@@ -24,6 +24,21 @@ const REQUIRED_ARTIFACTS = [
   "ui-state-catalog.json",
   "sha256sums.txt",
 ];
+const EXPECTED_REFERENCE_PATHS = [
+  "artifacts/lpbot/2026-08-13/artifact-manifest.json",
+  "artifacts/lpbot/2026-08-13/api-calls.json",
+  "artifacts/lpbot/2026-08-13/api-docs.json",
+  "artifacts/lpbot/2026-08-13/api-docs.md",
+  "artifacts/lpbot/2026-08-13/assets/index-D0FmPqGc.js",
+  "artifacts/lpbot/2026-08-13/assets/TopPoolsView-BmMrLEMA.js",
+  "artifacts/lpbot/2026-08-13/assets/LiquidityFlowSheet-DEk34LQj.js",
+  "artifacts/lpbot/2026-08-13/assets/KlineLiquidityChart-0xvlAqf1.js",
+  "artifacts/acceptance/P01-01/screenshots/desktop-pools.png",
+  "artifacts/acceptance/P01-01/screenshots/mobile-pools.png",
+  "docs/FUNCTION_MATRIX.md",
+  "docs/DEVELOPMENT_ROADMAP.md",
+  "docs/TRACEABILITY_MATRIX.md",
+];
 
 async function readJson(relativePath) {
   return JSON.parse(await readFile(path.join(ACCEPTANCE, relativePath), "utf8"));
@@ -73,6 +88,7 @@ test("P02-01 preserves all 23 feature IDs as planned and claims no implementatio
 
   assert.equal(manifest.workItemId, "P02-01");
   assert.equal(manifest.risk, "R0");
+  assert.equal(manifest.referenceBaseline, "3ff4eb9ed84e1d459671695618a67a2932f5abd6");
   assert.deepEqual(manifest.featureIds, []);
   assert.equal(manifest.scope.mode, "read-only-reference");
   assert.equal(manifest.scope.externalRpc, false);
@@ -359,8 +375,13 @@ test("manifest inventory and sha256sums cover every reference artifact byte-for-
     assert.equal(checksums.get(relativePath).sha256, digest, `${relativePath} checksum digest`);
   }
 
+  assert.deepEqual(
+    sorted(manifest.references.map(({ path: referencePath }) => referencePath)),
+    sorted(EXPECTED_REFERENCE_PATHS),
+  );
   for (const reference of manifest.references) {
     const bytes = await readFile(path.join(ROOT, reference.path));
+    assert.equal(reference.bytes, bytes.length, `${reference.path} reference bytes`);
     assert.equal(
       createHash("sha256").update(bytes).digest("hex"),
       reference.sha256,

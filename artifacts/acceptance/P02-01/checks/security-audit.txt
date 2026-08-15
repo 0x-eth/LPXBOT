@@ -6,12 +6,12 @@ Gitleaks version: 8.30.1
 Command:
 gitleaks git . --config .gitleaks.toml --log-opts=--all --redact --no-banner --no-color --verbose
 Exit: 0
-Result: 353 commits and approximately 18.89 MB scanned; no leaks found.
+Result: final scan covered 354 commits and approximately 18.90 MB; no leaks found.
 
 Command:
 gitleaks git . --config .gitleaks.toml --pre-commit --redact --no-banner --no-color --verbose
 Exit: 0
-Result: worktree increment scanned; no leaks found.
+Result: final worktree increment (approximately 1.57 KB) scanned; no leaks found.
 
 Command:
 pnpm audit:dependencies

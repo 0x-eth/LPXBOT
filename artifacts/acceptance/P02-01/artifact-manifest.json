@@ -80,8 +80,8 @@
     },
     {
       "path": "checks/security-audit.txt",
-      "bytes": 699,
-      "sha256": "1861266bf20504c8ca8ceb9f4cd3cc7bce99aadb759eb635afcb76d22d25c2f8",
+      "bytes": 740,
+      "sha256": "93100a64c5f8029b753549b31e2f39f1db2a94703c7c6515d942d03b3091642b",
       "mediaType": "text/plain",
       "category": "check"
     },
