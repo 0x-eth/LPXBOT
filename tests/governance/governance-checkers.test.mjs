@@ -197,7 +197,7 @@ test("rejects a relative Markdown link with a missing heading anchor", async () 
 
 async function acceptanceFixture(manifest) {
   const repoRoot = await mkdtemp(path.join(tmpdir(), "lpbot-acceptance-"));
-  const acceptanceDirectory = path.join(repoRoot, "artifacts/acceptance/P00-99");
+  const acceptanceDirectory = path.join(repoRoot, "artifacts/acceptance", manifest.workItemId);
   const docsDirectory = path.join(repoRoot, "docs");
   await mkdir(acceptanceDirectory, { recursive: true });
   await mkdir(docsDirectory, { recursive: true });
@@ -269,6 +269,47 @@ test("accepts a valid P00 infrastructure manifest with no feature IDs", async ()
 
   assert.equal(result.status, 0, output(result));
   assert.match(output(result), /1 acceptance manifest.*valid/i);
+});
+
+test("accepts only the P01-08 phase completion manifest with no feature IDs", async () => {
+  const completionManifest = {
+    ...validP00Manifest(),
+    workItemId: "P01-08",
+    phase: "P01",
+    status: "accepted-with-gaps",
+    tests: [
+      {
+        id: "T-UNIT",
+        command: "node --test fixture.test.mjs",
+        result: "passed",
+        evidencePath: "artifacts/acceptance/P01-08/evidence.md",
+      },
+    ],
+    evidence: [{ id: "E-OPS", path: "artifacts/acceptance/P01-08/evidence.md" }],
+  };
+  const completionFixture = await acceptanceFixture(completionManifest);
+  const completionResult = run("scripts/check-acceptance.mjs", [
+    "--repo-root",
+    completionFixture.repoRoot,
+    "--acceptance-dir",
+    completionFixture.acceptanceDirectory,
+    "--function-matrix",
+    path.join(completionFixture.repoRoot, "docs/FUNCTION_MATRIX.md"),
+  ]);
+  assert.equal(completionResult.status, 0, output(completionResult));
+
+  const implementationManifest = { ...completionManifest, workItemId: "P01-09" };
+  const implementationFixture = await acceptanceFixture(implementationManifest);
+  const implementationResult = run("scripts/check-acceptance.mjs", [
+    "--repo-root",
+    implementationFixture.repoRoot,
+    "--acceptance-dir",
+    implementationFixture.acceptanceDirectory,
+    "--function-matrix",
+    path.join(implementationFixture.repoRoot, "docs/FUNCTION_MATRIX.md"),
+  ]);
+  assert.notEqual(implementationResult.status, 0);
+  assert.match(output(implementationResult), /must reference at least one feature ID/i);
 });
 
 test("accepts migration evidence in an acceptance manifest", async () => {

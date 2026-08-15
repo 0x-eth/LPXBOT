@@ -49,3 +49,9 @@ not ok - P01 route matrix stays non-overlapping at all required widths
 - Result: expected failure in the new full-cycle test (`19` passed, `1` failed).
 - Finding: TimescaleDB rejects dropping and recreating its extension in the same PostgreSQL backend session (`extension "timescaledb" has already been loaded with another version`).
 - Resolution boundary: keep migration SQL unchanged and reconnect between reverse-down and the subsequent up cycle, matching separate dbmate command processes.
+
+## Acceptance checker red run
+
+- Command: `node --test --test-name-pattern='accepts only the P01-08' tests/governance/governance-checkers.test.mjs`
+- Result: expected failure; `P01-08` was rejected solely because its required empty `featureIds` array did not yet have a checker exception.
+- Boundary: the exception is exact to `P01-08`; the same empty array remains rejected for other P01 work items.

@@ -74,7 +74,12 @@ async function main() {
     if (manifest.phase !== manifest.workItemId.slice(0, 3)) {
       errors.push(`${label}: phase ${manifest.phase} does not match workItemId ${manifest.workItemId}`);
     }
-    if (manifest.phase !== "P00" && manifest.featureIds.length === 0) {
+    const isFeaturelessPhaseCompletion = manifest.workItemId === "P01-08";
+    if (
+      manifest.phase !== "P00" &&
+      !isFeaturelessPhaseCompletion &&
+      manifest.featureIds.length === 0
+    ) {
       errors.push(`${label}: business work items must reference at least one feature ID`);
     }
     for (const id of manifest.featureIds) {

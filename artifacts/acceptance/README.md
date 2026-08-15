@@ -5,7 +5,7 @@ Each completed work item stores evidence in `artifacts/acceptance/<WORK-ITEM>/` 
 ## Manifest Rules
 
 - `workItemId`, `phase`, `risk`, and `status` describe the reviewed work item.
-- `featureIds` contains unique stable IDs from `docs/FUNCTION_MATRIX.md`. P00 infrastructure work may use an empty array; P01-P13 work must name at least one valid feature ID.
+- `featureIds` contains unique stable IDs from `docs/FUNCTION_MATRIX.md`. P00 infrastructure work may use an empty array. P01-P13 implementation work must name at least one valid feature ID; the featureless P01 phase-completion audit is fixed to `P01-08` and may use an empty array because it does not claim implementation ownership.
 - Every `tests` entry records an allowed Test ID, the exact command, its observed result, and a repository-relative evidence path that exists.
 - Every `evidence` entry records an allowed Evidence ID and an existing repository-relative path.
 - `assumptions` names unresolved boundaries without upgrading them to verified behavior.
