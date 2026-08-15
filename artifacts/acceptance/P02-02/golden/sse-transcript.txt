@@ -1,0 +1,14 @@
+retry: 3000
+
+id: market:v1:top-fees:56:1:1:1:58cfdaf6c61d66b7
+event: pools.snapshot
+data: {"data":{"rows":[{"fdvUsd":"5000000","feeTvl":"0","poolId":"0x4444444444444444444444444444444444444444444444444444444444444444","tvlUsd":"1000","chainId":56,"feesUsd":"0","protocol":"univ4","volumeUsd":"0","poolAddress":null,"activeTvlUsd":null,"feeActiveTvl":null,"token0Symbol":"WBNB","token1Symbol":"USDT","transactionCount":"0"}],"chainId":56,"minutes":1,"version":"1","windowEnd":"2026-08-16T00:01:00.000Z","generatedAt":"2026-08-16T00:01:00.000Z","windowStart":"2026-08-16T00:00:00.000Z"},"mode":"snapshot","epoch":"1","cursor":"market:v1:top-fees:56:1:1:1:58cfdaf6c61d66b7","sequence":"1","emittedAt":"2026-08-16T00:01:00.000Z","eventType":"pools.snapshot","streamKey":"top-fees:56:1","schemaVersion":"1.0.0"}
+
+id: market:v1:top-fees:56:1:1:2:4f53cda18c2baa0c
+event: pools.diff
+data: {"data":{"upserts":[],"version":"2","tombstones":["56:0x4444444444444444444444444444444444444444444444444444444444444444"]},"mode":"diff","epoch":"1","cursor":"market:v1:top-fees:56:1:1:2:4f53cda18c2baa0c","sequence":"2","emittedAt":"2026-08-16T00:01:00.000Z","eventType":"pools.diff","streamKey":"top-fees:56:1","schemaVersion":"1.0.0"}
+
+id: market:v1:top-fees:56:1:1:3:58cfdaf6c61d66b7
+event: pools.diff
+data: {"data":{"upserts":[{"fdvUsd":"5000000","feeTvl":"0","poolId":"0x4444444444444444444444444444444444444444444444444444444444444444","tvlUsd":"1000","chainId":56,"feesUsd":"0","protocol":"univ4","volumeUsd":"0","poolAddress":null,"activeTvlUsd":null,"feeActiveTvl":null,"token0Symbol":"WBNB","token1Symbol":"USDT","transactionCount":"0"}],"version":"3","tombstones":[]},"mode":"diff","epoch":"1","cursor":"market:v1:top-fees:56:1:1:3:58cfdaf6c61d66b7","sequence":"3","emittedAt":"2026-08-16T00:01:00.000Z","eventType":"pools.diff","streamKey":"top-fees:56:1","schemaVersion":"1.0.0"}
+

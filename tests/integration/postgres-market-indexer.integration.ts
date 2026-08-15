@@ -1,10 +1,11 @@
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  compareRawLogDeliveries,
   IndexerRunner,
   PostgresCanonicalEventStore,
 } from "../../apps/indexer/src/index.js";
@@ -40,6 +41,23 @@ const migrationPath = path.join(
   repositoryRoot,
   "infra/migrations/20260816000100_create_market_indexer.sql",
 );
+const goldenDirectory = path.join(repositoryRoot, "artifacts/acceptance/P02-02/golden");
+
+function reorgMarketProjection(entry: ReturnType<typeof readP02Fixture>["input"][number]) {
+  const replacement = entry.rawLog.blockHash.endsWith("30");
+  return {
+    fdvUsd: "5000000",
+    feesUsd: replacement ? "40" : "100",
+    token0Symbol: "WBNB",
+    token1Symbol: "USDT",
+    tvlUsd: "1000",
+    volumeUsd: replacement ? "400" : "1000",
+  };
+}
+
+function goldenJson(value: unknown): string {
+  return `${JSON.stringify(value, null, 2)}\n`;
+}
 
 function runnerFor(name: "normal" | "duplicate" | "out-of-order" | "reorg") {
   const fixture = readP02Fixture(name);
@@ -365,5 +383,136 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
       [heartbeat!.cursor],
     );
     expect(durable.rows).toEqual([{ count: "1" }]);
+  });
+
+  it("matches the committed reorg vertical-slice golden artifacts", async () => {
+    const fixture = readP02Fixture("reorg");
+    const decoder = new FixtureEventDecoder(fixture.input, {
+      marketFor: reorgMarketProjection,
+    });
+    const source = new FixtureRawLogSource(fixture.input, fixtureBlockTimestamp);
+    const page = await source.read(null);
+    const normalizedEvents = page!.deliveries
+      .slice()
+      .sort(compareRawLogDeliveries)
+      .map((delivery) => decoder.decode(delivery));
+
+    const runner = new IndexerRunner({
+      decoder: new FixtureEventDecoder(fixture.input, {
+        marketFor: reorgMarketProjection,
+      }),
+      evaluationTime: () => new Date("2026-08-16T00:01:00.000Z"),
+      source: new FixtureRawLogSource(fixture.input, fixtureBlockTimestamp),
+      store: new PostgresCanonicalEventStore(pool),
+    });
+    await runner.runOnce();
+
+    const canonicalStore = {
+      blocks: (
+        await pool.query(
+          `SELECT chain_id::text, block_number::text, block_hash, parent_hash,
+                  block_timestamp, canonical, reverted_at
+             FROM canonical_chain_blocks
+            ORDER BY block_number, block_hash`,
+        )
+      ).rows,
+      cursor: (
+        await pool.query(
+          `SELECT chain_id::text, block_number::text, block_hash,
+                  transaction_index::text, log_index::text, cursor, updated_at
+             FROM indexer_cursors
+            ORDER BY chain_id`,
+        )
+      ).rows,
+      events: (
+        await pool.query(
+          `SELECT event_id, schema_version, chain_id::text, block_number::text,
+                  block_hash, block_timestamp, transaction_hash,
+                  transaction_index::text, log_index::text, protocol,
+                  protocol_generation, kind, finality, canonical, cursor,
+                  pool_address, pool_id, amount0::text, amount1::text,
+                  liquidity_delta::text, sqrt_price_x96::text, payload,
+                  market_data, raw_ref, reverted_at
+             FROM normalized_pool_events
+            ORDER BY block_number, block_hash, transaction_index, log_index`,
+        )
+      ).rows,
+      rawLogs: (
+        await pool.query(
+          `SELECT chain_id::text, block_number::text, block_hash,
+                  transaction_hash, transaction_index::text, log_index::text,
+                  contract_address, removed, canonical, reverted_at
+             FROM raw_chain_logs
+            ORDER BY block_number, block_hash, transaction_index, log_index`,
+        )
+      ).rows,
+    };
+    const windows = (
+      await pool.query(
+        `SELECT stream_key, chain_id::text, window_minutes, window_start,
+                window_end, version::text, source_cursor, snapshot_hash, rows,
+                created_at
+           FROM market_snapshots
+          WHERE canonical
+          ORDER BY window_minutes`,
+      )
+    ).rows;
+    const outbox = await pool.query<{ envelope: MarketStreamEnvelope }>(
+      `SELECT envelope
+         FROM market_stream_outbox
+        WHERE stream_key = 'top-fees:56:1'
+        ORDER BY epoch, sequence`,
+    );
+    let transcript = "retry: 3000\n\n";
+    for (const { envelope } of outbox.rows) {
+      transcript += `id: ${envelope.cursor}\n`;
+      transcript += `event: ${envelope.eventType}\n`;
+      transcript += `data: ${JSON.stringify(envelope)}\n\n`;
+    }
+
+    const sourceFixturePath = path.join(
+      repositoryRoot,
+      "artifacts/acceptance/P02-01/fixtures/reorg.json",
+    );
+    const expected = new Map<string, string>([
+      ["fixed-input.json", readFileSync(sourceFixturePath, "utf8")],
+      [
+        "normalized-events.json",
+        goldenJson({
+          events: normalizedEvents,
+          schemaVersion: 1,
+          sourceFixture: "artifacts/acceptance/P02-01/fixtures/reorg.json",
+          workItemId: "P02-02",
+        }),
+      ],
+      [
+        "canonical-store.json",
+        goldenJson({
+          ...canonicalStore,
+          schemaVersion: 1,
+          workItemId: "P02-02",
+        }),
+      ],
+      [
+        "window-results.json",
+        goldenJson({
+          schemaVersion: 1,
+          windows,
+          workItemId: "P02-02",
+        }),
+      ],
+      ["sse-transcript.txt", transcript],
+    ]);
+
+    if (process.env.UPDATE_P02_02_GOLDEN === "1") {
+      mkdirSync(goldenDirectory, { recursive: true });
+      for (const [filename, content] of expected) {
+        writeFileSync(path.join(goldenDirectory, filename), content);
+      }
+    }
+
+    for (const [filename, content] of expected) {
+      expect(readFileSync(path.join(goldenDirectory, filename), "utf8"), filename).toBe(content);
+    }
   });
 });

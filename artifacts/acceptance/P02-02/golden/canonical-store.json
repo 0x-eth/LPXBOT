@@ -1,0 +1,139 @@
+{
+  "blocks": [
+    {
+      "chain_id": "56",
+      "block_number": "110",
+      "block_hash": "0x2020202020202020202020202020202020202020202020202020202020202020",
+      "parent_hash": null,
+      "block_timestamp": "2026-08-16T00:00:10.000Z",
+      "canonical": false,
+      "reverted_at": "2026-08-16T00:01:00.000Z"
+    },
+    {
+      "chain_id": "56",
+      "block_number": "110",
+      "block_hash": "0x2121212121212121212121212121212121212121212121212121212121212121",
+      "parent_hash": null,
+      "block_timestamp": "2026-08-16T00:00:10.000Z",
+      "canonical": true,
+      "reverted_at": null
+    }
+  ],
+  "cursor": [
+    {
+      "chain_id": "56",
+      "block_number": "110",
+      "block_hash": "0x2121212121212121212121212121212121212121212121212121212121212121",
+      "transaction_index": "0",
+      "log_index": "0",
+      "cursor": "v1:56:110:0:0:0x2121212121212121212121212121212121212121212121212121212121212121",
+      "updated_at": "2026-08-16T00:01:00.000Z"
+    }
+  ],
+  "events": [
+    {
+      "event_id": "9e0722ce872d59a1a0d344d720262ffd1b3f8d547728e54e4a329ad95dd71e0a",
+      "schema_version": "1.0.0",
+      "chain_id": "56",
+      "block_number": "110",
+      "block_hash": "0x2020202020202020202020202020202020202020202020202020202020202020",
+      "block_timestamp": "2026-08-16T00:00:10.000Z",
+      "transaction_hash": "0xc0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+      "transaction_index": "0",
+      "log_index": "0",
+      "protocol": "univ4",
+      "protocol_generation": "v4",
+      "kind": "liquidity.add",
+      "finality": "reverted",
+      "canonical": false,
+      "cursor": "v1:56:110:0:0:0x2020202020202020202020202020202020202020202020202020202020202020",
+      "pool_address": null,
+      "pool_id": "0x4444444444444444444444444444444444444444444444444444444444444444",
+      "amount0": "10",
+      "amount1": "20",
+      "liquidity_delta": "100",
+      "sqrt_price_x96": null,
+      "payload": {
+        "amount0": "10",
+        "amount1": "20",
+        "liquidityDelta": "100"
+      },
+      "market_data": {
+        "fdvUsd": "5000000",
+        "tvlUsd": "1000",
+        "feesUsd": "100",
+        "volumeUsd": "1000",
+        "token0Symbol": "WBNB",
+        "token1Symbol": "USDT"
+      },
+      "raw_ref": "fixture://univ4/liquidity.add/v1",
+      "reverted_at": "2026-08-16T00:01:00.000Z"
+    },
+    {
+      "event_id": "292dcaa0bb8908111b2d29c7a365ae024042a29daa350631f22e1374c0eeba61",
+      "schema_version": "1.0.0",
+      "chain_id": "56",
+      "block_number": "110",
+      "block_hash": "0x2121212121212121212121212121212121212121212121212121212121212121",
+      "block_timestamp": "2026-08-16T00:00:10.000Z",
+      "transaction_hash": "0xc1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+      "transaction_index": "0",
+      "log_index": "0",
+      "protocol": "univ4",
+      "protocol_generation": "v4",
+      "kind": "liquidity.remove",
+      "finality": "observed",
+      "canonical": true,
+      "cursor": "v1:56:110:0:0:0x2121212121212121212121212121212121212121212121212121212121212121",
+      "pool_address": null,
+      "pool_id": "0x4444444444444444444444444444444444444444444444444444444444444444",
+      "amount0": "-4",
+      "amount1": "-8",
+      "liquidity_delta": "-40",
+      "sqrt_price_x96": null,
+      "payload": {
+        "amount0": "-4",
+        "amount1": "-8",
+        "liquidityDelta": "-40"
+      },
+      "market_data": {
+        "fdvUsd": "5000000",
+        "tvlUsd": "1000",
+        "feesUsd": "100",
+        "volumeUsd": "1000",
+        "token0Symbol": "WBNB",
+        "token1Symbol": "USDT"
+      },
+      "raw_ref": "fixture://univ4/liquidity.remove/v1",
+      "reverted_at": null
+    }
+  ],
+  "rawLogs": [
+    {
+      "chain_id": "56",
+      "block_number": "110",
+      "block_hash": "0x2020202020202020202020202020202020202020202020202020202020202020",
+      "transaction_hash": "0xc0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+      "transaction_index": "0",
+      "log_index": "0",
+      "contract_address": "0x3434343434343434343434343434343434343434",
+      "removed": true,
+      "canonical": false,
+      "reverted_at": "2026-08-16T00:01:00.000Z"
+    },
+    {
+      "chain_id": "56",
+      "block_number": "110",
+      "block_hash": "0x2121212121212121212121212121212121212121212121212121212121212121",
+      "transaction_hash": "0xc1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+      "transaction_index": "0",
+      "log_index": "0",
+      "contract_address": "0x3434343434343434343434343434343434343434",
+      "removed": false,
+      "canonical": true,
+      "reverted_at": null
+    }
+  ],
+  "schemaVersion": 1,
+  "workItemId": "P02-02"
+}

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "scenario": "reorg",
+  "description": "An observed block-110 event is removed and replaced by a different canonical block-110 event.",
+  "fixtureOnly": true,
+  "input": [
+    {
+      "operation": "ingest-old-branch",
+      "decoderFixtureId": "fixture://univ4/liquidity.add/v1",
+      "rawLog": { "chainId": 56, "blockNumber": "110", "blockHash": "0x2020202020202020202020202020202020202020202020202020202020202020", "transactionHash": "0xc0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0", "transactionIndex": 0, "logIndex": 0, "address": "0x3434343434343434343434343434343434343434", "topics": ["0xf2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2"], "data": "0x20", "removed": false },
+      "fixtureDecoded": { "protocol": "univ4", "protocolGeneration": "v4", "kind": "liquidity.add", "pool": { "poolAddress": null, "poolId": "0x4444444444444444444444444444444444444444444444444444444444444444" }, "payload": { "liquidityDelta": "100", "amount0": "10", "amount1": "20" } }
+    },
+    {
+      "operation": "remove-old-branch",
+      "decoderFixtureId": "fixture://univ4/liquidity.add/v1",
+      "rawLog": { "chainId": 56, "blockNumber": "110", "blockHash": "0x2020202020202020202020202020202020202020202020202020202020202020", "transactionHash": "0xc0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0", "transactionIndex": 0, "logIndex": 0, "address": "0x3434343434343434343434343434343434343434", "topics": ["0xf2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2"], "data": "0x20", "removed": true },
+      "fixtureDecoded": { "protocol": "univ4", "protocolGeneration": "v4", "kind": "liquidity.add", "pool": { "poolAddress": null, "poolId": "0x4444444444444444444444444444444444444444444444444444444444444444" }, "payload": { "liquidityDelta": "100", "amount0": "10", "amount1": "20" } }
+    },
+    {
+      "operation": "ingest-replacement-branch",
+      "decoderFixtureId": "fixture://univ4/liquidity.remove/v1",
+      "rawLog": { "chainId": 56, "blockNumber": "110", "blockHash": "0x2121212121212121212121212121212121212121212121212121212121212121", "transactionHash": "0xc1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1", "transactionIndex": 0, "logIndex": 0, "address": "0x3434343434343434343434343434343434343434", "topics": ["0xf3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3"], "data": "0x21", "removed": false },
+      "fixtureDecoded": { "protocol": "univ4", "protocolGeneration": "v4", "kind": "liquidity.remove", "pool": { "poolAddress": null, "poolId": "0x4444444444444444444444444444444444444444444444444444444444444444" }, "payload": { "liquidityDelta": "-40", "amount0": "-4", "amount1": "-8" } }
+    }
+  ],
+  "expected": {
+    "acceptedDeliveries": 2,
+    "tombstoneCount": 1,
+    "revertedEventIds": ["9e0722ce872d59a1a0d344d720262ffd1b3f8d547728e54e4a329ad95dd71e0a"],
+    "canonicalEventIds": ["292dcaa0bb8908111b2d29c7a365ae024042a29daa350631f22e1374c0eeba61"],
+    "aggregateDeltasInOrder": ["apply old +100", "rollback old -100", "apply replacement -40"],
+    "netLiquidityDelta": "-40",
+    "lastCursor": "v1:56:110:0:0:0x2121212121212121212121212121212121212121212121212121212121212121",
+    "oldCursorValid": false,
+    "replacementFinality": "observed"
+  }
+}

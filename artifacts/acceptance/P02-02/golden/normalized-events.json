@@ -1,0 +1,163 @@
+{
+  "events": [
+    {
+      "amount0": "10",
+      "amount1": "20",
+      "blockHash": "0x2020202020202020202020202020202020202020202020202020202020202020",
+      "blockNumber": "110",
+      "blockTimestamp": "2026-08-16T00:00:10.000Z",
+      "chainId": 56,
+      "contractAddress": "0x3434343434343434343434343434343434343434",
+      "cursor": {
+        "blockHash": "0x2020202020202020202020202020202020202020202020202020202020202020",
+        "blockNumber": "110",
+        "chainId": 56,
+        "logIndex": 0,
+        "transactionIndex": 0,
+        "value": "v1:56:110:0:0:0x2020202020202020202020202020202020202020202020202020202020202020"
+      },
+      "eventId": "9e0722ce872d59a1a0d344d720262ffd1b3f8d547728e54e4a329ad95dd71e0a",
+      "finality": "observed",
+      "kind": "liquidity.add",
+      "liquidityDelta": "100",
+      "logIndex": 0,
+      "market": {
+        "fdvUsd": "5000000",
+        "feesUsd": "100",
+        "token0Symbol": "WBNB",
+        "token1Symbol": "USDT",
+        "tvlUsd": "1000",
+        "volumeUsd": "1000"
+      },
+      "payload": {
+        "liquidityDelta": "100",
+        "amount0": "10",
+        "amount1": "20"
+      },
+      "pool": {
+        "feePips": null,
+        "hooks": null,
+        "poolAddress": null,
+        "poolId": "0x4444444444444444444444444444444444444444444444444444444444444444",
+        "tickSpacing": null,
+        "token0": null,
+        "token1": null
+      },
+      "protocol": "univ4",
+      "protocolGeneration": "v4",
+      "rawRef": "fixture://univ4/liquidity.add/v1",
+      "removed": false,
+      "schemaVersion": "1.0.0",
+      "sqrtPriceX96": null,
+      "transactionHash": "0xc0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+      "transactionIndex": 0
+    },
+    {
+      "amount0": "10",
+      "amount1": "20",
+      "blockHash": "0x2020202020202020202020202020202020202020202020202020202020202020",
+      "blockNumber": "110",
+      "blockTimestamp": "2026-08-16T00:00:10.000Z",
+      "chainId": 56,
+      "contractAddress": "0x3434343434343434343434343434343434343434",
+      "cursor": {
+        "blockHash": "0x2020202020202020202020202020202020202020202020202020202020202020",
+        "blockNumber": "110",
+        "chainId": 56,
+        "logIndex": 0,
+        "transactionIndex": 0,
+        "value": "v1:56:110:0:0:0x2020202020202020202020202020202020202020202020202020202020202020"
+      },
+      "eventId": "9e0722ce872d59a1a0d344d720262ffd1b3f8d547728e54e4a329ad95dd71e0a",
+      "finality": "reverted",
+      "kind": "liquidity.add",
+      "liquidityDelta": "100",
+      "logIndex": 0,
+      "market": {
+        "fdvUsd": "5000000",
+        "feesUsd": "100",
+        "token0Symbol": "WBNB",
+        "token1Symbol": "USDT",
+        "tvlUsd": "1000",
+        "volumeUsd": "1000"
+      },
+      "payload": {
+        "liquidityDelta": "100",
+        "amount0": "10",
+        "amount1": "20"
+      },
+      "pool": {
+        "feePips": null,
+        "hooks": null,
+        "poolAddress": null,
+        "poolId": "0x4444444444444444444444444444444444444444444444444444444444444444",
+        "tickSpacing": null,
+        "token0": null,
+        "token1": null
+      },
+      "protocol": "univ4",
+      "protocolGeneration": "v4",
+      "rawRef": "fixture://univ4/liquidity.add/v1",
+      "removed": true,
+      "schemaVersion": "1.0.0",
+      "sqrtPriceX96": null,
+      "transactionHash": "0xc0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+      "transactionIndex": 0
+    },
+    {
+      "amount0": "-4",
+      "amount1": "-8",
+      "blockHash": "0x2121212121212121212121212121212121212121212121212121212121212121",
+      "blockNumber": "110",
+      "blockTimestamp": "2026-08-16T00:00:10.000Z",
+      "chainId": 56,
+      "contractAddress": "0x3434343434343434343434343434343434343434",
+      "cursor": {
+        "blockHash": "0x2121212121212121212121212121212121212121212121212121212121212121",
+        "blockNumber": "110",
+        "chainId": 56,
+        "logIndex": 0,
+        "transactionIndex": 0,
+        "value": "v1:56:110:0:0:0x2121212121212121212121212121212121212121212121212121212121212121"
+      },
+      "eventId": "292dcaa0bb8908111b2d29c7a365ae024042a29daa350631f22e1374c0eeba61",
+      "finality": "observed",
+      "kind": "liquidity.remove",
+      "liquidityDelta": "-40",
+      "logIndex": 0,
+      "market": {
+        "fdvUsd": "5000000",
+        "feesUsd": "100",
+        "token0Symbol": "WBNB",
+        "token1Symbol": "USDT",
+        "tvlUsd": "1000",
+        "volumeUsd": "1000"
+      },
+      "payload": {
+        "liquidityDelta": "-40",
+        "amount0": "-4",
+        "amount1": "-8"
+      },
+      "pool": {
+        "feePips": null,
+        "hooks": null,
+        "poolAddress": null,
+        "poolId": "0x4444444444444444444444444444444444444444444444444444444444444444",
+        "tickSpacing": null,
+        "token0": null,
+        "token1": null
+      },
+      "protocol": "univ4",
+      "protocolGeneration": "v4",
+      "rawRef": "fixture://univ4/liquidity.remove/v1",
+      "removed": false,
+      "schemaVersion": "1.0.0",
+      "sqrtPriceX96": null,
+      "transactionHash": "0xc1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+      "transactionIndex": 0
+    }
+  ],
+  "schemaVersion": 1,
+  "sourceFixture": "artifacts/acceptance/P02-01/fixtures/reorg.json",
+  "workItemId": "P02-02"
+}
