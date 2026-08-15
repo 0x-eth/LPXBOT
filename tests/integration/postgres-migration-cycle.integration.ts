@@ -25,7 +25,7 @@ adminUrl.pathname = "/postgres";
 const fixtureUrl = new URL(databaseUrl);
 fixtureUrl.pathname = `/${databaseName}`;
 const adminPool = new Pool({ connectionString: adminUrl.toString(), max: 1 });
-const fixturePool = new Pool({ connectionString: fixtureUrl.toString(), max: 1 });
+let fixturePool = new Pool({ connectionString: fixtureUrl.toString(), max: 1 });
 
 function sections(source: string): { down: string; up: string } {
   const [, afterUp] = source.split("-- migrate:up");
@@ -93,6 +93,10 @@ describe("P01 complete PostgreSQL migration cycle", () => {
     await migrateDown();
     expect(await publicTables()).toEqual([]);
 
+    // TimescaleDB cannot be dropped and reloaded in one PostgreSQL backend session.
+    // Real dbmate down/up commands use separate processes, so reconnect at that boundary.
+    await fixturePool.end();
+    fixturePool = new Pool({ connectionString: fixtureUrl.toString(), max: 1 });
     await migrateUp();
     await fixturePool.query(seed);
     await fixturePool.query(seed);

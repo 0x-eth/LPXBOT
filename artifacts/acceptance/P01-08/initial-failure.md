@@ -42,3 +42,10 @@ not ok - P01 route matrix stays non-overlapping at all required widths
   /settings at 320px: state-specific mobile overlap assertion failed
 3 failed
 ```
+
+## PostgreSQL migration-cycle red run
+
+- Command: `pnpm test:postgres`
+- Result: expected failure in the new full-cycle test (`19` passed, `1` failed).
+- Finding: TimescaleDB rejects dropping and recreating its extension in the same PostgreSQL backend session (`extension "timescaledb" has already been loaded with another version`).
+- Resolution boundary: keep migration SQL unchanged and reconnect between reverse-down and the subsequent up cycle, matching separate dbmate command processes.
