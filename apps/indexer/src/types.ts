@@ -1,4 +1,8 @@
-import type { MarketMetricValues, MarketMetricKind, MarketMetricProtocol } from "@lpbot/market-metrics";
+import type {
+  MarketMetricValues,
+  MarketMetricKind,
+  MarketMetricProtocol,
+} from "@lpbot/market-metrics";
 
 export interface RawChainBlock {
   blockHash: string;
@@ -107,4 +111,3 @@ export interface CanonicalEventStore {
   commit(commit: CanonicalCommit): Promise<IndexerRunResult>;
   getCursor(chainId: number): Promise<IndexerCursor | null>;
 }
-

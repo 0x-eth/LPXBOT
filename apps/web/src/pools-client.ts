@@ -33,10 +33,7 @@ export class PoolsClient {
     return envelope.data;
   }
 
-  subscribe(
-    minutes: MarketWindowMinutes,
-    callbacks: PoolStreamCallbacks,
-  ): PoolStreamSubscription {
+  subscribe(minutes: MarketWindowMinutes, callbacks: PoolStreamCallbacks): PoolStreamSubscription {
     const source = new EventSource(`/api/pools/top-fees/${minutes}/stream?chainId=56`, {
       withCredentials: true,
     });
@@ -55,4 +52,3 @@ export class PoolsClient {
     return { close: () => source.close() };
   }
 }
-

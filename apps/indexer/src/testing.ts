@@ -58,9 +58,7 @@ function rawFingerprint(rawLog: RawChainLog): string {
 
 export function eventIdForRawLog(rawLog: RawChainLog): string {
   return createHash("sha256")
-    .update(
-      [rawLog.chainId, rawLog.blockHash, rawLog.transactionHash, rawLog.logIndex].join(":"),
-    )
+    .update([rawLog.chainId, rawLog.blockHash, rawLog.transactionHash, rawLog.logIndex].join(":"))
     .digest("hex");
 }
 
@@ -175,7 +173,9 @@ export class FixtureRawLogSource implements RawLogSource {
 
     const priorByHeight = [...this.#entries]
       .filter(({ rawLog }) => !rawLog.removed)
-      .sort((left, right) => Number(BigInt(left.rawLog.blockNumber) - BigInt(right.rawLog.blockNumber)));
+      .sort((left, right) =>
+        Number(BigInt(left.rawLog.blockNumber) - BigInt(right.rawLog.blockNumber)),
+      );
     const deliveries: RawLogDelivery[] = eligible.map(({ rawLog }) => {
       const prior = priorByHeight
         .filter((entry) => BigInt(entry.rawLog.blockNumber) < BigInt(rawLog.blockNumber))
@@ -194,4 +194,3 @@ export class FixtureRawLogSource implements RawLogSource {
     return { chainId: 56, deliveries };
   }
 }
-

@@ -913,7 +913,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           if (event.streamKey !== `top-fees:56:${context.minutes}`) continue;
           const nextSequence = BigInt(event.sequence);
           if (epoch === event.epoch && nextSequence <= sequence) continue;
-          if (epoch !== null && epoch !== event.epoch && event.eventType !== "pools.snapshot") break;
+          if (epoch !== null && epoch !== event.epoch && event.eventType !== "pools.snapshot")
+            break;
           reply.raw.write(`id: ${event.cursor}\n`);
           reply.raw.write(`event: ${event.eventType}\n`);
           reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);

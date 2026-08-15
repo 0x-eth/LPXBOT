@@ -238,7 +238,13 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
         }
 
         await this.#upsertBlock(client, delivery, commit.evaluationTime);
-        await this.#insertRawLog(client, delivery, incomingHash, incomingPayload, commit.evaluationTime);
+        await this.#insertRawLog(
+          client,
+          delivery,
+          incomingHash,
+          incomingPayload,
+          commit.evaluationTime,
+        );
         await this.#insertEvent(client, event, incomingHash, commit.evaluationTime);
         acceptedCount += 1;
         lastAccepted = event;
@@ -467,7 +473,9 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     await this.#rewindCursor(client, commit.chainId, blockNumber, commit.evaluationTime);
     return {
       count: affected.rowCount ?? 0,
-      poolKeys: new Set(affected.rows.map(identityFromAffected).filter((key): key is string => !!key)),
+      poolKeys: new Set(
+        affected.rows.map(identityFromAffected).filter((key): key is string => !!key),
+      ),
     };
   }
 
@@ -583,7 +591,13 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     });
     const sourceCursor = await this.#getCursor(client, commit.chainId);
     for (const window of windows) {
-      await this.#persistWindow(client, commit, window, sourceCursor?.value ?? null, forcedTombstones);
+      await this.#persistWindow(
+        client,
+        commit,
+        window,
+        sourceCursor?.value ?? null,
+        forcedTombstones,
+      );
     }
   }
 
@@ -665,10 +679,7 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
       eventType = "pools.snapshot";
       mode = "snapshot";
     } else {
-      const tombstones = new Set([
-        ...removedRows(previous.rows, rows),
-        ...forcedTombstones,
-      ]);
+      const tombstones = new Set([...removedRows(previous.rows, rows), ...forcedTombstones]);
       data = {
         tombstones: [...tombstones].sort(),
         upserts: changedRows(previous.rows, rows)

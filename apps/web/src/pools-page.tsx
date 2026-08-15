@@ -181,11 +181,12 @@ export function PoolsPage() {
   const [minutes, setMinutes] = useState<MarketWindowMinutes>(5);
   const [retry, setRetry] = useState(0);
   const [state, dispatch] = useReducer(reducePoolStream, undefined, initialPoolStreamState);
-  const latestEventAt = useRef(Date.now());
+  const latestEventAt = useRef<number | null>(null);
 
   useEffect(() => {
     if (fixture) return;
     const controller = new AbortController();
+    latestEventAt.current = Date.now();
     dispatch({ type: "loading" });
     let subscription: ReturnType<PoolsClient["subscribe"]> | null = null;
     void client
@@ -212,7 +213,9 @@ export function PoolsPage() {
         });
       });
     const staleTimer = window.setInterval(() => {
-      if (Date.now() - latestEventAt.current > 25_000) dispatch({ type: "stale" });
+      if (latestEventAt.current !== null && Date.now() - latestEventAt.current > 25_000) {
+        dispatch({ type: "stale" });
+      }
     }, 1_000);
     return () => {
       controller.abort();

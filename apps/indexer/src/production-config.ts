@@ -14,7 +14,9 @@ function containsFixtureSelector(value: unknown): boolean {
   if (Array.isArray(value)) return value.some(containsFixtureSelector);
   if (typeof value !== "object" || value === null) return false;
   const record = value as Record<string, unknown>;
-  return Object.hasOwn(record, "decoderFixtureId") || Object.values(record).some(containsFixtureSelector);
+  return (
+    Object.hasOwn(record, "decoderFixtureId") || Object.values(record).some(containsFixtureSelector)
+  );
 }
 
 function address(value: string | null): value is string {
@@ -48,4 +50,3 @@ export function validateProductionIndexerConfig(value: unknown): ProductionIndex
   }
   return config as ProductionIndexerConfig;
 }
-

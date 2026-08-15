@@ -59,4 +59,3 @@ export function fixtureBlockTimestamp(blockNumber: string): string {
   const seconds = BigInt(blockNumber) - 100n;
   return new Date(Date.parse("2026-08-16T00:00:00.000Z") + Number(seconds) * 1_000).toISOString();
 }
-

@@ -5,11 +5,7 @@ export const MARKET_WINDOWS = [1, 5, 15, 30, 60] as const;
 
 export type MarketWindowMinutes = (typeof MARKET_WINDOWS)[number];
 export type MarketMetricKind =
-  | "pool.created"
-  | "swap"
-  | "liquidity.add"
-  | "liquidity.remove"
-  | "collect";
+  "pool.created" | "swap" | "liquidity.add" | "liquidity.remove" | "collect";
 export type MarketMetricProtocol = "pcsv3" | "univ3" | "pcsv4" | "univ4";
 
 export interface MarketMetricValues {
@@ -85,7 +81,9 @@ function decimalString(value: Decimal): string {
   return value.isZero() ? "0" : value.toFixed();
 }
 
-export function poolMetricKey(row: Pick<PoolMetricRow, "chainId" | "poolAddress" | "poolId">): string {
+export function poolMetricKey(
+  row: Pick<PoolMetricRow, "chainId" | "poolAddress" | "poolId">,
+): string {
   const identity = row.poolAddress ?? row.poolId;
   if (!identity) throw new RangeError("A pool address or pool ID is required");
   return `${row.chainId}:${identity.toLowerCase()}`;
@@ -206,13 +204,14 @@ export function computeMarketWindows(
     const rows = [...grouped.entries()].map(([key, events]) =>
       rowForPool(
         events,
-        canonical.filter((event) =>
-          key ===
-          poolMetricKey({
-            chainId: event.chainId,
-            poolAddress: event.pool.poolAddress,
-            poolId: event.pool.poolId,
-          }),
+        canonical.filter(
+          (event) =>
+            key ===
+            poolMetricKey({
+              chainId: event.chainId,
+              poolAddress: event.pool.poolAddress,
+              poolId: event.pool.poolId,
+            }),
         ),
         options.windowComplete,
       ),

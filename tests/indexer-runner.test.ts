@@ -5,10 +5,7 @@ import {
   type IndexerCursor,
   validateProductionIndexerConfig,
 } from "../apps/indexer/src/index.js";
-import {
-  FixtureEventDecoder,
-  FixtureRawLogSource,
-} from "../apps/indexer/src/testing.js";
+import { FixtureEventDecoder, FixtureRawLogSource } from "../apps/indexer/src/testing.js";
 import { describe, expect, it } from "vitest";
 
 import { fixtureBlockTimestamp, readP02Fixture } from "./helpers/p02-fixture.js";
@@ -124,4 +121,3 @@ describe("P02-02 IndexerRunner tracer seam", () => {
     ).toThrowError(/FIXTURE_DECODER_FORBIDDEN/u);
   });
 });
-

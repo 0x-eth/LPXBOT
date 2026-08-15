@@ -83,10 +83,7 @@ afterEach(async () => {
 
 async function fixture() {
   const sessionStore = new SessionFixtureStore();
-  const token = await issueFixtureSession(
-    sessionStore,
-    "29000000-0000-4000-8000-000000000001",
-  );
+  const token = await issueFixtureSession(sessionStore, "29000000-0000-4000-8000-000000000001");
   const provider = new FiniteMarketProvider();
   const app = buildApiApp({
     maintenance: { enabled: false, message: null, until: null },
