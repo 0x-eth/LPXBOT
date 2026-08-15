@@ -44,9 +44,44 @@
       "category": "contract"
     },
     {
+      "path": "checks/artifact-schema.txt",
+      "bytes": 406,
+      "sha256": "ebc31462e2cc747b0e8714b6918b89c7b880c6de3675235e7d4d9abefa41a45e",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "checks/baseline-integrity.txt",
+      "bytes": 697,
+      "sha256": "4003d5374cfa541cfcd7c2d031ec6ea60957bf2ad6ec1ff64f228c873e3fec96",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "checks/governance-test.txt",
+      "bytes": 1071,
+      "sha256": "8187ba6dd25641129dd624ab373e4ff4cbdf1061a11003aa44f9a5670f076d5b",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
       "path": "checks/initial-failure.txt",
       "bytes": 1098,
       "sha256": "7a78edbf46e06cb54d14e87bde0a67cb3f660537cfd3ec32884a76c219db1c32",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "checks/quality-gates.txt",
+      "bytes": 738,
+      "sha256": "d4eea0a4037a34aaa325a3e51bdd0eeeaf78ee8ce15c5d4debc4e981a6bf5466",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "checks/security-audit.txt",
+      "bytes": 699,
+      "sha256": "1861266bf20504c8ca8ceb9f4cd3cc7bce99aadb759eb635afcb76d22d25c2f8",
       "mediaType": "text/plain",
       "category": "check"
     },
