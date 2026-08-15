@@ -18,6 +18,13 @@ export type { LoginWalletAuthEnvironment } from "./login-wallet-auth-config.js";
 export { PostgresSessionStore } from "./postgres-session-store.js";
 export { PostgresChainAccessPolicyStore } from "./postgres-chain-access-policy-store.js";
 export { PostgresUserPreferencesStore } from "./postgres-user-preferences-store.js";
+export { PostgresMarketPoolsProvider } from "./market-pools.js";
+export type {
+  MarketPoolsContext,
+  MarketPoolsProvider,
+  MarketPoolsStreamContext,
+  PostgresMarketPoolsProviderOptions,
+} from "./market-pools.js";
 export { ChainPolicyStoreError } from "./chain-access-policies.js";
 export type {
   ChainAccessPolicyChange,

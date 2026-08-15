@@ -5,6 +5,8 @@ import {
   createSuccessEnvelope,
   type ChainAccessMode,
   type ManagedChainView,
+  marketWindowMinutes,
+  type MarketWindowMinutes,
   type SessionView,
 } from "@lpbot/api-contract";
 import {
@@ -37,6 +39,7 @@ import {
   type ChainAccessPolicyStore,
   type ChainAccessPolicyView,
 } from "./chain-access-policies.js";
+import type { MarketPoolsProvider } from "./market-pools.js";
 import type { ShellStatsProvider } from "./shell-stats.js";
 import {
   defaultVersionedUserPreferences,
@@ -64,6 +67,7 @@ export interface ApiAppOptions {
   chainPolicyStore?: ChainAccessPolicyStore;
   logger?: { write(line: string): void };
   maintenance: MaintenanceConfig;
+  marketPoolsProvider?: MarketPoolsProvider;
   managementOrigin?: string;
   now?: () => Date;
   preferencesStore?: UserPreferencesStore;
@@ -95,6 +99,18 @@ export interface AuthRateLimits {
   walletLogin?: number;
   walletLinks?: number;
   walletNonce?: number;
+}
+
+function parseMarketPoolsContext(request: FastifyRequest): {
+  chainId: 56;
+  minutes: MarketWindowMinutes;
+} | null {
+  const parameters = request.params as { minutes?: unknown };
+  const query = request.query as { chainId?: unknown };
+  if (typeof parameters.minutes !== "string" || typeof query.chainId !== "string") return null;
+  if (!/^(?:1|5|15|30|60)$/u.test(parameters.minutes) || query.chainId !== "56") return null;
+  const minutes = Number(parameters.minutes) as MarketWindowMinutes;
+  return marketWindowMinutes.includes(minutes) ? { chainId: 56, minutes } : null;
 }
 
 class AuthenticationRateLimitError extends Error {
@@ -817,6 +833,97 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         return createSuccessEnvelope({ authorized: true, operation }, request.id);
       });
     }
+
+    app.get("/api/pools/top-fees/:minutes", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      const context = parseMarketPoolsContext(request);
+      if (!context) {
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "MARKET_QUERY_INVALID",
+            message: "Window must be 1, 5, 15, 30, or 60 minutes and chainId must be 56",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!options.marketPoolsProvider) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "MARKET_DATA_UNAVAILABLE",
+            message: "Market data is not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      const snapshot = await options.marketPoolsProvider.getTopFees(context);
+      return createSuccessEnvelope(snapshot, request.id);
+    });
+
+    app.get("/api/pools/top-fees/:minutes/stream", async (request, reply) => {
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      const context = parseMarketPoolsContext(request);
+      if (!context) {
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "MARKET_QUERY_INVALID",
+            message: "Window must be 1, 5, 15, 30, or 60 minutes and chainId must be 56",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!options.marketPoolsProvider) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "MARKET_DATA_UNAVAILABLE",
+            message: "Market data is not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+
+      const controller = new AbortController();
+      reply.hijack();
+      reply.raw.writeHead(200, {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Connection: "keep-alive",
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "X-Accel-Buffering": "no",
+      });
+      reply.raw.flushHeaders?.();
+      reply.raw.on("close", () => controller.abort());
+      reply.raw.write("retry: 3000\n\n");
+
+      let epoch: string | null = null;
+      let sequence = 0n;
+      try {
+        for await (const event of options.marketPoolsProvider.subscribe({
+          ...context,
+          lastEventId: request.headers["last-event-id"] ?? null,
+          signal: controller.signal,
+        })) {
+          if (controller.signal.aborted) break;
+          if (event.streamKey !== `top-fees:56:${context.minutes}`) continue;
+          const nextSequence = BigInt(event.sequence);
+          if (epoch === event.epoch && nextSequence <= sequence) continue;
+          if (epoch !== null && epoch !== event.epoch && event.eventType !== "pools.snapshot") break;
+          reply.raw.write(`id: ${event.cursor}\n`);
+          reply.raw.write(`event: ${event.eventType}\n`);
+          reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
+          epoch = event.epoch;
+          sequence = nextSequence;
+        }
+      } finally {
+        if (!reply.raw.destroyed) reply.raw.end();
+      }
+      return reply;
+    });
 
     app.get("/api/stats", async (request, reply) => {
       reply.header("Cache-Control", "no-store");
