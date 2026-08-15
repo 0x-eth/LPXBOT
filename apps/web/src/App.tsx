@@ -67,6 +67,7 @@ import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
 function BootingPage() {
   return (
     <main className="state-page" aria-busy="true">
+      <h1 className="sr-only">Loading application</h1>
       <div className="spinner" aria-hidden="true" />
       <p role="status">Restoring session</p>
     </main>
@@ -80,6 +81,7 @@ function AuthenticatingPage({
 }) {
   return (
     <main className="state-page" aria-busy="true">
+      <h1 className="sr-only">Authentication in progress</h1>
       <div className="spinner" aria-hidden="true" />
       <p role="status">
         {state.method === "wallet"
@@ -627,6 +629,76 @@ function EmptyFixturePage({
   );
 }
 
+type LocalRouteFixtureState = "loading" | "empty" | "error" | "forbidden";
+
+function localRouteFixtureState(search: string): LocalRouteFixtureState | null {
+  if (!import.meta.env.DEV) return null;
+  const value = new URLSearchParams(search).get("fixture");
+  if (
+    value === "route-loading" ||
+    value === "route-empty" ||
+    value === "route-error" ||
+    value === "route-forbidden"
+  ) {
+    return value.slice("route-".length) as LocalRouteFixtureState;
+  }
+  return null;
+}
+
+function localRouteTitle(pathname: string): { localized: string; accessible: string } {
+  if (pathname.startsWith("/tasks")) return { accessible: "Tasks", localized: "任务" };
+  if (pathname.startsWith("/pools")) return { accessible: "Pools", localized: "池子发现" };
+  if (pathname.startsWith("/strategies")) {
+    return { accessible: "Strategies", localized: "自动策略" };
+  }
+  if (pathname.startsWith("/activity")) return { accessible: "Activity", localized: "操作日志" };
+  if (pathname.startsWith("/wallets")) return { accessible: "Wallets", localized: "钱包管理" };
+  if (pathname.startsWith("/developer")) return { accessible: "Developer", localized: "开发者" };
+  if (pathname.startsWith("/settings")) return { accessible: "Settings", localized: "设置" };
+  return { accessible: "Page", localized: "页面" };
+}
+
+function LocalRouteStateFixture({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const state = localRouteFixtureState(location.search);
+  if (!state) return children;
+  if (state === "error") {
+    throw new Error("INTERNAL_FIXTURE_TOKEN requestBody={fixture}");
+  }
+  if (state === "forbidden") {
+    return (
+      <main className="workspace" data-fixture-state="forbidden">
+        <p className="eyebrow">Permission required</p>
+        <h1>Access denied</h1>
+        <p role="alert">You do not have permission to view this page.</p>
+      </main>
+    );
+  }
+
+  const title = localRouteTitle(location.pathname);
+  return (
+    <main
+      aria-busy={state === "loading" ? "true" : undefined}
+      className="workspace route-workspace"
+      data-fixture-state={state}
+    >
+      <p className="eyebrow">{state === "loading" ? "Loading" : "Local empty fixture"}</p>
+      <h1>
+        <span aria-hidden="true">{title.localized}</span>
+        <span className="sr-only">{state === "loading" ? "Loading page" : title.accessible}</span>
+      </h1>
+      <div className="empty-fixture" role="status">
+        {state === "loading" ? (
+          <span className="spinner spinner-small" aria-hidden="true" />
+        ) : (
+          <Inbox aria-hidden="true" size={22} strokeWidth={1.7} />
+        )}
+        <p>{state === "loading" ? "正在加载" : "暂无内容"}</p>
+      </div>
+    </main>
+  );
+}
+
 class RouteErrorBoundary extends Component<
   { children: ReactNode; onRetry(): void; resetKey: string },
   { failed: boolean }
@@ -646,7 +718,7 @@ class RouteErrorBoundary extends Component<
   override render() {
     if (!this.state.failed) return this.props.children;
     return (
-      <main className="workspace">
+      <main className="workspace" data-fixture-state="error">
         <p className="eyebrow">Route error</p>
         <h1>Page unavailable</h1>
         <p role="alert">This page could not be displayed safely.</p>
@@ -805,50 +877,52 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
           }}
           resetKey={`${location.pathname}${location.search}`}
         >
-          <Routes>
-            <Route path="/" element={<Navigate to="/tasks/running" replace />} />
-            <Route path="/all" element={<Navigate to="/tasks/running" replace />} />
-            <Route path="/all/:status" element={<LegacyAllRedirect />} />
-            <Route path="/monitors" element={<Navigate to="/pools" replace />} />
-            <Route
-              path="/settings"
-              element={<SettingsPage client={client} session={state.session} />}
-            />
-            {routeFixtures.map((fixture) => (
+          <LocalRouteStateFixture>
+            <Routes>
+              <Route path="/" element={<Navigate to="/tasks/running" replace />} />
+              <Route path="/all" element={<Navigate to="/tasks/running" replace />} />
+              <Route path="/all/:status" element={<LegacyAllRedirect />} />
+              <Route path="/monitors" element={<Navigate to="/pools" replace />} />
+              <Route
+                path="/settings"
+                element={<SettingsPage client={client} session={state.session} />}
+              />
+              {routeFixtures.map((fixture) => (
+                <Route
+                  element={
+                    <EmptyFixturePage
+                      eyebrow={fixture.eyebrow}
+                      localizedTitle={fixture.localizedTitle}
+                      title={fixture.title}
+                    />
+                  }
+                  key={fixture.path}
+                  path={fixture.path}
+                />
+              ))}
               <Route
                 element={
-                  <EmptyFixturePage
-                    eyebrow={fixture.eyebrow}
-                    localizedTitle={fixture.localizedTitle}
-                    title={fixture.title}
-                  />
+                  state.session.role === "admin" ? (
+                    <main className="workspace">
+                      <p className="eyebrow">Admin only</p>
+                      <h1>
+                        <span aria-hidden="true">用户管理</span>
+                        <span className="sr-only">Users</span>
+                      </h1>
+                      <div className="empty-fixture" role="status">
+                        <Code2 aria-hidden="true" size={22} />
+                        <p>暂无内容</p>
+                      </div>
+                    </main>
+                  ) : (
+                    <Navigate to="/tasks/running" replace />
+                  )
                 }
-                key={fixture.path}
-                path={fixture.path}
+                path="/users"
               />
-            ))}
-            <Route
-              element={
-                state.session.role === "admin" ? (
-                  <main className="workspace">
-                    <p className="eyebrow">Admin only</p>
-                    <h1>
-                      <span aria-hidden="true">用户管理</span>
-                      <span className="sr-only">Users</span>
-                    </h1>
-                    <div className="empty-fixture" role="status">
-                      <Code2 aria-hidden="true" size={22} />
-                      <p>暂无内容</p>
-                    </div>
-                  </main>
-                ) : (
-                  <Navigate to="/tasks/running" replace />
-                )
-              }
-              path="/users"
-            />
-            <Route path="*" element={<Navigate to="/tasks/running" replace />} />
-          </Routes>
+              <Route path="*" element={<Navigate to="/tasks/running" replace />} />
+            </Routes>
+          </LocalRouteStateFixture>
         </RouteErrorBoundary>
       )}
       <ShellStatusBar />

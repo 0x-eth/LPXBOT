@@ -22,3 +22,23 @@ not ok 4 - P01 feature coverage records inspectable implementation, tests, evide
 # pass 2
 # fail 2
 ```
+
+## UI route-state red run
+
+- Command: `LPBOT_PLAYWRIGHT_PORT=43178 pnpm exec playwright test tests/e2e/p01-completion.spec.ts --project=chromium-desktop --workers=1`
+- Result: expected failure (`3` failed)
+- Findings:
+  - `/tasks/running?fixture=route-loading` rendered the existing empty fixture because the per-route state catalog did not exist.
+  - Dark/system-dark route rendering produced one serious axe `color-contrast` violation: `.eyebrow` used `#60686c` against `#151719` (`3.16:1`).
+  - The settings empty-state matrix could not be isolated from the long settings form, so the state-specific mobile overlap assertion failed at 320px.
+
+```text
+Running 3 tests using 1 worker
+not ok - P01 route-state matrix covers loading, empty, error and forbidden
+  Expected data-fixture-state="loading"; received "empty"
+not ok - P01 route matrix covers light, dark and system themes on both viewports
+  axe color-contrast serious: 3.16, expected 4.5:1
+not ok - P01 route matrix stays non-overlapping at all required widths
+  /settings at 320px: state-specific mobile overlap assertion failed
+3 failed
+```
