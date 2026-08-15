@@ -327,6 +327,54 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     ]);
   });
 
+  it("treats a stale old-branch redelivery as a strict no-op after reorg", async () => {
+    const fixture = readP02Fixture("reorg");
+    await runnerFor("reorg").runner.runOnce();
+    const state = () =>
+      pool.query<{
+        canonical_block: string;
+        canonical_events: string;
+        cursor: string;
+        max_sequence: string;
+      }>(
+        `SELECT
+          (SELECT block_hash FROM canonical_chain_blocks WHERE chain_id = 56 AND canonical)
+            AS canonical_block,
+          (SELECT count(*)::text FROM normalized_pool_events WHERE canonical)
+            AS canonical_events,
+          (SELECT cursor FROM indexer_cursors WHERE chain_id = 56) AS cursor,
+          (SELECT max(sequence)::text FROM market_stream_outbox WHERE window_minutes = 5)
+            AS max_sequence`,
+      );
+    const before = await state();
+    const staleOldBranch = [fixture.input[0]!];
+    const staleRunner = new IndexerRunner({
+      decoder: new FixtureEventDecoder(staleOldBranch, {
+        marketFor: () => ({
+          fdvUsd: "1000000",
+          feesUsd: null,
+          token0Symbol: "WBNB",
+          token1Symbol: "USDT",
+          tvlUsd: "10000",
+          volumeUsd: null,
+        }),
+      }),
+      evaluationTime: () => new Date("2026-08-16T00:06:00.000Z"),
+      source: new FixtureRawLogSource(staleOldBranch, fixtureBlockTimestamp),
+      store: new PostgresCanonicalEventStore(pool),
+    });
+
+    const result = await staleRunner.runOnce();
+    const after = await state();
+
+    expect(result).toMatchObject({
+      acceptedCount: 0,
+      duplicateCount: 1,
+      revertedCount: 0,
+    });
+    expect(after.rows).toEqual(before.rows);
+  });
+
   it("runs the market migration down and up in a real transaction", async () => {
     const source = readFileSync(migrationPath, "utf8");
     const { down, up } = migrationSections(source);
