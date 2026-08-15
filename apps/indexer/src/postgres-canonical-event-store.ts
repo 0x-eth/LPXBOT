@@ -428,6 +428,7 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
   ): Promise<{ count: number; poolKeys: Set<string> }> {
     const parameters: unknown[] = [commit.chainId, blockNumber];
     const hashClause = blockHash ? " AND block_hash = $3" : "";
+    const timeParameter = blockHash ? "$4" : "$3";
     if (blockHash) parameters.push(blockHash);
     const affected = await client.query<AffectedPoolRow>(
       `SELECT chain_id::text, pool_address, pool_id
@@ -441,7 +442,7 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
 
     await client.query(
       `UPDATE normalized_pool_events
-          SET canonical = false, finality = 'reverted', reverted_at = $3
+          SET canonical = false, finality = 'reverted', reverted_at = ${timeParameter}
         WHERE chain_id = $1 AND block_number >= $2 AND canonical${hashClause}`,
       blockHash
         ? [commit.chainId, blockNumber, blockHash, commit.evaluationTime]
@@ -449,7 +450,7 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     );
     await client.query(
       `UPDATE raw_chain_logs
-          SET canonical = false, removed = true, reverted_at = $3
+          SET canonical = false, removed = true, reverted_at = ${timeParameter}
         WHERE chain_id = $1 AND block_number >= $2 AND canonical${hashClause}`,
       blockHash
         ? [commit.chainId, blockNumber, blockHash, commit.evaluationTime]
@@ -457,7 +458,7 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     );
     await client.query(
       `UPDATE canonical_chain_blocks
-          SET canonical = false, reverted_at = $3
+          SET canonical = false, reverted_at = ${timeParameter}
         WHERE chain_id = $1 AND block_number >= $2 AND canonical${hashClause}`,
       blockHash
         ? [commit.chainId, blockNumber, blockHash, commit.evaluationTime]
@@ -709,4 +710,3 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     );
   }
 }
-
