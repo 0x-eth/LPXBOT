@@ -129,9 +129,9 @@ async function fulfillPreferences(route: Route): Promise<void> {
 
 async function expectAccessibleStablePage(page: Page): Promise<void> {
   await expect(page.locator("h1")).toHaveCount(1);
-  expect(
-    await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
-  ).toBe(false);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(
+    false,
+  );
   const axe = await new AxeBuilder({ page }).analyze();
   expect(
     axe.violations.filter(({ impact }) => impact === "serious" || impact === "critical"),
@@ -202,7 +202,9 @@ test("P01 route matrix covers light, dark and system themes on both viewports", 
   }
 });
 
-test("P01 route matrix stays non-overlapping at all required widths", async ({ page }, testInfo) => {
+test("P01 route matrix stays non-overlapping at all required widths", async ({
+  page,
+}, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop", "The width matrix runs once.");
   test.setTimeout(90_000);
   await installFixture(page);
@@ -217,7 +219,8 @@ test("P01 route matrix stays non-overlapping at all required widths", async ({ p
         const main = document.querySelector("main")?.getBoundingClientRect();
         const mobile = document.querySelector(".mobile-navigation-shell")?.getBoundingClientRect();
         const mobileVisible =
-          mobile && getComputedStyle(document.querySelector(".mobile-navigation-shell")!).display !== "none";
+          mobile &&
+          getComputedStyle(document.querySelector(".mobile-navigation-shell")!).display !== "none";
         return Boolean(main && mobile && mobileVisible && main.bottom > mobile.top + 0.5);
       });
       expect(overlap, `${route.path} at ${width}px`).toBe(false);

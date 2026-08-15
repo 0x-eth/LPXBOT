@@ -57,7 +57,8 @@ function commaSeparated(value) {
 
 function traceabilityRows(markdown) {
   const rows = new Map();
-  const rowPattern = /^\|\s*([A-Z][A-Z0-9]*-\d{2})\s*\|\s*(P\d{2})\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*$/gm;
+  const rowPattern =
+    /^\|\s*([A-Z][A-Z0-9]*-\d{2})\s*\|\s*(P\d{2})\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*$/gm;
   for (const match of markdown.matchAll(rowPattern)) {
     assert.equal(rows.has(match[1]), false, `duplicate traceability row for ${match[1]}`);
     rows.set(match[1], {
@@ -76,7 +77,8 @@ function statusRows(markdown) {
   assert.ok(section, "TRACEABILITY_MATRIX is missing the machine-checkable P01 status table");
 
   const rows = new Map();
-  const rowPattern = /^\|\s*(AUTH-(?:0[1-9]|10)|SHELL-0[1-6]|SET-0[1-2])\s*\|\s*`?([a-z-]+)`?\s*\|/gm;
+  const rowPattern =
+    /^\|\s*(AUTH-(?:0[1-9]|10)|SHELL-0[1-6]|SET-0[1-2])\s*\|\s*`?([a-z-]+)`?\s*\|/gm;
   for (const match of section[1].matchAll(rowPattern)) {
     assert.equal(rows.has(match[1]), false, `duplicate P01 status row for ${match[1]}`);
     rows.set(match[1], match[2]);
@@ -102,13 +104,21 @@ test("P01-02 through P01-07 accepted manifests cover every P01 feature exactly o
     const manifest = await readJson(path.join(ACCEPTANCE_ROOT, workItemId, "manifest.json"));
     assert.equal(manifest.workItemId, workItemId);
     assert.equal(manifest.phase, "P01", `${workItemId} has an incorrect phase`);
-    assert.equal(manifest.status, "accepted", `${workItemId} is not an accepted implementation manifest`);
+    assert.equal(
+      manifest.status,
+      "accepted",
+      `${workItemId} is not an accepted implementation manifest`,
+    );
     assert.ok(manifest.featureIds.length > 0, `${workItemId} has no implementation feature IDs`);
 
     for (const featureId of manifest.featureIds) {
       assert.ok(occurrences.has(featureId), `${workItemId} claims non-P01 feature ${featureId}`);
       occurrences.get(featureId).push(workItemId);
-      assert.equal(traceability.get(featureId)?.phase, "P01", `${featureId} has an incorrect phase`);
+      assert.equal(
+        traceability.get(featureId)?.phase,
+        "P01",
+        `${featureId} has an incorrect phase`,
+      );
     }
   }
 
@@ -176,8 +186,14 @@ test("P01 feature coverage records inspectable implementation, tests, evidence, 
   assert.equal(coverage.workItemId, "P01-08");
   assert.equal(coverage.phase, "P01");
   assert.equal(coverage.acceptanceStatus, "accepted-with-gaps");
-  assert.deepEqual(sorted(coverage.features.map((entry) => entry.id)), sorted(EXPECTED_FEATURE_IDS));
-  assert.equal(new Set(coverage.features.map((entry) => entry.id)).size, EXPECTED_FEATURE_IDS.length);
+  assert.deepEqual(
+    sorted(coverage.features.map((entry) => entry.id)),
+    sorted(EXPECTED_FEATURE_IDS),
+  );
+  assert.equal(
+    new Set(coverage.features.map((entry) => entry.id)).size,
+    EXPECTED_FEATURE_IDS.length,
+  );
 
   const traceabilityMarkdown = await readFile(TRACEABILITY_PATH, "utf8");
   const traceability = traceabilityRows(traceabilityMarkdown);
@@ -188,8 +204,15 @@ test("P01 feature coverage records inspectable implementation, tests, evidence, 
   for (const feature of coverage.features) {
     const minimums = traceability.get(feature.id);
     assert.equal(feature.phase, "P01", `${feature.id} has an incorrect coverage phase`);
-    assert.ok(COMPLETED_FEATURE_STATUSES.has(feature.status), `${feature.id} has invalid status ${feature.status}`);
-    assert.notEqual(feature.status, "released", `${feature.id} must not be released during P01 closeout`);
+    assert.ok(
+      COMPLETED_FEATURE_STATUSES.has(feature.status),
+      `${feature.id} has invalid status ${feature.status}`,
+    );
+    assert.notEqual(
+      feature.status,
+      "released",
+      `${feature.id} must not be released during P01 closeout`,
+    );
     assert.equal(
       documentedStatuses.get(feature.id),
       feature.status,
@@ -225,6 +248,8 @@ test("P01 feature coverage records inspectable implementation, tests, evidence, 
         assertRepositoryPath(evidenceLink.path, `${feature.id}/${evidenceLink.id} evidence path`),
       );
     }
-    await access(assertRepositoryPath(feature.acceptanceDirectory, `${feature.id} acceptance directory`));
+    await access(
+      assertRepositoryPath(feature.acceptanceDirectory, `${feature.id} acceptance directory`),
+    );
   }
 });
