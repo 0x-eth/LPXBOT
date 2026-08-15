@@ -336,7 +336,7 @@ test("manifest inventory and sha256sums cover every reference artifact byte-for-
   const checksumRows = checksumText
     .trim()
     .split("\n")
-    .map((line) => line.match(/^([0-9a-f]{64})  (.+)$/))
+    .map((line) => line.match(/^([0-9a-f]{64}) {2}(.+)$/))
     .map((match) => {
       assert.ok(match, "invalid sha256sums row");
       return { sha256: match[1], path: match[2] };
