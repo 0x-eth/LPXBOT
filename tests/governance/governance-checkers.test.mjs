@@ -492,14 +492,14 @@ test("CI defines six pinned, bounded jobs with real browser and contract gates",
   assert.ok(actions.every((action) => /@[0-9a-f]{40}$/.test(action)));
   assert.ok(Object.values(jobs).every((job) => /^\d+$/.test(job["timeout-minutes"])));
 
-  const governanceCheckout = jobs.governance.steps.find((step) =>
-    step.uses?.startsWith("actions/checkout@"),
-  );
-  assert.equal(
-    governanceCheckout?.with?.["fetch-depth"],
-    "0",
-    "Governance must fetch history for frozen reference commits",
-  );
+  for (const job of [jobs.quality, jobs.governance]) {
+    const checkout = job.steps.find((step) => step.uses?.startsWith("actions/checkout@"));
+    assert.equal(
+      checkout?.with?.["fetch-depth"],
+      "0",
+      `${job.name} must fetch history for frozen reference commits`,
+    );
+  }
 
   for (const job of [
     jobs.quality,
