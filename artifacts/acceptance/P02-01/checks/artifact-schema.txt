@@ -1,0 +1,15 @@
+P02-01 artifact schema validation
+Recorded: 2026-08-16T03:30:00+08:00
+
+Schema:
+schemas/p02-reference-artifacts.schema.json
+
+Command:
+node -e 'validate artifact-manifest.json with Ajv against p02-reference-artifacts.schema.json'
+Exit: 0
+Result: P02-01 artifact schema: PASS
+
+Integrated command:
+pnpm check:p02-reference
+Exit: 0
+Result: 23 planned feature IDs, 6 API endpoints, and 4 offline fixtures valid.

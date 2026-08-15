@@ -1,0 +1,29 @@
+P02-01 repository quality gate record
+Recorded: 2026-08-16T03:30:00+08:00
+
+pnpm exec prettier --write <P02-01 changed files>
+Exit: 0
+
+pnpm format:check
+Exit: 0
+Result: All matched files use Prettier code style.
+
+pnpm lint
+Exit: 0
+Result: 13 workspace lint tasks and root ESLint passed with zero warnings.
+
+pnpm typecheck
+Exit: 0
+Result: 19 workspace build/typecheck tasks and root TypeScript check passed.
+
+pnpm test
+Exit: 0
+Result: 29 Vitest files / 162 tests and 34 Node governance tests passed.
+
+pnpm build
+Exit: 0
+Result: 13 workspace build tasks passed, including the production web/PWA build.
+
+pnpm check:all
+Exit: 0
+Result: baseline, 196/196 traceability, P00, docs, 11 acceptance manifests, and P02-01 reference artifacts passed.

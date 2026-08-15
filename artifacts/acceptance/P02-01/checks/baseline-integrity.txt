@@ -1,0 +1,22 @@
+P02-01 frozen baseline integrity record
+Recorded: 2026-08-16T03:30:00+08:00
+Reference commit: 3ff4eb9ed84e1d459671695618a67a2932f5abd6
+
+Command:
+pnpm check:baseline
+Exit: 0
+Result: Frozen baseline valid: 248 checksums and 247 manifest records.
+
+Command:
+git diff --exit-code 3ff4eb9ed84e1d459671695618a67a2932f5abd6 --
+  artifacts/lpbot/2026-08-13
+  artifacts/acceptance/P01-01
+  artifacts/acceptance/P01-02
+  artifacts/acceptance/P01-03
+  artifacts/acceptance/P01-04
+  artifacts/acceptance/P01-05
+  artifacts/acceptance/P01-06
+  artifacts/acceptance/P01-07
+  artifacts/acceptance/P01-08
+Exit: 0
+Result: Frozen Bundle and all P01 acceptance artifacts are byte-unchanged from the reference commit.

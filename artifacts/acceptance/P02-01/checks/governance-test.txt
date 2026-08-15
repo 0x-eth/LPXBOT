@@ -1,0 +1,25 @@
+P02-01 governance test record
+Recorded: 2026-08-16T03:30:00+08:00
+
+Initial red command:
+node --test tests/governance/p02-reference.test.mjs
+Exit: 1 (expected before P02-01 artifacts existed)
+Evidence: checks/initial-failure.txt
+
+Final command:
+node --test tests/governance/p02-reference.test.mjs
+Exit: 0
+Result: 10 tests passed, 0 failed.
+
+Assertions cover:
+- required artifact presence and SHA-256 integrity;
+- exact POOL-01..16, FLOW-01..05, STATS-01..02 planned coverage;
+- empty featureIds and no implementation ownership;
+- six API contracts and source/evidence boundaries;
+- chain-56 protocols, event kinds, raw-to-normalized fields, and dedupe key;
+- reorg, finality, cursor, backfill, replay, idempotency, and ordering semantics;
+- offline normal, duplicate, out-of-order, and reorg fixtures;
+- metric windows/formulas/units/nulls/rounding/tie-breaks;
+- SSE envelope, heartbeat, replay, reconnect, duplicate, and gap handling;
+- /pools capabilities and operational states;
+- exact closure of unresolved fields, formulas, events, and algorithms through gaps.json.
