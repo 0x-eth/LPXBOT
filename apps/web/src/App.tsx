@@ -59,6 +59,7 @@ import { Eip1193WalletAdapter, browserEip1193Provider } from "./eip1193-wallet";
 import { ConfirmDialog, FeedbackProvider, useFeedback } from "./feedback";
 import { UserPreferencesProvider, useUserPreferences } from "./preferences";
 import { PwaUpdateBridge } from "./pwa-updates";
+import { PoolsPage } from "./pools-page";
 import { InterfaceSettings } from "./settings-interface";
 import { ShellStatsContextProvider, ShellStatusBar, useShellStats } from "./shell-stats-react";
 import { shellStatsDisplay } from "./shell-stats";
@@ -560,12 +561,6 @@ const routeFixtures = [
   },
   {
     eyebrow: "Local empty fixture",
-    localizedTitle: "池子发现",
-    path: "/pools",
-    title: "Pools",
-  },
-  {
-    eyebrow: "Local empty fixture",
     localizedTitle: "自动策略",
     path: "/strategies",
     title: "Strategies",
@@ -887,6 +882,7 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
                 path="/settings"
                 element={<SettingsPage client={client} session={state.session} />}
               />
+              <Route path="/pools" element={<PoolsPage />} />
               {routeFixtures.map((fixture) => (
                 <Route
                   element={
