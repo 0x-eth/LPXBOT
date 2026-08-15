@@ -146,12 +146,17 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     expect(result).toMatchObject({ acceptedCount: 1, conflictCount: 0, duplicateCount: 1 });
 
     const fixture = duplicate.fixture;
-    const conflicting = structuredClone(fixture.input);
+    await pool.query(
+      `TRUNCATE market_stream_outbox, market_snapshots, integrity_quarantine,
+        normalized_pool_events, raw_chain_logs, canonical_chain_blocks, indexer_cursors
+        RESTART IDENTITY CASCADE`,
+    );
+    const conflicting = [structuredClone(fixture.input[0]!), structuredClone(fixture.input[0]!)];
     conflicting[1]!.rawLog.data = "0x99";
     const conflictRunner = new IndexerRunner({
       decoder: new FixtureEventDecoder(conflicting),
       evaluationTime: () => new Date("2026-08-16T00:05:00.000Z"),
-      source: new FixtureRawLogSource(conflicting.slice(1), fixtureBlockTimestamp),
+      source: new FixtureRawLogSource(conflicting, fixtureBlockTimestamp),
       store: new PostgresCanonicalEventStore(pool),
     });
     const conflict = await conflictRunner.runOnce();
@@ -216,7 +221,7 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
           };
         },
       }),
-      evaluationTime: () => new Date("2026-08-16T00:05:00.000Z"),
+      evaluationTime: () => new Date("2026-08-16T00:01:00.000Z"),
       source: new FixtureRawLogSource(fixture.input, fixtureBlockTimestamp),
       store: new PostgresCanonicalEventStore(pool),
     });
@@ -271,4 +276,3 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     }
   });
 });
-
