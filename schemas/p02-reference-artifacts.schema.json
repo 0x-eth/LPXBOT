@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://lpbot.local/schemas/p02-reference-artifacts.schema.json",
+  "title": "LPBot P02-01 reference artifact manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractVersion",
+    "workItemId",
+    "phase",
+    "risk",
+    "status",
+    "featureIds",
+    "capturedAt",
+    "referenceBaseline",
+    "scope",
+    "checksumScope",
+    "files",
+    "references",
+    "checks",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "contractVersion": { "const": "1.0.0" },
+    "workItemId": { "const": "P02-01" },
+    "phase": { "const": "P02" },
+    "risk": { "const": "R0" },
+    "status": { "const": "contract-frozen-with-unresolved-gaps" },
+    "featureIds": { "type": "array", "maxItems": 0 },
+    "capturedAt": { "type": "string", "format": "date-time" },
+    "referenceBaseline": { "const": "3ff4eb9ed84e1d459671695618a67a2932f5abd6" },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "chainIds",
+        "externalRpc",
+        "targetWrites",
+        "productionSecrets",
+        "signing",
+        "broadcasting",
+        "fundsOperations",
+        "implementationOwnership"
+      ],
+      "properties": {
+        "mode": { "const": "read-only-reference" },
+        "chainIds": { "type": "array", "items": { "const": 56 }, "minItems": 1, "maxItems": 1 },
+        "externalRpc": { "const": false },
+        "targetWrites": { "const": false },
+        "productionSecrets": { "const": false },
+        "signing": { "const": false },
+        "broadcasting": { "const": false },
+        "fundsOperations": { "const": false },
+        "implementationOwnership": { "const": "none" }
+      }
+    },
+    "checksumScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "excludedSelfReferentialFiles"],
+      "properties": {
+        "algorithm": { "const": "SHA-256" },
+        "excludedSelfReferentialFiles": {
+          "const": ["artifact-manifest.json", "sha256sums.txt"]
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 12,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "bytes", "sha256", "mediaType", "category"],
+        "properties": {
+          "path": { "$ref": "#/definitions/artifactPath" },
+          "bytes": { "type": "integer", "minimum": 1 },
+          "sha256": { "$ref": "#/definitions/sha256" },
+          "mediaType": { "enum": ["application/json", "text/plain"] },
+          "category": { "enum": ["contract", "catalog", "fixture", "check"] }
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "minItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "bytes", "sha256", "source", "evidenceLevel"],
+        "properties": {
+          "path": { "$ref": "#/definitions/repositoryPath" },
+          "bytes": { "type": "integer", "minimum": 1 },
+          "sha256": { "$ref": "#/definitions/sha256" },
+          "source": { "type": "string", "minLength": 1 },
+          "evidenceLevel": { "enum": ["observed", "bundle-derived", "documented", "locally-defined", "unresolved"] }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "result", "evidencePath"],
+        "properties": {
+          "id": { "enum": ["initial-red", "governance-test", "artifact-schema", "quality-gates", "baseline-integrity", "secret-scan", "dependency-audit"] },
+          "result": { "enum": ["expected-failure", "passed"] },
+          "evidencePath": { "$ref": "#/definitions/artifactPath" }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 4,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "definitions": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "artifactPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!artifact-manifest\\.json$)(?!sha256sums\\.txt$).+$"
+    }
+  }
+}
