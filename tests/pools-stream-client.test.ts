@@ -1,8 +1,5 @@
 import type { MarketStreamEnvelope } from "../packages/api-contract/src/index.js";
-import {
-  initialPoolStreamState,
-  reducePoolStream,
-} from "../apps/web/src/pools-stream-state.js";
+import { initialPoolStreamState, reducePoolStream } from "../apps/web/src/pools-stream-state.js";
 import { describe, expect, it } from "vitest";
 
 const row = {

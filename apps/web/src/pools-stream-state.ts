@@ -7,12 +7,7 @@ import type {
 import { Decimal } from "decimal.js";
 
 export type PoolConnectionState =
-  | "loading"
-  | "empty"
-  | "ready"
-  | "error"
-  | "stale"
-  | "reconnecting";
+  "loading" | "empty" | "ready" | "error" | "stale" | "reconnecting";
 
 export interface PoolStreamState {
   connection: PoolConnectionState;

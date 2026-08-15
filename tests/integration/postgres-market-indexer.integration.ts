@@ -12,10 +12,7 @@ import {
 } from "../../apps/indexer/src/index.js";
 import { PostgresMarketPoolsProvider } from "../../apps/api/src/market-pools.js";
 import type { MarketStreamEnvelope } from "../../packages/api-contract/src/index.js";
-import {
-  FixtureEventDecoder,
-  FixtureRawLogSource,
-} from "../../apps/indexer/src/testing.js";
+import { FixtureEventDecoder, FixtureRawLogSource } from "../../apps/indexer/src/testing.js";
 import { fixtureBlockTimestamp, readP02Fixture } from "../helpers/p02-fixture.js";
 
 const { Pool } = pg;
@@ -184,7 +181,9 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
         normalized_pool_events, raw_chain_logs, canonical_chain_blocks, indexer_cursors
         RESTART IDENTITY CASCADE`,
     );
-    await expect(runnerFor("normal").runner.runOnce()).rejects.toThrow(/intentional write interruption/u);
+    await expect(runnerFor("normal").runner.runOnce()).rejects.toThrow(
+      /intentional write interruption/u,
+    );
     const rolledBack = await pool.query<{ total: string }>(
       `SELECT (
         (SELECT count(*) FROM normalized_pool_events) +
@@ -234,7 +233,9 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     const fixture = readP02Fixture("out-of-order");
     const first = fixture.input.filter(({ rawLog }) => rawLog.blockNumber === "106");
     const firstRunner = new IndexerRunner({
-      decoder: new FixtureEventDecoder(first, { marketFor: () => ({ feesUsd: "1", volumeUsd: "10" }) }),
+      decoder: new FixtureEventDecoder(first, {
+        marketFor: () => ({ feesUsd: "1", volumeUsd: "10" }),
+      }),
       evaluationTime: () => new Date("2026-08-16T00:05:00.000Z"),
       source: new FixtureRawLogSource(first, fixtureBlockTimestamp),
       store: new PostgresCanonicalEventStore(pool),
@@ -250,14 +251,22 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
       store: new PostgresCanonicalEventStore(pool),
     });
     await restarted.runOnce();
-    const beforeReplay = await pool.query<{ events: string; max_sequence: string; snapshots: string }>(
+    const beforeReplay = await pool.query<{
+      events: string;
+      max_sequence: string;
+      snapshots: string;
+    }>(
       `SELECT
         (SELECT count(*)::text FROM normalized_pool_events) AS events,
         (SELECT count(*)::text FROM market_snapshots) AS snapshots,
         (SELECT max(sequence)::text FROM market_stream_outbox) AS max_sequence`,
     );
     await restarted.runOnce();
-    const afterReplay = await pool.query<{ events: string; max_sequence: string; snapshots: string }>(
+    const afterReplay = await pool.query<{
+      events: string;
+      max_sequence: string;
+      snapshots: string;
+    }>(
       `SELECT
         (SELECT count(*)::text FROM normalized_pool_events) AS events,
         (SELECT count(*)::text FROM market_snapshots) AS snapshots,
@@ -288,8 +297,14 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     const events = await pool.query<{ block_hash: string; finality: string }>(
       "SELECT block_hash, finality FROM normalized_pool_events ORDER BY created_at, event_id",
     );
-    expect(events.rows).toContainEqual({ block_hash: fixture.input[0]!.rawLog.blockHash, finality: "reverted" });
-    expect(events.rows).toContainEqual({ block_hash: fixture.input[2]!.rawLog.blockHash, finality: "observed" });
+    expect(events.rows).toContainEqual({
+      block_hash: fixture.input[0]!.rawLog.blockHash,
+      finality: "reverted",
+    });
+    expect(events.rows).toContainEqual({
+      block_hash: fixture.input[2]!.rawLog.blockHash,
+      finality: "observed",
+    });
     const outbox = await pool.query<{ event_type: string; payload: unknown; sequence: string }>(
       `SELECT event_type, sequence::text, envelope->'data' AS payload
          FROM market_stream_outbox

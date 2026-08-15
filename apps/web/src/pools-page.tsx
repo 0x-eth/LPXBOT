@@ -1,4 +1,5 @@
 import type { MarketPoolRow, MarketWindowMinutes } from "@lpbot/api-contract";
+import { Decimal } from "decimal.js";
 import { AlertTriangle, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { useEffect, useMemo, useReducer, useRef, useState, type KeyboardEvent } from "react";
 import { useLocation } from "react-router-dom";
@@ -51,9 +52,12 @@ function protocolName(protocol: MarketPoolRow["protocol"]): string {
   return names[protocol];
 }
 
-function decimalDisplay(value: string | null, prefix = ""): string {
+function decimalDisplay(value: string | null, prefix = "", fractionDigits = 6): string {
   if (value === null) return "--";
-  const [integer, fraction] = value.split(".");
+  const display = new Decimal(value)
+    .toDecimalPlaces(fractionDigits, Decimal.ROUND_HALF_EVEN)
+    .toFixed();
+  const [integer, fraction] = display.split(".");
   const grouped = integer!.replace(/\B(?=(\d{3})+(?!\d))/gu, ",");
   return `${prefix}${grouped}${fraction ? `.${fraction}` : ""}`;
 }
@@ -100,8 +104,10 @@ function PoolTable({ rows }: { rows: readonly MarketPoolRow[] }) {
       <table aria-label="BSC 热门池" className="pools-table">
         <thead>
           <tr>
-            {['池', '协议', 'Fees', 'Volume', 'TVL', 'Txs', 'FDV'].map((label) => (
-              <th key={label} scope="col">{label}</th>
+            {["池", "协议", "Fees", "Volume", "TVL", "Txs", "FDV"].map((label) => (
+              <th key={label} scope="col">
+                {label}
+              </th>
             ))}
           </tr>
         </thead>
@@ -111,15 +117,31 @@ function PoolTable({ rows }: { rows: readonly MarketPoolRow[] }) {
             return (
               <tr key={`${row.chainId}:${identity}`}>
                 <td data-label="池">
-                  <strong>{row.token0Symbol ?? "?"} / {row.token1Symbol ?? "?"}</strong>
+                  <strong>
+                    {row.token0Symbol ?? "?"} / {row.token1Symbol ?? "?"}
+                  </strong>
                   <span className="pool-address">{poolIdentity(row)}</span>
                 </td>
                 <td data-label="协议">{protocolName(row.protocol)}</td>
-                <td data-label="Fees" className="numeric-value">{decimalDisplay(row.feesUsd, "$ ")}</td>
-                <td data-label="Volume" className="numeric-value">{decimalDisplay(row.volumeUsd, "$ ")}</td>
-                <td data-label="TVL" className="numeric-value">{decimalDisplay(row.tvlUsd, "$ ")}</td>
-                <td data-label="Txs" className="numeric-value">{decimalDisplay(row.transactionCount)}</td>
-                <td data-label="FDV" className="numeric-value">{decimalDisplay(row.fdvUsd, "$ ")}</td>
+                <td data-label="Fees" className="numeric-value" title={row.feesUsd ?? undefined}>
+                  {decimalDisplay(row.feesUsd, "$ ")}
+                </td>
+                <td
+                  data-label="Volume"
+                  className="numeric-value"
+                  title={row.volumeUsd ?? undefined}
+                >
+                  {decimalDisplay(row.volumeUsd, "$ ")}
+                </td>
+                <td data-label="TVL" className="numeric-value" title={row.tvlUsd ?? undefined}>
+                  {decimalDisplay(row.tvlUsd, "$ ")}
+                </td>
+                <td data-label="Txs" className="numeric-value" title={row.transactionCount}>
+                  {decimalDisplay(row.transactionCount, "", 0)}
+                </td>
+                <td data-label="FDV" className="numeric-value" title={row.fdvUsd ?? undefined}>
+                  {decimalDisplay(row.fdvUsd, "$ ")}
+                </td>
               </tr>
             );
           })}
@@ -161,7 +183,10 @@ export function PoolsPage() {
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        dispatch({ code: error instanceof Error ? error.message : "MARKET_REQUEST_FAILED", type: "error" });
+        dispatch({
+          code: error instanceof Error ? error.message : "MARKET_REQUEST_FAILED",
+          type: "error",
+        });
       });
     const staleTimer = window.setInterval(() => {
       if (Date.now() - latestEventAt.current > 25_000) dispatch({ type: "stale" });
@@ -234,7 +259,11 @@ export function PoolsPage() {
         <div className="pools-error">
           <AlertTriangle aria-hidden="true" size={20} />
           <p role="alert">市场数据暂不可用</p>
-          <button className="retry-button" onClick={() => setRetry((value) => value + 1)} type="button">
+          <button
+            className="retry-button"
+            onClick={() => setRetry((value) => value + 1)}
+            type="button"
+          >
             <RefreshCw aria-hidden="true" size={16} />
             重试
           </button>
@@ -249,4 +278,3 @@ export function PoolsPage() {
     </main>
   );
 }
-
