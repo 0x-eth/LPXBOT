@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "1.0.0",
+  "workItemId": "P02-01",
+  "route": "/pools",
+  "implementationStatus": "planned",
+  "implementationOwnership": "none",
+  "capabilities": [
+    {
+      "id": "table",
+      "featureIds": ["POOL-01", "POOL-02", "POOL-03", "POOL-04", "POOL-05"],
+      "states": ["loading", "empty", "ready", "error", "stale", "reconnecting"],
+      "contract": "Stable rows keyed by chainId plus pool address/poolId; raw values remain available to accessible labels and sorting."
+    },
+    {
+      "id": "filtering",
+      "featureIds": ["POOL-03", "POOL-06", "POOL-08", "FLOW-02"],
+      "states": ["pristine", "dirty", "applied", "no-results", "invalid"],
+      "contract": "Filters are explicit, serializable, resettable, and applied to table, summaries, and flow consistently."
+    },
+    {
+      "id": "sorting",
+      "featureIds": ["POOL-01", "POOL-04", "POOL-05"],
+      "states": ["default", "ascending", "descending"],
+      "contract": "One primary metric sort uses metric-contracts.json tie-break rules; null always sorts last."
+    },
+    {
+      "id": "grouping",
+      "featureIds": ["POOL-09"],
+      "states": ["ungrouped", "collapsed", "expanded"],
+      "contract": "Same-token groups have stable canonical token keys, show +N when collapsed, and preserve member ordering."
+    },
+    {
+      "id": "column-preferences",
+      "featureIds": ["POOL-10"],
+      "states": ["default", "custom", "saving", "save-error"],
+      "contract": "Pool and actions columns are locked; visibility/order reset is deterministic; versioned preferences may sync across devices only in a later implementation task."
+    },
+    {
+      "id": "comparison",
+      "featureIds": ["POOL-11"],
+      "states": ["none-selected", "one-selected", "ready", "limit-reached"],
+      "contract": "Comparison uses the same snapshot/window for Fees, Volume, TVL, aTVL, Fee/TVL, Txs, and fee tier; unresolved metrics render unavailable."
+    },
+    {
+      "id": "candles",
+      "featureIds": ["POOL-12"],
+      "states": ["collapsed", "loading-history", "ready", "empty", "error", "stale"],
+      "contract": "Candles are ordered by unique timestamp and never synthesized across missing bars."
+    },
+    {
+      "id": "tick-liquidity",
+      "featureIds": ["POOL-12"],
+      "states": ["collapsed", "loading", "ready", "empty", "error", "unsupported"],
+      "contract": "V4 requires pool identity and tickSpacing; missing decimal or price inputs remain unavailable."
+    },
+    {
+      "id": "liquidity-flow",
+      "featureIds": ["FLOW-01", "FLOW-02", "FLOW-03", "FLOW-04", "FLOW-05"],
+      "states": ["loading-backfill", "live", "paused-hidden", "empty", "error", "stale", "reconnecting"],
+      "contract": "Normal, duplicate, out-of-order, and reorg inputs follow fixture-index.json; filters and address aggregates share one canonical event set."
+    }
+  ],
+  "operationalStates": [
+    {
+      "id": "loading",
+      "entry": "No usable snapshot has been committed and a request is active.",
+      "render": "Preserve table geometry with skeleton rows and aria-busy=true; controls that change the request remain available."
+    },
+    {
+      "id": "empty",
+      "entry": "A successful non-stale snapshot contains zero rows after current filters.",
+      "render": "Show an unframed empty state and clear-filter command when filters are active; do not show zero-valued fake rows."
+    },
+    {
+      "id": "error",
+      "entry": "No usable data exists and the request failed fatally, or retries are exhausted.",
+      "render": "Expose safe error code/message with retry; never leak request credentials or raw provider errors."
+    },
+    {
+      "id": "stale",
+      "entry": "Usable data exists but SSE silence exceeds the contracted threshold.",
+      "render": "Keep the last good snapshot, mark it stale with its as-of time, and disable claims of live ordering."
+    },
+    {
+      "id": "reconnecting",
+      "entry": "Usable data exists while replay/reconnect is active.",
+      "render": "Keep stable rows and preferences, show reconnecting status, and accept no gapped diffs until replay or snapshot succeeds."
+    }
+  ],
+  "statePriority": ["error-without-data", "loading-without-data", "reconnecting", "stale", "empty", "ready"],
+  "persistence": {
+    "filters": "URL query when shareable; session otherwise",
+    "sort": "versioned pool preference",
+    "grouping": "versioned pool preference",
+    "columns": "versioned pool preference",
+    "comparison": "session-only",
+    "expandedCharts": "session-only"
+  },
+  "accessibility": {
+    "table": "semantic headers expose sort state; virtualized rows retain programmatic row identity",
+    "status": "loading uses aria-busy, error uses role=alert, connection changes use a polite live region",
+    "controls": "icon-only controls require accessible names and visible keyboard focus",
+    "charts": "provide textual metric summaries and tabular fallback"
+  },
+  "unresolvedRefs": [
+    "GAP-LABEL-ALGORITHM",
+    "GAP-UI-TARGET-STALE-THRESHOLD",
+    "GAP-UI-TICK-LIQUIDITY-MAPPING"
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-01",
+  "policy": "Unknown fields, formulas, events, topics, and behavioral thresholds stay unresolved until named evidence is approved. No gap may be converted into a production default by inference.",
+  "items": [
+    {
+      "id": "GAP-API-ERROR-SCHEMA",
+      "category": "field",
+      "status": "unresolved",
+      "reason": "The reference API documentation does not enumerate endpoint-specific status codes or error envelopes.",
+      "resolutionEvidence": "Captured read-only error responses or an approved authoritative API schema."
+    },
+    {
+      "id": "GAP-API-NULLABILITY",
+      "category": "field",
+      "status": "unresolved",
+      "reason": "Examples show populated success rows but do not prove target null, omission, or empty-result behavior for every field.",
+      "resolutionEvidence": "Versioned response fixtures covering empty, partial, and unavailable market data."
+    },
+    {
+      "id": "GAP-API-CANDLE-QUOTE",
+      "category": "field",
+      "status": "unresolved",
+      "reason": "The candle example does not identify quote currency, volume denomination, gap-fill policy, or timestamp boundary semantics.",
+      "resolutionEvidence": "Authoritative candle schema and time-aligned target samples."
+    },
+    {
+      "id": "GAP-API-SSE-RESUME",
+      "category": "field",
+      "status": "unresolved",
+      "reason": "Frozen clients show event names and reconnect behavior but no verified target sequence, cursor, Last-Event-ID, or replay payload fields.",
+      "resolutionEvidence": "Captured SSE transcript with disconnect, Last-Event-ID reconnect, and replay."
+    },
+    {
+      "id": "GAP-API-UNKNOWN-FIELDS",
+      "category": "field",
+      "status": "unresolved",
+      "reason": "Bundle-derived objects contain candidate fields beyond the published examples and their meaning is not authoritative.",
+      "resolutionEvidence": "Approved field dictionary with type, unit, nullability, and provenance."
+    },
+    {
+      "id": "GAP-EVENT-ABI-TOPICS",
+      "category": "event",
+      "status": "unresolved",
+      "reason": "No verified chain-56 ABI and topic registry for pcsv3, univ3, pcsv4, and univ4 is included in the evidence set.",
+      "resolutionEvidence": "Pinned bytecode/address registry plus verified ABI artifacts and topic hashes."
+    },
+    {
+      "id": "GAP-EVENT-PROTOCOL-ADDRESSES",
+      "category": "event",
+      "status": "unresolved",
+      "reason": "Factory, pool manager, pool, hook, and deployment ranges for the four protocol identifiers are not verified.",
+      "resolutionEvidence": "Chain-56 deployment manifest tied to block ranges and code hashes."
+    },
+    {
+      "id": "GAP-EVENT-AMOUNT-SIGNS",
+      "category": "field",
+      "status": "unresolved",
+      "reason": "Exact indexed/non-indexed fields and protocol-specific amount sign conventions cannot be mapped without verified ABIs.",
+      "resolutionEvidence": "Decoder golden fixtures matched to transaction receipts and state deltas."
+    },
+    {
+      "id": "GAP-FINALITY-DEPTH",
+      "category": "algorithm",
+      "status": "unresolved",
+      "reason": "No approved BSC confirmation depth or operational finality source is present; fixture depth 2 is test-only.",
+      "resolutionEvidence": "Operations decision recording confirmation depth, finality source, and rollback SLO."
+    },
+    {
+      "id": "GAP-BLOCK-TIMESTAMP-SOURCE",
+      "category": "field",
+      "status": "unresolved",
+      "reason": "A raw log does not carry block timestamp and P02-01 does not contact an RPC to enrich it.",
+      "resolutionEvidence": "Read-only block-header source contract with caching and reorg behavior."
+    },
+    {
+      "id": "GAP-FORMULA-ATVL",
+      "category": "formula",
+      "status": "unresolved",
+      "reason": "Active-TVL range, price, and liquidity inclusion rules require production-sample calibration per the function matrix.",
+      "resolutionEvidence": "Versioned formula, reference samples, tolerance, and target-parity approval."
+    },
+    {
+      "id": "GAP-FORMULA-FEE-ATVL",
+      "category": "formula",
+      "status": "unresolved",
+      "reason": "Fee/aTVL cannot be defined until aTVL and target annualization semantics are approved.",
+      "resolutionEvidence": "Approved aTVL plus ratio window and annualization specification."
+    },
+    {
+      "id": "GAP-METRIC-FDV-SOURCE",
+      "category": "formula",
+      "status": "unresolved",
+      "reason": "The designated token, supply source, price source, and rebasing/burn treatment for FDV are not evidenced.",
+      "resolutionEvidence": "Versioned token designation and supply/price provenance rules with fixtures."
+    },
+    {
+      "id": "GAP-METRIC-TVL-SNAPSHOT",
+      "category": "formula",
+      "status": "unresolved",
+      "reason": "Published examples expose TVL-like values but not the canonical balance snapshot and price source used at window end.",
+      "resolutionEvidence": "Time-aligned pool balances, prices, target outputs, and approved tolerance."
+    },
+    {
+      "id": "GAP-LABEL-ALGORITHM",
+      "category": "algorithm",
+      "status": "unresolved",
+      "reason": "Thresholds, lookback windows, precedence, and stability rules for high-fee, stable, surge, decline, crowded, volatile, and LP-flow labels are not evidenced.",
+      "resolutionEvidence": "Versioned label truth tables and target-output golden samples."
+    },
+    {
+      "id": "GAP-UI-TARGET-STALE-THRESHOLD",
+      "category": "field",
+      "status": "unresolved",
+      "reason": "The target bundles contain several watchdog intervals but no single authoritative stale-state threshold for every /pools surface.",
+      "resolutionEvidence": "Approved per-stream liveness and UI state-transition specification."
+    },
+    {
+      "id": "GAP-UI-TICK-LIQUIDITY-MAPPING",
+      "category": "field",
+      "status": "unresolved",
+      "reason": "V4 PoolKey identity, hook effects, tick-spacing source, decimal conversion, and chart interpolation are not fully evidenced.",
+      "resolutionEvidence": "Verified V3/V4 pool fixtures with expected tick chart outputs."
+    }
+  ]
+}

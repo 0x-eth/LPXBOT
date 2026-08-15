@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P02-01",
+  "status": "frozen-reference-with-unresolved-atvl",
+  "numericPolicy": {
+    "internal": "arbitrary-precision decimal or integer; no IEEE-754 aggregation",
+    "wire": "base-10 decimal string for domain values",
+    "display": "locale formatting is presentation-only and must not feed sorting or formulas"
+  },
+  "windows": [
+    { "minutes": 1, "durationSeconds": 60, "id": "1m" },
+    { "minutes": 5, "durationSeconds": 300, "id": "5m" },
+    { "minutes": 15, "durationSeconds": 900, "id": "15m" },
+    { "minutes": 30, "durationSeconds": 1800, "id": "30m" },
+    { "minutes": 60, "durationSeconds": 3600, "id": "60m" }
+  ],
+  "windowBoundary": {
+    "interval": "[start,end)",
+    "timezone": "UTC",
+    "end": "evaluation timestamp truncated to whole milliseconds",
+    "start": "end minus exact window duration",
+    "eventInclusion": "start <= blockTimestamp < end",
+    "lateEventPolicy": "recompute every affected non-finalized window; never mutate a finalized window without reconciliation",
+    "reorgPolicy": "remove orphaned deltas then recompute affected windows from canonical events"
+  },
+  "metrics": [
+    {
+      "id": "Fees",
+      "status": "defined",
+      "unit": "USD",
+      "precision": "decimal string; minimum internal scale 18",
+      "definition": "Sum of protocol fees denominated in USD for canonical swaps in the window.",
+      "formula": "sum(feeAmountToken * canonicalUsdPriceAtEvent)",
+      "nullPolicy": "null when any required fee amount, token decimals, or price is unavailable; zero only for a fully observed window with no fees",
+      "rounding": "ROUND_HALF_EVEN at display boundary; no aggregation rounding",
+      "source": "docs/FUNCTION_MATRIX.md POOL-04 plus locally frozen arithmetic semantics",
+      "evidenceLevel": "locally-defined"
+    },
+    {
+      "id": "Volume",
+      "status": "defined",
+      "unit": "USD",
+      "precision": "decimal string; minimum internal scale 18",
+      "definition": "Sum of one canonical USD notional per swap in the window; never sum both token legs.",
+      "formula": "sum(canonicalSwapNotionalUsd)",
+      "nullPolicy": "null when canonical notional cannot be priced; zero only for a fully observed window with no swaps",
+      "rounding": "ROUND_HALF_EVEN at display boundary; no aggregation rounding",
+      "source": "docs/FUNCTION_MATRIX.md POOL-04 plus locally frozen double-count prevention",
+      "evidenceLevel": "locally-defined"
+    },
+    {
+      "id": "TVL",
+      "status": "defined-with-source-gap",
+      "unit": "USD",
+      "precision": "decimal string; minimum internal scale 18",
+      "definition": "Point-in-time total pool token balances valued in USD at the window end.",
+      "formula": "token0Balance * token0UsdPrice + token1Balance * token1UsdPrice",
+      "sampling": "as-of latest canonical state strictly before window end",
+      "nullPolicy": "null when either balance, decimals, or required price is unavailable; never coerce missing TVL to zero",
+      "rounding": "ROUND_HALF_EVEN at display boundary; no formula rounding",
+      "source": "documented current_pool_value/pool_usd_value fields plus locally frozen as-of semantics",
+      "evidenceLevel": "locally-defined"
+    },
+    {
+      "id": "Txs",
+      "status": "defined",
+      "unit": "count",
+      "precision": "non-negative integer",
+      "definition": "Count of unique canonical swap transactions in the window.",
+      "formula": "count(distinct chainId, transactionHash among normalized swap events)",
+      "nullPolicy": "never null for a fully observed window; zero means no swaps",
+      "rounding": "none",
+      "source": "documented transaction_count/tx_count fields plus locally frozen transaction-level counting",
+      "evidenceLevel": "locally-defined"
+    },
+    {
+      "id": "FDV",
+      "status": "defined-with-source-gap",
+      "unit": "USD",
+      "precision": "decimal string; minimum internal scale 18",
+      "definition": "Fully diluted value of the designated non-quote token at the window end.",
+      "formula": "totalTokenSupply * canonicalUsdPriceAtWindowEnd",
+      "nullPolicy": "null when designated token, total supply, decimals, or canonical price is unavailable",
+      "rounding": "ROUND_HALF_EVEN at display boundary; no formula rounding",
+      "source": "documented current_token_fdv_usd/token_fdv_usd fields; source selection remains unresolved",
+      "evidenceLevel": "documented"
+    },
+    {
+      "id": "aTVL",
+      "status": "unresolved",
+      "unit": "USD",
+      "precision": "decimal string when resolved",
+      "definition": null,
+      "formula": null,
+      "nullPolicy": "always null until GAP-FORMULA-ATVL is resolved and versioned fixture evidence is approved",
+      "rounding": "unresolved",
+      "source": "docs/FUNCTION_MATRIX.md explicitly requires production-sample calibration",
+      "evidenceLevel": "unresolved"
+    },
+    {
+      "id": "Fee/TVL",
+      "status": "defined",
+      "unit": "ratio (displayed as percent)",
+      "precision": "decimal string; minimum internal scale 18",
+      "definition": "Unannualized fee yield for the selected window.",
+      "formula": "Fees / TVL",
+      "denominatorTimestamp": "window end",
+      "nullPolicy": "null when Fees or TVL is null or TVL <= 0",
+      "rounding": "ROUND_HALF_EVEN to 4 percentage decimal places for display only",
+      "source": "docs/FUNCTION_MATRIX.md POOL-05 plus locally frozen unannualized ratio semantics",
+      "evidenceLevel": "locally-defined"
+    },
+    {
+      "id": "Fee/aTVL",
+      "status": "unresolved",
+      "unit": "ratio (displayed as percent)",
+      "precision": "decimal string when resolved",
+      "definition": "Fees divided by aTVL only after the aTVL algorithm is approved.",
+      "formula": null,
+      "nullPolicy": "always null while aTVL or its formula is unresolved; null when aTVL <= 0 after resolution",
+      "rounding": "unresolved",
+      "source": "docs/FUNCTION_MATRIX.md POOL-05; exact target formula has insufficient evidence",
+      "evidenceLevel": "unresolved"
+    }
+  ],
+  "roundingPolicy": {
+    "mode": "ROUND_HALF_EVEN",
+    "stage": "display-only",
+    "currencyDisplay": "2 decimals below USD 1000; compact suffix may be shown but raw value remains available",
+    "ratioDisplay": "4 percentage decimal places",
+    "tokenDisplay": "up to token decimals with UI-specific cap; never round persisted values"
+  },
+  "sorting": {
+    "valueSource": "unrounded internal value",
+    "nullPlacement": "last for ascending and descending",
+    "nanInfinity": "invalid and treated as null",
+    "direction": "explicit asc or desc; default desc for Fees and Volume",
+    "tieBreak": ["poolAddress:asc", "chainId:asc"],
+    "addressComparison": "lowercase ASCII hexadecimal",
+    "stability": "same input snapshot and contract version must produce identical ordering"
+  },
+  "unresolvedRefs": [
+    "GAP-FORMULA-ATVL",
+    "GAP-FORMULA-FEE-ATVL",
+    "GAP-METRIC-FDV-SOURCE",
+    "GAP-METRIC-TVL-SNAPSHOT"
+  ]
+}

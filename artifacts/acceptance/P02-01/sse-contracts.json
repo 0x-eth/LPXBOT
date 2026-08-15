@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P02-01",
+  "status": "frozen-local-envelope-with-target-mapping-gap",
+  "wire": {
+    "contentType": "text/event-stream; charset=utf-8",
+    "method": "GET",
+    "cacheControl": "no-cache",
+    "encoding": "UTF-8",
+    "eventId": "must equal envelope.cursor",
+    "retryMilliseconds": 3000,
+    "data": "one canonical JSON object per event; multi-line data is not emitted"
+  },
+  "envelope": {
+    "additionalProperties": false,
+    "required": ["schemaVersion", "eventType", "sequence", "cursor", "mode", "emittedAt", "data"],
+    "fields": {
+      "schemaVersion": { "type": "string", "const": "1.0.0" },
+      "eventType": { "type": "string", "enum": ["pools.snapshot", "pools.diff", "stats.snapshot", "stats.update", "recommended-pools.snapshot", "liquidity.backfill", "liquidity.event", "heartbeat", "error"] },
+      "sequence": { "type": "unsigned-decimal-string", "scope": "strictly increasing per streamKey and epoch" },
+      "cursor": { "type": "opaque-non-empty-string", "scope": "resume position after this event" },
+      "mode": { "type": "string", "enum": ["snapshot", "diff"] },
+      "emittedAt": { "type": "RFC3339 UTC with milliseconds" },
+      "streamKey": { "type": "string", "derivation": "endpoint plus canonicalized filters" },
+      "epoch": { "type": "unsigned-decimal-string", "semantics": "changes when sequence history is reset" },
+      "data": { "type": "object|null", "nullOnlyFor": ["heartbeat"] }
+    }
+  },
+  "modes": ["snapshot", "diff"],
+  "streams": [
+    {
+      "id": "top-fees",
+      "pathTemplate": "https://m.lpbot.cc/api/pools/top-fees/:minutes/stream",
+      "targetEvents": ["snapshot", "diff", "waiting"],
+      "normalizedEvents": ["pools.snapshot", "pools.diff", "heartbeat"],
+      "filters": ["minutes", "chain", "dex"],
+      "source": "frozen assets/TopPoolsView-BmMrLEMA.js",
+      "evidenceLevel": "bundle-derived"
+    },
+    {
+      "id": "stats",
+      "pathTemplate": "/api/stats/stream",
+      "targetEvents": ["snapshot", "update", "rec_pools_snapshot", "error"],
+      "normalizedEvents": ["stats.snapshot", "stats.update", "recommended-pools.snapshot", "error", "heartbeat"],
+      "filters": ["user_id", "chain", "limit"],
+      "documentedCadence": { "statsHeartbeatSeconds": 25, "recommendedPoolsTickSeconds": 5, "unchangedRecommendedPools": "not emitted" },
+      "source": "frozen api-docs.json and assets/index-D0FmPqGc.js",
+      "evidenceLevel": "documented"
+    },
+    {
+      "id": "liquidity-flow",
+      "pathTemplate": "https://m.lpbot.cc/api/liquidity-adds/stream",
+      "targetEvents": ["backfill", "liquidity-add"],
+      "normalizedEvents": ["liquidity.backfill", "liquidity.event", "heartbeat"],
+      "filters": ["since", "pool", "token", "user", "nft_id"],
+      "source": "frozen assets/LiquidityFlowSheet-DEk34LQj.js",
+      "evidenceLevel": "bundle-derived"
+    }
+  ],
+  "semantics": {
+    "snapshot": {
+      "rule": "First data-bearing event on a new epoch or unreplayable reconnect is a complete snapshot.",
+      "clientAction": "atomically replace local stream state and store sequence/cursor/epoch"
+    },
+    "diff": {
+      "rule": "Contains upserts and tombstones relative to the immediately preceding sequence in the same epoch.",
+      "clientAction": "apply atomically and idempotently, then persist sequence/cursor"
+    },
+    "heartbeat": {
+      "maximumSilenceSeconds": 25,
+      "eventType": "heartbeat",
+      "mode": "diff",
+      "data": null,
+      "sequenceRule": "consumes a sequence and advances cursor",
+      "clientAction": "update liveness only"
+    },
+    "replay": {
+      "request": "send Last-Event-ID with the last committed cursor",
+      "serverRule": "replay events strictly after cursor in sequence order when retained",
+      "retentionMiss": "start a new epoch with a snapshot; never send a partial diff"
+    },
+    "reconnect": {
+      "trigger": "transport close, retryable error, heartbeat timeout, or missing sequence",
+      "backoffMilliseconds": [1000, 2000, 4000, 8000, 15000, 30000],
+      "jitter": "full jitter in [0, selected backoff]",
+      "reset": "reset attempt count after one snapshot or 60 seconds of contiguous healthy traffic",
+      "credentials": "same authorization policy as the initial GET; credentials never appear in cursor or URL logs"
+    },
+    "duplicateSequence": {
+      "condition": "same streamKey, epoch, and sequence as last committed",
+      "action": "ignore",
+      "integrityRule": "same sequence with different cursor or payload hash is a fatal integrity error"
+    },
+    "missingSequence": {
+      "condition": "received sequence > last committed sequence + 1 in the same epoch",
+      "action": "reconnect-from-last-cursor",
+      "clientRule": "do not apply the gapped event before successful replay or replacement snapshot"
+    },
+    "olderSequence": {
+      "condition": "received sequence < last committed sequence in the same epoch",
+      "action": "ignore and count as out-of-order"
+    },
+    "epochChange": {
+      "rule": "accept only a snapshot as the first event of a new epoch; otherwise reconnect without applying"
+    },
+    "stale": {
+      "rule": "mark stale after maximumSilenceSeconds without any event; retain last good data while reconnecting"
+    },
+    "error": {
+      "fatalStatuses": [400, 401, 403, 404],
+      "retryableStatuses": [408, 429, 500, 502, 503, 504],
+      "unknownStatus": "retry with capped backoff and expose reconnecting state"
+    }
+  },
+  "unresolvedRefs": []
+}
