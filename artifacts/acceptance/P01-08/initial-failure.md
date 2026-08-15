@@ -50,6 +50,13 @@ not ok - P01 route matrix stays non-overlapping at all required widths
 - Finding: TimescaleDB rejects dropping and recreating its extension in the same PostgreSQL backend session (`extension "timescaledb" has already been loaded with another version`).
 - Resolution boundary: keep migration SQL unchanged and reconnect between reverse-down and the subsequent up cycle, matching separate dbmate command processes.
 
+## Full Playwright budget red run
+
+- Command: `LPBOT_PLAYWRIGHT_PORT=43179 pnpm test:e2e`
+- Result: expected test-harness failure (`74` passed, `4` skipped, `4` failed).
+- Finding: the new route-state and theme matrices each perform 27-36 navigation plus axe combinations per browser project and exceeded Playwright's default 30-second per-test timeout during the full parallel suite. Focused assertions had already passed, and the failures contained no visual, accessibility or overlap assertion mismatch.
+- Resolution boundary: assign each finite combination matrix the same explicit 90-second budget already used by the five-width matrix; do not relax assertions, screenshot thresholds or masks.
+
 ## Acceptance checker red run
 
 - Command: `node --test --test-name-pattern='accepts only the P01-08' tests/governance/governance-checkers.test.mjs`
