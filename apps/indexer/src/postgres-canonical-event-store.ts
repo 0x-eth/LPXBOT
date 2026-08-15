@@ -189,17 +189,6 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
           continue;
         }
 
-        const reorgHeight = await this.#reorgHeight(client, delivery);
-        if (reorgHeight !== null) {
-          await flushAccepted();
-          const reverted = await this.#revertFromHeight(client, commit, reorgHeight, null);
-          revertedCount += reverted.count;
-          if (reverted.count > 0) {
-            await this.#recomputeAndPersist(client, commit, reverted.poolKeys);
-          }
-        }
-
-        await this.#upsertBlock(client, delivery, commit.evaluationTime);
         const incomingPayload = { block: delivery.block, event, log: delivery.log };
         const incomingHash = payloadHash(incomingPayload);
         const existing = await client.query<StoredRawLog>(
@@ -238,6 +227,17 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
           continue;
         }
 
+        const reorgHeight = await this.#reorgHeight(client, delivery);
+        if (reorgHeight !== null) {
+          await flushAccepted();
+          const reverted = await this.#revertFromHeight(client, commit, reorgHeight, null);
+          revertedCount += reverted.count;
+          if (reverted.count > 0) {
+            await this.#recomputeAndPersist(client, commit, reverted.poolKeys);
+          }
+        }
+
+        await this.#upsertBlock(client, delivery, commit.evaluationTime);
         await this.#insertRawLog(client, delivery, incomingHash, incomingPayload, commit.evaluationTime);
         await this.#insertEvent(client, event, incomingHash, commit.evaluationTime);
         acceptedCount += 1;
