@@ -22,4 +22,17 @@
 
 The full browser run rewrote one P01-06 generated `actual` screenshot. It was restored from `9ad094654659f9eab98319d48f59d2c7e18978ed`; the final historical-path diff is empty.
 
-GitHub Actions is not recorded as passed. [Run 31826761337](https://github.com/0x-eth/LPXBOT/actions/runs/31826761337) targets verified implementation commit `c399c836712c48344ffd0c460f9438f4e692ab69`; both its initial attempt and explicit rerun ended all six jobs with no executed steps, `runner_id: 0`, and no failure log. The Check Run annotation attributes this to failed account payments or a spending limit. It cannot qualify the work item for acceptance.
+## GitHub Actions result
+
+[Run 31827013669](https://github.com/0x-eth/LPXBOT/actions/runs/31827013669) attempt 3 passed all six jobs for stable commit `ec00f30077579e2670e010562befc994a35f0b62` and completed at `2026-08-15T17:09:36Z`.
+
+| Job | Result | Runner ID | Executed steps |
+|---|---|---:|---:|
+| Quality | passed | 1000001770 | 13 |
+| Governance | passed | 1000001767 | 14 |
+| Browser | passed | 1000001768 | 11 |
+| Contracts | passed | 1000001769 | 9 |
+| Infrastructure | passed | 1000001771 | 17 |
+| Security | passed | 1000001766 | 10 |
+
+Every job received a nonzero runner ID and executed its gate steps. The Browser gate passed; only its failure-only report upload was conditionally skipped. Attempts 1 and 2, which had `runner_id: 0` and no steps, are not acceptance evidence.

@@ -64,4 +64,15 @@ The requested start commit is an ancestor of the implementation. The working tre
 
 ## CI status
 
-Local equivalents of all six CI jobs pass. No qualifying six-job GitHub Actions run is available. [Run 31826761337](https://github.com/0x-eth/LPXBOT/actions/runs/31826761337) targets verified implementation commit `c399c836712c48344ffd0c460f9438f4e692ab69`; its initial attempt and explicit rerun both ended all six jobs in about two seconds with `steps: []`, `runner_id: 0`, and no failure log. The GitHub Check Run annotation says the jobs were not started because recent account payments failed or the spending limit needs to be increased. Repository code was not executed, so the run is not acceptance evidence. The manifest remains `in-progress`.
+[GitHub Actions run 31827013669](https://github.com/0x-eth/LPXBOT/actions/runs/31827013669) attempt 3 completed successfully for stable commit `ec00f30077579e2670e010562befc994a35f0b62` at `2026-08-15T17:09:36Z`.
+
+| Job | Result | Runner ID | Executed steps |
+|---|---|---:|---:|
+| Quality | passed | 1000001770 | 13 |
+| Governance | passed | 1000001767 | 14 |
+| Browser | passed | 1000001768 | 11 |
+| Contracts | passed | 1000001769 | 9 |
+| Infrastructure | passed | 1000001771 | 17 |
+| Security | passed | 1000001766 | 10 |
+
+All six jobs received a GitHub-hosted runner, executed their gate steps, and ended with `success`. Browser's `Run browser tests` step passed; its failure-only Playwright report upload was conditionally skipped and is not counted as a gate result. The runner-blocked attempts 1 and 2 of this run, and earlier run 31826761337, remain excluded from acceptance evidence.

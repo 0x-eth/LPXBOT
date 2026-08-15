@@ -3,7 +3,7 @@
   "workItemId": "P01-07",
   "phase": "P01",
   "risk": "R2",
-  "status": "in-progress",
+  "status": "accepted",
   "featureIds": ["AUTH-10"],
   "tests": [
     {
@@ -55,8 +55,8 @@
     "All P01-07 behavior and configuration values are deterministic local-fixture-verified evidence.",
     "No real business task, pool, liquidity, swap, wallet, signing, broadcast, external RPC, Telegram, target-site, or production operation is implemented or invoked.",
     "The frozen bundle and P01-01 through P01-06 acceptance trees match the requested start commit.",
-    "Local equivalents of all six CI jobs pass, but no final six-job GitHub Actions run is green; status must remain in-progress."
+    "Acceptance is based on successful six-job GitHub Actions run 31827013669 attempt 3 for stable commit ec00f30077579e2670e010562befc994a35f0b62; every job received a runner and executed its gate steps."
   ],
-  "completedAt": null,
-  "commit": "c399c836712c48344ffd0c460f9438f4e692ab69"
+  "completedAt": "2026-08-15T17:09:36.000Z",
+  "commit": "ec00f30077579e2670e010562befc994a35f0b62"
 }
