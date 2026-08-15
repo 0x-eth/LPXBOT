@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-01",
+  "phase": "P02",
+  "risk": "R0",
+  "workItemFeatureIds": [],
+  "implementationOwnership": "none",
+  "statusPolicy": "Reference contracts do not advance implementation status.",
+  "features": [
+    { "id": "POOL-01", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-02", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-03", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-04", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-05", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-06", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-07", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-08", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-09", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-10", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-11", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-12", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-13", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-14", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-15", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "POOL-16", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "FLOW-01", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "FLOW-02", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "FLOW-03", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "FLOW-04", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "FLOW-05", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "STATS-01", "phase": "P02", "status": "planned", "implementationOwner": null },
+    { "id": "STATS-02", "phase": "P02", "status": "planned", "implementationOwner": null }
+  ],
+  "referenceSurfaces": {
+    "api": "api-contracts.json",
+    "chainEvents": "chain-event-contracts.json",
+    "metrics": "metric-contracts.json",
+    "sse": "sse-contracts.json",
+    "ui": "ui-state-catalog.json",
+    "fixtures": "fixture-index.json",
+    "unknowns": "gaps.json"
+  }
+}

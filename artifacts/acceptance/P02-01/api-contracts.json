@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P02-01",
+  "status": "frozen-reference",
+  "boundary": {
+    "methods": ["GET"],
+    "requestWrites": false,
+    "externalCallsDuringAcceptance": false,
+    "unknownFieldPolicy": "Do not infer meaning. Record a gap and update the contract before consumption.",
+    "numericWirePolicy": "Accept documented JSON numbers at the reference boundary, convert monetary and ratio values to decimal strings before domain use, and never use binary floating point for aggregation."
+  },
+  "commonErrorEnvelope": {
+    "schema": {
+      "success": "false",
+      "error": {
+        "code": "stable-string",
+        "message": "safe-string",
+        "requestId": "opaque-string|null",
+        "retryable": "boolean"
+      }
+    },
+    "statusCodes": [400, 401, 403, 404, 429, 500, 503],
+    "status": "locally-defined-until-endpoint-errors-are-observed",
+    "gapRef": "GAP-API-ERROR-SCHEMA"
+  },
+  "endpoints": [
+    {
+      "id": "pools.top-fees",
+      "method": "GET",
+      "path": "/api/pools/top-fees/:minutes",
+      "parameters": [
+        {
+          "name": "minutes",
+          "in": "path",
+          "required": true,
+          "type": "integer",
+          "allowed": [1, 5, 15, 30, 60]
+        },
+        {
+          "name": "chain",
+          "in": "query",
+          "required": true,
+          "type": "string",
+          "allowed": ["bsc", "base"]
+        },
+        {
+          "name": "dex",
+          "in": "query",
+          "required": true,
+          "type": "comma-separated-set",
+          "members": ["pcsv3", "univ3", "pcsv4", "univ4"],
+          "canonicalOrder": ["pcsv3", "univ3", "pcsv4", "univ4"]
+        }
+      ],
+      "response": {
+        "contentType": "application/json",
+        "schema": {
+          "success": "boolean",
+          "data": "array<PoolTopFeesRow>",
+          "PoolTopFeesRow": {
+            "pool_address": "address",
+            "trading_pair": "string",
+            "token0_symbol": "string",
+            "token1_symbol": "string",
+            "token0_address": "address",
+            "token1_address": "address",
+            "factory_name": "string",
+            "fee_percentage": "decimal",
+            "total_fees": "decimal-usd",
+            "total_volume": "decimal-usd",
+            "transaction_count": "integer",
+            "current_pool_value": "decimal-usd",
+            "current_token_price": "decimal-usd",
+            "current_token_fdv_usd": "decimal-usd",
+            "current_token0_balance": "decimal-token0",
+            "current_token1_balance": "decimal-token1",
+            "hook_address": "address|null"
+          }
+        }
+      },
+      "nullability": {
+        "success": "never-null",
+        "data": "never-null; empty result is []",
+        "hook_address": "nullable",
+        "otherDocumentedFields": "target behavior unresolved; local decoder maps absent or invalid values to null"
+      },
+      "errors": ["400 INVALID_WINDOW|INVALID_FILTER", "401 UNAUTHENTICATED", "403 FORBIDDEN", "429 RATE_LIMITED", "500 INTERNAL", "503 UNAVAILABLE"],
+      "source": "artifacts/lpbot/2026-08-13/api-docs.json and assets/TopPoolsView-BmMrLEMA.js",
+      "evidenceLevel": "documented"
+    },
+    {
+      "id": "pools.by-token",
+      "method": "GET",
+      "path": "/api/pools/by-token/:address",
+      "parameters": [
+        { "name": "address", "in": "path", "required": true, "type": "evm-address", "canonicalization": "lowercase for lookup; preserve checksum form only for display" },
+        { "name": "chain", "in": "query", "required": true, "type": "string", "allowed": ["bsc", "base"] },
+        { "name": "dex", "in": "query", "required": true, "type": "comma-separated-set", "members": ["pcsv3", "univ3", "pcsv4", "univ4"] },
+        { "name": "limit", "in": "query", "required": false, "type": "integer", "observedCandidate": 100, "evidenceLevel": "bundle-derived" },
+        { "name": "sort", "in": "query", "required": false, "type": "string", "allowed": ["fees", "volume"], "evidenceLevel": "bundle-derived" }
+      ],
+      "response": {
+        "contentType": "application/json",
+        "schema": {
+          "success": "boolean",
+          "data": "array<PoolByTokenRow>",
+          "PoolByTokenRow": {
+            "pool_address": "address",
+            "token0_symbol": "string",
+            "token1_symbol": "string",
+            "token0_address": "address",
+            "token1_address": "address",
+            "factory_name": "string",
+            "fee_percentage": "decimal",
+            "fees_5min": "decimal-usd",
+            "fees_1h": "decimal-usd",
+            "volume_5min": "decimal-usd",
+            "volume_1h": "decimal-usd",
+            "tx_count_5min": "integer",
+            "tx_count_1h": "integer",
+            "pool_usd_value": "decimal-usd",
+            "token_usd_price": "decimal-usd",
+            "token_fdv_usd": "decimal-usd"
+          }
+        }
+      },
+      "nullability": {
+        "success": "never-null",
+        "data": "never-null; no matching token or pools is []",
+        "rowFields": "target behavior unresolved; local decoder maps absent market values to null"
+      },
+      "errors": ["400 INVALID_ADDRESS|INVALID_FILTER", "401 UNAUTHENTICATED", "403 FORBIDDEN", "404 TOKEN_NOT_FOUND", "429 RATE_LIMITED", "500 INTERNAL", "503 UNAVAILABLE"],
+      "source": "artifacts/lpbot/2026-08-13/api-docs.json and assets/TopPoolsView-BmMrLEMA.js",
+      "evidenceLevel": "documented"
+    },
+    {
+      "id": "pools.liquidity",
+      "method": "GET",
+      "path": "/api/pools/liquidity/:poolAddress",
+      "parameters": [
+        { "name": "poolAddress", "in": "path", "required": true, "type": "evm-address-or-bytes32-pool-id" },
+        { "name": "range", "in": "query", "required": false, "type": "integer", "default": 15, "minimum": 5, "maximum": 50 },
+        { "name": "chain", "in": "query", "required": false, "type": "string", "default": "bsc", "allowed": ["bsc", "base"] },
+        { "name": "dex", "in": "query", "required": "for-v4", "type": "string", "allowed": ["univ4", "pcsv4"] },
+        { "name": "tickSpacing", "in": "query", "required": "for-v4", "type": "integer" },
+        { "name": "decimals0", "in": "query", "required": false, "type": "integer", "default": 18, "minimum": 0, "maximum": 255 },
+        { "name": "decimals1", "in": "query", "required": false, "type": "integer", "default": 18, "minimum": 0, "maximum": 255 }
+      ],
+      "response": {
+        "contentType": "application/json",
+        "schema": {
+          "success": "boolean",
+          "ticks": "array<TickLiquidityRow>",
+          "currentTick": "integer|null",
+          "tickSpacing": "integer|null",
+          "TickLiquidityRow": {
+            "tickIdx": "integer",
+            "liquidityNet": "signed-integer-string",
+            "price0": "decimal-string|null",
+            "price1": "decimal-string|null"
+          }
+        }
+      },
+      "nullability": {
+        "ticks": "never-null; pool with no initialized ticks is []",
+        "currentTick": "nullable when current state is unavailable",
+        "tickSpacing": "nullable only when protocol mapping is unresolved",
+        "prices": "nullable when decimals or conversion cannot be validated"
+      },
+      "errors": ["400 INVALID_POOL|INVALID_RANGE|MISSING_V4_PARAMETER", "401 UNAUTHENTICATED", "403 FORBIDDEN", "404 POOL_NOT_FOUND", "429 RATE_LIMITED", "500 INTERNAL", "503 UNAVAILABLE"],
+      "source": "artifacts/lpbot/2026-08-13/api-docs.json and assets/KlineLiquidityChart-0xvlAqf1.js",
+      "evidenceLevel": "documented"
+    },
+    {
+      "id": "market.candles",
+      "method": "GET",
+      "path": "/api/market/candles",
+      "parameters": [
+        { "name": "token", "in": "query", "required": true, "type": "evm-address" },
+        { "name": "bar", "in": "query", "required": false, "type": "string", "default": "1H", "allowed": ["1m", "5m", "15m", "1H", "4H", "1D"] },
+        { "name": "limit", "in": "query", "required": false, "type": "integer", "default": 100, "minimum": 1, "maximum": 299 },
+        { "name": "chainId", "in": "query", "required": false, "type": "integer", "default": 56 }
+      ],
+      "response": {
+        "contentType": "application/json",
+        "schema": {
+          "success": "boolean",
+          "data": "array<Candle>",
+          "Candle": {
+            "o": "decimal-string",
+            "h": "decimal-string",
+            "l": "decimal-string",
+            "c": "decimal-string",
+            "v": "decimal-string",
+            "ts": "unix-milliseconds-string"
+          }
+        },
+        "ordering": "ts ascending; duplicate ts is invalid"
+      },
+      "nullability": {
+        "data": "never-null; no candles is []",
+        "candleFields": "never-null for accepted rows; malformed rows are rejected"
+      },
+      "errors": ["400 INVALID_TOKEN|INVALID_BAR|INVALID_LIMIT|INVALID_CHAIN", "401 UNAUTHENTICATED", "403 FORBIDDEN", "404 MARKET_NOT_FOUND", "429 RATE_LIMITED", "500 INTERNAL", "503 UNAVAILABLE"],
+      "source": "artifacts/lpbot/2026-08-13/api-docs.json",
+      "evidenceLevel": "documented"
+    },
+    {
+      "id": "stats.snapshot",
+      "method": "GET",
+      "path": "/api/stats",
+      "parameters": [],
+      "response": {
+        "contentType": "application/json",
+        "schema": {
+          "success": "boolean",
+          "stats": {
+            "totalTasks": "non-negative-integer",
+            "runningTasks": "non-negative-integer",
+            "pausedTasks": "non-negative-integer",
+            "stoppedTasks": "non-negative-integer"
+          }
+        }
+      },
+      "nullability": {
+        "stats": "never-null on success",
+        "counts": "never-null; zero is represented as 0"
+      },
+      "errors": ["401 UNAUTHENTICATED", "403 FORBIDDEN", "429 RATE_LIMITED", "500 INTERNAL", "503 MAINTENANCE|UNAVAILABLE"],
+      "source": "artifacts/lpbot/2026-08-13/api-docs.json and P01-01 network observations",
+      "evidenceLevel": "observed"
+    },
+    {
+      "id": "stats.stream",
+      "method": "GET",
+      "path": "/api/stats/stream",
+      "transport": "text/event-stream",
+      "parameters": [
+        { "name": "user_id", "in": "query", "required": false, "type": "string", "authorization": "admin-only filter; exact enforcement unresolved" },
+        { "name": "chain", "in": "query", "required": false, "type": "comma-separated-set", "members": ["bsc", "base", "eth", "robinhood"], "semantics": "omission requests stats without recommended pools" },
+        { "name": "limit", "in": "query", "required": false, "type": "integer", "default": 3, "minimum": 1, "maximum": 20 }
+      ],
+      "response": {
+        "contentType": "text/event-stream",
+        "schema": "See sse-contracts.json",
+        "documentedEvents": ["snapshot", "update", "rec_pools_snapshot"]
+      },
+      "nullability": {
+        "eventData": "never-null JSON object for data-bearing events",
+        "recommendedPools": "never-null; no rows is []",
+        "heartbeatData": "nullable"
+      },
+      "errors": ["400 INVALID_FILTER", "401 UNAUTHENTICATED", "403 FORBIDDEN", "429 RATE_LIMITED", "500 INTERNAL", "503 MAINTENANCE|UNAVAILABLE"],
+      "source": "artifacts/lpbot/2026-08-13/api-docs.json and assets/index-D0FmPqGc.js",
+      "evidenceLevel": "documented"
+    }
+  ],
+  "unresolvedRefs": [
+    "GAP-API-ERROR-SCHEMA",
+    "GAP-API-NULLABILITY",
+    "GAP-API-CANDLE-QUOTE",
+    "GAP-API-SSE-RESUME",
+    "GAP-API-UNKNOWN-FIELDS"
+  ]
+}
