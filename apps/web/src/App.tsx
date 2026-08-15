@@ -663,7 +663,7 @@ function LocalRouteStateFixture({ children }: { children: ReactNode }) {
   const state = localRouteFixtureState(location.search);
   if (!state) return children;
   if (state === "error") {
-    throw new Error("INTERNAL_FIXTURE_TOKEN requestBody={fixture}");
+    throw new Error("Local route fixture failure");
   }
   if (state === "forbidden") {
     return (

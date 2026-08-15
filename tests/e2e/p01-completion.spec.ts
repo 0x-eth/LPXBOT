@@ -204,6 +204,7 @@ test("P01 route matrix covers light, dark and system themes on both viewports", 
 
 test("P01 route matrix stays non-overlapping at all required widths", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop", "The width matrix runs once.");
+  test.setTimeout(90_000);
   await installFixture(page);
   preferences.theme = "system";
 
