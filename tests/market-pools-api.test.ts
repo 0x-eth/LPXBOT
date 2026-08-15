@@ -91,6 +91,7 @@ async function fixture() {
   const app = buildApiApp({
     maintenance: { enabled: false, message: null, until: null },
     marketPoolsProvider: provider,
+    now: () => new Date("2026-08-14T02:00:00.000Z"),
     regionPolicy: () => ({ blocked: false, code: null, message: null }),
     sessionStore,
   });
@@ -179,4 +180,3 @@ describe("P02-02 top-fees API and replayable SSE", () => {
     expect(provider.streamContexts).toEqual([]);
   });
 });
-

@@ -902,10 +902,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
 
       let epoch: string | null = null;
       let sequence = 0n;
+      const lastEventHeader = request.headers["last-event-id"];
       try {
         for await (const event of options.marketPoolsProvider.subscribe({
           ...context,
-          lastEventId: request.headers["last-event-id"] ?? null,
+          lastEventId: typeof lastEventHeader === "string" ? lastEventHeader : null,
           signal: controller.signal,
         })) {
           if (controller.signal.aborted) break;
