@@ -8,6 +8,7 @@ import {
   compareRawLogDeliveries,
   IndexerRunner,
   PostgresCanonicalEventStore,
+  type NormalizedPoolEvent,
 } from "../../apps/indexer/src/index.js";
 import { PostgresMarketPoolsProvider } from "../../apps/api/src/market-pools.js";
 import type { MarketStreamEnvelope } from "../../packages/api-contract/src/index.js";
@@ -407,7 +408,7 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
       { fixture: normal, marketFor: normalMarketProjection },
       { fixture: reorg, marketFor: reorgMarketProjection },
     ] as const;
-    const normalizedEvents = [];
+    const normalizedEvents: NormalizedPoolEvent[] = [];
     for (const { fixture, marketFor } of fixtureStages) {
       const decoder = new FixtureEventDecoder(fixture.input, { marketFor });
       const source = new FixtureRawLogSource(fixture.input, fixtureBlockTimestamp);

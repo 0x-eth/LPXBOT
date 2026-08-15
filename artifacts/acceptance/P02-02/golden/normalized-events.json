@@ -1,6 +1,281 @@
 {
   "events": [
     {
+      "amount0": null,
+      "amount1": null,
+      "blockHash": "0x1010101010101010101010101010101010101010101010101010101010101010",
+      "blockNumber": "100",
+      "blockTimestamp": "2026-08-16T00:00:00.000Z",
+      "chainId": 56,
+      "contractAddress": "0x3131313131313131313131313131313131313131",
+      "cursor": {
+        "blockHash": "0x1010101010101010101010101010101010101010101010101010101010101010",
+        "blockNumber": "100",
+        "chainId": 56,
+        "logIndex": 0,
+        "transactionIndex": 0,
+        "value": "v1:56:100:0:0:0x1010101010101010101010101010101010101010101010101010101010101010"
+      },
+      "eventId": "0f20278a59d1428cbde159e4f3769e04d77e04ecd2393fbf61aa86d7a2cda57a",
+      "finality": "observed",
+      "kind": "pool.created",
+      "liquidityDelta": null,
+      "logIndex": 0,
+      "market": {
+        "fdvUsd": "12000000",
+        "feesUsd": null,
+        "token0Symbol": "WBNB",
+        "token1Symbol": "USDT",
+        "tvlUsd": "10000",
+        "volumeUsd": null
+      },
+      "payload": {
+        "creator": "0x6161616161616161616161616161616161616161"
+      },
+      "pool": {
+        "feePips": "2500",
+        "hooks": null,
+        "poolAddress": "0x4141414141414141414141414141414141414141",
+        "poolId": null,
+        "tickSpacing": "50",
+        "token0": "0x5151515151515151515151515151515151515151",
+        "token1": "0x5252525252525252525252525252525252525252"
+      },
+      "protocol": "pcsv3",
+      "protocolGeneration": "v3",
+      "rawRef": "normal-pcsv3-created",
+      "removed": false,
+      "schemaVersion": "1.0.0",
+      "sqrtPriceX96": null,
+      "transactionHash": "0xa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0",
+      "transactionIndex": 0
+    },
+    {
+      "amount0": "1000000000000000000",
+      "amount1": "-2500000000000000000",
+      "blockHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+      "blockNumber": "101",
+      "blockTimestamp": "2026-08-16T00:00:01.000Z",
+      "chainId": 56,
+      "contractAddress": "0x3232323232323232323232323232323232323232",
+      "cursor": {
+        "blockHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "blockNumber": "101",
+        "chainId": 56,
+        "logIndex": 0,
+        "transactionIndex": 1,
+        "value": "v1:56:101:1:0:0x1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "eventId": "de62c2ae52c61d225b78d2efa020f6dd0bbc64140961b5a63fdac7be27555931",
+      "finality": "observed",
+      "kind": "swap",
+      "liquidityDelta": null,
+      "logIndex": 0,
+      "market": {
+        "fdvUsd": "12001000",
+        "feesUsd": "42.125",
+        "token0Symbol": "WBNB",
+        "token1Symbol": "USDT",
+        "tvlUsd": "10100",
+        "volumeUsd": "9000.75"
+      },
+      "payload": {
+        "sender": "0x6262626262626262626262626262626262626262",
+        "recipient": "0x6363636363636363636363636363636363636363",
+        "amount0": "1000000000000000000",
+        "amount1": "-2500000000000000000",
+        "sqrtPriceX96": "79228162514264337593543950336",
+        "liquidity": "1000000000000",
+        "tick": "0"
+      },
+      "pool": {
+        "feePips": "3000",
+        "hooks": null,
+        "poolAddress": "0x4242424242424242424242424242424242424242",
+        "poolId": null,
+        "tickSpacing": "60",
+        "token0": "0x5151515151515151515151515151515151515151",
+        "token1": "0x5252525252525252525252525252525252525252"
+      },
+      "protocol": "univ3",
+      "protocolGeneration": "v3",
+      "rawRef": "normal-univ3-swap",
+      "removed": false,
+      "schemaVersion": "1.0.0",
+      "sqrtPriceX96": "79228162514264337593543950336",
+      "transactionHash": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "transactionIndex": 1
+    },
+    {
+      "amount0": "750000000000000000",
+      "amount1": "2000000000000000000",
+      "blockHash": "0x1212121212121212121212121212121212121212121212121212121212121212",
+      "blockNumber": "102",
+      "blockTimestamp": "2026-08-16T00:00:02.000Z",
+      "chainId": 56,
+      "contractAddress": "0x3333333333333333333333333333333333333333",
+      "cursor": {
+        "blockHash": "0x1212121212121212121212121212121212121212121212121212121212121212",
+        "blockNumber": "102",
+        "chainId": 56,
+        "logIndex": 1,
+        "transactionIndex": 0,
+        "value": "v1:56:102:0:1:0x1212121212121212121212121212121212121212121212121212121212121212"
+      },
+      "eventId": "170536ff6db184c323430a524a5fbd63352ad86cb2a3a93a7a1318999f84cf66",
+      "finality": "observed",
+      "kind": "liquidity.add",
+      "liquidityDelta": "500000",
+      "logIndex": 1,
+      "market": {
+        "fdvUsd": "12002000",
+        "feesUsd": null,
+        "token0Symbol": "WBNB",
+        "token1Symbol": "USDT",
+        "tvlUsd": "10200",
+        "volumeUsd": null
+      },
+      "payload": {
+        "sender": "0x6464646464646464646464646464646464646464",
+        "owner": "0x6565656565656565656565656565656565656565",
+        "positionId": null,
+        "tickLower": "-100",
+        "tickUpper": "100",
+        "liquidityDelta": "500000",
+        "amount0": "750000000000000000",
+        "amount1": "2000000000000000000"
+      },
+      "pool": {
+        "feePips": "500",
+        "hooks": "0x6060606060606060606060606060606060606060",
+        "poolAddress": null,
+        "poolId": "0x4343434343434343434343434343434343434343434343434343434343434343",
+        "tickSpacing": "10",
+        "token0": "0x5151515151515151515151515151515151515151",
+        "token1": "0x5252525252525252525252525252525252525252"
+      },
+      "protocol": "pcsv4",
+      "protocolGeneration": "v4",
+      "rawRef": "normal-pcsv4-add",
+      "removed": false,
+      "schemaVersion": "1.0.0",
+      "sqrtPriceX96": null,
+      "transactionHash": "0xa2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2",
+      "transactionIndex": 0
+    },
+    {
+      "amount0": "-375000000000000000",
+      "amount1": "-1000000000000000000",
+      "blockHash": "0x1313131313131313131313131313131313131313131313131313131313131313",
+      "blockNumber": "103",
+      "blockTimestamp": "2026-08-16T00:00:03.000Z",
+      "chainId": 56,
+      "contractAddress": "0x3434343434343434343434343434343434343434",
+      "cursor": {
+        "blockHash": "0x1313131313131313131313131313131313131313131313131313131313131313",
+        "blockNumber": "103",
+        "chainId": 56,
+        "logIndex": 0,
+        "transactionIndex": 2,
+        "value": "v1:56:103:2:0:0x1313131313131313131313131313131313131313131313131313131313131313"
+      },
+      "eventId": "05b3bf85038ad83133d7b9cd3f63dd36177341387af94dc7e5943cdc402a8df0",
+      "finality": "observed",
+      "kind": "liquidity.remove",
+      "liquidityDelta": "-250000",
+      "logIndex": 0,
+      "market": {
+        "fdvUsd": "12003000",
+        "feesUsd": null,
+        "token0Symbol": "WBNB",
+        "token1Symbol": "USDT",
+        "tvlUsd": "10300",
+        "volumeUsd": null
+      },
+      "payload": {
+        "sender": "0x6666666666666666666666666666666666666666",
+        "owner": "0x6767676767676767676767676767676767676767",
+        "positionId": null,
+        "tickLower": "-200",
+        "tickUpper": "200",
+        "liquidityDelta": "-250000",
+        "amount0": "-375000000000000000",
+        "amount1": "-1000000000000000000"
+      },
+      "pool": {
+        "feePips": "10000",
+        "hooks": "0x0000000000000000000000000000000000000000",
+        "poolAddress": null,
+        "poolId": "0x4444444444444444444444444444444444444444444444444444444444444444",
+        "tickSpacing": "200",
+        "token0": "0x5151515151515151515151515151515151515151",
+        "token1": "0x5252525252525252525252525252525252525252"
+      },
+      "protocol": "univ4",
+      "protocolGeneration": "v4",
+      "rawRef": "normal-univ4-remove",
+      "removed": false,
+      "schemaVersion": "1.0.0",
+      "sqrtPriceX96": null,
+      "transactionHash": "0xa3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3",
+      "transactionIndex": 2
+    },
+    {
+      "amount0": "10000000000000000",
+      "amount1": "25000000000000000",
+      "blockHash": "0x1414141414141414141414141414141414141414141414141414141414141414",
+      "blockNumber": "104",
+      "blockTimestamp": "2026-08-16T00:00:04.000Z",
+      "chainId": 56,
+      "contractAddress": "0x3535353535353535353535353535353535353535",
+      "cursor": {
+        "blockHash": "0x1414141414141414141414141414141414141414141414141414141414141414",
+        "blockNumber": "104",
+        "chainId": 56,
+        "logIndex": 2,
+        "transactionIndex": 0,
+        "value": "v1:56:104:0:2:0x1414141414141414141414141414141414141414141414141414141414141414"
+      },
+      "eventId": "4230873597ea9f0ec84a9c6e3c81c2bc0525ae54e9a359e84484c764ea162650",
+      "finality": "observed",
+      "kind": "collect",
+      "liquidityDelta": null,
+      "logIndex": 2,
+      "market": {
+        "fdvUsd": "12004000",
+        "feesUsd": null,
+        "token0Symbol": "WBNB",
+        "token1Symbol": "USDT",
+        "tvlUsd": "10400",
+        "volumeUsd": null
+      },
+      "payload": {
+        "sender": "0x6868686868686868686868686868686868686868",
+        "recipient": "0x6969696969696969696969696969696969696969",
+        "owner": "0x6565656565656565656565656565656565656565",
+        "positionId": "7",
+        "amount0": "10000000000000000",
+        "amount1": "25000000000000000"
+      },
+      "pool": {
+        "feePips": "2500",
+        "hooks": null,
+        "poolAddress": "0x4141414141414141414141414141414141414141",
+        "poolId": null,
+        "tickSpacing": "50",
+        "token0": "0x5151515151515151515151515151515151515151",
+        "token1": "0x5252525252525252525252525252525252525252"
+      },
+      "protocol": "pcsv3",
+      "protocolGeneration": "v3",
+      "rawRef": "normal-pcsv3-collect",
+      "removed": false,
+      "schemaVersion": "1.0.0",
+      "sqrtPriceX96": null,
+      "transactionHash": "0xa4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4",
+      "transactionIndex": 0
+    },
+    {
       "amount0": "10",
       "amount1": "20",
       "blockHash": "0x2020202020202020202020202020202020202020202020202020202020202020",
@@ -126,12 +401,12 @@
       "liquidityDelta": "-40",
       "logIndex": 0,
       "market": {
-        "fdvUsd": "5000000",
-        "feesUsd": "100",
+        "fdvUsd": "4500000",
+        "feesUsd": "40",
         "token0Symbol": "WBNB",
         "token1Symbol": "USDT",
-        "tvlUsd": "1000",
-        "volumeUsd": "1000"
+        "tvlUsd": "900",
+        "volumeUsd": "400"
       },
       "payload": {
         "liquidityDelta": "-40",
@@ -158,6 +433,9 @@
     }
   ],
   "schemaVersion": 1,
-  "sourceFixture": "artifacts/acceptance/P02-01/fixtures/reorg.json",
+  "sourceFixtures": [
+    "artifacts/acceptance/P02-01/fixtures/normal.json",
+    "artifacts/acceptance/P02-01/fixtures/reorg.json"
+  ],
   "workItemId": "P02-02"
 }
