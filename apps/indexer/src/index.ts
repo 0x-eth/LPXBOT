@@ -9,6 +9,7 @@ export type {
 } from "./production-config.js";
 export { compareRawLogDeliveries, IndexerRunner } from "./runner.js";
 export type { IndexerRunnerOptions } from "./runner.js";
+export { PostgresCanonicalEventStore } from "./postgres-canonical-event-store.js";
 export type {
   CanonicalCommit,
   CanonicalEventStore,
