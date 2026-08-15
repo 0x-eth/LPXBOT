@@ -43,15 +43,30 @@ const migrationPath = path.join(
 );
 const goldenDirectory = path.join(repositoryRoot, "artifacts/acceptance/P02-02/golden");
 
-function reorgMarketProjection(entry: ReturnType<typeof readP02Fixture>["input"][number]) {
-  const replacement = entry.rawLog.blockHash.endsWith("30");
+function normalMarketProjection(
+  entry: ReturnType<typeof readP02Fixture>["input"][number],
+  index: number,
+) {
+  const swap = entry.fixtureDecoded.kind === "swap";
   return {
-    fdvUsd: "5000000",
-    feesUsd: replacement ? "40" : "100",
+    fdvUsd: String(12_000_000 + index * 1_000),
+    feesUsd: swap ? "42.125" : null,
     token0Symbol: "WBNB",
     token1Symbol: "USDT",
-    tvlUsd: "1000",
-    volumeUsd: replacement ? "400" : "1000",
+    tvlUsd: String(10_000 + index * 100),
+    volumeUsd: swap ? "9000.75" : null,
+  };
+}
+
+function reorgMarketProjection(entry: ReturnType<typeof readP02Fixture>["input"][number]) {
+  const originalBranch = entry.rawLog.blockHash.endsWith("20");
+  return {
+    fdvUsd: originalBranch ? "5000000" : "4500000",
+    feesUsd: originalBranch ? "100" : "40",
+    token0Symbol: "WBNB",
+    token1Symbol: "USDT",
+    tvlUsd: originalBranch ? "1000" : "900",
+    volumeUsd: originalBranch ? "1000" : "400",
   };
 }
 
@@ -386,26 +401,30 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
   });
 
   it("matches the committed reorg vertical-slice golden artifacts", async () => {
-    const fixture = readP02Fixture("reorg");
-    const decoder = new FixtureEventDecoder(fixture.input, {
-      marketFor: reorgMarketProjection,
-    });
-    const source = new FixtureRawLogSource(fixture.input, fixtureBlockTimestamp);
-    const page = await source.read(null);
-    const normalizedEvents = page!.deliveries
-      .slice()
-      .sort(compareRawLogDeliveries)
-      .map((delivery) => decoder.decode(delivery));
-
-    const runner = new IndexerRunner({
-      decoder: new FixtureEventDecoder(fixture.input, {
-        marketFor: reorgMarketProjection,
-      }),
-      evaluationTime: () => new Date("2026-08-16T00:01:00.000Z"),
-      source: new FixtureRawLogSource(fixture.input, fixtureBlockTimestamp),
-      store: new PostgresCanonicalEventStore(pool),
-    });
-    await runner.runOnce();
+    const normal = readP02Fixture("normal");
+    const reorg = readP02Fixture("reorg");
+    const fixtureStages = [
+      { fixture: normal, marketFor: normalMarketProjection },
+      { fixture: reorg, marketFor: reorgMarketProjection },
+    ] as const;
+    const normalizedEvents = [];
+    for (const { fixture, marketFor } of fixtureStages) {
+      const decoder = new FixtureEventDecoder(fixture.input, { marketFor });
+      const source = new FixtureRawLogSource(fixture.input, fixtureBlockTimestamp);
+      const page = await source.read(null);
+      normalizedEvents.push(
+        ...page!.deliveries
+          .slice()
+          .sort(compareRawLogDeliveries)
+          .map((delivery) => decoder.decode(delivery)),
+      );
+      await new IndexerRunner({
+        decoder: new FixtureEventDecoder(fixture.input, { marketFor }),
+        evaluationTime: () => new Date("2026-08-16T00:01:00.000Z"),
+        source: new FixtureRawLogSource(fixture.input, fixtureBlockTimestamp),
+        store: new PostgresCanonicalEventStore(pool),
+      }).runOnce();
+    }
 
     const canonicalStore = {
       blocks: (
@@ -470,18 +489,28 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
       transcript += `data: ${JSON.stringify(envelope)}\n\n`;
     }
 
-    const sourceFixturePath = path.join(
-      repositoryRoot,
-      "artifacts/acceptance/P02-01/fixtures/reorg.json",
-    );
     const expected = new Map<string, string>([
-      ["fixed-input.json", readFileSync(sourceFixturePath, "utf8")],
+      [
+        "fixed-input.json",
+        goldenJson({
+          fixtures: [normal, reorg],
+          schemaVersion: 1,
+          sourceFixtures: [
+            "artifacts/acceptance/P02-01/fixtures/normal.json",
+            "artifacts/acceptance/P02-01/fixtures/reorg.json",
+          ],
+          workItemId: "P02-02",
+        }),
+      ],
       [
         "normalized-events.json",
         goldenJson({
           events: normalizedEvents,
           schemaVersion: 1,
-          sourceFixture: "artifacts/acceptance/P02-01/fixtures/reorg.json",
+          sourceFixtures: [
+            "artifacts/acceptance/P02-01/fixtures/normal.json",
+            "artifacts/acceptance/P02-01/fixtures/reorg.json",
+          ],
           workItemId: "P02-02",
         }),
       ],
