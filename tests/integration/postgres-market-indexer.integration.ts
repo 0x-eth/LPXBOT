@@ -8,6 +8,8 @@ import {
   IndexerRunner,
   PostgresCanonicalEventStore,
 } from "../../apps/indexer/src/index.js";
+import { PostgresMarketPoolsProvider } from "../../apps/api/src/market-pools.js";
+import type { MarketStreamEnvelope } from "../../packages/api-contract/src/index.js";
 import {
   FixtureEventDecoder,
   FixtureRawLogSource,
@@ -62,6 +64,28 @@ function runnerFor(name: "normal" | "duplicate" | "out-of-order" | "reorg") {
       store: new PostgresCanonicalEventStore(pool),
     }),
   };
+}
+
+async function takeStreamEvents(
+  provider: PostgresMarketPoolsProvider,
+  count: number,
+  lastEventId: string | null,
+): Promise<MarketStreamEnvelope[]> {
+  const controller = new AbortController();
+  const events: MarketStreamEnvelope[] = [];
+  for await (const event of provider.subscribe({
+    chainId: 56,
+    lastEventId,
+    minutes: 5,
+    signal: controller.signal,
+  })) {
+    events.push(event);
+    if (events.length === count) {
+      controller.abort();
+      break;
+    }
+  }
+  return events;
 }
 
 beforeAll(async () => {
@@ -274,5 +298,72 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
       await client.query("ROLLBACK");
       client.release();
     }
+  });
+
+  it("starts a new epoch with a complete snapshot after a retention miss", async () => {
+    await runnerFor("normal").runner.runOnce();
+    const before = await pool.query<{ epoch: string }>(
+      `SELECT epoch::text
+         FROM market_stream_outbox
+        WHERE stream_key = 'top-fees:56:5'
+        ORDER BY epoch DESC, sequence DESC
+        LIMIT 1`,
+    );
+    const provider = new PostgresMarketPoolsProvider(pool, {
+      now: () => new Date("2026-08-16T00:06:00.000Z"),
+      pollMilliseconds: 1,
+    });
+
+    const [recovery] = await takeStreamEvents(provider, 1, "expired-retention-cursor");
+
+    expect(recovery).toMatchObject({
+      epoch: (BigInt(before.rows[0]!.epoch) + 1n).toString(),
+      eventType: "pools.snapshot",
+      mode: "snapshot",
+      sequence: "1",
+      streamKey: "top-fees:56:5",
+    });
+    expect(recovery?.data).toMatchObject({ chainId: 56, minutes: 5, rows: expect.any(Array) });
+    const durable = await pool.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+         FROM market_stream_outbox
+        WHERE cursor = $1 AND event_type = 'pools.snapshot'`,
+      [recovery!.cursor],
+    );
+    expect(durable.rows).toEqual([{ count: "1" }]);
+  });
+
+  it("persists heartbeats and replays strictly after Last-Event-ID", async () => {
+    await runnerFor("normal").runner.runOnce();
+    const provider = new PostgresMarketPoolsProvider(pool, {
+      heartbeatMilliseconds: 1,
+      now: () => new Date("2026-08-16T00:06:00.000Z"),
+      pollMilliseconds: 1,
+    });
+
+    const [snapshot, heartbeat] = await takeStreamEvents(provider, 2, null);
+
+    expect(snapshot?.eventType).toBe("pools.snapshot");
+    expect(heartbeat).toMatchObject({
+      data: null,
+      epoch: snapshot!.epoch,
+      eventType: "heartbeat",
+      mode: "diff",
+      sequence: (BigInt(snapshot!.sequence) + 1n).toString(),
+    });
+    const replayProvider = new PostgresMarketPoolsProvider(pool, {
+      now: () => new Date("2026-08-16T00:06:01.000Z"),
+      pollMilliseconds: 1,
+    });
+    const [replayed] = await takeStreamEvents(replayProvider, 1, snapshot!.cursor);
+    expect(replayed).toEqual(heartbeat);
+
+    const durable = await pool.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+         FROM market_stream_outbox
+        WHERE cursor = $1 AND event_type = 'heartbeat'`,
+      [heartbeat!.cursor],
+    );
+    expect(durable.rows).toEqual([{ count: "1" }]);
   });
 });

@@ -120,5 +120,32 @@ describe("P02-02 pool stream client state", () => {
     expect(stale.connection).toBe("stale");
     expect(stale.rows).toEqual([row]);
   });
-});
 
+  it("sorts decimal fee strings by their numeric value after a diff", () => {
+    const lowerFeeRow = {
+      ...row,
+      feesUsd: "9.9",
+      poolAddress: "0x2222222222222222222222222222222222222222" as const,
+    };
+    const snapshot = event("1", "pools.snapshot", {
+      chainId: 56,
+      generatedAt: "2026-08-16T01:00:00.000Z",
+      minutes: 5,
+      rows: [{ ...row, feesUsd: "10" }, lowerFeeRow],
+      version: "1",
+      windowEnd: "2026-08-16T01:00:00.000Z",
+      windowStart: "2026-08-16T00:55:00.000Z",
+    });
+    const ready = reducePoolStream(initialPoolStreamState(), { event: snapshot, type: "event" });
+    const sorted = reducePoolStream(ready, {
+      event: event("2", "pools.diff", {
+        tombstones: [],
+        upserts: [lowerFeeRow],
+        version: "2",
+      }),
+      type: "event",
+    });
+
+    expect(sorted.rows.map(({ feesUsd }) => feesUsd)).toEqual(["10", "9.9"]);
+  });
+});
