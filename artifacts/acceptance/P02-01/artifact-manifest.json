@@ -60,35 +60,35 @@
     {
       "path": "fixture-index.json",
       "bytes": 1509,
-      "sha256": "2a91fc9bf9d346f528aa82589e9cbdcb5d1430a9c91419d6ab3054f148524953",
+      "sha256": "f83f5aeb7819b98f7832d40966d11ee2b668414e1cfa65d1e35755f2b0bdf7ee",
       "mediaType": "application/json",
       "category": "catalog"
     },
     {
       "path": "fixtures/duplicate.json",
-      "bytes": 2255,
-      "sha256": "5bc09eb5bc432a9f9eaa3e7cc3a73f1434655c349c432058767bd41a67e45299",
+      "bytes": 2279,
+      "sha256": "43be54e38bcefa112b285a1223e639100ecc0654c38ff071e8245a60a9fff8d9",
       "mediaType": "application/json",
       "category": "fixture"
     },
     {
       "path": "fixtures/normal.json",
-      "bytes": 8516,
-      "sha256": "876f3f23796014926de836b243f21afc2c2baf2af20673433579ce333819c67a",
+      "bytes": 8576,
+      "sha256": "d0cc5b63899bce1518a632a4302ed14aacef8c4afb71296457f225941fc8e012",
       "mediaType": "application/json",
       "category": "fixture"
     },
     {
       "path": "fixtures/out-of-order.json",
-      "bytes": 3033,
-      "sha256": "221ec1417a94428c1618592a6a974e80fb6b318d4dc46983f4e2bf8cfa807b5a",
+      "bytes": 3069,
+      "sha256": "b94b7e23a406269d5e9b0c0102ad050c9014d792adb1ae7474267c55b5826ba1",
       "mediaType": "application/json",
       "category": "fixture"
     },
     {
       "path": "fixtures/reorg.json",
-      "bytes": 3273,
-      "sha256": "64b1639fa86ab48d76114b39498eeb2f6ea5b656e3a6c7b0fdd8afd09333a654",
+      "bytes": 3305,
+      "sha256": "3d06674ea3c20b5106dc64eccea529560398c92ec974b5ec015b431c175f81b3",
       "mediaType": "application/json",
       "category": "fixture"
     },

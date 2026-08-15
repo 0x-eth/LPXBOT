@@ -7,19 +7,19 @@
     {
       "arrival": 1,
       "decoderFixtureId": "fixture://pcsv4/swap/v1",
-      "rawLog": { "chainId": 56, "blockNumber": "108", "blockHash": "0x1818181818181818181818181818181818181818181818181818181818181818", "transactionHash": "0xb3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3", "transactionIndex": 0, "logIndex": 0, "address": "0x3333333333333333333333333333333333333333", "topics": ["0xf1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1"], "data": "0x08", "removed": false },
+      "rawLog": { "chainId": 56, "blockNumber": "108", "blockHash": "0x1818181818181818181818181818181818181818181818181818181818181818", "transactionHash": "0xb3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3", "transactionIndex": 0, "logIndex": 0, "address": "0x3333333333333333333333333333333333333333", "topics": ["0xf1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1"], "data": "0x08", "removed": false },
       "fixtureDecoded": { "protocol": "pcsv4", "protocolGeneration": "v4", "kind": "swap", "pool": { "poolAddress": null, "poolId": "0x4343434343434343434343434343434343434343434343434343434343434343" }, "payload": { "amount0": "8", "amount1": "-16" } }
     },
     {
       "arrival": 2,
       "decoderFixtureId": "fixture://pcsv4/swap/v1",
-      "rawLog": { "chainId": 56, "blockNumber": "106", "blockHash": "0x1616161616161616161616161616161616161616161616161616161616161616", "transactionHash": "0xb1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "transactionIndex": 0, "logIndex": 0, "address": "0x3333333333333333333333333333333333333333", "topics": ["0xf1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1"], "data": "0x06", "removed": false },
+      "rawLog": { "chainId": 56, "blockNumber": "106", "blockHash": "0x1616161616161616161616161616161616161616161616161616161616161616", "transactionHash": "0xb1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "transactionIndex": 0, "logIndex": 0, "address": "0x3333333333333333333333333333333333333333", "topics": ["0xf1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1"], "data": "0x06", "removed": false },
       "fixtureDecoded": { "protocol": "pcsv4", "protocolGeneration": "v4", "kind": "swap", "pool": { "poolAddress": null, "poolId": "0x4343434343434343434343434343434343434343434343434343434343434343" }, "payload": { "amount0": "6", "amount1": "-12" } }
     },
     {
       "arrival": 3,
       "decoderFixtureId": "fixture://pcsv4/swap/v1",
-      "rawLog": { "chainId": 56, "blockNumber": "107", "blockHash": "0x1717171717171717171717171717171717171717171717171717171717171717", "transactionHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2", "transactionIndex": 0, "logIndex": 0, "address": "0x3333333333333333333333333333333333333333", "topics": ["0xf1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1"], "data": "0x07", "removed": false },
+      "rawLog": { "chainId": 56, "blockNumber": "107", "blockHash": "0x1717171717171717171717171717171717171717171717171717171717171717", "transactionHash": "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2", "transactionIndex": 0, "logIndex": 0, "address": "0x3333333333333333333333333333333333333333", "topics": ["0xf1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1"], "data": "0x07", "removed": false },
       "fixtureDecoded": { "protocol": "pcsv4", "protocolGeneration": "v4", "kind": "swap", "pool": { "poolAddress": null, "poolId": "0x4343434343434343434343434343434343434343434343434343434343434343" }, "payload": { "amount0": "7", "amount1": "-14" } }
     }
   ],
