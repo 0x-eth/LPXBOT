@@ -1,0 +1,444 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-08",
+  "phase": "P01",
+  "acceptanceStatus": "accepted-with-gaps",
+  "phaseStatus": "implemented-assumed",
+  "referenceOnlyWorkItem": "P01-01",
+  "implementationWorkItems": ["P01-02", "P01-03", "P01-04", "P01-05", "P01-06", "P01-07"],
+  "counts": {
+    "phaseFeatures": 18,
+    "implementedAssumed": 18,
+    "parityVerified": 0,
+    "released": 0,
+    "remainingPlanned": 178
+  },
+  "features": [
+    {
+      "id": "AUTH-01",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-03/manifest.json",
+      "implementationFiles": [
+        "packages/security/src/telegram-init-data.ts",
+        "packages/security/src/telegram-mini-app-login.ts",
+        "apps/api/src/app.ts",
+        "apps/web/src/telegram-mini-app.ts"
+      ],
+      "testLinks": [
+        { "id": "T-UNIT", "path": "tests/telegram-init-data.test.ts" },
+        { "id": "T-API", "path": "tests/telegram-mini-app-login.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/telegram-login.spec.ts" },
+        { "id": "T-SEC", "path": "tests/telegram-mini-app-login.test.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-03",
+      "evidenceLinks": [
+        { "id": "E-API", "path": "artifacts/acceptance/P01-03/E-API.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-03/E-UI.md" },
+        { "id": "E-RBAC", "path": "artifacts/acceptance/P01-03/E-RBAC.md" },
+        { "id": "E-SEC", "path": "artifacts/acceptance/P01-03/E-SEC.md" }
+      ],
+      "evidenceLevels": ["frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "AUTH-02",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-03/manifest.json",
+      "implementationFiles": [
+        "packages/security/src/telegram-bot-login.ts",
+        "apps/api/src/app.ts",
+        "apps/web/src/auth-client.ts"
+      ],
+      "testLinks": [
+        { "id": "T-UNIT", "path": "tests/telegram-bot-login.test.ts" },
+        { "id": "T-API", "path": "tests/telegram-bot-login.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/telegram-login.spec.ts" },
+        { "id": "T-SEC", "path": "tests/telegram-bot-login.test.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-03",
+      "evidenceLinks": [
+        { "id": "E-API", "path": "artifacts/acceptance/P01-03/E-API.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-03/E-UI.md" },
+        { "id": "E-RBAC", "path": "artifacts/acceptance/P01-03/E-RBAC.md" },
+        { "id": "E-SEC", "path": "artifacts/acceptance/P01-03/E-SEC.md" }
+      ],
+      "evidenceLevels": ["frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "AUTH-03",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-04/manifest.json",
+      "implementationFiles": [
+        "packages/security/src/login-wallet-auth.ts",
+        "apps/api/src/app.ts",
+        "apps/web/src/eip1193-wallet.ts",
+        "apps/web/src/auth-client.ts"
+      ],
+      "testLinks": [
+        { "id": "T-UNIT", "path": "tests/wallet-auth.test.ts" },
+        { "id": "T-API", "path": "tests/wallet-auth-api.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/wallet-auth.spec.ts" },
+        { "id": "T-SEC", "path": "tests/wallet-auth.test.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-04",
+      "evidenceLinks": [
+        { "id": "E-API", "path": "artifacts/acceptance/P01-04/E-API.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-04/E-UI.md" },
+        { "id": "E-RBAC", "path": "artifacts/acceptance/P01-04/E-RBAC.md" },
+        { "id": "E-SEC", "path": "artifacts/acceptance/P01-04/E-SEC.md" }
+      ],
+      "evidenceLevels": ["frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false,
+      "claimBoundary": "EOA only; EIP-1271 is not implemented or verified"
+    },
+    {
+      "id": "AUTH-04",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-04/manifest.json",
+      "implementationFiles": [
+        "packages/security/src/login-wallet-auth.ts",
+        "apps/api/src/app.ts",
+        "apps/web/src/App.tsx",
+        "apps/web/src/auth-client.ts"
+      ],
+      "testLinks": [
+        { "id": "T-API", "path": "tests/wallet-auth-api.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/wallet-auth.spec.ts" },
+        { "id": "T-SEC", "path": "tests/wallet-domain-boundary.test.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-04",
+      "evidenceLinks": [
+        { "id": "E-API", "path": "artifacts/acceptance/P01-04/E-API.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-04/E-UI.md" },
+        { "id": "E-RBAC", "path": "artifacts/acceptance/P01-04/E-RBAC.md" },
+        { "id": "E-SEC", "path": "artifacts/acceptance/P01-04/E-SEC.md" }
+      ],
+      "evidenceLevels": ["frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "AUTH-05",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-02/manifest.json",
+      "implementationFiles": [
+        "apps/api/src/app.ts",
+        "apps/api/src/postgres-session-store.ts",
+        "apps/api/src/browser-session-cookie.ts",
+        "apps/web/src/auth-client.ts"
+      ],
+      "testLinks": [
+        { "id": "T-API", "path": "tests/api-auth.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/auth-states.spec.ts" },
+        { "id": "T-SEC", "path": "tests/api-auth.test.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-02",
+      "evidenceLinks": [
+        { "id": "E-API", "path": "artifacts/acceptance/P01-02/E-API.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-02/E-UI.md" },
+        { "id": "E-RBAC", "path": "artifacts/acceptance/P01-02/E-RBAC.md" },
+        { "id": "E-SEC", "path": "artifacts/acceptance/P01-02/E-SEC.md" }
+      ],
+      "evidenceLevels": ["frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "AUTH-06",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-02/manifest.json",
+      "implementationFiles": ["packages/domain/src/index.ts", "apps/api/src/app.ts", "apps/web/src/App.tsx"],
+      "testLinks": [
+        { "id": "T-API", "path": "tests/api-auth.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/auth-states.spec.ts" },
+        { "id": "T-SEC", "path": "tests/auth-policy.test.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-02",
+      "evidenceLinks": [
+        { "id": "E-API", "path": "artifacts/acceptance/P01-02/E-API.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-02/E-UI.md" },
+        { "id": "E-RBAC", "path": "artifacts/acceptance/P01-02/E-RBAC.md" }
+      ],
+      "evidenceLevels": ["frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "AUTH-07",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-02/manifest.json",
+      "implementationFiles": ["packages/domain/src/index.ts", "apps/api/src/app.ts", "apps/web/src/App.tsx"],
+      "testLinks": [
+        { "id": "T-API", "path": "tests/api-auth.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/auth-states.spec.ts" },
+        { "id": "T-REC", "path": "tests/integration/postgres-session.integration.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-02",
+      "evidenceLinks": [
+        { "id": "E-API", "path": "artifacts/acceptance/P01-02/E-API.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-02/E-UI.md" },
+        { "id": "E-RBAC", "path": "artifacts/acceptance/P01-02/E-RBAC.md" },
+        { "id": "E-REC", "path": "artifacts/acceptance/P01-02/E-REC.md" }
+      ],
+      "evidenceLevels": ["frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "AUTH-08",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-02/manifest.json",
+      "implementationFiles": ["packages/domain/src/index.ts", "apps/api/src/app.ts", "apps/web/src/App.tsx"],
+      "testLinks": [
+        { "id": "T-API", "path": "tests/api-auth.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/auth-states.spec.ts" },
+        { "id": "T-SEC", "path": "tests/auth-policy.test.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-02",
+      "evidenceLinks": [
+        { "id": "E-API", "path": "artifacts/acceptance/P01-02/E-API.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-02/E-UI.md" },
+        { "id": "E-RBAC", "path": "artifacts/acceptance/P01-02/E-RBAC.md" }
+      ],
+      "evidenceLevels": ["frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "AUTH-09",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-02/manifest.json",
+      "implementationFiles": ["packages/domain/src/index.ts", "apps/api/src/app.ts", "apps/web/src/App.tsx"],
+      "testLinks": [
+        { "id": "T-API", "path": "tests/api-auth.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/auth-states.spec.ts" },
+        { "id": "T-SEC", "path": "tests/auth-policy.test.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-02",
+      "evidenceLinks": [
+        { "id": "E-API", "path": "artifacts/acceptance/P01-02/E-API.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-02/E-UI.md" },
+        { "id": "E-RBAC", "path": "artifacts/acceptance/P01-02/E-RBAC.md" },
+        { "id": "E-SEC", "path": "artifacts/acceptance/P01-02/E-SEC.md" }
+      ],
+      "evidenceLevels": ["frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "AUTH-10",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-07/manifest.json",
+      "implementationFiles": [
+        "packages/domain/src/index.ts",
+        "apps/api/src/app.ts",
+        "apps/api/src/postgres-chain-access-policy-store.ts",
+        "apps/web/src/chain-management.tsx",
+        "infra/migrations/20260815000100_create_chain_access_policies.sql"
+      ],
+      "testLinks": [
+        { "id": "T-API", "path": "tests/chain-access-api.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/chain-management.spec.ts" },
+        { "id": "T-SEC", "path": "tests/chain-access-policy.test.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-07",
+      "evidenceLinks": [
+        { "id": "E-API", "path": "artifacts/acceptance/P01-07/E-API.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-07/E-UI.md" },
+        { "id": "E-RBAC", "path": "artifacts/acceptance/P01-07/E-RBAC.md" },
+        { "id": "E-OPS", "path": "artifacts/acceptance/P01-07/E-OPS.md" }
+      ],
+      "evidenceLevels": ["frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "SHELL-01",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-05/manifest.json",
+      "implementationFiles": ["apps/web/src/App.tsx", "apps/web/src/styles.css"],
+      "testLinks": [
+        { "id": "T-UI", "path": "tests/e2e/shell.spec.ts" },
+        { "id": "T-VIS", "path": "tests/e2e/shell.spec.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-05",
+      "evidenceLinks": [
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-05/E-UI.md" },
+        { "id": "E-VIS", "path": "artifacts/acceptance/P01-05/E-VIS.md" }
+      ],
+      "evidenceLevels": ["live-observed", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "SHELL-02",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-06/manifest.json",
+      "implementationFiles": [
+        "apps/api/src/shell-stats.ts",
+        "apps/api/src/app.ts",
+        "apps/web/src/shell-stats.ts",
+        "apps/web/src/shell-stats-react.tsx"
+      ],
+      "testLinks": [
+        { "id": "T-SSE", "path": "tests/stats-sse-api.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/preferences-shell.spec.ts" },
+        { "id": "T-VIS", "path": "tests/e2e/preferences-shell.spec.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-06",
+      "evidenceLinks": [
+        { "id": "E-SSE", "path": "artifacts/acceptance/P01-06/E-SSE.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-06/E-UI.md" },
+        { "id": "E-VIS", "path": "artifacts/acceptance/P01-06/E-VIS.md" }
+      ],
+      "evidenceLevels": ["live-observed", "frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "SHELL-03",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-06/manifest.json",
+      "implementationFiles": ["apps/web/src/theme.ts", "apps/web/src/preferences.tsx", "apps/web/src/styles.css"],
+      "testLinks": [
+        { "id": "T-UI", "path": "tests/e2e/preferences-shell.spec.ts" },
+        { "id": "T-VIS", "path": "tests/e2e/preferences-shell.spec.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-06",
+      "evidenceLinks": [
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-06/E-UI.md" },
+        { "id": "E-VIS", "path": "artifacts/acceptance/P01-06/E-VIS.md" }
+      ],
+      "evidenceLevels": ["live-observed", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "SHELL-04",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-06/manifest.json",
+      "implementationFiles": [
+        "apps/api/src/user-preferences.ts",
+        "apps/web/src/preferences.tsx",
+        "apps/web/src/settings-interface.tsx",
+        "apps/web/src/App.tsx"
+      ],
+      "testLinks": [
+        { "id": "T-API", "path": "tests/user-preferences-api.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/preferences-shell.spec.ts" },
+        { "id": "T-VIS", "path": "tests/e2e/preferences-shell.spec.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-06",
+      "evidenceLinks": [
+        { "id": "E-API", "path": "artifacts/acceptance/P01-06/E-API.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-06/E-UI.md" },
+        { "id": "E-VIS", "path": "artifacts/acceptance/P01-06/E-VIS.md" },
+        { "id": "E-RBAC", "path": "artifacts/acceptance/P01-06/E-RBAC.md" }
+      ],
+      "evidenceLevels": ["frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "SHELL-05",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-05/manifest.json",
+      "implementationFiles": [
+        "apps/web/src/feedback-controller.ts",
+        "apps/web/src/feedback.tsx",
+        "apps/web/src/App.tsx"
+      ],
+      "testLinks": [
+        { "id": "T-UI", "path": "tests/e2e/shell.spec.ts" },
+        { "id": "T-VIS", "path": "tests/e2e/shell.spec.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-05",
+      "evidenceLinks": [
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-05/E-UI.md" },
+        { "id": "E-VIS", "path": "artifacts/acceptance/P01-05/E-VIS.md" }
+      ],
+      "evidenceLevels": ["local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "SHELL-06",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-05/manifest.json",
+      "implementationFiles": [
+        "apps/web/src/sw.ts",
+        "apps/web/src/pwa-policy.ts",
+        "apps/web/src/pwa-update-controller.ts",
+        "apps/web/src/telegram-mini-app.ts"
+      ],
+      "testLinks": [
+        { "id": "T-UI", "path": "tests/e2e/shell.spec.ts" },
+        { "id": "T-VIS", "path": "tests/e2e/shell.spec.ts" },
+        { "id": "T-MIG", "path": "tests/e2e-pwa/pwa-preview.spec.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-05",
+      "evidenceLinks": [
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-05/E-UI.md" },
+        { "id": "E-VIS", "path": "artifacts/acceptance/P01-05/E-VIS.md" },
+        { "id": "E-OPS", "path": "artifacts/acceptance/P01-05/E-OPS.md" }
+      ],
+      "evidenceLevels": ["frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "SET-01",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-06/manifest.json",
+      "implementationFiles": [
+        "apps/api/src/user-preferences.ts",
+        "apps/api/src/postgres-user-preferences-store.ts",
+        "apps/web/src/preferences.tsx",
+        "apps/web/src/settings-interface.tsx"
+      ],
+      "testLinks": [
+        { "id": "T-API", "path": "tests/user-preferences-api.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/preferences-shell.spec.ts" },
+        { "id": "T-VIS", "path": "tests/e2e/preferences-shell.spec.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-06",
+      "evidenceLinks": [
+        { "id": "E-API", "path": "artifacts/acceptance/P01-06/E-API.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-06/E-UI.md" },
+        { "id": "E-VIS", "path": "artifacts/acceptance/P01-06/E-VIS.md" }
+      ],
+      "evidenceLevels": ["live-observed", "frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    },
+    {
+      "id": "SET-02",
+      "phase": "P01",
+      "implementationManifest": "artifacts/acceptance/P01-06/manifest.json",
+      "implementationFiles": [
+        "apps/api/src/user-preferences.ts",
+        "apps/api/src/postgres-user-preferences-store.ts",
+        "apps/web/src/preferences.tsx",
+        "apps/web/src/settings-interface.tsx"
+      ],
+      "testLinks": [
+        { "id": "T-API", "path": "tests/user-preferences-api.test.ts" },
+        { "id": "T-UI", "path": "tests/e2e/preferences-shell.spec.ts" },
+        { "id": "T-VIS", "path": "tests/e2e/preferences-shell.spec.ts" }
+      ],
+      "acceptanceDirectory": "artifacts/acceptance/P01-06",
+      "evidenceLinks": [
+        { "id": "E-API", "path": "artifacts/acceptance/P01-06/E-API.md" },
+        { "id": "E-UI", "path": "artifacts/acceptance/P01-06/E-UI.md" },
+        { "id": "E-VIS", "path": "artifacts/acceptance/P01-06/E-VIS.md" }
+      ],
+      "evidenceLevels": ["live-observed", "frozen-bundle-candidate", "local-fixture-verified"],
+      "status": "implemented-assumed",
+      "parityEvidenceComplete": false
+    }
+  ]
+}
