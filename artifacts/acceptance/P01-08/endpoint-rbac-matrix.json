@@ -1,0 +1,320 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P01-08",
+  "evidenceLevel": "local-fixture-verified",
+  "scope": {
+    "runtimeEndpoints": 17,
+    "testOnlyEndpoints": 3,
+    "roles": ["anonymous", "user", "pro", "admin"],
+    "accountStates": ["active", "pending", "rejected", "banned"],
+    "globalStates": ["maintenance", "region-blocked"]
+  },
+  "globalSessionPolicy": {
+    "credentialOrder": ["HttpOnly lpbot_session cookie", "Authorization Bearer"],
+    "missingOrExpired": "401 UNAUTHENTICATED or AUTH_EXPIRED",
+    "pending": "403 ACCOUNT_PENDING",
+    "rejected": "403 ACCOUNT_REJECTED",
+    "banned": "403 ACCOUNT_BANNED",
+    "regionBlocked": "403 REGION_BLOCKED for every role",
+    "maintenance": "503 MAINTENANCE for user/pro; active admin bypasses",
+    "trustedRoleTierPairs": ["user/normal", "pro/pro", "admin/normal", "admin/pro"]
+  },
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/auth/me",
+      "featureIds": ["AUTH-01", "AUTH-05", "AUTH-06", "AUTH-07", "AUTH-08", "AUTH-09"],
+      "purpose": "Telegram Mini App login when initData is present; session restoration otherwise",
+      "rbac": {
+        "anonymous": "401 without initData; public Telegram authentication with initData",
+        "user": "200 active session",
+        "pro": "200 active session",
+        "admin": "200 active session and maintenance bypass"
+      },
+      "statePolicy": "full global session policy; newly authenticated account is checked before success",
+      "security": ["rate-limited", "Telegram HMAC/time/replay validation", "no-store credential handling"],
+      "tests": ["tests/api-auth.test.ts", "tests/telegram-mini-app-login.test.ts"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "featureIds": ["AUTH-05"],
+      "purpose": "Idempotent session revocation and browser cookie clearing",
+      "rbac": {
+        "anonymous": "200 loggedOut=true, revoked=false",
+        "user": "200 and own session revoked",
+        "pro": "200 and own session revoked",
+        "admin": "200 and own session revoked"
+      },
+      "statePolicy": "logout remains available for blocked, maintenance and region states",
+      "security": ["HttpOnly/Secure/SameSite=Lax cookie cleared", "credential hash only"],
+      "tests": ["tests/api-auth.test.ts", "tests/integration/postgres-session.integration.ts"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login-token",
+      "featureIds": ["AUTH-02"],
+      "purpose": "Create Telegram Bot one-time login intent",
+      "rbac": {
+        "anonymous": "200 when configured",
+        "user": "200 when configured",
+        "pro": "200 when configured",
+        "admin": "200 when configured"
+      },
+      "statePolicy": "no account exists yet; 503 when Bot configuration is absent",
+      "security": ["rate-limited", "random single-use token", "only token hash persisted"],
+      "tests": ["tests/telegram-bot-login.test.ts"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/login-status/:token",
+      "featureIds": ["AUTH-02", "AUTH-06", "AUTH-07", "AUTH-08"],
+      "purpose": "Poll and atomically consume a Telegram Bot login intent",
+      "rbac": {
+        "anonymous": "public token capability",
+        "user": "public token capability",
+        "pro": "public token capability",
+        "admin": "public token capability"
+      },
+      "statePolicy": "confirmed account receives full account/region/maintenance decision",
+      "security": ["rate-limited", "single consumer", "token omitted from success response"],
+      "tests": ["tests/telegram-bot-login.test.ts", "tests/e2e/telegram-login.spec.ts"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login-token/:token/cancel",
+      "featureIds": ["AUTH-02"],
+      "purpose": "Cancel an unconsumed Telegram Bot login intent",
+      "rbac": {
+        "anonymous": "public token capability",
+        "user": "public token capability",
+        "pro": "public token capability",
+        "admin": "public token capability"
+      },
+      "statePolicy": "409 consumed, 410 expired, 404 invalid",
+      "security": ["rate-limited", "single terminal transition", "only token hash persisted"],
+      "tests": ["tests/telegram-bot-login.test.ts"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/wallet/nonce",
+      "featureIds": ["AUTH-03"],
+      "purpose": "Issue an EOA SIWE login challenge",
+      "rbac": {
+        "anonymous": "200 valid request",
+        "user": "200 valid request",
+        "pro": "200 valid request",
+        "admin": "200 valid request"
+      },
+      "statePolicy": "no account decision until signed challenge is consumed",
+      "security": ["rate-limited", "nonce/domain/URI/chain/expiry/purpose bound", "hash-only persistence"],
+      "tests": ["tests/wallet-auth.test.ts", "tests/wallet-auth-api.test.ts"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/wallet/login",
+      "featureIds": ["AUTH-03", "AUTH-06", "AUTH-07", "AUTH-08"],
+      "purpose": "Verify an EOA signature, consume the challenge and create a session",
+      "rbac": {
+        "anonymous": "public login capability",
+        "user": "public login capability",
+        "pro": "public login capability",
+        "admin": "public login capability"
+      },
+      "statePolicy": "resolved account receives full account/region/maintenance decision",
+      "security": ["rate-limited", "single atomic nonce consumer", "EOA only", "signature not persisted or returned"],
+      "tests": ["tests/wallet-auth.test.ts", "tests/wallet-auth-api.test.ts"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/wallet/links",
+      "featureIds": ["AUTH-04"],
+      "purpose": "List masked login-wallet identities owned by the session user",
+      "rbac": {
+        "anonymous": "401",
+        "user": "200 own links",
+        "pro": "200 own links",
+        "admin": "200 own links; no implicit cross-user scope"
+      },
+      "statePolicy": "full global session policy",
+      "security": ["rate-limited", "session-derived owner", "masked addresses"],
+      "tests": ["tests/wallet-auth-api.test.ts", "tests/wallet-auth.test.ts"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/wallet/link-nonce",
+      "featureIds": ["AUTH-04"],
+      "purpose": "Issue an owned wallet-link challenge",
+      "rbac": {
+        "anonymous": "401",
+        "user": "200 own challenge",
+        "pro": "200 own challenge",
+        "admin": "200 own challenge; no implicit cross-user scope"
+      },
+      "statePolicy": "full global session policy",
+      "security": ["rate-limited", "session user bound", "login and link purpose separated"],
+      "tests": ["tests/wallet-auth-api.test.ts", "tests/wallet-auth.test.ts"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/wallet/link",
+      "featureIds": ["AUTH-04"],
+      "purpose": "Verify and add an owned login-wallet identity",
+      "rbac": {
+        "anonymous": "401",
+        "user": "200 own link",
+        "pro": "200 own link",
+        "admin": "200 own link; no implicit cross-user scope"
+      },
+      "statePolicy": "full global session policy",
+      "security": ["rate-limited", "session user/purpose bound", "address uniqueness", "signature omitted"],
+      "tests": ["tests/wallet-auth-api.test.ts", "tests/wallet-auth.test.ts"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/auth/wallet/link/:linkId",
+      "featureIds": ["AUTH-04"],
+      "purpose": "Delete an owned login-wallet identity while preserving a login method",
+      "rbac": {
+        "anonymous": "401",
+        "user": "200 own deletable link",
+        "pro": "200 own deletable link",
+        "admin": "200 own deletable link; no implicit cross-user scope"
+      },
+      "statePolicy": "full global session policy",
+      "security": ["session-derived owner", "last login method protected", "cross-user IDs return safe not-found"],
+      "tests": ["tests/wallet-auth-api.test.ts", "tests/wallet-auth.test.ts"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/preferences",
+      "featureIds": ["SHELL-03", "SHELL-04", "SET-01", "SET-02"],
+      "purpose": "Read server-owned versioned preferences",
+      "rbac": {
+        "anonymous": "401",
+        "user": "200 own preferences",
+        "pro": "200 own preferences",
+        "admin": "200 own preferences"
+      },
+      "statePolicy": "full global session policy",
+      "security": ["Cache-Control no-store", "session-derived owner", "server defaults and normalization"],
+      "tests": ["tests/user-preferences-api.test.ts", "tests/integration/postgres-user-preferences.integration.ts"]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/user/preferences",
+      "featureIds": ["SHELL-03", "SHELL-04", "SET-01", "SET-02"],
+      "purpose": "Optimistically update whitelisted preferences",
+      "rbac": {
+        "anonymous": "401",
+        "user": "200 own valid update",
+        "pro": "200 own valid update",
+        "admin": "200 own valid update"
+      },
+      "statePolicy": "full global session policy",
+      "security": ["Cache-Control no-store", "exact field validation", "session-derived owner", "revision conflict 409"],
+      "tests": ["tests/user-preferences-api.test.ts", "tests/integration/postgres-user-preferences.integration.ts"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/stats",
+      "featureIds": ["SHELL-02"],
+      "purpose": "Read the authenticated shell statistics snapshot",
+      "rbac": {
+        "anonymous": "401",
+        "user": "200 when provider configured",
+        "pro": "200 when provider configured",
+        "admin": "200 when provider configured"
+      },
+      "statePolicy": "full global session policy; 503 when provider absent",
+      "security": ["Cache-Control no-store", "missing values remain null"],
+      "tests": ["tests/stats-sse-api.test.ts"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/stats/stream",
+      "featureIds": ["SHELL-02"],
+      "purpose": "Open authenticated ordered shell-statistics SSE",
+      "rbac": {
+        "anonymous": "401 before subscription",
+        "user": "200 stream when provider configured",
+        "pro": "200 stream when provider configured",
+        "admin": "200 stream when provider configured"
+      },
+      "statePolicy": "full global session policy; 503 when provider absent",
+      "security": ["no-cache/no-store", "authentication before hijack", "abort on close", "strict sequence"],
+      "tests": ["tests/stats-sse-api.test.ts", "tests/shell-stats-client.test.ts"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/system-config/chains",
+      "featureIds": ["AUTH-10"],
+      "purpose": "Read role-effective chain access; management metadata only for trusted admin",
+      "rbac": {
+        "anonymous": "401",
+        "user": "200 all-mode chains with public fields",
+        "pro": "200 all/pro-mode chains with public fields",
+        "admin": "200 all/pro-mode chains with management fields"
+      },
+      "statePolicy": "full global session policy; fail-closed role/tier mismatch; 503 without store",
+      "security": ["Cache-Control no-store", "server-derived role/tier", "configuration failure returns no grants"],
+      "tests": ["tests/chain-access-api.test.ts", "tests/chain-access-policy.test.ts"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/system-config/chains",
+      "featureIds": ["AUTH-10"],
+      "purpose": "Versioned administrator chain-access update and rollback",
+      "rbac": {
+        "anonymous": "401",
+        "user": "403",
+        "pro": "403",
+        "admin": "200 valid update for trusted admin role/tier"
+      },
+      "statePolicy": "full global session policy; maintenance admin bypass; region block still denies",
+      "security": [
+        "same-origin",
+        "409 optimistic conflict",
+        "429 per-session fixed-window limit",
+        "4096-byte body limit",
+        "exact field whitelist",
+        "append-only history and management audit"
+      ],
+      "tests": ["tests/chain-access-api.test.ts", "tests/integration/postgres-chain-operations.integration.ts"]
+    }
+  ],
+  "testOnlyEndpoints": [
+    {
+      "method": "POST",
+      "path": "/api/test/chain-access",
+      "production": "404 NOT_FOUND",
+      "purpose": "Exercise chain/ownership truth table without adding business APIs"
+    },
+    {
+      "method": "GET",
+      "path": "/__test/guard/:level",
+      "production": "404 NOT_FOUND",
+      "purpose": "Exercise authenticated/pro/admin role guard"
+    },
+    {
+      "method": "GET",
+      "path": "/__test/owned/:ownerUserId",
+      "production": "404 NOT_FOUND",
+      "purpose": "Exercise ownership without implicit admin scope"
+    }
+  ],
+  "stableSecurityResponses": {
+    "401": ["UNAUTHENTICATED", "AUTH_EXPIRED", "SIGNATURE_INVALID"],
+    "403": ["ACCOUNT_PENDING", "ACCOUNT_REJECTED", "ACCOUNT_BANNED", "REGION_BLOCKED", "FORBIDDEN", "CSRF_INVALID"],
+    "409": ["AUTH_REPLAYED", "NONCE_REPLAYED", "LOGIN_TOKEN_CONSUMED", "LOGIN_TOKEN_CANCELLED", "PREFERENCES_CONFLICT", "CONFIG_CONFLICT"],
+    "410": ["NONCE_EXPIRED", "LOGIN_TOKEN_EXPIRED"],
+    "429": ["RATE_LIMITED"],
+    "503": ["MAINTENANCE", "TELEGRAM_AUTH_UNAVAILABLE", "TELEGRAM_BOT_UNAVAILABLE", "WALLET_AUTH_UNAVAILABLE", "PREFERENCES_UNAVAILABLE", "STATS_UNAVAILABLE", "CHAIN_CONFIG_UNAVAILABLE"]
+  },
+  "sensitiveDataBoundary": {
+    "excludedFromHttpLogs": ["Cookie", "Bearer", "nonce", "signature", "request body", "initData", "internal error detail"],
+    "excludedFromUi": ["Cookie", "Bearer", "nonce", "signature", "raw server error", "internal error detail"],
+    "loggerFields": ["event", "method", "requestId", "statusCode"],
+    "tests": ["tests/api-auth.test.ts", "tests/wallet-auth-api.test.ts", "tests/chain-access-api.test.ts", "tests/e2e/auth-states.spec.ts"]
+  }
+}
