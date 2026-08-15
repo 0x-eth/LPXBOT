@@ -161,6 +161,15 @@ test("chain event contract freezes BSC normalization and ingestion semantics", a
 test("local fixtures cover normal, duplicate, out-of-order, and reorg deterministically", async () => {
   const index = await readJson("fixture-index.json");
   assert.equal(index.networkPolicy, "offline-only");
+  assert.deepEqual(index.coverage.chainIds, [56]);
+  assert.deepEqual(sorted(index.coverage.protocols), ["pcsv3", "pcsv4", "univ3", "univ4"]);
+  assert.deepEqual(sorted(index.coverage.eventKinds), [
+    "collect",
+    "liquidity.add",
+    "liquidity.remove",
+    "pool.created",
+    "swap",
+  ]);
   const scenarios = by(index.fixtures, "scenario");
   assert.deepEqual(sorted(scenarios.keys()), ["duplicate", "normal", "out-of-order", "reorg"]);
 
@@ -170,12 +179,58 @@ test("local fixtures cover normal, duplicate, out-of-order, and reorg determinis
     assert.equal(createHash("sha256").update(bytes).digest("hex"), fixture.sha256, scenario);
     const contents = JSON.parse(bytes.toString("utf8"));
     assert.equal(contents.scenario, scenario);
+    assert.equal(contents.fixtureOnly, true, `${scenario} must be fixture-only`);
     assert.ok(contents.input.length > 0, `${scenario} input must not be empty`);
     assert.ok(contents.expected, `${scenario} expected result is required`);
+    for (const delivery of contents.input) {
+      const rawLog = delivery.rawLog;
+      assert.equal(rawLog.chainId, 56, `${scenario} chainId`);
+      assert.match(rawLog.blockNumber, /^\d+$/, `${scenario} blockNumber`);
+      assert.match(rawLog.blockHash, /^0x[0-9a-f]{64}$/, `${scenario} blockHash`);
+      assert.match(rawLog.transactionHash, /^0x[0-9a-f]{64}$/, `${scenario} tx hash`);
+      assert.ok(Number.isInteger(rawLog.transactionIndex), `${scenario} transactionIndex`);
+      assert.ok(Number.isInteger(rawLog.logIndex), `${scenario} logIndex`);
+      assert.match(rawLog.address, /^0x[0-9a-f]{40}$/, `${scenario} address`);
+      assert.ok(rawLog.topics.length > 0, `${scenario} topics`);
+      for (const topic of rawLog.topics)
+        assert.match(topic, /^0x[0-9a-f]{64}$/, `${scenario} topic`);
+      assert.match(rawLog.data, /^0x(?:[0-9a-f]{2})*$/, `${scenario} data`);
+      assert.equal(typeof rawLog.removed, "boolean", `${scenario} removed`);
+      assert.match(delivery.decoderFixtureId, /^fixture:\/\//, `${scenario} decoder scope`);
+    }
   }
   assert.equal(scenarios.get("duplicate").expectedSemantics, "deduplicate-idempotently");
   assert.equal(scenarios.get("out-of-order").expectedSemantics, "canonical-order");
   assert.equal(scenarios.get("reorg").expectedSemantics, "rollback-and-replay");
+
+  const normal = await readJson("fixtures/normal.json");
+  assert.deepEqual(sorted(normal.expected.protocolCoverage), ["pcsv3", "pcsv4", "univ3", "univ4"]);
+  assert.deepEqual(sorted(normal.expected.eventKindCoverage), [
+    "collect",
+    "liquidity.add",
+    "liquidity.remove",
+    "pool.created",
+    "swap",
+  ]);
+
+  const duplicate = await readJson("fixtures/duplicate.json");
+  assert.deepEqual(duplicate.input[0].rawLog, duplicate.input[1].rawLog);
+  assert.equal(duplicate.expected.acceptedCount, 1);
+  assert.equal(duplicate.expected.aggregateApplications, 1);
+
+  const outOfOrder = await readJson("fixtures/out-of-order.json");
+  assert.deepEqual(outOfOrder.expected.arrivalBlockOrder, ["108", "106", "107"]);
+  assert.deepEqual(outOfOrder.expected.committedBlockOrder, ["106", "107", "108"]);
+
+  const reorg = await readJson("fixtures/reorg.json");
+  assert.equal(
+    reorg.input.some(({ rawLog }) => rawLog.removed),
+    true,
+  );
+  assert.equal(reorg.input[0].rawLog.blockNumber, reorg.input[2].rawLog.blockNumber);
+  assert.notEqual(reorg.input[0].rawLog.blockHash, reorg.input[2].rawLog.blockHash);
+  assert.equal(reorg.expected.tombstoneCount, 1);
+  assert.equal(reorg.expected.oldCursorValid, false);
 });
 
 test("metric contract defines windows, units, arithmetic, nulls, rounding, and stable sort", async () => {
@@ -187,16 +242,10 @@ test("metric contract defines windows, units, arithmetic, nulls, rounding, and s
   assert.equal(contract.windowBoundary.interval, "[start,end)");
   assert.equal(contract.windowBoundary.timezone, "UTC");
   const metrics = by(contract.metrics, "id");
-  assert.deepEqual(sorted(metrics.keys()), [
-    "Fee/aTVL",
-    "Fee/TVL",
-    "Fees",
-    "Txs",
-    "Volume",
-    "aTVL",
-    "FDV",
-    "TVL",
-  ]);
+  assert.deepEqual(
+    sorted(metrics.keys()),
+    sorted(["Fees", "Volume", "TVL", "Txs", "FDV", "aTVL", "Fee/TVL", "Fee/aTVL"]),
+  );
   for (const metric of metrics.values()) {
     assert.ok(metric.unit, `${metric.id} unit`);
     assert.ok(metric.precision, `${metric.id} precision`);
