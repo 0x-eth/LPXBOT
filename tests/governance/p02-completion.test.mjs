@@ -22,6 +22,7 @@ const REQUIRED_EVIDENCE_IDS = [
   "E-VIS",
   "E-MIG",
   "E-SEC",
+  "E-OPS",
 ];
 
 function sorted(values) {
@@ -47,6 +48,26 @@ function p02StatusRows(markdown) {
       implementation: columns[2],
       tests: columns[3],
       evidence: columns[4],
+    });
+  }
+  return rows;
+}
+
+function commaSeparated(value) {
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function traceabilityRows(markdown) {
+  const rows = new Map();
+  const rowPattern =
+    /^\|\s*([A-Z][A-Z0-9]*-\d{2})\s*\|\s*(P\d{2})\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*$/gm;
+  for (const match of markdown.matchAll(rowPattern)) {
+    rows.set(match[1], {
+      evidence: commaSeparated(match[4]),
+      tests: commaSeparated(match[3]),
     });
   }
   return rows;
@@ -93,12 +114,29 @@ test("P02 status table keeps exactly four fixture-verified features implemented"
 });
 
 test("P02-02 manifest owns only the tracer slice and local fixture evidence", async () => {
-  const manifest = JSON.parse(await readFile(MANIFEST_PATH, "utf8"));
+  const [manifest, markdown] = await Promise.all([
+    readFile(MANIFEST_PATH, "utf8").then(JSON.parse),
+    readFile(TRACEABILITY_PATH, "utf8"),
+  ]);
   assert.equal(manifest.workItemId, "P02-02");
   assert.equal(manifest.phase, "P02");
   assert.equal(manifest.risk, "R1");
   assert.deepEqual(sorted(manifest.featureIds), sorted(IMPLEMENTED_FEATURE_IDS));
   assert.deepEqual(sorted(manifest.evidence.map(({ id }) => id)), sorted(REQUIRED_EVIDENCE_IDS));
+
+  const traceability = traceabilityRows(markdown);
+  const manifestTests = new Set(manifest.tests.map(({ id }) => id));
+  const manifestEvidence = new Set(manifest.evidence.map(({ id }) => id));
+  for (const featureId of IMPLEMENTED_FEATURE_IDS) {
+    const minimums = traceability.get(featureId);
+    assert.ok(minimums, `${featureId} is missing from TRACEABILITY_MATRIX`);
+    for (const testId of minimums.tests) {
+      assert.ok(manifestTests.has(testId), `${featureId} is missing ${testId}`);
+    }
+    for (const evidenceId of minimums.evidence) {
+      assert.ok(manifestEvidence.has(evidenceId), `${featureId} is missing ${evidenceId}`);
+    }
+  }
 
   for (const evidence of manifest.evidence) {
     await access(assertRepositoryPath(evidence.path, evidence.id));

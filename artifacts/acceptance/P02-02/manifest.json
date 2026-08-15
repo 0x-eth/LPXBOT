@@ -58,6 +58,12 @@
       "command": "pnpm test:postgres; migration down/up and complete cycle",
       "result": "passed",
       "evidencePath": "artifacts/acceptance/P02-02/E-MIG.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "gitleaks detect --source . --config .gitleaks.toml --redact --no-banner; pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-02/E-SEC.md"
     }
   ],
   "evidence": [
@@ -68,7 +74,8 @@
     { "id": "E-UI", "path": "artifacts/acceptance/P02-02/E-UI.md" },
     { "id": "E-VIS", "path": "artifacts/acceptance/P02-02/E-VIS.md" },
     { "id": "E-MIG", "path": "artifacts/acceptance/P02-02/E-MIG.md" },
-    { "id": "E-SEC", "path": "artifacts/acceptance/P02-02/E-SEC.md" }
+    { "id": "E-SEC", "path": "artifacts/acceptance/P02-02/E-SEC.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P02-02/E-OPS.md" }
   ],
   "assumptions": [
     "Evidence is local-fixture-verified only; accepted work-item status will not imply target parity or release readiness.",

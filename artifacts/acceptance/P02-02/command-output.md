@@ -28,4 +28,23 @@ The first focused run failed because the indexer modules, market implementation,
 
 ## Final gates
 
-Final format, lint, typecheck, test, build, full e2e, PostgreSQL, migration, governance, Gitleaks, dependency audit, and six-job-equivalent results will be written here before the manifest is closed.
+| Command | Result |
+|---|---|
+| `pnpm format:check` | passed |
+| `pnpm lint` | passed; 13/13 workspace tasks |
+| `pnpm typecheck` | passed; 19/19 workspace tasks |
+| `pnpm test` | passed; 13/13 builds, 33 Vitest files with 177 tests, 36 governance tests |
+| `pnpm build` | passed; 13/13 workspace tasks |
+| `pnpm test:e2e` | passed; 92 tests, 4 project-specific skips |
+| `pnpm db:migrate` twice | passed; second run was a no-op |
+| `pnpm db:seed` twice | passed; deterministic tuple unchanged |
+| Complete migration down/up cycle | passed; 1/1 |
+| `pnpm test:postgres` | passed; 9 files with 30 tests |
+| `pnpm infra:verify` | passed; PostgreSQL, Redis, MinIO, and Anvil healthy |
+| `pnpm test:infra` | passed; 8/8 |
+| `pnpm check:all` | passed; 196/196 traceability and all acceptance/reference checks |
+| `forge fmt --check`; `forge build`; `forge test -vvv` | passed; 3/3 contract tests |
+| Gitleaks full-history scan | passed; 385 commits, no leaks |
+| `pnpm audit:dependencies` | passed; no known vulnerabilities |
+
+The local shell used Node.js 26.5.0 and emitted the expected engine warning; CI uses the repository-pinned Node.js 22.23.1. Six-job GitHub Actions evidence is added only after a stable commit completes.

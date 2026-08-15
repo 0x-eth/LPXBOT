@@ -15,4 +15,4 @@ Security boundaries verified in code and tests:
 - conflict payloads are isolated in integrity quarantine rather than applied;
 - logs and cursors contain no credentials.
 
-Final Gitleaks and dependency-audit results are recorded in [command-output.md](command-output.md). All P02-01 event, finality, block-timestamp, formula, and target-source gaps remain unresolved.
+Gitleaks scanned 385 commits with no leaks, and `pnpm audit:dependencies` reported no known vulnerabilities. The results are recorded in [command-output.md](command-output.md). All P02-01 event, finality, block-timestamp, formula, and target-source gaps remain unresolved.

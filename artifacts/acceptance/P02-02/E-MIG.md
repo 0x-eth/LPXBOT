@@ -15,3 +15,5 @@ Migration `20260816000100_create_market_indexer.sql` has explicit `-- migrate:up
 The schema constrains chain ID to 56, windows to 1/5/15/30/60, hashes and addresses to expected shapes, canonical uniqueness, positive version/epoch/sequence, and the dedupe key. Core integer quantities use `numeric(78,0)`.
 
 Real PostgreSQL tests execute the market migration down and up inside an isolated transaction. The full migration-cycle suite runs every migration up, every down in reverse, reconnects across the Timescale extension boundary, runs every up again, and applies the seed twice. The expected public-table inventory includes all seven P02-02 tables.
+
+Final local verification passed two consecutive `db:migrate` runs, two consecutive `db:seed` runs, the isolated full migration cycle, 30 PostgreSQL integration tests, and all eight infrastructure tests.
