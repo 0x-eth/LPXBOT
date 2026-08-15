@@ -10,14 +10,14 @@ All 18 P01 feature IDs occur exactly once across accepted implementation manifes
 
 - P01-01 live observations are retained without editing its files or expanding incomplete claims.
 - Frozen bundle-derived behavior remains `frozen-bundle-candidate`.
-- P01-02 through P01-08 implementation and regression results are `local-fixture-verified` unless explicitly linked to a GitHub-hosted run.
+- P01-02 through P01-07 implementation evidence and P01-08 regression results are `local-fixture-verified` unless explicitly linked to a GitHub-hosted run.
 - Accepted historical work items do not automatically imply parity.
 - Every P01 feature remains `implemented-assumed` because complete current target comparisons do not exist.
 - No feature is `released`; staging, monitoring and deployment rollback have not been demonstrated.
 
 ## Closeout repairs
 
-The initial governance test correctly failed because the P01-08 package did not exist. UI matrix tests then found missing per-route states, missing transient-state headings and a serious dark-theme eyebrow contrast failure. Minimal shell-only fixes and retained failing evidence are in this work item. A complete PostgreSQL reverse migration cycle was also added.
+The initial governance test correctly failed because the P01-08 package did not exist. UI matrix tests then found missing per-route states, missing transient-state headings and a serious dark-theme eyebrow contrast failure. Minimal shell-only fixes and retained failing evidence are in this work item. A complete PostgreSQL reverse migration cycle was also added. Full-gate reruns additionally hardened finite matrix timeouts, isolated PostgreSQL teardown and stopped E2E runs from rewriting historical P01-06 evidence; no assertion, visual threshold or mask was relaxed.
 
 ## Gaps
 

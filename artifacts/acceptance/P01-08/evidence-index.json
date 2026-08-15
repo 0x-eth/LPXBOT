@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "workItemId": "P01-08",
-  "verificationStatus": "in-progress",
+  "verificationStatus": "local-gates-passed-awaiting-current-commit-ci",
   "classificationPolicy": {
     "acceptedWorkItemDoesNotImplyParity": true,
     "parityRequiresCompleteTargetComparison": true,
