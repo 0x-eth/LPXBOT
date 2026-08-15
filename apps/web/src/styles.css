@@ -678,6 +678,10 @@ input:focus-visible,
   font-variant-numeric: tabular-nums;
 }
 
+.numeric-compact {
+  display: none;
+}
+
 .pools-loading,
 .pools-empty,
 .pools-error {
@@ -2054,6 +2058,15 @@ html[data-theme="dark"] .chain-operation-success {
 
   .pool-address {
     grid-column: 2;
+  }
+
+  .numeric-full {
+    display: none;
+  }
+
+  .numeric-compact {
+    display: inline;
+    white-space: nowrap;
   }
 
   .interface-section-heading {

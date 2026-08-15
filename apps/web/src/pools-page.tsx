@@ -62,6 +62,43 @@ function decimalDisplay(value: string | null, prefix = "", fractionDigits = 6): 
   return `${prefix}${grouped}${fraction ? `.${fraction}` : ""}`;
 }
 
+function compactDecimalDisplay(value: string | null, prefix = ""): string {
+  if (value === null) return "--";
+  const decimal = new Decimal(value);
+  for (const { divisor, suffix } of [
+    { divisor: new Decimal("1000000000"), suffix: "B" },
+    { divisor: new Decimal("1000000"), suffix: "M" },
+    { divisor: new Decimal("1000"), suffix: "K" },
+  ]) {
+    if (decimal.abs().greaterThanOrEqualTo(divisor)) {
+      return `${prefix}${decimal
+        .dividedBy(divisor)
+        .toDecimalPlaces(2, Decimal.ROUND_HALF_EVEN)
+        .toFixed()}${suffix}`;
+    }
+  }
+  return decimalDisplay(value, prefix);
+}
+
+function NumericValue({
+  fractionDigits,
+  label,
+  prefix = "",
+  value,
+}: {
+  fractionDigits?: number;
+  label: string;
+  prefix?: string;
+  value: string | null;
+}) {
+  return (
+    <td className="numeric-value" data-label={label} title={value ?? undefined}>
+      <span className="numeric-full">{decimalDisplay(value, prefix, fractionDigits)}</span>
+      <span className="numeric-compact">{compactDecimalDisplay(value, prefix)}</span>
+    </td>
+  );
+}
+
 function poolIdentity(row: MarketPoolRow): string {
   const value = row.poolAddress ?? row.poolId ?? "unknown";
   return value.length > 14 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
@@ -123,25 +160,11 @@ function PoolTable({ rows }: { rows: readonly MarketPoolRow[] }) {
                   <span className="pool-address">{poolIdentity(row)}</span>
                 </td>
                 <td data-label="协议">{protocolName(row.protocol)}</td>
-                <td data-label="Fees" className="numeric-value" title={row.feesUsd ?? undefined}>
-                  {decimalDisplay(row.feesUsd, "$ ")}
-                </td>
-                <td
-                  data-label="Volume"
-                  className="numeric-value"
-                  title={row.volumeUsd ?? undefined}
-                >
-                  {decimalDisplay(row.volumeUsd, "$ ")}
-                </td>
-                <td data-label="TVL" className="numeric-value" title={row.tvlUsd ?? undefined}>
-                  {decimalDisplay(row.tvlUsd, "$ ")}
-                </td>
-                <td data-label="Txs" className="numeric-value" title={row.transactionCount}>
-                  {decimalDisplay(row.transactionCount, "", 0)}
-                </td>
-                <td data-label="FDV" className="numeric-value" title={row.fdvUsd ?? undefined}>
-                  {decimalDisplay(row.fdvUsd, "$ ")}
-                </td>
+                <NumericValue label="Fees" prefix="$ " value={row.feesUsd} />
+                <NumericValue label="Volume" prefix="$ " value={row.volumeUsd} />
+                <NumericValue label="TVL" prefix="$ " value={row.tvlUsd} />
+                <NumericValue fractionDigits={0} label="Txs" value={row.transactionCount} />
+                <NumericValue label="FDV" prefix="$ " value={row.fdvUsd} />
               </tr>
             );
           })}
