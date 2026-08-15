@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-02",
+  "phase": "P02",
+  "risk": "R1",
+  "status": "in-progress",
+  "featureIds": [
+    "POOL-01",
+    "POOL-02",
+    "POOL-04",
+    "POOL-16"
+  ],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm exec vitest run tests/indexer-runner.test.ts tests/market-metrics.test.ts tests/pools-stream-client.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-02/command-output.md"
+    },
+    {
+      "id": "T-API",
+      "command": "pnpm exec vitest run tests/market-pools-api.test.ts tests/stats-sse-api.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-02/E-API.md"
+    },
+    {
+      "id": "T-SSE",
+      "command": "pnpm exec vitest run tests/market-pools-api.test.ts tests/pools-stream-client.test.ts; pnpm test:postgres",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-02/E-SSE.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "pnpm test:postgres",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-02/E-REC.md"
+    },
+    {
+      "id": "T-PERF",
+      "command": "PostgreSQL 600-event indexed replay pagination test",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-02/E-SSE.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm exec playwright test tests/e2e/pools.spec.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-02/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "Playwright desktop/mobile snapshots and axe serious/critical scan",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-02/E-VIS.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm test:postgres; migration down/up and complete cycle",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-02/E-MIG.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-DATA", "path": "artifacts/acceptance/P02-02/E-DATA.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P02-02/E-REC.md" },
+    { "id": "E-API", "path": "artifacts/acceptance/P02-02/E-API.md" },
+    { "id": "E-SSE", "path": "artifacts/acceptance/P02-02/E-SSE.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P02-02/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P02-02/E-VIS.md" },
+    { "id": "E-MIG", "path": "artifacts/acceptance/P02-02/E-MIG.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P02-02/E-SEC.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only; accepted work-item status will not imply target parity or release readiness.",
+    "POOL-01 is implemented only for BSC chainId 56; multi-chain coverage remains outside this slice.",
+    "aTVL and Fee/aTVL remain null and unresolved, so POOL-05 remains planned.",
+    "The other 19 P02 feature IDs remain planned and have no P02-02 implementation ownership.",
+    "GAP-EVENT-ABI-TOPICS, GAP-EVENT-PROTOCOL-ADDRESSES, GAP-EVENT-AMOUNT-SIGNS, GAP-FINALITY-DEPTH, GAP-BLOCK-TIMESTAMP-SOURCE, and target data-source gaps remain unresolved.",
+    "No external RPC, target endpoint, production secret, signature, broadcast, or funds operation is used."
+  ],
+  "completedAt": null,
+  "commit": null
+}
