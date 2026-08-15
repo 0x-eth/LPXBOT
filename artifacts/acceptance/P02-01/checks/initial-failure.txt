@@ -1,0 +1,38 @@
+P02-01 initial failing test evidence
+Captured: 2026-08-16T03:00:00+08:00
+Baseline: 3ff4eb9ed84e1d459671695618a67a2932f5abd6
+
+Command:
+node --test tests/governance/p02-reference.test.mjs
+
+Exit code: 1
+TAP summary:
+1..10
+# tests 10
+# suites 0
+# pass 0
+# fail 10
+# cancelled 0
+# skipped 0
+# todo 0
+
+First failure:
+P02-01 required reference artifacts exist
+ENOENT: no such file or directory, access
+artifacts/acceptance/P02-01/artifact-manifest.json
+
+Failure inventory:
+1. Required reference artifacts did not exist.
+2. Planned feature coverage and zero implementation ownership were not recorded.
+3. API contracts did not exist.
+4. Chain event contracts did not exist.
+5. Local fixture index did not exist.
+6. Metric contracts did not exist.
+7. SSE contracts did not exist.
+8. /pools UI state catalog did not exist.
+9. Unresolved items were not closed through gaps.json.
+10. Manifest and SHA-256 inventory did not exist.
+
+Interpretation:
+This is the expected red state captured after the governance test was written and
+before any P02-01 contract, fixture, manifest, or checksum artifact was created.
