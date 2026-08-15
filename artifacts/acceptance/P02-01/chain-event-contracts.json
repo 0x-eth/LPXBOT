@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P02-01",
+  "status": "frozen-reference-with-unresolved-decoders",
+  "chain": {
+    "chainId": 56,
+    "name": "BSC",
+    "nativeSymbol": "BNB"
+  },
+  "sourcePolicy": {
+    "externalRpc": false,
+    "fixtureOnly": true,
+    "targetWrites": false,
+    "signing": false,
+    "broadcasting": false,
+    "note": "P02-01 defines contracts against repository-local synthetic logs only."
+  },
+  "protocols": [
+    {
+      "id": "pcsv3",
+      "displayName": "PancakeSwap V3",
+      "generation": "v3",
+      "registryAddress": null,
+      "eventSupport": {
+        "pool.created": "unresolved",
+        "swap": "unresolved",
+        "liquidity.add": "unresolved",
+        "liquidity.remove": "unresolved",
+        "collect": "unresolved"
+      },
+      "gapRef": "GAP-EVENT-PROTOCOL-ADDRESSES"
+    },
+    {
+      "id": "univ3",
+      "displayName": "Uniswap V3",
+      "generation": "v3",
+      "registryAddress": null,
+      "eventSupport": {
+        "pool.created": "unresolved",
+        "swap": "unresolved",
+        "liquidity.add": "unresolved",
+        "liquidity.remove": "unresolved",
+        "collect": "unresolved"
+      },
+      "gapRef": "GAP-EVENT-PROTOCOL-ADDRESSES"
+    },
+    {
+      "id": "pcsv4",
+      "displayName": "PancakeSwap V4",
+      "generation": "v4",
+      "registryAddress": null,
+      "eventSupport": {
+        "pool.created": "unresolved",
+        "swap": "unresolved",
+        "liquidity.add": "unresolved",
+        "liquidity.remove": "unresolved",
+        "collect": "unresolved"
+      },
+      "gapRef": "GAP-EVENT-PROTOCOL-ADDRESSES"
+    },
+    {
+      "id": "univ4",
+      "displayName": "Uniswap V4",
+      "generation": "v4",
+      "registryAddress": null,
+      "eventSupport": {
+        "pool.created": "unresolved",
+        "swap": "unresolved",
+        "liquidity.add": "unresolved",
+        "liquidity.remove": "unresolved",
+        "collect": "unresolved"
+      },
+      "gapRef": "GAP-EVENT-PROTOCOL-ADDRESSES"
+    }
+  ],
+  "eventKinds": [
+    {
+      "kind": "pool.created",
+      "targetNames": ["PoolCreated", "Initialize", "unknown-v4-equivalent"],
+      "abiStatus": "unresolved",
+      "topic0": null,
+      "topic0Status": "unresolved",
+      "payload": ["poolAddress", "poolId", "token0", "token1", "fee", "tickSpacing", "hooks"],
+      "source": "docs/FUNCTION_MATRIX.md FLOW-01 and POOL-15; no verified ABI in the P02-01 evidence set",
+      "evidenceLevel": "unresolved"
+    },
+    {
+      "kind": "swap",
+      "targetNames": ["Swap"],
+      "abiStatus": "unresolved",
+      "topic0": null,
+      "topic0Status": "unresolved",
+      "payload": ["sender", "recipient", "amount0", "amount1", "sqrtPriceX96", "liquidity", "tick"],
+      "source": "docs/DEVELOPMENT_ROADMAP.md requests V3/V4 decoding; no verified ABI in the P02-01 evidence set",
+      "evidenceLevel": "unresolved"
+    },
+    {
+      "kind": "liquidity.add",
+      "targetNames": ["Mint", "ModifyLiquidity", "unknown-v4-equivalent"],
+      "abiStatus": "unresolved",
+      "topic0": null,
+      "topic0Status": "unresolved",
+      "payload": ["sender", "owner", "positionId", "tickLower", "tickUpper", "liquidityDelta", "amount0", "amount1"],
+      "source": "frozen LiquidityFlowSheet bundle shows normalized add rows but not verified raw-log ABI mapping",
+      "evidenceLevel": "unresolved"
+    },
+    {
+      "kind": "liquidity.remove",
+      "targetNames": ["Burn", "ModifyLiquidity", "unknown-v4-equivalent"],
+      "abiStatus": "unresolved",
+      "topic0": null,
+      "topic0Status": "unresolved",
+      "payload": ["sender", "owner", "positionId", "tickLower", "tickUpper", "liquidityDelta", "amount0", "amount1"],
+      "source": "frozen LiquidityFlowSheet bundle shows normalized remove rows but not verified raw-log ABI mapping",
+      "evidenceLevel": "unresolved"
+    },
+    {
+      "kind": "collect",
+      "targetNames": ["Collect"],
+      "abiStatus": "unresolved",
+      "topic0": null,
+      "topic0Status": "unresolved",
+      "payload": ["sender", "recipient", "owner", "positionId", "amount0", "amount1"],
+      "source": "requested P02-01 event surface; no verified ABI/topic evidence in the repository",
+      "evidenceLevel": "unresolved"
+    }
+  ],
+  "rawLog": {
+    "encoding": "EVM JSON-compatible canonical form",
+    "required": [
+      "chainId",
+      "blockNumber",
+      "blockHash",
+      "transactionHash",
+      "transactionIndex",
+      "logIndex",
+      "address",
+      "topics",
+      "data",
+      "removed"
+    ],
+    "fields": {
+      "chainId": { "type": "integer", "const": 56 },
+      "blockNumber": { "type": "unsigned-decimal-string" },
+      "blockHash": { "type": "0x-prefixed-bytes32" },
+      "transactionHash": { "type": "0x-prefixed-bytes32" },
+      "transactionIndex": { "type": "non-negative-integer" },
+      "logIndex": { "type": "non-negative-integer" },
+      "address": { "type": "0x-prefixed-address" },
+      "topics": { "type": "array<0x-prefixed-bytes32>", "minItems": 1 },
+      "data": { "type": "0x-prefixed-even-length-hex" },
+      "removed": { "type": "boolean" }
+    },
+    "unknownFieldPolicy": "Preserve under rawExtensions, register GAP-API-UNKNOWN-FIELDS, and do not map into normalized payload until contracted."
+  },
+  "normalizedEvent": {
+    "required": [
+      "schemaVersion",
+      "eventId",
+      "chainId",
+      "blockNumber",
+      "blockHash",
+      "transactionHash",
+      "transactionIndex",
+      "logIndex",
+      "contractAddress",
+      "protocol",
+      "protocolGeneration",
+      "kind",
+      "removed",
+      "finality",
+      "cursor",
+      "payload"
+    ],
+    "fields": {
+      "schemaVersion": { "type": "string", "const": "1.0.0" },
+      "eventId": { "type": "string", "derivation": "sha256(canonical deduplication key joined with ':')" },
+      "chainId": { "type": "integer", "const": 56 },
+      "blockNumber": { "type": "unsigned-decimal-string" },
+      "blockHash": { "type": "bytes32" },
+      "blockTimestamp": { "type": "RFC3339|null", "gapRef": "GAP-BLOCK-TIMESTAMP-SOURCE" },
+      "transactionHash": { "type": "bytes32" },
+      "transactionIndex": { "type": "non-negative-integer" },
+      "logIndex": { "type": "non-negative-integer" },
+      "contractAddress": { "type": "address" },
+      "protocol": { "type": "enum", "values": ["pcsv3", "univ3", "pcsv4", "univ4"] },
+      "protocolGeneration": { "type": "enum", "values": ["v3", "v4"] },
+      "kind": { "type": "enum", "values": ["pool.created", "swap", "liquidity.add", "liquidity.remove", "collect"] },
+      "removed": { "type": "boolean" },
+      "finality": { "type": "enum", "values": ["observed", "confirmed", "finalized", "reverted"] },
+      "cursor": { "type": "string" },
+      "pool": {
+        "type": "object",
+        "fields": {
+          "poolAddress": "address|null",
+          "poolId": "bytes32|null",
+          "token0": "address|null",
+          "token1": "address|null",
+          "feePips": "unsigned-decimal-string|null",
+          "tickSpacing": "signed-decimal-string|null",
+          "hooks": "address|null"
+        }
+      },
+      "payload": { "type": "event-kind-specific-object" },
+      "rawRef": { "type": "content-address-or-fixture-id" }
+    },
+    "amountPolicy": {
+      "representation": "base-unit signed decimal strings",
+      "perspective": "pool balance delta: positive enters pool, negative leaves pool",
+      "displayConversion": "requires verified token decimals",
+      "decoderMappingStatus": "unresolved",
+      "gapRef": "GAP-EVENT-AMOUNT-SIGNS"
+    },
+    "deduplicationKey": ["chainId", "blockHash", "transactionHash", "logIndex"],
+    "canonicalOrder": ["blockNumber:numeric-asc", "transactionIndex:asc", "logIndex:asc", "transactionHash:asc"]
+  },
+  "ingestionSemantics": {
+    "reorg": {
+      "detection": [
+        "raw log removed=true",
+        "stored block number receives a different canonical blockHash",
+        "parent continuity check fails"
+      ],
+      "action": "Find the common ancestor, mark orphaned normalized events reverted, emit tombstones, rewind the durable cursor to the ancestor, then replay the replacement branch in canonical order.",
+      "visibility": "Observed data may be shown as provisional; finalized aggregates exclude reverted events."
+    },
+    "finality": {
+      "states": {
+        "observed": "accepted on the current canonical head",
+        "confirmed": "headDistance >= configured confirmationDepth",
+        "finalized": "confirmed and below the durable finality watermark",
+        "reverted": "formerly accepted event is no longer canonical"
+      },
+      "confirmationDepth": null,
+      "productionStatus": "unresolved",
+      "fixtureConfirmationDepth": 2,
+      "gapRef": "GAP-FINALITY-DEPTH"
+    },
+    "cursor": {
+      "format": "v1:<chainId>:<blockNumber>:<transactionIndex>:<logIndex>:<blockHash>",
+      "position": "last event durably applied in canonical order",
+      "commitRule": "advance atomically with event and aggregate writes",
+      "reorgRule": "rewind to the common ancestor; never retain a cursor into an orphaned block"
+    },
+    "backfill": {
+      "range": "inclusive [fromBlock,toBlock]",
+      "chunking": "deterministic ascending chunks with configurable size",
+      "overlap": "one finalized block is allowed between chunks and is removed by the deduplication key",
+      "liveHandoff": "capture head, backfill through captured head, then apply buffered live logs in canonical order"
+    },
+    "replay": {
+      "start": "strictly after a valid cursor, or from the beginning of the requested inclusive backfill range",
+      "order": "canonicalOrder",
+      "reorg": "replay includes tombstones before replacement events",
+      "determinism": "same canonical inputs and contract version produce byte-equivalent normalized output"
+    },
+    "idempotency": {
+      "sameKeySamePayload": "no-op and acknowledge",
+      "sameKeyDifferentPayload": "quarantine as integrity conflict; do not overwrite silently",
+      "aggregateWrites": "event insertion, aggregate delta, and cursor advancement share one transaction",
+      "replay": "reapplying an already committed event changes neither rows nor aggregates"
+    },
+    "outOfOrder": {
+      "action": "buffer above the finality watermark and sort by canonicalOrder before durable application",
+      "lateFinalizedLog": "quarantine and require explicit backfill reconciliation"
+    }
+  },
+  "fixtureDecoderPolicy": {
+    "scope": "tests-only",
+    "selector": "decoderFixtureId",
+    "rule": "Synthetic fixture topics and decoded payloads validate normalization and lifecycle semantics only; they are not protocol ABI evidence and must never be registered in production."
+  },
+  "unresolvedRefs": [
+    "GAP-EVENT-ABI-TOPICS",
+    "GAP-EVENT-PROTOCOL-ADDRESSES",
+    "GAP-EVENT-AMOUNT-SIGNS",
+    "GAP-FINALITY-DEPTH",
+    "GAP-BLOCK-TIMESTAMP-SOURCE"
+  ]
+}
