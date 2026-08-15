@@ -54,4 +54,15 @@ This run does not prove the P01-08 changes.
 
 ## Current-change CI
 
-Pending a stable P01-08 commit. The manifest commit, completion time and six-job run are filled only after all jobs execute successfully.
+Run [31901103964](https://github.com/0x-eth/LPXBOT/actions/runs/31901103964) completed successfully for stable commit `23b72d072fe9149346a1346fa1bcaa3d41967eab`.
+
+| Job | Job ID | Result | Completed |
+|---|---:|---|---|
+| Quality | 95051918845 | passed | 2026-08-15T18:27:15Z |
+| Governance | 95051918892 | passed | 2026-08-15T18:26:35Z |
+| Browser | 95051918878 | passed | 2026-08-15T18:34:30Z |
+| Contracts | 95051918891 | passed | 2026-08-15T18:26:18Z |
+| Infrastructure | 95051918865 | passed | 2026-08-15T18:27:15Z |
+| Security | 95051918897 | passed | 2026-08-15T18:26:28Z |
+
+All six jobs received runners and executed their configured gates. The acceptance-only update after this run records the immutable result; it does not substitute a different code commit for the tested SHA.

@@ -47,6 +47,12 @@
       "command": "Dockerized Gitleaks v8.30.0 full-history scan; pnpm audit:dependencies; AUTH-10 R2 review",
       "result": "passed",
       "evidencePath": "artifacts/acceptance/P01-08/E-SEC.md"
+    },
+    {
+      "id": "T-UNIT",
+      "command": "gh run watch 31901103964 --exit-status",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P01-08/command-output.md"
     }
   ],
   "evidence": [
@@ -64,8 +70,9 @@
     "Real Telegram Mini App and Bot execution, and complete target Pro/admin/abnormal-state/dark/write comparisons, remain explicit blocking evidence gaps.",
     "AUTH-03 acceptance is EOA-only; EIP-1271 contract-wallet verification is not implemented or verified.",
     "P01-02's historical commit remains null and no retrospective value was synthesized.",
-    "The target site, Telegram, external RPC and production services were not contacted; no later-phase market, signer, funds or business-data capability was added."
+    "The target site, Telegram, external RPC and production services were not contacted; no later-phase market, signer, funds or business-data capability was added.",
+    "GitHub Actions run 31901103964 executed all six jobs successfully for stable commit 23b72d072fe9149346a1346fa1bcaa3d41967eab; the subsequent acceptance-only update records that immutable result."
   ],
-  "completedAt": null,
-  "commit": null
+  "completedAt": "2026-08-15T18:34:30.000Z",
+  "commit": "23b72d072fe9149346a1346fa1bcaa3d41967eab"
 }

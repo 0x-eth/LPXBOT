@@ -28,4 +28,4 @@ The closeout makes no change under any of those paths.
 
 GitHub Actions run [31897638440](https://github.com/0x-eth/LPXBOT/actions/runs/31897638440) passed Quality, Governance, Browser, Contracts, Infrastructure and Security for baseline commit `b1510673efe4ec474ecbd7e1df8e3eb903176079`. It is valid baseline evidence, not evidence for uncommitted P01-08 changes.
 
-The current-change final CI run is recorded only after all six jobs execute successfully for the final commit. Local and remote results are kept distinct in [command-output.md](./command-output.md).
+Current-change GitHub Actions run [31901103964](https://github.com/0x-eth/LPXBOT/actions/runs/31901103964) passed Quality, Governance, Browser, Contracts, Infrastructure and Security for stable commit `23b72d072fe9149346a1346fa1bcaa3d41967eab`. All six jobs received runners and executed their gate steps; the run completed at `2026-08-15T18:34:30Z`. Local and remote results remain distinct in [command-output.md](./command-output.md).
