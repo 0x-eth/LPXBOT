@@ -636,10 +636,10 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     );
 
     const lastOutbox = await client.query<OutboxPosition>(
-      `SELECT epoch::text, sequence::text
-         FROM market_stream_outbox
-        WHERE stream_key = $1
-        ORDER BY epoch DESC, sequence DESC LIMIT 1
+      `SELECT o.epoch::text, o.sequence::text
+         FROM market_stream_outbox AS o
+        WHERE o.stream_key = $1
+        ORDER BY o.epoch DESC, o.sequence DESC LIMIT 1
         FOR UPDATE`,
       [streamKey],
     );

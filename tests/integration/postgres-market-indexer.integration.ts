@@ -400,10 +400,10 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
   it("starts a new epoch with a complete snapshot after a retention miss", async () => {
     await runnerFor("normal").runner.runOnce();
     const before = await pool.query<{ epoch: string }>(
-      `SELECT epoch::text
-         FROM market_stream_outbox
-        WHERE stream_key = 'top-fees:56:5'
-        ORDER BY epoch DESC, sequence DESC
+      `SELECT o.epoch::text
+         FROM market_stream_outbox AS o
+        WHERE o.stream_key = 'top-fees:56:5'
+        ORDER BY o.epoch DESC, o.sequence DESC
         LIMIT 1`,
     );
     const provider = new PostgresMarketPoolsProvider(pool, {
@@ -492,11 +492,11 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     try {
       const plan = await pool.query(
         `EXPLAIN (FORMAT JSON)
-         SELECT epoch::text, sequence::text, envelope
-           FROM market_stream_outbox
-          WHERE stream_key = $1
-            AND (epoch > $2 OR (epoch = $2 AND sequence > $3))
-          ORDER BY epoch, sequence
+         SELECT o.epoch::text, o.sequence::text, o.envelope
+           FROM market_stream_outbox AS o
+          WHERE o.stream_key = $1
+            AND (o.epoch > $2 OR (o.epoch = $2 AND o.sequence > $3))
+          ORDER BY o.epoch, o.sequence
           LIMIT 500`,
         ["top-fees:56:5", "1", "1"],
       );

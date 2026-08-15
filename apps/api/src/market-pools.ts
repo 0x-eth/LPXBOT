@@ -148,9 +148,9 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
     const key = streamKey(context);
     if (context.lastEventId) {
       const retained = await this.#pool.query<OutboxRow>(
-        `SELECT epoch::text, sequence::text, envelope
-           FROM market_stream_outbox
-          WHERE stream_key = $1 AND cursor = $2`,
+        `SELECT o.epoch::text, o.sequence::text, o.envelope
+           FROM market_stream_outbox AS o
+          WHERE o.stream_key = $1 AND o.cursor = $2`,
         [key, context.lastEventId],
       );
       const position = retained.rows[0];
@@ -159,10 +159,10 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
     }
 
     const latestSnapshot = await this.#pool.query<OutboxRow>(
-      `SELECT epoch::text, sequence::text, envelope
-         FROM market_stream_outbox
-        WHERE stream_key = $1 AND event_type = 'pools.snapshot'
-        ORDER BY epoch DESC, sequence DESC LIMIT 1`,
+      `SELECT o.epoch::text, o.sequence::text, o.envelope
+         FROM market_stream_outbox AS o
+        WHERE o.stream_key = $1 AND o.event_type = 'pools.snapshot'
+        ORDER BY o.epoch DESC, o.sequence DESC LIMIT 1`,
       [key],
     );
     const first = latestSnapshot.rows[0];
@@ -176,11 +176,11 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
     sequence: string,
   ): Promise<MarketStreamEnvelope[]> {
     const result = await this.#pool.query<OutboxRow>(
-      `SELECT epoch::text, sequence::text, envelope
-         FROM market_stream_outbox
-        WHERE stream_key = $1
-          AND (epoch > $2 OR (epoch = $2 AND sequence > $3))
-        ORDER BY epoch, sequence
+      `SELECT o.epoch::text, o.sequence::text, o.envelope
+         FROM market_stream_outbox AS o
+        WHERE o.stream_key = $1
+          AND (o.epoch > $2 OR (o.epoch = $2 AND o.sequence > $3))
+        ORDER BY o.epoch, o.sequence
         LIMIT 500`,
       [streamKey(context), epoch, sequence],
     );
@@ -193,8 +193,8 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
       await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
       await this.#lockStream(client, context);
       const latest = await client.query<{ epoch: string }>(
-        `SELECT epoch::text FROM market_stream_outbox
-          WHERE stream_key = $1 ORDER BY epoch DESC, sequence DESC LIMIT 1`,
+        `SELECT o.epoch::text FROM market_stream_outbox AS o
+          WHERE o.stream_key = $1 ORDER BY o.epoch DESC, o.sequence DESC LIMIT 1`,
         [streamKey(context)],
       );
       const epoch = latest.rows[0] ? (BigInt(latest.rows[0].epoch) + 1n).toString() : "1";
@@ -221,9 +221,9 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
         epoch: string;
         sequence: string;
       }>(
-        `SELECT epoch::text, sequence::text, created_at
-           FROM market_stream_outbox
-          WHERE stream_key = $1 ORDER BY epoch DESC, sequence DESC LIMIT 1`,
+        `SELECT o.epoch::text, o.sequence::text, o.created_at
+           FROM market_stream_outbox AS o
+          WHERE o.stream_key = $1 ORDER BY o.epoch DESC, o.sequence DESC LIMIT 1`,
         [streamKey(context)],
       );
       const row = latest.rows[0];
@@ -332,4 +332,3 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
     );
   }
 }
-
