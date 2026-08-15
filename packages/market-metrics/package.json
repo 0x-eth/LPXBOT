@@ -17,6 +17,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@lpbot/domain": "workspace:*"
+    "@lpbot/domain": "workspace:*",
+    "decimal.js": "10.6.0"
   }
 }

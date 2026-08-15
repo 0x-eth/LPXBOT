@@ -1,0 +1,124 @@
+import type { MarketStreamEnvelope } from "../packages/api-contract/src/index.js";
+import {
+  initialPoolStreamState,
+  reducePoolStream,
+} from "../apps/web/src/pools-stream-state.js";
+import { describe, expect, it } from "vitest";
+
+const row = {
+  activeTvlUsd: null,
+  chainId: 56 as const,
+  fdvUsd: "100",
+  feeActiveTvl: null,
+  feesUsd: "2",
+  feeTvl: "0.02",
+  poolAddress: "0x1111111111111111111111111111111111111111" as const,
+  poolId: null,
+  protocol: "pcsv3" as const,
+  token0Symbol: "WBNB",
+  token1Symbol: "USDT",
+  transactionCount: "3",
+  tvlUsd: "100",
+  volumeUsd: "20",
+};
+
+function event(
+  sequence: string,
+  eventType: MarketStreamEnvelope["eventType"],
+  data: MarketStreamEnvelope["data"],
+  epoch = "1",
+): MarketStreamEnvelope {
+  return {
+    cursor: `cursor-${epoch}-${sequence}`,
+    data,
+    emittedAt: "2026-08-16T01:00:00.000Z",
+    epoch,
+    eventType,
+    mode: eventType === "pools.snapshot" ? "snapshot" : "diff",
+    schemaVersion: "1.0.0",
+    sequence,
+    streamKey: "top-fees:56:5",
+  };
+}
+
+describe("P02-02 pool stream client state", () => {
+  it("applies snapshot, diff and heartbeat atomically in sequence", () => {
+    const snapshot = event("4", "pools.snapshot", {
+      chainId: 56,
+      generatedAt: "2026-08-16T01:00:00.000Z",
+      minutes: 5,
+      rows: [row],
+      version: "4",
+      windowEnd: "2026-08-16T01:00:00.000Z",
+      windowStart: "2026-08-16T00:55:00.000Z",
+    });
+    const diff = event("5", "pools.diff", {
+      tombstones: [],
+      upserts: [{ ...row, feesUsd: "3" }],
+      version: "5",
+    });
+    const heartbeat = event("6", "heartbeat", null);
+
+    const ready = reducePoolStream(initialPoolStreamState(), {
+      event: snapshot,
+      type: "event",
+    });
+    const updated = reducePoolStream(ready, { event: diff, type: "event" });
+    const alive = reducePoolStream(updated, { event: heartbeat, type: "event" });
+
+    expect(alive.connection).toBe("ready");
+    expect(alive.rows[0]?.feesUsd).toBe("3");
+    expect(alive.sequence).toBe("6");
+    expect(alive.cursor).toBe("cursor-1-6");
+  });
+
+  it("ignores exact duplicates and reconnects without applying gaps", () => {
+    const snapshot = event("4", "pools.snapshot", {
+      chainId: 56,
+      generatedAt: "2026-08-16T01:00:00.000Z",
+      minutes: 5,
+      rows: [row],
+      version: "4",
+      windowEnd: "2026-08-16T01:00:00.000Z",
+      windowStart: "2026-08-16T00:55:00.000Z",
+    });
+    const ready = reducePoolStream(initialPoolStreamState(), { event: snapshot, type: "event" });
+    expect(reducePoolStream(ready, { event: snapshot, type: "event" })).toEqual(ready);
+
+    const gapped = reducePoolStream(ready, {
+      event: event("6", "pools.diff", {
+        tombstones: [],
+        upserts: [{ ...row, feesUsd: "999" }],
+        version: "6",
+      }),
+      type: "event",
+    });
+    expect(gapped.connection).toBe("reconnecting");
+    expect(gapped.rows[0]?.feesUsd).toBe("2");
+    expect(gapped.cursor).toBe("cursor-1-4");
+  });
+
+  it("requires a snapshot on epoch change and retains last good rows when stale", () => {
+    const snapshot = event("1", "pools.snapshot", {
+      chainId: 56,
+      generatedAt: "2026-08-16T01:00:00.000Z",
+      minutes: 5,
+      rows: [row],
+      version: "1",
+      windowEnd: "2026-08-16T01:00:00.000Z",
+      windowStart: "2026-08-16T00:55:00.000Z",
+    });
+    const ready = reducePoolStream(initialPoolStreamState(), { event: snapshot, type: "event" });
+    const invalidEpoch = reducePoolStream(ready, {
+      event: event("1", "pools.diff", { tombstones: [], upserts: [], version: "2" }, "2"),
+      type: "event",
+    });
+    expect(invalidEpoch.connection).toBe("reconnecting");
+    expect(invalidEpoch.rows).toEqual([row]);
+
+    const stale = reducePoolStream(ready, { type: "stale" });
+    expect(stale.connection).toBe("stale");
+    expect(stale.rows).toEqual([row]);
+  });
+});
+
