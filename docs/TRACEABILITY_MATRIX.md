@@ -3,7 +3,7 @@
 > 基线日期：2026-08-13  
 > 范围源：[功能矩阵](./FUNCTION_MATRIX.md)  
 > 阶段源：[开发路线图](./DEVELOPMENT_ROADMAP.md)  
-> 当前状态：产品代码尚未开始，以下 196 项均为 `planned`；表中测试和证据是达到完成定义的最低要求。
+> 当前状态：P01 的 18 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 178 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
 
 ## 1. 使用规则
 
@@ -260,6 +260,33 @@
 | SET-06 | P04 | T-API,T-SEC,T-UI | E-API,E-SEC,E-UI |
 | SET-07 | P04 | T-API,T-REC,T-SEC,T-UI | E-API,E-REC,E-SEC,E-UI |
 
+#### P01 当前实现与证据状态
+
+`accepted` work item 只表示对应工作项通过当时门禁，不自动提升功能状态。以下项目均只有本地 fixture、冻结 Bundle 候选或有限 live-observed 证据；完整目标对照未完成，因此没有项目达到 `parity-verified` 或 `released`。完整逐文件记录见 [P01-08 feature coverage](../artifacts/acceptance/P01-08/feature-coverage.json)。
+
+<!-- P01_STATUS_TABLE_START -->
+| ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
+|---|---|---|---|---|
+| AUTH-01 | `implemented-assumed` | [Telegram initData](../packages/security/src/telegram-init-data.ts), [Mini App login](../packages/security/src/telegram-mini-app-login.ts), [API](../apps/api/src/app.ts), [Web adapter](../apps/web/src/telegram-mini-app.ts) | [T-UNIT](../tests/telegram-init-data.test.ts), [T-API/T-SEC](../tests/telegram-mini-app-login.test.ts), [T-UI](../tests/e2e/telegram-login.spec.ts) | [P01-03](../artifacts/acceptance/P01-03/manifest.json); frozen-bundle-candidate, local-fixture-verified |
+| AUTH-02 | `implemented-assumed` | [Bot login](../packages/security/src/telegram-bot-login.ts), [API](../apps/api/src/app.ts), [Web auth](../apps/web/src/auth-client.ts) | [T-UNIT/T-API/T-SEC](../tests/telegram-bot-login.test.ts), [T-UI](../tests/e2e/telegram-login.spec.ts) | [P01-03](../artifacts/acceptance/P01-03/manifest.json); frozen-bundle-candidate, local-fixture-verified |
+| AUTH-03 | `implemented-assumed` | [Wallet auth](../packages/security/src/login-wallet-auth.ts), [API](../apps/api/src/app.ts), [EIP-1193 adapter](../apps/web/src/eip1193-wallet.ts), [Web auth](../apps/web/src/auth-client.ts) | [T-UNIT/T-SEC](../tests/wallet-auth.test.ts), [T-API](../tests/wallet-auth-api.test.ts), [T-UI](../tests/e2e/wallet-auth.spec.ts) | [P01-04](../artifacts/acceptance/P01-04/manifest.json); frozen-bundle-candidate, local-fixture-verified; EOA only, no EIP-1271 claim |
+| AUTH-04 | `implemented-assumed` | [Wallet auth](../packages/security/src/login-wallet-auth.ts), [API](../apps/api/src/app.ts), [Web shell](../apps/web/src/App.tsx), [Web auth](../apps/web/src/auth-client.ts) | [T-API](../tests/wallet-auth-api.test.ts), [T-UI](../tests/e2e/wallet-auth.spec.ts), [T-SEC](../tests/wallet-domain-boundary.test.ts) | [P01-04](../artifacts/acceptance/P01-04/manifest.json); frozen-bundle-candidate, local-fixture-verified |
+| AUTH-05 | `implemented-assumed` | [API](../apps/api/src/app.ts), [PostgreSQL session store](../apps/api/src/postgres-session-store.ts), [Cookie policy](../apps/api/src/browser-session-cookie.ts), [Web auth](../apps/web/src/auth-client.ts) | [T-API/T-SEC](../tests/api-auth.test.ts), [T-UI](../tests/e2e/auth-states.spec.ts) | [P01-02](../artifacts/acceptance/P01-02/manifest.json); frozen-bundle-candidate, local-fixture-verified; historical commit remains null |
+| AUTH-06 | `implemented-assumed` | [Domain policy](../packages/domain/src/index.ts), [API](../apps/api/src/app.ts), [Web shell](../apps/web/src/App.tsx) | [T-API](../tests/api-auth.test.ts), [T-UI](../tests/e2e/auth-states.spec.ts), [T-SEC](../tests/auth-policy.test.ts) | [P01-02](../artifacts/acceptance/P01-02/manifest.json); frozen-bundle-candidate, local-fixture-verified |
+| AUTH-07 | `implemented-assumed` | [Domain policy](../packages/domain/src/index.ts), [API](../apps/api/src/app.ts), [Web shell](../apps/web/src/App.tsx) | [T-API](../tests/api-auth.test.ts), [T-UI](../tests/e2e/auth-states.spec.ts), [T-REC](../tests/integration/postgres-session.integration.ts) | [P01-02](../artifacts/acceptance/P01-02/manifest.json); frozen-bundle-candidate, local-fixture-verified |
+| AUTH-08 | `implemented-assumed` | [Domain policy](../packages/domain/src/index.ts), [API](../apps/api/src/app.ts), [Web shell](../apps/web/src/App.tsx) | [T-API](../tests/api-auth.test.ts), [T-UI](../tests/e2e/auth-states.spec.ts), [T-SEC](../tests/auth-policy.test.ts) | [P01-02](../artifacts/acceptance/P01-02/manifest.json); frozen-bundle-candidate, local-fixture-verified |
+| AUTH-09 | `implemented-assumed` | [Domain policy](../packages/domain/src/index.ts), [API](../apps/api/src/app.ts), [Web shell](../apps/web/src/App.tsx) | [T-API](../tests/api-auth.test.ts), [T-UI](../tests/e2e/auth-states.spec.ts), [T-SEC](../tests/auth-policy.test.ts) | [P01-02](../artifacts/acceptance/P01-02/manifest.json); frozen-bundle-candidate, local-fixture-verified |
+| AUTH-10 | `implemented-assumed` | [Domain policy](../packages/domain/src/index.ts), [API](../apps/api/src/app.ts), [Policy store](../apps/api/src/postgres-chain-access-policy-store.ts), [Chain management](../apps/web/src/chain-management.tsx), [Migration](../infra/migrations/20260815000100_create_chain_access_policies.sql) | [T-API](../tests/chain-access-api.test.ts), [T-UI](../tests/e2e/chain-management.spec.ts), [T-SEC](../tests/chain-access-policy.test.ts) | [P01-07](../artifacts/acceptance/P01-07/manifest.json); frozen-bundle-candidate, local-fixture-verified; R2 review |
+| SHELL-01 | `implemented-assumed` | [Web shell](../apps/web/src/App.tsx), [Styles](../apps/web/src/styles.css) | [T-UI/T-VIS](../tests/e2e/shell.spec.ts) | [P01-05](../artifacts/acceptance/P01-05/manifest.json); live-observed, local-fixture-verified |
+| SHELL-02 | `implemented-assumed` | [API stats](../apps/api/src/shell-stats.ts), [API](../apps/api/src/app.ts), [Web stats](../apps/web/src/shell-stats.ts), [React adapter](../apps/web/src/shell-stats-react.tsx) | [T-SSE](../tests/stats-sse-api.test.ts), [T-UI/T-VIS](../tests/e2e/preferences-shell.spec.ts) | [P01-06](../artifacts/acceptance/P01-06/manifest.json); live-observed, frozen-bundle-candidate, local-fixture-verified |
+| SHELL-03 | `implemented-assumed` | [Theme](../apps/web/src/theme.ts), [Preferences](../apps/web/src/preferences.tsx), [Styles](../apps/web/src/styles.css) | [T-UI/T-VIS](../tests/e2e/preferences-shell.spec.ts) | [P01-06](../artifacts/acceptance/P01-06/manifest.json); live-observed, local-fixture-verified |
+| SHELL-04 | `implemented-assumed` | [Preferences API](../apps/api/src/user-preferences.ts), [Preferences UI](../apps/web/src/preferences.tsx), [Settings UI](../apps/web/src/settings-interface.tsx), [Web shell](../apps/web/src/App.tsx) | [T-API](../tests/user-preferences-api.test.ts), [T-UI/T-VIS](../tests/e2e/preferences-shell.spec.ts) | [P01-06](../artifacts/acceptance/P01-06/manifest.json); frozen-bundle-candidate, local-fixture-verified |
+| SHELL-05 | `implemented-assumed` | [Feedback controller](../apps/web/src/feedback-controller.ts), [Feedback UI](../apps/web/src/feedback.tsx), [Web shell](../apps/web/src/App.tsx) | [T-UI/T-VIS](../tests/e2e/shell.spec.ts) | [P01-05](../artifacts/acceptance/P01-05/manifest.json); local-fixture-verified |
+| SHELL-06 | `implemented-assumed` | [Service Worker](../apps/web/src/sw.ts), [PWA policy](../apps/web/src/pwa-policy.ts), [Update controller](../apps/web/src/pwa-update-controller.ts), [Mini App adapter](../apps/web/src/telegram-mini-app.ts) | [T-UI/T-VIS](../tests/e2e/shell.spec.ts), [T-MIG](../tests/e2e-pwa/pwa-preview.spec.ts) | [P01-05](../artifacts/acceptance/P01-05/manifest.json); frozen-bundle-candidate, local-fixture-verified |
+| SET-01 | `implemented-assumed` | [Preferences API](../apps/api/src/user-preferences.ts), [Preferences store](../apps/api/src/postgres-user-preferences-store.ts), [Preferences UI](../apps/web/src/preferences.tsx), [Settings UI](../apps/web/src/settings-interface.tsx) | [T-API](../tests/user-preferences-api.test.ts), [T-UI/T-VIS](../tests/e2e/preferences-shell.spec.ts) | [P01-06](../artifacts/acceptance/P01-06/manifest.json); live-observed, frozen-bundle-candidate, local-fixture-verified |
+| SET-02 | `implemented-assumed` | [Preferences API](../apps/api/src/user-preferences.ts), [Preferences store](../apps/api/src/postgres-user-preferences-store.ts), [Preferences UI](../apps/web/src/preferences.tsx), [Settings UI](../apps/web/src/settings-interface.tsx) | [T-API](../tests/user-preferences-api.test.ts), [T-UI/T-VIS](../tests/e2e/preferences-shell.spec.ts) | [P01-06](../artifacts/acceptance/P01-06/manifest.json); live-observed, frozen-bundle-candidate, local-fixture-verified |
+<!-- P01_STATUS_TABLE_END -->
+
 ### 管理后台
 
 | ID | 阶段 | 最低测试 | 最低验收证据 |
@@ -281,14 +308,16 @@
 | ADMIN-15 | P11 | T-API,T-UI,T-SEC | E-API,E-UI,E-RBAC |
 | ADMIN-16 | P11 | T-API,T-REC,T-SEC,T-UI | E-API,E-REC,E-UI,E-RBAC,E-OPS |
 
-## 3. 基线覆盖统计
+## 3. 当前覆盖统计
 
 | 项目 | 数量 | 当前结果 |
 |---|---:|---|
 | 功能矩阵稳定 ID | 196 | 已全部映射 |
 | 追踪表稳定 ID | 196 | 必须由自动检查保持相等 |
-| 当前产品实现 | 0 | 尚未开始产品代码 |
-| `parity-verified` | 0 | 开发/对照后逐项提升 |
-| `implemented-assumed` | 0 | 开发后只用于证据尚缺项 |
+| 当前产品实现 | 18 | P01 阶段实现完成，证据缺口见 P01-08 |
+| `implemented-assumed` | 18 | P01 全部功能；目标对照或 live 证据仍不完整 |
+| `parity-verified` | 0 | 不由 accepted work item 自动提升 |
+| `released` | 0 | 尚无 staging、监控和回滚完整证明 |
+| 其余 `planned` | 178 | P02-P13 状态未改变 |
 
 建议 CI 检查逻辑：从 `FUNCTION_MATRIX.md` 与本文件抽取 `^[A-Z]+-[0-9]{2}$`，比较去重集合；再检查每行非空的阶段、测试和证据列。任何新增功能 ID 必须先进入范围源和本表。
