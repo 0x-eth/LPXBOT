@@ -4,6 +4,7 @@ import type {
   MarketPoolSnapshot,
   MarketStreamEnvelope,
 } from "@lpbot/api-contract";
+import Decimal from "decimal.js";
 
 export type PoolConnectionState =
   | "loading"
@@ -76,10 +77,7 @@ function applyDiff(rows: readonly MarketPoolRow[], diff: MarketPoolDiff): Market
       if (left.feesUsd === right.feesUsd) return poolKey(left).localeCompare(poolKey(right));
       return left.feesUsd === null ? 1 : -1;
     }
-    if (left.feesUsd.length !== right.feesUsd.length) {
-      return right.feesUsd.length - left.feesUsd.length;
-    }
-    const valueOrder = right.feesUsd.localeCompare(left.feesUsd);
+    const valueOrder = new Decimal(right.feesUsd).comparedTo(left.feesUsd);
     return valueOrder === 0 ? poolKey(left).localeCompare(poolKey(right)) : valueOrder;
   });
 }
@@ -161,4 +159,3 @@ export function reducePoolStream(
     snapshot,
   };
 }
-
