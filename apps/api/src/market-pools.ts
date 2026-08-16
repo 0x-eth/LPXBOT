@@ -2,13 +2,13 @@ import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 
-import type {
-  MarketPoolRow,
-  MarketPoolSnapshot,
-  type LiquidityFlowProtocol,
-  MarketStreamEnvelope,
-  MarketWindowMinutes,
+import {
   marketStreamKey,
+  type LiquidityFlowProtocol,
+  type MarketPoolRow,
+  type MarketPoolSnapshot,
+  type MarketStreamEnvelope,
+  type MarketWindowMinutes,
 } from "@lpbot/api-contract";
 import type { Pool, PoolClient } from "pg";
 

@@ -108,6 +108,7 @@ async function takeStreamEvents(
     chainId: 56,
     lastEventId,
     minutes: 5,
+    protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
     signal: controller.signal,
   })) {
     events.push(event);
