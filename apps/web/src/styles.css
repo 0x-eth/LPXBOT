@@ -4016,6 +4016,10 @@ html[data-theme="dark"] .chain-operation-success {
     padding-right: 16px;
     padding-left: 16px;
   }
+
+  .pool-market-detail {
+    width: min(100%, calc(100vw - 32px));
+  }
 }
 
 @media (max-width: 640px) {
@@ -4099,6 +4103,44 @@ html[data-theme="dark"] .chain-operation-success {
 
   .pools-table {
     width: 1040px;
+  }
+
+  .pool-market-detail {
+    width: min(100%, calc(100vw - 40px));
+    padding: 14px 12px;
+  }
+
+  .pool-market-detail-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pool-market-tabs {
+    width: 100%;
+  }
+
+  .pool-market-controls {
+    justify-content: space-between;
+  }
+
+  .pool-market-range {
+    flex: 1;
+  }
+
+  .pool-market-range input {
+    width: 100%;
+  }
+
+  .candle-chart-canvas,
+  .pool-market-operational-state {
+    height: 240px;
+    min-height: 240px;
+  }
+
+  .tick-liquidity-histogram {
+    height: 200px;
+    min-height: 200px;
   }
 
   .pool-comparison-table {
