@@ -37,6 +37,7 @@ export type {
 } from "./address-remarks.js";
 export { PostgresMarketPoolsProvider } from "./market-pools.js";
 export type {
+  MarketPoolsByTokenContext,
   MarketPoolsContext,
   MarketPoolsProvider,
   MarketPoolsStreamContext,

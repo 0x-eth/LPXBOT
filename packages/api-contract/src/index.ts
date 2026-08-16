@@ -396,6 +396,17 @@ export interface MarketPoolRow {
   volumeUsd: string | null;
 }
 
+export type MarketPoolByTokenSort = "fees" | "volume";
+
+export interface MarketPoolByTokenRow extends MarketPoolRow {
+  fees1h: string | null;
+  fees5m: string | null;
+  transactionCount1h: string | null;
+  transactionCount5m: string | null;
+  volume1h: string | null;
+  volume5m: string | null;
+}
+
 export interface MarketPoolSnapshot {
   chainId: 56;
   generatedAt: string;
@@ -427,6 +438,7 @@ export interface MarketStreamEnvelope {
 }
 
 export const marketPoolsContracts = {
+  byToken: { method: "GET", path: "/api/pools/by-token/{address}" },
   snapshot: { method: "GET", path: "/api/pools/top-fees/{minutes}" },
   stream: { method: "GET", path: "/api/pools/top-fees/{minutes}/stream" },
 } as const;

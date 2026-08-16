@@ -5,6 +5,8 @@ import { setTimeout as delay } from "node:timers/promises";
 import {
   marketStreamKey,
   type LiquidityFlowProtocol,
+  type MarketPoolByTokenRow,
+  type MarketPoolByTokenSort,
   type MarketPoolRow,
   type MarketPoolSnapshot,
   type MarketStreamEnvelope,
@@ -23,7 +25,16 @@ export interface MarketPoolsStreamContext extends MarketPoolsContext {
   signal: AbortSignal;
 }
 
+export interface MarketPoolsByTokenContext {
+  address: `0x${string}`;
+  chainId: 56;
+  limit: number;
+  protocols: readonly LiquidityFlowProtocol[];
+  sort: MarketPoolByTokenSort;
+}
+
 export interface MarketPoolsProvider {
+  getByToken(context: MarketPoolsByTokenContext): Promise<MarketPoolByTokenRow[]>;
   getTopFees(context: MarketPoolsContext): Promise<MarketPoolSnapshot>;
   subscribe(context: MarketPoolsStreamContext): AsyncIterable<MarketStreamEnvelope>;
 }

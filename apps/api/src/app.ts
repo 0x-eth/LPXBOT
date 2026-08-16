@@ -10,6 +10,7 @@ import {
   marketStreamKey,
   marketWindowMinutes,
   parseLiquidityProtocolFilter,
+  type MarketPoolByTokenSort,
   type MarketWindowMinutes,
   type SessionView,
 } from "@lpbot/api-contract";
@@ -53,7 +54,7 @@ import {
   type ChainAccessPolicyView,
 } from "./chain-access-policies.js";
 import type { LiquidityFlowProvider } from "./liquidity-flow.js";
-import type { MarketPoolsProvider } from "./market-pools.js";
+import type { MarketPoolsByTokenContext, MarketPoolsProvider } from "./market-pools.js";
 import type { ShellStatsProvider } from "./shell-stats.js";
 import {
   defaultVersionedUserPreferences,
@@ -86,6 +87,7 @@ export interface ApiAppOptions {
   liquidityFlowRateLimit?: PublicReadRateLimit;
   maintenance: MaintenanceConfig;
   marketPoolsProvider?: MarketPoolsProvider;
+  marketPoolsRateLimit?: PublicReadRateLimit;
   managementOrigin?: string;
   now?: () => Date;
   preferencesStore?: UserPreferencesStore;
@@ -138,6 +140,38 @@ function parseMarketPoolsContext(request: FastifyRequest): {
   if (!marketWindowMinutes.includes(minutes)) return null;
   try {
     return { chainId: 56, minutes, protocols: parseLiquidityProtocolFilter(query.dex) };
+  } catch {
+    return null;
+  }
+}
+
+function parseMarketPoolsByTokenContext(request: FastifyRequest): MarketPoolsByTokenContext | null {
+  const parameters = request.params as { address?: unknown };
+  const query = request.query as Record<string, unknown>;
+  const allowed = new Set(["chain", "dex", "limit", "sort"]);
+  if (Object.keys(query).some((key) => !allowed.has(key))) return null;
+  if (
+    typeof parameters.address !== "string" ||
+    !/^0x[0-9a-fA-F]{40}$/u.test(parameters.address) ||
+    query.chain !== "bsc" ||
+    typeof query.dex !== "string"
+  ) {
+    return null;
+  }
+  const limitValue = query.limit ?? "100";
+  if (typeof limitValue !== "string" || !/^(?:[1-9]|[1-9][0-9]|100)$/u.test(limitValue)) {
+    return null;
+  }
+  const sort = query.sort ?? "fees";
+  if (sort !== "fees" && sort !== "volume") return null;
+  try {
+    return {
+      address: parameters.address.toLowerCase() as `0x${string}`,
+      chainId: 56,
+      limit: Number(limitValue),
+      protocols: parseLiquidityProtocolFilter(query.dex),
+      sort: sort as MarketPoolByTokenSort,
+    };
   } catch {
     return null;
   }
@@ -511,6 +545,19 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     liquidityFlowRateLimit.timeWindowMs <= 0
   ) {
     throw new RangeError("Liquidity flow rate limits must be positive integers");
+  }
+  const marketPoolsRateLimit: PublicReadRateLimit = {
+    max: 60,
+    timeWindowMs: 60_000,
+    ...options.marketPoolsRateLimit,
+  };
+  if (
+    !Number.isSafeInteger(marketPoolsRateLimit.max) ||
+    marketPoolsRateLimit.max <= 0 ||
+    !Number.isSafeInteger(marketPoolsRateLimit.timeWindowMs) ||
+    marketPoolsRateLimit.timeWindowMs <= 0
+  ) {
+    throw new RangeError("Market pool rate limits must be positive integers");
   }
   const authRateLimits: Required<AuthRateLimits> = {
     cancel: 20,
@@ -1088,6 +1135,57 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           if (!reply.raw.destroyed) reply.raw.end();
         }
         return reply;
+      },
+    );
+
+    app.get(
+      "/api/pools/by-token/:address",
+      {
+        config: {
+          rateLimit: {
+            keyGenerator: (request: FastifyRequest) => sessionToken(request) ?? request.ip,
+            max: marketPoolsRateLimit.max,
+            timeWindow: marketPoolsRateLimit.timeWindowMs,
+          },
+        },
+      },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!roleCanAccess(session.account.role, "authenticated")) {
+          return reply.code(403).send(
+            createErrorEnvelope({
+              code: "FORBIDDEN",
+              message: "Pool search is not authorized",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        const context = parseMarketPoolsByTokenContext(request);
+        if (!context) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "MARKET_TOKEN_QUERY_INVALID",
+              message: "Token, BSC chain, DEX, limit, or sort is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.marketPoolsProvider) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "MARKET_DATA_UNAVAILABLE",
+              message: "Market data is not configured",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        const rows = await options.marketPoolsProvider.getByToken(context);
+        return createSuccessEnvelope(rows, request.id);
       },
     );
 
