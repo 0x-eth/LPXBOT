@@ -5,9 +5,16 @@ Verification uses Node 22, pnpm 11.17.0, macOS 15.7.9 arm64, and the repository 
 ```text
 Focused recommendation/API/SSE/client/abort suites: passed
 Focused P02-09 Playwright: 3 passed, 1 intentional project skip
+Full Vitest: 61 files, 372 tests passed
+Governance: 51/51 tests passed
+Full Playwright: 141 passed, 5 intentional project skips
 PostgreSQL integration: 11 files, 46 tests passed
+Foundry contracts: 3/3 tests passed
+Infrastructure: 8/8 tests passed
+Build: 14/14 package tasks passed
+check:all: baseline, traceability, P00, docs, acceptance and P02 reference checks passed
 P02-01 through P02-08 acceptance files: 162/162 SHA-256 matches
-Gitleaks 8.30.1 full-history: 634 commits, 20.54 MB, no leaks
+Gitleaks 8.30.1 full-history: 642 commits, 20.59 MB, no leaks
 Dependency audit: no known vulnerabilities
 ```
 
