@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "recommended-pools/local-v1",
+  "workItemId": "P02-09",
+  "featureId": "STATS-02",
+  "evidenceLevel": "locally-defined",
+  "parityStatus": "not-parity-verified",
+  "source": {
+    "provider": "MarketPoolsProvider.getTopFees",
+    "streamKey": "top-fees:56:5",
+    "chain": "bsc",
+    "chainId": 56,
+    "windowMinutes": 5,
+    "protocols": ["pcsv3", "univ3", "pcsv4", "univ4"],
+    "externalRpc": "forbidden",
+    "duplicateSnapshotSql": "forbidden"
+  },
+  "query": {
+    "method": "GET",
+    "path": "/api/stats/stream",
+    "additionalProperties": false,
+    "chain": {
+      "recommendations": "bsc",
+      "omitted": "stats-only",
+      "other": "validation-error"
+    },
+    "limit": { "default": 3, "minimum": 1, "maximum": 20 },
+    "userId": {
+      "wireName": "user_id",
+      "nonAdmin": "forbidden",
+      "recommendationPartitioning": "none"
+    }
+  },
+  "row": {
+    "name": "RecommendedPoolRow",
+    "additionalProperties": false,
+    "fields": {
+      "poolKey": "string",
+      "chainId": "56",
+      "poolAddress": "lowercase-evm-address|null",
+      "poolId": "lowercase-bytes32|null",
+      "protocol": "pcsv3|univ3|pcsv4|univ4",
+      "token0Address": "lowercase-evm-address",
+      "token0Symbol": "string|null",
+      "token1Address": "lowercase-evm-address",
+      "token1Symbol": "string|null",
+      "feePips": "unsigned-decimal-string|null",
+      "feesUsd": "positive-decimal-string"
+    },
+    "unknownSymbol": "null",
+    "emptyResult": []
+  },
+  "selection": {
+    "eligibility": [
+      "feesUsd-is-not-null",
+      "feesUsd-decimal-greater-than-zero",
+      "chain-protocol-pool-and-token-identity-valid"
+    ],
+    "order": ["feesUsd:decimal-desc", "poolKey:byte-asc"],
+    "deduplicateBy": "poolKey-before-limit",
+    "feePrecision": "unrounded-source-decimal",
+    "forbiddenWeighting": [
+      "label-score",
+      "hook",
+      "active-tvl",
+      "creator",
+      "unknown-price"
+    ]
+  },
+  "event": {
+    "type": "rec_pools_snapshot",
+    "sourceWindow": 5,
+    "required": [
+      "cursor",
+      "observedAt",
+      "pools",
+      "selectionHash",
+      "sourceVersion",
+      "sourceWindow",
+      "sourceWindowEnd",
+      "type"
+    ],
+    "initial": "immediate-current-snapshot",
+    "pollMilliseconds": 5000,
+    "heartbeatMilliseconds": 25000
+  },
+  "deduplication": {
+    "algorithm": "sha256",
+    "hashInput": "ordered-wire-rows-only",
+    "excluded": ["observedAt", "generatedAt", "canonicalRevision"],
+    "samePayloadNewSourceVersion": "do-not-emit",
+    "memberOrderOrWireFieldChange": "emit-replacement"
+  },
+  "cursor": {
+    "format": "rec-pools:v1:{chain}:{limit}:{base64url(sourceVersion)}:{base64url(sourceWindowEnd)}:{selectionHashHex}",
+    "lastEventId": "must-match-chain-and-limit",
+    "binds": ["chain", "limit", "sourceVersion", "sourceWindowEnd", "selectionHash"]
+  },
+  "errors": {
+    "providerMissingOrInitialReadFailure": {
+      "status": 503,
+      "code": "RECOMMENDATIONS_UNAVAILABLE",
+      "safeEnvelope": true
+    },
+    "invalidFilterOrCursor": { "status": 400, "safeEnvelope": true }
+  },
+  "scope": {
+    "stats01Implemented": false,
+    "fundsActions": false,
+    "businessActions": false,
+    "candles": false,
+    "ticks": false,
+    "blocking": false,
+    "creatorAttribution": false
+  }
+}
