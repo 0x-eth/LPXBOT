@@ -1,4 +1,104 @@
-import type { EvmAddress, MarketPoolRow } from "@lpbot/api-contract";
+import type {
+  EvmAddress,
+  MarketPoolRow,
+  PoolColumnKey,
+  PoolColumnPreference,
+} from "@lpbot/api-contract";
+
+export const POOL_COLUMN_KEYS = [
+  "pool",
+  "protocol",
+  "fees",
+  "volume",
+  "tvl",
+  "txs",
+  "fdv",
+  "actions",
+] as const satisfies readonly PoolColumnKey[];
+
+export const DEFAULT_POOL_COLUMNS: readonly PoolColumnPreference[] = Object.freeze(
+  POOL_COLUMN_KEYS.map((key) => ({ key, visible: true })),
+);
+
+const poolColumnKeySet = new Set<string>(POOL_COLUMN_KEYS);
+const lockedPoolColumnKeys = new Set<PoolColumnKey>(["pool", "actions"]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isPoolColumnKey(value: unknown): value is PoolColumnKey {
+  return typeof value === "string" && poolColumnKeySet.has(value);
+}
+
+export function normalizePoolColumns(value: unknown): PoolColumnPreference[] {
+  if (!Array.isArray(value)) return structuredClone(DEFAULT_POOL_COLUMNS);
+  const middle: PoolColumnPreference[] = [];
+  const seen = new Set<PoolColumnKey>();
+  for (const item of value) {
+    if (
+      !isRecord(item) ||
+      !isPoolColumnKey(item.key) ||
+      typeof item.visible !== "boolean" ||
+      seen.has(item.key)
+    ) {
+      continue;
+    }
+    seen.add(item.key);
+    if (!lockedPoolColumnKeys.has(item.key)) {
+      middle.push({ key: item.key, visible: item.visible });
+    }
+  }
+  for (const key of POOL_COLUMN_KEYS.slice(1, -1)) {
+    if (!seen.has(key)) middle.push({ key, visible: true });
+  }
+  return [
+    { key: "pool", visible: true },
+    ...middle,
+    { key: "actions", visible: true },
+  ];
+}
+
+export function setPoolColumnVisibility(
+  value: readonly PoolColumnPreference[],
+  key: PoolColumnKey,
+  visible: boolean,
+): PoolColumnPreference[] {
+  const columns = normalizePoolColumns(value);
+  if (lockedPoolColumnKeys.has(key)) return columns;
+  return columns.map((column) => (column.key === key ? { ...column, visible } : column));
+}
+
+export function reorderPoolColumn(
+  value: readonly PoolColumnPreference[],
+  activeKey: PoolColumnKey,
+  targetKey: PoolColumnKey,
+): PoolColumnPreference[] {
+  const columns = normalizePoolColumns(value);
+  if (lockedPoolColumnKeys.has(activeKey) || activeKey === targetKey) return columns;
+  const active = columns.find(({ key }) => key === activeKey);
+  if (!active) return columns;
+  const withoutActive = columns.filter(({ key }) => key !== activeKey);
+  const targetIndex = withoutActive.findIndex(({ key }) => key === targetKey);
+  if (targetIndex < 0) return columns;
+  withoutActive.splice(targetIndex, 0, active);
+  return normalizePoolColumns(withoutActive);
+}
+
+export function movePoolColumn(
+  value: readonly PoolColumnPreference[],
+  key: PoolColumnKey,
+  direction: -1 | 1,
+): PoolColumnPreference[] {
+  const columns = normalizePoolColumns(value);
+  if (lockedPoolColumnKeys.has(key)) return columns;
+  const middle = columns.slice(1, -1);
+  const index = middle.findIndex((column) => column.key === key);
+  const target = index + direction;
+  if (index < 0 || target < 0 || target >= middle.length) return columns;
+  [middle[index], middle[target]] = [middle[target]!, middle[index]!];
+  return [{ key: "pool", visible: true }, ...middle, { key: "actions", visible: true }];
+}
 
 export const BSC_QUOTE_TOKEN_ADDRESSES = Object.freeze([
   "0x55d398326f99059ff775485246999027b3197955",

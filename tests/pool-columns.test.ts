@@ -59,7 +59,16 @@ describe("P02-06 pool column preferences", () => {
       "actions",
     ]);
     const keyboard = movePoolColumn(pointer, "fdv", 1);
-    expect(keyboard.map(({ key }) => key)).toEqual(POOL_COLUMN_KEYS);
+    expect(keyboard.map(({ key }) => key)).toEqual([
+      "pool",
+      "protocol",
+      "fdv",
+      "fees",
+      "volume",
+      "tvl",
+      "txs",
+      "actions",
+    ]);
     expect(movePoolColumn(keyboard, "pool", 1)).toEqual(keyboard);
     expect(movePoolColumn(keyboard, "actions", -1)).toEqual(keyboard);
 

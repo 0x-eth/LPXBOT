@@ -110,7 +110,18 @@ export const addressRemarksContracts = {
   put: { method: "PUT", path: "/api/address-remarks" },
 } as const;
 
-export const userPreferenceSchemaVersion = 2 as const;
+export const userPreferenceSchemaVersion = 3 as const;
+
+export const poolColumnKeys = [
+  "pool",
+  "protocol",
+  "fees",
+  "volume",
+  "tvl",
+  "txs",
+  "fdv",
+  "actions",
+] as const;
 
 export const navigationKeys = [
   "tasks",
@@ -140,9 +151,15 @@ export type NavigationKey = (typeof navigationKeys)[number];
 export type ColorTheme = (typeof colorThemeKeys)[number];
 export type ThemePreference = "light" | "dark" | "system";
 export type TaskViewMode = "grid" | "list";
+export type PoolColumnKey = (typeof poolColumnKeys)[number];
 
 export interface NavigationPreference {
   key: NavigationKey;
+  visible: boolean;
+}
+
+export interface PoolColumnPreference {
+  key: PoolColumnKey;
   visible: boolean;
 }
 
@@ -150,6 +167,7 @@ export interface UserPreferences {
   colorTheme: ColorTheme;
   customColor: string | null;
   navConfig: NavigationPreference[];
+  poolColumns: PoolColumnPreference[];
   poolsPanelCollapsed: boolean;
   showHotPools: boolean;
   showScanTab: boolean;
@@ -161,6 +179,7 @@ export const defaultUserPreferences: Readonly<UserPreferences> = Object.freeze({
   colorTheme: "neutral",
   customColor: null,
   navConfig: navigationKeys.map((key) => ({ key, visible: true })),
+  poolColumns: poolColumnKeys.map((key) => ({ key, visible: true })),
   poolsPanelCollapsed: false,
   showHotPools: false,
   showScanTab: true,
