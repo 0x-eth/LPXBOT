@@ -649,6 +649,298 @@ function PoolSearchControls({
   );
 }
 
+type PoolFilterUiState = "pristine" | "dirty" | "applied" | "no-results" | "invalid";
+
+const poolNumericFilterLabels: Record<PoolNumericFilterKey, string> = {
+  activeTvl: "aTVL",
+  feeActiveTvl: "Fee/aTVL",
+  fees: "Fees",
+  feeTvl: "Fee/TVL",
+  tvl: "TVL",
+  txs: "Txs",
+  volume: "Volume",
+};
+
+function PoolAdvancedFilterControls({
+  apply,
+  draft,
+  filterState,
+  open,
+  reset,
+  setOpen,
+  update,
+}: {
+  apply(): void;
+  draft: PoolAdvancedFilters;
+  filterState: PoolFilterUiState;
+  open: boolean;
+  reset(): void;
+  setOpen(open: boolean): void;
+  update(filters: PoolAdvancedFilters): void;
+}) {
+  const updateRange = (key: PoolNumericFilterKey, value: Partial<PoolAdvancedFilters["ranges"][PoolNumericFilterKey]>) => {
+    update({
+      ...draft,
+      ranges: {
+        ...draft.ranges,
+        [key]: { ...draft.ranges[key], ...value },
+      },
+    });
+  };
+  return (
+    <section
+      aria-label="高级筛选"
+      className="pool-advanced-filter"
+      data-filter-state={filterState}
+    >
+      <div className="pool-advanced-filter-heading">
+        <button
+          aria-expanded={open}
+          aria-label={`${open ? "收起" : "展开"}高级筛选`}
+          onClick={() => setOpen(!open)}
+          type="button"
+        >
+          <SlidersHorizontal aria-hidden="true" size={16} />
+          <span>高级筛选</span>
+        </button>
+        <span className="pool-filter-state" data-state={filterState} role="status">
+          {{
+            applied: "已应用",
+            dirty: "待应用",
+            invalid: "条件无效",
+            "no-results": "无结果",
+            pristine: "未筛选",
+          }[filterState]}
+        </span>
+      </div>
+      {open ? (
+        <div className="pool-advanced-filter-body">
+          <fieldset className="pool-filter-generations">
+            <legend>版本</legend>
+            {(["v3", "v4"] as const).map((generation) => (
+              <label key={generation}>
+                <input
+                  checked={draft.generations.includes(generation)}
+                  onChange={(event) => {
+                    const selected = new Set(draft.generations);
+                    if (event.target.checked) selected.add(generation);
+                    else selected.delete(generation);
+                    update({
+                      ...draft,
+                      generations: (["v3", "v4"] as const).filter((value) => selected.has(value)),
+                    });
+                  }}
+                  type="checkbox"
+                />
+                <span>{generation.toUpperCase()}</span>
+              </label>
+            ))}
+          </fieldset>
+          <div className="pool-numeric-filters">
+            {poolNumericFilterKeys.map((key) => {
+              const range = draft.ranges[key];
+              const label = poolNumericFilterLabels[key];
+              return (
+                <div className="pool-numeric-filter" data-filter-key={key} key={key}>
+                  <label className="pool-numeric-filter-toggle">
+                    <input
+                      aria-label={`启用 ${label} 筛选`}
+                      checked={range.enabled}
+                      onChange={(event) => updateRange(key, { enabled: event.target.checked })}
+                      type="checkbox"
+                    />
+                    <span>{label}</span>
+                  </label>
+                  <label>
+                    <span>最小</span>
+                    <input
+                      aria-label={`${label} 最小值`}
+                      disabled={!range.enabled}
+                      inputMode="decimal"
+                      onChange={(event) => updateRange(key, { min: event.target.value })}
+                      type="text"
+                      value={range.min}
+                    />
+                  </label>
+                  <label>
+                    <span>最大</span>
+                    <input
+                      aria-label={`${label} 最大值`}
+                      disabled={!range.enabled}
+                      inputMode="decimal"
+                      onChange={(event) => updateRange(key, { max: event.target.value })}
+                      type="text"
+                      value={range.max}
+                    />
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+          <div className="pool-filter-options">
+            <label>
+              <span>Hook</span>
+              <select
+                aria-label="Hook 筛选"
+                onChange={(event) =>
+                  update({ ...draft, hook: event.target.value as PoolAdvancedFilters["hook"] })
+                }
+                value={draft.hook}
+              >
+                <option value="any">全部</option>
+                <option value="present">有 Hook</option>
+                <option value="absent">无 Hook</option>
+              </select>
+            </label>
+            <label>
+              <span>排序指标</span>
+              <select
+                aria-label="排序指标"
+                onChange={(event) =>
+                  update({ ...draft, sortBy: event.target.value as PoolNumericFilterKey })
+                }
+                value={draft.sortBy}
+              >
+                {poolNumericFilterKeys.map((key) => (
+                  <option key={key} value={key}>
+                    {poolNumericFilterLabels[key]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>排序方向</span>
+              <select
+                aria-label="排序方向"
+                onChange={(event) =>
+                  update({
+                    ...draft,
+                    sortDirection: event.target.value as PoolAdvancedFilters["sortDirection"],
+                  })
+                }
+                value={draft.sortDirection}
+              >
+                <option value="desc">降序</option>
+                <option value="asc">升序</option>
+              </select>
+            </label>
+            <label className="pool-filter-han">
+              <input
+                checked={draft.excludeHanTokens}
+                onChange={(event) =>
+                  update({ ...draft, excludeHanTokens: event.target.checked })
+                }
+                type="checkbox"
+              />
+              <span>排除中文 Token</span>
+            </label>
+          </div>
+          {filterState === "invalid" ? (
+            <p className="pool-filter-error" role="alert">
+              请检查高级筛选条件
+            </p>
+          ) : null}
+          <div className="pool-filter-actions">
+            <button onClick={reset} type="button">
+              <RotateCcw aria-hidden="true" size={15} />
+              重置筛选
+            </button>
+            <button onClick={apply} type="button">
+              应用筛选
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function snapshotAsOfDisplay(value: string): string {
+  const parsed = new Date(value);
+  if (!Number.isFinite(parsed.getTime())) return "不可用";
+  return `${parsed.toISOString().slice(0, 19).replace("T", " ")} UTC`;
+}
+
+function PoolComparisonPanel({
+  clear,
+  state,
+  view,
+}: {
+  clear(): void;
+  state: PoolComparisonState;
+  view: PoolComparisonView | null;
+}) {
+  const status = view?.status ?? state.status;
+  const pools = view?.pools ?? [];
+  return (
+    <section
+      aria-label="池对比"
+      className="pool-comparison"
+      data-comparison-state={status}
+    >
+      <div className="pool-comparison-heading">
+        <div>
+          <h2>池对比</h2>
+          <p role="status">
+            {status === "none-selected"
+              ? "选择 2 至 3 个池"
+              : status === "one-selected"
+                ? "再选择 1 个池"
+                : `${pools.length} 个池`}
+          </p>
+        </div>
+        {state.selectedPoolKeys.length > 0 ? (
+          <button aria-label="清空池对比" onClick={clear} title="清空" type="button">
+            <X aria-hidden="true" size={16} />
+          </button>
+        ) : null}
+      </div>
+      {status === "limit-reached" ? <p role="alert">最多对比 3 个池</p> : null}
+      {view ? (
+        <div className="pool-comparison-binding">
+          <span>{view.binding.windowMinutes}m</span>
+          <span>快照 {view.binding.snapshotVersion}</span>
+          <time dateTime={view.binding.asOf}>{snapshotAsOfDisplay(view.binding.asOf)}</time>
+        </div>
+      ) : null}
+      {view && pools.length >= 2 ? (
+        <div className="pool-comparison-table-shell">
+          <table aria-label="池对比指标" className="pool-comparison-table">
+            <thead>
+              <tr>
+                <th scope="col">指标</th>
+                {pools.map((pool) => (
+                  <th key={pool.poolKey} scope="col" title={pool.poolAddress ?? pool.poolId ?? ""}>
+                    {pool.token0Symbol ?? "--"} / {pool.token1Symbol ?? "--"}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {view.metrics.map((metric) => (
+                <tr key={metric.key}>
+                  <th scope="row">{metric.label}</th>
+                  {metric.values.map((value) => (
+                    <td
+                      className={value.isBest ? "pool-comparison-best" : undefined}
+                      data-best={value.isBest ? "true" : undefined}
+                      key={value.poolKey}
+                      title={value.rawValue ?? undefined}
+                    >
+                      {value.display}
+                      {value.isBest ? <span className="sr-only"> 最佳</span> : null}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function PoolColumnDialog({
   columns,
   save,
