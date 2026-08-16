@@ -46,6 +46,7 @@ const preferenceKeys = [
   "poolColumns",
   "poolsPanelCollapsed",
   "showHotPools",
+  "showPoolLabels",
   "showScanTab",
   "taskViewMode",
   "theme",
@@ -178,11 +179,17 @@ function validateCompletePreferences(value: Record<string, unknown>): UserPrefer
   if (value.theme !== "light" && value.theme !== "dark" && value.theme !== "system") {
     throw new UserPreferencesValidationError();
   }
-  for (const key of ["poolsPanelCollapsed", "showHotPools", "showScanTab"] as const) {
+  for (const key of [
+    "poolsPanelCollapsed",
+    "showHotPools",
+    "showPoolLabels",
+    "showScanTab",
+  ] as const) {
     if (typeof value[key] !== "boolean") throw new UserPreferencesValidationError();
   }
   const poolsPanelCollapsed = value.poolsPanelCollapsed as boolean;
   const showHotPools = value.showHotPools as boolean;
+  const showPoolLabels = value.showPoolLabels as boolean;
   const showScanTab = value.showScanTab as boolean;
   return {
     colorTheme: value.colorTheme,
@@ -191,6 +198,7 @@ function validateCompletePreferences(value: Record<string, unknown>): UserPrefer
     poolColumns: validatePoolColumns(value.poolColumns),
     poolsPanelCollapsed,
     showHotPools,
+    showPoolLabels,
     showScanTab,
     taskViewMode: value.taskViewMode,
     theme: value.theme,
@@ -276,6 +284,10 @@ export function normalizeStoredUserPreferences(value: unknown): UserPreferences 
       typeof raw.showHotPools === "boolean"
         ? raw.showHotPools
         : defaultUserPreferences.showHotPools,
+    showPoolLabels:
+      typeof raw.showPoolLabels === "boolean"
+        ? raw.showPoolLabels
+        : defaultUserPreferences.showPoolLabels,
     showScanTab:
       typeof raw.showScanTab === "boolean" ? raw.showScanTab : defaultUserPreferences.showScanTab,
     taskViewMode: raw.taskViewMode === "list" ? "list" : "grid",

@@ -108,6 +108,7 @@ function parsePreferences(value: unknown): UserPreferences | null {
     (value.taskViewMode !== "grid" && value.taskViewMode !== "list") ||
     typeof value.poolsPanelCollapsed !== "boolean" ||
     typeof value.showHotPools !== "boolean" ||
+    typeof value.showPoolLabels !== "boolean" ||
     typeof value.showScanTab !== "boolean"
   ) {
     return null;
@@ -119,6 +120,7 @@ function parsePreferences(value: unknown): UserPreferences | null {
     poolColumns,
     poolsPanelCollapsed: value.poolsPanelCollapsed,
     showHotPools: value.showHotPools,
+    showPoolLabels: value.showPoolLabels,
     showScanTab: value.showScanTab,
     taskViewMode: value.taskViewMode,
     theme: value.theme,

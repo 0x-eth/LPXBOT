@@ -110,7 +110,7 @@ export const addressRemarksContracts = {
   put: { method: "PUT", path: "/api/address-remarks" },
 } as const;
 
-export const userPreferenceSchemaVersion = 4 as const;
+export const userPreferenceSchemaVersion = 5 as const;
 
 export const poolColumnKeys = [
   "pool",
@@ -172,6 +172,7 @@ export interface UserPreferences {
   poolColumns: PoolColumnPreference[];
   poolsPanelCollapsed: boolean;
   showHotPools: boolean;
+  showPoolLabels: boolean;
   showScanTab: boolean;
   taskViewMode: TaskViewMode;
   theme: ThemePreference;
@@ -184,6 +185,7 @@ export const defaultUserPreferences: Readonly<UserPreferences> = Object.freeze({
   poolColumns: poolColumnKeys.map((key) => ({ key, visible: true })),
   poolsPanelCollapsed: false,
   showHotPools: false,
+  showPoolLabels: true,
   showScanTab: true,
   taskViewMode: "grid",
   theme: "system",
@@ -394,6 +396,38 @@ export function marketStreamKey(input: {
     : `${base}:dex=${protocols.join(",")}`;
 }
 
+export const poolLabelIds = [
+  "high-fee-rate",
+  "yield-surge",
+  "yield-decline",
+  "yield-stable",
+  "stable-volume-price",
+  "crowded",
+  "volatile",
+  "lp-inflow",
+  "lp-outflow",
+] as const;
+
+export type PoolLabelId = (typeof poolLabelIds)[number];
+export type PoolLabelReasonOperator = ">=" | "<=" | "abs<=";
+
+export interface PoolLabelReason {
+  code: string;
+  observed: string;
+  operator: PoolLabelReasonOperator;
+  threshold: string;
+  window: string;
+}
+
+export interface MarketPoolLabel {
+  computedAt: string;
+  id: PoolLabelId;
+  label: string;
+  reasons: PoolLabelReason[];
+  ruleVersion: string;
+  score: number;
+}
+
 export interface MarketPoolRow {
   activeTvlUsd: null;
   chainId: 56;
@@ -403,6 +437,8 @@ export interface MarketPoolRow {
   feesUsd: string | null;
   feeTvl: string | null;
   hooks: EvmAddress | null;
+  labelRuleVersion: string;
+  labels: MarketPoolLabel[];
   poolAddress: EvmAddress | null;
   poolId: `0x${string}` | null;
   poolKey: string;
@@ -429,8 +465,10 @@ export interface MarketPoolByTokenRow extends MarketPoolRow {
 }
 
 export interface MarketPoolSnapshot {
+  canonicalRevision: string;
   chainId: 56;
   generatedAt: string;
+  metricVersion: string;
   minutes: MarketWindowMinutes;
   rows: MarketPoolRow[];
   version: string;
@@ -439,9 +477,12 @@ export interface MarketPoolSnapshot {
 }
 
 export interface MarketPoolDiff {
+  canonicalRevision: string;
+  metricVersion: string;
   tombstones: string[];
   upserts: MarketPoolRow[];
   version: string;
+  windowEnd: string;
 }
 
 export type MarketStreamEventType = "pools.snapshot" | "pools.diff" | "heartbeat";
