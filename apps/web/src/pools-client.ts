@@ -1,8 +1,13 @@
 import type {
+  LiquidityFlowProtocol,
   MarketPoolSnapshot,
   MarketStreamEnvelope,
   MarketWindowMinutes,
   SuccessEnvelope,
+} from "@lpbot/api-contract";
+import {
+  canonicalizeLiquidityProtocols,
+  liquidityFlowProtocols,
 } from "@lpbot/api-contract";
 
 export interface PoolStreamSubscription {
@@ -15,12 +20,25 @@ export interface PoolStreamCallbacks {
   onOpen(): void;
 }
 
+export function buildMarketPoolsUrl(
+  minutes: MarketWindowMinutes,
+  protocols: readonly string[],
+  stream: boolean,
+): string {
+  const selected = canonicalizeLiquidityProtocols(protocols);
+  const path = `/api/pools/top-fees/${minutes}${stream ? "/stream" : ""}`;
+  const parameters = new URLSearchParams({ chainId: "56" });
+  if (selected.length !== liquidityFlowProtocols.length) parameters.set("dex", selected.join(","));
+  return `${path}?${parameters.toString()}`;
+}
+
 export class PoolsClient {
   async getSnapshot(
     minutes: MarketWindowMinutes,
     signal: AbortSignal,
+    protocols: readonly LiquidityFlowProtocol[] = liquidityFlowProtocols,
   ): Promise<MarketPoolSnapshot> {
-    const response = await fetch(`/api/pools/top-fees/${minutes}?chainId=56`, {
+    const response = await fetch(buildMarketPoolsUrl(minutes, protocols, false), {
       credentials: "include",
       headers: { Accept: "application/json" },
       signal,
@@ -33,8 +51,12 @@ export class PoolsClient {
     return envelope.data;
   }
 
-  subscribe(minutes: MarketWindowMinutes, callbacks: PoolStreamCallbacks): PoolStreamSubscription {
-    const source = new EventSource(`/api/pools/top-fees/${minutes}/stream?chainId=56`, {
+  subscribe(
+    minutes: MarketWindowMinutes,
+    callbacks: PoolStreamCallbacks,
+    protocols: readonly LiquidityFlowProtocol[] = liquidityFlowProtocols,
+  ): PoolStreamSubscription {
+    const source = new EventSource(buildMarketPoolsUrl(minutes, protocols, true), {
       withCredentials: true,
     });
     const receive = (message: MessageEvent<string>) => {

@@ -1,5 +1,6 @@
 import type { MarketStreamEnvelope } from "../packages/api-contract/src/index.js";
 import { initialPoolStreamState, reducePoolStream } from "../apps/web/src/pools-stream-state.js";
+import { buildMarketPoolsUrl } from "../apps/web/src/pools-client.js";
 import { describe, expect, it } from "vitest";
 
 const row = {
@@ -39,6 +40,15 @@ function event(
 }
 
 describe("P02-02 pool stream client state", () => {
+  it("uses the same canonical DEX collection for snapshot and stream URLs", () => {
+    expect(buildMarketPoolsUrl(5, ["univ4", "pcsv3", "univ4"], false)).toBe(
+      "/api/pools/top-fees/5?chainId=56&dex=pcsv3%2Cuniv4",
+    );
+    expect(buildMarketPoolsUrl(5, ["univ4", "pcsv3", "univ4"], true)).toBe(
+      "/api/pools/top-fees/5/stream?chainId=56&dex=pcsv3%2Cuniv4",
+    );
+  });
+
   it("applies snapshot, diff and heartbeat atomically in sequence", () => {
     const snapshot = event("4", "pools.snapshot", {
       chainId: 56,
