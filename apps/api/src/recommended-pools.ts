@@ -3,10 +3,10 @@ import { createHash } from "node:crypto";
 import {
   liquidityFlowProtocols,
   type LiquidityFlowProtocol,
-  MarketPoolRow,
-  MarketPoolSnapshot,
-  RecommendedPoolRow,
-  RecommendedPoolsSnapshotEvent,
+  type MarketPoolRow,
+  type MarketPoolSnapshot,
+  type RecommendedPoolRow,
+  type RecommendedPoolsSnapshotEvent,
 } from "@lpbot/api-contract";
 import { Decimal } from "decimal.js";
 
@@ -34,8 +34,7 @@ export interface RecommendedPoolsEventStreamOptions {
 }
 
 export type RecommendedPoolsStreamEvent =
-  | RecommendedPoolsSnapshotEvent
-  | { observedAt: string; sequence: null; type: "heartbeat" };
+  RecommendedPoolsSnapshotEvent | { observedAt: string; sequence: null; type: "heartbeat" };
 
 const systemScheduler: RecommendedPoolsScheduler = {
   clearInterval: (handle) => clearInterval(handle),
@@ -229,7 +228,7 @@ function snapshotEvent(
 
 export async function* createRecommendedPoolsEventStream(
   options: RecommendedPoolsEventStreamOptions,
-): AsyncIterable<RecommendedPoolsStreamEvent> {
+): AsyncGenerator<RecommendedPoolsStreamEvent, void, void> {
   const scheduler = options.scheduler ?? systemScheduler;
   const pollMilliseconds = options.pollMilliseconds ?? 5_000;
   const heartbeatMilliseconds = options.heartbeatMilliseconds ?? 25_000;

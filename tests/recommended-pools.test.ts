@@ -1,7 +1,4 @@
-import type {
-  MarketPoolRow,
-  MarketPoolSnapshot,
-} from "../packages/api-contract/src/index.js";
+import type { MarketPoolRow, MarketPoolSnapshot } from "../packages/api-contract/src/index.js";
 import {
   parseRecommendedPoolsCursor,
   recommendedPoolsCursor,
@@ -127,9 +124,9 @@ describe("P02-09 recommended pool selection", () => {
     expect(recommendationSelectionHash([{ ...rows[0]!, feesUsd: "2.5001" }, rows[1]!])).not.toBe(
       hash,
     );
-    expect(
-      recommendationSelectionHash([{ ...rows[0]!, token0Symbol: "WBNB" }, rows[1]!]),
-    ).not.toBe(hash);
+    expect(recommendationSelectionHash([{ ...rows[0]!, token0Symbol: "WBNB" }, rows[1]!])).not.toBe(
+      hash,
+    );
     expect(recommendationSelectionHash([...rows].reverse())).not.toBe(hash);
   });
 
@@ -149,7 +146,11 @@ describe("P02-09 recommended pool selection", () => {
       sourceWindowEnd: "2026-08-17T01:05:00.000Z",
     });
     expect(parseRecommendedPoolsCursor(cursor, { chain: "bsc", limit: 4 })).toBeNull();
-    expect(parseRecommendedPoolsCursor("rec-pools:v1:bsc:3:bad", { chain: "bsc", limit: 3 })).toBeNull();
-    expect(parseRecommendedPoolsCursor("market:v1:top-fees:56:5", { chain: "bsc", limit: 3 })).toBeNull();
+    expect(
+      parseRecommendedPoolsCursor("rec-pools:v1:bsc:3:bad", { chain: "bsc", limit: 3 }),
+    ).toBeNull();
+    expect(
+      parseRecommendedPoolsCursor("market:v1:top-fees:56:5", { chain: "bsc", limit: 3 }),
+    ).toBeNull();
   });
 });

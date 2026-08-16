@@ -85,7 +85,8 @@ class EmptyMarketProvider implements MarketPoolsProvider {
 
 class ReplacingMarketProvider extends EmptyMarketProvider {
   override async getTopFees(context: MarketPoolsContext): Promise<MarketPoolSnapshot> {
-    const snapshot = this.contexts.length === 0 ? populatedSnapshot("7", "12.5") : populatedSnapshot("8", "9.25");
+    const snapshot =
+      this.contexts.length === 0 ? populatedSnapshot("7", "12.5") : populatedSnapshot("8", "9.25");
     this.contexts.push(context);
     return snapshot;
   }
@@ -138,14 +139,16 @@ class FiniteStatsProvider implements ShellStatsProvider {
   async *subscribe(): AsyncIterable<ShellStatsEvent> {}
 }
 
-async function fixture(options: {
-  admin?: boolean;
-  heartbeatMilliseconds?: number;
-  marketPoolsProvider?: MarketPoolsProvider;
-  pollMilliseconds?: number;
-  rateLimitMax?: number;
-  statsProvider?: ShellStatsProvider;
-} = {}) {
+async function fixture(
+  options: {
+    admin?: boolean;
+    heartbeatMilliseconds?: number;
+    marketPoolsProvider?: MarketPoolsProvider;
+    pollMilliseconds?: number;
+    rateLimitMax?: number;
+    statsProvider?: ShellStatsProvider;
+  } = {},
+) {
   const sessionStore = new SessionFixtureStore();
   const token = await issueFixtureSession(
     sessionStore,
@@ -184,12 +187,22 @@ interface SseFrame {
 
 function parseFrame(block: string): SseFrame | null {
   const lines = block.split("\n");
-  const event = lines.find((line) => line.startsWith("event:"))?.slice(6).trim();
-  const data = lines.find((line) => line.startsWith("data:"))?.slice(5).trim();
+  const event = lines
+    .find((line) => line.startsWith("event:"))
+    ?.slice(6)
+    .trim();
+  const data = lines
+    .find((line) => line.startsWith("data:"))
+    ?.slice(5)
+    .trim();
   if (!event || !data) return null;
   return {
     event,
-    id: lines.find((line) => line.startsWith("id:"))?.slice(3).trim() ?? null,
+    id:
+      lines
+        .find((line) => line.startsWith("id:"))
+        ?.slice(3)
+        .trim() ?? null,
     payload: JSON.parse(data) as Record<string, unknown>,
   };
 }
@@ -370,12 +383,7 @@ describe("P02-09 recommendation stream HTTP boundary", () => {
     const marketPoolsProvider = new EmptyMarketProvider();
     const { app, token } = await fixture({ marketPoolsProvider, pollMilliseconds: 100 });
     const firstController = new AbortController();
-    const first = await openSse(
-      app,
-      token,
-      "/api/stats/stream?chain=bsc&limit=3",
-      firstController,
-    );
+    const first = await openSse(app, token, "/api/stats/stream?chain=bsc&limit=3", firstController);
     const [initial] = await readSseFrames(first, 1, firstController);
     const cursor = initial!.id!;
 
@@ -442,15 +450,10 @@ describe("P02-09 recommendation stream HTTP boundary", () => {
     const response = await openSse(app, token, "/api/stats/stream?chain=bsc", controller);
     const frames = await readSseFrames(response, 2, controller);
 
-    expect(frames.map(({ event }) => event)).toEqual([
-      "rec_pools_snapshot",
-      "rec_pools_snapshot",
-    ]);
+    expect(frames.map(({ event }) => event)).toEqual(["rec_pools_snapshot", "rec_pools_snapshot"]);
     expect(frames.map(({ payload }) => payload.sourceVersion)).toEqual(["7", "8"]);
     expect(frames[0]?.payload.selectionHash).not.toBe(frames[1]?.payload.selectionHash);
-    expect(frames[1]?.payload.pools).toEqual([
-      expect.objectContaining({ feesUsd: "9.25" }),
-    ]);
+    expect(frames[1]?.payload.pools).toEqual([expect.objectContaining({ feesUsd: "9.25" })]);
   });
 
   it("aborts an in-flight canonical snapshot read when the client disconnects", async () => {

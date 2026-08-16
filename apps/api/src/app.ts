@@ -152,10 +152,7 @@ function parseStatsStreamQuery(request: FastifyRequest): StatsStreamQuery | null
   const rawLimit = query.limit === undefined ? "3" : query.limit;
   if (typeof rawLimit !== "string" || !/^(?:[1-9]|1[0-9]|20)$/u.test(rawLimit)) return null;
   const userId = query.user_id === undefined ? null : query.user_id;
-  if (
-    userId !== null &&
-    (typeof userId !== "string" || userId.length < 1 || userId.length > 128)
-  ) {
+  if (userId !== null && (typeof userId !== "string" || userId.length < 1 || userId.length > 128)) {
     return null;
   }
   return { chain, limit: Number(rawLimit), userId };
@@ -1445,8 +1442,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         let initialRecommendation: IteratorResult<RecommendedPoolsStreamEvent> | null = null;
         if (recommendationStream) {
           try {
-            initialRecommendation = await recommendationStream.next();
-            if (initialRecommendation.done) throw new Error("Recommendation stream ended early");
+            const first = await recommendationStream.next();
+            if (first.done) throw new Error("Recommendation stream ended early");
+            initialRecommendation = first;
           } catch {
             controller.abort();
             return reply.code(503).send(
