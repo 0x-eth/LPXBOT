@@ -38,6 +38,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -103,6 +104,10 @@ import {
   type PoolSearchMode,
   type PoolSearchState,
 } from "./pool-search-state";
+import {
+  PoolMarketDetail,
+  type MarketDetailFixtureState,
+} from "./pool-market-detail";
 import {
   initialPoolStreamState,
   reducePoolStream,
@@ -318,6 +323,21 @@ function fixtureState(search: string): PoolsFixtureState | null {
   return ["loading", "empty", "ready", "error", "stale", "reconnecting"].includes(state)
     ? (state as PoolsFixtureState)
     : null;
+}
+
+function fixtureMarketDetailState(search: string): MarketDetailFixtureState | null {
+  if (!import.meta.env.DEV) return null;
+  const value = new URLSearchParams(search).get("chart_state");
+  return ["loading", "empty", "error", "stale", "unsupported", "invalid"].includes(value ?? "")
+    ? (value as MarketDetailFixtureState)
+    : null;
+}
+
+function marketDetailRefreshMs(search: string): number {
+  const fallback = 15_000;
+  if (!import.meta.env.DEV) return fallback;
+  const value = Number(new URLSearchParams(search).get("chart_refresh_ms"));
+  return Number.isSafeInteger(value) && value >= 50 && value <= 60_000 ? value : fallback;
 }
 
 function fixtureFlowState(
@@ -542,16 +562,20 @@ function PoolTableCell({
   column,
   comparisonEnabled,
   comparisonSelected,
+  marketExpanded,
   toggleComparison,
   toggleGroup,
+  toggleMarket,
   visibleRow,
   showLabels,
 }: {
   column: PoolColumnKey;
   comparisonEnabled: boolean;
   comparisonSelected: boolean;
+  marketExpanded: boolean;
   toggleComparison(poolKey: string): void;
   toggleGroup(groupKey: string): void;
+  toggleMarket(poolKey: string): void;
   visibleRow: VisiblePoolRow;
   showLabels: boolean;
 }) {
@@ -608,6 +632,19 @@ function PoolTableCell({
   if (column === "fdv") return <NumericValue label="FDV" prefix="$ " value={row.fdvUsd} />;
   return (
     <td className="pool-row-actions" data-label="操作">
+      <button
+        aria-expanded={marketExpanded}
+        aria-label={`${marketExpanded ? "收起" : "展开"}池图表 ${identity}`}
+        onClick={() => toggleMarket(row.poolKey)}
+        title={marketExpanded ? "收起市场图表" : "展开市场图表"}
+        type="button"
+      >
+        {marketExpanded ? (
+          <ChevronDown aria-hidden="true" size={15} />
+        ) : (
+          <ChevronRight aria-hidden="true" size={15} />
+        )}
+      </button>
       <button
         aria-label={`${comparisonSelected ? "移出" : "选择"}对比 ${identity}`}
         aria-pressed={comparisonSelected}
