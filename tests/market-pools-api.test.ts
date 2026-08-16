@@ -29,7 +29,24 @@ const snapshot: MarketPoolSnapshot = {
       feeTvl: "0.0042125",
       hooks: null,
       labelRuleVersion: "pool-labels/local-v1",
-      labels: [],
+      labels: [
+        {
+          computedAt: "2026-08-16T01:00:00.000Z",
+          id: "high-fee-rate",
+          label: "高费率",
+          reasons: [
+            {
+              code: "FEE_TVL_GTE_THRESHOLD",
+              observed: "0.01",
+              operator: ">=",
+              threshold: "0.01",
+              window: "5m",
+            },
+          ],
+          ruleVersion: "pool-labels/local-v1",
+          score: 50,
+        },
+      ],
       poolAddress: "0x1111111111111111111111111111111111111111",
       poolId: null,
       poolKey: "56:0x1111111111111111111111111111111111111111",
@@ -193,6 +210,7 @@ describe("P02-02 top-fees API and replayable SSE", () => {
       ["pools.diff", "market:v1:56:5:1:8"],
       ["heartbeat", "market:v1:56:5:1:9"],
     ]);
+    expect(events[0]?.payload.data.upserts[0].labels).toEqual(snapshot.rows[0]?.labels);
     expect(provider.streamContexts[0]).toMatchObject({
       chainId: 56,
       lastEventId,

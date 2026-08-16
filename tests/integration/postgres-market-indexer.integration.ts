@@ -52,6 +52,10 @@ const catalogMigrationPath = path.join(
   repositoryRoot,
   "infra/migrations/20260816000400_create_market_pool_catalog.sql",
 );
+const labelContextMigrationPath = path.join(
+  repositoryRoot,
+  "infra/migrations/20260816000500_add_market_label_context.sql",
+);
 const goldenDirectory = path.join(repositoryRoot, "artifacts/acceptance/P02-02/golden");
 
 function normalMarketProjection(
@@ -183,6 +187,7 @@ beforeAll(async () => {
     "20260816000100_create_market_indexer.sql",
     "20260816000200_create_liquidity_flow.sql",
     "20260816000400_create_market_pool_catalog.sql",
+    "20260816000500_add_market_label_context.sql",
   ];
   for (const filename of migrationFiles) {
     const source = readFileSync(path.join(repositoryRoot, "infra/migrations", filename), "utf8");
@@ -623,6 +628,108 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     ]);
   });
 
+  it("withdraws orphan labels and recomputes the replacement branch with shared context", async () => {
+    const fixture = structuredClone(readP02Fixture("reorg"));
+    for (const entry of fixture.input) entry.fixtureDecoded.kind = "swap";
+    const createRunner = () =>
+      new IndexerRunner({
+        decoder: new FixtureEventDecoder(fixture.input, {
+          marketFor(entry) {
+            const oldBranch = entry.rawLog.blockHash.endsWith("20");
+            return {
+              feesUsd: oldBranch ? "20" : "4",
+              tvlUsd: "1000",
+              volumeUsd: oldBranch ? "200" : "40",
+            };
+          },
+        }),
+        evaluationTime: () => new Date("2026-08-16T00:01:00.000Z"),
+        source: new FixtureRawLogSource(fixture.input, fixtureBlockTimestamp),
+        store: new PostgresCanonicalEventStore(pool),
+      });
+
+    const first = await createRunner().runOnce();
+    expect(first).toMatchObject({ acceptedCount: 2, duplicateCount: 0, revertedCount: 1 });
+    const outbox = await pool.query<{
+      event_type: string;
+      payload: {
+        canonicalRevision: string;
+        metricVersion: string;
+        rows?: MarketPoolSnapshot["rows"];
+        tombstones?: string[];
+        upserts?: MarketPoolSnapshot["rows"];
+        windowEnd: string;
+      };
+      sequence: string;
+    }>(
+      `SELECT event_type, sequence::text, envelope->'data' AS payload
+         FROM market_stream_outbox
+        WHERE window_minutes = 1
+        ORDER BY sequence`,
+    );
+    expect(outbox.rows.map(({ event_type }) => event_type)).toEqual([
+      "pools.snapshot",
+      "pools.diff",
+      "pools.diff",
+    ]);
+    const [oldBranch, withdrawn, replacement] = outbox.rows.map(({ payload }) => payload);
+    expect(oldBranch?.rows?.[0]?.labels.map(({ id }) => id)).toContain("high-fee-rate");
+    const poolKey = oldBranch?.rows?.[0]?.poolKey;
+    expect(withdrawn).toMatchObject({ tombstones: [poolKey], upserts: [] });
+    expect(replacement?.upserts).toHaveLength(1);
+    expect(replacement?.upserts?.[0]).toMatchObject({ labels: [], poolKey });
+    for (const payload of [oldBranch, withdrawn, replacement]) {
+      expect(payload).toMatchObject({
+        canonicalRevision: expect.stringMatching(/^canonical:v1:[0-9a-f]{64}$/u),
+        metricVersion: "market-metrics/v1",
+        windowEnd: "2026-08-16T00:01:00.000Z",
+      });
+    }
+    expect(new Set([oldBranch, withdrawn, replacement].map((item) => item?.canonicalRevision)).size).toBe(
+      3,
+    );
+
+    const canonical = await pool.query<{
+      canonical_revision: string;
+      label_rule_version: string;
+      metric_version: string;
+      rows: MarketPoolSnapshot["rows"];
+      window_end: Date;
+    }>(
+      `SELECT canonical_revision, label_rule_version, metric_version, rows, window_end
+         FROM market_snapshots
+        WHERE stream_key = 'top-fees:56:1' AND canonical`,
+    );
+    expect(canonical.rows).toHaveLength(1);
+    expect(canonical.rows[0]).toMatchObject({
+      canonical_revision: replacement?.canonicalRevision,
+      label_rule_version: "pool-labels/local-v1",
+      metric_version: "market-metrics/v1",
+      rows: [{ labelRuleVersion: "pool-labels/local-v1", labels: [], poolKey }],
+    });
+    expect(canonical.rows[0]?.window_end.toISOString()).toBe(replacement?.windowEnd);
+
+    const beforeReplay = await pool.query<{
+      max_sequence: string;
+      snapshots: string;
+    }>(
+      `SELECT
+         (SELECT count(*)::text FROM market_snapshots) AS snapshots,
+         (SELECT max(sequence)::text FROM market_stream_outbox) AS max_sequence`,
+    );
+    const replay = await createRunner().runOnce();
+    const afterReplay = await pool.query<{
+      max_sequence: string;
+      snapshots: string;
+    }>(
+      `SELECT
+         (SELECT count(*)::text FROM market_snapshots) AS snapshots,
+         (SELECT max(sequence)::text FROM market_stream_outbox) AS max_sequence`,
+    );
+    expect(replay).toMatchObject({ acceptedCount: 0, duplicateCount: 2, revertedCount: 0 });
+    expect(afterReplay.rows).toEqual(beforeReplay.rows);
+  });
+
   it("treats a stale old-branch redelivery as a strict no-op after reorg", async () => {
     const fixture = readP02Fixture("reorg");
     await runnerFor("reorg").runner.runOnce();
@@ -671,13 +778,15 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     expect(after.rows).toEqual(before.rows);
   });
 
-  it("runs the market, flow and catalog migrations down and up in dependency order", async () => {
+  it("runs the market, flow, catalog and label migrations down and up in dependency order", async () => {
     const market = migrationSections(readFileSync(migrationPath, "utf8"));
     const flow = migrationSections(readFileSync(flowMigrationPath, "utf8"));
     const catalog = migrationSections(readFileSync(catalogMigrationPath, "utf8"));
+    const labelContext = migrationSections(readFileSync(labelContextMigrationPath, "utf8"));
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
+      await client.query(labelContext.down);
       await client.query(catalog.down);
       await client.query(flow.down);
       await client.query(market.down);
@@ -691,6 +800,7 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
       await client.query(market.up);
       await client.query(flow.up);
       await client.query(catalog.up);
+      await client.query(labelContext.up);
       const restored = await client.query<{ catalog: boolean; flow: boolean; market: boolean }>(
         `SELECT
            to_regclass('public.market_pool_catalog') IS NOT NULL AS catalog,
