@@ -92,8 +92,8 @@ export interface ComputePoolLabelsInput {
   metricVersion: string;
   row: Pick<
     PoolMetricRow,
-    "chainId" | "feeTvl" | "feesUsd" | "poolAddress" | "poolId" | "poolKey" | "transactionCount" | "tvlUsd"
-  >;
+    "chainId" | "feeTvl" | "feesUsd" | "poolAddress" | "poolId" | "poolKey" | "tvlUsd"
+  > & { transactionCount: string | null };
   ruleContract?: PoolLabelRuleContract;
   windowEnd: string;
   windowMinutes: MarketWindowMinutes;
