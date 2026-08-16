@@ -628,6 +628,22 @@ function walletErrorMessage(code: WalletAuthenticationError["code"]): string {
   return messages[code];
 }
 
+function marketChartErrorStatus(code: MarketChartProviderError["code"]): number {
+  if (code === "MARKET_POOL_NOT_FOUND") return 404;
+  if (code === "AMBIGUOUS_POOL" || code === "TICK_SPACING_MISMATCH") return 409;
+  return 400;
+}
+
+function marketChartErrorMessage(code: MarketChartProviderError["code"]): string {
+  const messages: Record<MarketChartProviderError["code"], string> = {
+    AMBIGUOUS_POOL: "Token resolves to multiple pools; poolKey is required",
+    MARKET_POOL_NOT_FOUND: "The requested canonical pool is unknown",
+    TICK_SPACING_MISMATCH: "tickSpacing does not match the canonical pool catalog",
+    TOKEN_NOT_IN_POOL: "Token does not belong to the requested pool",
+  };
+  return messages[code];
+}
+
 const telegramBotUsernamePattern = /^[A-Za-z][A-Za-z0-9_]{4,31}$/u;
 
 function telegramBotConfigured(options: ApiAppOptions): options is ApiAppOptions & {
@@ -683,6 +699,19 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     liquidityFlowRateLimit.timeWindowMs <= 0
   ) {
     throw new RangeError("Liquidity flow rate limits must be positive integers");
+  }
+  const marketChartsRateLimit: PublicReadRateLimit = {
+    max: 60,
+    timeWindowMs: 60_000,
+    ...options.marketChartsRateLimit,
+  };
+  if (
+    !Number.isSafeInteger(marketChartsRateLimit.max) ||
+    marketChartsRateLimit.max <= 0 ||
+    !Number.isSafeInteger(marketChartsRateLimit.timeWindowMs) ||
+    marketChartsRateLimit.timeWindowMs <= 0
+  ) {
+    throw new RangeError("Market chart rate limits must be positive integers");
   }
   const marketPoolsRateLimit: PublicReadRateLimit = {
     max: 60,
@@ -1286,6 +1315,112 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           if (!reply.raw.destroyed) reply.raw.end();
         }
         return reply;
+      },
+    );
+
+    app.get(
+      "/api/market/candles",
+      {
+        config: {
+          rateLimit: {
+            keyGenerator: (request: FastifyRequest) => sessionToken(request) ?? request.ip,
+            max: marketChartsRateLimit.max,
+            timeWindow: marketChartsRateLimit.timeWindowMs,
+          },
+        },
+      },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        const query = parseMarketCandleQuery(request);
+        if (!query) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "MARKET_CANDLE_QUERY_INVALID",
+              message: "Candle token, poolKey, bar, limit, or BSC chain is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.marketChartsProvider) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "MARKET_CHARTS_UNAVAILABLE",
+              message: "Canonical chart data is not configured",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const result = await options.marketChartsProvider.getCandles(query);
+          return createSuccessEnvelope(result, request.id);
+        } catch (error) {
+          if (!(error instanceof MarketChartProviderError)) throw error;
+          return reply.code(marketChartErrorStatus(error.code)).send(
+            createErrorEnvelope({
+              code: error.code,
+              message: marketChartErrorMessage(error.code),
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+      },
+    );
+
+    app.get(
+      "/api/pools/liquidity/:poolAddressOrPoolId",
+      {
+        config: {
+          rateLimit: {
+            keyGenerator: (request: FastifyRequest) => sessionToken(request) ?? request.ip,
+            max: marketChartsRateLimit.max,
+            timeWindow: marketChartsRateLimit.timeWindowMs,
+          },
+        },
+      },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        const query = parseMarketTickLiquidityQuery(request);
+        if (!query) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "MARKET_LIQUIDITY_QUERY_INVALID",
+              message: "Liquidity pool, range, BSC chain, DEX, spacing, or decimals are invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.marketChartsProvider) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "MARKET_CHARTS_UNAVAILABLE",
+              message: "Canonical chart data is not configured",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const result = await options.marketChartsProvider.getTickLiquidity(query);
+          return createSuccessEnvelope(result, request.id);
+        } catch (error) {
+          if (!(error instanceof MarketChartProviderError)) throw error;
+          return reply.code(marketChartErrorStatus(error.code)).send(
+            createErrorEnvelope({
+              code: error.code,
+              message: marketChartErrorMessage(error.code),
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
       },
     );
 
