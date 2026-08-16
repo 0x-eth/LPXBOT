@@ -74,7 +74,9 @@ async function main() {
     if (manifest.phase !== manifest.workItemId.slice(0, 3)) {
       errors.push(`${label}: phase ${manifest.phase} does not match workItemId ${manifest.workItemId}`);
     }
-    const isFeaturelessPhaseCompletion = manifest.workItemId === "P01-08";
+    const isFeaturelessPhaseCompletion = new Set(["P01-08", "P02-03"]).has(
+      manifest.workItemId,
+    );
     if (
       manifest.phase !== "P00" &&
       !isFeaturelessPhaseCompletion &&

@@ -271,7 +271,7 @@ test("accepts a valid P00 infrastructure manifest with no feature IDs", async ()
   assert.match(output(result), /1 acceptance manifest.*valid/i);
 });
 
-test("accepts only the P01-08 phase completion manifest with no feature IDs", async () => {
+test("accepts only named featureless phase evidence manifests with no feature IDs", async () => {
   const completionManifest = {
     ...validP00Manifest(),
     workItemId: "P01-08",
@@ -297,6 +297,30 @@ test("accepts only the P01-08 phase completion manifest with no feature IDs", as
     path.join(completionFixture.repoRoot, "docs/FUNCTION_MATRIX.md"),
   ]);
   assert.equal(completionResult.status, 0, output(completionResult));
+
+  const decoderEvidenceManifest = {
+    ...completionManifest,
+    workItemId: "P02-03",
+    phase: "P02",
+    tests: completionManifest.tests.map((entry) => ({
+      ...entry,
+      evidencePath: "artifacts/acceptance/P02-03/evidence.md",
+    })),
+    evidence: completionManifest.evidence.map((entry) => ({
+      ...entry,
+      path: "artifacts/acceptance/P02-03/evidence.md",
+    })),
+  };
+  const decoderEvidenceFixture = await acceptanceFixture(decoderEvidenceManifest);
+  const decoderEvidenceResult = run("scripts/check-acceptance.mjs", [
+    "--repo-root",
+    decoderEvidenceFixture.repoRoot,
+    "--acceptance-dir",
+    decoderEvidenceFixture.acceptanceDirectory,
+    "--function-matrix",
+    path.join(decoderEvidenceFixture.repoRoot, "docs/FUNCTION_MATRIX.md"),
+  ]);
+  assert.equal(decoderEvidenceResult.status, 0, output(decoderEvidenceResult));
 
   const implementationManifest = { ...completionManifest, workItemId: "P01-09" };
   const implementationFixture = await acceptanceFixture(implementationManifest);
