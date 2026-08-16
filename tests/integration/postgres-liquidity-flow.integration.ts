@@ -238,7 +238,12 @@ describe("P02-04 PostgreSQL liquidity flow read model", () => {
   });
 
   it("provides bounded historical backfill and identical pool/token/user/NFT filtering", async () => {
-    await new PostgresCanonicalEventStore(pool).commit(productionGoldenCommit());
+    const commitResult = await new PostgresCanonicalEventStore(pool).commit(productionGoldenCommit());
+    expect(commitResult).toMatchObject({ acceptedCount: 16, revertedCount: 0 });
+    const projectionCount = await pool.query<{ count: string }>(
+      "SELECT count(*)::text AS count FROM liquidity_flow_events",
+    );
+    expect(projectionCount.rows).toEqual([{ count: "10" }]);
     const provider = new PostgresLiquidityFlowProvider(pool, {
       backfillLimit: 3,
       now: () => new Date("2026-08-16T03:01:00.000Z"),
