@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-05",
+  "direction": "forward-only",
+  "items": [
+    {
+      "id": "GAP-FLOW-USD-VALUATION",
+      "status": "unresolved",
+      "scope": "Some add/remove events in the loaded flow window have no authoritative usd_value.",
+      "currentBehavior": "Known USD values are summed with Decimal; unknown monetary events increment unvalued counts and mark summary/address results partial.",
+      "requiredEvidence": "An authoritative, replay-stable valuation source and timestamp policy for every supported flow event without inferring missing NFT, in-range, or V4 amount fields."
+    },
+    {
+      "id": "GAP-FINALITY-DEPTH",
+      "status": "unresolved",
+      "scope": "P02-05 does not select a BSC confirmation depth or finality source.",
+      "currentBehavior": "The UI consumes observed and reverted records; no event is marked finalized.",
+      "requiredEvidence": "An operations decision recording confirmation depth, finality source, rollback behavior, and SLO."
+    }
+  ]
+}

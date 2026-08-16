@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-05",
+  "phase": "P02",
+  "risk": "R1",
+  "status": "accepted-with-gaps",
+  "featureIds": ["FLOW-03", "FLOW-04", "FLOW-05"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "focused P02-05 Vitest; pnpm format:check; pnpm lint; pnpm typecheck; pnpm test; pnpm build; pnpm check:all",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-05/command-output.md"
+    },
+    {
+      "id": "T-API",
+      "command": "pnpm exec vitest run tests/address-remarks-contract.test.ts tests/address-remarks-api.test.ts tests/address-remarks-client.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-05/E-API.md"
+    },
+    {
+      "id": "T-SSE",
+      "command": "focused liquidity projection/client/API regression with duplicate, replay, tombstone, pause/resume and filter coverage",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-05/E-SSE.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "pnpm test:postgres including user isolation, concurrent upsert, idempotent delete and atomic audit writes",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-05/E-DATA.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "clean/repeat migration and seed plus complete reverse-down/up PostgreSQL cycle",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-05/E-DATA.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm exec playwright test tests/e2e/p02-05-liquidity-insights.spec.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-05/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "Darwin and pinned Playwright Linux desktop/mobile screenshots, overflow assertions and axe scans",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-05/E-VIS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "full-history Gitleaks; pnpm audit:dependencies; focused request/response/RBAC boundary tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-05/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-DATA", "path": "artifacts/acceptance/P02-05/E-DATA.md" },
+    { "id": "E-SSE", "path": "artifacts/acceptance/P02-05/E-SSE.md" },
+    { "id": "E-API", "path": "artifacts/acceptance/P02-05/E-API.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P02-05/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P02-05/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P02-05/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P02-05/E-SEC.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only.",
+    "FLOW-03, FLOW-04 and FLOW-05 are implemented-assumed; the other 13 P02 feature IDs remain planned.",
+    "GAP-FLOW-USD-VALUATION remains unresolved; null USD values produce partial known-value results.",
+    "GAP-FINALITY-DEPTH remains unresolved. No event is marked finalized.",
+    "BSC chainId 56 is the only implemented chain; no multi-chain behavior is claimed.",
+    "NFT ID, USD value and in-range remain null without an authoritative source; absent V4 token amounts remain null.",
+    "No separate statistics API, new price source, wallet address-book endpoint or funds operation is introduced.",
+    "No external RPC, production secret, signature, broadcast or target write is used.",
+    "P02-01 through P02-04 acceptance directories remain byte-identical to baseline de0a846b137777f710f53f25f47f276b43d43b7c."
+  ],
+  "completedAt": "2026-08-16T08:12:27.000Z",
+  "commit": "fc3aeb78f25f66b4aa54a30db83876215b6701c2"
+}
