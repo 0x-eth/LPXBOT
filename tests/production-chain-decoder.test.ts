@@ -43,6 +43,18 @@ function readGolden(protocol: string, eventName: string): GoldenRawEvent {
   ) as GoldenRawEvent;
 }
 
+async function decodeGolden(
+  decoder: ProductionBscEventDecoder,
+  protocol: string,
+  eventName: string,
+) {
+  const raw = readGolden(protocol, eventName);
+  for (const prerequisite of raw.prerequisites ?? []) {
+    await decoder.decode(prerequisite.delivery);
+  }
+  return { normalized: await decoder.decode(raw.delivery), raw };
+}
+
 describe("P02-03 production BSC event decoder", () => {
   it("derives the exact official event topic0 values", () => {
     expect(PROTOCOL_EVENT_TOPICS).toEqual(EXPECTED_TOPICS);
@@ -71,14 +83,7 @@ describe("P02-03 production BSC event decoder", () => {
       deployments: BSC_PROTOCOL_DEPLOYMENTS,
       quarantine: { write: (entry) => quarantined.push(entry) },
     });
-    const poolCreated =
-      protocol.endsWith("v3") && eventName !== "PoolCreated"
-        ? readGolden(protocol, "PoolCreated")
-        : null;
-    if (poolCreated) await decoder.decode(poolCreated.delivery);
-
-    const raw = readGolden(protocol, eventName);
-    const normalized = await decoder.decode(raw.delivery);
+    const { normalized } = await decodeGolden(decoder, protocol, eventName);
     const expected = JSON.parse(
       readFileSync(
         path.join(acceptanceRoot, "golden/normalized", protocol, `${eventName}.json`),
@@ -100,21 +105,26 @@ describe("P02-03 production BSC event decoder", () => {
 
   it("preserves swap signs and maps add/remove liquidity without guessing a position ID", async () => {
     const decoder = new ProductionBscEventDecoder({ deployments: BSC_PROTOCOL_DEPLOYMENTS });
-    await decoder.decode(readGolden("univ3", "PoolCreated").delivery);
-    const [swap, mint, burn, collect, v4Add] = await Promise.all([
-      decoder.decode(readGolden("univ3", "Swap").delivery),
-      decoder.decode(readGolden("univ3", "Mint").delivery),
-      decoder.decode(readGolden("univ3", "Burn").delivery),
-      decoder.decode(readGolden("univ3", "Collect").delivery),
-      decoder.decode(readGolden("univ4", "ModifyLiquidity").delivery),
-    ]);
+    const decoded = [];
+    for (const [protocol, eventName] of [
+      ["univ3", "Swap"],
+      ["univ3", "Mint"],
+      ["univ3", "Burn"],
+      ["univ3", "Collect"],
+      ["univ4", "ModifyLiquidity"],
+    ] as const) {
+      decoded.push((await decodeGolden(decoder, protocol, eventName)).normalized);
+    }
+    const [decodedSwap, decodedMint, decodedBurn, decodedCollect, decodedV4Add] = decoded;
 
-    expect(BigInt(swap.amount0!) * BigInt(swap.amount1!)).toBeLessThan(0n);
-    expect(BigInt(mint.liquidityDelta!)).toBeGreaterThan(0n);
-    expect(BigInt(burn.liquidityDelta!)).toBeLessThan(0n);
-    expect(BigInt(collect.amount0!) <= 0n && BigInt(collect.amount1!) <= 0n).toBe(true);
-    expect(BigInt(v4Add.liquidityDelta!)).toBeGreaterThan(0n);
-    for (const event of [swap, mint, burn, collect, v4Add]) {
+    expect(BigInt(decodedSwap!.amount0!) * BigInt(decodedSwap!.amount1!)).toBeLessThan(0n);
+    expect(BigInt(decodedMint!.liquidityDelta!)).toBeGreaterThan(0n);
+    expect(BigInt(decodedBurn!.liquidityDelta!)).toBeLessThan(0n);
+    expect(
+      BigInt(decodedCollect!.amount0!) <= 0n && BigInt(decodedCollect!.amount1!) <= 0n,
+    ).toBe(true);
+    expect(BigInt(decodedV4Add!.liquidityDelta!)).toBeGreaterThan(0n);
+    for (const event of decoded) {
       expect(event.payload.positionId).toBeNull();
     }
   });

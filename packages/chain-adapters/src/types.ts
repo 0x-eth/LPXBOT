@@ -91,6 +91,7 @@ export interface RawLogSource {
 export interface GoldenRawEvent {
   delivery: RawLogDelivery;
   eventName: string;
+  prerequisites?: readonly { delivery: RawLogDelivery }[];
   protocol: MarketMetricProtocol;
   schemaVersion: 1;
   [key: string]: unknown;
