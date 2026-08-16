@@ -249,7 +249,6 @@ export interface ShellStats {
   gas: ShellGasStats;
   online: boolean | null;
   pingMs: number | null;
-  recommendedPools: string[] | null;
   taskCounts: ShellTaskCounts;
 }
 
@@ -264,20 +263,14 @@ export interface ShellStatsPatch {
   gas?: Partial<ShellGasStats>;
   online?: boolean | null;
   pingMs?: number | null;
-  recommendedPools?: string[] | null;
   taskCounts?: Partial<ShellTaskCounts>;
 }
 
 export type ShellStatsEvent =
   | (ShellStatsSnapshot & { type: "snapshot" })
   | { observedAt: string; sequence: number; stats: ShellStatsPatch; type: "update" }
-  | {
-      observedAt: string;
-      recommendedPools: string[] | null;
-      sequence: number;
-      type: "rec_pools_snapshot";
-    }
-  | { observedAt: string; sequence: number; type: "heartbeat" };
+  | RecommendedPoolsSnapshotEvent
+  | { observedAt: string; sequence: number | null; type: "heartbeat" };
 
 export const shellStatsContracts = {
   snapshot: { method: "GET", path: "/api/stats" },

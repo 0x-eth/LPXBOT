@@ -32,7 +32,7 @@ export interface RecommendedPoolsEventStreamOptions {
 
 export type RecommendedPoolsStreamEvent =
   | RecommendedPoolsSnapshotEvent
-  | { observedAt: string; type: "heartbeat" };
+  | { observedAt: string; sequence: null; type: "heartbeat" };
 
 const systemScheduler: RecommendedPoolsScheduler = {
   clearInterval: (handle) => clearInterval(handle),
@@ -278,6 +278,7 @@ export async function* createRecommendedPoolsEventStream(
     () =>
       queue.push({
         observedAt: validNow(scheduler).toISOString(),
+        sequence: null,
         type: "heartbeat",
       }),
     heartbeatMilliseconds,

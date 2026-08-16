@@ -1462,6 +1462,10 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           })) {
             if (controller.signal.aborted) break;
             if (event.type === "rec_pools_snapshot") continue;
+            if (event.sequence === null) {
+              if (query.chain === null && !(await writeEvent(event))) break;
+              continue;
+            }
             if (event.sequence <= sequence) continue;
             if (query.chain === "bsc" && event.type === "heartbeat") continue;
             if (!(await writeEvent(event))) break;
