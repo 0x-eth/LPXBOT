@@ -323,6 +323,133 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     ]);
   });
 
+  it("merges canonical 5m and 60m rows for stable by-token sorting", async () => {
+    await runnerFor("normal").runner.runOnce();
+    const catalog = await pool.query<{
+      fee_pips: string | null;
+      hooks: string | null;
+      pool_address: string | null;
+      pool_id: string | null;
+      pool_key: string;
+      protocol: "pcsv3" | "univ3" | "pcsv4" | "univ4";
+      tick_spacing: string | null;
+      token0: `0x${string}`;
+      token1: `0x${string}`;
+    }>(
+      `SELECT pool_key, protocol, pool_address, pool_id, token0, token1,
+              fee_pips::text, tick_spacing::text, hooks
+         FROM market_pool_catalog
+        ORDER BY pool_key`,
+    );
+    const [poolA, poolB, poolC, poolD] = catalog.rows;
+    const marketRow = (
+      entry: (typeof catalog.rows)[number],
+      feesUsd: string | null,
+      volumeUsd: string | null,
+      overrides: Partial<MarketPoolSnapshot["rows"][number]> = {},
+    ): MarketPoolSnapshot["rows"][number] => ({
+      activeTvlUsd: null,
+      chainId: 56,
+      fdvUsd: null,
+      feeActiveTvl: null,
+      feePips: entry.fee_pips,
+      feesUsd,
+      feeTvl: null,
+      hooks: entry.hooks as `0x${string}` | null,
+      poolAddress: entry.pool_address as `0x${string}` | null,
+      poolId: entry.pool_id as `0x${string}` | null,
+      poolKey: entry.pool_key,
+      protocol: entry.protocol,
+      tickSpacing: entry.tick_spacing,
+      token0Address: entry.token0,
+      token0Symbol: null,
+      token1Address: entry.token1,
+      token1Symbol: null,
+      transactionCount: feesUsd === null ? null : "1",
+      tvlUsd: null,
+      volumeUsd,
+      ...overrides,
+    });
+    const rows5m = [
+      marketRow(poolA!, "10", null),
+      marketRow(poolB!, "10", "50", { token0Symbol: "TOKEN", token1Symbol: "QUOTE" }),
+      marketRow(poolC!, null, "100"),
+    ];
+    const rows60m = [
+      marketRow(poolA!, "100", "20"),
+      marketRow(poolB!, null, "500"),
+      marketRow(poolC!, "1000", null),
+      marketRow(poolD!, null, "1000"),
+    ];
+    await pool.query(
+      `UPDATE market_snapshots
+          SET rows = CASE window_minutes
+            WHEN 5 THEN $1::jsonb
+            WHEN 60 THEN $2::jsonb
+            ELSE rows
+          END
+        WHERE canonical AND window_minutes IN (5, 60)`,
+      [JSON.stringify(rows5m), JSON.stringify(rows60m)],
+    );
+    const provider = new PostgresMarketPoolsProvider(pool);
+    const address = "0x5151515151515151515151515151515151515151";
+
+    const fees = await provider.getByToken({
+      address,
+      chainId: 56,
+      limit: 3,
+      protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
+      sort: "fees",
+    });
+    expect(fees.map(({ poolKey }) => poolKey)).toEqual([
+      poolA!.pool_key,
+      poolB!.pool_key,
+      poolC!.pool_key,
+    ]);
+    expect(fees[0]).toMatchObject({
+      fdvUsd: null,
+      fees1h: "100",
+      fees5m: "10",
+      token0Symbol: null,
+      token1Symbol: null,
+      tvlUsd: null,
+      volume1h: "20",
+      volume5m: null,
+    });
+
+    const volume = await provider.getByToken({
+      address,
+      chainId: 56,
+      limit: 100,
+      protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
+      sort: "volume",
+    });
+    expect(volume.map(({ poolKey }) => poolKey)).toEqual([
+      poolC!.pool_key,
+      poolB!.pool_key,
+      poolD!.pool_key,
+      poolA!.pool_key,
+    ]);
+
+    const filtered = await provider.getByToken({
+      address,
+      chainId: 56,
+      limit: 100,
+      protocols: ["pcsv3", "pcsv4"],
+      sort: "volume",
+    });
+    expect(filtered.map(({ protocol }) => protocol)).toEqual(["pcsv4", "pcsv3"]);
+    expect(
+      await provider.getByToken({
+        address: "0xffffffffffffffffffffffffffffffffffffffff",
+        chainId: 56,
+        limit: 100,
+        protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
+        sort: "fees",
+      }),
+    ).toEqual([]);
+  });
+
   it("treats same-key same-payload as no-op and quarantines a different payload", async () => {
     const duplicate = runnerFor("duplicate");
     const result = await duplicate.runner.runOnce();
