@@ -22,10 +22,15 @@ export interface MarketMetricEvent {
   kind: MarketMetricKind;
   market: MarketMetricValues;
   pool: {
+    feePips?: string | null;
+    hooks?: string | null;
     poolAddress: string | null;
     poolId: string | null;
     protocol: MarketMetricProtocol;
+    tickSpacing?: string | null;
+    token0Address?: string | null;
     token0Symbol?: string | null;
+    token1Address?: string | null;
     token1Symbol?: string | null;
   };
   reverted: boolean;
@@ -36,13 +41,19 @@ export interface PoolMetricRow {
   activeTvlUsd: null;
   chainId: number;
   fdvUsd: string | null;
+  feePips: string | null;
   feeActiveTvl: null;
   feesUsd: string | null;
   feeTvl: string | null;
+  hooks: string | null;
   poolAddress: string | null;
   poolId: string | null;
+  poolKey: string;
   protocol: MarketMetricProtocol;
+  tickSpacing: string | null;
+  token0Address: string | null;
   token0Symbol: string | null;
+  token1Address: string | null;
   token1Symbol: string | null;
   transactionCount: string;
   tvlUsd: string | null;
@@ -142,6 +153,7 @@ function rowForPool(
   windowComplete: boolean,
 ): PoolMetricRow {
   const first = poolEvents[0]!;
+  const identity = allPoolEventsBeforeEnd[0] ?? first;
   const feesUsd = metricSum(poolEvents, "feesUsd", windowComplete);
   const tvlUsd = latestPointValue(allPoolEventsBeforeEnd, "tvlUsd");
   const feeTvl =
@@ -152,13 +164,23 @@ function rowForPool(
     activeTvlUsd: null,
     chainId: first.chainId,
     fdvUsd: latestPointValue(allPoolEventsBeforeEnd, "fdvUsd"),
+    feePips: identity.pool.feePips ?? null,
     feeActiveTvl: null,
     feesUsd,
     feeTvl,
+    hooks: identity.pool.hooks?.toLowerCase() ?? null,
     poolAddress: first.pool.poolAddress,
     poolId: first.pool.poolId,
+    poolKey: poolMetricKey({
+      chainId: first.chainId,
+      poolAddress: first.pool.poolAddress,
+      poolId: first.pool.poolId,
+    }),
     protocol: first.pool.protocol,
+    tickSpacing: identity.pool.tickSpacing ?? null,
+    token0Address: identity.pool.token0Address?.toLowerCase() ?? null,
     token0Symbol: first.pool.token0Symbol ?? null,
+    token1Address: identity.pool.token1Address?.toLowerCase() ?? null,
     token1Symbol: first.pool.token1Symbol ?? null,
     transactionCount: String(
       new Set(
