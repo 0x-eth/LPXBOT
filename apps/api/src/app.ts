@@ -1283,16 +1283,17 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         parsed = parseAddressRemarkPutRequest(request.body);
       } catch (error) {
         if (!(error instanceof AddressRemarkValidationError)) throw error;
-        let address = null;
-        try {
-          address = canonicalAddressRemarkAddress(
-            typeof request.body === "object" && request.body !== null
-              ? (request.body as { address?: unknown }).address
-              : null,
-          );
-        } catch {
-          address = null;
-        }
+        const address = (() => {
+          try {
+            return canonicalAddressRemarkAddress(
+              typeof request.body === "object" && request.body !== null
+                ? (request.body as { address?: unknown }).address
+                : null,
+            );
+          } catch {
+            return null;
+          }
+        })();
         await recordDeniedAddressRemark(
           addressRemarkAudit("address-remark.put", address, request, session),
           "ADDRESS_REMARK_INVALID",
