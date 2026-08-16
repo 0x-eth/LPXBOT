@@ -188,7 +188,7 @@ export class ViemBscLogSource implements RawLogSource {
           (!error.message.startsWith("RPC_HTTP_STATUS:") &&
             !error.message.startsWith("RPC_RESPONSE_ERROR:"));
         if (!retryableTransportError || attempt === this.#maxAttempts) {
-          throw new Error(`RPC_REQUEST_FAILED: ${method}`);
+          throw new Error(`RPC_REQUEST_FAILED: ${method}`, { cause: error });
         }
       } finally {
         clearTimeout(timeout);

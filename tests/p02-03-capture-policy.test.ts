@@ -30,7 +30,7 @@ describe("P02-03 live capture policy", () => {
       "eth_getTransactionReceipt",
       "eth_getCode",
     ]) {
-      expect(source).toContain(`\"${method}\"`);
+      expect(source).toContain(`"${method}"`);
     }
     for (const forbidden of [
       "eth_sendTransaction",

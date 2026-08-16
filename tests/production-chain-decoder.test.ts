@@ -75,7 +75,11 @@ describe("P02-03 production BSC event decoder", () => {
     const quarantined: QuarantinedLog[] = [];
     const decoder = new ProductionBscEventDecoder({
       deployments: BSC_PROTOCOL_DEPLOYMENTS,
-      quarantine: { write: (entry) => quarantined.push(entry) },
+      quarantine: {
+        write: (entry) => {
+          quarantined.push(entry);
+        },
+      },
     });
     const { normalized } = await decodeGolden(decoder, protocol, eventName);
     const raw = readGolden(protocol, eventName);
@@ -136,7 +140,11 @@ describe("P02-03 production BSC event decoder", () => {
     const quarantined: QuarantinedLog[] = [];
     const decoder = new ProductionBscEventDecoder({
       deployments: BSC_PROTOCOL_DEPLOYMENTS,
-      quarantine: { write: (entry) => quarantined.push(entry) },
+      quarantine: {
+        write: (entry) => {
+          quarantined.push(entry);
+        },
+      },
     });
     const fixture = structuredClone(readGolden("univ4", "Initialize").delivery);
     if ("topic" in mutation) fixture.log.topics[0] = mutation.topic;
@@ -178,7 +186,7 @@ describe("P02-03 production BSC event decoder", () => {
         tickLower: -887_272,
         tickUpper: 887_272,
       },
-    });
+    }) as unknown as string[];
     v3.log.data = encodeAbiParameters(
       [{ type: "address" }, { type: "uint128" }, { type: "uint256" }, { type: "uint256" }],
       ["0x0000000000000000000000000000000000000002", maxUint128, 1n, 2n],

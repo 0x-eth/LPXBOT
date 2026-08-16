@@ -74,12 +74,12 @@ describe("P02-03 BSC protocol deployment registry", () => {
       { ...valid, validToBlock: "1" },
       { ...valid, runtimeCodeHash: "0x00" },
       { ...valid, abiHash: "sha256:not-a-hash" },
-    ] satisfies ProtocolDeployment[];
+    ];
 
     for (const deployment of invalid) {
-      expect(() => validateProtocolDeploymentRegistry([deployment])).toThrowError(
-        /PROTOCOL_DEPLOYMENT_INVALID/u,
-      );
+      expect(() =>
+        validateProtocolDeploymentRegistry([deployment as unknown as ProtocolDeployment]),
+      ).toThrowError(/PROTOCOL_DEPLOYMENT_INVALID/u);
     }
   });
 

@@ -24,16 +24,26 @@ describe("P02-03 acceptance integrity", () => {
     const resolution = json("gap-resolution.json");
     expect(resolution.direction).toBe("forward-only");
     expect(resolution.sourceGapArtifactModified).toBe(false);
-    expect(resolution.items.find(({ id }: { id: string }) => id === "GAP-FINALITY-DEPTH"))
-      .toMatchObject({ status: "unresolved" });
+    expect(
+      resolution.items.find(({ id }: { id: string }) => id === "GAP-FINALITY-DEPTH"),
+    ).toMatchObject({ status: "unresolved" });
   });
 
   it("matches the code registry and canonical ABI hashes", () => {
     const registry = json("deployment-registry.json");
     expect(
-      registry.deployments.map(
-        ({ displayAddress: _displayAddress, creationTransactionHash: _transaction, ...entry }: Record<string, unknown>) => entry,
-      ),
+      registry.deployments.map((deployment: Record<string, unknown>) => ({
+        abiHash: deployment.abiHash,
+        evidenceRefs: deployment.evidenceRefs,
+        factory: deployment.factory,
+        generation: deployment.generation,
+        platformId: deployment.platformId,
+        poolManager: deployment.poolManager,
+        protocolId: deployment.protocolId,
+        runtimeCodeHash: deployment.runtimeCodeHash,
+        validFromBlock: deployment.validFromBlock,
+        validToBlock: deployment.validToBlock,
+      })),
     ).toEqual(
       BSC_PROTOCOL_DEPLOYMENTS.map((deployment) => ({
         abiHash: deployment.abiHash,
@@ -51,14 +61,19 @@ describe("P02-03 acceptance integrity", () => {
     const abiIndex = json("abi-index.json");
     expect(
       Object.fromEntries(
-        abiIndex.protocols.map(({ abiHash, platformId }: { abiHash: string; platformId: string }) => [
-          platformId,
-          abiHash,
-        ]),
+        abiIndex.protocols.map(
+          ({ abiHash, platformId }: { abiHash: string; platformId: string }) => [
+            platformId,
+            abiHash,
+          ],
+        ),
       ),
     ).toEqual(PROTOCOL_ABI_HASHES);
-    expect(abiIndex.protocols.flatMap(({ events }: { events: { topic0: string }[] }) => events)
-      .map(({ topic0 }: { topic0: string }) => topic0)).toEqual(
+    expect(
+      abiIndex.protocols
+        .flatMap(({ events }: { events: { topic0: string }[] }) => events)
+        .map(({ topic0 }: { topic0: string }) => topic0),
+    ).toEqual(
       expect.arrayContaining([
         ...Object.values(PROTOCOL_EVENT_TOPICS.v3),
         ...Object.values(PROTOCOL_EVENT_TOPICS.v4),
