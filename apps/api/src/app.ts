@@ -4,6 +4,8 @@ import {
   createErrorEnvelope,
   createSuccessEnvelope,
   type ChainAccessMode,
+  type EvmAddress,
+  type LiquidityFlowFilter,
   type ManagedChainView,
   marketWindowMinutes,
   type MarketWindowMinutes,
@@ -39,6 +41,7 @@ import {
   type ChainAccessPolicyStore,
   type ChainAccessPolicyView,
 } from "./chain-access-policies.js";
+import type { LiquidityFlowProvider } from "./liquidity-flow.js";
 import type { MarketPoolsProvider } from "./market-pools.js";
 import type { ShellStatsProvider } from "./shell-stats.js";
 import {
@@ -66,6 +69,8 @@ export interface ApiAppOptions {
   chainManagementRateLimit?: ChainManagementRateLimit;
   chainPolicyStore?: ChainAccessPolicyStore;
   logger?: { write(line: string): void };
+  liquidityFlowProvider?: LiquidityFlowProvider;
+  liquidityFlowRateLimit?: PublicReadRateLimit;
   maintenance: MaintenanceConfig;
   marketPoolsProvider?: MarketPoolsProvider;
   managementOrigin?: string;
@@ -86,6 +91,11 @@ export interface ChainActivityProvider {
 }
 
 export interface ChainManagementRateLimit {
+  max: number;
+  timeWindowMs: number;
+}
+
+export interface PublicReadRateLimit {
   max: number;
   timeWindowMs: number;
 }
@@ -111,6 +121,68 @@ function parseMarketPoolsContext(request: FastifyRequest): {
   if (!/^(?:1|5|15|30|60)$/u.test(parameters.minutes) || query.chainId !== "56") return null;
   const minutes = Number(parameters.minutes) as MarketWindowMinutes;
   return marketWindowMinutes.includes(minutes) ? { chainId: 56, minutes } : null;
+}
+
+function parseLiquidityFlowFilter(request: FastifyRequest): LiquidityFlowFilter | null {
+  const query = request.query as Record<string, unknown>;
+  const allowed = new Set(["since", "pool", "token", "user", "nft_id"]);
+  if (Object.keys(query).some((key) => !allowed.has(key))) return null;
+  if (typeof query.since !== "string" || !/^(?:0|[1-9][0-9]*)$/u.test(query.since)) {
+    return null;
+  }
+  const since = Number(query.since);
+  if (!Number.isSafeInteger(since)) return null;
+  const addressPattern = /^0x[0-9a-fA-F]{40}$/u;
+  const poolPattern = /^0x(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$/u;
+  const optional = (value: unknown, pattern: RegExp): string | null | undefined => {
+    if (value === undefined) return null;
+    if (typeof value !== "string" || !pattern.test(value)) return undefined;
+    return value.toLowerCase();
+  };
+  const pool = optional(query.pool, poolPattern);
+  const token = optional(query.token, addressPattern);
+  const user = optional(query.user, addressPattern);
+  const nftId = optional(query.nft_id, /^(?:0|[1-9][0-9]*)$/u);
+  if (pool === undefined || token === undefined || user === undefined || nftId === undefined) {
+    return null;
+  }
+  return {
+    nftId,
+    pool: pool as EvmAddress | `0x${string}` | null,
+    since,
+    token: token as EvmAddress | null,
+    user: user as EvmAddress | null,
+  };
+}
+
+async function writeSseChunk(
+  reply: FastifyReply,
+  controller: AbortController,
+  chunk: string,
+): Promise<boolean> {
+  if (controller.signal.aborted || reply.raw.destroyed) return false;
+  if (reply.raw.writableLength > 1_048_576) {
+    controller.abort(new Error("LIQUIDITY_FLOW_CLIENT_TOO_SLOW"));
+    return false;
+  }
+  if (reply.raw.write(chunk)) return true;
+  return new Promise<boolean>((resolve) => {
+    const cleanup = () => {
+      reply.raw.off("close", onClose);
+      reply.raw.off("drain", onDrain);
+    };
+    const onClose = () => {
+      cleanup();
+      controller.abort();
+      resolve(false);
+    };
+    const onDrain = () => {
+      cleanup();
+      resolve(true);
+    };
+    reply.raw.once("close", onClose);
+    reply.raw.once("drain", onDrain);
+  });
 }
 
 class AuthenticationRateLimitError extends Error {
@@ -393,6 +465,19 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     throw new RangeError("Chain management rate limits must be positive integers");
   }
   const chainManagementLimiter = new FixedWindowRateLimiter();
+  const liquidityFlowRateLimit: PublicReadRateLimit = {
+    max: 60,
+    timeWindowMs: 60_000,
+    ...options.liquidityFlowRateLimit,
+  };
+  if (
+    !Number.isSafeInteger(liquidityFlowRateLimit.max) ||
+    liquidityFlowRateLimit.max <= 0 ||
+    !Number.isSafeInteger(liquidityFlowRateLimit.timeWindowMs) ||
+    liquidityFlowRateLimit.timeWindowMs <= 0
+  ) {
+    throw new RangeError("Liquidity flow rate limits must be positive integers");
+  }
   const authRateLimits: Required<AuthRateLimits> = {
     cancel: 20,
     loginToken: 5,
@@ -833,6 +918,86 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         return createSuccessEnvelope({ authorized: true, operation }, request.id);
       });
     }
+
+    app.get(
+      "/api/liquidity-adds/stream",
+      {
+        config: {
+          rateLimit: {
+            max: liquidityFlowRateLimit.max,
+            timeWindow: liquidityFlowRateLimit.timeWindowMs,
+          },
+        },
+      },
+      async (request, reply) => {
+        const filter = parseLiquidityFlowFilter(request);
+        if (!filter) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "LIQUIDITY_FLOW_QUERY_INVALID",
+              message: "Liquidity flow filters are invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.liquidityFlowProvider) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "LIQUIDITY_FLOW_UNAVAILABLE",
+              message: "Liquidity flow data is not configured",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+
+        const controller = new AbortController();
+        reply.hijack();
+        reply.raw.writeHead(200, {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Connection: "keep-alive",
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "X-Accel-Buffering": "no",
+        });
+        reply.raw.flushHeaders?.();
+        reply.raw.once("close", () => controller.abort());
+        reply.raw.once("error", () => controller.abort());
+        await writeSseChunk(reply, controller, "retry: 3000\n\n");
+
+        try {
+          for await (const envelope of options.liquidityFlowProvider.subscribe({
+            ...filter,
+            signal: controller.signal,
+          })) {
+            if (controller.signal.aborted) break;
+            if (envelope.eventType === "heartbeat") {
+              if (
+                !(await writeSseChunk(
+                  reply,
+                  controller,
+                  `: heartbeat ${envelope.emittedAt}\n\n`,
+                ))
+              ) {
+                break;
+              }
+              continue;
+            }
+            const wireEvent =
+              envelope.eventType === "liquidity.backfill" ? "backfill" : "liquidity-add";
+            const chunk =
+              `id: ${envelope.cursor}\n` +
+              `event: ${wireEvent}\n` +
+              `data: ${JSON.stringify(envelope.data)}\n\n`;
+            if (!(await writeSseChunk(reply, controller, chunk))) break;
+          }
+        } finally {
+          controller.abort();
+          if (!reply.raw.destroyed) reply.raw.end();
+        }
+        return reply;
+      },
+    );
 
     app.get("/api/pools/top-fees/:minutes", async (request, reply) => {
       reply.header("Cache-Control", "no-store");

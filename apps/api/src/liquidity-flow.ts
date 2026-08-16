@@ -7,7 +7,7 @@ import type {
   LiquidityFlowFilter,
   LiquidityFlowRecord,
 } from "@lpbot/api-contract";
-import type { Pool, PoolClient } from "pg";
+import type { Pool } from "pg";
 
 export interface LiquidityFlowStreamContext extends LiquidityFlowFilter {
   signal: AbortSignal;

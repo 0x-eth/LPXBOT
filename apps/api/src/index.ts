@@ -10,6 +10,7 @@ export type {
   ChainActivityProvider,
   ChainManagementRateLimit,
   MaintenanceConfig,
+  PublicReadRateLimit,
   RegionPolicyResult,
 } from "./app.js";
 export { sessionCookieName, setBrowserSessionCookie } from "./browser-session-cookie.js";
