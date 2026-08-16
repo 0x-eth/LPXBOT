@@ -25,6 +25,17 @@ async function useSession(page: Page): Promise<void> {
       status: 200,
     }),
   );
+  await page.route("**/api/address-remarks", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      json: {
+        data: { remarks: [], shared: [] },
+        requestId: "req-flow-remarks-e2e",
+        success: true,
+      },
+      status: 200,
+    }),
+  );
 }
 
 test("POOL-03 and FLOW-01/02 expose canonical, serializable filters", async ({ page }) => {
@@ -112,6 +123,6 @@ test("flow is axe-clean and visually stable on desktop and mobile", async ({ pag
     animations: "disabled",
     caret: "hide",
     fullPage: true,
-    path: `artifacts/acceptance/P02-04/ui/liquidity-flow-${testInfo.project.name}.png`,
+    path: `artifacts/acceptance/P02-05/ui/liquidity-flow-${testInfo.project.name}.png`,
   });
 });
