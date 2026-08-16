@@ -172,6 +172,7 @@ test("POOL-12 keeps one expanded row, stable columns, mobile bounds and axe sema
   );
   const box = await detail.boundingBox();
   expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.x + box!.width).toBeLessThanOrEqual((await page.viewportSize())!.width + 1);
   const axe = await new AxeBuilder({ page }).analyze();
   expect(

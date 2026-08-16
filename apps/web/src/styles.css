@@ -1186,6 +1186,7 @@ html[data-theme="dark"] .pool-label-chip[data-label-id="lp-inflow"] {
 }
 
 .pool-market-detail {
+  position: sticky;
   width: min(100%, calc(100vw - 56px));
   min-width: 0;
   padding: 18px 20px 16px;
@@ -1193,6 +1194,7 @@ html[data-theme="dark"] .pool-label-chip[data-label-id="lp-inflow"] {
   border-top: 2px solid var(--focus-ring);
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+  left: 0;
 }
 
 .pool-market-detail-heading {
