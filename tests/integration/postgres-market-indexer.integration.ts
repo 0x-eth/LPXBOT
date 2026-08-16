@@ -101,6 +101,7 @@ async function takeStreamEvents(
   provider: PostgresMarketPoolsProvider,
   count: number,
   lastEventId: string | null,
+  protocols = ["pcsv3", "univ3", "pcsv4", "univ4"] as const,
 ): Promise<MarketStreamEnvelope[]> {
   const controller = new AbortController();
   const events: MarketStreamEnvelope[] = [];
@@ -108,7 +109,7 @@ async function takeStreamEvents(
     chainId: 56,
     lastEventId,
     minutes: 5,
-    protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
+    protocols,
     signal: controller.signal,
   })) {
     events.push(event);
@@ -132,6 +133,7 @@ beforeAll(async () => {
     "20260815000100_create_chain_access_policies.sql",
     "20260815000200_remove_user_allowed_chain_ids.sql",
     "20260816000100_create_market_indexer.sql",
+    "20260816000200_create_liquidity_flow.sql",
   ];
   for (const filename of migrationFiles) {
     const source = readFileSync(path.join(repositoryRoot, "infra/migrations", filename), "utf8");
@@ -141,7 +143,8 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await pool.query(
-    `TRUNCATE market_stream_outbox, market_snapshots, integrity_quarantine,
+    `TRUNCATE liquidity_flow_outbox, liquidity_flow_events,
+      market_stream_outbox, market_snapshots, integrity_quarantine,
       normalized_pool_events, raw_chain_logs, canonical_chain_blocks, indexer_cursors
       RESTART IDENTITY CASCADE`,
   );
@@ -463,6 +466,38 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
       [heartbeat!.cursor],
     );
     expect(durable.rows).toEqual([{ count: "1" }]);
+  });
+
+  it("uses one normalized DEX set for filtered snapshots, streams, and reconnect cursors", async () => {
+    await runnerFor("normal").runner.runOnce();
+    const protocols = ["pcsv3", "univ4"] as const;
+    const provider = new PostgresMarketPoolsProvider(pool, {
+      heartbeatMilliseconds: 1,
+      now: () => new Date("2026-08-16T00:06:00.000Z"),
+      pollMilliseconds: 1,
+    });
+
+    const combined = await provider.getTopFees({ chainId: 56, minutes: 5, protocols });
+    const [snapshot, heartbeat] = await takeStreamEvents(provider, 2, null, protocols);
+
+    const selected = new Set<string>(protocols);
+    expect(combined.rows.every(({ protocol }) => selected.has(protocol))).toBe(true);
+    expect(snapshot).toMatchObject({
+      eventType: "pools.snapshot",
+      streamKey: "top-fees:56:5:dex=pcsv3,univ4",
+    });
+    expect(snapshot?.cursor).toMatch(/^market-filter:v1:/u);
+    expect((snapshot?.data as MarketPoolSnapshot).rows).toEqual(combined.rows);
+    expect(heartbeat?.streamKey).toBe(snapshot?.streamKey);
+
+    const replayProvider = new PostgresMarketPoolsProvider(pool, { pollMilliseconds: 1 });
+    const [replayed] = await takeStreamEvents(
+      replayProvider,
+      1,
+      snapshot!.cursor,
+      protocols,
+    );
+    expect(replayed).toEqual(heartbeat);
   });
 
   it("uses the replay index and paginates retained events in bounded 500-row reads", async () => {
