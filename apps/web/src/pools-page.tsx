@@ -631,7 +631,7 @@ function PoolTableCell({
     <td className="pool-row-actions" data-label="操作">
       <button
         aria-expanded={marketExpanded}
-        aria-label={`${marketExpanded ? "收起" : "展开"}池图表 ${identity}`}
+        aria-label={`展开池图表 ${identity}`}
         onClick={() => toggleMarket(row.poolKey)}
         title={marketExpanded ? "收起市场图表" : "展开市场图表"}
         type="button"
