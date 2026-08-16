@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 
-import type {
+import {
+  liquidityFlowProtocols,
+  type LiquidityFlowProtocol,
   MarketPoolRow,
   MarketPoolSnapshot,
   RecommendedPoolRow,
@@ -13,6 +15,7 @@ import type { MarketPoolsProvider } from "./market-pools.js";
 const evmAddressPattern = /^0x[0-9a-f]{40}$/u;
 const poolIdPattern = /^0x[0-9a-f]{64}$/u;
 const selectionHashPattern = /^sha256:[0-9a-f]{64}$/u;
+const supportedProtocols = new Set<LiquidityFlowProtocol>(liquidityFlowProtocols);
 
 export interface RecommendedPoolsScheduler {
   clearInterval(handle: ReturnType<typeof setInterval>): void;
@@ -81,6 +84,7 @@ class AsyncEventQueue<T> {
 function normalizedIdentity(row: MarketPoolRow): string | null {
   if (
     row.chainId !== 56 ||
+    !supportedProtocols.has(row.protocol) ||
     !row.token0Address ||
     !evmAddressPattern.test(row.token0Address) ||
     !row.token1Address ||
@@ -333,7 +337,9 @@ export function selectRecommendedPools(
     .filter((value): value is NonNullable<typeof value> => value !== null)
     .sort((left, right) => {
       const feeOrder = right.fees.comparedTo(left.fees);
-      return feeOrder || left.row.poolKey.localeCompare(right.row.poolKey) || left.index - right.index;
+      const keyOrder =
+        left.row.poolKey < right.row.poolKey ? -1 : left.row.poolKey > right.row.poolKey ? 1 : 0;
+      return feeOrder || keyOrder || left.index - right.index;
     });
   const seen = new Set<string>();
   const selected: RecommendedPoolRow[] = [];

@@ -59,6 +59,7 @@ import {
   createRecommendedPoolsEventStream,
   parseRecommendedPoolsCursor,
   type RecommendedPoolsScheduler,
+  type RecommendedPoolsStreamEvent,
 } from "./recommended-pools.js";
 import type { ShellStatsProvider } from "./shell-stats.js";
 import {
@@ -1422,8 +1423,44 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           );
         }
 
-        const statsUserId = query.userId ?? session.userId;
         const controller = new AbortController();
+        const recommendationStream =
+          query.chain === "bsc" && options.marketPoolsProvider
+            ? createRecommendedPoolsEventStream({
+                chain: query.chain,
+                limit: query.limit,
+                provider: options.marketPoolsProvider,
+                signal: controller.signal,
+                ...(options.statsHeartbeatMilliseconds === undefined
+                  ? {}
+                  : { heartbeatMilliseconds: options.statsHeartbeatMilliseconds }),
+                ...(options.recommendedPoolsPollMilliseconds === undefined
+                  ? {}
+                  : { pollMilliseconds: options.recommendedPoolsPollMilliseconds }),
+                ...(options.statsStreamScheduler === undefined
+                  ? {}
+                  : { scheduler: options.statsStreamScheduler }),
+              })
+            : null;
+        let initialRecommendation: IteratorResult<RecommendedPoolsStreamEvent> | null = null;
+        if (recommendationStream) {
+          try {
+            initialRecommendation = await recommendationStream.next();
+            if (initialRecommendation.done) throw new Error("Recommendation stream ended early");
+          } catch {
+            controller.abort();
+            return reply.code(503).send(
+              createErrorEnvelope({
+                code: "RECOMMENDATIONS_UNAVAILABLE",
+                message: "Recommended pool data is temporarily unavailable",
+                requestId: request.id,
+                retryable: true,
+              }),
+            );
+          }
+        }
+
+        const statsUserId = query.userId ?? session.userId;
         const close = () => controller.abort();
         reply.hijack();
         reply.raw.writeHead(200, {
@@ -1478,22 +1515,12 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         };
 
         const streamRecommendations = async () => {
-          if (query.chain !== "bsc" || !options.marketPoolsProvider) return;
-          for await (const event of createRecommendedPoolsEventStream({
-            chain: query.chain,
-            limit: query.limit,
-            provider: options.marketPoolsProvider,
-            signal: controller.signal,
-            ...(options.statsHeartbeatMilliseconds === undefined
-              ? {}
-              : { heartbeatMilliseconds: options.statsHeartbeatMilliseconds }),
-            ...(options.recommendedPoolsPollMilliseconds === undefined
-              ? {}
-              : { pollMilliseconds: options.recommendedPoolsPollMilliseconds }),
-            ...(options.statsStreamScheduler === undefined
-              ? {}
-              : { scheduler: options.statsStreamScheduler }),
-          })) {
+          if (!recommendationStream || !initialRecommendation || initialRecommendation.done) return;
+          if (!(await writeEvent(initialRecommendation.value))) {
+            await recommendationStream.return(undefined);
+            return;
+          }
+          for await (const event of recommendationStream) {
             if (!(await writeEvent(event))) break;
           }
         };
