@@ -1,25 +1,66 @@
 import {
   canonicalizeLiquidityProtocols,
   liquidityFlowProtocols,
+  type AddressRemark,
+  type EvmAddress,
   type LiquidityFlowEvent,
   type LiquidityFlowProtocol,
   type MarketPoolRow,
   type MarketWindowMinutes,
 } from "@lpbot/api-contract";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Decimal } from "decimal.js";
-import { AlertTriangle, Pause, Play, RefreshCw, RotateCcw, Wifi, WifiOff } from "lucide-react";
-import { useEffect, useMemo, useReducer, useRef, useState, type KeyboardEvent } from "react";
+import {
+  AlertTriangle,
+  Copy,
+  ExternalLink,
+  Filter,
+  Pause,
+  Play,
+  RefreshCw,
+  RotateCcw,
+  Star,
+  Tag,
+  Trash2,
+  Wifi,
+  WifiOff,
+  X,
+} from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import {
+  AddressRemarksClient,
+  AddressRemarksRequestError,
+} from "./address-remarks-client.js";
+import {
+  addressRemarkLabel,
+  initialAddressRemarksState,
+  reduceAddressRemarks,
+  watchedAddressSet,
+  type AddressRemarksState,
+} from "./address-remarks-state.js";
 import { LiquidityFlowClient, type LiquidityFlowServerFilters } from "./liquidity-flow-client";
 import {
   applyLiquidityFlowFilters,
+  buildLiquidityFlowProjection,
   defaultLiquidityFlowUiFilters,
   initialLiquidityFlowState,
   parseLiquidityFlowUiFilters,
   reduceLiquidityFlow,
   serializeLiquidityFlowUiFilters,
+  type LiquidityFlowAddressAggregate,
+  type LiquidityFlowAddressSort,
   type LiquidityFlowConnection as FlowConnection,
+  type LiquidityFlowSummary,
   type LiquidityFlowUiFilters,
 } from "./liquidity-flow-state";
 import { PoolsClient } from "./pools-client";
@@ -104,18 +145,22 @@ const fixtureFlowEvents: LiquidityFlowEvent[] = [
     event_type: "remove",
     nft_id: "42",
     usd_value: "125.5",
+    user: "0x5555555555555555555555555555555555555555",
     version: "v4",
   }),
   fixtureFlowEvent("flow-pcsv4-remove", 1_765_843_202_000, {
     dex: "pcsv4",
     event_type: "remove",
+    user: "0x6666666666666666666666666666666666666666",
     version: "v4",
   }),
   fixtureFlowEvent("flow-univ3-create", 1_765_843_201_000, {
     dex: "univ3",
     event_type: "create",
   }),
-  fixtureFlowEvent("flow-pcsv3-add", 1_765_843_200_000, {}),
+  fixtureFlowEvent("flow-pcsv3-add", 1_765_843_200_000, {
+    usd_value: "250.125000000000000001",
+  }),
 ];
 
 type PoolsFixtureState = PoolConnectionState;
@@ -352,13 +397,30 @@ function FlowSegment<T extends string>({
   options: readonly { label: string; value: T }[];
   value: T;
 }) {
+  const selectFromKeyboard = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const direction =
+      event.key === "ArrowLeft" || event.key === "ArrowUp"
+        ? -1
+        : event.key === "ArrowRight" || event.key === "ArrowDown"
+          ? 1
+          : 0;
+    if (direction === 0) return;
+    event.preventDefault();
+    const nextIndex = (index + direction + options.length) % options.length;
+    const next = options[nextIndex];
+    if (!next) return;
+    onChange(next.value);
+    const buttons = event.currentTarget.parentElement?.querySelectorAll("button");
+    (buttons?.item(nextIndex) as HTMLButtonElement | undefined)?.focus();
+  };
   return (
     <div aria-label={label} className="flow-segment" role="radiogroup">
-      {options.map((option) => (
+      {options.map((option, index) => (
         <button
           aria-checked={value === option.value}
           key={option.value}
           onClick={() => onChange(option.value)}
+          onKeyDown={(event) => selectFromKeyboard(event, index)}
           role="radio"
           tabIndex={value === option.value ? 0 : -1}
           type="button"
