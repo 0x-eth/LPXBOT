@@ -71,8 +71,7 @@ export interface PricedTickBoundary extends CanonicalTickBoundary {
   price1: string | null;
 }
 
-export interface SelectedTickLiquidity
-  extends Omit<CanonicalTickLiquidity, "ticks"> {
+export interface SelectedTickLiquidity extends Omit<CanonicalTickLiquidity, "ticks"> {
   ticks: PricedTickBoundary[];
 }
 
@@ -131,7 +130,8 @@ function compareCanonicalOrder(
   left: CandleTickCanonicalEvent,
   right: CandleTickCanonicalEvent,
 ): number {
-  const blockOrder = integer(left.blockNumber, "CANDLE_BLOCK_NUMBER_INVALID") -
+  const blockOrder =
+    integer(left.blockNumber, "CANDLE_BLOCK_NUMBER_INVALID") -
     integer(right.blockNumber, "CANDLE_BLOCK_NUMBER_INVALID");
   if (blockOrder !== 0n) return blockOrder < 0n ? -1 : 1;
   if (left.transactionIndex !== right.transactionIndex) {
@@ -149,9 +149,7 @@ function exactDuplicate(left: CandleTickCanonicalEvent, right: CandleTickCanonic
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
-function canonicalEvents(
-  events: readonly CandleTickCanonicalEvent[],
-): CandleTickCanonicalEvent[] {
+function canonicalEvents(events: readonly CandleTickCanonicalEvent[]): CandleTickCanonicalEvent[] {
   const byId = new Map<string, CandleTickCanonicalEvent>();
   for (const event of events) {
     if (!event.canonical) continue;
@@ -283,7 +281,8 @@ export function orientCanonicalCandles(
       return { ...values, volume: volume0 };
     }
     if (direction !== "token1") throw new RangeError("CANDLE_DIRECTION_INVALID");
-    const inverse = (value: string) => decimalString(new ProjectionDecimal(1).dividedBy(decimal(value)));
+    const inverse = (value: string) =>
+      decimalString(new ProjectionDecimal(1).dividedBy(decimal(value)));
     return {
       close: inverse(candle.close),
       high: inverse(candle.low),

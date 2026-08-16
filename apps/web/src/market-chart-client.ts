@@ -171,7 +171,12 @@ export function parseMarketCandlesResponse(value: unknown): MarketCandlesRespons
     const high = new Decimal(candle.high as string);
     const low = new Decimal(candle.low as string);
     const close = new Decimal(candle.close as string);
-    if (low.greaterThan(open) || low.greaterThan(close) || high.lessThan(open) || high.lessThan(close)) {
+    if (
+      low.greaterThan(open) ||
+      low.greaterThan(close) ||
+      high.lessThan(open) ||
+      high.lessThan(close)
+    ) {
       throw new Error("MARKET_CANDLE_RESPONSE_INVALID");
     }
     previousTs = candle.ts as number;
@@ -228,10 +233,14 @@ export function parseMarketTickLiquidityResponse(value: unknown): MarketTickLiqu
 }
 
 export class MarketChartRequestManager {
-  #active: { controller: AbortControllerLike; requestId: number; selectionKey: string } | null = null;
+  #active: { controller: AbortControllerLike; requestId: number; selectionKey: string } | null =
+    null;
   #nextRequestId = 0;
 
-  start(selectionKey: string, controller: AbortControllerLike = new AbortController()): MarketChartRequest {
+  start(
+    selectionKey: string,
+    controller: AbortControllerLike = new AbortController(),
+  ): MarketChartRequest {
     this.#active?.controller.abort();
     const requestId = ++this.#nextRequestId;
     this.#active = { controller, requestId, selectionKey };

@@ -234,10 +234,7 @@ function parseMarketCandleQuery(request: FastifyRequest): MarketCandleQuery | nu
     return null;
   }
   const limitValue = query.limit ?? "200";
-  if (
-    typeof limitValue !== "string" ||
-    !/^(?:[1-9]|[1-9][0-9]{1,2}|1000)$/u.test(limitValue)
-  ) {
+  if (typeof limitValue !== "string" || !/^(?:[1-9]|[1-9][0-9]{1,2}|1000)$/u.test(limitValue)) {
     return null;
   }
   const rawPoolKey = query.poolKey ?? null;
@@ -260,23 +257,14 @@ function parseMarketCandleQuery(request: FastifyRequest): MarketCandleQuery | nu
 function parseMarketTickLiquidityQuery(request: FastifyRequest): MarketTickLiquidityQuery | null {
   const parameters = request.params as { poolAddressOrPoolId?: unknown };
   const query = request.query as Record<string, unknown>;
-  const allowed = new Set([
-    "chain",
-    "decimals0",
-    "decimals1",
-    "dex",
-    "range",
-    "tickSpacing",
-  ]);
+  const allowed = new Set(["chain", "decimals0", "decimals1", "dex", "range", "tickSpacing"]);
   if (Object.keys(query).some((key) => !allowed.has(key))) return null;
   if (
     typeof parameters.poolAddressOrPoolId !== "string" ||
     !/^0x(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$/u.test(parameters.poolAddressOrPoolId) ||
     query.chain !== "bsc" ||
     typeof query.dex !== "string" ||
-    !(["pcsv3", "univ3", "pcsv4", "univ4"] as const).includes(
-      query.dex as MarketProtocol,
-    ) ||
+    !(["pcsv3", "univ3", "pcsv4", "univ4"] as const).includes(query.dex as MarketProtocol) ||
     typeof query.range !== "string" ||
     !/^(?:[5-9]|[1-4][0-9]|50)$/u.test(query.range) ||
     typeof query.tickSpacing !== "string" ||

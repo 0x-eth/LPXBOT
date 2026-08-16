@@ -37,10 +37,7 @@ export interface MarketChartsProvider {
 }
 
 export type MarketChartProviderErrorCode =
-  | "AMBIGUOUS_POOL"
-  | "MARKET_POOL_NOT_FOUND"
-  | "TICK_SPACING_MISMATCH"
-  | "TOKEN_NOT_IN_POOL";
+  "AMBIGUOUS_POOL" | "MARKET_POOL_NOT_FOUND" | "TICK_SPACING_MISMATCH" | "TOKEN_NOT_IN_POOL";
 
 export class MarketChartProviderError extends Error {
   readonly code: MarketChartProviderErrorCode;

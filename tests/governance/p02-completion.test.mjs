@@ -250,7 +250,10 @@ test("P02-10 Golden freezes V3 and V4 identity, Candle direction and Tick bounda
   assert.equal(v3.pool.tickSpacing, 60);
   assert.equal(v3.expected.token0Candles[0].high, "4");
   assert.equal(v3.expected.token1Candles[0].low, "0.25");
-  assert.deepEqual(v3.expected.ticks.map(({ tickIdx }) => tickIdx), [-120, 120]);
+  assert.deepEqual(
+    v3.expected.ticks.map(({ tickIdx }) => tickIdx),
+    [-120, 120],
+  );
   assert.ok(v3.expected.ticks.every(({ liquidityNet }) => typeof liquidityNet === "string"));
 
   assert.equal(v4.protocol, "pcsv4");
@@ -258,7 +261,10 @@ test("P02-10 Golden freezes V3 and V4 identity, Candle direction and Tick bounda
   assert.match(v4.pool.poolId, /^0x[0-9a-f]{64}$/u);
   assert.equal(v4.pool.tickSpacing, 10);
   assert.equal(v4.expected.currentTick, -1);
-  assert.deepEqual(v4.expected.ticks.map(({ tickIdx }) => tickIdx), [-20, 30]);
+  assert.deepEqual(
+    v4.expected.ticks.map(({ tickIdx }) => tickIdx),
+    [-20, 30],
+  );
   assert.equal(v4.expected.decimalsUnknown[0].price0, null);
   assert.equal(v4.expected.decimalsUnknown[0].price1, null);
 });

@@ -88,7 +88,9 @@ function stableValue(value: unknown): unknown {
 }
 
 function canonicalRevision(events: readonly CandleTickCanonicalEvent[]): string {
-  const hash = createHash("sha256").update(JSON.stringify(stableValue(events))).digest("hex");
+  const hash = createHash("sha256")
+    .update(JSON.stringify(stableValue(events)))
+    .digest("hex");
   return `canonical:v1:${hash}`;
 }
 
@@ -183,10 +185,7 @@ function storedCandle(row: StoredCandleRow): CanonicalBaseCandle {
 }
 
 export class PostgresCandleTickReadModelProjector {
-  async rebuild(
-    client: PoolClient,
-    input: RebuildCandleTickReadModelsInput,
-  ): Promise<void> {
+  async rebuild(client: PoolClient, input: RebuildCandleTickReadModelsInput): Promise<void> {
     for (const key of [...input.impact.poolKeys].sort()) {
       const catalog = await client.query<CatalogRow>(
         `SELECT tick_spacing::text
@@ -213,9 +212,7 @@ export class PostgresCandleTickReadModelProjector {
           WHERE pool_key = $1 FOR UPDATE`,
         [key],
       );
-      const version = previous.rows[0]
-        ? (BigInt(previous.rows[0].version) + 1n).toString()
-        : "1";
+      const version = previous.rows[0] ? (BigInt(previous.rows[0].version) + 1n).toString() : "1";
       const revision = canonicalRevision(events);
 
       await this.#rebuildCandles(

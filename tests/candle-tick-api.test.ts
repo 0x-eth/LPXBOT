@@ -21,9 +21,7 @@ const poolKey = `56:${poolAddress}`;
 const candles: MarketCandlesResponse = {
   asOf: "2026-08-17T00:05:00.000Z",
   bar: "5m",
-  candles: [
-    { close: "4", high: "4", low: "1", open: "1", ts: 1_786_924_800, volume: "15" },
-  ],
+  candles: [{ close: "4", high: "4", low: "1", open: "1", ts: 1_786_924_800, volume: "15" }],
   canonicalRevision: `canonical:v1:${"ab".repeat(32)}`,
   chainId: 56,
   direction: "token0",

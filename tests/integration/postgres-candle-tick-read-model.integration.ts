@@ -148,7 +148,10 @@ function fixture(
   };
 }
 
-function commit(entries: readonly ReturnType<typeof fixture>[], evaluationTime: string): CanonicalCommit {
+function commit(
+  entries: readonly ReturnType<typeof fixture>[],
+  evaluationTime: string,
+): CanonicalCommit {
   return {
     chainId: 56,
     deliveries: entries.map(({ delivery }) => delivery),
@@ -348,7 +351,9 @@ describe("P02-10 PostgreSQL Candle/Tick read model", () => {
       duplicateCount: 6,
     });
     expect(
-      await pool.query("SELECT pool_key, version::text FROM market_read_model_states ORDER BY pool_key"),
+      await pool.query(
+        "SELECT pool_key, version::text FROM market_read_model_states ORDER BY pool_key",
+      ),
     ).toMatchObject({ rows: versionsBefore.rows });
 
     const removed = fixture("removed", {
@@ -517,9 +522,10 @@ describe("P02-10 PostgreSQL Candle/Tick read model", () => {
       }),
     ).resolves.toMatchObject({ candles: [], poolKey: `56:${poolA}` });
 
-    await pool.query("UPDATE market_read_model_states SET current_tick = NULL WHERE pool_key = $1", [
-      `56:${poolA}`,
-    ]);
+    await pool.query(
+      "UPDATE market_read_model_states SET current_tick = NULL WHERE pool_key = $1",
+      [`56:${poolA}`],
+    );
     const ticks = await provider.getTickLiquidity({
       chainId: 56,
       decimals0: null,

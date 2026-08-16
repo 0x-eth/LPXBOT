@@ -19,9 +19,7 @@ const revision = `canonical:v1:${"ab".repeat(32)}`;
 const candleResponse: MarketCandlesResponse = {
   asOf: "2026-08-17T00:05:00.000Z",
   bar: "5m",
-  candles: [
-    { close: "2", high: "3", low: "1", open: "1.5", ts: 1_786_924_800, volume: "20" },
-  ],
+  candles: [{ close: "2", high: "3", low: "1", open: "1.5", ts: 1_786_924_800, volume: "20" }],
   canonicalRevision: revision,
   chainId: 56,
   direction: "token0",
@@ -50,9 +48,7 @@ const tickResponse: MarketTickLiquidityResponse = {
 
 describe("P02-10 market chart client", () => {
   it("always includes canonical poolKey in Candle requests and stable Tick parameters", () => {
-    expect(
-      buildMarketCandlesUrl({ bar: "1H", limit: 200, poolKey, token }),
-    ).toBe(
+    expect(buildMarketCandlesUrl({ bar: "1H", limit: 200, poolKey, token })).toBe(
       "/api/market/candles?token=0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&poolKey=56%3A0x1111111111111111111111111111111111111111&bar=1H&limit=200&chainId=56",
     );
     expect(

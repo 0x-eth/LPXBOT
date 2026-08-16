@@ -70,8 +70,7 @@ async function installFixture(page: Page): Promise<{ candleRequests: () => numbe
           chainId: 56,
           direction,
           poolKey: url.searchParams.get("poolKey"),
-          priceUnit:
-            direction === "token0" ? "token1-raw/token0-raw" : "token0-raw/token1-raw",
+          priceUnit: direction === "token0" ? "token1-raw/token0-raw" : "token0-raw/token1-raw",
           source: "canonical-events",
           token,
           version: "7",
@@ -151,16 +150,16 @@ test("POOL-12 keeps one expanded row, stable columns, mobile bounds and axe sema
   await installFixture(page);
   await page.goto("/pools?fixture=pools-ready");
   const table = page.getByRole("table", { name: "BSC 热门池" });
-  const widthsBefore = await table.getByRole("columnheader").evaluateAll((cells) =>
-    cells.map((cell) => Math.round(cell.getBoundingClientRect().width)),
-  );
+  const widthsBefore = await table
+    .getByRole("columnheader")
+    .evaluateAll((cells) => cells.map((cell) => Math.round(cell.getBoundingClientRect().width)));
   const toggles = table.getByRole("button", { name: /^展开池图表/u });
   await toggles.nth(0).click();
   const detail = page.locator(".pool-market-detail");
   await expect(detail).toHaveCount(1);
-  const widthsAfter = await table.getByRole("columnheader").evaluateAll((cells) =>
-    cells.map((cell) => Math.round(cell.getBoundingClientRect().width)),
-  );
+  const widthsAfter = await table
+    .getByRole("columnheader")
+    .evaluateAll((cells) => cells.map((cell) => Math.round(cell.getBoundingClientRect().width)));
   expect(widthsAfter).toEqual(widthsBefore);
   await toggles.nth(1).click();
   await expect(detail).toHaveCount(1);
