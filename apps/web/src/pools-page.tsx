@@ -6,18 +6,27 @@ import {
   type LiquidityFlowProtocol,
   type MarketPoolRow,
   type MarketWindowMinutes,
+  type PoolColumnKey,
+  type PoolColumnPreference,
 } from "@lpbot/api-contract";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Decimal } from "decimal.js";
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronRight,
   Copy,
   ExternalLink,
   Filter,
+  GripVertical,
   Pause,
   Play,
   RefreshCw,
   RotateCcw,
+  Search,
+  Settings2,
   Star,
   Tag,
   Trash2,
@@ -32,6 +41,8 @@ import {
   useReducer,
   useRef,
   useState,
+  type DragEvent,
+  type FormEvent,
   type KeyboardEvent,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -60,10 +71,33 @@ import {
 } from "./liquidity-flow-state";
 import { PoolsClient } from "./pools-client";
 import {
+  PoolSearchRequestManager,
+  filterPoolsByIdentity,
+  initialPoolSearchState,
+  parsePoolSearchParameters,
+  reducePoolSearch,
+  validTokenSearchAddress,
+  writePoolSearchParameters,
+  type PoolSearchMode,
+  type PoolSearchState,
+} from "./pool-search-state";
+import {
   initialPoolStreamState,
   reducePoolStream,
   type PoolConnectionState,
 } from "./pools-stream-state";
+import {
+  DEFAULT_POOL_COLUMNS,
+  flattenPoolGroups,
+  groupPoolRows,
+  movePoolColumn,
+  normalizePoolColumns,
+  reconcileExpandedPoolGroups,
+  reorderPoolColumn,
+  setPoolColumnVisibility,
+  type VisiblePoolRow,
+} from "./pool-table-state";
+import { useUserPreferences } from "./preferences";
 
 const windows = [1, 5, 15, 30, 60] as const;
 

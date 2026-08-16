@@ -122,6 +122,7 @@ export interface PoolRowGroup {
 
 export interface VisiblePoolRow {
   additionalCount: number;
+  expanded: boolean;
   groupKey: string;
   isHeader: boolean;
   row: MarketPoolRow;
@@ -183,7 +184,8 @@ export function flattenPoolGroups(
     const expanded = group.members.length > 1 && expandedGroupKeys.has(group.groupKey);
     const members = expanded ? group.members : [group.header];
     return members.map((row, index) => ({
-      additionalCount: index === 0 && !expanded ? group.additionalCount : 0,
+      additionalCount: index === 0 ? group.additionalCount : 0,
+      expanded,
       groupKey: group.groupKey,
       isHeader: index === 0,
       row,
