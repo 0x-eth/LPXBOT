@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from "vitest";
 const observedAt = "2026-08-14T09:15:00.000Z";
 
 describe("P01-06 shell stats reducer", () => {
-  it("merges snapshot, updates and recommendation snapshots while ignoring duplicate sequence", () => {
+  it("merges snapshot and updates while ignoring duplicate sequence", () => {
     const snapshot: ShellStatsEvent = {
       observedAt,
       sequence: 10,
@@ -19,7 +19,6 @@ describe("P01-06 shell stats reducer", () => {
         gas: { baseGwei: null, ethereumGwei: 0.232 },
         online: true,
         pingMs: 84,
-        recommendedPools: ["USDT / utility"],
         taskCounts: { paused: 1, running: 1, stopped: null },
       },
       type: "snapshot",
@@ -37,23 +36,15 @@ describe("P01-06 shell stats reducer", () => {
       stats: { pingMs: 999 },
       type: "update",
     });
-    const recommendations = reduceShellStatsEvent(duplicate, {
-      observedAt,
-      recommendedPools: ["USDT / WBNB"],
-      sequence: 12,
-      type: "rec_pools_snapshot",
-    });
-
     expect(duplicate).toBe(updated);
-    expect(recommendations.stats).toEqual({
+    expect(updated.stats).toEqual({
       fps: 60,
       gas: { baseGwei: 0.006, ethereumGwei: 0.232 },
       online: true,
       pingMs: 85,
-      recommendedPools: ["USDT / WBNB"],
       taskCounts: { paused: 1, running: 1, stopped: null },
     });
-    expect(recommendations.sequence).toBe(12);
+    expect(updated.sequence).toBe(11);
   });
 
   it("renders null, missing and disconnected stats as unavailable instead of zero or online", () => {
@@ -76,7 +67,6 @@ describe("P01-06 shell stats reducer", () => {
         gas: { baseGwei: null, ethereumGwei: null },
         online: null,
         pingMs: null,
-        recommendedPools: null,
         taskCounts: { paused: null, running: null, stopped: null },
       },
       type: "snapshot",
@@ -86,13 +76,40 @@ describe("P01-06 shell stats reducer", () => {
 });
 
 describe("P01-06 API shell stats provider", () => {
-  it("parses split SSE frames, reconnects with bounded exponential backoff and aborts on cleanup", async () => {
+  it("parses split lanes, resumes from the recommendation cursor, backs off and aborts cleanup", async () => {
     const encoder = new TextEncoder();
+    const selectionHash = `sha256:${"a".repeat(64)}`;
+    const cursor = `rec-pools:v1:bsc:3:Nw:MjAyNi0wOC0xN1QwMTo1NTowMC4wMDBa:${"a".repeat(64)}`;
+    const recommendation = JSON.stringify({
+      cursor,
+      observedAt,
+      pools: [
+        {
+          chainId: 56,
+          feePips: "500",
+          feesUsd: "12.5",
+          poolAddress: `0x${"1".repeat(40)}`,
+          poolId: null,
+          poolKey: `56:0x${"1".repeat(40)}`,
+          protocol: "pcsv3",
+          token0Address: `0x${"a".repeat(40)}`,
+          token0Symbol: "WBNB",
+          token1Address: `0x${"b".repeat(40)}`,
+          token1Symbol: "USDT",
+        },
+      ],
+      selectionHash,
+      sourceVersion: "7",
+      sourceWindow: 5,
+      sourceWindowEnd: "2026-08-17T01:55:00.000Z",
+      type: "rec_pools_snapshot",
+    });
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
         controller.enqueue(
           encoder.encode(
-            'id: 10\nevent: snapshot\ndata: {"type":"snapshot","sequence":10,"observedAt":"2026-08-14T09:15:00.000Z","stats":{"online":true,"taskCounts":{"running":1,"paused":1,"stopped":1},"recommendedPools":null,',
+            `id: ${cursor}\nevent: rec_pools_snapshot\ndata: ${recommendation}\n\n` +
+              'event: snapshot\ndata: {"type":"snapshot","sequence":10,"observedAt":"2026-08-14T09:15:00.000Z","stats":{"online":true,"taskCounts":{"running":1,"paused":1,"stopped":1},',
           ),
         );
         controller.enqueue(
@@ -122,6 +139,7 @@ describe("P01-06 API shell stats provider", () => {
       fetcher,
       initialRetryMs: 250,
       maxRetryMs: 1_000,
+      now: () => new Date("2026-08-17T02:00:20.000Z"),
       sleep: async (delay) => {
         delays.push(delay);
       },
@@ -132,18 +150,22 @@ describe("P01-06 API shell stats provider", () => {
     await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(3));
     expect(delays).toEqual([250, 500]);
     expect(states.some((state) => state.connected && state.sequence === 10)).toBe(true);
+    expect(states.some((state) => state.recommendations.status === "ready")).toBe(true);
     expect(states.at(-1)?.connected).toBe(false);
     stop();
     expect(getThirdSignal()?.aborted).toBe(true);
     await Promise.resolve();
     expect(fetcher).toHaveBeenCalledTimes(3);
     expect(fetcher.mock.calls[0]).toEqual([
-      "/api/stats/stream",
+      "/api/stats/stream?chain=bsc&limit=3",
       expect.objectContaining({
         credentials: "include",
         headers: { Accept: "text/event-stream" },
         signal: expect.any(AbortSignal),
       }),
     ]);
+    expect(fetcher.mock.calls[1]?.[1]).toMatchObject({
+      headers: { Accept: "text/event-stream", "Last-Event-ID": cursor },
+    });
   });
 });
