@@ -1645,6 +1645,10 @@ function serverFilters(filters: LiquidityFlowUiFilters): LiquidityFlowServerFilt
 export function PoolsPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const parsedAdvancedFilters = useMemo(
+    () => parsePoolAdvancedFilters(location.search),
+    [location.search],
+  );
   const { preferences, update: updatePreferences } = useUserPreferences();
   const fixture = fixtureState(location.search);
   const poolClient = useMemo(() => new PoolsClient(), []);
@@ -1670,6 +1674,18 @@ export function PoolsPage() {
   const [poolSearchRefresh, setPoolSearchRefresh] = useState(0);
   const poolSearchManager = useRef(new PoolSearchRequestManager());
   const [expandedPoolGroups, setExpandedPoolGroups] = useState<Set<string>>(() => new Set());
+  const [advancedFilterDraft, setAdvancedFilterDraft] = useState<PoolAdvancedFilters>(() =>
+    structuredClone(parsedAdvancedFilters.filters),
+  );
+  const [advancedFilterOpen, setAdvancedFilterOpen] = useState(
+    !parsedAdvancedFilters.valid || !poolAdvancedFiltersAreDefault(parsedAdvancedFilters.filters),
+  );
+  const [advancedFilterValidationFailed, setAdvancedFilterValidationFailed] = useState(
+    !parsedAdvancedFilters.valid,
+  );
+  const [comparisonState, setComparisonState] = useState<PoolComparisonState>(
+    initialPoolComparisonState,
+  );
   const latestEventAt = useRef<number | null>(null);
   const [flowState, flowDispatch] = useReducer(reduceLiquidityFlow, 0, initialLiquidityFlowState);
   const flowStateRef = useRef(flowState);
@@ -1689,6 +1705,17 @@ export function PoolsPage() {
   );
   const [editingAddress, setEditingAddress] = useState<EvmAddress | null>(null);
   const remarkOperation = useRef(0);
+
+  useEffect(() => {
+    setAdvancedFilterDraft(structuredClone(parsedAdvancedFilters.filters));
+    setAdvancedFilterValidationFailed(!parsedAdvancedFilters.valid);
+    if (
+      !parsedAdvancedFilters.valid ||
+      !poolAdvancedFiltersAreDefault(parsedAdvancedFilters.filters)
+    ) {
+      setAdvancedFilterOpen(true);
+    }
+  }, [parsedAdvancedFilters]);
 
   if (poolSearchLocation !== location.search) {
     const next = parsePoolSearchParameters(location.search);
@@ -1939,6 +1966,26 @@ export function PoolsPage() {
   ]);
 
   const activePoolRows = poolSearchParameters ? poolSearchState.rows : poolRows;
+  const appliedAdvancedFilters = parsedAdvancedFilters.valid
+    ? parsedAdvancedFilters.filters
+    : defaultPoolAdvancedFilters();
+  const filteredPoolRows = useMemo(
+    () => filterAndSortPoolRows(activePoolRows, appliedAdvancedFilters),
+    [activePoolRows, appliedAdvancedFilters],
+  );
+  const advancedFilterDirty =
+    JSON.stringify(advancedFilterDraft) !== JSON.stringify(appliedAdvancedFilters);
+  const advancedFilterActive = !poolAdvancedFiltersAreDefault(appliedAdvancedFilters);
+  const advancedFilterState: PoolFilterUiState =
+    advancedFilterValidationFailed || !parsedAdvancedFilters.valid
+      ? "invalid"
+      : advancedFilterDirty
+        ? "dirty"
+        : advancedFilterActive && filteredPoolRows.length === 0 && activePoolRows.length > 0
+          ? "no-results"
+          : advancedFilterActive
+            ? "applied"
+            : "pristine";
   const searchedToken =
     poolSearchParameters?.mode === "token" && poolSearchParameters.valid
       ? validTokenSearchAddress(poolSearchParameters.query)
@@ -1946,10 +1993,10 @@ export function PoolsPage() {
   const poolGroups = useMemo(
     () =>
       groupPoolRows(
-        activePoolRows,
+        filteredPoolRows,
         searchedToken ? { tokenAddress: searchedToken, type: "token-search" } : { type: "default" },
       ),
-    [activePoolRows, searchedToken],
+    [filteredPoolRows, searchedToken],
   );
   const expandablePoolGroupSignature = poolGroups
     .filter(({ members }) => members.length > 1)
@@ -1975,6 +2022,36 @@ export function PoolsPage() {
   const savePoolColumns = useCallback(
     (columns: PoolColumnPreference[]) => updatePreferences({ poolColumns: columns }),
     [updatePreferences],
+  );
+  const comparisonSnapshot = useMemo<MarketPoolSnapshot | null>(() => {
+    if (fixture) return fixturePoolSnapshot(minutes, poolRows);
+    return state.snapshot ? { ...state.snapshot, rows: poolRows } : null;
+  }, [fixture, minutes, poolRows, state.snapshot]);
+  useEffect(() => {
+    if (!comparisonSnapshot) return;
+    setComparisonState((current) => reconcilePoolComparison(current, comparisonSnapshot));
+  }, [comparisonSnapshot]);
+  const comparisonView = useMemo(
+    () =>
+      comparisonSnapshot ? buildPoolComparison(comparisonState, comparisonSnapshot) : null,
+    [comparisonSnapshot, comparisonState],
+  );
+  const comparisonSelectedKeys = useMemo(
+    () => new Set(comparisonState.selectedPoolKeys),
+    [comparisonState.selectedPoolKeys],
+  );
+  const snapshotPoolKeys = useMemo(
+    () => new Set(comparisonSnapshot?.rows.map(({ poolKey }) => poolKey) ?? []),
+    [comparisonSnapshot],
+  );
+  const comparisonCandidateKeys = useMemo(
+    () =>
+      new Set(
+        filteredPoolRows
+          .filter(({ poolKey }) => snapshotPoolKeys.has(poolKey))
+          .map(({ poolKey }) => poolKey),
+      ),
+    [filteredPoolRows, snapshotPoolKeys],
   );
   const explicitFlowConnection = fixtureFlowState(location.search, fixture);
   const flowConnection = fixturePaused
@@ -2108,6 +2185,33 @@ export function PoolsPage() {
     const search = writePoolSearchParameters(location.search, null);
     void navigate({ pathname: location.pathname, search }, { replace: true });
   };
+
+  const applyAdvancedFilters = () => {
+    if (!validatePoolAdvancedFilters(advancedFilterDraft)) {
+      setAdvancedFilterValidationFailed(true);
+      return;
+    }
+    setAdvancedFilterValidationFailed(false);
+    const search = writePoolAdvancedFilters(location.search, advancedFilterDraft);
+    void navigate({ pathname: location.pathname, search }, { replace: true });
+  };
+
+  const resetAdvancedFilters = () => {
+    setAdvancedFilterDraft(defaultPoolAdvancedFilters());
+    setAdvancedFilterValidationFailed(false);
+    const search = writePoolAdvancedFilters(location.search, null);
+    void navigate({ pathname: location.pathname, search }, { replace: true });
+  };
+
+  const toggleComparison = useCallback(
+    (poolKey: string) => {
+      if (!comparisonSnapshot) return;
+      setComparisonState((current) =>
+        togglePoolComparison(current, poolKey, comparisonSnapshot),
+      );
+    },
+    [comparisonSnapshot],
+  );
 
   const togglePoolGroup = useCallback((groupKey: string) => {
     setExpandedPoolGroups((current) => {
