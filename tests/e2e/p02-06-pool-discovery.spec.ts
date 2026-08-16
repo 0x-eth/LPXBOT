@@ -8,7 +8,17 @@ const quoteToken = "0x55d398326f99059ff775485246999027b3197955";
 const v3Pool = "0x1111111111111111111111111111111111111111";
 const v4Pool = `0x${"3".repeat(64)}`;
 
-type PoolColumnKey = "pool" | "protocol" | "fees" | "volume" | "tvl" | "txs" | "fdv" | "actions";
+type PoolColumnKey =
+  | "pool"
+  | "protocol"
+  | "fees"
+  | "volume"
+  | "feeTvl"
+  | "feeActiveTvl"
+  | "tvl"
+  | "txs"
+  | "fdv"
+  | "actions";
 
 interface ColumnPreference {
   key: PoolColumnKey;
@@ -27,6 +37,8 @@ const defaultColumns: ColumnPreference[] = [
   { key: "protocol", visible: true },
   { key: "fees", visible: true },
   { key: "volume", visible: true },
+  { key: "feeTvl", visible: true },
+  { key: "feeActiveTvl", visible: true },
   { key: "tvl", visible: true },
   { key: "txs", visible: true },
   { key: "fdv", visible: true },
@@ -59,7 +71,7 @@ function preferenceEnvelope(state: PreferenceState) {
     data: {
       preferences: preferences(state),
       revision: state.revision,
-      schemaVersion: 3,
+      schemaVersion: 4,
       updatedAt: state.revision === 0 ? null : "2026-08-16T10:00:00.000Z",
     },
     requestId: "req-p02-06-preferences",
@@ -399,7 +411,18 @@ test("POOL-10 persists locked column preferences and rolls back failures and con
   dialog = page.getByRole("dialog", { name: "表格列" });
   await dialog.getByRole("button", { name: "重置" }).click();
   await dialog.getByRole("button", { name: "保存", exact: true }).click();
-  for (const label of ["池", "协议", "Fees", "Volume", "TVL", "Txs", "FDV", "操作"]) {
+  for (const label of [
+    "池",
+    "协议",
+    "Fees",
+    "Volume",
+    "Fee/TVL",
+    "Fee/aTVL",
+    "TVL",
+    "Txs",
+    "FDV",
+    "操作",
+  ]) {
     await expect(table.getByRole("columnheader", { name: label, exact: true })).toBeVisible();
   }
 });

@@ -52,11 +52,21 @@ test("POOL-01/02/04/16 render the usable local tracer row", async ({ page }) => 
   await expect(page.getByRole("status", { name: "市场数据连接状态" })).toContainText("实时");
   const table = page.getByRole("table", { name: "BSC 热门池" });
   await expect(table).toBeVisible();
-  for (const heading of ["池", "协议", "Fees", "Volume", "TVL", "Txs", "FDV"]) {
+  for (const heading of [
+    "池",
+    "协议",
+    "Fees",
+    "Volume",
+    "Fee/TVL",
+    "Fee/aTVL",
+    "TVL",
+    "Txs",
+    "FDV",
+  ]) {
     await expect(table.getByRole("columnheader", { name: heading })).toBeVisible();
   }
   await expect(table.getByRole("row", { name: /WBNB.*USDT.*PancakeSwap V3/u })).toBeVisible();
-  await expect(page.getByText(/aTVL/u)).toHaveCount(0);
+  await expect(table.getByRole("columnheader", { name: "Fee/aTVL" })).toBeVisible();
 });
 
 for (const state of ["loading", "empty", "error", "stale", "reconnecting"] as const) {

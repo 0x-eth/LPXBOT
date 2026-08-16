@@ -84,7 +84,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
     expect(defaults.json().data).toMatchObject({
       preferences: { colorTheme: "neutral", taskViewMode: "grid", theme: "system" },
       revision: 0,
-      schemaVersion: 3,
+      schemaVersion: 4,
       updatedAt: null,
     });
 
@@ -114,7 +114,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         WHERE user_id = $1`,
       [userIds[0]],
     );
-    expect(stored.rows).toEqual([{ owner: userIds[0], revision: "1", schema_version: 3 }]);
+    expect(stored.rows).toEqual([{ owner: userIds[0], revision: "1", schema_version: 4 }]);
     await app.close();
 
     const restoredApp = createApp();
@@ -171,7 +171,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         theme: "dark",
       },
       revision: 7,
-      schemaVersion: 3,
+      schemaVersion: 4,
     });
     const upgraded = await pool.query<{ revision: string; schema_version: number }>(
       `SELECT revision::text, schema_version
@@ -179,7 +179,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         WHERE user_id = $1`,
       [userIds[1]],
     );
-    expect(upgraded.rows).toEqual([{ revision: "7", schema_version: 3 }]);
+    expect(upgraded.rows).toEqual([{ revision: "7", schema_version: 4 }]);
 
     const isolated = await app.inject({
       headers: { cookie: `lpbot_session=${tokenA}` },
@@ -219,6 +219,8 @@ describe("P01-06 PostgreSQL user preferences", () => {
       { key: "fees", visible: true },
       { key: "protocol", visible: true },
       { key: "volume", visible: false },
+      { key: "feeTvl", visible: true },
+      { key: "feeActiveTvl", visible: true },
       { key: "tvl", visible: true },
       { key: "txs", visible: true },
       { key: "actions", visible: true },
@@ -262,7 +264,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         showScanTab: expect.any(Boolean),
       },
       revision: saved.json().data.revision,
-      schemaVersion: 3,
+      schemaVersion: 4,
     });
     await relogged.close();
   });

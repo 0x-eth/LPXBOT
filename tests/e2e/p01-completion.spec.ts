@@ -43,6 +43,8 @@ const preferences = {
     { key: "protocol", visible: true },
     { key: "fees", visible: true },
     { key: "volume", visible: true },
+    { key: "feeTvl", visible: true },
+    { key: "feeActiveTvl", visible: true },
     { key: "tvl", visible: true },
     { key: "txs", visible: true },
     { key: "fdv", visible: true },
@@ -128,7 +130,7 @@ async function fulfillPreferences(route: Route): Promise<void> {
       data: {
         preferences,
         revision: 1,
-        schemaVersion: 3,
+        schemaVersion: 4,
         updatedAt: "2026-08-16T00:00:00.000Z",
       },
       requestId: "req-p01-completion-preferences",
