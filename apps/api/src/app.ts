@@ -3,6 +3,7 @@ import rateLimit from "@fastify/rate-limit";
 import {
   createErrorEnvelope,
   createSuccessEnvelope,
+  marketCandleBars,
   type ChainAccessMode,
   type EvmAddress,
   type LiquidityFlowFilter,
@@ -11,6 +12,8 @@ import {
   marketWindowMinutes,
   parseLiquidityProtocolFilter,
   type MarketPoolByTokenSort,
+  type MarketCandleBar,
+  type MarketProtocol,
   type MarketWindowMinutes,
   type SessionView,
 } from "@lpbot/api-contract";
@@ -54,6 +57,12 @@ import {
   type ChainAccessPolicyView,
 } from "./chain-access-policies.js";
 import type { LiquidityFlowProvider } from "./liquidity-flow.js";
+import {
+  MarketChartProviderError,
+  type MarketCandleQuery,
+  type MarketChartsProvider,
+  type MarketTickLiquidityQuery,
+} from "./market-charts.js";
 import type { MarketPoolsByTokenContext, MarketPoolsProvider } from "./market-pools.js";
 import {
   createRecommendedPoolsEventStream,
@@ -92,6 +101,8 @@ export interface ApiAppOptions {
   liquidityFlowProvider?: LiquidityFlowProvider;
   liquidityFlowRateLimit?: PublicReadRateLimit;
   maintenance: MaintenanceConfig;
+  marketChartsProvider?: MarketChartsProvider;
+  marketChartsRateLimit?: PublicReadRateLimit;
   marketPoolsProvider?: MarketPoolsProvider;
   marketPoolsRateLimit?: PublicReadRateLimit;
   managementOrigin?: string;
@@ -207,6 +218,101 @@ function parseMarketPoolsByTokenContext(request: FastifyRequest): MarketPoolsByT
   } catch {
     return null;
   }
+}
+
+function parseMarketCandleQuery(request: FastifyRequest): MarketCandleQuery | null {
+  const query = request.query as Record<string, unknown>;
+  const allowed = new Set(["bar", "chainId", "limit", "poolKey", "token"]);
+  if (Object.keys(query).some((key) => !allowed.has(key))) return null;
+  if (
+    typeof query.token !== "string" ||
+    !/^0x[0-9a-fA-F]{40}$/u.test(query.token) ||
+    typeof query.bar !== "string" ||
+    !marketCandleBars.includes(query.bar as MarketCandleBar) ||
+    query.chainId !== "56"
+  ) {
+    return null;
+  }
+  const limitValue = query.limit ?? "200";
+  if (
+    typeof limitValue !== "string" ||
+    !/^(?:[1-9]|[1-9][0-9]{1,2}|1000)$/u.test(limitValue)
+  ) {
+    return null;
+  }
+  const rawPoolKey = query.poolKey ?? null;
+  if (
+    rawPoolKey !== null &&
+    (typeof rawPoolKey !== "string" ||
+      !/^56:0x(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$/u.test(rawPoolKey))
+  ) {
+    return null;
+  }
+  return {
+    bar: query.bar as MarketCandleBar,
+    chainId: 56,
+    limit: Number(limitValue),
+    poolKey: rawPoolKey?.toLowerCase() ?? null,
+    token: query.token.toLowerCase() as EvmAddress,
+  };
+}
+
+function parseMarketTickLiquidityQuery(request: FastifyRequest): MarketTickLiquidityQuery | null {
+  const parameters = request.params as { poolAddressOrPoolId?: unknown };
+  const query = request.query as Record<string, unknown>;
+  const allowed = new Set([
+    "chain",
+    "decimals0",
+    "decimals1",
+    "dex",
+    "range",
+    "tickSpacing",
+  ]);
+  if (Object.keys(query).some((key) => !allowed.has(key))) return null;
+  if (
+    typeof parameters.poolAddressOrPoolId !== "string" ||
+    !/^0x(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$/u.test(parameters.poolAddressOrPoolId) ||
+    query.chain !== "bsc" ||
+    typeof query.dex !== "string" ||
+    !(["pcsv3", "univ3", "pcsv4", "univ4"] as const).includes(
+      query.dex as MarketProtocol,
+    ) ||
+    typeof query.range !== "string" ||
+    !/^(?:[5-9]|[1-4][0-9]|50)$/u.test(query.range) ||
+    typeof query.tickSpacing !== "string" ||
+    !/^[1-9][0-9]*$/u.test(query.tickSpacing)
+  ) {
+    return null;
+  }
+  const tickSpacing = Number(query.tickSpacing);
+  if (!Number.isSafeInteger(tickSpacing)) return null;
+  const hasDecimals0 = query.decimals0 !== undefined;
+  const hasDecimals1 = query.decimals1 !== undefined;
+  if (hasDecimals0 !== hasDecimals1) return null;
+  let decimals0: number | null = null;
+  let decimals1: number | null = null;
+  if (hasDecimals0 && hasDecimals1) {
+    if (
+      typeof query.decimals0 !== "string" ||
+      typeof query.decimals1 !== "string" ||
+      !/^(?:0|[1-9][0-9]{0,2})$/u.test(query.decimals0) ||
+      !/^(?:0|[1-9][0-9]{0,2})$/u.test(query.decimals1)
+    ) {
+      return null;
+    }
+    decimals0 = Number(query.decimals0);
+    decimals1 = Number(query.decimals1);
+    if (decimals0 > 255 || decimals1 > 255) return null;
+  }
+  return {
+    chainId: 56,
+    decimals0,
+    decimals1,
+    identity: parameters.poolAddressOrPoolId.toLowerCase() as `0x${string}`,
+    protocol: query.dex as MarketProtocol,
+    range: Number(query.range),
+    tickSpacing,
+  };
 }
 
 function parseLiquidityFlowFilter(request: FastifyRequest): LiquidityFlowFilter | null {

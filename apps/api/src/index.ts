@@ -43,6 +43,13 @@ export type {
   MarketPoolsStreamContext,
   PostgresMarketPoolsProviderOptions,
 } from "./market-pools.js";
+export { MarketChartProviderError, PostgresMarketChartsProvider } from "./market-charts.js";
+export type {
+  MarketCandleQuery,
+  MarketChartProviderErrorCode,
+  MarketChartsProvider,
+  MarketTickLiquidityQuery,
+} from "./market-charts.js";
 export { PostgresLiquidityFlowProvider, liquidityFlowStreamKey } from "./liquidity-flow.js";
 export type {
   LiquidityFlowProvider,

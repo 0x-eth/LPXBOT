@@ -523,6 +523,62 @@ export const marketPoolsContracts = {
   stream: { method: "GET", path: "/api/pools/top-fees/{minutes}/stream" },
 } as const;
 
+export const marketCandleBars = ["1m", "5m", "15m", "1H", "4H", "1D"] as const;
+export type MarketCandleBar = (typeof marketCandleBars)[number];
+export type MarketCandleDirection = "token0" | "token1";
+export type MarketReadModelSource = "canonical-events";
+
+export interface MarketCandle {
+  close: string;
+  high: string;
+  low: string;
+  open: string;
+  ts: number;
+  volume: string;
+}
+
+export interface MarketCandlesResponse {
+  asOf: string;
+  bar: MarketCandleBar;
+  candles: MarketCandle[];
+  canonicalRevision: string;
+  chainId: 56;
+  direction: MarketCandleDirection;
+  poolKey: string;
+  priceUnit: "token0-raw/token1-raw" | "token1-raw/token0-raw";
+  source: MarketReadModelSource;
+  token: EvmAddress;
+  version: string;
+  volumeUnit: { kind: "raw-integer"; token: EvmAddress };
+}
+
+export interface MarketTickLiquidityPoint {
+  liquidityNet: string;
+  price0: string | null;
+  price1: string | null;
+  tickIdx: number;
+}
+
+export interface MarketTickLiquidityResponse {
+  asOf: string;
+  canonicalRevision: string;
+  chainId: 56;
+  currentTick: number | null;
+  decimals0: number | null;
+  decimals1: number | null;
+  poolKey: string;
+  range: number;
+  source: MarketReadModelSource;
+  tickSpacing: number;
+  ticks: MarketTickLiquidityPoint[];
+  version: string;
+}
+
+export const marketChartContracts = {
+  candles: { method: "GET", path: "/api/market/candles" },
+  liquidity: { method: "GET", path: "/api/pools/liquidity/{poolAddressOrPoolId}" },
+} as const;
+
 export interface WalletChallengeRequest {
   address: EvmAddress;
   chainId: number;
