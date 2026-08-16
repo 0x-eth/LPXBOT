@@ -97,6 +97,18 @@ test("FLOW-03/04 share filtered projection and expose stable watched address ope
   await expect(addressTable.getByText("<b>共享鲸鱼</b>", { exact: true })).toBeVisible();
   await expect(addressTable.locator("b")).toHaveCount(0);
   await expect(addressTable.getByText("partial", { exact: true })).toBeVisible();
+  await expect(page).toHaveScreenshot("p02-05-liquidity-insights.png", {
+    animations: "disabled",
+    caret: "hide",
+    fullPage: true,
+    maxDiffPixels: 100,
+  });
+  await page.screenshot({
+    animations: "disabled",
+    caret: "hide",
+    fullPage: true,
+    path: `artifacts/acceptance/P02-05/ui/liquidity-insights-${testInfo.project.name}.png`,
+  });
 
   const watchedOnly = panel.getByRole("button", { name: "只看关注地址" });
   await watchedOnly.click();

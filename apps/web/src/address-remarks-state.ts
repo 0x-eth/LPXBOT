@@ -68,12 +68,18 @@ export function reduceAddressRemarks(
     return { ...state, loadErrorCode: action.code, status: "error" };
   }
   if (action.type === "loaded") {
+    const remarks = new Map(
+      action.response.remarks.map((remark) => [canonical(remark.address), remark]),
+    );
+    for (const address of state.pending.keys()) {
+      const optimistic = state.remarks.get(address);
+      if (optimistic) remarks.set(address, optimistic);
+      else remarks.delete(address);
+    }
     return {
       ...state,
       loadErrorCode: null,
-      remarks: new Map(
-        action.response.remarks.map((remark) => [canonical(remark.address), remark]),
-      ),
+      remarks,
       shared: new Map(action.response.shared.map((remark) => [canonical(remark.address), remark])),
       status: "ready",
     };

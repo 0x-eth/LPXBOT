@@ -568,6 +568,36 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     const errorCode = (error as { code?: unknown }).code;
     if (
       errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
+      request.method === "PUT" &&
+      request.url.split("?", 1)[0] === "/api/address-remarks"
+    ) {
+      reply.header("Cache-Control", "no-store");
+      const token = sessionToken(request);
+      const resolved = token ? await findValidSession(token, options.sessionStore, now()) : null;
+      if (resolved) {
+        await options.addressRemarkStore?.recordDenied({
+          action: "address-remark.put",
+          actorUserId: resolved.session.userId,
+          address: null,
+          chainId: addressRemarkChainId,
+          createdAt: now(),
+          outcome: "denied",
+          requestId: request.id,
+          resultCode: "REQUEST_TOO_LARGE",
+          sessionId: resolved.session.id,
+        });
+      }
+      return reply.code(413).send(
+        createErrorEnvelope({
+          code: "REQUEST_TOO_LARGE",
+          message: "The request body is too large",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+    }
+    if (
+      errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
       request.url.split("?", 1)[0] === "/api/system-config/chains"
     ) {
       reply.header("Cache-Control", "no-store");
