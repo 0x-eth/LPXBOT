@@ -47,6 +47,9 @@ export function validateProductionIndexerConfig(value: unknown): ProductionIndex
   if (typeof value !== "object" || value === null) {
     throw new Error("PRODUCTION_DECODER_CONFIG_MISSING: configuration is required");
   }
+  if (Object.hasOwn(value, "rpcUrl") || Object.hasOwn(value, "BSC_RPC_URL")) {
+    throw new Error("BSC_RPC_URL_ENV_ONLY: RPC URL must be supplied through the environment");
+  }
   const config = value as Partial<ProductionIndexerConfig>;
   if (
     config.chainId !== 56 ||
