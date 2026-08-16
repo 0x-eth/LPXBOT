@@ -95,6 +95,9 @@ importers:
       '@lpbot/security':
         specifier: workspace:*
         version: link:../../packages/security
+      decimal.js:
+        specifier: 10.6.0
+        version: 10.6.0
       fastify:
         specifier: 5.12.0
         version: 5.12.0
