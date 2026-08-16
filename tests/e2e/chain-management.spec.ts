@@ -340,11 +340,12 @@ test("AUTH-10 admin dialog covers loading, error, retry and empty states", async
   await page.goto("/settings");
   const trigger = page.getByRole("button", { name: "链管理" });
   await trigger.click();
-  await expect(page.getByRole("status")).toContainText("正在加载链配置");
+  const dialog = page.getByRole("dialog", { name: "链管理" });
+  await expect(dialog.getByRole("status")).toContainText("正在加载链配置");
   await expect(page.getByRole("alert")).toContainText("链配置加载失败");
   await expect(page.getByText("PRIVATE_CHAIN_CONFIGURATION_VALUE")).toHaveCount(0);
   await page.getByRole("button", { name: "重试加载" }).click();
-  await expect(page.getByRole("status")).toContainText("暂无链配置");
+  await expect(dialog.getByRole("status")).toContainText("暂无链配置");
   await page.getByRole("button", { name: "关闭链管理" }).click();
   await expect(trigger).toBeFocused();
   await trigger.click();
@@ -363,7 +364,8 @@ test("AUTH-10 admin previews, confirms, resolves conflict, saves and rolls back"
   await expect(page.getByText("站点运营", { exact: true })).toBeVisible();
   await trigger.click();
 
-  await expect(page.getByRole("dialog", { name: "链管理" })).toBeVisible();
+  const dialog = page.getByRole("dialog", { name: "链管理" });
+  await expect(dialog).toBeVisible();
   await expect(page.getByText("关闭：所有人不能新建，已有仓位仍可监控和撤池")).toBeVisible();
   await expect(page.getByText("Pro：仅 Pro 和管理员可新建")).toBeVisible();
   await expect(page.getByText("全部：所有已授权用户可新建")).toBeVisible();
@@ -388,7 +390,7 @@ test("AUTH-10 admin previews, confirms, resolves conflict, saves and rolls back"
   await expect(page.getByRole("alertdialog", { name: "确认链配置变更" })).toBeVisible();
   await expect(page.getByRole("button", { name: "取消" })).toBeFocused();
   await page.getByRole("button", { name: "确认保存" }).click();
-  await expect(page.getByRole("status")).toContainText("正在保存链配置");
+  await expect(dialog.getByRole("status")).toContainText("正在保存链配置");
   await expect(page.getByRole("alert")).toContainText("配置已被其他会话更新，请重新加载");
   await expect(page.getByText("PRIVATE_CONFLICT_DETAIL")).toHaveCount(0);
   await page.getByRole("button", { name: "重新加载" }).click();
@@ -398,7 +400,7 @@ test("AUTH-10 admin previews, confirms, resolves conflict, saves and rolls back"
   await page.getByLabel("变更原因").fill("Local all to pro drill");
   await page.getByRole("button", { name: "保存链配置" }).click();
   await page.getByRole("button", { name: "确认保存" }).click();
-  await expect(page.getByRole("status")).toContainText("链配置已保存");
+  await expect(dialog.getByRole("status")).toContainText("链配置已保存");
   await expect(reloadedBsc.getByRole("radio", { name: "Pro" })).toBeChecked();
 
   await page.getByRole("button", { name: "恢复 BNB Smart Chain 上一版本" }).click();
@@ -407,7 +409,7 @@ test("AUTH-10 admin previews, confirms, resolves conflict, saves and rolls back"
   await page.getByRole("button", { name: "保存链配置" }).click();
   await expect(page.getByRole("button", { name: "取消" })).toBeFocused();
   await page.getByRole("button", { name: "确认保存" }).click();
-  await expect(page.getByRole("status")).toContainText("链配置已保存");
+  await expect(dialog.getByRole("status")).toContainText("链配置已保存");
   await expect(reloadedBsc.getByRole("radio", { name: "全部" })).toBeChecked();
 
   expect(state.posts).toHaveLength(3);
