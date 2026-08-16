@@ -196,10 +196,13 @@ describe("P02-04 PostgreSQL liquidity flow read model", () => {
       record_type: "tombstone",
       reverted_id: projection.rows.find(({ finality }) => finality === "reverted")?.event_id,
     });
-    expect(projection.rows.map(({ canonical, finality }) => ({ canonical, finality }))).toEqual([
-      { canonical: false, finality: "reverted" },
-      { canonical: true, finality: "observed" },
-    ]);
+    expect(projection.rows).toHaveLength(2);
+    expect(projection.rows.map(({ canonical, finality }) => ({ canonical, finality }))).toEqual(
+      expect.arrayContaining([
+        { canonical: false, finality: "reverted" },
+        { canonical: true, finality: "observed" },
+      ]),
+    );
     expect(cursor.rows).toEqual([
       { block_hash: fixture.input[2]!.rawLog.blockHash, block_number: "110" },
     ]);

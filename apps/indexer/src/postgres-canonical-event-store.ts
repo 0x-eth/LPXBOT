@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 
 import type {
+  LiquidityFlowEvent,
+  LiquidityFlowTombstone,
   MarketPoolDiff,
   MarketPoolRow,
   MarketPoolSnapshot,
@@ -15,6 +17,7 @@ import {
 } from "@lpbot/market-metrics";
 import type { Pool, PoolClient } from "pg";
 
+import { projectLiquidityFlowEvent } from "./liquidity-flow.js";
 import type {
   CanonicalCommit,
   CanonicalEventStore,
@@ -60,6 +63,10 @@ interface AffectedPoolRow {
   chain_id: string;
   pool_address: string | null;
   pool_id: string | null;
+}
+
+interface StoredFlowEvent {
+  record: LiquidityFlowEvent;
 }
 
 function stableValue(value: unknown): unknown {
@@ -246,6 +253,7 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
           commit.evaluationTime,
         );
         await this.#insertEvent(client, event, incomingHash, commit.evaluationTime);
+        await this.#insertFlowEvent(client, event, commit.evaluationTime);
         acceptedCount += 1;
         lastAccepted = event;
         pending = true;
@@ -367,6 +375,166 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     );
   }
 
+  async #insertFlowEvent(
+    client: PoolClient,
+    event: NormalizedPoolEvent,
+    createdAt: string,
+  ): Promise<void> {
+    const projected = projectLiquidityFlowEvent(event);
+    if (!projected) return;
+    const sourceCursor = projected.cursor;
+    const position = await this.#nextFlowPosition(client, projected.id, "event");
+    const record: LiquidityFlowEvent = { ...projected, cursor: position.cursor };
+    await client.query(
+      `INSERT INTO liquidity_flow_events (
+         event_id, schema_version, chain_id, block_number, block_hash,
+         transaction_hash, transaction_index, log_index, occurred_at_milliseconds,
+         protocol, protocol_generation, event_type, finality, canonical,
+         source_cursor, replay_cursor, pool_address, pool_id, token0, token1,
+         user_address, nft_id, usd_value, in_range, amount0, amount1,
+         liquidity_delta, record, created_at
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9,
+         $10, $11, $12, 'observed', true, $13, $14, $15, $16, $17, $18,
+         $19, NULL, NULL, NULL, $20, $21, $22, $23::jsonb, $24
+       )`,
+      [
+        record.id,
+        record.schema_version,
+        record.chain_id,
+        record.block_number,
+        record.block_hash,
+        record.tx_hash,
+        record.tx_index,
+        record.log_index,
+        record.ts,
+        record.dex,
+        record.version,
+        record.event_type,
+        sourceCursor,
+        record.cursor,
+        record.pool_address,
+        record.pool_id,
+        record.token0_address,
+        record.token1_address,
+        record.user,
+        record.amount0,
+        record.amount1,
+        record.liquidity_delta,
+        stableJson(record),
+        createdAt,
+      ],
+    );
+    await this.#insertFlowOutbox(client, position.sequence, record, record.id, createdAt);
+  }
+
+  async #nextFlowPosition(
+    client: PoolClient,
+    relatedEventId: string,
+    recordType: "event" | "heartbeat" | "tombstone",
+  ): Promise<{ cursor: string; sequence: string }> {
+    const latest = await client.query<{ sequence: string }>(
+      `SELECT sequence::text
+         FROM liquidity_flow_outbox
+        WHERE chain_id = 56
+        ORDER BY sequence DESC
+        LIMIT 1
+        FOR UPDATE`,
+    );
+    const sequence = latest.rows[0]
+      ? (BigInt(latest.rows[0].sequence) + 1n).toString()
+      : "1";
+    const digest = payloadHash({ recordType, relatedEventId, sequence }).slice(0, 16);
+    return { cursor: `flow:v1:56:${sequence}:${digest}`, sequence };
+  }
+
+  async #insertFlowOutbox(
+    client: PoolClient,
+    sequence: string,
+    record: LiquidityFlowEvent | LiquidityFlowTombstone,
+    relatedEventId: string,
+    createdAt: string,
+  ): Promise<void> {
+    await client.query(
+      `INSERT INTO liquidity_flow_outbox (
+         sequence, chain_id, cursor, record_type, related_event_id,
+         occurred_at_milliseconds, protocol, protocol_generation, event_type,
+         pool_address, pool_id, token0, token1, user_address, nft_id,
+         payload, created_at
+       ) VALUES (
+         $1, 56, $2, $3, $4, $5, $6, $7, $8,
+         $9, $10, $11, $12, $13, NULL, $14::jsonb, $15
+       )`,
+      [
+        sequence,
+        record.cursor,
+        record.record_type,
+        relatedEventId,
+        record.ts,
+        record.dex,
+        record.version,
+        record.record_type === "event" ? record.event_type : null,
+        record.pool_address,
+        record.pool_id,
+        record.token0_address,
+        record.token1_address,
+        record.user,
+        stableJson(record),
+        createdAt,
+      ],
+    );
+  }
+
+  async #appendFlowTombstones(
+    client: PoolClient,
+    commit: CanonicalCommit,
+    blockNumber: string,
+    blockHash: string | null,
+  ): Promise<void> {
+    const parameters: unknown[] = [commit.chainId, blockNumber];
+    const hashClause = blockHash ? " AND block_hash = $3" : "";
+    if (blockHash) parameters.push(blockHash);
+    const affected = await client.query<StoredFlowEvent>(
+      `SELECT record
+         FROM liquidity_flow_events
+        WHERE chain_id = $1 AND block_number >= $2 AND canonical${hashClause}
+        ORDER BY block_number, transaction_index, log_index, transaction_hash, event_id
+        FOR UPDATE`,
+      parameters,
+    );
+    const timestamp = Date.parse(commit.evaluationTime);
+    if (!Number.isFinite(timestamp)) throw new RangeError("LIQUIDITY_FLOW_TIMESTAMP_INVALID");
+    for (const { record: event } of affected.rows) {
+      const id = payloadHash({ recordType: "tombstone", revertedId: event.id });
+      const position = await this.#nextFlowPosition(client, event.id, "tombstone");
+      const tombstone: LiquidityFlowTombstone = {
+        cursor: position.cursor,
+        dex: event.dex,
+        finality: "reverted",
+        id,
+        nft_id: null,
+        pool_address: event.pool_address,
+        pool_id: event.pool_id,
+        reason: "reorg",
+        record_type: "tombstone",
+        reverted_id: event.id,
+        schema_version: "1.0.0",
+        token0_address: event.token0_address,
+        token1_address: event.token1_address,
+        ts: timestamp,
+        user: event.user,
+        version: event.version,
+      };
+      await this.#insertFlowOutbox(
+        client,
+        position.sequence,
+        tombstone,
+        event.id,
+        commit.evaluationTime,
+      );
+    }
+  }
+
   async #upsertBlock(
     client: PoolClient,
     delivery: RawLogDelivery,
@@ -414,6 +582,12 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
         FOR UPDATE`,
       [delivery.block.chainId, delivery.block.blockNumber],
     );
+    if (
+      latest.rows[0] &&
+      BigInt(latest.rows[0].block_number) + 1n !== BigInt(delivery.block.blockNumber)
+    ) {
+      return null;
+    }
     if (!latest.rows[0] || latest.rows[0].block_hash === delivery.block.parentHash) return null;
     const ancestor = await client.query<{ block_number: string }>(
       `SELECT block_number::text
@@ -446,8 +620,17 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     );
     if (affected.rowCount === 0) return { count: 0, poolKeys: new Set() };
 
+    await this.#appendFlowTombstones(client, commit, blockNumber, blockHash);
     await client.query(
       `UPDATE normalized_pool_events
+          SET canonical = false, finality = 'reverted', reverted_at = ${timeParameter}
+        WHERE chain_id = $1 AND block_number >= $2 AND canonical${hashClause}`,
+      blockHash
+        ? [commit.chainId, blockNumber, blockHash, commit.evaluationTime]
+        : [commit.chainId, blockNumber, commit.evaluationTime],
+    );
+    await client.query(
+      `UPDATE liquidity_flow_events
           SET canonical = false, finality = 'reverted', reverted_at = ${timeParameter}
         WHERE chain_id = $1 AND block_number >= $2 AND canonical${hashClause}`,
       blockHash
