@@ -1,5 +1,7 @@
 import type {
   LiquidityFlowProtocol,
+  MarketPoolByTokenRow,
+  MarketPoolByTokenSort,
   MarketPoolSnapshot,
   MarketStreamEnvelope,
   MarketWindowMinutes,
@@ -29,7 +31,43 @@ export function buildMarketPoolsUrl(
   return `${path}?${parameters.toString()}`;
 }
 
+export function buildPoolsByTokenUrl(
+  address: string,
+  protocols: readonly string[],
+  limit: number,
+  sort: MarketPoolByTokenSort,
+): string {
+  const selected = canonicalizeLiquidityProtocols(protocols);
+  const parameters = new URLSearchParams({
+    chain: "bsc",
+    dex: selected.join(","),
+    limit: String(limit),
+    sort,
+  });
+  return `/api/pools/by-token/${address.toLowerCase()}?${parameters.toString()}`;
+}
+
 export class PoolsClient {
+  async getByToken(
+    address: string,
+    signal: AbortSignal,
+    protocols: readonly LiquidityFlowProtocol[] = liquidityFlowProtocols,
+    limit = 100,
+    sort: MarketPoolByTokenSort = "fees",
+  ): Promise<MarketPoolByTokenRow[]> {
+    const response = await fetch(buildPoolsByTokenUrl(address, protocols, limit, sort), {
+      credentials: "include",
+      headers: { Accept: "application/json" },
+      signal,
+    });
+    if (!response.ok) throw new Error(`MARKET_TOKEN_HTTP_${response.status}`);
+    const envelope = (await response.json()) as SuccessEnvelope<unknown>;
+    if (!envelope.success || !Array.isArray(envelope.data)) {
+      throw new Error("MARKET_TOKEN_RESPONSE_INVALID");
+    }
+    return envelope.data as MarketPoolByTokenRow[];
+  }
+
   async getSnapshot(
     minutes: MarketWindowMinutes,
     signal: AbortSignal,

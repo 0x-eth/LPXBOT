@@ -1,19 +1,25 @@
 import type { MarketStreamEnvelope } from "../packages/api-contract/src/index.js";
 import { initialPoolStreamState, reducePoolStream } from "../apps/web/src/pools-stream-state.js";
-import { buildMarketPoolsUrl } from "../apps/web/src/pools-client.js";
+import { buildMarketPoolsUrl, buildPoolsByTokenUrl } from "../apps/web/src/pools-client.js";
 import { describe, expect, it } from "vitest";
 
 const row = {
   activeTvlUsd: null,
   chainId: 56 as const,
   fdvUsd: "100",
+  feePips: "2500",
   feeActiveTvl: null,
   feesUsd: "2",
   feeTvl: "0.02",
+  hooks: null,
   poolAddress: "0x1111111111111111111111111111111111111111" as const,
   poolId: null,
+  poolKey: "56:0x1111111111111111111111111111111111111111",
   protocol: "pcsv3" as const,
+  tickSpacing: "50",
+  token0Address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as const,
   token0Symbol: "WBNB",
+  token1Address: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" as const,
   token1Symbol: "USDT",
   transactionCount: "3",
   tvlUsd: "100",
@@ -46,6 +52,16 @@ describe("P02-02 pool stream client state", () => {
     );
     expect(buildMarketPoolsUrl(5, ["univ4", "pcsv3", "univ4"], true)).toBe(
       "/api/pools/top-fees/5/stream?chainId=56&dex=pcsv3%2Cuniv4",
+    );
+    expect(
+      buildPoolsByTokenUrl(
+        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        ["univ4", "pcsv3", "univ4"],
+        25,
+        "volume",
+      ),
+    ).toBe(
+      "/api/pools/by-token/0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?chain=bsc&dex=pcsv3%2Cuniv4&limit=25&sort=volume",
     );
   });
 
