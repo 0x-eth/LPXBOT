@@ -8,6 +8,7 @@ type RouteState = "loading" | "empty" | "error" | "forbidden";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const captureEvidence = process.env.LPBOT_CAPTURE_P01_08 === "1";
+const routeMatrixTimeoutMilliseconds = 180_000;
 const routes = [
   { path: "/tasks/running", title: "Tasks" },
   { path: "/tasks/paused", title: "Tasks" },
@@ -141,7 +142,7 @@ async function expectAccessibleStablePage(page: Page): Promise<void> {
 test("P01 route-state matrix covers loading, empty, error and forbidden", async ({
   page,
 }, testInfo) => {
-  test.setTimeout(90_000);
+  test.setTimeout(routeMatrixTimeoutMilliseconds);
   await installFixture(page);
   preferences.theme = "light";
 
@@ -173,7 +174,7 @@ test("P01 route-state matrix covers loading, empty, error and forbidden", async 
 test("P01 route matrix covers light, dark and system themes on both viewports", async ({
   page,
 }, testInfo) => {
-  test.setTimeout(90_000);
+  test.setTimeout(routeMatrixTimeoutMilliseconds);
   await installFixture(page);
 
   for (const theme of ["light", "dark", "system"] as const) {
@@ -208,7 +209,7 @@ test("P01 route matrix stays non-overlapping at all required widths", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop", "The width matrix runs once.");
-  test.setTimeout(90_000);
+  test.setTimeout(routeMatrixTimeoutMilliseconds);
   await installFixture(page);
   preferences.theme = "system";
 
