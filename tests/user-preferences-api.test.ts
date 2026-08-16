@@ -33,6 +33,8 @@ const defaultPreferences: UserPreferences = {
     { key: "protocol", visible: true },
     { key: "fees", visible: true },
     { key: "volume", visible: true },
+    { key: "feeTvl", visible: true },
+    { key: "feeActiveTvl", visible: true },
     { key: "tvl", visible: true },
     { key: "txs", visible: true },
     { key: "fdv", visible: true },
@@ -62,7 +64,7 @@ class MemoryPreferencesStore implements UserPreferencesStore {
         current: current ?? {
           preferences: structuredClone(defaultPreferences),
           revision: 0,
-          schemaVersion: 3,
+          schemaVersion: 4,
           updatedAt: null,
         },
         status: "conflict",
@@ -71,7 +73,7 @@ class MemoryPreferencesStore implements UserPreferencesStore {
     const next: VersionedUserPreferences = {
       preferences: structuredClone(input.preferences),
       revision: revision + 1,
-      schemaVersion: 3,
+      schemaVersion: 4,
       updatedAt: input.updatedAt.toISOString(),
     };
     this.records.set(input.userId, next);
@@ -122,7 +124,7 @@ describe("P01-06 user preferences API", () => {
     expect(authenticated.json().data).toEqual({
       preferences: defaultPreferences,
       revision: 0,
-      schemaVersion: 3,
+      schemaVersion: 4,
       updatedAt: null,
     });
   });
@@ -153,7 +155,7 @@ describe("P01-06 user preferences API", () => {
     expect(first.json().data).toMatchObject({
       preferences: { ...defaultPreferences, ...changes },
       revision: 1,
-      schemaVersion: 3,
+      schemaVersion: 4,
       updatedAt: now.toISOString(),
     });
 
@@ -244,7 +246,7 @@ describe("P01-06 user preferences API", () => {
     }
   });
 
-  it("migrates malformed columns while preserving every existing preference", () => {
+  it("migrates schema v3 columns while preserving order and every existing preference", () => {
     const migrated = normalizeStoredUserPreferences({
       colorTheme: "teal",
       customColor: null,
@@ -288,6 +290,8 @@ describe("P01-06 user preferences API", () => {
       { key: "volume", visible: true },
       { key: "tvl", visible: true },
       { key: "txs", visible: true },
+      { key: "feeTvl", visible: true },
+      { key: "feeActiveTvl", visible: true },
       { key: "actions", visible: true },
     ]);
   });

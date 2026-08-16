@@ -8,7 +8,7 @@ import {
 } from "../apps/web/src/pool-table-state.js";
 import { describe, expect, it } from "vitest";
 
-describe("P02-06 pool column preferences", () => {
+describe("P02-07 pool column preferences", () => {
   it("normalizes legacy, unknown and duplicate columns without moving locked edges", () => {
     const normalized = normalizePoolColumns([
       { key: "fdv", visible: false },
@@ -24,6 +24,8 @@ describe("P02-06 pool column preferences", () => {
       "protocol",
       "fees",
       "volume",
+      "feeTvl",
+      "feeActiveTvl",
       "tvl",
       "txs",
       "fdv",
@@ -35,6 +37,8 @@ describe("P02-06 pool column preferences", () => {
       { key: "volume", visible: true },
       { key: "protocol", visible: true },
       { key: "fees", visible: true },
+      { key: "feeTvl", visible: true },
+      { key: "feeActiveTvl", visible: true },
       { key: "tvl", visible: true },
       { key: "txs", visible: true },
       { key: "actions", visible: true },
@@ -54,6 +58,8 @@ describe("P02-06 pool column preferences", () => {
       "protocol",
       "fees",
       "volume",
+      "feeTvl",
+      "feeActiveTvl",
       "tvl",
       "txs",
       "actions",
@@ -65,6 +71,8 @@ describe("P02-06 pool column preferences", () => {
       "fdv",
       "fees",
       "volume",
+      "feeTvl",
+      "feeActiveTvl",
       "tvl",
       "txs",
       "actions",
