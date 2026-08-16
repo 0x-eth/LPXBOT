@@ -215,6 +215,29 @@ describe("P02-05 address remarks API", () => {
     );
   });
 
+  it("rejects and audits oversized authenticated writes at the existing body boundary", async () => {
+    const { addressRemarkStore, app, tokenA } = await fixture();
+    const response = await app.inject({
+      headers: { ...session(tokenA), "content-type": "application/json" },
+      method: "PUT",
+      payload: JSON.stringify({ address, label: "x".repeat(3_000), watched: false }),
+      url: "/api/address-remarks",
+    });
+
+    expect(response.statusCode).toBe(413);
+    expect(response.json().error.code).toBe("REQUEST_TOO_LARGE");
+    expect(addressRemarkStore.records.size).toBe(0);
+    expect(addressRemarkStore.audits).toEqual([
+      expect.objectContaining({
+        action: "address-remark.put",
+        address: null,
+        actorUserId: userA,
+        outcome: "denied",
+        resultCode: "REQUEST_TOO_LARGE",
+      }),
+    ]);
+  });
+
   it("supports watch-only records, idempotent delete, per-session rate limits and write audits", async () => {
     const { addressRemarkStore, app, tokenA, tokenB } = await fixture(2);
     const watched = await app.inject({

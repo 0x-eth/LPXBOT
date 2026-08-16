@@ -184,6 +184,29 @@ describe("P02-05 optimistic address remark state", () => {
     expect(staleFailure.pending.get(address)?.operationId).toBe(2);
   });
 
+  it("does not let a stale list refresh overwrite an optimistic mutation", () => {
+    const optimistic = reduceAddressRemarks(ready(), {
+      operationId: 5,
+      request: { address, label: "Pending draft", watched: true },
+      type: "put-optimistic",
+    });
+    const refreshed = reduceAddressRemarks(optimistic, {
+      response: {
+        remarks: [original],
+        shared: [{ address, label: "New shared vote", votes: 5 }],
+      },
+      type: "loaded",
+    });
+
+    expect(refreshed.remarks.get(address)).toEqual({
+      address,
+      label: "Pending draft",
+      watched: true,
+    });
+    expect(refreshed.pending.get(address)?.operationId).toBe(5);
+    expect(refreshed.shared.get(address)?.label).toBe("New shared vote");
+  });
+
   it("restores an idempotently deleted row on failure and removes it on success", () => {
     const optimistic = reduceAddressRemarks(ready(), {
       address,
