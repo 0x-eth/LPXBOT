@@ -115,7 +115,9 @@ function legacyRows(rows: MarketPoolSnapshot["rows"]): Record<string, unknown>[]
 }
 
 function legacyRowsHash(rows: MarketPoolSnapshot["rows"]): string {
-  return createHash("sha256").update(JSON.stringify(stableValue(legacyRows(rows)))).digest("hex");
+  return createHash("sha256")
+    .update(JSON.stringify(stableValue(legacyRows(rows))))
+    .digest("hex");
 }
 
 function runnerFor(name: "normal" | "duplicate" | "out-of-order" | "reorg") {
@@ -316,9 +318,9 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
       source: new FixtureRawLogSource(duplicate.input, fixtureBlockTimestamp),
       store: new PostgresCanonicalEventStore(pool),
     }).runOnce();
-    expect((await pool.query("SELECT count(*)::text AS count FROM market_pool_catalog")).rows).toEqual(
-      [{ count: "1" }],
-    );
+    expect(
+      (await pool.query("SELECT count(*)::text AS count FROM market_pool_catalog")).rows,
+    ).toEqual([{ count: "1" }]);
 
     await pool.query(
       `TRUNCATE liquidity_flow_outbox, liquidity_flow_events,
@@ -336,9 +338,10 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
         poolAddress: null,
         poolId: index === 2 ? replacementPoolId : orphanPoolId,
         tickSpacing: index === 2 ? "10" : "1",
-        token0: index === 2
-          ? "0x7777777777777777777777777777777777777777"
-          : "0x5555555555555555555555555555555555555555",
+        token0:
+          index === 2
+            ? "0x7777777777777777777777777777777777777777"
+            : "0x5555555555555555555555555555555555555555",
         token1: "0x6666666666666666666666666666666666666666",
       };
     }
@@ -908,16 +911,47 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
         )
       ).rows,
     };
-    const windows = (
-      await pool.query(
+    const currentWindows = (
+      await pool.query<{ rows: MarketPoolSnapshot["rows"]; snapshot_hash: string }>(
         `SELECT stream_key, chain_id::text, window_minutes, window_start,
                 window_end, version::text, source_cursor, snapshot_hash, rows,
                 created_at
            FROM market_snapshots
           WHERE canonical
-          ORDER BY window_minutes`,
+        ORDER BY window_minutes`,
       )
     ).rows;
+    for (const window of currentWindows) {
+      for (const row of window.rows) {
+        expect(row).toMatchObject({
+          feePips: expect.toBeOneOf([expect.any(String), null]),
+          hooks: expect.toBeOneOf([expect.any(String), null]),
+          poolKey: expect.any(String),
+          tickSpacing: expect.toBeOneOf([expect.any(String), null]),
+          token0Address: expect.toBeOneOf([expect.any(String), null]),
+          token1Address: expect.toBeOneOf([expect.any(String), null]),
+        });
+      }
+    }
+    const windows = currentWindows.map((window) => ({
+      ...window,
+      rows: legacyRows(window.rows),
+      snapshot_hash: legacyRowsHash(window.rows),
+    }));
+    const snapshotHistory = await pool.query<{
+      rows: MarketPoolSnapshot["rows"];
+      stream_key: string;
+      version: string;
+    }>(
+      `SELECT stream_key, version::text, rows
+         FROM market_snapshots`,
+    );
+    const legacySnapshotHashes = new Map(
+      snapshotHistory.rows.map((snapshot) => [
+        `${snapshot.stream_key}:${snapshot.version}`,
+        legacyRowsHash(snapshot.rows),
+      ]),
+    );
     const outbox = await pool.query<{ envelope: MarketStreamEnvelope }>(
       `SELECT envelope
          FROM market_stream_outbox
@@ -925,8 +959,26 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
         ORDER BY epoch, sequence`,
     );
     let transcript = "retry: 3000\n\n";
-    for (const { envelope } of outbox.rows) {
-      transcript += `id: ${envelope.cursor}\n`;
+    for (const { envelope: currentEnvelope } of outbox.rows) {
+      const currentData = currentEnvelope.data!;
+      const currentRows = "rows" in currentData ? currentData.rows : currentData.upserts;
+      for (const row of currentRows) {
+        expect(row).toMatchObject({
+          poolKey: expect.any(String),
+          token0Address: expect.toBeOneOf([expect.any(String), null]),
+          token1Address: expect.toBeOneOf([expect.any(String), null]),
+        });
+      }
+      const data =
+        "rows" in currentData
+          ? { ...currentData, rows: legacyRows(currentData.rows) }
+          : { ...currentData, upserts: legacyRows(currentData.upserts) };
+      const legacyHash = legacySnapshotHashes.get(
+        `${currentEnvelope.streamKey}:${currentData.version}`,
+      )!;
+      const cursor = currentEnvelope.cursor.replace(/[0-9a-f]{16}$/u, legacyHash.slice(0, 16));
+      const envelope = { ...currentEnvelope, cursor, data };
+      transcript += `id: ${cursor}\n`;
       transcript += `event: ${envelope.eventType}\n`;
       transcript += `data: ${JSON.stringify(envelope)}\n\n`;
     }
