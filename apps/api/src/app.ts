@@ -7,7 +7,9 @@ import {
   type EvmAddress,
   type LiquidityFlowFilter,
   type ManagedChainView,
+  marketStreamKey,
   marketWindowMinutes,
+  parseLiquidityProtocolFilter,
   type MarketWindowMinutes,
   type SessionView,
 } from "@lpbot/api-contract";
@@ -114,13 +116,20 @@ export interface AuthRateLimits {
 function parseMarketPoolsContext(request: FastifyRequest): {
   chainId: 56;
   minutes: MarketWindowMinutes;
+  protocols: ReturnType<typeof parseLiquidityProtocolFilter>;
 } | null {
   const parameters = request.params as { minutes?: unknown };
-  const query = request.query as { chainId?: unknown };
+  const query = request.query as { chainId?: unknown; dex?: unknown };
+  if (Object.keys(query).some((key) => key !== "chainId" && key !== "dex")) return null;
   if (typeof parameters.minutes !== "string" || typeof query.chainId !== "string") return null;
   if (!/^(?:1|5|15|30|60)$/u.test(parameters.minutes) || query.chainId !== "56") return null;
   const minutes = Number(parameters.minutes) as MarketWindowMinutes;
-  return marketWindowMinutes.includes(minutes) ? { chainId: 56, minutes } : null;
+  if (!marketWindowMinutes.includes(minutes)) return null;
+  try {
+    return { chainId: 56, minutes, protocols: parseLiquidityProtocolFilter(query.dex) };
+  } catch {
+    return null;
+  }
 }
 
 function parseLiquidityFlowFilter(request: FastifyRequest): LiquidityFlowFilter | null {
@@ -1075,7 +1084,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           signal: controller.signal,
         })) {
           if (controller.signal.aborted) break;
-          if (event.streamKey !== `top-fees:56:${context.minutes}`) continue;
+          if (event.streamKey !== marketStreamKey(context)) continue;
           const nextSequence = BigInt(event.sequence);
           if (epoch === event.epoch && nextSequence <= sequence) continue;
           if (epoch !== null && epoch !== event.epoch && event.eventType !== "pools.snapshot")

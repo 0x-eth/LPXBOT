@@ -1,17 +1,21 @@
+import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 
 import type {
   MarketPoolRow,
   MarketPoolSnapshot,
+  type LiquidityFlowProtocol,
   MarketStreamEnvelope,
   MarketWindowMinutes,
+  marketStreamKey,
 } from "@lpbot/api-contract";
 import type { Pool, PoolClient } from "pg";
 
 export interface MarketPoolsContext {
   chainId: 56;
   minutes: MarketWindowMinutes;
+  protocols: readonly LiquidityFlowProtocol[];
 }
 
 export interface MarketPoolsStreamContext extends MarketPoolsContext {
@@ -44,8 +48,37 @@ export interface PostgresMarketPoolsProviderOptions {
   pollMilliseconds?: number;
 }
 
-function streamKey(context: MarketPoolsContext): string {
+function storageStreamKey(context: Pick<MarketPoolsContext, "chainId" | "minutes">): string {
   return `top-fees:${context.chainId}:${context.minutes}`;
+}
+
+function filteredStream(context: MarketPoolsContext): boolean {
+  return context.protocols.length !== 4;
+}
+
+function wrapFilteredCursor(context: MarketPoolsContext, sourceCursor: string): string {
+  if (!filteredStream(context)) return sourceCursor;
+  const signature = digest(context.protocols.join(","));
+  return `market-filter:v1:${signature}:${Buffer.from(sourceCursor).toString("base64url")}`;
+}
+
+function unwrapFilteredCursor(context: MarketPoolsContext, cursor: string): string | null {
+  if (!filteredStream(context)) return cursor;
+  const [prefix, version, signature, encoded, ...extra] = cursor.split(":");
+  if (
+    prefix !== "market-filter" ||
+    version !== "v1" ||
+    signature !== digest(context.protocols.join(",")) ||
+    !encoded ||
+    extra.length > 0
+  ) {
+    return null;
+  }
+  try {
+    return Buffer.from(encoded, "base64url").toString("utf8") || null;
+  } catch {
+    return null;
+  }
 }
 
 function digest(value: unknown): string {
@@ -53,12 +86,13 @@ function digest(value: unknown): string {
 }
 
 function snapshotEnvelope(
+  context: MarketPoolsContext,
   snapshot: MarketPoolSnapshot,
   epoch: string,
   sequence: string,
   emittedAt: string,
 ): MarketStreamEnvelope {
-  const key = streamKey(snapshot);
+  const key = storageStreamKey(context);
   const cursor = `market:v1:${key}:${epoch}:${sequence}:${digest(snapshot.rows)}`;
   return {
     cursor,
@@ -99,11 +133,10 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
       `SELECT version::text, window_start, window_end, rows, created_at
          FROM market_snapshots
         WHERE stream_key = $1 AND canonical`,
-      [streamKey(context)],
+      [storageStreamKey(context)],
     );
     const row = result.rows[0];
-    if (row) return this.#snapshot(context, row);
-    return this.#emptySnapshot(context);
+    return this.#filterSnapshot(context, row ? this.#snapshot(context, row) : this.#emptySnapshot(context));
   }
 
   async *subscribe(context: MarketPoolsStreamContext): AsyncIterable<MarketStreamEnvelope> {
@@ -112,7 +145,7 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
     let sequence = "0";
     for (const event of initial) {
       if (context.signal.aborted) return;
-      yield event;
+      yield this.#filterEnvelope(context, event);
       epoch = event.epoch;
       sequence = event.sequence;
     }
@@ -122,7 +155,7 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
       if (events.length > 0) {
         for (const event of events) {
           if (context.signal.aborted) return;
-          yield event;
+          yield this.#filterEnvelope(context, event);
           epoch = event.epoch;
           sequence = event.sequence;
         }
@@ -130,7 +163,7 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
       }
       const heartbeat = await this.#appendHeartbeat(context);
       if (heartbeat && BigInt(heartbeat.epoch) >= BigInt(epoch)) {
-        yield heartbeat;
+        yield this.#filterEnvelope(context, heartbeat);
         epoch = heartbeat.epoch;
         sequence = heartbeat.sequence;
         continue;
@@ -145,13 +178,15 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
   }
 
   async #initialEvents(context: MarketPoolsStreamContext): Promise<MarketStreamEnvelope[]> {
-    const key = streamKey(context);
+    const key = storageStreamKey(context);
     if (context.lastEventId) {
+      const sourceCursor = unwrapFilteredCursor(context, context.lastEventId);
+      if (!sourceCursor) return [await this.#appendRecoverySnapshot(context)];
       const retained = await this.#pool.query<OutboxRow>(
         `SELECT o.epoch::text, o.sequence::text, o.envelope
            FROM market_stream_outbox AS o
           WHERE o.stream_key = $1 AND o.cursor = $2`,
-        [key, context.lastEventId],
+        [key, sourceCursor],
       );
       const position = retained.rows[0];
       if (position) return this.#eventsAfter(context, position.epoch, position.sequence);
@@ -182,7 +217,7 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
           AND (o.epoch > $2 OR (o.epoch = $2 AND o.sequence > $3))
         ORDER BY o.epoch, o.sequence
         LIMIT 500`,
-      [streamKey(context), epoch, sequence],
+      [storageStreamKey(context), epoch, sequence],
     );
     return result.rows.map(({ envelope }) => envelope);
   }
@@ -195,11 +230,17 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
       const latest = await client.query<{ epoch: string }>(
         `SELECT o.epoch::text FROM market_stream_outbox AS o
           WHERE o.stream_key = $1 ORDER BY o.epoch DESC, o.sequence DESC LIMIT 1`,
-        [streamKey(context)],
+        [storageStreamKey(context)],
       );
       const epoch = latest.rows[0] ? (BigInt(latest.rows[0].epoch) + 1n).toString() : "1";
       const snapshot = await this.#snapshotWithClient(client, context);
-      const envelope = snapshotEnvelope(snapshot, epoch, "1", this.#validNow().toISOString());
+      const envelope = snapshotEnvelope(
+        context,
+        snapshot,
+        epoch,
+        "1",
+        this.#validNow().toISOString(),
+      );
       await this.#insertOutbox(client, context, envelope);
       await client.query("COMMIT");
       return envelope;
@@ -224,7 +265,7 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
         `SELECT o.epoch::text, o.sequence::text, o.created_at
            FROM market_stream_outbox AS o
           WHERE o.stream_key = $1 ORDER BY o.epoch DESC, o.sequence DESC LIMIT 1`,
-        [streamKey(context)],
+        [storageStreamKey(context)],
       );
       const row = latest.rows[0];
       const now = this.#validNow();
@@ -233,7 +274,7 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
         return null;
       }
       const sequence = (BigInt(row.sequence) + 1n).toString();
-      const key = streamKey(context);
+      const key = storageStreamKey(context);
       const envelope: MarketStreamEnvelope = {
         cursor: `market:v1:${key}:${row.epoch}:${sequence}:heartbeat`,
         data: null,
@@ -263,7 +304,7 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
     const result = await client.query<SnapshotRow>(
       `SELECT version::text, window_start, window_end, rows, created_at
          FROM market_snapshots WHERE stream_key = $1 AND canonical`,
-      [streamKey(context)],
+      [storageStreamKey(context)],
     );
     const row = result.rows[0];
     return row ? this.#snapshot(context, row) : this.#emptySnapshot(context);
@@ -294,6 +335,40 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
     };
   }
 
+  #filterSnapshot(
+    context: MarketPoolsContext,
+    snapshot: MarketPoolSnapshot,
+  ): MarketPoolSnapshot {
+    const protocols = new Set(context.protocols);
+    return {
+      ...snapshot,
+      rows: snapshot.rows.filter(({ protocol }) => protocols.has(protocol)),
+    };
+  }
+
+  #filterEnvelope(
+    context: MarketPoolsContext,
+    envelope: MarketStreamEnvelope,
+  ): MarketStreamEnvelope {
+    if (!filteredStream(context)) return envelope;
+    let data = envelope.data;
+    if (data && "rows" in data) {
+      data = this.#filterSnapshot(context, data);
+    } else if (data && "upserts" in data) {
+      const protocols = new Set(context.protocols);
+      data = {
+        ...data,
+        upserts: data.upserts.filter(({ protocol }) => protocols.has(protocol)),
+      };
+    }
+    return {
+      ...envelope,
+      cursor: wrapFilteredCursor(context, envelope.cursor),
+      data,
+      streamKey: marketStreamKey(context),
+    };
+  }
+
   #validNow(): Date {
     const now = this.#now();
     if (!Number.isFinite(now.getTime())) throw new RangeError("Market provider clock is invalid");
@@ -318,7 +393,7 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
          event_type, mode, envelope, created_at
        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10)`,
       [
-        streamKey(context),
+        storageStreamKey(context),
         context.chainId,
         context.minutes,
         envelope.epoch,
