@@ -23,6 +23,17 @@ export type {
 } from "@lpbot/chain-adapters";
 export { compareRawLogDeliveries, IndexerRunner } from "./runner.js";
 export type { IndexerRunnerOptions } from "./runner.js";
+export {
+  PostgresCandleTickReadModelProjector,
+  addCandleTickReadModelImpact,
+  createCandleTickReadModelImpact,
+  mergeCandleTickReadModelImpact,
+} from "./candle-tick-read-model.js";
+export type {
+  CandleTickReadModelImpact,
+  CandleTickReadModelImpactEvent,
+  RebuildCandleTickReadModelsInput,
+} from "./candle-tick-read-model.js";
 export { PostgresCanonicalEventStore } from "./postgres-canonical-event-store.js";
 export {
   compareLiquidityFlowEvents,

@@ -21,6 +21,12 @@ import {
 } from "@lpbot/market-metrics";
 import type { Pool, PoolClient } from "pg";
 
+import {
+  PostgresCandleTickReadModelProjector,
+  addCandleTickReadModelImpact,
+  createCandleTickReadModelImpact,
+  type CandleTickReadModelImpact,
+} from "./candle-tick-read-model.js";
 import { projectLiquidityFlowEvent } from "./liquidity-flow.js";
 import type {
   CanonicalCommit,
@@ -76,7 +82,9 @@ interface OutboxPosition {
 }
 
 interface AffectedPoolRow {
+  block_timestamp: Date;
   chain_id: string;
+  kind: NormalizedPoolEvent["kind"];
   pool_address: string | null;
   pool_id: string | null;
 }
@@ -158,6 +166,7 @@ function cursorFromRow(row: {
 
 export class PostgresCanonicalEventStore implements CanonicalEventStore {
   readonly #pool: Pool;
+  readonly #readModels = new PostgresCandleTickReadModelProjector();
 
   constructor(pool: Pool) {
     this.#pool = pool;
@@ -195,6 +204,7 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
       let revertedCount = 0;
       let pending = false;
       const pendingPoolKeys = new Set<string>();
+      let pendingReadModels = createCandleTickReadModelImpact();
       let lastAccepted: NormalizedPoolEvent | null = null;
 
       const flushAccepted = async () => {
@@ -206,8 +216,14 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
           pendingPoolKeys,
           commit.evaluationTime,
         );
+        await this.#readModels.rebuild(client, {
+          evaluationTime: commit.evaluationTime,
+          impact: pendingReadModels,
+          sourceCursor: lastAccepted.cursor.value,
+        });
         await this.#recomputeAndPersist(client, commit, new Set());
         pendingPoolKeys.clear();
+        pendingReadModels = createCandleTickReadModelImpact();
         pending = false;
       };
 
@@ -230,6 +246,12 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
               reverted.poolKeys,
               commit.evaluationTime,
             );
+            const rewoundCursor = await this.#getCursor(client, commit.chainId);
+            await this.#readModels.rebuild(client, {
+              evaluationTime: commit.evaluationTime,
+              impact: reverted.readModels,
+              sourceCursor: rewoundCursor?.value ?? null,
+            });
             await this.#recomputeAndPersist(client, commit, reverted.poolKeys);
           }
           continue;
@@ -285,6 +307,12 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
               reverted.poolKeys,
               commit.evaluationTime,
             );
+            const rewoundCursor = await this.#getCursor(client, commit.chainId);
+            await this.#readModels.rebuild(client, {
+              evaluationTime: commit.evaluationTime,
+              impact: reverted.readModels,
+              sourceCursor: rewoundCursor?.value ?? null,
+            });
             await this.#recomputeAndPersist(client, commit, reverted.poolKeys);
           }
         }
@@ -308,6 +336,13 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
             poolId: event.pool.poolId,
           }),
         );
+        addCandleTickReadModelImpact(pendingReadModels, {
+          blockTimestamp: event.blockTimestamp,
+          chainId: event.chainId,
+          kind: event.kind,
+          poolAddress: event.pool.poolAddress,
+          poolId: event.pool.poolId,
+        });
         pending = true;
       }
 
@@ -653,20 +688,30 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     commit: CanonicalCommit,
     blockNumber: string,
     blockHash: string | null,
-  ): Promise<{ count: number; poolKeys: Set<string> }> {
+  ): Promise<{
+    count: number;
+    poolKeys: Set<string>;
+    readModels: CandleTickReadModelImpact;
+  }> {
     const parameters: unknown[] = [commit.chainId, blockNumber];
     const hashClause = blockHash ? " AND block_hash = $3" : "";
     const timeParameter = blockHash ? "$4" : "$3";
     if (blockHash) parameters.push(blockHash);
     const affected = await client.query<AffectedPoolRow>(
-      `SELECT chain_id::text, pool_address, pool_id
+      `SELECT chain_id::text, pool_address, pool_id, block_timestamp, kind
          FROM normalized_pool_events
         WHERE chain_id = $1 AND block_number >= $2 AND canonical${hashClause}
         ORDER BY block_number, transaction_index, log_index
         FOR UPDATE`,
       parameters,
     );
-    if (affected.rowCount === 0) return { count: 0, poolKeys: new Set() };
+    if (affected.rowCount === 0) {
+      return {
+        count: 0,
+        poolKeys: new Set(),
+        readModels: createCandleTickReadModelImpact(),
+      };
+    }
 
     await this.#appendFlowTombstones(client, commit, blockNumber, blockHash);
     await client.query(
@@ -702,11 +747,22 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
         : [commit.chainId, blockNumber, commit.evaluationTime],
     );
     await this.#rewindCursor(client, commit.chainId, blockNumber, commit.evaluationTime);
+    const readModels = createCandleTickReadModelImpact();
+    for (const row of affected.rows) {
+      addCandleTickReadModelImpact(readModels, {
+        blockTimestamp: row.block_timestamp,
+        chainId: Number(row.chain_id),
+        kind: row.kind,
+        poolAddress: row.pool_address,
+        poolId: row.pool_id,
+      });
+    }
     return {
       count: affected.rowCount ?? 0,
       poolKeys: new Set(
         affected.rows.map(identityFromAffected).filter((key): key is string => !!key),
       ),
+      readModels,
     };
   }
 
