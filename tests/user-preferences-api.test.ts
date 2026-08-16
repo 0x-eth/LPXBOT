@@ -3,6 +3,7 @@ import type {
   VersionedUserPreferences,
 } from "../packages/api-contract/src/index.js";
 import { buildApiApp } from "../apps/api/src/index.js";
+import { normalizeStoredUserPreferences } from "../apps/api/src/user-preferences.js";
 import type {
   UpdateUserPreferencesInput,
   UserPreferencesStore,
@@ -26,6 +27,16 @@ const defaultPreferences: UserPreferences = {
     { key: "activity", visible: true },
     { key: "wallets", visible: true },
     { key: "chat", visible: true },
+  ],
+  poolColumns: [
+    { key: "pool", visible: true },
+    { key: "protocol", visible: true },
+    { key: "fees", visible: true },
+    { key: "volume", visible: true },
+    { key: "tvl", visible: true },
+    { key: "txs", visible: true },
+    { key: "fdv", visible: true },
+    { key: "actions", visible: true },
   ],
   poolsPanelCollapsed: false,
   showHotPools: false,
@@ -51,7 +62,7 @@ class MemoryPreferencesStore implements UserPreferencesStore {
         current: current ?? {
           preferences: structuredClone(defaultPreferences),
           revision: 0,
-          schemaVersion: 2,
+          schemaVersion: 3,
           updatedAt: null,
         },
         status: "conflict",
@@ -60,7 +71,7 @@ class MemoryPreferencesStore implements UserPreferencesStore {
     const next: VersionedUserPreferences = {
       preferences: structuredClone(input.preferences),
       revision: revision + 1,
-      schemaVersion: 2,
+      schemaVersion: 3,
       updatedAt: input.updatedAt.toISOString(),
     };
     this.records.set(input.userId, next);
@@ -111,7 +122,7 @@ describe("P01-06 user preferences API", () => {
     expect(authenticated.json().data).toEqual({
       preferences: defaultPreferences,
       revision: 0,
-      schemaVersion: 2,
+      schemaVersion: 3,
       updatedAt: null,
     });
   });
@@ -142,7 +153,7 @@ describe("P01-06 user preferences API", () => {
     expect(first.json().data).toMatchObject({
       preferences: { ...defaultPreferences, ...changes },
       revision: 1,
-      schemaVersion: 2,
+      schemaVersion: 3,
       updatedAt: now.toISOString(),
     });
 
@@ -195,6 +206,30 @@ describe("P01-06 user preferences API", () => {
         ],
       },
       { expectedRevision: 99, theme: "light" },
+      {
+        poolColumns: [
+          { key: "pool", visible: true },
+          { key: "protocol", visible: true },
+          { key: "fees", visible: true },
+          { key: "volume", visible: true },
+          { key: "tvl", visible: true },
+          { key: "txs", visible: true },
+          { key: "fdv", visible: true },
+          { key: "pool", visible: true },
+        ],
+      },
+      {
+        poolColumns: defaultPreferences.poolColumns.map((column) => ({
+          ...column,
+          visible: column.key === "pool" ? false : column.visible,
+        })),
+      },
+      {
+        poolColumns: defaultPreferences.poolColumns.map((column) => ({
+          ...column,
+          visible: column.key === "actions" ? false : column.visible,
+        })),
+      },
     ];
 
     for (const changes of invalidChanges) {
@@ -207,6 +242,54 @@ describe("P01-06 user preferences API", () => {
       expect(response.statusCode, JSON.stringify(changes)).toBe(400);
       expect(response.json().error.code).toBe("PREFERENCES_INVALID");
     }
+  });
+
+  it("migrates malformed columns while preserving every existing preference", () => {
+    const migrated = normalizeStoredUserPreferences({
+      colorTheme: "teal",
+      customColor: null,
+      navConfig: [
+        { key: "wallets", visible: false },
+        { key: "tasks", visible: true },
+        { key: "pools", visible: true },
+        { key: "strategies", visible: true },
+        { key: "activity", visible: true },
+        { key: "chat", visible: true },
+      ],
+      poolColumns: [
+        { key: "fdv", visible: false },
+        { key: "future-column", visible: true },
+        { key: "fdv", visible: true },
+        { key: "pool", visible: false },
+        { key: "actions", visible: false },
+      ],
+      poolsPanelCollapsed: true,
+      showHotPools: true,
+      showScanTab: false,
+      taskViewMode: "list",
+      theme: "dark",
+    });
+
+    expect(migrated).toMatchObject({
+      colorTheme: "teal",
+      customColor: null,
+      poolsPanelCollapsed: true,
+      showHotPools: true,
+      showScanTab: false,
+      taskViewMode: "list",
+      theme: "dark",
+    });
+    expect(migrated.navConfig[0]).toEqual({ key: "wallets", visible: false });
+    expect(migrated.poolColumns).toEqual([
+      { key: "pool", visible: true },
+      { key: "fdv", visible: false },
+      { key: "protocol", visible: true },
+      { key: "fees", visible: true },
+      { key: "volume", visible: true },
+      { key: "tvl", visible: true },
+      { key: "txs", visible: true },
+      { key: "actions", visible: true },
+    ]);
   });
 
   it("derives ownership only from the session and isolates two users", async () => {
