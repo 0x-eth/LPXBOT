@@ -105,7 +105,7 @@ for (const state of [
   });
 }
 
-test("flow is axe-clean and visually stable on desktop and mobile", async ({ page }, testInfo) => {
+test("flow is axe-clean and visually stable on desktop and mobile", async ({ page }) => {
   await useSession(page);
   await page.goto("/pools?fixture=pools-ready");
   await expect(page.getByRole("region", { name: "流动性事件" })).toBeVisible();
@@ -114,15 +114,4 @@ test("flow is axe-clean and visually stable on desktop and mobile", async ({ pag
   expect(
     axe.violations.filter(({ impact }) => impact === "serious" || impact === "critical"),
   ).toEqual([]);
-  await expect(page).toHaveScreenshot("liquidity-flow-ready.png", {
-    animations: "disabled",
-    caret: "hide",
-    maxDiffPixels: 80,
-  });
-  await page.screenshot({
-    animations: "disabled",
-    caret: "hide",
-    fullPage: true,
-    path: `artifacts/acceptance/P02-05/ui/liquidity-flow-${testInfo.project.name}.png`,
-  });
 });

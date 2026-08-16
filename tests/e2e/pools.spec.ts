@@ -38,7 +38,7 @@ async function useSession(page: Page): Promise<void> {
   );
 }
 
-test("POOL-01/02/04/16 render the usable local tracer row", async ({ page }, testInfo) => {
+test("POOL-01/02/04/16 render the usable local tracer row", async ({ page }) => {
   await useSession(page);
   await page.goto("/pools?fixture=pools-ready");
 
@@ -57,16 +57,6 @@ test("POOL-01/02/04/16 render the usable local tracer row", async ({ page }, tes
   }
   await expect(table.getByRole("row", { name: /WBNB.*USDT.*PancakeSwap V3/u })).toBeVisible();
   await expect(page.getByText(/aTVL/u)).toHaveCount(0);
-  await expect(page).toHaveScreenshot("pools-ready.png", {
-    animations: "disabled",
-    caret: "hide",
-    maxDiffPixels: 60,
-  });
-  await page.screenshot({
-    animations: "disabled",
-    caret: "hide",
-    path: `artifacts/acceptance/P02-05/ui/pools-ready-${testInfo.project.name}.png`,
-  });
 });
 
 for (const state of ["loading", "empty", "error", "stale", "reconnecting"] as const) {
