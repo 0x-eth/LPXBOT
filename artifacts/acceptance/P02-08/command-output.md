@@ -23,6 +23,14 @@ PostgreSQL integration: 11 files, 45 tests passed
 Playwright full regression: 138 passed, 4 project-conditional skipped, 0 failed
 Gitleaks 8.30.1 full-history: 600 commits, 20.43 MB, no leaks
 Dependency audit: no known vulnerabilities
+GitHub Actions CI run 31956300178, attempt 2, HEAD 3dc56bc46ab318f9336c47f7a32f09a4bbc43d9e: success
+Quality job 95188023312: success with non-empty steps
+Governance job 95188007395: success with non-empty steps
+Contracts job 95188007096: success with non-empty steps
+Infrastructure job 95188006469: success with non-empty steps
+Security job 95188007180: success with non-empty steps
+Browser job 95188006530: success with non-empty steps
 ```
 
-The GitHub Actions run is recorded after all six jobs execute successfully with non-empty step lists.
+All six GitHub Actions jobs executed real steps and completed successfully. The run is available at
+`https://github.com/0x-eth/LPXBOT/actions/runs/31956300178`.
