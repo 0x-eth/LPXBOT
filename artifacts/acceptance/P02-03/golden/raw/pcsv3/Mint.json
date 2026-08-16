@@ -403,5 +403,16 @@
       },
       "schemaVersion": 1
     }
-  ]
+  ],
+  "amountSignEvidence": {
+    "custodyAddress": "0xab058332a7279f1e64162be08f59ac0cd9601759",
+    "receiptTokenDelta0": "2130295605232799890000",
+    "receiptTokenDelta1": "0",
+    "token0": "0x55d398326f99059ff775485246999027b3197955",
+    "token1": "0xbeea1d618e533a387d941f58a7d4c9b7bd377777",
+    "convention": "mint amounts are positive pool inflows",
+    "normalizedAmount0": "2130295605232799890000",
+    "normalizedAmount1": "0",
+    "status": "verified-exact"
+  }
 }

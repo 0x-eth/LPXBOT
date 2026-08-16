@@ -340,5 +340,16 @@
       },
       "schemaVersion": 1
     }
-  ]
+  ],
+  "amountSignEvidence": {
+    "custodyAddress": "0x8fa4f1148a6e8af175bebe052b76cd39c649ee16",
+    "receiptTokenDelta0": "-55098714236854011254",
+    "receiptTokenDelta1": "-6673764687",
+    "token0": "0x55d398326f99059ff775485246999027b3197955",
+    "token1": "0xd20fb09a49a8e75fef536a2dbc68222900287bac",
+    "convention": "collected amounts are normalized as negative pool outflows",
+    "normalizedAmount0": "-55098714236854011254",
+    "normalizedAmount1": "-6673764687",
+    "status": "verified-exact"
+  }
 }

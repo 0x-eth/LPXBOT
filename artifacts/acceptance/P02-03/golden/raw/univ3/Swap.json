@@ -403,5 +403,16 @@
       },
       "schemaVersion": 1
     }
-  ]
+  ],
+  "amountSignEvidence": {
+    "custodyAddress": "0x8fa4f1148a6e8af175bebe052b76cd39c649ee16",
+    "receiptTokenDelta0": "13836466486644364635",
+    "receiptTokenDelta1": "-3770402143",
+    "token0": "0x55d398326f99059ff775485246999027b3197955",
+    "token1": "0xd20fb09a49a8e75fef536a2dbc68222900287bac",
+    "convention": "event amount is the pool token flow",
+    "normalizedAmount0": "13836466486644364635",
+    "normalizedAmount1": "-3770402143",
+    "status": "verified-exact"
+  }
 }

@@ -84,6 +84,7 @@ describe("P02-03 production BSC event decoder", () => {
       quarantine: { write: (entry) => quarantined.push(entry) },
     });
     const { normalized } = await decodeGolden(decoder, protocol, eventName);
+    const raw = readGolden(protocol, eventName);
     const expected = JSON.parse(
       readFileSync(
         path.join(acceptanceRoot, "golden/normalized", protocol, `${eventName}.json`),
@@ -101,6 +102,9 @@ describe("P02-03 production BSC event decoder", () => {
       expect(normalized.pool.poolId).toMatch(/^0x[0-9a-f]{64}$/u);
     }
     expect(normalized.payload.positionId).toBeNull();
+    expect(raw.amountSignEvidence).toMatchObject({
+      status: expect.stringMatching(/^(?:not-applicable|verified-(?:exact|direction))$/u),
+    });
   });
 
   it("preserves swap signs and maps add/remove liquidity without guessing a position ID", async () => {

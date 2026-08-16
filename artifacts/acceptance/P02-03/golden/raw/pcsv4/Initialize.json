@@ -224,5 +224,9 @@
     "transactionIndex": "0x35",
     "effectiveGasPrice": "0x36de78f"
   },
-  "schemaVersion": 1
+  "schemaVersion": 1,
+  "amountSignEvidence": {
+    "method": "event-has-no-amount-or-liquidity-delta",
+    "status": "not-applicable"
+  }
 }

@@ -294,5 +294,15 @@
       },
       "schemaVersion": 1
     }
-  ]
+  ],
+  "amountSignEvidence": {
+    "custodyAddress": "0x28e2ea090877bf75740558f6bfb36a5ffee9e9df",
+    "receiptTokenDelta0": "102161030878383324531",
+    "receiptTokenDelta1": "10000000000000000000",
+    "token0": "0x28f7ce3301a33089b72912b43d36b78a169add36",
+    "token1": "0x55d398326f99059ff775485246999027b3197955",
+    "convention": "positive liquidityDelta is add; negative liquidityDelta is remove",
+    "normalizedLiquidityDelta": "31962639264989260981",
+    "status": "verified-direction"
+  }
 }
