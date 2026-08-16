@@ -104,10 +104,7 @@ import {
   type PoolSearchMode,
   type PoolSearchState,
 } from "./pool-search-state";
-import {
-  PoolMarketDetail,
-  type MarketDetailFixtureState,
-} from "./pool-market-detail";
+import { PoolMarketDetail, type MarketDetailFixtureState } from "./pool-market-detail";
 import {
   initialPoolStreamState,
   reducePoolStream,

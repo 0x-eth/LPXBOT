@@ -16,14 +16,7 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 
 import {
   MarketChartClient,
@@ -32,12 +25,7 @@ import {
 } from "./market-chart-client";
 
 export type MarketDetailFixtureState =
-  | "loading"
-  | "empty"
-  | "error"
-  | "stale"
-  | "unsupported"
-  | "invalid";
+  "loading" | "empty" | "error" | "stale" | "unsupported" | "invalid";
 
 type MarketDetailStatus = MarketDetailFixtureState | "ready";
 type MarketDetailTab = "candles" | "ticks";
@@ -146,10 +134,9 @@ function CandleChart({ response }: { response: MarketCandlesResponse }) {
     );
     volume.setData(
       response.candles.map<HistogramData>((candle) => ({
-        color:
-          new Decimal(candle.close).greaterThanOrEqualTo(candle.open)
-            ? "rgba(8, 127, 91, 0.38)"
-            : "rgba(181, 65, 59, 0.38)",
+        color: new Decimal(candle.close).greaterThanOrEqualTo(candle.open)
+          ? "rgba(8, 127, 91, 0.38)"
+          : "rgba(181, 65, 59, 0.38)",
         time: candle.ts as UTCTimestamp,
         value: finiteDecimalNumber(candle.volume)!,
       })),
@@ -158,14 +145,7 @@ function CandleChart({ response }: { response: MarketCandlesResponse }) {
     return () => chart.remove();
   }, [response]);
 
-  return (
-    <div
-      aria-label="K 线图"
-      className="candle-chart-canvas"
-      ref={container}
-      role="group"
-    />
-  );
+  return <div aria-label="K 线图" className="candle-chart-canvas" ref={container} role="group" />;
 }
 
 function TickHistogram({ response }: { response: MarketTickLiquidityResponse }) {
@@ -217,7 +197,10 @@ function TickHistogram({ response }: { response: MarketTickLiquidityResponse }) 
           </thead>
           <tbody>
             {response.ticks.map((tick) => (
-              <tr data-current={tick.tickIdx === response.currentTick ? "true" : undefined} key={tick.tickIdx}>
+              <tr
+                data-current={tick.tickIdx === response.currentTick ? "true" : undefined}
+                key={tick.tickIdx}
+              >
                 <th scope="row">{tick.tickIdx}</th>
                 <td>{tick.liquidityNet}</td>
                 <td>{tick.price0 ?? "--"}</td>
@@ -265,9 +248,7 @@ export function PoolMarketDetail({
   const lastRefreshSignal = useRef(refreshSignal);
   const identity = row.poolAddress ?? row.poolId;
   const parsedTickSpacing =
-    row.tickSpacing && /^[1-9][0-9]*$/u.test(row.tickSpacing)
-      ? Number(row.tickSpacing)
-      : null;
+    row.tickSpacing && /^[1-9][0-9]*$/u.test(row.tickSpacing) ? Number(row.tickSpacing) : null;
   const tickSpacing =
     parsedTickSpacing !== null && Number.isSafeInteger(parsedTickSpacing)
       ? parsedTickSpacing
@@ -342,10 +323,7 @@ export function PoolMarketDetail({
     const request = requestManager.start(selectionKey);
     const result =
       tab === "candles"
-        ? client.getCandles(
-            { bar, limit: 200, poolKey: row.poolKey, token },
-            request.signal,
-          )
+        ? client.getCandles({ bar, limit: 200, poolKey: row.poolKey, token }, request.signal)
         : client.getTickLiquidity(
             {
               decimals0: null,
@@ -367,11 +345,7 @@ export function PoolMarketDetail({
         }
         if (tab === "candles") {
           const candles = response as MarketCandlesResponse;
-          if (
-            candles.bar !== bar ||
-            candles.token !== token ||
-            !candlesAreRenderable(candles)
-          ) {
+          if (candles.bar !== bar || candles.token !== token || !candlesAreRenderable(candles)) {
             setLoaded(null);
             setFailure({ selectionKey, status: "invalid" });
             return;
@@ -546,11 +520,7 @@ export function PoolMarketDetail({
         </div>
       </div>
 
-      <div
-        className="pool-market-panel"
-        id={panelId}
-        role="tabpanel"
-      >
+      <div className="pool-market-panel" id={panelId} role="tabpanel">
         {displayStatus !== "ready" && displayStatus !== "stale" ? (
           <div
             className="pool-market-operational-state"
@@ -570,8 +540,7 @@ export function PoolMarketDetail({
             {message}
           </div>
         ) : null}
-        {(displayStatus === "ready" || displayStatus === "stale") &&
-        current?.kind === "candles" ? (
+        {(displayStatus === "ready" || displayStatus === "stale") && current?.kind === "candles" ? (
           <CandleChart response={current.response} />
         ) : null}
         {(displayStatus === "ready" || displayStatus === "stale") && current?.kind === "ticks" ? (
@@ -596,7 +565,9 @@ export function PoolMarketDetail({
           <div>
             <dt>As of</dt>
             <dd>
-              <time dateTime={response.asOf}>{new Date(response.asOf).toLocaleString("zh-CN", { hour12: false })}</time>
+              <time dateTime={response.asOf}>
+                {new Date(response.asOf).toLocaleString("zh-CN", { hour12: false })}
+              </time>
             </dd>
           </div>
           {current?.kind === "candles" ? (
