@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-03",
+  "policy": "ABI evidence is accepted only from pinned official source files. Deployment evidence requires an official deployment file or verified Explorer contract capture. Historical research notes are not evidence inputs.",
+  "sources": [
+    {
+      "id": "SRC-UNIV3-ABI",
+      "kind": "official-abi-source",
+      "sourceUrl": "https://github.com/Uniswap/v3-core/tree/v1.0.0/contracts/interfaces",
+      "commit": "e3589b192d0be27e100cd0daaf6c97204fdb1899",
+      "tag": "v1.0.0",
+      "license": "GPL-2.0-or-later (interface SPDX identifiers)",
+      "chainId": null,
+      "address": null,
+      "validFromBlock": null,
+      "runtimeCodeHash": null,
+      "capturedAt": "2026-08-16T01:11:00.000Z",
+      "sha256": "e2c8915f8355d9660e4fabbdb48b13a01c6c7092e968179bb91aa9b76c92fc71",
+      "resources": [
+        {
+          "path": "contracts/interfaces/IUniswapV3Factory.sol",
+          "sha256": "17c72e89a7d0eecca7929ca08d97f46e80930ef7024e4ccbc7b294c588477107"
+        },
+        {
+          "path": "contracts/interfaces/pool/IUniswapV3PoolEvents.sol",
+          "sha256": "2c2b798ca4288dfdf746bca8516b4e725b79ca6636af3d38a5a64801e50020a7"
+        }
+      ]
+    },
+    {
+      "id": "SRC-PCSV3-ABI",
+      "kind": "official-abi-source",
+      "sourceUrl": "https://github.com/pancakeswap/pancake-v3-contracts/tree/986847948755cba528324d41be19480731c36c2a/projects/v3-core/contracts/interfaces",
+      "commit": "986847948755cba528324d41be19480731c36c2a",
+      "tag": null,
+      "license": "GPL-2.0-or-later (interface SPDX identifiers)",
+      "chainId": null,
+      "address": null,
+      "validFromBlock": null,
+      "runtimeCodeHash": null,
+      "capturedAt": "2026-08-16T01:07:00.000Z",
+      "sha256": "122d540f5560010224d0777c88e5df4b5dd9654dc51cc7b2e8e26c904690ec33",
+      "resources": [
+        {
+          "path": "projects/v3-core/contracts/interfaces/IPancakeV3Factory.sol",
+          "sha256": "390685b7ff3fe9d4a0895fc9a420402dd0ce01adb6dc7137c022d68c65a66bdd"
+        },
+        {
+          "path": "projects/v3-core/contracts/interfaces/pool/IPancakeV3PoolEvents.sol",
+          "sha256": "c9979f9c2678921e77f3cc4484c24438267c2aa0c289c4199a59455899d56930"
+        }
+      ]
+    },
+    {
+      "id": "SRC-UNIV4-ABI",
+      "kind": "official-abi-source",
+      "sourceUrl": "https://github.com/Uniswap/v4-core/blob/v4.0.0/src/interfaces/IPoolManager.sol",
+      "commit": "e50237c43811bd9b526eff40f26772152a42daba",
+      "tag": "v4.0.0",
+      "license": "MIT (interface SPDX identifier)",
+      "chainId": null,
+      "address": null,
+      "validFromBlock": null,
+      "runtimeCodeHash": null,
+      "capturedAt": "2026-08-16T01:11:00.000Z",
+      "sha256": "173a3f93aeb39373271ebe2bfb961d824922378a39b7a5e983acbb1c122d296e",
+      "resources": []
+    },
+    {
+      "id": "SRC-PCSV4-ABI",
+      "kind": "official-abi-source",
+      "sourceUrl": "https://github.com/pancakeswap/infinity-core/blob/7c04695faeab8b06570cf6c277d9a9717136fb26/src/pool-cl/interfaces/ICLPoolManager.sol",
+      "commit": "7c04695faeab8b06570cf6c277d9a9717136fb26",
+      "tag": null,
+      "license": "MIT (interface SPDX identifier)",
+      "chainId": null,
+      "address": null,
+      "validFromBlock": null,
+      "runtimeCodeHash": null,
+      "capturedAt": "2026-08-16T01:07:00.000Z",
+      "sha256": "d2a488219dd1f4c6ce12bcb7234f692cb658384a61859a3b52ebb3a125edb2c5",
+      "resources": []
+    },
+    {
+      "id": "SRC-UNIV3-BSC-DEPLOYMENT",
+      "kind": "official-deployment-document",
+      "sourceUrl": "https://github.com/Uniswap/docs/blob/a0da460b1becfe920330adfab5d11f2f3f63863a/content/protocols/v3/deployments/v3-bnb-deployments.mdx",
+      "commit": "a0da460b1becfe920330adfab5d11f2f3f63863a",
+      "tag": null,
+      "license": "MIT",
+      "chainId": 56,
+      "address": "0xdb1d10011ad0ff90774d0c6bb92e5c5c8b4461f7",
+      "validFromBlock": "26324014",
+      "runtimeCodeHash": "0x34b1009d0f004e58da791225992645e2df7697ac71ac89dc5e80469c4ef7e322",
+      "capturedAt": "2026-08-16T01:10:00.000Z",
+      "sha256": "6cdf13d56e7304dbbcf3da35a2e170887a762a0e970e85d201adde5c1a950cd8"
+    },
+    {
+      "id": "SRC-PCSV3-BSC-DEPLOYMENT",
+      "kind": "official-deployment-artifact",
+      "sourceUrl": "https://github.com/pancakeswap/pancake-v3-contracts/blob/986847948755cba528324d41be19480731c36c2a/deployments/bscMainnet.json",
+      "commit": "986847948755cba528324d41be19480731c36c2a",
+      "tag": null,
+      "license": "GPL-2.0-or-later",
+      "chainId": 56,
+      "address": "0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865",
+      "validFromBlock": "26956207",
+      "runtimeCodeHash": "0x8191d3ab1d55d3da9822199f28865415c99566b6f1aee4a4b16713f57930678c",
+      "capturedAt": "2026-08-16T01:10:00.000Z",
+      "sha256": "cd72575c75643cc55e500963b2a94451e64166a84ce15a57412ce9737d48ad05"
+    },
+    {
+      "id": "SRC-UNIV4-BSC-DEPLOYMENT",
+      "kind": "official-deployment-document",
+      "sourceUrl": "https://github.com/Uniswap/docs/blob/a0da460b1becfe920330adfab5d11f2f3f63863a/content/protocols/v4/deployments.mdx",
+      "commit": "a0da460b1becfe920330adfab5d11f2f3f63863a",
+      "tag": null,
+      "license": "MIT",
+      "chainId": 56,
+      "address": "0x28e2ea090877bf75740558f6bfb36a5ffee9e9df",
+      "validFromBlock": "45970610",
+      "runtimeCodeHash": "0x48752321ee7abf0d2a17c30679df9a1ddd14dc75d28b26e2509b76396145a005",
+      "capturedAt": "2026-08-16T01:10:00.000Z",
+      "sha256": "83d2e6aa87d0ddfec9d30816a5ccd18c3680ab964cbe97fa2cc82cd7172895e9"
+    },
+    {
+      "id": "SRC-PCSV4-BSC-DEPLOYMENT",
+      "kind": "official-deployment-artifact",
+      "sourceUrl": "https://github.com/pancakeswap/infinity-periphery/blob/f39aef4a1be63e5404e686bf621436bbfe58f6aa/script/config/bsc-mainnet.json",
+      "commit": "f39aef4a1be63e5404e686bf621436bbfe58f6aa",
+      "tag": null,
+      "license": "GPL-2.0-only (repository license)",
+      "chainId": 56,
+      "address": "0xa0ffb9c1ce1fe56963b0321b32e7a0302114058b",
+      "validFromBlock": "47214308",
+      "runtimeCodeHash": "0x3caf72836cb6603c6af03bba1578ec70ece8c3e5b1d0ef73667b5fbd74b02a0f",
+      "capturedAt": "2026-08-16T01:10:00.000Z",
+      "sha256": "a6d483e4481fdf1b94c57cff02496b4dce896908fe1224a14d0c943436bf391e",
+      "secondaryEvidence": {
+        "sourceUrl": "https://developer.pancakeswap.finance/contracts/infinity/addresses",
+        "capturedAt": "2026-08-16T01:09:00.000Z",
+        "sha256": "58c35e2dadcfc1c55babedd499da32107fea8880b79130b66ca10eaca7d4997a"
+      }
+    },
+    {
+      "id": "CHAIN-UNIV3-FACTORY",
+      "kind": "verified-explorer-contract",
+      "sourceUrl": "https://bscscan.com/address/0xdb1d10011ad0ff90774d0c6bb92e5c5c8b4461f7#code",
+      "commit": null,
+      "tag": "verified-contract-capture-2026-08-16",
+      "license": "GPL-2.0-or-later (verified interface SPDX); public chain data",
+      "chainId": 56,
+      "address": "0xdb1d10011ad0ff90774d0c6bb92e5c5c8b4461f7",
+      "validFromBlock": "26324014",
+      "runtimeCodeHash": "0x34b1009d0f004e58da791225992645e2df7697ac71ac89dc5e80469c4ef7e322",
+      "creationTransactionHash": "0xbfe5cdcb2a4346934430a39eb4bb683f9d8d2145d9d96edfab6b06cf51f3abfb",
+      "capturedAt": "2026-08-16T01:10:00.000Z",
+      "sha256": "d81fb11905f84e8fe4e7b1eabbab36eedf396aed317a9965296488b3e3d74caf"
+    },
+    {
+      "id": "CHAIN-PCSV3-FACTORY",
+      "kind": "verified-explorer-contract",
+      "sourceUrl": "https://bscscan.com/address/0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865#code",
+      "commit": null,
+      "tag": "verified-contract-capture-2026-08-16",
+      "license": "GPL-2.0-or-later (verified interface SPDX); public chain data",
+      "chainId": 56,
+      "address": "0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865",
+      "validFromBlock": "26956207",
+      "runtimeCodeHash": "0x8191d3ab1d55d3da9822199f28865415c99566b6f1aee4a4b16713f57930678c",
+      "creationTransactionHash": "0x57b6445ade8e733f10303f1b9b89b275cda5a136ef14075f6fd0517e8f3b6c85",
+      "capturedAt": "2026-08-16T01:10:00.000Z",
+      "sha256": "0d0c121f44b4cf8757b1d92e24f51cbdb6323192e80c5ee0e26d611e62b3f721"
+    },
+    {
+      "id": "CHAIN-UNIV4-POOL-MANAGER",
+      "kind": "verified-explorer-contract",
+      "sourceUrl": "https://bscscan.com/address/0x28e2ea090877bf75740558f6bfb36a5ffee9e9df#code",
+      "commit": null,
+      "tag": "verified-contract-capture-2026-08-16",
+      "license": "MIT (verified interface SPDX); public chain data",
+      "chainId": 56,
+      "address": "0x28e2ea090877bf75740558f6bfb36a5ffee9e9df",
+      "validFromBlock": "45970610",
+      "runtimeCodeHash": "0x48752321ee7abf0d2a17c30679df9a1ddd14dc75d28b26e2509b76396145a005",
+      "creationTransactionHash": "0x64b395f1b0b3c734a477c802bc8cc3ce394f328c651290d0d166946048487bbe",
+      "capturedAt": "2026-08-16T01:10:00.000Z",
+      "sha256": "aefe525376001ef6fb46b1f792ff3ed0c11965ce897a62db143d029c94320f7e"
+    },
+    {
+      "id": "CHAIN-PCSV4-POOL-MANAGER",
+      "kind": "verified-explorer-contract",
+      "sourceUrl": "https://bscscan.com/address/0xa0ffb9c1ce1fe56963b0321b32e7a0302114058b#code",
+      "commit": null,
+      "tag": "verified-contract-capture-2026-08-16",
+      "license": "MIT (verified interface SPDX); public chain data",
+      "chainId": 56,
+      "address": "0xa0ffb9c1ce1fe56963b0321b32e7a0302114058b",
+      "validFromBlock": "47214308",
+      "runtimeCodeHash": "0x3caf72836cb6603c6af03bba1578ec70ece8c3e5b1d0ef73667b5fbd74b02a0f",
+      "creationTransactionHash": "0x7d05c0cc2a525da874ce100b5ed782f7c48703a263b6740c835bd3922e7ec2d2",
+      "capturedAt": "2026-08-16T01:10:00.000Z",
+      "sha256": "aa9c3400a3c99b1f4a80980c54c0c8e0d2f041c2e8a7a4a36b7f2bfed42441b6"
+    },
+    {
+      "id": "SRC-BSC-GOLDEN-RPC",
+      "kind": "public-chain-capture",
+      "sourceUrl": "eip155:56",
+      "commit": null,
+      "tag": "capture-2026-08-16T01:49:34.326Z",
+      "license": "public chain data; no repository license asserted",
+      "chainId": 56,
+      "address": null,
+      "validFromBlock": null,
+      "runtimeCodeHash": null,
+      "capturedAt": "2026-08-16T01:49:34.326Z",
+      "sha256": "72ae419cac312ff08506f38808861321e9a39233a45a11748dbd90074522eb66",
+      "rpcUrlRecorded": false,
+      "allowedMethods": [
+        "eth_chainId",
+        "eth_getLogs",
+        "eth_getBlockByNumber",
+        "eth_getTransactionReceipt",
+        "eth_getCode"
+      ]
+    }
+  ]
+}
