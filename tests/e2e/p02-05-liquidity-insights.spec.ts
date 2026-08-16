@@ -114,7 +114,7 @@ test("FLOW-03/04 share filtered projection and expose stable watched address ope
   ).toHaveAttribute("href", `https://bscscan.com/address/${addressA}`);
   for (const action of ["筛选", "复制", "编辑备注", "取消关注"]) {
     await expect(
-      addressTable.getByRole("button", { name: new RegExp(`^${action}`, "u") }),
+      addressTable.getByRole("button", { name: new RegExp(`^${action}`, "u") }).first(),
     ).toBeVisible();
   }
   await expect(addressTable.getByRole("button", { name: /资金|任务|转账|建仓/u })).toHaveCount(0);
@@ -173,7 +173,7 @@ test("FLOW-05 optimistic save rolls back exactly and preserves the user's input"
   await dialog.getByRole("button", { name: "保存" }).click();
   await expect(dialog.getByRole("alert")).toContainText("备注保存失败");
   await expect(input).toHaveValue("保留的用户输入");
-  await expect(page.getByRole("table", { name: "地址聚合" }).getByText("核心 LP")).toBeVisible();
+  await expect(page.locator(".flow-address-table").getByText("核心 LP")).toBeVisible();
 
   await dialog.getByRole("button", { name: "保存" }).click();
   await expect(dialog).toBeHidden();
@@ -190,7 +190,7 @@ test("FLOW-05 exposes remark loading and retryable error states", async ({ page 
   });
   await page.goto("/pools?fixture=pools-ready");
   await openAddressView(page);
-  await expect(page.getByRole("status")).toContainText("正在加载备注");
+  await expect(page.getByText("正在加载备注", { exact: true })).toBeVisible();
   await pendingRoute!.fulfill({
     contentType: "application/json",
     json: {

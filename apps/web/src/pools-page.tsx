@@ -764,35 +764,34 @@ function AddressTable({
   );
 }
 
-function AddressRemarkDialog({
-  address,
-  close,
-  remove,
-  remarks,
-  save,
-}: {
+interface AddressRemarkDialogProps {
   address: EvmAddress | null;
   close(): void;
   remove(address: EvmAddress): Promise<boolean>;
   remarks: AddressRemarksState;
   save(request: { address: EvmAddress; label: string; watched: boolean }): Promise<boolean>;
-}) {
-  const personal = address ? remarks.remarks.get(address) : undefined;
-  const shared = address ? remarks.shared.get(address) : undefined;
-  const [label, setLabel] = useState("");
-  const [watched, setWatched] = useState(false);
+}
+
+function AddressRemarkDialog(props: AddressRemarkDialogProps) {
+  if (!props.address) return null;
+  return <AddressRemarkDialogContent {...props} address={props.address} key={props.address} />;
+}
+
+function AddressRemarkDialogContent({
+  address,
+  close,
+  remove,
+  remarks,
+  save,
+}: Omit<AddressRemarkDialogProps, "address"> & { address: EvmAddress }) {
+  const personal = remarks.remarks.get(address);
+  const shared = remarks.shared.get(address);
+  const [label, setLabel] = useState(() => remarks.drafts.get(address) ?? personal?.label ?? "");
+  const [watched, setWatched] = useState(personal?.watched ?? false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!address) return;
-    setLabel(remarks.drafts.get(address) ?? personal?.label ?? "");
-    setWatched(personal?.watched ?? false);
-    setError(null);
-  }, [address, personal?.label, personal?.watched, remarks.drafts]);
-
   const submit = async () => {
-    if (!address) return;
     setSaving(true);
     setError(null);
     const saved = await save({ address, label: label.trim(), watched });
@@ -802,7 +801,6 @@ function AddressRemarkDialog({
   };
 
   const deleteRemark = async () => {
-    if (!address) return;
     setSaving(true);
     setError(null);
     const deleted = await remove(address);
@@ -812,7 +810,7 @@ function AddressRemarkDialog({
   };
 
   return (
-    <Dialog.Root onOpenChange={(open) => !open && close()} open={address !== null}>
+    <Dialog.Root onOpenChange={(open) => !open && close()} open>
       <Dialog.Portal>
         <Dialog.Overlay className="remark-dialog-backdrop" />
         <Dialog.Content aria-describedby="address-remark-description" className="remark-dialog">
@@ -1100,13 +1098,17 @@ export function PoolsPage() {
   const flowConnection = fixturePaused
     ? "paused-hidden"
     : (explicitFlowConnection ?? flowState.connection);
-  const baseFlowEvents = fixture
-    ? flowConnection === "loading-backfill" ||
-      flowConnection === "empty" ||
-      flowConnection === "error"
-      ? []
-      : fixtureFlowEvents
-    : flowState.events;
+  const baseFlowEvents = useMemo(
+    () =>
+      fixture
+        ? flowConnection === "loading-backfill" ||
+          flowConnection === "empty" ||
+          flowConnection === "error"
+          ? []
+          : fixtureFlowEvents
+        : flowState.events,
+    [fixture, flowConnection, flowState.events],
+  );
   const watched = useMemo(() => watchedAddressSet(remarkState), [remarkState]);
   const flowProjection = useMemo(
     () =>
