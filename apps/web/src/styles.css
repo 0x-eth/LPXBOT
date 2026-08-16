@@ -1012,7 +1012,7 @@ input:focus-visible,
 }
 
 .pools-table th.pool-column-actions {
-  width: 84px;
+  width: 116px;
 }
 
 .pools-table tbody tr + tr {
@@ -1163,6 +1163,12 @@ html[data-theme="dark"] .pool-label-chip[data-label-id="lp-inflow"] {
   background: var(--accent);
 }
 
+.pool-row-actions button[aria-expanded="true"] {
+  color: var(--text);
+  border-color: var(--focus-ring);
+  background: var(--accent-surface);
+}
+
 .pool-row-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.4;
@@ -1171,6 +1177,284 @@ html[data-theme="dark"] .pool-label-chip[data-label-id="lp-inflow"] {
 .pool-row-actions button:hover {
   color: var(--text);
   background: var(--surface-hover);
+}
+
+.pool-market-detail-cell {
+  padding: 0 !important;
+  text-align: left !important;
+  vertical-align: top !important;
+}
+
+.pool-market-detail {
+  width: min(100%, calc(100vw - 56px));
+  min-width: 0;
+  padding: 18px 20px 16px;
+  color: var(--text);
+  border-top: 2px solid var(--focus-ring);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.pool-market-detail-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pool-market-tabs {
+  display: inline-grid;
+  min-width: 250px;
+  min-height: 36px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--muted);
+}
+
+.pool-market-tabs button {
+  min-width: 0;
+  min-height: 28px;
+  padding: 4px 12px;
+  color: var(--muted-foreground);
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.pool-market-tabs button[aria-selected="true"] {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
+}
+
+.pool-market-controls,
+.pool-market-controls label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.pool-market-controls {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.pool-market-controls label {
+  gap: 7px;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pool-market-controls select {
+  min-width: 78px;
+  height: 32px;
+  padding: 0 26px 0 9px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  outline: 0;
+  background: var(--surface);
+  font-size: 0.72rem;
+}
+
+.pool-market-controls select:focus,
+.pool-market-range input:focus-visible {
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.pool-market-range input {
+  width: 150px;
+  margin: 0;
+  accent-color: var(--focus-ring);
+}
+
+.pool-market-refresh {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  cursor: pointer;
+  place-items: center;
+}
+
+.pool-market-refresh:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.pool-market-panel {
+  min-width: 0;
+  margin-top: 14px;
+}
+
+.pool-market-operational-state {
+  display: flex;
+  min-height: 280px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: var(--muted-foreground);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.pool-market-operational-state[role="alert"] {
+  color: var(--danger);
+}
+
+.pool-market-operational-state p {
+  margin: 0;
+}
+
+.pool-market-stale {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  color: var(--danger);
+  border-top: 1px solid color-mix(in srgb, var(--danger) 42%, var(--border));
+  background: var(--danger-surface);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.candle-chart-canvas {
+  width: 100%;
+  height: 280px;
+  min-height: 280px;
+  overflow: hidden;
+}
+
+.tick-liquidity-histogram {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  min-height: 220px;
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+}
+
+.tick-histogram-zero {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--muted-foreground);
+  opacity: 0.7;
+}
+
+.tick-histogram-bars {
+  position: absolute;
+  inset: 8px 10px;
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+}
+
+.tick-histogram-slot {
+  display: grid;
+  min-width: 2px;
+  flex: 1 1 0;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.tick-histogram-bar {
+  width: 100%;
+  min-height: 2px;
+}
+
+.tick-histogram-bar[data-sign="positive"] {
+  align-self: end;
+  background: #087f5b;
+  grid-row: 1;
+}
+
+.tick-histogram-bar[data-sign="negative"] {
+  align-self: start;
+  background: #b5413b;
+  grid-row: 2;
+}
+
+.tick-liquidity-table-shell {
+  width: 100%;
+  max-height: 220px;
+  overflow: auto;
+  border-bottom: 1px solid var(--border);
+}
+
+.tick-liquidity-table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tick-liquidity-table th,
+.tick-liquidity-table td {
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.tick-liquidity-table th:first-child,
+.tick-liquidity-table td:first-child {
+  text-align: left;
+}
+
+.tick-liquidity-table tbody tr[data-current="true"] {
+  background: var(--accent-surface);
+}
+
+.pool-market-metadata {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 10px 0 0;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+}
+
+.pool-market-metadata > div {
+  display: flex;
+  min-width: 0;
+  gap: 5px;
+}
+
+.pool-market-metadata dt {
+  font-weight: 700;
+}
+
+.pool-market-metadata dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .numeric-value {
