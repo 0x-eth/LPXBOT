@@ -52,6 +52,9 @@ export interface ApiShellStatsProviderOptions {
   fetcher?: typeof fetch;
   initialRetryMs?: number;
   maxRetryMs?: number;
+  now?: () => Date;
+  recommendationChain?: "bsc" | null;
+  recommendationLimit?: number;
   sleep?: (delayMs: number, signal: AbortSignal) => Promise<void>;
 }
 
@@ -381,6 +384,7 @@ export function reduceShellStatsEvent(
     return {
       connected: true,
       observedAt: event.observedAt,
+      recommendations: state.recommendations,
       sequence: event.sequence,
       stats: structuredClone(event.stats),
     };
@@ -453,6 +457,9 @@ export class ApiShellStatsProvider {
   readonly #initialRetryMs: number;
   readonly #listeners = new Set<ShellStatsListener>();
   readonly #maxRetryMs: number;
+  readonly #now: () => Date;
+  readonly #recommendationChain: "bsc" | null;
+  readonly #recommendationLimit: number;
   readonly #sleep: (delayMs: number, signal: AbortSignal) => Promise<void>;
   #controller: AbortController | null = null;
   #running = false;
@@ -462,12 +469,18 @@ export class ApiShellStatsProvider {
     this.#fetcher = options.fetcher ?? globalThis.fetch.bind(globalThis);
     this.#initialRetryMs = options.initialRetryMs ?? 1_000;
     this.#maxRetryMs = options.maxRetryMs ?? 30_000;
+    this.#now = options.now ?? (() => new Date());
+    this.#recommendationChain = options.recommendationChain ?? "bsc";
+    this.#recommendationLimit = options.recommendationLimit ?? 3;
     this.#sleep = options.sleep ?? defaultSleep;
     if (
       !Number.isSafeInteger(this.#initialRetryMs) ||
       !Number.isSafeInteger(this.#maxRetryMs) ||
       this.#initialRetryMs <= 0 ||
-      this.#maxRetryMs < this.#initialRetryMs
+      this.#maxRetryMs < this.#initialRetryMs ||
+      !Number.isSafeInteger(this.#recommendationLimit) ||
+      this.#recommendationLimit < 1 ||
+      this.#recommendationLimit > 20
     ) {
       throw new RangeError("Stats retry delays are invalid");
     }
@@ -495,12 +508,28 @@ export class ApiShellStatsProvider {
       const controller = new AbortController();
       this.#controller = controller;
       try {
-        const response = await this.#fetcher("/api/stats/stream", {
+        const path =
+          this.#recommendationChain === null
+            ? `/api/stats/stream?limit=${this.#recommendationLimit}`
+            : `/api/stats/stream?chain=${this.#recommendationChain}&limit=${this.#recommendationLimit}`;
+        const headers: Record<string, string> = { Accept: "text/event-stream" };
+        if (this.#recommendationChain !== null && this.#state.recommendations.cursor !== null) {
+          headers["Last-Event-ID"] = this.#state.recommendations.cursor;
+        }
+        const response = await this.#fetcher(path, {
           credentials: "include",
-          headers: { Accept: "text/event-stream" },
+          headers,
           signal: controller.signal,
         });
         if (!response.ok || !response.headers.get("Content-Type")?.includes("text/event-stream")) {
+          if (response.status === 503 && this.#recommendationChain !== null) {
+            this.#state = {
+              ...this.#state,
+              connected: false,
+              recommendations: { ...this.#state.recommendations, status: "unavailable" },
+            };
+            this.#emit();
+          }
           throw new Error("Stats stream response is invalid");
         }
         await this.#consume(response, controller.signal);
@@ -510,7 +539,7 @@ export class ApiShellStatsProvider {
       }
       if (!this.#running) break;
       if (this.#state.connected) {
-        this.#state = { ...this.#state, connected: false };
+        this.#state = markShellStatsDisconnected(this.#state, this.#now());
         this.#emit();
       }
       const delay = Math.min(this.#maxRetryMs, this.#initialRetryMs * 2 ** attempt);
@@ -547,12 +576,14 @@ export class ApiShellStatsProvider {
   }
 
   #acceptFrame(frame: string): void {
-    const data = frame
-      .split("\n")
-      .filter((line) => line.startsWith("data:"))
-      .map((line) => line.slice(5).trimStart())
-      .join("\n");
-    if (!data) return;
+    const lines = frame.split("\n");
+    const eventLines = lines.filter((line) => line.startsWith("event:"));
+    const idLines = lines.filter((line) => line.startsWith("id:"));
+    const dataLines = lines.filter((line) => line.startsWith("data:"));
+    if (eventLines.length !== 1 || idLines.length > 1 || dataLines.length === 0) return;
+    const eventName = eventLines[0]!.slice(6).trim();
+    const identifier = idLines[0]?.slice(3).trim() ?? null;
+    const data = dataLines.map((line) => line.slice(5).trimStart()).join("\n");
     let decoded: unknown;
     try {
       decoded = JSON.parse(data);
@@ -561,6 +592,16 @@ export class ApiShellStatsProvider {
     }
     const event = parseShellStatsEvent(decoded);
     if (!event) return;
+    if (event.type !== eventName) return;
+    if (event.type === "rec_pools_snapshot" && identifier !== event.cursor) return;
+    if (
+      event.type !== "rec_pools_snapshot" &&
+      identifier !== null &&
+      event.sequence !== null &&
+      identifier !== String(event.sequence)
+    ) {
+      return;
+    }
     const next = reduceShellStatsEvent(this.#state, event);
     if (next === this.#state) return;
     this.#state = next;
