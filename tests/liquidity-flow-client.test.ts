@@ -11,6 +11,7 @@ import {
   serializeLiquidityFlowUiFilters,
   type LiquidityFlowUiFilters,
 } from "../apps/web/src/liquidity-flow-state.js";
+import { buildLiquidityFlowStreamUrl } from "../apps/web/src/liquidity-flow-client.js";
 import { describe, expect, it } from "vitest";
 
 function event(
@@ -76,6 +77,22 @@ function tombstone(reverted: LiquidityFlowEvent): LiquidityFlowTombstone {
 }
 
 describe("P02-04 liquidity flow client state", () => {
+  it("builds a reconnect URL from the latest since cursor and canonical server filters", () => {
+    expect(
+      buildLiquidityFlowStreamUrl(300, {
+        nftId: "42",
+        pool: "0x1111111111111111111111111111111111111111",
+        token: "0x2222222222222222222222222222222222222222",
+        user: "0x4444444444444444444444444444444444444444",
+      }),
+    ).toBe(
+      "/api/liquidity-adds/stream?since=300" +
+        "&pool=0x1111111111111111111111111111111111111111" +
+        "&token=0x2222222222222222222222222222222222222222" +
+        "&user=0x4444444444444444444444444444444444444444&nft_id=42",
+    );
+  });
+
   it("deduplicates stable ids, sorts out-of-order backfill, and advances since by ts", () => {
     const older = event("older", 100);
     const newer = event("newer", 300);
