@@ -23,7 +23,7 @@ interface PreferenceFixture {
 interface FixtureState {
   failNextPatch?: boolean;
   failedPatchGate?: Promise<void>;
-  getDelayMs?: number;
+  getGate?: Promise<void>;
   preferences: PreferenceFixture;
   revision: number;
 }
@@ -62,7 +62,7 @@ function cloneDefaults(): PreferenceFixture {
 
 async function fulfillPreferences(route: Route, state: FixtureState): Promise<void> {
   if (route.request().method() === "GET") {
-    if (state.getDelayMs) await new Promise((resolve) => setTimeout(resolve, state.getDelayMs));
+    if (state.getGate) await state.getGate;
     await route.fulfill({
       contentType: "application/json",
       headers: { "Cache-Control": "no-store" },
@@ -285,17 +285,25 @@ test("SET-01 and SET-02 update optimistically, roll back, retry and validate cus
   const failedPatchGate = new Promise<void>((resolve) => {
     releaseFailedPatch = resolve;
   });
+  let releaseGet = () => {};
+  const getGate = new Promise<void>((resolve) => {
+    releaseGet = resolve;
+  });
   const state: FixtureState = {
     failNextPatch: true,
     failedPatchGate,
-    getDelayMs: 250,
+    getGate,
     preferences: cloneDefaults(),
     revision: 0,
   };
   await installFixture(context, state);
   await page.goto("/settings", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
-  await expect(page.getByRole("status", { name: "界面设置状态" })).toContainText("正在加载");
+  try {
+    await expect(page.getByRole("status", { name: "界面设置状态" })).toContainText("正在加载");
+  } finally {
+    releaseGet();
+  }
   await expect(page.getByRole("status", { name: "界面设置状态" })).toContainText("已同步");
 
   const hotPools = page.getByRole("switch", { name: "热门池子推荐" });
