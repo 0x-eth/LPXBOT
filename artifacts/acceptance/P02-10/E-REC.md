@@ -7,3 +7,4 @@
 - After replacement, the old high-volume Candle and old liquidity boundaries are absent; the unrelated pool retains its original rows and version.
 - Transaction fault injection interrupts Candle insertion and confirms canonical events, Candles, ticks, read-model state, and cursor all remain absent after rollback.
 - Migration restore coverage executes the new migration down and up in a transaction and verifies all three tables disappear and return with their constraints.
+- A dedicated compatibility regression commits projection-incomplete canonical events, verifies that no Candle/Tick values are invented, and retains the valid current tick and transaction cursor. The original market-indexer/migration repro passed 16/16; full PostgreSQL integration passed 12 files and 51 tests.
