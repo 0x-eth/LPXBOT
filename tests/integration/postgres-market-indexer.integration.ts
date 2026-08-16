@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -82,6 +83,39 @@ function reorgMarketProjection(entry: ReturnType<typeof readP02Fixture>["input"]
 
 function goldenJson(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
+}
+
+function stableValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (typeof value !== "object" || value === null) return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entry]) => [key, stableValue(entry)]),
+  );
+}
+
+function legacyMarketRow(row: MarketPoolSnapshot["rows"][number]) {
+  const legacy = { ...row } as Record<string, unknown>;
+  for (const key of [
+    "feePips",
+    "hooks",
+    "poolKey",
+    "tickSpacing",
+    "token0Address",
+    "token1Address",
+  ]) {
+    delete legacy[key];
+  }
+  return legacy;
+}
+
+function legacyRows(rows: MarketPoolSnapshot["rows"]): Record<string, unknown>[] {
+  return rows.map(legacyMarketRow);
+}
+
+function legacyRowsHash(rows: MarketPoolSnapshot["rows"]): string {
+  return createHash("sha256").update(JSON.stringify(stableValue(legacyRows(rows)))).digest("hex");
 }
 
 function runnerFor(name: "normal" | "duplicate" | "out-of-order" | "reorg") {
