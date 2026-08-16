@@ -502,8 +502,6 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
         FOR UPDATE`,
       parameters,
     );
-    const timestamp = Date.parse(commit.evaluationTime);
-    if (!Number.isFinite(timestamp)) throw new RangeError("LIQUIDITY_FLOW_TIMESTAMP_INVALID");
     for (const { record: event } of affected.rows) {
       const id = payloadHash({ recordType: "tombstone", revertedId: event.id });
       const position = await this.#nextFlowPosition(client, event.id, "tombstone");
@@ -521,7 +519,7 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
         schema_version: "1.0.0",
         token0_address: event.token0_address,
         token1_address: event.token1_address,
-        ts: timestamp,
+        ts: event.ts,
         user: event.user,
         version: event.version,
       };

@@ -13,6 +13,11 @@ import {
   type RawLogDelivery,
 } from "../../apps/indexer/src/index.js";
 import { FixtureEventDecoder, FixtureRawLogSource } from "../../apps/indexer/src/testing.js";
+import { PostgresLiquidityFlowProvider } from "../../apps/api/src/liquidity-flow.js";
+import type {
+  LiquidityFlowBackfill,
+  LiquidityFlowCanonicalEnvelope,
+} from "../../packages/api-contract/src/index.js";
 import { fixtureBlockTimestamp, readP02Fixture } from "../helpers/p02-fixture.js";
 
 const { Pool } = pg;
@@ -67,6 +72,30 @@ function reorgRunner(): IndexerRunner {
     source: new FixtureRawLogSource(fixture.input, fixtureBlockTimestamp),
     store: new PostgresCanonicalEventStore(pool),
   });
+}
+
+async function takeFlow(
+  provider: PostgresLiquidityFlowProvider,
+  count: number,
+  filter: Partial<{ nftId: string; pool: `0x${string}`; token: `0x${string}`; user: `0x${string}` }> = {},
+): Promise<LiquidityFlowCanonicalEnvelope[]> {
+  const controller = new AbortController();
+  const result: LiquidityFlowCanonicalEnvelope[] = [];
+  for await (const envelope of provider.subscribe({
+    nftId: filter.nftId ?? null,
+    pool: filter.pool ?? null,
+    signal: controller.signal,
+    since: 0,
+    token: filter.token ?? null,
+    user: filter.user ?? null,
+  })) {
+    result.push(envelope);
+    if (result.length === count) {
+      controller.abort();
+      break;
+    }
+  }
+  return result;
 }
 
 beforeAll(async () => {
@@ -206,5 +235,64 @@ describe("P02-04 PostgreSQL liquidity flow read model", () => {
     expect(cursor.rows).toEqual([
       { block_hash: fixture.input[2]!.rawLog.blockHash, block_number: "110" },
     ]);
+  });
+
+  it("provides bounded historical backfill and identical pool/token/user/NFT filtering", async () => {
+    await new PostgresCanonicalEventStore(pool).commit(productionGoldenCommit());
+    const provider = new PostgresLiquidityFlowProvider(pool, {
+      backfillLimit: 3,
+      now: () => new Date("2026-08-16T03:01:00.000Z"),
+      pollMilliseconds: 1,
+    });
+
+    const [boundedEnvelope] = await takeFlow(provider, 1);
+    const bounded = boundedEnvelope!.data as LiquidityFlowBackfill;
+    expect(bounded.events).toHaveLength(3);
+    expect(bounded.has_more).toBe(true);
+    expect(bounded.events.map(({ id }) => id)).toEqual([
+      "eb56e2cf006282c2a07bdc2fc563014b1390560763a27618bd3ffe95a2485370",
+      "d12fab3e18894c97163abe2cd1b544bb9037694403572feb79021688267c1d76",
+      "ccf15384ff3ce1450c0f574c3d3ee8652df091c511a832452214a596dccee2b2",
+    ]);
+
+    const filterProvider = new PostgresLiquidityFlowProvider(pool, { backfillLimit: 20 });
+    const poolAddress = "0xab058332a7279f1e64162be08f59ac0cd9601759" as const;
+    const tokenAddress = "0x55d398326f99059ff775485246999027b3197955" as const;
+    const userAddress = "0x46a15b0b27311cedf172ab29e4f4766fbe7f4364" as const;
+    const [filteredEnvelope] = await takeFlow(filterProvider, 1, {
+      pool: poolAddress,
+      token: tokenAddress,
+      user: userAddress,
+    });
+    const filtered = filteredEnvelope!.data as LiquidityFlowBackfill;
+    expect(filtered.events.map(({ id }) => id)).toEqual([
+      "47dc88f839f41af63e13bf37c2527afe9bf7d89d3c1984e166bf3bd19cd0dbbd",
+      "95f6f25fbb0646feb4a1712096d4922db3bb1df5b447dd4f2f50c8ac89942bc1",
+    ]);
+
+    const [emptyEnvelope] = await takeFlow(filterProvider, 1, { nftId: "42" });
+    expect((emptyEnvelope!.data as LiquidityFlowBackfill).events).toEqual([]);
+  });
+
+  it("replays reorg tombstones and persists a canonical heartbeat", async () => {
+    await reorgRunner().runOnce();
+    const provider = new PostgresLiquidityFlowProvider(pool, {
+      heartbeatMilliseconds: 1,
+      now: () => new Date("2026-08-16T00:06:00.000Z"),
+      pollMilliseconds: 1,
+    });
+
+    const [backfillEnvelope, heartbeat] = await takeFlow(provider, 2);
+    const backfill = backfillEnvelope!.data as LiquidityFlowBackfill;
+    expect(backfill.events.map(({ record_type }) => record_type)).toEqual([
+      "event",
+      "tombstone",
+      "event",
+    ]);
+    expect(heartbeat).toMatchObject({ data: null, eventType: "heartbeat" });
+    const durable = await pool.query<{ count: string }>(
+      "SELECT count(*)::text AS count FROM liquidity_flow_outbox WHERE record_type = 'heartbeat'",
+    );
+    expect(durable.rows).toEqual([{ count: "1" }]);
   });
 });
