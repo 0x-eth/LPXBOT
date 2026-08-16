@@ -26,11 +26,11 @@ These commands are local equivalents of the six CI Jobs. They remain useful supp
 
 ## Hosted CI execution evidence
 
-Run: `31923619152`  
-Attempt: `2`  
-Head SHA: `52aef88f99b3701ee5218a4ca1d19b051d211639`  
-Run conclusion: `success`  
-Completed: `2026-08-16T03:23:59.000Z`
+- Run: `31923619152`
+- Attempt: `2`
+- Head SHA: `52aef88f99b3701ee5218a4ca1d19b051d211639`
+- Run conclusion: `success`
+- Completed: `2026-08-16T03:23:59.000Z`
 
 `gh run view 31923619152 --attempt 2 --json attempt,headSha,conclusion,createdAt,startedAt,updatedAt,jobs,url,workflowName` returned a non-empty `steps` array and `conclusion: success` for every Job:
 
@@ -47,10 +47,10 @@ The conditionally skipped Browser report-upload step runs only on failure; the B
 
 ### Attempt 1 allocation history
 
-Run: `31923619152`  
-Attempt: `1`  
-Head SHA: `52aef88f99b3701ee5218a4ca1d19b051d211639`  
-Run conclusion: `failure`
+- Run: `31923619152`
+- Attempt: `1`
+- Head SHA: `52aef88f99b3701ee5218a4ca1d19b051d211639`
+- Run conclusion: `failure`
 
 `gh run view 31923619152 --attempt 1` reports all six Jobs with `steps: []`. GitHub assigned no runner and attached the same annotation to each Job:
 

@@ -18,10 +18,10 @@ The PostgreSQL suite runs all migrations up, every down in reverse, all migratio
 
 The local equivalent gates in `command-output.md` establish reproducibility in the acceptance workspace. They are supporting evidence and are not labeled as Hosted CI.
 
-Stable implementation commit: `52aef88f99b3701ee5218a4ca1d19b051d211639`  
-Hosted CI run: `31923619152`  
-Hosted CI attempt: `2`  
-Hosted CI completion: `2026-08-16T03:23:59.000Z`
+- Stable implementation commit: `52aef88f99b3701ee5218a4ca1d19b051d211639`
+- Hosted CI run: `31923619152`
+- Hosted CI attempt: `2`
+- Hosted CI completion: `2026-08-16T03:23:59.000Z`
 
 | Hosted Job | Job ID | Conclusion |
 | --- | ---: | --- |
