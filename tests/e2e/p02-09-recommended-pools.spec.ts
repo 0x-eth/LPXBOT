@@ -114,9 +114,7 @@ async function installStatsFixture(page: Page): Promise<void> {
             const base64url = (value: string) =>
               btoa(value).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
             const windowEnd = new Date(Date.now() - 5 * 60_000).toISOString();
-            const observedAt = new Date(
-              Date.now() - (mode === "stale" ? 31_000 : 0),
-            ).toISOString();
+            const observedAt = new Date(Date.now() - (mode === "stale" ? 31_000 : 0)).toISOString();
             const pool = (digit: string, feesUsd: string, token0Symbol: string | null) => ({
               chainId: 56,
               feePips: "500",
@@ -224,7 +222,9 @@ test("STATS-02 renders and navigates recommended pools without layout shifts", a
   const initialHeight = await bar.evaluate((element) => element.getBoundingClientRect().height);
 
   await expect(bar).toContainText("5m Fees $99.00", { timeout: 5_000 });
-  expect(await bar.evaluate((element) => element.getBoundingClientRect().height)).toBe(initialHeight);
+  expect(await bar.evaluate((element) => element.getBoundingClientRect().height)).toBe(
+    initialHeight,
+  );
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(
     false,
   );
@@ -274,9 +274,9 @@ test("STATS-02 covers loading, empty, unavailable, reconnecting and stale states
     await expect(bar.locator(".status-pools-state").first()).toHaveText(label);
     await expect(bar).toHaveAttribute("data-recommendation-state", state);
     heights.push(await bar.evaluate((element) => element.getBoundingClientRect().height));
-    expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(
-      false,
-    );
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
+    ).toBe(false);
   }
   expect(new Set(heights)).toEqual(new Set([32]));
 });

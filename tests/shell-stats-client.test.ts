@@ -170,9 +170,11 @@ describe("P01-06 API shell stats provider", () => {
   });
 
   it("marks requested recommendations unavailable on a safe 503 response", async () => {
-    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response("{}", { headers: { "Content-Type": "application/json" }, status: 503 }),
-    );
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        new Response("{}", { headers: { "Content-Type": "application/json" }, status: 503 }),
+      );
     const provider = new ApiShellStatsProvider({
       fetcher,
       sleep: async (_delay, signal) =>
@@ -181,9 +183,7 @@ describe("P01-06 API shell stats provider", () => {
     const states: ReturnType<typeof createShellStatsState>[] = [];
     const stop = provider.subscribe((state) => states.push(state));
 
-    await vi.waitFor(() =>
-      expect(states.at(-1)?.recommendations.status).toBe("unavailable"),
-    );
+    await vi.waitFor(() => expect(states.at(-1)?.recommendations.status).toBe("unavailable"));
     stop();
     expect(fetcher).toHaveBeenCalledTimes(1);
   });

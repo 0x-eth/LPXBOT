@@ -3637,7 +3637,8 @@ html[data-theme="dark"] .chain-operation-success {
   .feedback-viewport {
     right: 12px;
     bottom: calc(
-      var(--mobile-nav-height) + var(--shell-status-height) + env(safe-area-inset-bottom, 0px) + 12px
+      var(--mobile-nav-height) + var(--shell-status-height) + env(safe-area-inset-bottom, 0px) +
+        12px
     );
     width: calc(100vw - 24px);
   }

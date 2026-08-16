@@ -10,12 +10,7 @@ import type {
 import { Decimal } from "decimal.js";
 
 export type RecommendedPoolsStatus =
-  | "loading"
-  | "ready"
-  | "empty"
-  | "unavailable"
-  | "reconnecting"
-  | "stale";
+  "loading" | "ready" | "empty" | "unavailable" | "reconnecting" | "stale";
 
 export interface RecommendedPoolsState {
   cursor: string | null;
@@ -217,7 +212,9 @@ function decodeBase64Url(value: string): string | null {
     const base64 = value.replaceAll("-", "+").replaceAll("_", "/");
     const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
     const binary = globalThis.atob(padded);
-    return new TextDecoder().decode(Uint8Array.from(binary, (character) => character.charCodeAt(0)));
+    return new TextDecoder().decode(
+      Uint8Array.from(binary, (character) => character.charCodeAt(0)),
+    );
   } catch {
     return null;
   }
@@ -241,7 +238,9 @@ function validRecommendationCursor(event: RecommendedPoolsSnapshotEvent): boolea
   );
 }
 
-function parseRecommendationEvent(value: Record<string, unknown>): RecommendedPoolsSnapshotEvent | null {
+function parseRecommendationEvent(
+  value: Record<string, unknown>,
+): RecommendedPoolsSnapshotEvent | null {
   if (
     !hasExactKeys(value, [
       "cursor",
@@ -278,7 +277,10 @@ export function parseShellStatsEvent(value: unknown): ShellStatsEvent | null {
   if (value.type === "rec_pools_snapshot") return parseRecommendationEvent(value);
   if (!validObservedAt(value.observedAt)) return null;
   if (value.type === "snapshot") {
-    if (!hasExactKeys(value, ["observedAt", "sequence", "stats", "type"]) || !validSequence(value.sequence)) {
+    if (
+      !hasExactKeys(value, ["observedAt", "sequence", "stats", "type"]) ||
+      !validSequence(value.sequence)
+    ) {
       return null;
     }
     const stats = parseStats(value.stats, true);
@@ -291,7 +293,10 @@ export function parseShellStatsEvent(value: unknown): ShellStatsEvent | null {
     };
   }
   if (value.type === "update") {
-    if (!hasExactKeys(value, ["observedAt", "sequence", "stats", "type"]) || !validSequence(value.sequence)) {
+    if (
+      !hasExactKeys(value, ["observedAt", "sequence", "stats", "type"]) ||
+      !validSequence(value.sequence)
+    ) {
       return null;
     }
     const stats = parseStats(value.stats, false);
@@ -403,7 +408,10 @@ export function reduceShellStatsEvent(
   };
 }
 
-export function markShellStatsDisconnected(state: ShellStatsState, now = new Date()): ShellStatsState {
+export function markShellStatsDisconnected(
+  state: ShellStatsState,
+  now = new Date(),
+): ShellStatsState {
   if (!Number.isFinite(now.getTime())) throw new RangeError("Stats disconnect clock is invalid");
   const recommendationObservedAt = state.recommendations.observedAt;
   const stale =

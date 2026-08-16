@@ -77,9 +77,12 @@ describe("P02-09 recommended pool client state", () => {
     expect(reduceShellStatsEvent(first, firstEvent)).toBe(first);
     expect(reduceShellStatsEvent(first, recommendation("6", "b"))).toBe(first);
 
-    const replacement = reduceShellStatsEvent(first, recommendation("8", "c", {
-      pools: [{ ...row, feesUsd: "9.25" }],
-    }));
+    const replacement = reduceShellStatsEvent(
+      first,
+      recommendation("8", "c", {
+        pools: [{ ...row, feesUsd: "9.25" }],
+      }),
+    );
     expect(replacement.recommendations).toMatchObject({
       pools: [expect.objectContaining({ feesUsd: "9.25" })],
       sourceVersion: "8",
@@ -92,7 +95,9 @@ describe("P02-09 recommended pool client state", () => {
     expect(parseShellStatsEvent(event)).toEqual(event);
     expect(parseShellStatsEvent({ ...event, extra: true })).toBeNull();
     expect(parseShellStatsEvent({ ...event, sourceWindow: 15 })).toBeNull();
-    expect(parseShellStatsEvent({ ...event, selectionHash: `sha256:${"z".repeat(64)}` })).toBeNull();
+    expect(
+      parseShellStatsEvent({ ...event, selectionHash: `sha256:${"z".repeat(64)}` }),
+    ).toBeNull();
     expect(
       parseShellStatsEvent({
         ...event,
@@ -104,14 +109,18 @@ describe("P02-09 recommended pool client state", () => {
 
   it("distinguishes reconnecting and stale without discarding the last safe rows", () => {
     const current = reduceShellStatsEvent(createShellStatsState(), recommendation("7", "a"));
-    expect(markShellStatsDisconnected(current, new Date("2026-08-17T02:00:20.000Z"))).toMatchObject({
-      connected: false,
-      recommendations: { pools: [row], status: "reconnecting" },
-    });
-    expect(markShellStatsDisconnected(current, new Date("2026-08-17T02:00:31.000Z"))).toMatchObject({
-      connected: false,
-      recommendations: { pools: [row], status: "stale" },
-    });
+    expect(markShellStatsDisconnected(current, new Date("2026-08-17T02:00:20.000Z"))).toMatchObject(
+      {
+        connected: false,
+        recommendations: { pools: [row], status: "reconnecting" },
+      },
+    );
+    expect(markShellStatsDisconnected(current, new Date("2026-08-17T02:00:31.000Z"))).toMatchObject(
+      {
+        connected: false,
+        recommendations: { pools: [row], status: "stale" },
+      },
+    );
   });
 
   it("formats unknown symbols from addresses and links only to the existing pool search", () => {
@@ -122,8 +131,6 @@ describe("P02-09 recommended pool client state", () => {
     expect(recommendedPoolSearchPath(row)).toBe(
       "/pools?pool_search_mode=pool&pool_search=0x1111111111111111111111111111111111111111",
     );
-    expect(recommendedPoolDisplay({ ...row, feesUsd: "1234567.899" }).fees).toBe(
-      "$1,234,567.90",
-    );
+    expect(recommendedPoolDisplay({ ...row, feesUsd: "1234567.899" }).fees).toBe("$1,234,567.90");
   });
 });
