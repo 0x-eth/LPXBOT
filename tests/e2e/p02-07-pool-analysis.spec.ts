@@ -137,7 +137,7 @@ test("POOL-11 compares two to three stable pool keys in one snapshot", async ({ 
   const table = page.getByRole("table", { name: "BSC 热门池" });
   let select = table.getByRole("button", { name: /^选择对比/u });
   await select.nth(0).click();
-  const comparison = page.getByRole("region", { name: "池对比" });
+  const comparison = page.getByRole("region", { exact: true, name: "池对比" });
   await expect(comparison).toHaveAttribute("data-comparison-state", "one-selected");
   await select.nth(1).click();
   await expect(comparison).toHaveAttribute("data-comparison-state", "ready");
@@ -168,7 +168,7 @@ test("advanced filtering and comparison are keyboard, mobile, and axe clean", as
   const compare = table.getByRole("button", { name: /^选择对比/u }).first();
   await compare.focus();
   await page.keyboard.press("Space");
-  await expect(page.getByRole("region", { name: "池对比" })).toHaveAttribute(
+  await expect(page.getByRole("region", { exact: true, name: "池对比" })).toHaveAttribute(
     "data-comparison-state",
     "one-selected",
   );
@@ -176,7 +176,7 @@ test("advanced filtering and comparison are keyboard, mobile, and axe clean", as
     .getByRole("button", { name: /^选择对比/u })
     .first()
     .click();
-  await expect(page.getByRole("region", { name: "池对比" })).toHaveAttribute(
+  await expect(page.getByRole("region", { exact: true, name: "池对比" })).toHaveAttribute(
     "data-comparison-state",
     "ready",
   );
