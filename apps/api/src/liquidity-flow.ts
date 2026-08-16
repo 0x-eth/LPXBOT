@@ -108,7 +108,7 @@ export class PostgresLiquidityFlowProvider implements LiquidityFlowProvider {
       .map(({ payload }) => payload)
       .filter((record): record is LiquidityFlowRecord => record !== null);
     const cursor = selected.at(-1)?.cursor ?? watermark.cursor ?? null;
-    const sequence = selected.at(-1)?.sequence ?? watermark.sequence;
+    const backfillSequence = selected.at(-1)?.sequence ?? watermark.sequence;
     const backfill: LiquidityFlowBackfill = {
       cursor,
       event_type: "liquidity.backfill",
@@ -125,7 +125,7 @@ export class PostgresLiquidityFlowProvider implements LiquidityFlowProvider {
       eventType: "liquidity.backfill",
       mode: "snapshot",
       schemaVersion: "1.0.0",
-      sequence,
+      sequence: backfillSequence,
       streamKey: key,
     };
 
