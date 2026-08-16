@@ -5,6 +5,7 @@ import {
   type LiquidityFlowEvent,
   type LiquidityFlowProtocol,
   type MarketPoolRow,
+  type MarketPoolSnapshot,
   type MarketWindowMinutes,
   type PoolColumnKey,
   type PoolColumnPreference,
@@ -20,6 +21,7 @@ import {
   Copy,
   ExternalLink,
   Filter,
+  GitCompareArrows,
   GripVertical,
   Pause,
   Play,
@@ -27,6 +29,7 @@ import {
   RotateCcw,
   Search,
   Settings2,
+  SlidersHorizontal,
   Star,
   Tag,
   Trash2,
@@ -71,6 +74,25 @@ import {
 } from "./liquidity-flow-state";
 import { PoolsClient } from "./pools-client";
 import {
+  buildPoolComparison,
+  initialPoolComparisonState,
+  reconcilePoolComparison,
+  togglePoolComparison,
+  type PoolComparisonState,
+  type PoolComparisonView,
+} from "./pool-comparison-state";
+import {
+  defaultPoolAdvancedFilters,
+  filterAndSortPoolRows,
+  parsePoolAdvancedFilters,
+  poolAdvancedFiltersAreDefault,
+  poolNumericFilterKeys,
+  validatePoolAdvancedFilters,
+  writePoolAdvancedFilters,
+  type PoolAdvancedFilters,
+  type PoolNumericFilterKey,
+} from "./pool-filter-state";
+import {
   PoolSearchRequestManager,
   filterPoolsByIdentity,
   initialPoolSearchState,
@@ -89,6 +111,7 @@ import {
 import {
   DEFAULT_POOL_COLUMNS,
   flattenPoolGroups,
+  formatPoolRatioPercent,
   groupPoolRows,
   movePoolColumn,
   normalizePoolColumns,
@@ -131,10 +154,14 @@ const fixturePoolRows: MarketPoolRow[] = liquidityFlowProtocols.map((protocol, i
     : (`0x${String(index + 1).repeat(40)}` as MarketPoolRow["poolAddress"]);
   const poolId = v4 ? (`0x${String(index + 1).repeat(64)}` as MarketPoolRow["poolId"]) : null;
   const identity = poolAddress ?? poolId!;
+  const feesUsd = new Decimal(basePoolRow.feesUsd!).minus(index * 36).toString();
   return {
     ...basePoolRow,
     fdvUsd: new Decimal(basePoolRow.fdvUsd!).plus(index * 1_000_000).toString(),
-    feesUsd: new Decimal(basePoolRow.feesUsd!).minus(index * 36).toString(),
+    feesUsd,
+    feeTvl: new Decimal(feesUsd).dividedBy(basePoolRow.tvlUsd!).toString(),
+    hooks:
+      v4 && index === 3 ? "0x4444444444444444444444444444444444444444" : null,
     poolAddress,
     poolId,
     poolKey: `56:${identity}`,
@@ -142,9 +169,26 @@ const fixturePoolRows: MarketPoolRow[] = liquidityFlowProtocols.map((protocol, i
     token0Address: (index < 2
       ? basePoolRow.token0Address
       : `0x${String.fromCharCode(97 + index).repeat(40)}`) as MarketPoolRow["token0Address"],
-    token0Symbol: index === 0 ? "WBNB" : ["WBNB", "USDC", "ETH"][index - 1]!,
+    token0Symbol: index === 0 ? "WBNB" : ["WBNB", "USDC", "币安币"][index - 1]!,
+    transactionCount: String(37 - index * 7),
+    volumeUsd: new Decimal(basePoolRow.volumeUsd!).minus(index * 40_000).toString(),
   };
 });
+
+function fixturePoolSnapshot(
+  minutes: MarketWindowMinutes,
+  rows: MarketPoolRow[],
+): MarketPoolSnapshot {
+  return {
+    chainId: 56,
+    generatedAt: "2026-08-16T01:00:01.000Z",
+    minutes,
+    rows,
+    version: "fixture-1",
+    windowEnd: "2026-08-16T01:00:00.000Z",
+    windowStart: new Date(Date.parse("2026-08-16T01:00:00.000Z") - minutes * 60_000).toISOString(),
+  };
+}
 
 function fixtureFlowEvent(
   id: string,
@@ -317,6 +361,16 @@ function NumericValue({
   );
 }
 
+function RatioValue({ label, value }: { label: string; value: string | null }) {
+  const display = formatPoolRatioPercent(value);
+  return (
+    <td className="numeric-value" data-label={label} title={value ?? undefined}>
+      <span className="numeric-full">{display}</span>
+      <span className="numeric-compact">{display}</span>
+    </td>
+  );
+}
+
 function shortIdentity(value: string | null): string {
   if (!value) return "--";
   return value.length > 14 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
@@ -352,7 +406,9 @@ function ConnectionStatus({ connection }: { connection: PoolConnectionState }) {
 const poolColumnLabels: Record<PoolColumnKey, string> = {
   actions: "操作",
   fdv: "FDV",
+  feeActiveTvl: "Fee/aTVL",
   fees: "Fees",
+  feeTvl: "Fee/TVL",
   pool: "池",
   protocol: "协议",
   tvl: "TVL",
@@ -362,10 +418,16 @@ const poolColumnLabels: Record<PoolColumnKey, string> = {
 
 function PoolTableCell({
   column,
+  comparisonEnabled,
+  comparisonSelected,
+  toggleComparison,
   toggleGroup,
   visibleRow,
 }: {
   column: PoolColumnKey;
+  comparisonEnabled: boolean;
+  comparisonSelected: boolean;
+  toggleComparison(poolKey: string): void;
   toggleGroup(groupKey: string): void;
   visibleRow: VisiblePoolRow;
 }) {
@@ -410,6 +472,10 @@ function PoolTableCell({
   if (column === "volume") {
     return <NumericValue label="Volume" prefix="$ " value={row.volumeUsd} />;
   }
+  if (column === "feeTvl") return <RatioValue label="Fee/TVL" value={row.feeTvl} />;
+  if (column === "feeActiveTvl") {
+    return <RatioValue label="Fee/aTVL" value={row.feeActiveTvl} />;
+  }
   if (column === "tvl") return <NumericValue label="TVL" prefix="$ " value={row.tvlUsd} />;
   if (column === "txs") {
     return <NumericValue fractionDigits={0} label="Txs" value={row.transactionCount} />;
@@ -417,6 +483,16 @@ function PoolTableCell({
   if (column === "fdv") return <NumericValue label="FDV" prefix="$ " value={row.fdvUsd} />;
   return (
     <td className="pool-row-actions" data-label="操作">
+      <button
+        aria-label={`${comparisonSelected ? "移出" : "选择"}对比 ${identity}`}
+        aria-pressed={comparisonSelected}
+        disabled={!comparisonEnabled}
+        onClick={() => toggleComparison(row.poolKey)}
+        title={comparisonEnabled ? "池对比" : "当前快照不可用"}
+        type="button"
+      >
+        <GitCompareArrows aria-hidden="true" size={15} />
+      </button>
       <button
         aria-label={`复制池身份 ${identity}`}
         onClick={() => void navigator.clipboard.writeText(identity)}
@@ -431,11 +507,17 @@ function PoolTableCell({
 
 function PoolTable({
   columns,
+  comparisonCandidateKeys,
+  comparisonSelectedKeys,
   rows,
+  toggleComparison,
   toggleGroup,
 }: {
   columns: readonly PoolColumnPreference[];
+  comparisonCandidateKeys: ReadonlySet<string>;
+  comparisonSelectedKeys: ReadonlySet<string>;
   rows: readonly VisiblePoolRow[];
+  toggleComparison(poolKey: string): void;
   toggleGroup(groupKey: string): void;
 }) {
   const visibleColumns = columns.filter(({ visible }) => visible);
@@ -460,7 +542,10 @@ function PoolTable({
               {visibleColumns.map(({ key }) => (
                 <PoolTableCell
                   column={key}
+                  comparisonEnabled={comparisonCandidateKeys.has(visibleRow.row.poolKey)}
+                  comparisonSelected={comparisonSelectedKeys.has(visibleRow.row.poolKey)}
                   key={key}
+                  toggleComparison={toggleComparison}
                   toggleGroup={toggleGroup}
                   visibleRow={visibleRow}
                 />
