@@ -518,41 +518,41 @@ function FlowStats({ summary }: { summary: LiquidityFlowSummary }) {
   const valuationCount = summary.valuedEventCount + summary.unvaluedEventCount;
   const money = (value: string) => `${partial ? "已估值 " : ""}${decimalDisplay(value, "$ ")}`;
   return (
-    <dl
+    <div
       aria-label="流动性统计"
       className="flow-stat-strip"
       data-completeness={summary.completeness}
       role="group"
     >
-      <div data-metric="inflow">
+      <dl data-metric="inflow">
         <dt>流入</dt>
         <dd title={summary.inflowUsd}>{money(summary.inflowUsd)}</dd>
-      </div>
-      <div data-metric="outflow">
+      </dl>
+      <dl data-metric="outflow">
         <dt>流出</dt>
         <dd title={summary.outflowUsd}>{money(summary.outflowUsd)}</dd>
-      </div>
-      <div data-metric="net">
+      </dl>
+      <dl data-metric="net">
         <dt>净额</dt>
         <dd title={summary.netUsd}>{money(summary.netUsd)}</dd>
-      </div>
-      <div data-metric="events">
+      </dl>
+      <dl data-metric="events">
         <dt>笔数</dt>
         <dd>{summary.eventCount}</dd>
-      </div>
-      <div data-metric="addresses">
+      </dl>
+      <dl data-metric="addresses">
         <dt>地址数</dt>
         <dd>{summary.uniqueAddressCount}</dd>
-      </div>
-      <div data-metric="completeness">
+      </dl>
+      <dl data-metric="completeness">
         <dt>估值完整性</dt>
         <dd>
           {partial
             ? `${summary.valuedEventCount} / ${valuationCount} 已估值 · ${summary.unvaluedEventCount} 未估值`
             : `完整 · ${summary.valuedEventCount} / ${valuationCount}`}
         </dd>
-      </div>
-    </dl>
+      </dl>
+    </div>
   );
 }
 
@@ -566,7 +566,7 @@ function FlowTable({
   watched: ReadonlySet<string>;
 }) {
   return (
-    <div className="flow-table-shell">
+    <div aria-label="可横向滚动的流动性事件列表" className="flow-table-shell" tabIndex={0}>
       <table aria-label="流动性事件列表" className="flow-table">
         <thead>
           <tr>
@@ -646,7 +646,7 @@ function AddressTable({
   watched: ReadonlySet<string>;
 }) {
   return (
-    <div className="flow-address-table-shell">
+    <div aria-label="可横向滚动的地址聚合表" className="flow-address-table-shell" tabIndex={0}>
       <table aria-label="地址聚合" className="flow-address-table">
         <thead>
           <tr>
