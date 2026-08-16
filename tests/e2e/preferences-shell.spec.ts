@@ -22,6 +22,7 @@ interface PreferenceFixture {
 
 interface FixtureState {
   failNextPatch?: boolean;
+  failedPatchGate?: Promise<void>;
   getDelayMs?: number;
   preferences: PreferenceFixture;
   revision: number;
@@ -86,7 +87,7 @@ async function fulfillPreferences(route: Route, state: FixtureState): Promise<vo
   };
   if (state.failNextPatch) {
     state.failNextPatch = false;
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    await (state.failedPatchGate ?? new Promise((resolve) => setTimeout(resolve, 250)));
     await route.fulfill({
       contentType: "application/json",
       json: {
@@ -280,8 +281,13 @@ test("SET-01 and SET-02 update optimistically, roll back, retry and validate cus
   context,
   page,
 }) => {
+  let releaseFailedPatch = () => {};
+  const failedPatchGate = new Promise<void>((resolve) => {
+    releaseFailedPatch = resolve;
+  });
   const state: FixtureState = {
     failNextPatch: true,
+    failedPatchGate,
     getDelayMs: 250,
     preferences: cloneDefaults(),
     revision: 0,
@@ -294,8 +300,12 @@ test("SET-01 and SET-02 update optimistically, roll back, retry and validate cus
 
   const hotPools = page.getByRole("switch", { name: "热门池子推荐" });
   await hotPools.click();
-  await expect(hotPools).toBeChecked();
-  await expect(page.getByRole("status", { name: "界面设置状态" })).toContainText("正在保存");
+  try {
+    await expect(hotPools).toBeChecked();
+    await expect(page.getByRole("status", { name: "界面设置状态" })).toContainText("正在保存");
+  } finally {
+    releaseFailedPatch();
+  }
   await expect(page.getByRole("alert").filter({ hasText: "界面设置保存失败" })).toBeVisible();
   await expect(hotPools).not.toBeChecked();
   await expect(page.getByText("Fixture internals must not render")).toHaveCount(0);
