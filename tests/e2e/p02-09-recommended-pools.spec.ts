@@ -87,7 +87,7 @@ async function installStatsFixture(page: Page): Promise<void> {
     };
     browser.__p0209StatsRequests = [];
     const nativeFetch = globalThis.fetch.bind(globalThis);
-    let calls = 0;
+    let servedInitialSnapshot = false;
     globalThis.fetch = (input, init) => {
       const raw = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       const url = new URL(raw, window.location.href);
@@ -103,86 +103,96 @@ async function installStatsFixture(page: Page): Promise<void> {
           new Response("{}", { headers: { "Content-Type": "application/json" }, status: 503 }),
         );
       }
-      const connection = calls++;
+      let cancelled = false;
       const stream = new ReadableStream<Uint8Array>({
         start(controller) {
-          if (mode === "loading" || connection > 0) return;
-          const encoder = new TextEncoder();
-          const base64url = (value: string) =>
-            btoa(value).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
-          const windowEnd = new Date(Date.now() - 5 * 60_000).toISOString();
-          const observedAt = new Date(Date.now() - (mode === "stale" ? 31_000 : 0)).toISOString();
-          const pool = (digit: string, feesUsd: string, token0Symbol: string | null) => ({
-            chainId: 56,
-            feePips: "500",
-            feesUsd,
-            poolAddress: `0x${digit.repeat(40)}`,
-            poolId: null,
-            poolKey: `56:0x${digit.repeat(40)}`,
-            protocol: "pcsv3",
-            token0Address: `0x${digit === "1" ? "a".repeat(40) : digit.repeat(40)}`,
-            token0Symbol,
-            token1Address: `0x${"b".repeat(40)}`,
-            token1Symbol: "USDT",
-          });
-          const initialPools =
-            mode === "empty"
-              ? []
-              : [
-                  pool("1", "12.5000", "WBNB"),
-                  pool("2", "11.25", null),
-                  pool("3", "10", "USDC"),
-                  pool("4", "9", "FOURTH"),
-                ];
-          const event = (version: string, hashDigit: string, pools: unknown[]) => {
-            const selectionHash = `sha256:${hashDigit.repeat(64)}`;
-            const cursor = `rec-pools:v1:bsc:3:${base64url(version)}:${base64url(windowEnd)}:${selectionHash.slice(7)}`;
-            const payload = {
-              cursor,
-              observedAt,
-              pools,
-              selectionHash,
-              sourceVersion: version,
-              sourceWindow: 5,
-              sourceWindowEnd: windowEnd,
-              type: "rec_pools_snapshot",
-            };
-            return `id: ${cursor}\nevent: rec_pools_snapshot\ndata: ${JSON.stringify(payload)}\n\n`;
-          };
-          controller.enqueue(encoder.encode(event("7", "a", initialPools)));
-          controller.enqueue(
-            encoder.encode(
-              `event: snapshot\ndata: ${JSON.stringify({
-                observedAt,
-                sequence: 20,
-                stats: {
-                  fps: null,
-                  gas: { baseGwei: null, ethereumGwei: null },
-                  online: null,
-                  pingMs: null,
-                  taskCounts: { paused: null, running: null, stopped: null },
-                },
-                type: "snapshot",
-              })}\n\n`,
-            ),
-          );
-          if (mode === "reconnecting" || mode === "stale") {
-            controller.close();
-            return;
-          }
-          if (mode === "ready") {
-            window.setTimeout(() => {
-              controller.enqueue(
-                encoder.encode(
-                  event("8", "b", [
-                    pool("1", "99", "WBNB"),
+          if (mode === "loading" || servedInitialSnapshot) return;
+          window.setTimeout(() => {
+            if (cancelled || init?.signal?.aborted || servedInitialSnapshot) return;
+            servedInitialSnapshot = true;
+            const encoder = new TextEncoder();
+            const base64url = (value: string) =>
+              btoa(value).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+            const windowEnd = new Date(Date.now() - 5 * 60_000).toISOString();
+            const observedAt = new Date(
+              Date.now() - (mode === "stale" ? 31_000 : 0),
+            ).toISOString();
+            const pool = (digit: string, feesUsd: string, token0Symbol: string | null) => ({
+              chainId: 56,
+              feePips: "500",
+              feesUsd,
+              poolAddress: `0x${digit.repeat(40)}`,
+              poolId: null,
+              poolKey: `56:0x${digit.repeat(40)}`,
+              protocol: "pcsv3",
+              token0Address: `0x${digit === "1" ? "a".repeat(40) : digit.repeat(40)}`,
+              token0Symbol,
+              token1Address: `0x${"b".repeat(40)}`,
+              token1Symbol: "USDT",
+            });
+            const initialPools =
+              mode === "empty"
+                ? []
+                : [
+                    pool("1", "12.5000", "WBNB"),
+                    pool("2", "11.25", null),
                     pool("3", "10", "USDC"),
-                    pool("2", "8", null),
-                  ]),
-                ),
-              );
-            }, 1_500);
-          }
+                    pool("4", "9", "FOURTH"),
+                  ];
+            const event = (version: string, hashDigit: string, pools: unknown[]) => {
+              const selectionHash = `sha256:${hashDigit.repeat(64)}`;
+              const cursor = `rec-pools:v1:bsc:3:${base64url(version)}:${base64url(windowEnd)}:${selectionHash.slice(7)}`;
+              const payload = {
+                cursor,
+                observedAt,
+                pools,
+                selectionHash,
+                sourceVersion: version,
+                sourceWindow: 5,
+                sourceWindowEnd: windowEnd,
+                type: "rec_pools_snapshot",
+              };
+              return `id: ${cursor}\nevent: rec_pools_snapshot\ndata: ${JSON.stringify(payload)}\n\n`;
+            };
+            controller.enqueue(encoder.encode(event("7", "a", initialPools)));
+            controller.enqueue(
+              encoder.encode(
+                `event: snapshot\ndata: ${JSON.stringify({
+                  observedAt,
+                  sequence: 20,
+                  stats: {
+                    fps: null,
+                    gas: { baseGwei: null, ethereumGwei: null },
+                    online: null,
+                    pingMs: null,
+                    taskCounts: { paused: null, running: null, stopped: null },
+                  },
+                  type: "snapshot",
+                })}\n\n`,
+              ),
+            );
+            if (mode === "reconnecting" || mode === "stale") {
+              controller.close();
+              return;
+            }
+            if (mode === "ready") {
+              window.setTimeout(() => {
+                if (cancelled) return;
+                controller.enqueue(
+                  encoder.encode(
+                    event("8", "b", [
+                      pool("1", "99", "WBNB"),
+                      pool("3", "10", "USDC"),
+                      pool("2", "8", null),
+                    ]),
+                  ),
+                );
+              }, 1_500);
+            }
+          }, 0);
+        },
+        cancel() {
+          cancelled = true;
         },
       });
       return Promise.resolve(
