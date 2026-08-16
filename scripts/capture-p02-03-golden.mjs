@@ -215,7 +215,9 @@ async function rpc(method, params) {
       });
       if (response.ok) {
         const payload = await response.json();
-        if (payload.error) throw new Error(`RPC error ${String(payload.error.code)}`);
+        if (payload.error) {
+          throw new Error(`RPC error ${String(payload.error.code)} for ${method}`);
+        }
         return payload.result;
       }
       if (response.status !== 429 && response.status < 500) {
@@ -290,17 +292,20 @@ async function capturePlan(plan, capturedAt) {
   const receipt = await rpc("eth_getTransactionReceipt", [plan.transactionHash]);
   if (!receipt || receipt.status !== "0x1") throw new Error(`${plan.protocol}/${plan.eventName}: receipt missing or failed`);
   const log = findLog(receipt, plan);
-  const [header, code] = await Promise.all([
+  const [header, observationHeader, code] = await Promise.all([
     rpc("eth_getBlockByNumber", [log.blockNumber, false]),
-    rpc("eth_getCode", [log.address, log.blockNumber]),
+    rpc("eth_getBlockByNumber", ["latest", false]),
+    rpc("eth_getCode", [log.address, "latest"]),
   ]);
-  if (!header || code === "0x") throw new Error(`${plan.protocol}/${plan.eventName}: header or code missing`);
+  if (!header || !observationHeader || code === "0x") {
+    throw new Error(`${plan.protocol}/${plan.eventName}: header or code missing`);
+  }
   const result = {
     blockHeader: headerProjection(header),
     capturedAt,
     contractCode: {
       address: log.address.toLowerCase(),
-      blockNumber: String(BigInt(log.blockNumber)),
+      observedAtBlock: String(BigInt(observationHeader.number)),
       runtimeCodeHash: keccak256(code),
     },
     delivery: delivery(log, header),
