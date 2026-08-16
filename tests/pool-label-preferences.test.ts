@@ -1,4 +1,7 @@
-import { defaultUserPreferences, userPreferenceSchemaVersion } from "../packages/api-contract/src/index.js";
+import {
+  defaultUserPreferences,
+  userPreferenceSchemaVersion,
+} from "../packages/api-contract/src/index.js";
 import { normalizeStoredUserPreferences } from "../apps/api/src/user-preferences.js";
 import { describe, expect, it } from "vitest";
 
@@ -40,8 +43,10 @@ describe("P02-08 pool label preference migration", () => {
   it("defaults labels on and preserves an explicit migrated preference", () => {
     expect(defaultUserPreferences.showPoolLabels).toBe(true);
     expect(
-      normalizeStoredUserPreferences({ ...structuredClone(defaultUserPreferences), showPoolLabels: false })
-        .showPoolLabels,
+      normalizeStoredUserPreferences({
+        ...structuredClone(defaultUserPreferences),
+        showPoolLabels: false,
+      }).showPoolLabels,
     ).toBe(false);
   });
 });

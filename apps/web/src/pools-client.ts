@@ -47,7 +47,12 @@ function isPoolId(value: unknown): value is `0x${string}` {
 
 function parsePoolRow(value: unknown): MarketPoolRow | null {
   if (!isRecord(value)) return null;
-  const poolAddress = value.poolAddress === null ? null : isAddress(value.poolAddress) ? value.poolAddress : undefined;
+  const poolAddress =
+    value.poolAddress === null
+      ? null
+      : isAddress(value.poolAddress)
+        ? value.poolAddress
+        : undefined;
   const poolId = value.poolId === null ? null : isPoolId(value.poolId) ? value.poolId : undefined;
   const identity = poolAddress ?? poolId;
   if (
@@ -282,7 +287,9 @@ export class PoolsClient {
     const envelope = (await response.json()) as SuccessEnvelope<unknown>;
     let snapshot: MarketPoolSnapshot;
     try {
-      snapshot = envelope.success ? parseMarketPoolSnapshot(envelope.data) : parseMarketPoolSnapshot(null);
+      snapshot = envelope.success
+        ? parseMarketPoolSnapshot(envelope.data)
+        : parseMarketPoolSnapshot(null);
     } catch {
       throw new Error("MARKET_RESPONSE_INVALID");
     }

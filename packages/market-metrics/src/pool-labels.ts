@@ -113,9 +113,7 @@ function deepFreeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
-export const POOL_LABEL_RULE_CONTRACT = deepFreeze(
-  contractJson as PoolLabelRuleContract,
-);
+export const POOL_LABEL_RULE_CONTRACT = deepFreeze(contractJson as PoolLabelRuleContract);
 
 function decimal(value: string): Decimal {
   const parsed = new LabelDecimal(value);
@@ -222,7 +220,9 @@ function volumeDispersion(events: readonly MarketMetricEvent[]): Decimal | null 
     .reduce<Decimal>((sum, value) => sum.plus(value), new LabelDecimal(0))
     .dividedBy(values.length);
   if (mean.lessThanOrEqualTo(0)) return null;
-  return LabelDecimal.max(...values).minus(LabelDecimal.min(...values)).dividedBy(mean);
+  return LabelDecimal.max(...values)
+    .minus(LabelDecimal.min(...values))
+    .dividedBy(mean);
 }
 
 function halfYield(events: readonly MarketMetricEvent[]): Decimal | null {
@@ -380,13 +380,7 @@ export function computePoolLabels(input: ComputePoolLabelsInput): ComputedPoolLa
               boundedScore(maxChange, priceMaximum, contract),
             ),
             [
-              reason(
-                "VOLUME_DISPERSION_LTE_THRESHOLD",
-                dispersion,
-                "<=",
-                volumeMaximum,
-                window,
-              ),
+              reason("VOLUME_DISPERSION_LTE_THRESHOLD", dispersion, "<=", volumeMaximum, window),
               reason("PRICE_CHANGE_LTE_THRESHOLD", maxChange, "<=", priceMaximum, window),
             ],
             input,
@@ -440,7 +434,10 @@ export function computePoolLabels(input: ComputePoolLabelsInput): ComputedPoolLa
   );
   if (liquidity.length >= contract.minimumSamples["lp-direction"]) {
     const values = liquidity.map((item) => decimal(item.liquidityDelta!));
-    const gross = values.reduce<Decimal>((sum, value) => sum.plus(value.abs()), new LabelDecimal(0));
+    const gross = values.reduce<Decimal>(
+      (sum, value) => sum.plus(value.abs()),
+      new LabelDecimal(0),
+    );
     if (gross.greaterThan(0)) {
       const dominance = values
         .reduce<Decimal>((sum, value) => sum.plus(value), new LabelDecimal(0))
@@ -473,7 +470,8 @@ export function computePoolLabels(input: ComputePoolLabelsInput): ComputedPoolLa
   const byId = new Map(candidates.map((label) => [label.id, label]));
   const priorities = new Map(contract.rules.map(({ id, priority }) => [id, priority]));
   return [...byId.values()].sort((left, right) => {
-    const priority = (priorities.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
+    const priority =
+      (priorities.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
       (priorities.get(right.id) ?? Number.MAX_SAFE_INTEGER);
     return priority === 0 ? left.id.localeCompare(right.id) : priority;
   });

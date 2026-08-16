@@ -465,10 +465,7 @@ function PoolLabelDisplay({ row, visible }: { row: MarketPoolRow; visible: boole
               </button>
             </Dialog.Close>
           </div>
-          <Dialog.Description
-            className="sr-only"
-            id={`pool-label-description-${row.poolKey}`}
-          >
+          <Dialog.Description className="sr-only" id={`pool-label-description-${row.poolKey}`}>
             当前市场窗口计算出的池标签及原因
           </Dialog.Description>
           <ul className="pool-label-detail-list">

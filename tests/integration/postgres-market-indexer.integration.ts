@@ -687,9 +687,9 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
         windowEnd: "2026-08-16T00:01:00.000Z",
       });
     }
-    expect(new Set([oldBranch, withdrawn, replacement].map((item) => item?.canonicalRevision)).size).toBe(
-      3,
-    );
+    expect(
+      new Set([oldBranch, withdrawn, replacement].map((item) => item?.canonicalRevision)).size,
+    ).toBe(3);
 
     const canonical = await pool.query<{
       canonical_revision: string;

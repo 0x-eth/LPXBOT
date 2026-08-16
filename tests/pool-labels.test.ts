@@ -102,7 +102,9 @@ describe("P02-08 versioned pool label rule contract", () => {
       "lp-outflow",
     ]);
     expect(
-      POOL_LABEL_RULE_CONTRACT.rules.filter(({ exclusiveGroup }) => exclusiveGroup === "yield-trend"),
+      POOL_LABEL_RULE_CONTRACT.rules.filter(
+        ({ exclusiveGroup }) => exclusiveGroup === "yield-trend",
+      ),
     ).toHaveLength(3);
     expect(new Set(POOL_LABEL_RULE_CONTRACT.rules.map(({ priority }) => priority)).size).toBe(
       POOL_LABEL_RULE_CONTRACT.rules.length,
@@ -194,30 +196,33 @@ describe("P02-08 versioned pool label rule contract", () => {
       metricRow: row(),
       reason: "LP_NET_FLOW_LTE_THRESHOLD",
     },
-  ])("emits $expected exactly at its Decimal threshold", ({ events, expected, metricRow, reason }) => {
-    const result = labels(events, metricRow);
-    const emitted = result.find(({ id }) => id === expected);
-    expect(emitted).toBeDefined();
-    expect(emitted).toMatchObject({
-      computedAt: end,
-      ruleVersion: POOL_LABEL_RULE_CONTRACT.ruleVersion,
-      score: 50,
-    });
-    expect(emitted!.reasons.some(({ code }) => code === reason)).toBe(true);
-    for (const item of result) {
-      expect(item.score).toBeGreaterThanOrEqual(0);
-      expect(item.score).toBeLessThanOrEqual(100);
-      for (const detail of item.reasons) {
-        expect(detail).toEqual({
-          code: expect.any(String),
-          observed: expect.any(String),
-          operator: expect.any(String),
-          threshold: expect.any(String),
-          window: "5m",
-        });
+  ])(
+    "emits $expected exactly at its Decimal threshold",
+    ({ events, expected, metricRow, reason }) => {
+      const result = labels(events, metricRow);
+      const emitted = result.find(({ id }) => id === expected);
+      expect(emitted).toBeDefined();
+      expect(emitted).toMatchObject({
+        computedAt: end,
+        ruleVersion: POOL_LABEL_RULE_CONTRACT.ruleVersion,
+        score: 50,
+      });
+      expect(emitted!.reasons.some(({ code }) => code === reason)).toBe(true);
+      for (const item of result) {
+        expect(item.score).toBeGreaterThanOrEqual(0);
+        expect(item.score).toBeLessThanOrEqual(100);
+        for (const detail of item.reasons) {
+          expect(detail).toEqual({
+            code: expect.any(String),
+            observed: expect.any(String),
+            operator: expect.any(String),
+            threshold: expect.any(String),
+            window: "5m",
+          });
+        }
       }
-    }
-  });
+    },
+  );
 
   it("omits labels for nulls, missing samples and missing history instead of filling values", () => {
     expect(labels([], row())).toEqual([]);
