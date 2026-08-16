@@ -761,6 +761,192 @@ input:focus-visible,
   color: var(--danger);
 }
 
+.pool-advanced-filter {
+  min-width: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.pool-advanced-filter-heading {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pool-advanced-filter-heading button,
+.pool-filter-actions button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 5px 10px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.pool-advanced-filter-heading button:hover,
+.pool-filter-actions button:hover {
+  background: var(--surface-hover);
+}
+
+.pool-filter-state {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.pool-filter-state[data-state="invalid"] {
+  color: var(--danger);
+}
+
+.pool-filter-state[data-state="applied"],
+.pool-filter-state[data-state="no-results"] {
+  color: var(--focus-ring);
+}
+
+.pool-advanced-filter-body {
+  display: grid;
+  min-width: 0;
+  gap: 14px;
+  padding: 4px 0 16px;
+}
+
+.pool-filter-generations {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.pool-filter-generations legend,
+.pool-filter-options > label > span,
+.pool-numeric-filter > label > span {
+  color: var(--muted-foreground);
+  font-size: 0.67rem;
+  font-weight: 700;
+}
+
+.pool-filter-generations legend {
+  margin-right: 4px;
+}
+
+.pool-filter-generations label,
+.pool-numeric-filter label,
+.pool-filter-han {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.pool-filter-generations label,
+.pool-numeric-filter-toggle,
+.pool-filter-han {
+  cursor: pointer;
+}
+
+.pool-filter-generations input,
+.pool-numeric-filter-toggle input,
+.pool-filter-han input {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: var(--focus-ring);
+}
+
+.pool-numeric-filters {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 20px;
+}
+
+.pool-numeric-filter {
+  display: grid;
+  min-width: 0;
+  min-height: 40px;
+  grid-template-columns: minmax(92px, 0.8fr) minmax(90px, 1fr) minmax(90px, 1fr);
+  align-items: end;
+  gap: 7px;
+}
+
+.pool-numeric-filter label:not(.pool-numeric-filter-toggle),
+.pool-filter-options > label:not(.pool-filter-han) {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.pool-numeric-filter input[type="text"],
+.pool-filter-options select {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  outline: 0;
+  background: var(--surface);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pool-numeric-filter input[type="text"]:focus,
+.pool-filter-options select:focus {
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.pool-numeric-filter input[type="text"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.pool-filter-options {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(130px, 190px)) minmax(180px, 1fr);
+  align-items: end;
+  gap: 10px 14px;
+}
+
+.pool-filter-han {
+  min-height: 32px;
+  justify-self: end;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.pool-filter-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.72rem;
+}
+
+.pool-filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pool-filter-actions button:last-child {
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
 .pool-table-toolbar {
   display: flex;
   min-height: 40px;
@@ -788,7 +974,7 @@ input:focus-visible,
 
 .pools-table {
   width: 100%;
-  min-width: 760px;
+  min-width: 1040px;
   table-layout: fixed;
   border-collapse: collapse;
   color: var(--text);
@@ -826,7 +1012,7 @@ input:focus-visible,
 }
 
 .pools-table th.pool-column-actions {
-  width: 54px;
+  width: 84px;
 }
 
 .pools-table tbody tr + tr {
@@ -893,6 +1079,12 @@ input:focus-visible,
   font-size: 0.68rem;
 }
 
+.pool-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
 .pool-row-actions button {
   display: inline-grid;
   width: 30px;
@@ -904,6 +1096,17 @@ input:focus-visible,
   background: var(--surface);
   cursor: pointer;
   place-items: center;
+}
+
+.pool-row-actions button[aria-pressed="true"] {
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.pool-row-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
 }
 
 .pool-row-actions button:hover {
@@ -945,6 +1148,119 @@ input:focus-visible,
 
 .pools-error .retry-button {
   margin-left: auto;
+}
+
+.pool-comparison {
+  min-width: 0;
+  margin-top: 28px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.pool-comparison-heading {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pool-comparison-heading h2,
+.pool-comparison-heading p,
+.pool-comparison > p {
+  margin: 0;
+}
+
+.pool-comparison-heading h2 {
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.pool-comparison-heading p,
+.pool-comparison > p {
+  margin-top: 4px;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+
+.pool-comparison > p[role="alert"] {
+  color: var(--danger);
+}
+
+.pool-comparison-heading button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  cursor: pointer;
+  place-items: center;
+}
+
+.pool-comparison-heading button:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.pool-comparison-binding {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 5px 16px;
+  padding: 8px 0;
+  color: var(--muted-foreground);
+  border-top: 1px solid var(--border);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.68rem;
+}
+
+.pool-comparison-table-shell {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  border-top: 1px solid var(--border);
+}
+
+.pool-comparison-table {
+  width: 100%;
+  min-width: 680px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  color: var(--text);
+}
+
+.pool-comparison-table th,
+.pool-comparison-table td {
+  min-width: 0;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.74rem;
+  text-align: right;
+}
+
+.pool-comparison-table th:first-child {
+  width: 120px;
+  color: var(--muted-foreground);
+  text-align: left;
+}
+
+.pool-comparison-table thead th {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+
+.pool-comparison-table td {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.pool-comparison-best {
+  color: #087f5b;
+  font-weight: 750;
 }
 
 .liquidity-flow-panel {

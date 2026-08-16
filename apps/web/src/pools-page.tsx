@@ -2272,6 +2272,19 @@ export function PoolsPage() {
         submit={submitPoolSearch}
       />
 
+      <PoolAdvancedFilterControls
+        apply={applyAdvancedFilters}
+        draft={advancedFilterDraft}
+        filterState={advancedFilterState}
+        open={advancedFilterOpen}
+        reset={resetAdvancedFilters}
+        setOpen={setAdvancedFilterOpen}
+        update={(filters) => {
+          setAdvancedFilterDraft(filters);
+          setAdvancedFilterValidationFailed(false);
+        }}
+      />
+
       {!poolSearchParameters && connection === "loading" ? (
         <div className="pools-loading" role="status">
           <span className="spinner spinner-small" aria-hidden="true" />
@@ -2298,13 +2311,31 @@ export function PoolsPage() {
           <p>当前过滤条件暂无池数据</p>
         </div>
       ) : null}
+      {advancedFilterState === "no-results" ? (
+        <div className="pools-empty pool-filter-empty" role="status">
+          <p>没有符合高级筛选条件的池</p>
+        </div>
+      ) : null}
       <div className="pool-table-toolbar">
         <span>{poolGroups.length} 组</span>
         <PoolColumnDialog columns={poolColumns} save={savePoolColumns} />
       </div>
       {visiblePoolRows.length > 0 ? (
-        <PoolTable columns={poolColumns} rows={visiblePoolRows} toggleGroup={togglePoolGroup} />
+        <PoolTable
+          columns={poolColumns}
+          comparisonCandidateKeys={comparisonCandidateKeys}
+          comparisonSelectedKeys={comparisonSelectedKeys}
+          rows={visiblePoolRows}
+          toggleComparison={toggleComparison}
+          toggleGroup={togglePoolGroup}
+        />
       ) : null}
+
+      <PoolComparisonPanel
+        clear={() => setComparisonState(initialPoolComparisonState())}
+        state={comparisonState}
+        view={comparisonView}
+      />
 
       <section
         aria-busy={flowConnection === "loading-backfill" ? "true" : undefined}
