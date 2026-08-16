@@ -125,13 +125,21 @@ const basePoolRow: MarketPoolRow = {
 };
 
 const fixturePoolRows: MarketPoolRow[] = liquidityFlowProtocols.map((protocol, index) => {
-  const poolAddress = `0x${String(index + 1).repeat(40)}` as const;
+  const v4 = protocol.endsWith("v4");
+  const poolAddress = v4
+    ? null
+    : (`0x${String(index + 1).repeat(40)}` as MarketPoolRow["poolAddress"]);
+  const poolId = v4
+    ? (`0x${String(index + 1).repeat(64)}` as MarketPoolRow["poolId"])
+    : null;
+  const identity = poolAddress ?? poolId!;
   return {
     ...basePoolRow,
     fdvUsd: new Decimal(basePoolRow.fdvUsd!).plus(index * 1_000_000).toString(),
     feesUsd: new Decimal(basePoolRow.feesUsd!).minus(index * 36).toString(),
     poolAddress,
-    poolKey: `56:${poolAddress}`,
+    poolId,
+    poolKey: `56:${identity}`,
     protocol,
     token0Address: (index < 2
       ? basePoolRow.token0Address
@@ -343,42 +351,351 @@ function ConnectionStatus({ connection }: { connection: PoolConnectionState }) {
   );
 }
 
-function PoolTable({ rows }: { rows: readonly MarketPoolRow[] }) {
+const poolColumnLabels: Record<PoolColumnKey, string> = {
+  actions: "操作",
+  fdv: "FDV",
+  fees: "Fees",
+  pool: "池",
+  protocol: "协议",
+  tvl: "TVL",
+  txs: "Txs",
+  volume: "Volume",
+};
+
+function PoolTableCell({
+  column,
+  toggleGroup,
+  visibleRow,
+}: {
+  column: PoolColumnKey;
+  toggleGroup(groupKey: string): void;
+  visibleRow: VisiblePoolRow;
+}) {
+  const { row } = visibleRow;
+  const identity = row.poolAddress ?? row.poolId!;
+  if (column === "pool") {
+    return (
+      <td className="pool-identity-cell" data-label="池">
+        <div className="pool-name-line">
+          {visibleRow.isHeader && visibleRow.additionalCount > 0 ? (
+            <button
+              aria-expanded={visibleRow.expanded}
+              aria-label={`${visibleRow.expanded ? "折叠" : "展开"}池分组 ${visibleRow.groupKey}`}
+              className="pool-group-toggle"
+              onClick={() => toggleGroup(visibleRow.groupKey)}
+              type="button"
+            >
+              {visibleRow.expanded ? (
+                <ChevronDown aria-hidden="true" size={14} />
+              ) : (
+                <ChevronRight aria-hidden="true" size={14} />
+              )}
+              <span>+{visibleRow.additionalCount}</span>
+            </button>
+          ) : (
+            <span aria-hidden="true" className="pool-group-spacer" />
+          )}
+          <strong>
+            {row.token0Symbol ?? "--"} / {row.token1Symbol ?? "--"}
+          </strong>
+        </div>
+        <code className="pool-address" title={identity}>
+          {identity}
+        </code>
+      </td>
+    );
+  }
+  if (column === "protocol") {
+    return <td data-label="协议">{protocolName(row.protocol)}</td>;
+  }
+  if (column === "fees") return <NumericValue label="Fees" prefix="$ " value={row.feesUsd} />;
+  if (column === "volume") {
+    return <NumericValue label="Volume" prefix="$ " value={row.volumeUsd} />;
+  }
+  if (column === "tvl") return <NumericValue label="TVL" prefix="$ " value={row.tvlUsd} />;
+  if (column === "txs") {
+    return <NumericValue fractionDigits={0} label="Txs" value={row.transactionCount} />;
+  }
+  if (column === "fdv") return <NumericValue label="FDV" prefix="$ " value={row.fdvUsd} />;
+  return (
+    <td className="pool-row-actions" data-label="操作">
+      <button
+        aria-label={`复制池身份 ${identity}`}
+        onClick={() => void navigator.clipboard.writeText(identity)}
+        title="复制池身份"
+        type="button"
+      >
+        <Copy aria-hidden="true" size={15} />
+      </button>
+    </td>
+  );
+}
+
+function PoolTable({
+  columns,
+  rows,
+  toggleGroup,
+}: {
+  columns: readonly PoolColumnPreference[];
+  rows: readonly VisiblePoolRow[];
+  toggleGroup(groupKey: string): void;
+}) {
+  const visibleColumns = columns.filter(({ visible }) => visible);
   return (
     <div className="pools-table-shell">
       <table aria-label="BSC 热门池" className="pools-table">
         <thead>
           <tr>
-            {["池", "协议", "Fees", "Volume", "TVL", "Txs", "FDV"].map((label) => (
-              <th key={label} scope="col">
-                {label}
+            {visibleColumns.map(({ key }) => (
+              <th className={`pool-column-${key}`} key={key} scope="col">
+                {poolColumnLabels[key]}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => {
-            const identity = row.poolAddress ?? row.poolId!;
-            return (
-              <tr key={`${row.chainId}:${identity}`}>
-                <td data-label="池">
-                  <strong>
-                    {row.token0Symbol ?? "?"} / {row.token1Symbol ?? "?"}
-                  </strong>
-                  <span className="pool-address">{shortIdentity(identity)}</span>
-                </td>
-                <td data-label="协议">{protocolName(row.protocol)}</td>
-                <NumericValue label="Fees" prefix="$ " value={row.feesUsd} />
-                <NumericValue label="Volume" prefix="$ " value={row.volumeUsd} />
-                <NumericValue label="TVL" prefix="$ " value={row.tvlUsd} />
-                <NumericValue fractionDigits={0} label="Txs" value={row.transactionCount} />
-                <NumericValue label="FDV" prefix="$ " value={row.fdvUsd} />
+          {rows.map((visibleRow) => (
+              <tr
+                data-group-member={!visibleRow.isHeader ? "true" : undefined}
+                key={visibleRow.row.poolKey}
+              >
+                {visibleColumns.map(({ key }) => (
+                  <PoolTableCell
+                    column={key}
+                    key={key}
+                    toggleGroup={toggleGroup}
+                    visibleRow={visibleRow}
+                  />
+                ))}
               </tr>
-            );
-          })}
+            ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function PoolSearchControls({
+  clear,
+  mode,
+  query,
+  refresh,
+  setMode,
+  setQuery,
+  state,
+  submit,
+}: {
+  clear(): void;
+  mode: PoolSearchMode;
+  query: string;
+  refresh(): void;
+  setMode(mode: PoolSearchMode): void;
+  setQuery(query: string): void;
+  state: PoolSearchState;
+  submit(): void;
+}) {
+  const active = state.status !== "pristine";
+  const statusText: Partial<Record<PoolSearchState["status"], string>> = {
+    error: "搜索暂不可用",
+    invalid: mode === "token" ? "请输入合法 Token 地址" : "请输入合法池地址或 Pool ID",
+    loading: "正在搜索",
+    "no-results": "没有匹配的池",
+    ready: `${state.rows.length} 个结果`,
+    reconnecting: "搜索结果重连中",
+  };
+  return (
+    <section aria-label="池搜索" className="pool-search-area" data-search-state={state.status}>
+      <form
+        className="pool-search-form"
+        onSubmit={(event: FormEvent<HTMLFormElement>) => {
+          event.preventDefault();
+          submit();
+        }}
+      >
+        <FlowSegment<PoolSearchMode>
+          label="搜索模式"
+          onChange={setMode}
+          options={
+            [
+              { label: "Token", value: "token" },
+              { label: "池", value: "pool" },
+            ] as const
+          }
+          value={mode}
+        />
+        <label className="pool-search-input">
+          <span className="sr-only">{mode === "token" ? "Token 地址" : "池地址或 Pool ID"}</span>
+          <Search aria-hidden="true" size={16} />
+          <input
+            aria-label={mode === "token" ? "Token 地址" : "池地址或 Pool ID"}
+            autoComplete="off"
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={mode === "token" ? "0x Token address" : "0x pool address / pool ID"}
+            spellCheck={false}
+            value={query}
+          />
+        </label>
+        <button className="pool-search-submit" type="submit">
+          <Search aria-hidden="true" size={15} />
+          搜索
+        </button>
+        {active ? (
+          <>
+            <button aria-label="刷新池搜索" onClick={refresh} title="刷新" type="button">
+              <RefreshCw aria-hidden="true" size={15} />
+            </button>
+            <button aria-label="清除池搜索" onClick={clear} title="清除" type="button">
+              <X aria-hidden="true" size={15} />
+            </button>
+          </>
+        ) : null}
+      </form>
+      {active ? (
+        <div
+          className="pool-search-status"
+          data-state={state.status}
+          role={state.status === "error" || state.status === "invalid" ? "alert" : "status"}
+        >
+          {state.status === "loading" || state.status === "reconnecting" ? (
+            <span aria-hidden="true" className="spinner spinner-small" />
+          ) : null}
+          <span>{statusText[state.status]}</span>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function PoolColumnDialog({
+  columns,
+  save,
+}: {
+  columns: readonly PoolColumnPreference[];
+  save(columns: PoolColumnPreference[]): Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(() => normalizePoolColumns(columns));
+  const [dragged, setDragged] = useState<PoolColumnKey | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(false);
+  const locked = (key: PoolColumnKey) => key === "pool" || key === "actions";
+  const openChanged = (next: boolean) => {
+    setOpen(next);
+    if (next) {
+      setDraft(normalizePoolColumns(columns));
+      setDragged(null);
+      setError(false);
+    }
+  };
+  const drop = (event: DragEvent<HTMLLIElement>, target: PoolColumnKey) => {
+    event.preventDefault();
+    if (dragged) setDraft((current) => reorderPoolColumn(current, dragged, target));
+    setDragged(null);
+  };
+  const submit = async () => {
+    setSaving(true);
+    setError(false);
+    const saved = await save(normalizePoolColumns(draft));
+    setSaving(false);
+    if (saved) setOpen(false);
+    else setError(true);
+  };
+  return (
+    <Dialog.Root onOpenChange={openChanged} open={open}>
+      <Dialog.Trigger asChild>
+        <button aria-label="设置池表列" className="pool-column-trigger" title="设置列" type="button">
+          <Settings2 aria-hidden="true" size={16} />
+        </button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="remark-dialog-backdrop" />
+        <Dialog.Content aria-describedby="pool-column-description" className="pool-column-dialog">
+          <div className="pool-column-dialog-heading">
+            <Dialog.Title>表格列</Dialog.Title>
+            <Dialog.Close asChild>
+              <button aria-label="关闭列设置" type="button">
+                <X aria-hidden="true" size={17} />
+              </button>
+            </Dialog.Close>
+          </div>
+          <Dialog.Description className="sr-only" id="pool-column-description">
+            调整热门池表格列的显示和顺序
+          </Dialog.Description>
+          <ul className="pool-column-list">
+            {draft.map((column, index) => {
+              const isLocked = locked(column.key);
+              return (
+                <li
+                  data-column-key={column.key}
+                  draggable={!isLocked}
+                  key={column.key}
+                  onDragEnd={() => setDragged(null)}
+                  onDragOver={(event) => !isLocked && event.preventDefault()}
+                  onDragStart={(event) => {
+                    setDragged(column.key);
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", column.key);
+                  }}
+                  onDrop={(event) => drop(event, column.key)}
+                >
+                  <GripVertical aria-hidden="true" className="pool-column-grip" size={16} />
+                  <label>
+                    <input
+                      checked={column.visible}
+                      disabled={isLocked}
+                      onChange={(event) =>
+                        setDraft((current) =>
+                          setPoolColumnVisibility(current, column.key, event.target.checked),
+                        )
+                      }
+                      type="checkbox"
+                    />
+                    <span>{poolColumnLabels[column.key]}</span>
+                  </label>
+                  {isLocked ? <span className="pool-column-lock">锁定</span> : null}
+                  <div className="pool-column-move">
+                    <button
+                      aria-label={`上移 ${poolColumnLabels[column.key]}`}
+                      disabled={isLocked || index <= 1}
+                      onClick={() => setDraft((current) => movePoolColumn(current, column.key, -1))}
+                      title="上移"
+                      type="button"
+                    >
+                      <ArrowUp aria-hidden="true" size={14} />
+                    </button>
+                    <button
+                      aria-label={`下移 ${poolColumnLabels[column.key]}`}
+                      disabled={isLocked || index >= draft.length - 2}
+                      onClick={() => setDraft((current) => movePoolColumn(current, column.key, 1))}
+                      title="下移"
+                      type="button"
+                    >
+                      <ArrowDown aria-hidden="true" size={14} />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {error ? <p className="pool-column-error" role="alert">列设置保存失败</p> : null}
+          <div className="pool-column-dialog-actions">
+            <button
+              onClick={() => setDraft(DEFAULT_POOL_COLUMNS.map((column) => ({ ...column })))}
+              type="button"
+            >
+              <RotateCcw aria-hidden="true" size={15} />
+              重置
+            </button>
+            <Dialog.Close asChild>
+              <button disabled={saving} type="button">取消</button>
+            </Dialog.Close>
+            <button disabled={saving} onClick={() => void submit()} type="button">
+              {saving ? "保存中" : "保存"}
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
