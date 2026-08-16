@@ -125,7 +125,10 @@ function parseRange(value: string): PoolNumericRange {
 export function parsePoolAdvancedFilters(search: string): ParsedPoolAdvancedFilters {
   const parameters = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
   const filters = defaultPoolAdvancedFilters();
-  const issues: string[] = [];
+  const issueSet = new Set<string>();
+  for (const key of filterQueryKeys) {
+    if (parameters.getAll(key).length > 1) issueSet.add(key);
+  }
   const versionValue = parameters.get("pool_versions");
   if (versionValue !== null) {
     const requested = versionValue.split(",");
@@ -134,7 +137,7 @@ export function parsePoolAdvancedFilters(search: string): ParsedPoolAdvancedFilt
       new Set(requested).size !== requested.length ||
       requested.some((value) => !generations.includes(value as PoolGeneration))
     ) {
-      issues.push("pool_versions");
+      issueSet.add("pool_versions");
       filters.generations = [];
     } else {
       const selected = new Set(requested);
@@ -147,31 +150,32 @@ export function parsePoolAdvancedFilters(search: string): ParsedPoolAdvancedFilt
     if (value === null) continue;
     const range = parseRange(value);
     filters.ranges[key] = range;
-    if (value.split(":").length !== 2 || !rangeIsValid(range)) issues.push(queryKey);
+    if (value.split(":").length !== 2 || !rangeIsValid(range)) issueSet.add(queryKey);
   }
 
   const hook = parameters.get("pool_hook");
   if (hook !== null) {
     if (hook === "present" || hook === "absent" || hook === "any") filters.hook = hook;
-    else issues.push("pool_hook");
+    else issueSet.add("pool_hook");
   }
   const excludeHan = parameters.get("pool_exclude_han");
   if (excludeHan !== null) {
     if (excludeHan === "1") filters.excludeHanTokens = true;
-    else issues.push("pool_exclude_han");
+    else issueSet.add("pool_exclude_han");
   }
   const sortBy = parameters.get("pool_sort");
   if (sortBy !== null) {
     if (poolNumericFilterKeys.includes(sortBy as PoolNumericFilterKey)) {
       filters.sortBy = sortBy as PoolNumericFilterKey;
-    } else issues.push("pool_sort");
+    } else issueSet.add("pool_sort");
   }
   const direction = parameters.get("pool_direction");
   if (direction !== null) {
     if (direction === "asc" || direction === "desc") filters.sortDirection = direction;
-    else issues.push("pool_direction");
+    else issueSet.add("pool_direction");
   }
 
+  const issues = filterQueryKeys.filter((key) => issueSet.has(key));
   return { filters, issues, valid: issues.length === 0 && validatePoolAdvancedFilters(filters) };
 }
 
