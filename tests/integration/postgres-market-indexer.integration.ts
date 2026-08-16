@@ -495,12 +495,7 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     expect(heartbeat?.streamKey).toBe(snapshot?.streamKey);
 
     const replayProvider = new PostgresMarketPoolsProvider(pool, { pollMilliseconds: 1 });
-    const [replayed] = await takeStreamEvents(
-      replayProvider,
-      1,
-      snapshot!.cursor,
-      protocols,
-    );
+    const [replayed] = await takeStreamEvents(replayProvider, 1, snapshot!.cursor, protocols);
     expect(replayed).toEqual(heartbeat);
   });
 

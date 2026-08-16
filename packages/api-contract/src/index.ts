@@ -299,9 +299,7 @@ function isLiquidityFlowProtocol(value: string): value is LiquidityFlowProtocol 
   return (liquidityFlowProtocols as readonly string[]).includes(value);
 }
 
-export function canonicalizeLiquidityProtocols(
-  values: readonly string[],
-): LiquidityFlowProtocol[] {
+export function canonicalizeLiquidityProtocols(values: readonly string[]): LiquidityFlowProtocol[] {
   const selected = new Set<LiquidityFlowProtocol>();
   for (const value of values) {
     if (!isLiquidityFlowProtocol(value)) throw new RangeError("DEX_FILTER_INVALID");

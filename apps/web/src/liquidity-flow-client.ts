@@ -1,7 +1,4 @@
-import type {
-  LiquidityFlowBackfill,
-  LiquidityFlowRecord,
-} from "@lpbot/api-contract";
+import type { LiquidityFlowBackfill, LiquidityFlowRecord } from "@lpbot/api-contract";
 
 export interface LiquidityFlowServerFilters {
   nftId: string;
@@ -89,7 +86,10 @@ export class LiquidityFlowClient {
             headers,
             signal: request.signal,
           });
-          if (!response.ok || !response.headers.get("content-type")?.startsWith("text/event-stream")) {
+          if (
+            !response.ok ||
+            !response.headers.get("content-type")?.startsWith("text/event-stream")
+          ) {
             const status = response.status;
             callbacks.onError(`LIQUIDITY_FLOW_HTTP_${status}`);
             if (fatalStatuses.has(status)) return;

@@ -988,11 +988,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             if (controller.signal.aborted) break;
             if (envelope.eventType === "heartbeat") {
               if (
-                !(await writeSseChunk(
-                  reply,
-                  controller,
-                  `: heartbeat ${envelope.emittedAt}\n\n`,
-                ))
+                !(await writeSseChunk(reply, controller, `: heartbeat ${envelope.emittedAt}\n\n`))
               ) {
                 break;
               }

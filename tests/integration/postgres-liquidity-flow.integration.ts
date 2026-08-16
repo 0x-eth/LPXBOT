@@ -47,8 +47,9 @@ function productionGoldenCommit() {
   for (const protocol of ["pcsv3", "univ3", "pcsv4", "univ4"]) {
     const directory = path.join(normalizedRoot, protocol);
     for (const filename of readdirSync(directory).filter((value) => value.endsWith(".json"))) {
-      const event = JSON.parse(readFileSync(path.join(directory, filename), "utf8")) as
-        NormalizedPoolEvent;
+      const event = JSON.parse(
+        readFileSync(path.join(directory, filename), "utf8"),
+      ) as NormalizedPoolEvent;
       const raw = JSON.parse(readFileSync(path.join(rawRoot, protocol, filename), "utf8")) as {
         delivery: RawLogDelivery;
       };
@@ -186,8 +187,9 @@ describe("P02-04 PostgreSQL liquidity flow read model", () => {
       FOR EACH ROW EXECUTE FUNCTION p0204_fail_flow_outbox();
     `);
 
-    await expect(new PostgresCanonicalEventStore(pool).commit(productionGoldenCommit())).rejects
-      .toThrow(/intentional flow outbox failure/u);
+    await expect(
+      new PostgresCanonicalEventStore(pool).commit(productionGoldenCommit()),
+    ).rejects.toThrow(/intentional flow outbox failure/u);
     const result = await pool.query<{ total: string }>(
       `SELECT (
          (SELECT count(*) FROM normalized_pool_events) +
@@ -245,7 +247,9 @@ describe("P02-04 PostgreSQL liquidity flow read model", () => {
   });
 
   it("provides bounded historical backfill and identical pool/token/user/NFT filtering", async () => {
-    const commitResult = await new PostgresCanonicalEventStore(pool).commit(productionGoldenCommit());
+    const commitResult = await new PostgresCanonicalEventStore(pool).commit(
+      productionGoldenCommit(),
+    );
     expect(commitResult).toMatchObject({ acceptedCount: 16, revertedCount: 0 });
     const projectionCount = await pool.query<{ count: string }>(
       "SELECT count(*)::text AS count FROM liquidity_flow_events",

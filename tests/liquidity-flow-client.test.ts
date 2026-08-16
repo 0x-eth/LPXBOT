@@ -126,12 +126,13 @@ describe("P02-04 liquidity flow client state", () => {
       .mockResolvedValueOnce(
         new Response(body, { headers: { "Content-Type": "text/event-stream" }, status: 200 }),
       )
-      .mockImplementationOnce((_input, init) =>
-        new Promise<Response>((_resolve, reject) => {
-          init?.signal?.addEventListener("abort", () =>
-            reject(new DOMException("Aborted", "AbortError")),
-          );
-        }),
+      .mockImplementationOnce(
+        (_input, init) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () =>
+              reject(new DOMException("Aborted", "AbortError")),
+            );
+          }),
       );
     vi.stubGlobal("fetch", fetcher);
     vi.stubGlobal("window", globalThis);
@@ -233,9 +234,7 @@ describe("P02-04 liquidity flow client state", () => {
       type: "backfill",
     });
     expect(reduceLiquidityFlow(live, { type: "stale" }).connection).toBe("stale");
-    expect(reduceLiquidityFlow(live, { type: "reconnecting" }).connection).toBe(
-      "reconnecting",
-    );
+    expect(reduceLiquidityFlow(live, { type: "reconnecting" }).connection).toBe("reconnecting");
   });
 
   it("applies event/version/address/NFT filters and excludes null USD above zero", () => {

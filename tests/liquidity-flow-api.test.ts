@@ -156,7 +156,11 @@ describe("P02-04 public liquidity flow SSE", () => {
     expect(response.headers["content-type"]).toContain("text/event-stream");
     expect(response.headers["x-accel-buffering"]).toBe("no");
     expect(parseWireEvents(response.body)).toEqual([
-      { event: "backfill", id: flowEvent.cursor, payload: expect.objectContaining({ events: [flowEvent] }) },
+      {
+        event: "backfill",
+        id: flowEvent.cursor,
+        payload: expect.objectContaining({ events: [flowEvent] }),
+      },
       { event: "liquidity-add", id: tombstone.cursor, payload: tombstone },
     ]);
     expect(response.body).toContain(": heartbeat");

@@ -53,11 +53,7 @@ function fingerprint(value: string): string {
 }
 
 function matches(record: LiquidityFlowRecord, context: LiquidityFlowStreamContext): boolean {
-  if (
-    context.pool &&
-    record.pool_address !== context.pool &&
-    record.pool_id !== context.pool
-  ) {
+  if (context.pool && record.pool_address !== context.pool && record.pool_id !== context.pool) {
     return false;
   }
   if (
@@ -255,10 +251,10 @@ export class PostgresLiquidityFlowProvider implements LiquidityFlowProvider {
     const client = await this.#pool.connect();
     try {
       await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
-      await client.query("SELECT pg_advisory_xact_lock($1::integer, $2::integer)", [
-        1_279_283_791,
-        56,
-      ]);
+      await client.query(
+        "SELECT pg_advisory_xact_lock($1::integer, $2::integer)",
+        [1_279_283_791, 56],
+      );
       const latest = await client.query<FlowOutboxRow>(
         `SELECT sequence::text, cursor, record_type, payload, created_at
            FROM liquidity_flow_outbox
@@ -269,10 +265,7 @@ export class PostgresLiquidityFlowProvider implements LiquidityFlowProvider {
       );
       const now = this.#validNow();
       const previous = latest.rows[0];
-      if (
-        previous &&
-        now.getTime() - previous.created_at.getTime() < this.#heartbeatMilliseconds
-      ) {
+      if (previous && now.getTime() - previous.created_at.getTime() < this.#heartbeatMilliseconds) {
         await client.query("COMMIT");
         return null;
       }
