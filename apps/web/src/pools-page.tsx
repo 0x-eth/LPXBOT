@@ -429,6 +429,78 @@ function shortIdentity(value: string | null): string {
   return value.length > 14 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
 }
 
+function PoolLabelDisplay({ row, visible }: { row: MarketPoolRow; visible: boolean }) {
+  if (!visible || row.labels.length === 0) return null;
+  const first = row.labels[0]!;
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger asChild>
+        <button
+          aria-label={`查看池标签 ${first.label}`}
+          className="pool-label-chip"
+          data-label-id={first.id}
+          type="button"
+        >
+          <Tag aria-hidden="true" size={12} />
+          <span className="pool-label-name">{first.label}</span>
+          {row.labels.length > 1 ? (
+            <span className="pool-label-more">+{row.labels.length - 1}</span>
+          ) : null}
+        </button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="remark-dialog-backdrop" />
+        <Dialog.Content
+          aria-describedby={`pool-label-description-${row.poolKey}`}
+          className="pool-label-dialog"
+        >
+          <div className="pool-label-dialog-heading">
+            <div>
+              <Dialog.Title>池标签详情</Dialog.Title>
+              <code>{shortIdentity(row.poolAddress ?? row.poolId)}</code>
+            </div>
+            <Dialog.Close asChild>
+              <button aria-label="关闭池标签详情" type="button">
+                <X aria-hidden="true" size={17} />
+              </button>
+            </Dialog.Close>
+          </div>
+          <Dialog.Description
+            className="sr-only"
+            id={`pool-label-description-${row.poolKey}`}
+          >
+            当前市场窗口计算出的池标签及原因
+          </Dialog.Description>
+          <ul className="pool-label-detail-list">
+            {row.labels.map((item) => (
+              <li data-label-id={item.id} key={item.id}>
+                <div className="pool-label-detail-title">
+                  <strong>{item.label}</strong>
+                  <span>{item.score}/100</span>
+                </div>
+                <ul className="pool-label-reason-list">
+                  {item.reasons.map((detail) => (
+                    <li key={`${item.id}:${detail.code}`}>
+                      <code>{detail.code}</code>
+                      <span>
+                        {detail.window} · {detail.observed} {detail.operator} {detail.threshold}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+          <div className="pool-label-dialog-version">
+            <span>{row.labelRuleVersion}</span>
+            <time dateTime={first.computedAt}>{first.computedAt}</time>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 function poolConnectionLabel(connection: PoolConnectionState): string {
   const labels: Record<PoolConnectionState, string> = {
     empty: "实时 · 暂无池数据",
@@ -476,6 +548,7 @@ function PoolTableCell({
   toggleComparison,
   toggleGroup,
   visibleRow,
+  showLabels,
 }: {
   column: PoolColumnKey;
   comparisonEnabled: boolean;
@@ -483,6 +556,7 @@ function PoolTableCell({
   toggleComparison(poolKey: string): void;
   toggleGroup(groupKey: string): void;
   visibleRow: VisiblePoolRow;
+  showLabels: boolean;
 }) {
   const { row } = visibleRow;
   const identity = row.poolAddress ?? row.poolId!;
@@ -511,6 +585,7 @@ function PoolTableCell({
           <strong>
             {row.token0Symbol ?? "--"} / {row.token1Symbol ?? "--"}
           </strong>
+          <PoolLabelDisplay row={row} visible={showLabels} />
         </div>
         <code className="pool-address" title={identity}>
           {identity}
@@ -563,6 +638,7 @@ function PoolTable({
   comparisonCandidateKeys,
   comparisonSelectedKeys,
   rows,
+  showLabels,
   toggleComparison,
   toggleGroup,
 }: {
@@ -570,6 +646,7 @@ function PoolTable({
   comparisonCandidateKeys: ReadonlySet<string>;
   comparisonSelectedKeys: ReadonlySet<string>;
   rows: readonly VisiblePoolRow[];
+  showLabels: boolean;
   toggleComparison(poolKey: string): void;
   toggleGroup(groupKey: string): void;
 }) {
@@ -590,6 +667,7 @@ function PoolTable({
           {rows.map((visibleRow) => (
             <tr
               data-group-member={!visibleRow.isHeader ? "true" : undefined}
+              data-pool-label-count={showLabels ? visibleRow.row.labels.length : 0}
               key={visibleRow.row.poolKey}
             >
               {visibleColumns.map(({ key }) => (
@@ -598,6 +676,7 @@ function PoolTable({
                   comparisonEnabled={comparisonCandidateKeys.has(visibleRow.row.poolKey)}
                   comparisonSelected={comparisonSelectedKeys.has(visibleRow.row.poolKey)}
                   key={key}
+                  showLabels={showLabels}
                   toggleComparison={toggleComparison}
                   toggleGroup={toggleGroup}
                   visibleRow={visibleRow}
@@ -2391,6 +2470,7 @@ export function PoolsPage() {
           comparisonCandidateKeys={comparisonCandidateKeys}
           comparisonSelectedKeys={comparisonSelectedKeys}
           rows={visiblePoolRows}
+          showLabels={preferences.showPoolLabels}
           toggleComparison={toggleComparison}
           toggleGroup={togglePoolGroup}
         />

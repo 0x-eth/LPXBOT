@@ -312,6 +312,14 @@ export function InterfaceSettings() {
             onChange={(checked) => void update({ showHotPools: checked })}
           />
         </SettingRow>
+        <SettingRow description="在热门池列表中显示版本化标签" title="池标签">
+          <PreferenceSwitch
+            checked={preferences.showPoolLabels}
+            disabled={loading}
+            label="显示池标签"
+            onChange={(checked) => void update({ showPoolLabels: checked })}
+          />
+        </SettingRow>
         <SettingRow description="在任务页显示扫描入口" title="扫描仓位">
           <PreferenceSwitch
             checked={preferences.showScanTab}
