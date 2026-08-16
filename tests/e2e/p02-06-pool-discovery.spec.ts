@@ -71,7 +71,7 @@ function preferenceEnvelope(state: PreferenceState) {
     data: {
       preferences: preferences(state),
       revision: state.revision,
-      schemaVersion: 4,
+      schemaVersion: 5,
       updatedAt: state.revision === 0 ? null : "2026-08-16T10:00:00.000Z",
     },
     requestId: "req-p02-06-preferences",

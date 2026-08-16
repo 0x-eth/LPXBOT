@@ -167,7 +167,7 @@ async function installFixture(
           theme: "light",
         },
         revision: 1,
-        schemaVersion: 4,
+        schemaVersion: 5,
         updatedAt: "2026-08-15T00:00:00.000Z",
       },
       requestId: "req-chain-ui-preferences",

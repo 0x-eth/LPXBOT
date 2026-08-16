@@ -83,7 +83,7 @@ async function fulfillPreferences(route: Route, state: FixtureState): Promise<vo
         data: {
           preferences: state.preferences,
           revision: state.revision,
-          schemaVersion: 4,
+          schemaVersion: 5,
           updatedAt: state.revision === 0 ? null : "2026-08-14T09:30:00.000Z",
         },
         requestId: "req-preferences-e2e",
@@ -141,7 +141,7 @@ async function fulfillPreferences(route: Route, state: FixtureState): Promise<vo
       data: {
         preferences: state.preferences,
         revision: state.revision,
-        schemaVersion: 4,
+        schemaVersion: 5,
         updatedAt: "2026-08-14T09:30:00.000Z",
       },
       requestId: "req-preferences-saved",

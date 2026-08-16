@@ -86,7 +86,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
     expect(defaults.json().data).toMatchObject({
       preferences: { colorTheme: "neutral", taskViewMode: "grid", theme: "system" },
       revision: 0,
-      schemaVersion: 4,
+      schemaVersion: 5,
       updatedAt: null,
     });
 
@@ -116,7 +116,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         WHERE user_id = $1`,
       [userIds[0]],
     );
-    expect(stored.rows).toEqual([{ owner: userIds[0], revision: "1", schema_version: 4 }]);
+    expect(stored.rows).toEqual([{ owner: userIds[0], revision: "1", schema_version: 5 }]);
     await app.close();
 
     const restoredApp = createApp();
@@ -173,7 +173,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         theme: "dark",
       },
       revision: 7,
-      schemaVersion: 4,
+      schemaVersion: 5,
     });
     const upgraded = await pool.query<{ revision: string; schema_version: number }>(
       `SELECT revision::text, schema_version
@@ -181,7 +181,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         WHERE user_id = $1`,
       [userIds[1]],
     );
-    expect(upgraded.rows).toEqual([{ revision: "7", schema_version: 4 }]);
+    expect(upgraded.rows).toEqual([{ revision: "7", schema_version: 5 }]);
 
     const isolated = await app.inject({
       headers: { cookie: `lpbot_session=${tokenA}` },
@@ -195,7 +195,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
     await app.close();
   });
 
-  it("migrates a schema v3 column layout to v4 without losing order or other preferences", async () => {
+  it("migrates a schema v3 column layout to v5 without losing order or other preferences", async () => {
     const oldColumns = [
       { key: "pool", visible: true },
       { key: "fdv", visible: false },
@@ -251,7 +251,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         theme: "dark",
       },
       revision: 9,
-      schemaVersion: 4,
+      schemaVersion: 5,
     });
     expect(migrated.json().data.preferences.poolColumns).toEqual([
       ...oldColumns.slice(0, -1),
@@ -265,7 +265,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         WHERE user_id = $1`,
       [userIds[2]],
     );
-    expect(stored.rows).toEqual([{ revision: "9", schema_version: 4 }]);
+    expect(stored.rows).toEqual([{ revision: "9", schema_version: 5 }]);
     await app.close();
   });
 
@@ -340,7 +340,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         showScanTab: expect.any(Boolean),
       },
       revision: saved.json().data.revision,
-      schemaVersion: 4,
+      schemaVersion: 5,
     });
     await relogged.close();
   });

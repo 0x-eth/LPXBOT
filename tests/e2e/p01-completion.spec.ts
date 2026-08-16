@@ -130,7 +130,7 @@ async function fulfillPreferences(route: Route): Promise<void> {
       data: {
         preferences,
         revision: 1,
-        schemaVersion: 4,
+        schemaVersion: 5,
         updatedAt: "2026-08-16T00:00:00.000Z",
       },
       requestId: "req-p01-completion-preferences",

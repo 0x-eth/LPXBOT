@@ -125,7 +125,7 @@ describe("P01-06 user preferences API", () => {
     expect(authenticated.json().data).toEqual({
       preferences: defaultPreferences,
       revision: 0,
-      schemaVersion: 4,
+      schemaVersion: 5,
       updatedAt: null,
     });
   });
@@ -156,7 +156,7 @@ describe("P01-06 user preferences API", () => {
     expect(first.json().data).toMatchObject({
       preferences: { ...defaultPreferences, ...changes },
       revision: 1,
-      schemaVersion: 4,
+      schemaVersion: 5,
       updatedAt: now.toISOString(),
     });
 

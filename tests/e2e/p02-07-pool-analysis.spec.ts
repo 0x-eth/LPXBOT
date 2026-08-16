@@ -61,7 +61,7 @@ async function installFixture(page: Page): Promise<void> {
             theme: "system",
           },
           revision: 0,
-          schemaVersion: 4,
+          schemaVersion: 5,
           updatedAt: null,
         },
         requestId: "req-p02-07-preferences",
