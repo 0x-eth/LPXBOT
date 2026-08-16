@@ -1,6 +1,10 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+declare global {
+  var __p0209StatsRequests: Array<{ lastEventId: string | null; url: string }>;
+}
+
 async function installShellFixture(page: Page): Promise<void> {
   await page.route("**/api/auth/me", (route) =>
     route.fulfill({
