@@ -423,6 +423,30 @@ function valueOrUnavailable(value: number | null, suffix = ""): string {
   return value === null ? "--" : `${value}${suffix}`;
 }
 
+function abbreviatedAddress(address: string): string {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+export function recommendedPoolDisplay(row: RecommendedPoolRow): { fees: string; pair: string } {
+  const fixed = new Decimal(row.feesUsd).toFixed(2);
+  const [whole, fraction] = fixed.split(".");
+  const grouped = whole!.replace(/\B(?=(\d{3})+(?!\d))/gu, ",");
+  return {
+    fees: `$${grouped}.${fraction}`,
+    pair: `${row.token0Symbol ?? abbreviatedAddress(row.token0Address)} / ${
+      row.token1Symbol ?? abbreviatedAddress(row.token1Address)
+    }`,
+  };
+}
+
+export function recommendedPoolSearchPath(row: RecommendedPoolRow): string {
+  const parameters = new URLSearchParams({
+    pool_search_mode: "pool",
+    pool_search: row.poolAddress ?? row.poolId!,
+  });
+  return `/pools?${parameters.toString()}`;
+}
+
 export function shellStatsDisplay(state: ShellStatsState): ShellStatsDisplay {
   const stats = state.connected ? state.stats : null;
   return {

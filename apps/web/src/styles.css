@@ -5,7 +5,7 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --shell-header-height: 56px;
-  --shell-status-height: 24px;
+  --shell-status-height: 32px;
   --mobile-nav-height: 58px;
   --telegram-viewport-height: 100dvh;
   --telegram-viewport-stable-height: 100dvh;
@@ -2401,7 +2401,8 @@ html[data-theme="dark"] .flow-stat-strip[data-completeness="partial"] [data-metr
   min-height: var(--shell-status-height);
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px;
+  height: var(--shell-status-height);
+  gap: 12px;
   padding: 0 14px;
   overflow: hidden;
   color: var(--muted-foreground);
@@ -2461,15 +2462,47 @@ html[data-theme="dark"] .online-state[data-online="true"] {
 
 .status-pools {
   justify-content: center;
-  gap: 18px;
+  gap: 8px;
   overflow: hidden;
 }
 
-.status-pools span {
-  max-width: 180px;
+.status-pool-link {
+  display: grid;
+  min-width: 0;
+  max-width: 190px;
+  height: 26px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 0 7px;
   overflow: hidden;
   color: var(--text);
+  border-left: 1px solid var(--border);
+  text-decoration: none;
+}
+
+.status-pool-link:hover {
+  background: var(--surface-hover);
+}
+
+.status-pool-link strong,
+.status-pool-link span {
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.status-pool-link strong {
+  font-weight: 700;
+}
+
+.status-pool-link span,
+.status-pools-state {
+  color: var(--muted-foreground);
+}
+
+.status-pools-state {
+  flex: 0 0 auto;
 }
 
 .status-metrics span + span,
@@ -3488,13 +3521,15 @@ html[data-theme="dark"] .chain-operation-success {
 @media (max-width: 899px) {
   :root {
     --shell-header-height: calc(60px + env(safe-area-inset-top, 0px));
-    --shell-status-height: 0px;
+    --shell-status-height: 34px;
   }
 
   .app-frame {
     min-height: var(--telegram-viewport-height, 100dvh);
-    grid-template-rows: var(--shell-header-height) minmax(0, 1fr);
-    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px));
+    grid-template-rows: var(--shell-header-height) minmax(0, 1fr) var(--shell-status-height);
+    padding-bottom: calc(
+      var(--mobile-nav-height) + var(--shell-status-height) + env(safe-area-inset-bottom, 0px)
+    );
   }
 
   .app-header {
@@ -3566,14 +3601,44 @@ html[data-theme="dark"] .chain-operation-success {
     justify-self: end;
   }
 
-  .status-bar-reserved,
-  .shell-status-bar {
+  .status-bar-reserved {
     display: none;
+  }
+
+  .shell-status-bar {
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px));
+    height: var(--shell-status-height);
+    min-height: var(--shell-status-height);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 0 8px;
+  }
+
+  .status-primary,
+  .status-metrics {
+    display: none;
+  }
+
+  .status-pools {
+    justify-content: flex-start;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .status-pools::-webkit-scrollbar {
+    display: none;
+  }
+
+  .status-pool-link {
+    flex: 0 0 min(180px, 72vw);
   }
 
   .feedback-viewport {
     right: 12px;
-    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px) + 12px);
+    bottom: calc(
+      var(--mobile-nav-height) + var(--shell-status-height) + env(safe-area-inset-bottom, 0px) + 12px
+    );
     width: calc(100vw - 24px);
   }
 

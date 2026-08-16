@@ -1,8 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 import {
   ApiShellStatsProvider,
   createShellStatsState,
+  recommendedPoolDisplay,
+  recommendedPoolSearchPath,
   shellStatsDisplay,
   type ShellStatsState,
 } from "./shell-stats.js";
@@ -39,17 +42,25 @@ export function useShellStats(): ShellStatsState {
 
 export function ShellStatusBar() {
   const state = useShellStats();
-  if (state.sequence < 0) {
-    return <div aria-hidden="true" className="status-bar-reserved" />;
-  }
   const display = shellStatsDisplay(state);
+  const stateLabels = {
+    empty: "暂无推荐池",
+    loading: "推荐池加载中",
+    ready: "推荐池已更新",
+    reconnecting: "推荐池重连中",
+    stale: "推荐池数据陈旧",
+    unavailable: "推荐池不可用",
+  } as const;
   return (
-    <div
+    <footer
       aria-label="实时状态"
       className="shell-status-bar"
       data-connected={state.connected}
-      role="status"
+      data-recommendation-state={display.recommendationStatus}
     >
+      <span aria-live="polite" className="sr-only" role="status">
+        {stateLabels[display.recommendationStatus]}
+      </span>
       <div className="status-primary">
         <span
           className="online-state"
@@ -69,16 +80,30 @@ export function ShellStatusBar() {
           停止 <strong data-visual-mask="stats">{display.stopped}</strong>
         </span>
       </div>
-      <div aria-label="推荐池" className="status-pools">
-        {display.recommendedPools.length > 0 ? (
-          display.recommendedPools.map((pool) => (
-            <span data-visual-mask="stats" key={pool}>
-              {pool}
-            </span>
-          ))
-        ) : (
-          <span>推荐池 --</span>
-        )}
+      <div aria-label="推荐池" className="status-pools" data-state={display.recommendationStatus}>
+        {display.recommendationStatus === "reconnecting" ||
+        display.recommendationStatus === "stale" ? (
+          <span className="status-pools-state">{stateLabels[display.recommendationStatus]}</span>
+        ) : null}
+        {display.recommendedPools.map((pool) => {
+          const formatted = recommendedPoolDisplay(pool);
+          return (
+            <Link
+              aria-label={`查看推荐池 ${formatted.pair}，5 分钟 Fees ${formatted.fees}`}
+              className="status-pool-link"
+              data-visual-mask="stats"
+              key={pool.poolKey}
+              title={`${formatted.pair} · 5m Fees ${formatted.fees}`}
+              to={recommendedPoolSearchPath(pool)}
+            >
+              <strong>{formatted.pair}</strong>
+              <span>5m Fees {formatted.fees}</span>
+            </Link>
+          );
+        })}
+        {display.recommendedPools.length === 0 ? (
+          <span className="status-pools-state">{stateLabels[display.recommendationStatus]}</span>
+        ) : null}
       </div>
       <div className="status-metrics">
         <span data-visual-mask="stats">Base {display.baseGas}</span>
@@ -86,6 +111,6 @@ export function ShellStatusBar() {
         <span data-visual-mask="stats">FPS {display.fps}</span>
         <span data-visual-mask="stats">PING {display.ping}</span>
       </div>
-    </div>
+    </footer>
   );
 }
