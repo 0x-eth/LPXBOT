@@ -202,7 +202,136 @@ export const shellStatsContracts = {
 export const marketWindowMinutes = [1, 5, 15, 30, 60] as const;
 
 export type MarketWindowMinutes = (typeof marketWindowMinutes)[number];
-export type MarketProtocol = "pcsv3" | "univ3" | "pcsv4" | "univ4";
+export const liquidityFlowSchemaVersion = "1.0.0" as const;
+export const liquidityFlowProtocols = ["pcsv3", "univ3", "pcsv4", "univ4"] as const;
+export const liquidityFlowEventTypes = ["create", "add", "remove"] as const;
+
+export type MarketProtocol = (typeof liquidityFlowProtocols)[number];
+export type LiquidityFlowProtocol = MarketProtocol;
+export type LiquidityFlowEventType = (typeof liquidityFlowEventTypes)[number];
+export type LiquidityProtocolFilter = readonly LiquidityFlowProtocol[];
+
+export interface LiquidityFlowFilter {
+  nftId: string | null;
+  pool: EvmAddress | `0x${string}` | null;
+  since: number;
+  token: EvmAddress | null;
+  user: EvmAddress | null;
+}
+
+export interface LiquidityFlowEvent {
+  amount0: string | null;
+  amount1: string | null;
+  block_hash: `0x${string}`;
+  block_number: string;
+  chain_id: 56;
+  cursor: string;
+  dex: LiquidityFlowProtocol;
+  event_type: LiquidityFlowEventType;
+  finality: "observed";
+  hooks: EvmAddress | null;
+  id: string;
+  in_range: null;
+  liquidity_delta: string | null;
+  nft_id: null;
+  pool_address: EvmAddress | null;
+  pool_id: `0x${string}` | null;
+  record_type: "event";
+  schema_version: typeof liquidityFlowSchemaVersion;
+  tick_lower: string | null;
+  tick_upper: string | null;
+  token0_address: EvmAddress | null;
+  token0_symbol: null;
+  token1_address: EvmAddress | null;
+  token1_symbol: null;
+  ts: number;
+  tx_hash: `0x${string}`;
+  user: EvmAddress | null;
+  usd_value: null;
+  version: "v3" | "v4";
+}
+
+export interface LiquidityFlowTombstone {
+  cursor: string;
+  dex: LiquidityFlowProtocol;
+  finality: "reverted";
+  id: string;
+  nft_id: null;
+  pool_address: EvmAddress | null;
+  pool_id: `0x${string}` | null;
+  reason: "reorg";
+  record_type: "tombstone";
+  reverted_id: string;
+  schema_version: typeof liquidityFlowSchemaVersion;
+  token0_address: EvmAddress | null;
+  token1_address: EvmAddress | null;
+  ts: number;
+  user: EvmAddress | null;
+  version: "v3" | "v4";
+}
+
+export type LiquidityFlowRecord = LiquidityFlowEvent | LiquidityFlowTombstone;
+
+export interface LiquidityFlowBackfill {
+  cursor: string | null;
+  event_type: "liquidity.backfill";
+  events: LiquidityFlowRecord[];
+  has_more: boolean;
+  schema_version: typeof liquidityFlowSchemaVersion;
+  stream_key: string;
+}
+
+export interface LiquidityFlowCanonicalEnvelope {
+  cursor: string;
+  data: LiquidityFlowBackfill | LiquidityFlowRecord | null;
+  emittedAt: string;
+  eventType: "liquidity.backfill" | "liquidity.event" | "heartbeat";
+  schemaVersion: typeof liquidityFlowSchemaVersion;
+  streamKey: string;
+}
+
+function isLiquidityFlowProtocol(value: string): value is LiquidityFlowProtocol {
+  return (liquidityFlowProtocols as readonly string[]).includes(value);
+}
+
+export function canonicalizeLiquidityProtocols(
+  values: readonly string[],
+): LiquidityFlowProtocol[] {
+  const selected = new Set<LiquidityFlowProtocol>();
+  for (const value of values) {
+    if (!isLiquidityFlowProtocol(value)) throw new RangeError("DEX_FILTER_INVALID");
+    selected.add(value);
+  }
+  if (selected.size === 0) throw new RangeError("DEX_FILTER_INVALID");
+  return liquidityFlowProtocols.filter((protocol) => selected.has(protocol));
+}
+
+export function parseLiquidityProtocolFilter(value: unknown): LiquidityFlowProtocol[] {
+  if (value === undefined || value === null) return [...liquidityFlowProtocols];
+  const entries = (Array.isArray(value) ? value : [value]).flatMap((entry) =>
+    typeof entry === "string" ? entry.split(",") : [],
+  );
+  if (
+    entries.length === 0 ||
+    entries.some((entry) => entry.length === 0) ||
+    (Array.isArray(value) && value.some((entry) => typeof entry !== "string"))
+  ) {
+    throw new RangeError("DEX_FILTER_INVALID");
+  }
+  return canonicalizeLiquidityProtocols(entries);
+}
+
+export function marketStreamKey(input: {
+  chainId: 56;
+  minutes: MarketWindowMinutes;
+  protocols: LiquidityProtocolFilter;
+}): string {
+  const protocols = canonicalizeLiquidityProtocols(input.protocols);
+  const base = `top-fees:${input.chainId}:${input.minutes}`;
+  return protocols.length === liquidityFlowProtocols.length
+    ? base
+    : `${base}:dex=${protocols.join(",")}`;
+}
 
 export interface MarketPoolRow {
   activeTvlUsd: null;
