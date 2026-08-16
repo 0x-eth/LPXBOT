@@ -19,6 +19,7 @@ export interface MarketPoolsContext {
   chainId: 56;
   minutes: MarketWindowMinutes;
   protocols: readonly LiquidityFlowProtocol[];
+  signal?: AbortSignal;
 }
 
 export interface MarketPoolsStreamContext extends MarketPoolsContext {

@@ -134,7 +134,10 @@ describe("P02-09 recommendation polling stream", () => {
 
     const heartbeat = iterator.next();
     await vi.advanceTimersByTimeAsync(15_000);
-    expect((await heartbeat).value).toEqual({ observedAt, type: "heartbeat" });
+    expect((await heartbeat).value).toEqual({
+      observedAt: "2026-08-17T02:00:25.000Z",
+      type: "heartbeat",
+    });
 
     controller.abort();
     await iterator.return?.();

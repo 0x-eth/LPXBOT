@@ -233,6 +233,17 @@ export interface RecommendedPoolRow {
   token1Symbol: string | null;
 }
 
+export interface RecommendedPoolsSnapshotEvent {
+  cursor: string;
+  observedAt: string;
+  pools: RecommendedPoolRow[];
+  selectionHash: string;
+  sourceVersion: string;
+  sourceWindow: 5;
+  sourceWindowEnd: string;
+  type: "rec_pools_snapshot";
+}
+
 export interface ShellStats {
   fps: number | null;
   gas: ShellGasStats;

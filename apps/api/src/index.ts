@@ -65,7 +65,17 @@ export type {
   ShellStatsProvider,
   ShellStatsSubscriptionContext,
 } from "./shell-stats.js";
-export { recommendationSelectionHash, selectRecommendedPools } from "./recommended-pools.js";
+export {
+  createRecommendedPoolsEventStream,
+  recommendedPoolsCursor,
+  recommendationSelectionHash,
+  selectRecommendedPools,
+} from "./recommended-pools.js";
+export type {
+  RecommendedPoolsEventStreamOptions,
+  RecommendedPoolsScheduler,
+  RecommendedPoolsStreamEvent,
+} from "./recommended-pools.js";
 export {
   defaultUserPreferences,
   defaultVersionedUserPreferences,
