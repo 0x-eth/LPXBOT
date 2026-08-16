@@ -209,6 +209,102 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     await pool.query("DROP FUNCTION p0202_fail_outbox() ");
   });
 
+  it("projects a replay-safe pool catalog and replaces orphaned reorg identities", async () => {
+    await runnerFor("normal").runner.runOnce();
+    const initial = await pool.query<{
+      created_event_id: string;
+      fee_pips: string | null;
+      hooks: string | null;
+      pool_address: string | null;
+      pool_id: string | null;
+      pool_key: string;
+      tick_spacing: string | null;
+      token0: string;
+      token1: string;
+    }>(
+      `SELECT pool_key, pool_address, pool_id, token0, token1,
+              fee_pips::text, tick_spacing::text, hooks, created_event_id
+         FROM market_pool_catalog
+        ORDER BY pool_key`,
+    );
+    expect(initial.rows).toHaveLength(4);
+    expect(initial.rows).toContainEqual(
+      expect.objectContaining({
+        fee_pips: "2500",
+        pool_address: "0x4141414141414141414141414141414141414141",
+        pool_id: null,
+        pool_key: "56:0x4141414141414141414141414141414141414141",
+        tick_spacing: "50",
+        token0: "0x5151515151515151515151515151515151515151",
+        token1: "0x5252525252525252525252525252525252525252",
+      }),
+    );
+    expect(initial.rows).toContainEqual(
+      expect.objectContaining({
+        hooks: "0x6060606060606060606060606060606060606060",
+        pool_address: null,
+        pool_id: `0x${"43".repeat(32)}`,
+        pool_key: `56:0x${"43".repeat(32)}`,
+      }),
+    );
+
+    await runnerFor("normal").runner.runOnce();
+    expect(
+      (await pool.query("SELECT pool_key FROM market_pool_catalog ORDER BY pool_key")).rows,
+    ).toEqual(initial.rows.map(({ pool_key }) => ({ pool_key })));
+
+    await pool.query(
+      `TRUNCATE liquidity_flow_outbox, liquidity_flow_events,
+        market_stream_outbox, market_snapshots, integrity_quarantine,
+        normalized_pool_events, raw_chain_logs, canonical_chain_blocks, indexer_cursors,
+        market_pool_catalog RESTART IDENTITY CASCADE`,
+    );
+    await runnerFor("duplicate").runner.runOnce();
+    expect((await pool.query("SELECT count(*)::text AS count FROM market_pool_catalog")).rows).toEqual(
+      [{ count: "1" }],
+    );
+
+    await pool.query(
+      `TRUNCATE liquidity_flow_outbox, liquidity_flow_events,
+        market_stream_outbox, market_snapshots, integrity_quarantine,
+        normalized_pool_events, raw_chain_logs, canonical_chain_blocks, indexer_cursors,
+        market_pool_catalog RESTART IDENTITY CASCADE`,
+    );
+    const reorg = structuredClone(readP02Fixture("reorg"));
+    const orphanPoolId = `0x${"aa".repeat(32)}`;
+    const replacementPoolId = `0x${"bb".repeat(32)}`;
+    for (const [index, entry] of reorg.input.entries()) {
+      entry.fixtureDecoded.pool = {
+        feePips: index === 2 ? "500" : "100",
+        hooks: "0x0000000000000000000000000000000000000000",
+        poolAddress: null,
+        poolId: index === 2 ? replacementPoolId : orphanPoolId,
+        tickSpacing: index === 2 ? "10" : "1",
+        token0: index === 2
+          ? "0x7777777777777777777777777777777777777777"
+          : "0x5555555555555555555555555555555555555555",
+        token1: "0x6666666666666666666666666666666666666666",
+      };
+    }
+    const replacementRunner = new IndexerRunner({
+      decoder: new FixtureEventDecoder(reorg.input),
+      evaluationTime: () => new Date("2026-08-16T00:05:00.000Z"),
+      source: new FixtureRawLogSource(reorg.input, fixtureBlockTimestamp),
+      store: new PostgresCanonicalEventStore(pool),
+    });
+    await replacementRunner.runOnce();
+    const replaced = await pool.query<{
+      pool_key: string;
+      token0: string;
+    }>("SELECT pool_key, token0 FROM market_pool_catalog ORDER BY pool_key");
+    expect(replaced.rows).toEqual([
+      {
+        pool_key: `56:${replacementPoolId}`,
+        token0: "0x7777777777777777777777777777777777777777",
+      },
+    ]);
+  });
+
   it("treats same-key same-payload as no-op and quarantines a different payload", async () => {
     const duplicate = runnerFor("duplicate");
     const result = await duplicate.runner.runOnce();
