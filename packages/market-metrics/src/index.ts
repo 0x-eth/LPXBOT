@@ -20,6 +20,7 @@ export interface MarketMetricEvent {
   chainId: number;
   eventId: string;
   kind: MarketMetricKind;
+  liquidityDelta?: string | null;
   market: MarketMetricValues;
   pool: {
     feePips?: string | null;
@@ -34,6 +35,7 @@ export interface MarketMetricEvent {
     token1Symbol?: string | null;
   };
   reverted: boolean;
+  sqrtPriceX96?: string | null;
   transactionHash: string;
 }
 
@@ -274,3 +276,15 @@ export const marketMetricsPackage = {
   domain: domainPackage.name,
   name: "@lpbot/market-metrics",
 } as const;
+
+export {
+  POOL_LABEL_RULE_CONTRACT,
+  computePoolLabels,
+  type ComputedPoolLabel,
+  type ComputePoolLabelsInput,
+  type PoolLabelId,
+  type PoolLabelReason,
+  type PoolLabelReasonOperator,
+  type PoolLabelRule,
+  type PoolLabelRuleContract,
+} from "./pool-labels.js";

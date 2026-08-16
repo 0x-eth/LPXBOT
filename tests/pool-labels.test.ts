@@ -205,8 +205,8 @@ describe("P02-08 versioned pool label rule contract", () => {
     });
     expect(emitted!.reasons.some(({ code }) => code === reason)).toBe(true);
     for (const item of result) {
-      expect(item.score).toBeGreaterThanOrEqualTo(0);
-      expect(item.score).toBeLessThanOrEqualTo(100);
+      expect(item.score).toBeGreaterThanOrEqual(0);
+      expect(item.score).toBeLessThanOrEqual(100);
       for (const detail of item.reasons) {
         expect(detail).toEqual({
           code: expect.any(String),
