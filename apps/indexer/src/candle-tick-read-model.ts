@@ -33,7 +33,7 @@ export interface RebuildCandleTickReadModelsInput {
 }
 
 interface CatalogRow {
-  tick_spacing: string;
+  tick_spacing: string | null;
 }
 
 interface StoredReadModelEvent {
@@ -184,6 +184,32 @@ function storedCandle(row: StoredCandleRow): CanonicalBaseCandle {
   };
 }
 
+function catalogTickSpacing(value: string | null): number | null {
+  if (value === null) return null;
+  if (!/^[1-9][0-9]*$/u.test(value)) throw new Error("READ_MODEL_TICK_SPACING_INVALID");
+  const spacing = Number(value);
+  if (!Number.isSafeInteger(spacing)) throw new Error("READ_MODEL_TICK_SPACING_INVALID");
+  return spacing;
+}
+
+function hasCandleFields(event: CandleTickCanonicalEvent): boolean {
+  return (
+    event.kind === "swap" &&
+    event.amount0 !== null &&
+    event.amount1 !== null &&
+    event.sqrtPriceX96 !== null
+  );
+}
+
+function hasTickFields(event: CandleTickCanonicalEvent): boolean {
+  if (event.kind !== "liquidity.add" && event.kind !== "liquidity.remove") return true;
+  return (
+    event.liquidityDelta !== null &&
+    event.payload.tickLower != null &&
+    event.payload.tickUpper != null
+  );
+}
+
 export class PostgresCandleTickReadModelProjector {
   async rebuild(client: PoolClient, input: RebuildCandleTickReadModelsInput): Promise<void> {
     for (const key of [...input.impact.poolKeys].sort()) {
@@ -203,8 +229,34 @@ export class PostgresCandleTickReadModelProjector {
 
       const events = await this.#events(client, key);
       if (events.length === 0) throw new Error("READ_MODEL_CANONICAL_EVENTS_MISSING");
-      const tickProjection = projectCanonicalTickLiquidity(events);
-      if (String(tickProjection.tickSpacing) !== catalogRow.tick_spacing) {
+      await this.#rebuildCandles(
+        client,
+        key,
+        events,
+        input.impact.minuteBuckets.get(key) ?? new Set(),
+        input.evaluationTime,
+      );
+
+      const tickSpacing = catalogTickSpacing(catalogRow.tick_spacing);
+      if (tickSpacing === null) {
+        await client.query("DELETE FROM market_tick_liquidity WHERE pool_key = $1", [key]);
+        await client.query("DELETE FROM market_read_model_states WHERE pool_key = $1", [key]);
+        continue;
+      }
+
+      // The normalized schema predates this projection and permits null chart-only fields.
+      const tickEvents = events.filter(hasTickFields).map((event) => ({
+        ...event,
+        pool: {
+          ...event.pool,
+          tickSpacing: event.pool.tickSpacing ?? String(tickSpacing),
+        },
+      }));
+      const tickProjection =
+        tickEvents.length === 0
+          ? { currentTick: null, poolKey: key, tickSpacing, ticks: [] }
+          : projectCanonicalTickLiquidity(tickEvents);
+      if (tickProjection.tickSpacing !== tickSpacing) {
         throw new Error("READ_MODEL_TICK_SPACING_MISMATCH");
       }
       const previous = await client.query<{ version: string }>(
@@ -214,14 +266,6 @@ export class PostgresCandleTickReadModelProjector {
       );
       const version = previous.rows[0] ? (BigInt(previous.rows[0].version) + 1n).toString() : "1";
       const revision = canonicalRevision(events);
-
-      await this.#rebuildCandles(
-        client,
-        key,
-        events,
-        input.impact.minuteBuckets.get(key) ?? new Set(),
-        input.evaluationTime,
-      );
       await client.query("DELETE FROM market_tick_liquidity WHERE pool_key = $1", [key]);
       for (const tick of tickProjection.ticks) {
         await client.query(
@@ -293,7 +337,7 @@ export class PostgresCandleTickReadModelProjector {
       const projected = projectCanonicalOneMinuteCandles(
         events.filter(
           (event) =>
-            event.kind === "swap" &&
+            hasCandleFields(event) &&
             Math.floor(epochSeconds(event.blockTimestamp) / 60) * 60 === minute,
         ),
       );

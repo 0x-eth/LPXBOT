@@ -362,9 +362,9 @@ describe("P02-10 PostgreSQL Candle/Tick read model", () => {
       }),
     ];
 
-    await expect(
-      store.commit(commit(entries, "2026-08-17T00:05:00.000Z")),
-    ).resolves.toMatchObject({ acceptedCount: 3 });
+    await expect(store.commit(commit(entries, "2026-08-17T00:05:00.000Z"))).resolves.toMatchObject({
+      acceptedCount: 3,
+    });
     const counts = await pool.query<{
       candles: string;
       cursors: string;
