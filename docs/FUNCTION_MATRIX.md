@@ -165,9 +165,9 @@
 |---|---|---|---|---|---|
 | FLOW-01 | 实时加池/撤池/新池流 | UI+BUNDLE | USER | R0 | 交易 hash、NFT、tick、区间、金额、地址、Hook；`implemented-assumed`（P02-04） |
 | FLOW-02 | 链、事件、V3/V4、token、金额筛选 | UI+BUNDLE | USER | R0 | 断线后回填且去重；`implemented-assumed`（P02-04） |
-| FLOW-03 | 流入/流出/净额统计 | UI+BUNDLE | USER | R0 | 当前过滤范围一致 |
-| FLOW-04 | 按地址聚合 | UI+BUNDLE | USER | R0 | 净额/笔数/最近排序、池数、地址操作 |
-| FLOW-05 | 地址备注/地址簿 | UI+BUNDLE | USER | R1 | 流动性流、钱包和扫描页复用统一备注 |
+| FLOW-03 | 流入/流出/净额统计 | UI+BUNDLE | USER | R0 | 当前过滤范围一致；`implemented-assumed`（P02-05） |
+| FLOW-04 | 按地址聚合 | UI+BUNDLE | USER | R0 | 净额/笔数/最近排序、池数、地址操作；`implemented-assumed`（P02-05） |
+| FLOW-05 | 地址备注/地址簿 | UI+BUNDLE | USER | R1 | 流动性流、钱包和扫描页复用统一备注；`implemented-assumed`（P02-05） |
 | MON-01 | 监控 CRUD 与启停 | UI+API | USER | R1 | 列表、5/7 启用数、更新和删除 |
 | MON-02 | 多条件 AND | UI+API+BUNDLE | USER | R1 | 交易量、Fee、Fee/TVL、Fee/aTVL、TVL、交易数、版本 |
 | MON-03 | 排除中文 token / Hook | UI+BUNDLE | USER | R1 | 与策略候选池一致 |
