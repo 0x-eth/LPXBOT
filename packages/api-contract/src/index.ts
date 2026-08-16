@@ -231,10 +231,10 @@ export interface LiquidityFlowEvent {
   finality: "observed";
   hooks: EvmAddress | null;
   id: string;
-  in_range: null;
+  in_range: boolean | null;
   liquidity_delta: string | null;
   log_index: number;
-  nft_id: null;
+  nft_id: string | null;
   pool_address: EvmAddress | null;
   pool_id: `0x${string}` | null;
   record_type: "event";
@@ -242,14 +242,14 @@ export interface LiquidityFlowEvent {
   tick_lower: string | null;
   tick_upper: string | null;
   token0_address: EvmAddress | null;
-  token0_symbol: null;
+  token0_symbol: string | null;
   token1_address: EvmAddress | null;
-  token1_symbol: null;
+  token1_symbol: string | null;
   ts: number;
   tx_hash: `0x${string}`;
   tx_index: number;
   user: EvmAddress | null;
-  usd_value: null;
+  usd_value: string | null;
   version: "v3" | "v4";
 }
 
@@ -258,7 +258,7 @@ export interface LiquidityFlowTombstone {
   dex: LiquidityFlowProtocol;
   finality: "reverted";
   id: string;
-  nft_id: null;
+  nft_id: string | null;
   pool_address: EvmAddress | null;
   pool_id: `0x${string}` | null;
   reason: "reorg";
