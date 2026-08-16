@@ -55,6 +55,11 @@ import {
 } from "./chain-access-policies.js";
 import type { LiquidityFlowProvider } from "./liquidity-flow.js";
 import type { MarketPoolsByTokenContext, MarketPoolsProvider } from "./market-pools.js";
+import {
+  createRecommendedPoolsEventStream,
+  parseRecommendedPoolsCursor,
+  type RecommendedPoolsScheduler,
+} from "./recommended-pools.js";
 import type { ShellStatsProvider } from "./shell-stats.js";
 import {
   defaultVersionedUserPreferences,
@@ -91,9 +96,13 @@ export interface ApiAppOptions {
   managementOrigin?: string;
   now?: () => Date;
   preferencesStore?: UserPreferencesStore;
+  recommendedPoolsPollMilliseconds?: number;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
   sessionStore: SessionStore;
+  statsHeartbeatMilliseconds?: number;
   statsProvider?: ShellStatsProvider;
+  statsRateLimit?: PublicReadRateLimit;
+  statsStreamScheduler?: RecommendedPoolsScheduler;
   telegramBot?: TelegramBotLoginApplication;
   telegramBotUsername?: string;
   telegramMiniApp?: TelegramMiniAppAuthenticator;
@@ -124,6 +133,31 @@ export interface AuthRateLimits {
   walletLogin?: number;
   walletLinks?: number;
   walletNonce?: number;
+}
+
+interface StatsStreamQuery {
+  chain: "bsc" | null;
+  limit: number;
+  userId: string | null;
+}
+
+function parseStatsStreamQuery(request: FastifyRequest): StatsStreamQuery | null {
+  const query = request.query as Record<string, unknown>;
+  if (Object.keys(query).some((key) => key !== "chain" && key !== "limit" && key !== "user_id")) {
+    return null;
+  }
+  const chain = query.chain === undefined ? null : query.chain;
+  if (chain !== null && chain !== "bsc") return null;
+  const rawLimit = query.limit === undefined ? "3" : query.limit;
+  if (typeof rawLimit !== "string" || !/^(?:[1-9]|1[0-9]|20)$/u.test(rawLimit)) return null;
+  const userId = query.user_id === undefined ? null : query.user_id;
+  if (
+    userId !== null &&
+    (typeof userId !== "string" || userId.length < 1 || userId.length > 128)
+  ) {
+    return null;
+  }
+  return { chain, limit: Number(rawLimit), userId };
 }
 
 function parseMarketPoolsContext(request: FastifyRequest): {
@@ -558,6 +592,19 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     marketPoolsRateLimit.timeWindowMs <= 0
   ) {
     throw new RangeError("Market pool rate limits must be positive integers");
+  }
+  const statsRateLimit: PublicReadRateLimit = {
+    max: 60,
+    timeWindowMs: 60_000,
+    ...options.statsRateLimit,
+  };
+  if (
+    !Number.isSafeInteger(statsRateLimit.max) ||
+    statsRateLimit.max <= 0 ||
+    !Number.isSafeInteger(statsRateLimit.timeWindowMs) ||
+    statsRateLimit.timeWindowMs <= 0
+  ) {
+    throw new RangeError("Stats rate limits must be positive integers");
   }
   const authRateLimits: Required<AuthRateLimits> = {
     cancel: 20,
@@ -1300,56 +1347,161 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       return createSuccessEnvelope(snapshot, request.id);
     });
 
-    app.get("/api/stats/stream", async (request, reply) => {
-      const session = await authenticateSessionRequest(request, reply);
-      if (!session) return reply;
-      if (!options.statsProvider) {
-        return reply.code(503).send(
-          createErrorEnvelope({
-            code: "STATS_UNAVAILABLE",
-            message: "Shell statistics are not configured",
-            requestId: request.id,
-            retryable: true,
-          }),
-        );
-      }
-
-      const snapshot = await options.statsProvider.getSnapshot({ userId: session.userId });
-      const controller = new AbortController();
-      reply.hijack();
-      reply.raw.writeHead(200, {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Connection: "keep-alive",
-        "Content-Type": "text/event-stream; charset=utf-8",
-        "X-Accel-Buffering": "no",
-      });
-      reply.raw.flushHeaders?.();
-      reply.raw.on("close", () => controller.abort());
-
-      const writeEvent = (event: { sequence: number; type: string }) => {
-        reply.raw.write(`id: ${event.sequence}\n`);
-        reply.raw.write(`event: ${event.type}\n`);
-        reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
-      };
-      reply.raw.write("retry: 1000\n\n");
-      writeEvent({ ...snapshot, type: "snapshot" });
-      let sequence = snapshot.sequence;
-      try {
-        for await (const event of options.statsProvider.subscribe({
-          afterSequence: sequence,
-          signal: controller.signal,
-          userId: session.userId,
-        })) {
-          if (controller.signal.aborted) break;
-          if (event.sequence <= sequence) continue;
-          writeEvent(event);
-          sequence = event.sequence;
+    app.get(
+      "/api/stats/stream",
+      {
+        config: {
+          rateLimit: {
+            keyGenerator: (request: FastifyRequest) => sessionToken(request) ?? request.ip,
+            max: statsRateLimit.max,
+            timeWindow: statsRateLimit.timeWindowMs,
+          },
+        },
+      },
+      async (request, reply) => {
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        const query = parseStatsStreamQuery(request);
+        if (!query) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "STATS_STREAM_QUERY_INVALID",
+              message: "Stats stream chain, limit, user_id, or query keys are invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
         }
-      } finally {
-        if (!reply.raw.destroyed) reply.raw.end();
-      }
-      return reply;
-    });
+        if (query.userId !== null && session.account.role !== "admin") {
+          return reply.code(403).send(
+            createErrorEnvelope({
+              code: "FORBIDDEN",
+              message: "Filtering stats by user is restricted to administrators",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (query.chain === null && !options.statsProvider) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "STATS_UNAVAILABLE",
+              message: "Shell statistics are not configured",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        if (query.chain === "bsc" && !options.marketPoolsProvider) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "RECOMMENDATIONS_UNAVAILABLE",
+              message: "Recommended pool data is not configured",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        const lastEventHeader = request.headers["last-event-id"];
+        if (
+          query.chain === "bsc" &&
+          lastEventHeader !== undefined &&
+          (typeof lastEventHeader !== "string" ||
+            parseRecommendedPoolsCursor(lastEventHeader, {
+              chain: query.chain,
+              limit: query.limit,
+            }) === null)
+        ) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "STATS_STREAM_CURSOR_INVALID",
+              message: "The recommendation cursor does not match this stream filter",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+
+        const statsUserId = query.userId ?? session.userId;
+        const controller = new AbortController();
+        const close = () => controller.abort();
+        reply.hijack();
+        reply.raw.writeHead(200, {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Connection: "keep-alive",
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "X-Accel-Buffering": "no",
+        });
+        reply.raw.flushHeaders?.();
+        reply.raw.once("close", close);
+        await writeSseChunk(reply, controller, "retry: 1000\n\n");
+
+        const writeEvent = async (event: { cursor?: string; sequence?: number; type: string }) => {
+          const identifier =
+            event.type === "rec_pools_snapshot"
+              ? event.cursor
+              : query.chain === null
+                ? event.sequence
+                : undefined;
+          const chunk =
+            (identifier === undefined ? "" : `id: ${identifier}\n`) +
+            `event: ${event.type}\n` +
+            `data: ${JSON.stringify(event)}\n\n`;
+          return writeSseChunk(reply, controller, chunk);
+        };
+
+        const streamStats = async () => {
+          if (!options.statsProvider) return;
+          const snapshot = await options.statsProvider.getSnapshot({ userId: statsUserId });
+          if (!(await writeEvent({ ...snapshot, type: "snapshot" }))) return;
+          let sequence = snapshot.sequence;
+          for await (const event of options.statsProvider.subscribe({
+            afterSequence: sequence,
+            signal: controller.signal,
+            userId: statsUserId,
+          })) {
+            if (controller.signal.aborted) break;
+            if (event.type === "rec_pools_snapshot") continue;
+            if (event.sequence <= sequence) continue;
+            if (query.chain === "bsc" && event.type === "heartbeat") continue;
+            if (!(await writeEvent(event))) break;
+            sequence = event.sequence;
+          }
+        };
+
+        const streamRecommendations = async () => {
+          if (query.chain !== "bsc" || !options.marketPoolsProvider) return;
+          for await (const event of createRecommendedPoolsEventStream({
+            chain: query.chain,
+            limit: query.limit,
+            provider: options.marketPoolsProvider,
+            signal: controller.signal,
+            ...(options.statsHeartbeatMilliseconds === undefined
+              ? {}
+              : { heartbeatMilliseconds: options.statsHeartbeatMilliseconds }),
+            ...(options.recommendedPoolsPollMilliseconds === undefined
+              ? {}
+              : { pollMilliseconds: options.recommendedPoolsPollMilliseconds }),
+            ...(options.statsStreamScheduler === undefined
+              ? {}
+              : { scheduler: options.statsStreamScheduler }),
+          })) {
+            if (!(await writeEvent(event))) break;
+          }
+        };
+
+        try {
+          await Promise.all([streamRecommendations(), streamStats()]);
+        } catch {
+          controller.abort();
+        } finally {
+          reply.raw.off("close", close);
+          controller.abort();
+          if (!reply.raw.destroyed) reply.raw.end();
+        }
+        return reply;
+      },
+    );
 
     app.get("/api/user/preferences", async (request, reply) => {
       reply.header("Cache-Control", "no-store");

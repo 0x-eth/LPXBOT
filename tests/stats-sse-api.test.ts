@@ -124,7 +124,7 @@ describe("P01-06 shell stats API and authenticated SSE", () => {
     expect(statsProvider.getCalls).toEqual([userId]);
   });
 
-  it("streams snapshot, ordered updates, recommendation snapshots and heartbeats", async () => {
+  it("streams snapshot, ordered updates and heartbeats without recommendations when chain is omitted", async () => {
     const { app, statsProvider, token } = await fixture();
     const response = await app.inject({
       headers: {
@@ -143,12 +143,12 @@ describe("P01-06 shell stats API and authenticated SSE", () => {
     expect(events.map(({ event, id }) => [event, id])).toEqual([
       ["snapshot", 40],
       ["update", 41],
-      ["rec_pools_snapshot", 42],
       ["heartbeat", 43],
     ]);
     expect(events[0]!.payload).toEqual({ ...snapshot, type: "snapshot" });
     expect(events[1]!.payload).toMatchObject({ stats: { pingMs: 85 }, type: "update" });
     expect(response.body).not.toContain("999");
+    expect(response.body).not.toContain("rec_pools_snapshot");
     expect(statsProvider.subscriptions).toEqual([{ afterSequence: 40, userId }]);
   });
 

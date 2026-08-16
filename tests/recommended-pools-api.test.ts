@@ -82,11 +82,11 @@ async function fixture(options: {
   }
   const app = buildApiApp({
     maintenance: { enabled: false, message: null, until: null },
-    marketPoolsProvider: options.marketPoolsProvider,
     now: () => new Date("2026-08-17T02:00:00.000Z"),
     regionPolicy: () => ({ blocked: false, code: null, message: null }),
     sessionStore,
-    statsProvider: options.statsProvider,
+    ...(options.marketPoolsProvider ? { marketPoolsProvider: options.marketPoolsProvider } : {}),
+    ...(options.statsProvider ? { statsProvider: options.statsProvider } : {}),
   });
   apps.push(app);
   return { app, token };
