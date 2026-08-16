@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-09",
+  "phase": "P02",
+  "risk": "R1",
+  "status": "accepted-with-gaps",
+  "featureIds": ["STATS-02"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm exec vitest run focused recommendation selection, hash, cursor, scheduler and client suites",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-09/E-DATA.md"
+    },
+    {
+      "id": "T-API",
+      "command": "pnpm exec vitest run focused recommendation HTTP boundary suite",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-09/E-API.md"
+    },
+    {
+      "id": "T-SSE",
+      "command": "pnpm exec vitest run focused recommendation stream, reconnect and strict client suites",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-09/E-SSE.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "pnpm test:postgres including canonical five-minute recommendation reorg replacement",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-09/E-REC.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm exec playwright test tests/e2e/p02-09-recommended-pools.spec.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-09/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile screenshots, keyboard, focus, overflow and axe assertions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-09/E-VIS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "Gitleaks full-history and pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-09/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P02-09/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P02-09/E-DATA.md" },
+    { "id": "E-SSE", "path": "artifacts/acceptance/P02-09/E-SSE.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P02-09/E-REC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P02-09/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P02-09/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P02-09/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P02-09/E-SEC.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only; STATS-02 remains implemented-assumed.",
+    "The recommendation selection rule is locally-defined because the exact target algorithm is not disclosed.",
+    "BSC chainId 56 and the canonical five-minute market snapshot are the only implemented recommendation source.",
+    "STATS-01 remains planned; P02-09 does not create online, task-count, gas, FPS, or ping values.",
+    "P02-01 through P02-08 acceptance directories remain byte-identical to the pre-P02-09 hash inventory.",
+    "POOL-12 through POOL-15 remain planned; candles, ticks, business actions, blocking and creator attribution are not implemented.",
+    "aTVL, Fee/aTVL, label-algorithm, flow-valuation, USD-formula and finality-depth gaps remain unresolved.",
+    "No external RPC, metadata fetch, price fetch, production secret, signature, broadcast or funds operation is used."
+  ],
+  "completedAt": "2026-08-16T18:21:00.000Z",
+  "commit": "d24086a5dda918f19a3e892f377e3ab8d19495d1"
+}
