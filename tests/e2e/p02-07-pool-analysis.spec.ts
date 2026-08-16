@@ -56,6 +56,7 @@ async function installFixture(page: Page): Promise<void> {
             poolColumns,
             poolsPanelCollapsed: false,
             showHotPools: false,
+            showPoolLabels: true,
             showScanTab: true,
             taskViewMode: "grid",
             theme: "system",

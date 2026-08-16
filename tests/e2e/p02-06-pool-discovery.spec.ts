@@ -60,6 +60,7 @@ function preferences(state: PreferenceState) {
     poolColumns: structuredClone(state.poolColumns),
     poolsPanelCollapsed: false,
     showHotPools: false,
+    showPoolLabels: true,
     showScanTab: true,
     taskViewMode: "grid",
     theme: "system",

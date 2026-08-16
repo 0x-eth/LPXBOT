@@ -162,6 +162,7 @@ async function installFixture(
           ],
           poolsPanelCollapsed: false,
           showHotPools: false,
+          showPoolLabels: true,
           showScanTab: true,
           taskViewMode: "grid",
           theme: "light",

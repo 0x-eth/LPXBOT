@@ -52,6 +52,7 @@ const preferences = {
   ],
   poolsPanelCollapsed: false,
   showHotPools: false,
+  showPoolLabels: true,
   showScanTab: true,
   taskViewMode: "grid",
   theme: "system" as ThemeMode,

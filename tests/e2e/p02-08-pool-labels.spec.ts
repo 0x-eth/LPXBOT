@@ -1,7 +1,10 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-async function installFixture(page: Page): Promise<void> {
+async function installFixture(
+  page: Page,
+  { showPoolLabels = true }: { showPoolLabels?: boolean } = {},
+): Promise<void> {
   await page.route("**/api/auth/me", (route) =>
     route.fulfill({
       contentType: "application/json",
@@ -54,7 +57,7 @@ async function installFixture(page: Page): Promise<void> {
             ],
             poolsPanelCollapsed: false,
             showHotPools: false,
-            showPoolLabels: true,
+            showPoolLabels,
             showScanTab: true,
             taskViewMode: "grid",
             theme: "system",
@@ -76,7 +79,9 @@ async function installFixture(page: Page): Promise<void> {
   );
 }
 
-test("POOL-07 shows first label, +N and every stable reason in an expanded layer", async ({ page }) => {
+test("POOL-07 shows first label, +N and every stable reason in an expanded layer", async ({
+  page,
+}) => {
   await installFixture(page);
   await page.goto("/pools?fixture=pools-ready");
 
@@ -100,6 +105,22 @@ test("POOL-07 shows first label, +N and every stable reason in an expanded layer
   const unlabeled = page.locator("tbody tr[data-pool-label-count='0']").first();
   await expect(unlabeled).toBeVisible();
   await expect(unlabeled.locator(".pool-label-chip, .pool-label-placeholder")).toHaveCount(0);
+});
+
+test("a hidden label preference preserves pool table structure and ordering", async ({ page }) => {
+  await installFixture(page, { showPoolLabels: false });
+  await page.goto("/pools?fixture=pools-ready");
+
+  const table = page.getByRole("table", { name: "BSC 热门池" });
+  const firstRow = table.locator("tbody tr").first();
+  await expect(table.locator("thead th")).toHaveCount(10);
+  await expect(firstRow.locator("td")).toHaveCount(10);
+  await expect(firstRow).toHaveAttribute("data-pool-label-count", "0");
+  await expect(table.locator(".pool-label-chip, .pool-label-placeholder")).toHaveCount(0);
+  await expect(firstRow.locator(".pool-name-line strong")).toHaveText("WBNB / USDT");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(
+    false,
+  );
 });
 
 test("pool labels remain keyboard accessible, axe-clean and non-overflowing on each viewport", async ({

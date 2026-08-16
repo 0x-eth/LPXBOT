@@ -16,6 +16,7 @@ interface PreferenceFixture {
   poolColumns: Array<{ key: string; visible: boolean }>;
   poolsPanelCollapsed: boolean;
   showHotPools: boolean;
+  showPoolLabels: boolean;
   showScanTab: boolean;
   taskViewMode: "grid" | "list";
   theme: ThemeMode;
@@ -54,6 +55,7 @@ const defaultPreferences: PreferenceFixture = {
   ],
   poolsPanelCollapsed: false,
   showHotPools: false,
+  showPoolLabels: true,
   showScanTab: true,
   taskViewMode: "grid",
   theme: "system",
@@ -413,6 +415,21 @@ test("SHELL-04 reorders and hides both navigation surfaces with keyboard and cro
   } finally {
     await secondContext.close();
   }
+});
+
+test("POOL-07 persists the pool label visibility preference", async ({ context, page }) => {
+  const state: FixtureState = { preferences: cloneDefaults(), revision: 0 };
+  await installFixture(context, state);
+  await page.goto("/settings");
+
+  const poolLabels = page.getByRole("switch", { name: "显示池标签" });
+  await expect(poolLabels).toBeChecked();
+  await poolLabels.click();
+  await expect(poolLabels).not.toBeChecked();
+  await expect.poll(() => state.preferences.showPoolLabels).toBe(false);
+
+  await page.reload();
+  await expect(poolLabels).not.toBeChecked();
 });
 
 test("SET-01 and SET-02 remain non-overlapping and accessible at boundary widths", async ({
