@@ -6,7 +6,7 @@ Local verification completed on `2026-08-16` without `BSC_RPC_URL`. See `initial
 
 ```text
 pnpm exec vitest run tests/protocol-deployment-registry.test.ts tests/production-chain-decoder.test.ts tests/production-indexer-startup.test.ts tests/viem-bsc-log-source.test.ts tests/p02-03-acceptance.test.ts tests/p02-03-capture-policy.test.ts
-Result: passed (6 files, 50 tests)
+Result: passed (6 files, 52 tests)
 ```
 
 The fixed official ABI/deployment URLs were fetched read-only at their recorded revisions and piped directly to SHA-256. All 10 source files and both V3 concatenated interface hashes matched `source-manifest.json`.
@@ -21,6 +21,16 @@ Contracts:      forge fmt --check/build/test passed (3 tests)
 Infrastructure: test:infra passed (8 tests); test:postgres passed (9 files, 30 tests)
 Security:       Gitleaks full-history passed; dependency audit found no vulnerabilities
 ```
+
+## Hosted CI allocation evidence
+
+GitHub Actions run `31922746203` for head `3aada4b5a0f3651aa89cfb6264c57f62c7faeb6d` created all six Jobs, but GitHub assigned `runner_id: 0`, reported `steps: []`, and failed each Job before execution. The check annotation is:
+
+```text
+The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings
+```
+
+This is repository-owner billing state, not a green hosted CI run. The six local equivalents above are the executed gate evidence.
 
 The PostgreSQL run includes the complete migration `up -> reverse down -> up` cycle, migration-specific down/up checks, repeatable seed, cursor restart and reorg recovery. The offline decoder golden and mock RPC suites do not access public RPC.
 

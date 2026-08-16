@@ -2,6 +2,8 @@
 
 `ViemBscLogSource` resumes from the durable cursor's block and filters only already committed positions on the same branch. Its cursor-keyed in-memory scan watermark advances across bounded empty windows, so a long event-free range does not rescan the same pages forever. A process restart safely begins again at the durable cursor.
 
+Same-block deliveries share a bounded header promise cache. A non-removed log whose hash differs from the cached header invalidates that height and forces a fresh `eth_getBlockByNumber` read, so caching does not hide a same-height replacement branch.
+
 A removed log is retained even when its position precedes the cursor. A same-height replacement hash and a next block with a discontinuous parent are delivered unchanged to the existing canonical-store reorg path. A non-removed log whose separately fetched header belongs to another branch is rejected before normalization.
 
 Mock RPC tests cover:
@@ -9,6 +11,7 @@ Mock RPC tests cover:
 - bounded block-range pagination;
 - continuation after `maxPagesPerRead` empty pages;
 - RFC3339 header timestamp and parentHash enrichment;
+- same-block header caching with hash-aware invalidation;
 - non-removed log/header branch consistency;
 - 429 and 5xx exponential backoff;
 - bounded timeout retries;

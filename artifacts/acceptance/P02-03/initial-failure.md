@@ -19,3 +19,15 @@ Frozen acceptance tree objects at the start of work:
 P02-01 ab14275c2df97d44f86c2970d441495dd94fbe82
 P02-02 a5cd9382933646f73fba0c5fc8fe2297fabe0354
 ```
+
+Follow-up red checks found during implementation review:
+
+```text
+2026-08-16T10:45:14+08:00
+production-indexer-startup: expected marketDecoderComplete false, received true
+Cause: four versions of univ3 were incorrectly counted as four-protocol coverage.
+
+2026-08-16T10:47:30+08:00
+viem-bsc-log-source: expected one same-block header request, received two
+Cause: concurrent deliveries did not share a bounded block-header cache.
+```

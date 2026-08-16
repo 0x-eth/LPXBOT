@@ -23,6 +23,33 @@ function filesBelow(directory: string, prefix = ""): string[] {
 }
 
 describe("P02-03 acceptance integrity", () => {
+  it("records pinned provenance and capture metadata for every evidence source", () => {
+    const manifest = json("source-manifest.json");
+    expect(manifest.policy).toMatch(/pinned official source files/u);
+    expect(manifest.policy).toMatch(/Historical research notes are not evidence inputs/u);
+    for (const source of manifest.sources as Array<Record<string, unknown>>) {
+      expect(source).toMatchObject({
+        capturedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u),
+        license: expect.any(String),
+        sha256: expect.stringMatching(/^[0-9a-f]{64}$/u),
+        sourceUrl: expect.any(String),
+      });
+      expect(source.commit ?? source.tag).toMatch(/^(?:[0-9a-f]{40}|[A-Za-z0-9._:+-]+)$/u);
+      expect(source).toHaveProperty("chainId");
+      expect(source).toHaveProperty("address");
+      expect(source).toHaveProperty("validFromBlock");
+      expect(source).toHaveProperty("runtimeCodeHash");
+      if (source.chainId !== null) expect(source.chainId).toBe(56);
+      if (source.address !== null) expect(source.address).toMatch(/^0x[0-9a-f]{40}$/u);
+      if (source.validFromBlock !== null) {
+        expect(source.validFromBlock).toMatch(/^(?:0|[1-9][0-9]*)$/u);
+      }
+      if (source.runtimeCodeHash !== null) {
+        expect(source.runtimeCodeHash).toMatch(/^0x[0-9a-f]{64}$/u);
+      }
+    }
+  });
+
   it("keeps P02-01 gaps immutable and records only forward resolutions", () => {
     const frozenGaps = readFileSync("artifacts/acceptance/P02-01/gaps.json");
     expect(createHash("sha256").update(frozenGaps).digest("hex")).toBe(
@@ -34,6 +61,22 @@ describe("P02-03 acceptance integrity", () => {
     expect(
       resolution.items.find(({ id }: { id: string }) => id === "GAP-FINALITY-DEPTH"),
     ).toMatchObject({ status: "unresolved" });
+  });
+
+  it("closes only the four evidenced event/header gaps and leaves finality unresolved", () => {
+    const items = new Map(
+      json("gap-resolution.json").items.map((item: { id: string; status: string }) => [
+        item.id,
+        item.status,
+      ]),
+    );
+    expect(Object.fromEntries(items)).toEqual({
+      "GAP-BLOCK-TIMESTAMP-SOURCE": "resolved",
+      "GAP-EVENT-ABI-TOPICS": "resolved",
+      "GAP-EVENT-AMOUNT-SIGNS": "resolved",
+      "GAP-EVENT-PROTOCOL-ADDRESSES": "resolved",
+      "GAP-FINALITY-DEPTH": "unresolved",
+    });
   });
 
   it("matches the code registry and canonical ABI hashes", () => {

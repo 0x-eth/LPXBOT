@@ -4,7 +4,7 @@
 
 The four chain-56 deployments are pinned in `deployment-registry.json` with schema/deployment versions, official source references, creation transactions/blocks, lowercase storage addresses, EIP-55 display addresses, runtime code hashes, ABI hashes and open-ended valid ranges. Sequential SemVer deployments are supported; overlapping ranges for one protocol are rejected.
 
-Startup verification calls `eth_chainId` and `eth_getCode(address, latest)`. A missing deployment, empty code or hash mismatch disables only that protocol. `chainAccessConfigurationComplete` remains separate from `marketDecoderComplete`.
+Startup verification calls `eth_chainId` and `eth_getCode(address, latest)`. A missing deployment, empty code or hash mismatch disables only that protocol. Completeness requires the unique set `univ3`, `pcsv3`, `univ4`, and `pcsv4`; multiple versions of one protocol cannot satisfy another protocol's slot. `chainAccessConfigurationComplete` remains separate from `marketDecoderComplete`.
 
 ## Decoder evidence
 
