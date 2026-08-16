@@ -11,7 +11,11 @@ import {
   type NormalizedPoolEvent,
 } from "../../apps/indexer/src/index.js";
 import { PostgresMarketPoolsProvider } from "../../apps/api/src/market-pools.js";
-import type { MarketStreamEnvelope } from "../../packages/api-contract/src/index.js";
+import type {
+  LiquidityFlowProtocol,
+  MarketPoolSnapshot,
+  MarketStreamEnvelope,
+} from "../../packages/api-contract/src/index.js";
 import { FixtureEventDecoder, FixtureRawLogSource } from "../../apps/indexer/src/testing.js";
 import { fixtureBlockTimestamp, readP02Fixture } from "../helpers/p02-fixture.js";
 
@@ -101,7 +105,7 @@ async function takeStreamEvents(
   provider: PostgresMarketPoolsProvider,
   count: number,
   lastEventId: string | null,
-  protocols = ["pcsv3", "univ3", "pcsv4", "univ4"] as const,
+  protocols: readonly LiquidityFlowProtocol[] = ["pcsv3", "univ3", "pcsv4", "univ4"],
 ): Promise<MarketStreamEnvelope[]> {
   const controller = new AbortController();
   const events: MarketStreamEnvelope[] = [];
