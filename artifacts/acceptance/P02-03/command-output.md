@@ -11,7 +11,7 @@ Result: passed (6 files, 54 tests)
 
 The fixed official ABI/deployment URLs were fetched read-only at their recorded revisions and piped directly to SHA-256. All 10 source files and both V3 concatenated interface hashes matched `source-manifest.json`.
 
-## Six CI job equivalents
+## Local six CI job equivalents
 
 ```text
 Quality:        format:check, lint, typecheck and build passed; Vitest 39 files/231 tests passed; governance tests 36/36 passed
@@ -22,15 +22,43 @@ Infrastructure: test:infra passed (8 tests); test:postgres passed (9 files, 30 t
 Security:       Gitleaks full-history passed (429 commits, 19.73 MB); dependency audit found no vulnerabilities
 ```
 
-## Hosted CI allocation evidence
+These commands are local equivalents of the six CI Jobs. They remain useful supporting evidence, but they are distinct from Hosted CI execution.
 
-GitHub Actions run `31923400642` for head `328a5403092c504d50c4f5d6d67bd140514c29e8` created all six Jobs, but GitHub assigned no runner, reported `steps: []`, and failed each Job before execution. The check annotation is:
+## Hosted CI execution evidence
+
+Run: `31923619152`  
+Attempt: `2`  
+Head SHA: `52aef88f99b3701ee5218a4ca1d19b051d211639`  
+Run conclusion: `success`  
+Completed: `2026-08-16T03:23:59.000Z`
+
+`gh run view 31923619152 --attempt 2 --json attempt,headSha,conclusion,createdAt,startedAt,updatedAt,jobs,url,workflowName` returned a non-empty `steps` array and `conclusion: success` for every Job:
+
+| Job | Job ID | Started | Completed | Conclusion | Successful execution step |
+| --- | ---: | --- | --- | --- | --- |
+| Quality | `95107894904` | `2026-08-16T03:14:16Z` | `2026-08-16T03:15:47Z` | `success` | `Test` |
+| Governance | `95107894873` | `2026-08-16T03:14:16Z` | `2026-08-16T03:14:37Z` | `success` | `Verify acceptance manifests` |
+| Browser | `95107894879` | `2026-08-16T03:14:16Z` | `2026-08-16T03:23:58Z` | `success` | `Run browser tests` |
+| Contracts | `95107894888` | `2026-08-16T03:14:16Z` | `2026-08-16T03:14:26Z` | `success` | `Run contract tests` |
+| Infrastructure | `95107894917` | `2026-08-16T03:14:17Z` | `2026-08-16T03:15:31Z` | `success` | `Run PostgreSQL session integration tests` |
+| Security | `95107894900` | `2026-08-16T03:14:17Z` | `2026-08-16T03:14:36Z` | `success` | `Audit dependencies` |
+
+The conditionally skipped Browser report-upload step runs only on failure; the Browser Job and its test step both concluded `success`. Attempt 2 is the remote execution evidence for the stable implementation commit.
+
+### Attempt 1 allocation history
+
+Run: `31923619152`  
+Attempt: `1`  
+Head SHA: `52aef88f99b3701ee5218a4ca1d19b051d211639`  
+Run conclusion: `failure`
+
+`gh run view 31923619152 --attempt 1` reports all six Jobs with `steps: []`. GitHub assigned no runner and attached the same annotation to each Job:
 
 ```text
 The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings
 ```
 
-This is repository-owner billing state, not a green hosted CI run. The six local equivalents above are the executed gate evidence.
+This was a runner allocation/billing failure, not a test failure, and attempt 1 is not remote execution evidence. Earlier run `31923400642` for head `328a5403092c504d50c4f5d6d67bd140514c29e8` had the same pre-run allocation failure and remains historical context only.
 
 The PostgreSQL run includes the complete migration `up -> reverse down -> up` cycle, migration-specific down/up checks, repeatable seed, cursor restart and reorg recovery. The offline decoder golden and mock RPC suites do not access public RPC.
 
