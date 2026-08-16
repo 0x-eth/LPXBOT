@@ -238,6 +238,18 @@ describe("P02-08 versioned pool label rule contract", () => {
         row(),
       ).map(({ id }) => id),
     ).not.toContain(expect.stringMatching(/^yield-/u));
+    const incompletePriceHistory = [
+      event("804", 30, { market: { volumeUsd: "100" }, sqrtPriceX96: "1000" }),
+      event("805", 90, { market: { volumeUsd: "100" }, sqrtPriceX96: null }),
+      event("806", 150, { market: { volumeUsd: "100" }, sqrtPriceX96: "1020" }),
+      event("807", 210, { market: { volumeUsd: "100" }, sqrtPriceX96: "1020" }),
+    ];
+    const incompleteIds = labels(
+      incompletePriceHistory,
+      row({ transactionCount: "4", volumeUsd: "400" }),
+    ).map(({ id }) => id);
+    expect(incompleteIds).not.toContain("stable-volume-price");
+    expect(incompleteIds).not.toContain("volatile");
   });
 
   it("uses Decimal precision, removes duplicate labels and returns priority/id stable order", () => {

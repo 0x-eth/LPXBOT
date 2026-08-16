@@ -197,11 +197,11 @@ function boundedScore(observed: Decimal, maximum: Decimal, contract: PoolLabelRu
 }
 
 function priceChanges(events: readonly MarketMetricEvent[]): Decimal[] | null {
-  const prices = events
+  const rawPrices = events
     .filter(({ kind }) => kind === "swap")
-    .map(({ sqrtPriceX96 }) => sqrtPriceX96)
-    .filter((value): value is string => value !== null && value !== undefined)
-    .map(decimal);
+    .map(({ sqrtPriceX96 }) => sqrtPriceX96);
+  if (rawPrices.some((value) => value === null || value === undefined)) return null;
+  const prices = rawPrices.map((value) => decimal(value!));
   if (prices.some((price) => price.lessThanOrEqualTo(0))) return null;
   const changes: Decimal[] = [];
   for (let index = 1; index < prices.length; index += 1) {
