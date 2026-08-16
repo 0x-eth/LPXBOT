@@ -12,15 +12,30 @@ import type {
   MarketPoolsStreamContext,
 } from "../apps/api/src/market-pools.js";
 import type { ShellStatsProvider } from "../apps/api/src/shell-stats.js";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { issueFixtureSession, SessionFixtureStore } from "./helpers/session-fixture.js";
 
 const userId = "27000000-0000-4000-8000-000000000009";
 const apps: Array<{ close(): Promise<void> }> = [];
 
+function emptySnapshot(version = "7"): MarketPoolSnapshot {
+  return {
+    canonicalRevision: `canonical:v1:${version}`,
+    chainId: 56,
+    generatedAt: "2026-08-17T02:00:00.000Z",
+    metricVersion: "market-metrics/v1",
+    minutes: 5,
+    rows: [],
+    version,
+    windowEnd: "2026-08-17T01:55:00.000Z",
+    windowStart: "2026-08-17T01:50:00.000Z",
+  };
+}
+
 class EmptyMarketProvider implements MarketPoolsProvider {
   contexts: MarketPoolsContext[] = [];
+  current = emptySnapshot();
 
   async getByToken(_context: MarketPoolsByTokenContext): Promise<[]> {
     return [];
@@ -28,17 +43,7 @@ class EmptyMarketProvider implements MarketPoolsProvider {
 
   async getTopFees(context: MarketPoolsContext): Promise<MarketPoolSnapshot> {
     this.contexts.push(context);
-    return {
-      canonicalRevision: "canonical:v1:empty",
-      chainId: 56,
-      generatedAt: "2026-08-17T02:00:00.000Z",
-      metricVersion: "market-metrics/v1",
-      minutes: 5,
-      rows: [],
-      version: "7",
-      windowEnd: "2026-08-17T01:55:00.000Z",
-      windowStart: "2026-08-17T01:50:00.000Z",
-    };
+    return structuredClone(this.current);
   }
 
   async *subscribe(_context: MarketPoolsStreamContext): AsyncIterable<MarketStreamEnvelope> {}
@@ -68,7 +73,10 @@ class FiniteStatsProvider implements ShellStatsProvider {
 
 async function fixture(options: {
   admin?: boolean;
+  heartbeatMilliseconds?: number;
   marketPoolsProvider?: MarketPoolsProvider;
+  pollMilliseconds?: number;
+  rateLimitMax?: number;
   statsProvider?: ShellStatsProvider;
 } = {}) {
   const sessionStore = new SessionFixtureStore();
@@ -85,11 +93,90 @@ async function fixture(options: {
     now: () => new Date("2026-08-17T02:00:00.000Z"),
     regionPolicy: () => ({ blocked: false, code: null, message: null }),
     sessionStore,
+    ...(options.heartbeatMilliseconds === undefined
+      ? {}
+      : { statsHeartbeatMilliseconds: options.heartbeatMilliseconds }),
     ...(options.marketPoolsProvider ? { marketPoolsProvider: options.marketPoolsProvider } : {}),
+    ...(options.pollMilliseconds === undefined
+      ? {}
+      : { recommendedPoolsPollMilliseconds: options.pollMilliseconds }),
+    ...(options.rateLimitMax === undefined
+      ? {}
+      : { statsRateLimit: { max: options.rateLimitMax, timeWindowMs: 60_000 } }),
     ...(options.statsProvider ? { statsProvider: options.statsProvider } : {}),
   });
   apps.push(app);
   return { app, token };
+}
+
+interface SseFrame {
+  event: string;
+  id: string | null;
+  payload: Record<string, unknown>;
+}
+
+function parseFrame(block: string): SseFrame | null {
+  const lines = block.split("\n");
+  const event = lines.find((line) => line.startsWith("event:"))?.slice(6).trim();
+  const data = lines.find((line) => line.startsWith("data:"))?.slice(5).trim();
+  if (!event || !data) return null;
+  return {
+    event,
+    id: lines.find((line) => line.startsWith("id:"))?.slice(3).trim() ?? null,
+    payload: JSON.parse(data) as Record<string, unknown>,
+  };
+}
+
+async function readSseFrames(
+  response: Response,
+  count: number,
+  controller: AbortController,
+): Promise<SseFrame[]> {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  const frames: SseFrame[] = [];
+  let buffer = "";
+  try {
+    while (frames.length < count) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true }).replaceAll("\r\n", "\n");
+      let boundary = buffer.indexOf("\n\n");
+      while (boundary >= 0) {
+        const frame = parseFrame(buffer.slice(0, boundary));
+        buffer = buffer.slice(boundary + 2);
+        if (frame) frames.push(frame);
+        if (frames.length === count) break;
+        boundary = buffer.indexOf("\n\n");
+      }
+    }
+  } finally {
+    controller.abort();
+    await reader.cancel().catch(() => undefined);
+  }
+  return frames;
+}
+
+async function openSse(
+  app: Awaited<ReturnType<typeof fixture>>["app"],
+  token: string,
+  path: string,
+  controller: AbortController,
+  lastEventId?: string,
+): Promise<Response> {
+  const listeningAddress = app.server.address();
+  const origin =
+    listeningAddress && typeof listeningAddress !== "string"
+      ? `http://127.0.0.1:${listeningAddress.port}`
+      : await app.listen({ host: "127.0.0.1", port: 0 });
+  return fetch(`${origin}${path}`, {
+    headers: {
+      Accept: "text/event-stream",
+      Cookie: `lpbot_session=${token}`,
+      ...(lastEventId ? { "Last-Event-ID": lastEventId } : {}),
+    },
+    signal: controller.signal,
+  });
 }
 
 afterEach(async () => {
@@ -155,5 +242,98 @@ describe("P02-09 recommendation stream HTTP boundary", () => {
     expect(forbidden.statusCode).toBe(403);
     expect(forbidden.json().error.code).toBe("FORBIDDEN");
     expect(statsProvider.contexts).toEqual([]);
+  });
+
+  it("streams an immediate empty recommendation and heartbeat without a stats provider", async () => {
+    const marketPoolsProvider = new EmptyMarketProvider();
+    const { app, token } = await fixture({
+      heartbeatMilliseconds: 20,
+      marketPoolsProvider,
+      pollMilliseconds: 100,
+    });
+    const controller = new AbortController();
+    const response = await openSse(app, token, "/api/stats/stream?chain=bsc&limit=3", controller);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/event-stream");
+    const frames = await readSseFrames(response, 2, controller);
+
+    expect(frames.map(({ event }) => event)).toEqual(["rec_pools_snapshot", "heartbeat"]);
+    expect(frames[0]).toMatchObject({
+      id: expect.stringMatching(/^rec-pools:v1:bsc:3:/u),
+      payload: {
+        pools: [],
+        sourceVersion: "7",
+        sourceWindow: 5,
+        sourceWindowEnd: "2026-08-17T01:55:00.000Z",
+        type: "rec_pools_snapshot",
+      },
+    });
+    expect(frames[1]?.id).toBeNull();
+    await vi.waitFor(() => expect(marketPoolsProvider.contexts[0]?.signal?.aborted).toBe(true));
+  });
+
+  it("accepts a matching Last-Event-ID and rejects malformed or cross-limit cursors", async () => {
+    const marketPoolsProvider = new EmptyMarketProvider();
+    const { app, token } = await fixture({ marketPoolsProvider, pollMilliseconds: 100 });
+    const firstController = new AbortController();
+    const first = await openSse(
+      app,
+      token,
+      "/api/stats/stream?chain=bsc&limit=3",
+      firstController,
+    );
+    const [initial] = await readSseFrames(first, 1, firstController);
+    const cursor = initial!.id!;
+
+    const reconnectController = new AbortController();
+    const reconnect = await openSse(
+      app,
+      token,
+      "/api/stats/stream?chain=bsc&limit=3",
+      reconnectController,
+      cursor,
+    );
+    expect((await readSseFrames(reconnect, 1, reconnectController))[0]?.id).toBe(cursor);
+
+    for (const [lastEventId, limit] of [
+      ["bad-cursor", 3],
+      [cursor, 4],
+    ] as const) {
+      const invalid = await app.inject({
+        headers: {
+          cookie: `lpbot_session=${token}`,
+          "last-event-id": lastEventId,
+        },
+        method: "GET",
+        url: `/api/stats/stream?chain=bsc&limit=${limit}`,
+      });
+      expect(invalid.statusCode).toBe(400);
+      expect(invalid.json().error.code).toBe("STATS_STREAM_CURSOR_INVALID");
+    }
+  });
+
+  it("passes an admin user filter only to stats and rate limits the read stream", async () => {
+    const statsProvider = new FiniteStatsProvider();
+    const { app, token } = await fixture({ admin: true, rateLimitMax: 2, statsProvider });
+    const filtered = await app.inject({
+      headers: { cookie: `lpbot_session=${token}` },
+      method: "GET",
+      url: "/api/stats/stream?user_id=target-user&limit=3",
+    });
+    expect(filtered.statusCode).toBe(200);
+    expect(statsProvider.contexts).toEqual(["target-user"]);
+
+    await app.inject({
+      headers: { cookie: `lpbot_session=${token}` },
+      method: "GET",
+      url: "/api/stats/stream",
+    });
+    const limited = await app.inject({
+      headers: { cookie: `lpbot_session=${token}` },
+      method: "GET",
+      url: "/api/stats/stream",
+    });
+    expect(limited.statusCode).toBe(429);
+    expect(limited.json().error.code).toBe("RATE_LIMITED");
   });
 });
