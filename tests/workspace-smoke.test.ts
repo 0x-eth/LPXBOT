@@ -17,6 +17,7 @@ const expectedWorkspaces = new Map([
   ["apps/telegram-bot", "@lpbot/telegram-bot"],
   ["packages/api-contract", "@lpbot/api-contract"],
   ["packages/domain", "@lpbot/domain"],
+  ["packages/chain-adapters", "@lpbot/chain-adapters"],
   ["packages/chain-registry", "@lpbot/chain-registry"],
   ["packages/market-metrics", "@lpbot/market-metrics"],
   ["packages/security", "@lpbot/security"],
