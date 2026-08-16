@@ -495,7 +495,8 @@ export class ApiShellStatsProvider {
     this.#initialRetryMs = options.initialRetryMs ?? 1_000;
     this.#maxRetryMs = options.maxRetryMs ?? 30_000;
     this.#now = options.now ?? (() => new Date());
-    this.#recommendationChain = options.recommendationChain ?? "bsc";
+    this.#recommendationChain =
+      options.recommendationChain === undefined ? "bsc" : options.recommendationChain;
     this.#recommendationLimit = options.recommendationLimit ?? 3;
     this.#sleep = options.sleep ?? defaultSleep;
     if (

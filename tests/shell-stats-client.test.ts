@@ -168,4 +168,23 @@ describe("P01-06 API shell stats provider", () => {
       headers: { Accept: "text/event-stream", "Last-Event-ID": cursor },
     });
   });
+
+  it("marks requested recommendations unavailable on a safe 503 response", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response("{}", { headers: { "Content-Type": "application/json" }, status: 503 }),
+    );
+    const provider = new ApiShellStatsProvider({
+      fetcher,
+      sleep: async (_delay, signal) =>
+        new Promise((resolve) => signal.addEventListener("abort", () => resolve(), { once: true })),
+    });
+    const states: ReturnType<typeof createShellStatsState>[] = [];
+    const stop = provider.subscribe((state) => states.push(state));
+
+    await vi.waitFor(() =>
+      expect(states.at(-1)?.recommendations.status).toBe("unavailable"),
+    );
+    stop();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
 });

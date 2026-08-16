@@ -61,6 +61,19 @@ describe("P02-09 recommended pool client state", () => {
       sourceVersion: "7",
       status: "ready",
     });
+    const withStats = reduceShellStatsEvent(first, {
+      observedAt: "2026-08-17T02:00:01.000Z",
+      sequence: 42,
+      stats: {
+        fps: null,
+        gas: { baseGwei: null, ethereumGwei: null },
+        online: null,
+        pingMs: null,
+        taskCounts: { paused: null, running: null, stopped: null },
+      },
+      type: "snapshot",
+    });
+    expect(withStats.recommendations).toEqual(first.recommendations);
     expect(reduceShellStatsEvent(first, firstEvent)).toBe(first);
     expect(reduceShellStatsEvent(first, recommendation("6", "b"))).toBe(first);
 
