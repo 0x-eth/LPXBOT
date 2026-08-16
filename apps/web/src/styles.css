@@ -1450,6 +1450,7 @@ html[data-theme="dark"] .pool-label-chip[data-label-id="lp-inflow"] {
 
 .pool-market-metadata dt {
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .pool-market-metadata dd {
