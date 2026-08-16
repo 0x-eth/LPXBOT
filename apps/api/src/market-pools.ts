@@ -523,4 +523,3 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
     );
   }
 }
-  metric_version: string;

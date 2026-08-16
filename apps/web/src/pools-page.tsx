@@ -133,6 +133,57 @@ const basePoolRow: MarketPoolRow = {
   feesUsd: "428.125000000000000001",
   feeTvl: "0.00428125000000000001",
   hooks: null,
+  labelRuleVersion: "pool-labels/local-v1",
+  labels: [
+    {
+      computedAt: "2026-08-16T01:00:00.000Z",
+      id: "high-fee-rate",
+      label: "高费率",
+      reasons: [
+        {
+          code: "FEE_TVL_GTE_THRESHOLD",
+          observed: "0.01",
+          operator: ">=",
+          threshold: "0.01",
+          window: "5m",
+        },
+      ],
+      ruleVersion: "pool-labels/local-v1",
+      score: 50,
+    },
+    {
+      computedAt: "2026-08-16T01:00:00.000Z",
+      id: "crowded",
+      label: "拥挤",
+      reasons: [
+        {
+          code: "TRANSACTION_COUNT_GTE_THRESHOLD",
+          observed: "20",
+          operator: ">=",
+          threshold: "20",
+          window: "5m",
+        },
+      ],
+      ruleVersion: "pool-labels/local-v1",
+      score: 50,
+    },
+    {
+      computedAt: "2026-08-16T01:00:00.000Z",
+      id: "lp-inflow",
+      label: "LP 流入",
+      reasons: [
+        {
+          code: "LP_NET_FLOW_GTE_THRESHOLD",
+          observed: "0.25",
+          operator: ">=",
+          threshold: "0.25",
+          window: "5m",
+        },
+      ],
+      ruleVersion: "pool-labels/local-v1",
+      score: 50,
+    },
+  ],
   poolAddress: "0x1111111111111111111111111111111111111111",
   poolId: null,
   poolKey: "56:0x1111111111111111111111111111111111111111",
@@ -161,6 +212,7 @@ const fixturePoolRows: MarketPoolRow[] = liquidityFlowProtocols.map((protocol, i
     feesUsd,
     feeTvl: new Decimal(feesUsd).dividedBy(basePoolRow.tvlUsd!).toString(),
     hooks: v4 && index === 3 ? "0x4444444444444444444444444444444444444444" : null,
+    labels: index === 0 ? basePoolRow.labels : index === 1 ? basePoolRow.labels.slice(0, 1) : [],
     poolAddress,
     poolId,
     poolKey: `56:${identity}`,
@@ -179,8 +231,10 @@ function fixturePoolSnapshot(
   rows: MarketPoolRow[],
 ): MarketPoolSnapshot {
   return {
+    canonicalRevision: "canonical:v1:fixture",
     chainId: 56,
     generatedAt: "2026-08-16T01:00:01.000Z",
+    metricVersion: "market-metrics/v1",
     minutes,
     rows,
     version: "fixture-1",

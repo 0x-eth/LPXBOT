@@ -196,7 +196,7 @@ export function parseMarketStreamEnvelope(value: unknown): MarketStreamEnvelope 
   ) {
     throw new Error("MARKET_STREAM_RESPONSE_INVALID");
   }
-  let data: MarketStreamEnvelope["data"];
+  let data: MarketStreamEnvelope["data"] | undefined;
   try {
     data =
       value.eventType === "pools.snapshot"
