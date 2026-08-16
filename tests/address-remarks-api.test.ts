@@ -83,9 +83,9 @@ afterEach(async () => {
 async function fixture(max = 30) {
   const sessionStore = new SessionFixtureStore();
   const addressRemarkStore = new MemoryAddressRemarkStore();
-  const [tokenA, tokenB, tokenC] = await Promise.all(
+  const [tokenA, tokenB, tokenC] = (await Promise.all(
     [userA, userB, userC].map((userId) => issueFixtureSession(sessionStore, userId, now)),
-  );
+  )) as [string, string, string];
   const app = buildApiApp({
     addressRemarkRateLimit: { max, timeWindowMs: 60_000 },
     addressRemarkStore,

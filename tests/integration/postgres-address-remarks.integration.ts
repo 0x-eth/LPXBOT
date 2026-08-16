@@ -123,7 +123,11 @@ describe("P02-05 PostgreSQL address remarks", () => {
   });
 
   it("isolates personal rows and exposes only the stable winning shared label", async () => {
-    const tokens = await Promise.all(userIds.map((userId) => session(userId)));
+    const tokens = (await Promise.all(userIds.map((userId) => session(userId)))) as [
+      string,
+      string,
+      string,
+    ];
     const app = createApp();
     for (const [token, label] of [
       [tokens[0], "Zebra"],
