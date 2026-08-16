@@ -331,6 +331,65 @@ describe("P02-10 PostgreSQL Candle/Tick read model", () => {
     await pool.query("DROP FUNCTION p0210_fail_candle()");
   });
 
+  it("keeps projection-incomplete canonical events without inventing Candle or Tick values", async () => {
+    const store = new PostgresCanonicalEventStore(pool);
+    const entries = [
+      fixture("legacy-created", {
+        blockHash: hash98,
+        blockNumber: "98",
+        blockTimestamp: "2026-08-17T00:00:00.000Z",
+        kind: "pool.created",
+        parentHash: null,
+      }),
+      fixture("legacy-swap", {
+        amount0: "-10",
+        amount1: "20",
+        blockHash: hash99,
+        blockNumber: "99",
+        blockTimestamp: "2026-08-17T00:00:01.000Z",
+        kind: "swap",
+        parentHash: hash98,
+        sqrtPriceX96: null,
+        tick: "0",
+      }),
+      fixture("legacy-liquidity", {
+        blockHash: hash100,
+        blockNumber: "100",
+        blockTimestamp: "2026-08-17T00:00:02.000Z",
+        kind: "liquidity.add",
+        liquidityDelta: "5",
+        parentHash: hash99,
+      }),
+    ];
+
+    await expect(
+      store.commit(commit(entries, "2026-08-17T00:05:00.000Z")),
+    ).resolves.toMatchObject({ acceptedCount: 3 });
+    const counts = await pool.query<{
+      candles: string;
+      cursors: string;
+      events: string;
+      states: string;
+      ticks: string;
+    }>(
+      `SELECT
+        (SELECT count(*)::text FROM normalized_pool_events) AS events,
+        (SELECT count(*)::text FROM market_candles) AS candles,
+        (SELECT count(*)::text FROM market_tick_liquidity) AS ticks,
+        (SELECT count(*)::text FROM market_read_model_states) AS states,
+        (SELECT count(*)::text FROM indexer_cursors) AS cursors`,
+    );
+    expect(counts.rows).toEqual([
+      { candles: "0", cursors: "1", events: "3", states: "1", ticks: "0" },
+    ]);
+    expect(
+      await pool.query(
+        `SELECT current_tick, tick_spacing FROM market_read_model_states WHERE pool_key = $1`,
+        [`56:${poolA}`],
+      ),
+    ).toMatchObject({ rows: [{ current_tick: 0, tick_spacing: 60 }] });
+  });
+
   it("is duplicate-safe and replaces only orphaned pool buckets and Tick boundaries", async () => {
     const store = new PostgresCanonicalEventStore(pool);
     const initial = initialEntries();
