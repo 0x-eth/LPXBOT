@@ -52,11 +52,7 @@ export function normalizePoolColumns(value: unknown): PoolColumnPreference[] {
   for (const key of POOL_COLUMN_KEYS.slice(1, -1)) {
     if (!seen.has(key)) middle.push({ key, visible: true });
   }
-  return [
-    { key: "pool", visible: true },
-    ...middle,
-    { key: "actions", visible: true },
-  ];
+  return [{ key: "pool", visible: true }, ...middle, { key: "actions", visible: true }];
 }
 
 export function setPoolColumnVisibility(
@@ -110,8 +106,7 @@ export const BSC_QUOTE_TOKEN_ADDRESSES = Object.freeze([
 const quoteTokens = new Set<string>(BSC_QUOTE_TOKEN_ADDRESSES);
 
 export type PoolGroupingMode =
-  | { type: "default" }
-  | { tokenAddress: EvmAddress; type: "token-search" };
+  { type: "default" } | { tokenAddress: EvmAddress; type: "token-search" };
 
 export interface PoolRowGroup {
   additionalCount: number;
@@ -144,7 +139,8 @@ function defaultGroupToken(row: MarketPoolRow): string | null {
 
 function tokenSearchGroup(row: MarketPoolRow, tokenAddress: EvmAddress): string | null {
   const token = tokenAddress.toLowerCase();
-  return canonicalAddress(row.token0Address) === token || canonicalAddress(row.token1Address) === token
+  return canonicalAddress(row.token0Address) === token ||
+    canonicalAddress(row.token1Address) === token
     ? token
     : null;
 }

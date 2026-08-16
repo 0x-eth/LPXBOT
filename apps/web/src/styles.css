@@ -3012,6 +3012,10 @@ html[data-theme="dark"] .chain-operation-success {
     grid-template-columns: 1fr;
   }
 
+  .pool-search-form {
+    grid-template-columns: 130px minmax(0, 1fr) auto 36px 36px;
+  }
+
   .pool-dex-options {
     justify-content: flex-start;
   }
@@ -3172,6 +3176,20 @@ html[data-theme="dark"] .chain-operation-success {
     margin-top: 20px;
   }
 
+  .pool-search-form {
+    grid-template-columns: minmax(0, 1fr) 36px 36px;
+  }
+
+  .pool-search-form .flow-segment,
+  .pool-search-input {
+    grid-column: 1 / -1;
+  }
+
+  .pool-search-form .pool-search-submit {
+    grid-column: 1;
+    justify-self: stretch;
+  }
+
   .pool-dex-options {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3184,69 +3202,11 @@ html[data-theme="dark"] .chain-operation-success {
   }
 
   .pools-table-shell {
-    margin-top: 18px;
+    overflow-x: auto;
   }
 
-  .pools-table,
-  .pools-table thead,
-  .pools-table tbody {
-    display: block;
-    width: 100%;
-  }
-
-  .pools-table thead tr {
-    display: grid;
-    min-height: 36px;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    align-items: center;
-  }
-
-  .pools-table th {
-    padding: 8px 2px;
-    border-bottom: 0;
-    font-size: 0.62rem;
-    text-align: center;
-  }
-
-  .pools-table th:first-child,
-  .pools-table th:nth-child(2) {
-    text-align: center;
-  }
-
-  .pools-table tbody tr {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    border-top: 1px solid var(--border);
-  }
-
-  .pools-table td,
-  .pools-table td:first-child,
-  .pools-table td:nth-child(2) {
-    display: grid;
-    min-width: 0;
-    grid-template-columns: 54px minmax(0, 1fr);
-    gap: 7px;
-    padding: 10px 6px;
-    font-size: 0.72rem;
-    text-align: right;
-  }
-
-  .pools-table td::before {
-    align-self: start;
-    color: var(--muted-foreground);
-    content: attr(data-label);
-    font-family: Inter, Arial, ui-sans-serif, system-ui, sans-serif;
-    font-size: 0.66rem;
-    font-weight: 700;
-    text-align: left;
-  }
-
-  .pools-table td:first-child {
-    grid-column: 1 / -1;
-  }
-
-  .pool-address {
-    grid-column: 2;
+  .pools-table {
+    width: 760px;
   }
 
   .numeric-full {

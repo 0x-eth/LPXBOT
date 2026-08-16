@@ -129,9 +129,7 @@ const fixturePoolRows: MarketPoolRow[] = liquidityFlowProtocols.map((protocol, i
   const poolAddress = v4
     ? null
     : (`0x${String(index + 1).repeat(40)}` as MarketPoolRow["poolAddress"]);
-  const poolId = v4
-    ? (`0x${String(index + 1).repeat(64)}` as MarketPoolRow["poolId"])
-    : null;
+  const poolId = v4 ? (`0x${String(index + 1).repeat(64)}` as MarketPoolRow["poolId"]) : null;
   const identity = poolAddress ?? poolId!;
   return {
     ...basePoolRow,
@@ -455,20 +453,20 @@ function PoolTable({
         </thead>
         <tbody>
           {rows.map((visibleRow) => (
-              <tr
-                data-group-member={!visibleRow.isHeader ? "true" : undefined}
-                key={visibleRow.row.poolKey}
-              >
-                {visibleColumns.map(({ key }) => (
-                  <PoolTableCell
-                    column={key}
-                    key={key}
-                    toggleGroup={toggleGroup}
-                    visibleRow={visibleRow}
-                  />
-                ))}
-              </tr>
-            ))}
+            <tr
+              data-group-member={!visibleRow.isHeader ? "true" : undefined}
+              key={visibleRow.row.poolKey}
+            >
+              {visibleColumns.map(({ key }) => (
+                <PoolTableCell
+                  column={key}
+                  key={key}
+                  toggleGroup={toggleGroup}
+                  visibleRow={visibleRow}
+                />
+              ))}
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
@@ -603,7 +601,12 @@ function PoolColumnDialog({
   return (
     <Dialog.Root onOpenChange={openChanged} open={open}>
       <Dialog.Trigger asChild>
-        <button aria-label="设置池表列" className="pool-column-trigger" title="设置列" type="button">
+        <button
+          aria-label="设置池表列"
+          className="pool-column-trigger"
+          title="设置列"
+          type="button"
+        >
           <Settings2 aria-hidden="true" size={16} />
         </button>
       </Dialog.Trigger>
@@ -677,7 +680,11 @@ function PoolColumnDialog({
               );
             })}
           </ul>
-          {error ? <p className="pool-column-error" role="alert">列设置保存失败</p> : null}
+          {error ? (
+            <p className="pool-column-error" role="alert">
+              列设置保存失败
+            </p>
+          ) : null}
           <div className="pool-column-dialog-actions">
             <button
               onClick={() => setDraft(DEFAULT_POOL_COLUMNS.map((column) => ({ ...column })))}
@@ -687,7 +694,9 @@ function PoolColumnDialog({
               重置
             </button>
             <Dialog.Close asChild>
-              <button disabled={saving} type="button">取消</button>
+              <button disabled={saving} type="button">
+                取消
+              </button>
             </Dialog.Close>
             <button disabled={saving} onClick={() => void submit()} type="button">
               {saving ? "保存中" : "保存"}
@@ -1506,7 +1515,11 @@ export function PoolsPage() {
       if (poolModeConnection === "reconnecting" || poolModeConnection === "stale") {
         poolSearchDispatch({ type: "reconnecting" });
       } else if (poolModeConnection === "error") {
-        poolSearchDispatch({ code: "MARKET_SEARCH_UNAVAILABLE", requestId: request.requestId, type: "error" });
+        poolSearchDispatch({
+          code: "MARKET_SEARCH_UNAVAILABLE",
+          requestId: request.requestId,
+          type: "error",
+        });
       } else if (poolModeConnection !== "loading") {
         poolSearchDispatch({
           requestId: request.requestId,
@@ -1523,7 +1536,8 @@ export function PoolsPage() {
         poolSearchDispatch({ requestId: request.requestId, rows, type: "success" });
       },
       (error: unknown) => {
-        if (request.signal.aborted || !poolSearchManager.current.isCurrent(request.requestId)) return;
+        if (request.signal.aborted || !poolSearchManager.current.isCurrent(request.requestId))
+          return;
         poolSearchDispatch({
           code: error instanceof Error ? error.message : "MARKET_TOKEN_REQUEST_FAILED",
           requestId: request.requestId,
