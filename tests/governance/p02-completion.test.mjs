@@ -13,7 +13,13 @@ const EXPECTED_FEATURE_IDS = [
   ...Array.from({ length: 5 }, (_, index) => `FLOW-${String(index + 1).padStart(2, "0")}`),
   ...Array.from({ length: 2 }, (_, index) => `STATS-${String(index + 1).padStart(2, "0")}`),
 ];
-const IMPLEMENTED_FEATURE_IDS = ["POOL-01", "POOL-02", "POOL-04", "POOL-16"];
+const P02_02_FEATURE_IDS = ["POOL-01", "POOL-02", "POOL-04", "POOL-16"];
+const IMPLEMENTED_FEATURE_IDS = [
+  ...P02_02_FEATURE_IDS,
+  "POOL-03",
+  "FLOW-01",
+  "FLOW-02",
+];
 const REQUIRED_EVIDENCE_IDS = [
   "E-DATA",
   "E-REC",
@@ -84,7 +90,7 @@ function assertRepositoryPath(value, label) {
   return resolved;
 }
 
-test("P02 status table keeps exactly four fixture-verified features implemented", async () => {
+test("P02 status table keeps exactly seven fixture-verified features implemented", async () => {
   const markdown = await readFile(TRACEABILITY_PATH, "utf8");
   const rows = p02StatusRows(markdown);
   assert.deepEqual(sorted(rows.keys()), sorted(EXPECTED_FEATURE_IDS));
@@ -109,9 +115,9 @@ test("P02 status table keeps exactly four fixture-verified features implemented"
   }
 
   assert.deepEqual(sorted(implemented), sorted(IMPLEMENTED_FEATURE_IDS));
-  assert.equal(planned.length, 19);
-  assert.match(markdown, /`implemented-assumed`\s*\|\s*22\s*\|/);
-  assert.match(markdown, /(?:其余|remaining)\s*`planned`\s*\|\s*174\s*\|/i);
+  assert.equal(planned.length, 16);
+  assert.match(markdown, /`implemented-assumed`\s*\|\s*25\s*\|/);
+  assert.match(markdown, /(?:其余|remaining)\s*`planned`\s*\|\s*171\s*\|/i);
 });
 
 test("P02-02 manifest owns only the tracer slice and local fixture evidence", async () => {
@@ -126,13 +132,13 @@ test("P02-02 manifest owns only the tracer slice and local fixture evidence", as
   assert.match(manifest.completedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   assert.equal(Number.isNaN(Date.parse(manifest.completedAt)), false);
   assert.equal(manifest.commit, EXPECTED_ACCEPTED_COMMIT);
-  assert.deepEqual(sorted(manifest.featureIds), sorted(IMPLEMENTED_FEATURE_IDS));
+  assert.deepEqual(sorted(manifest.featureIds), sorted(P02_02_FEATURE_IDS));
   assert.deepEqual(sorted(manifest.evidence.map(({ id }) => id)), sorted(REQUIRED_EVIDENCE_IDS));
 
   const traceability = traceabilityRows(markdown);
   const manifestTests = new Set(manifest.tests.map(({ id }) => id));
   const manifestEvidence = new Set(manifest.evidence.map(({ id }) => id));
-  for (const featureId of IMPLEMENTED_FEATURE_IDS) {
+  for (const featureId of P02_02_FEATURE_IDS) {
     const minimums = traceability.get(featureId);
     assert.ok(minimums, `${featureId} is missing from TRACEABILITY_MATRIX`);
     for (const testId of minimums.tests) {
