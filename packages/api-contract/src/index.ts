@@ -287,8 +287,11 @@ export interface LiquidityFlowCanonicalEnvelope {
   cursor: string;
   data: LiquidityFlowBackfill | LiquidityFlowRecord | null;
   emittedAt: string;
+  epoch: string;
   eventType: "liquidity.backfill" | "liquidity.event" | "heartbeat";
+  mode: "snapshot" | "diff";
   schemaVersion: typeof liquidityFlowSchemaVersion;
+  sequence: string;
   streamKey: string;
 }
 

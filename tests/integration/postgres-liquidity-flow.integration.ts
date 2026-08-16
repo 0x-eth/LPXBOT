@@ -270,6 +270,7 @@ describe("P02-04 PostgreSQL liquidity flow read model", () => {
     ]);
 
     const [boundedEnvelope] = await takeFlow(provider, 1);
+    expect(boundedEnvelope).toMatchObject({ epoch: "1", mode: "snapshot", sequence: "10" });
     const bounded = boundedEnvelope!.data as LiquidityFlowBackfill;
     expect(bounded.events).toHaveLength(3);
     expect(bounded.has_more).toBe(true);

@@ -108,6 +108,7 @@ export class PostgresLiquidityFlowProvider implements LiquidityFlowProvider {
       .map(({ payload }) => payload)
       .filter((record): record is LiquidityFlowRecord => record !== null);
     const cursor = selected.at(-1)?.cursor ?? watermark.cursor ?? null;
+    const sequence = selected.at(-1)?.sequence ?? watermark.sequence;
     const backfill: LiquidityFlowBackfill = {
       cursor,
       event_type: "liquidity.backfill",
@@ -120,8 +121,11 @@ export class PostgresLiquidityFlowProvider implements LiquidityFlowProvider {
       cursor: cursor ?? "flow:v1:56:0:empty",
       data: backfill,
       emittedAt: this.#validNow().toISOString(),
+      epoch: "1",
       eventType: "liquidity.backfill",
+      mode: "snapshot",
       schemaVersion: "1.0.0",
+      sequence,
       streamKey: key,
     };
 
@@ -166,8 +170,11 @@ export class PostgresLiquidityFlowProvider implements LiquidityFlowProvider {
       cursor: row.cursor,
       data,
       emittedAt: row.created_at.toISOString(),
+      epoch: "1",
       eventType,
+      mode: "diff",
       schemaVersion: "1.0.0",
+      sequence: row.sequence,
       streamKey,
     };
   }

@@ -75,8 +75,11 @@ function canonical(
     cursor,
     data,
     emittedAt: "2026-08-16T01:00:00.000Z",
+    epoch: "1",
     eventType,
+    mode: eventType === "liquidity.backfill" ? "snapshot" : "diff",
     schemaVersion: "1.0.0",
+    sequence: cursor.split(":").at(-2) ?? "0",
     streamKey: "liquidity-flow:56:pool=0x1111111111111111111111111111111111111111",
   };
 }
