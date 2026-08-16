@@ -81,6 +81,7 @@ describe("P02-09 recommended pool selection", () => {
   });
 
   it("returns an array while filtering null, non-positive, malformed, and incomplete rows", () => {
+    const invalidPoolId = `0x${"7".repeat(64)}` as const;
     const selected = selectRecommendedPools(
       snapshot([
         row("1", null),
@@ -89,6 +90,12 @@ describe("P02-09 recommended pool selection", () => {
         row("4", "not-a-decimal"),
         row("5", "1", { poolKey: `1:${address("5")}` }),
         row("6", "1", { token0Address: null }),
+        row("7", "1", {
+          poolAddress: null,
+          poolId: invalidPoolId,
+          poolKey: `56:${invalidPoolId}`,
+          protocol: "unknown-v4" as MarketPoolRow["protocol"],
+        }),
       ]),
       3,
     );

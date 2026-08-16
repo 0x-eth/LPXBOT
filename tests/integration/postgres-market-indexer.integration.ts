@@ -12,6 +12,10 @@ import {
   type NormalizedPoolEvent,
 } from "../../apps/indexer/src/index.js";
 import { PostgresMarketPoolsProvider } from "../../apps/api/src/market-pools.js";
+import {
+  recommendationSelectionHash,
+  selectRecommendedPools,
+} from "../../apps/api/src/recommended-pools.js";
 import type {
   LiquidityFlowProtocol,
   MarketPoolSnapshot,
@@ -627,6 +631,54 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     );
     expect(cursor.rows).toEqual([
       { block_hash: fixture.input[2]!.rawLog.blockHash, block_number: "110" },
+    ]);
+  });
+
+  it("replaces recommendations from the canonical five-minute snapshot after a reorg", async () => {
+    const fixture = structuredClone(readP02Fixture("reorg"));
+    for (const entry of fixture.input) {
+      entry.fixtureDecoded.pool.token0 = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+      entry.fixtureDecoded.pool.token1 = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    }
+    const runner = (input: typeof fixture.input) =>
+      new IndexerRunner({
+        decoder: new FixtureEventDecoder(input, { marketFor: reorgMarketProjection }),
+        evaluationTime: () => new Date("2026-08-16T00:05:00.000Z"),
+        source: new FixtureRawLogSource(input, fixtureBlockTimestamp),
+        store: new PostgresCanonicalEventStore(pool),
+      });
+    const provider = new PostgresMarketPoolsProvider(pool);
+
+    await runner(fixture.input.slice(0, 2)).runOnce();
+    const originalSource = await provider.getTopFees({
+      chainId: 56,
+      minutes: 5,
+      protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
+    });
+    const original = selectRecommendedPools(originalSource, 3);
+
+    await runner(fixture.input).runOnce();
+    const replacementSource = await provider.getTopFees({
+      chainId: 56,
+      minutes: 5,
+      protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
+    });
+    const replacement = selectRecommendedPools(replacementSource, 3);
+
+    expect(original).toEqual([expect.objectContaining({ feesUsd: "100" })]);
+    expect(replacement).toEqual([expect.objectContaining({ feesUsd: "40" })]);
+    expect(BigInt(replacementSource.version)).toBeGreaterThan(BigInt(originalSource.version));
+    expect(recommendationSelectionHash(replacement)).not.toBe(
+      recommendationSelectionHash(original),
+    );
+    const canonicalRows = await pool.query<{ canonical: boolean; version: string }>(
+      `SELECT canonical, version::text
+         FROM market_snapshots
+        WHERE stream_key = 'top-fees:56:5'
+        ORDER BY version`,
+    );
+    expect(canonicalRows.rows.filter(({ canonical }) => canonical)).toEqual([
+      { canonical: true, version: replacementSource.version },
     ]);
   });
 

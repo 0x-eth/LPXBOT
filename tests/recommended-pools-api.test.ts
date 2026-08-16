@@ -91,6 +91,13 @@ class ReplacingMarketProvider extends EmptyMarketProvider {
   }
 }
 
+class FailingMarketProvider extends EmptyMarketProvider {
+  override async getTopFees(context: MarketPoolsContext): Promise<MarketPoolSnapshot> {
+    this.contexts.push(context);
+    throw new Error("fixture database detail must not escape");
+  }
+}
+
 class BlockingMarketProvider extends EmptyMarketProvider {
   aborted = false;
 
@@ -307,6 +314,28 @@ describe("P02-09 recommendation stream HTTP boundary", () => {
     expect(forbidden.statusCode).toBe(403);
     expect(forbidden.json().error.code).toBe("FORBIDDEN");
     expect(statsProvider.contexts).toEqual([]);
+  });
+
+  it("returns a safe 503 envelope when the initial canonical read fails", async () => {
+    const marketPoolsProvider = new FailingMarketProvider();
+    const { app, token } = await fixture({ marketPoolsProvider });
+    const response = await app.inject({
+      headers: { cookie: `lpbot_session=${token}` },
+      method: "GET",
+      url: "/api/stats/stream?chain=bsc&limit=3",
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toMatchObject({
+      error: {
+        code: "RECOMMENDATIONS_UNAVAILABLE",
+        message: "Recommended pool data is temporarily unavailable",
+        retryable: true,
+      },
+      success: false,
+    });
+    expect(response.body).not.toContain("fixture database detail");
+    expect(marketPoolsProvider.contexts).toHaveLength(1);
   });
 
   it("streams an immediate empty recommendation and heartbeat without a stats provider", async () => {
