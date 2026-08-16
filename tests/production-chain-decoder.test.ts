@@ -7,7 +7,10 @@ import {
   type GoldenRawEvent,
   type QuarantinedLog,
 } from "../packages/chain-adapters/src/index.js";
-import { BSC_PROTOCOL_DEPLOYMENTS } from "../packages/chain-registry/src/index.js";
+import {
+  BSC_PROTOCOL_DEPLOYMENTS,
+  type ProtocolDeployment,
+} from "../packages/chain-registry/src/index.js";
 import { encodeAbiParameters, encodeEventTopics } from "viem";
 import { describe, expect, it } from "vitest";
 
@@ -134,18 +137,21 @@ describe("P02-03 production BSC event decoder", () => {
   it("routes a historical log through the deployment version active at its block", async () => {
     const raw = readGolden("univ4", "Initialize");
     const historicalBlock = raw.delivery.log.blockNumber;
-    const deployments = BSC_PROTOCOL_DEPLOYMENTS.flatMap((deployment) =>
-      deployment.platformId === "univ4"
-        ? [
-            { ...deployment, validToBlock: historicalBlock },
-            {
-              ...deployment,
-              deploymentVersion: "1.1.0",
-              validFromBlock: String(BigInt(historicalBlock) + 1n),
-            },
-          ]
-        : [deployment],
-    );
+    const deployments: ProtocolDeployment[] = [];
+    for (const deployment of BSC_PROTOCOL_DEPLOYMENTS) {
+      if (deployment.platformId !== "univ4") {
+        deployments.push(deployment);
+        continue;
+      }
+      deployments.push(
+        { ...deployment, validToBlock: historicalBlock },
+        {
+          ...deployment,
+          deploymentVersion: "1.1.0",
+          validFromBlock: String(BigInt(historicalBlock) + 1n),
+        },
+      );
+    }
     const decoder = new ProductionBscEventDecoder({ deployments });
 
     await expect(decoder.decode(raw.delivery)).resolves.toMatchObject({

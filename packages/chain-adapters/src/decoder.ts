@@ -210,8 +210,8 @@ function pcsv4PoolId(
 export class ProductionBscEventDecoder {
   readonly #conflictingAbis = new Set<ProtocolPlatformId>();
   readonly #deployments: readonly ProtocolDeployment[];
-  readonly #factoryByAddress = new Map<string, ProtocolDeployment>();
-  readonly #managerByAddress = new Map<string, ProtocolDeployment>();
+  readonly #factoryByAddress = new Map<string, ProtocolDeployment[]>();
+  readonly #managerByAddress = new Map<string, ProtocolDeployment[]>();
   readonly #quarantine: QuarantineSink | undefined;
   readonly #quarantined: QuarantinedLog[] = [];
   readonly #v3Pools = new Map<string, V3PoolIdentity>();
@@ -225,8 +225,16 @@ export class ProductionBscEventDecoder {
       if (deployment.abiHash !== PROTOCOL_ABI_HASHES[deployment.platformId]) {
         this.#conflictingAbis.add(deployment.platformId);
       }
-      if (deployment.factory) this.#factoryByAddress.set(deployment.factory, deployment);
-      if (deployment.poolManager) this.#managerByAddress.set(deployment.poolManager, deployment);
+      if (deployment.factory) {
+        const versions = this.#factoryByAddress.get(deployment.factory) ?? [];
+        versions.push(deployment);
+        this.#factoryByAddress.set(deployment.factory, versions);
+      }
+      if (deployment.poolManager) {
+        const versions = this.#managerByAddress.get(deployment.poolManager) ?? [];
+        versions.push(deployment);
+        this.#managerByAddress.set(deployment.poolManager, versions);
+      }
     }
   }
 
@@ -261,8 +269,13 @@ export class ProductionBscEventDecoder {
     const topic0 = delivery.log.topics[0]?.toLowerCase();
     if (!topic0) return this.#reject(delivery, "malformed-log");
     let deployment: ProtocolDeployment | undefined;
+    let knownAddress = false;
     if (topic0 === PROTOCOL_EVENT_TOPICS.v3.PoolCreated) {
-      deployment = this.#factoryByAddress.get(address);
+      const versions = this.#factoryByAddress.get(address);
+      knownAddress = versions !== undefined;
+      deployment = versions?.find((candidate) =>
+        this.#deploymentInRange(candidate, delivery.log.blockNumber),
+      );
     } else if (
       topic0 === PROTOCOL_EVENT_TOPICS.v4.InitializePancake ||
       topic0 === PROTOCOL_EVENT_TOPICS.v4.InitializeUniswap ||
@@ -270,7 +283,11 @@ export class ProductionBscEventDecoder {
       topic0 === PROTOCOL_EVENT_TOPICS.v4.SwapPancake ||
       topic0 === PROTOCOL_EVENT_TOPICS.v4.SwapUniswap
     ) {
-      deployment = this.#managerByAddress.get(address);
+      const versions = this.#managerByAddress.get(address);
+      knownAddress = versions !== undefined;
+      deployment = versions?.find((candidate) =>
+        this.#deploymentInRange(candidate, delivery.log.blockNumber),
+      );
     } else if (
       topic0 === PROTOCOL_EVENT_TOPICS.v3.Mint ||
       topic0 === PROTOCOL_EVENT_TOPICS.v3.Burn ||
@@ -280,7 +297,11 @@ export class ProductionBscEventDecoder {
     ) {
       const pool = this.#v3Pools.get(address);
       if (!pool) return this.#reject(delivery, "pool-unregistered");
-      deployment = this.#deployments.find(({ platformId }) => platformId === pool.platformId);
+      deployment = this.#deployments.find(
+        (candidate) =>
+          candidate.platformId === pool.platformId &&
+          this.#deploymentInRange(candidate, delivery.log.blockNumber),
+      );
       if (!deployment) return this.#reject(delivery, "inactive-protocol");
       const swapMatches =
         topic0 !== PROTOCOL_EVENT_TOPICS.v3.SwapPancake &&
@@ -291,7 +312,9 @@ export class ProductionBscEventDecoder {
     } else {
       return this.#reject(delivery, "unknown-topic");
     }
-    if (!deployment) return this.#reject(delivery, "wrong-address");
+    if (!deployment) {
+      return this.#reject(delivery, knownAddress ? "inactive-protocol" : "wrong-address");
+    }
     if (!this.#deploymentInRange(deployment, delivery.log.blockNumber)) {
       return this.#reject(delivery, "inactive-protocol");
     }
