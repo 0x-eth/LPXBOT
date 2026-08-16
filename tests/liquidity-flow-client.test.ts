@@ -5,6 +5,7 @@ import type {
 } from "../packages/api-contract/src/index.js";
 import {
   applyLiquidityFlowFilters,
+  buildLiquidityFlowProjection,
   initialLiquidityFlowState,
   parseLiquidityFlowUiFilters,
   reduceLiquidityFlow,
@@ -280,3 +281,183 @@ describe("P02-04 liquidity flow client state", () => {
     expect(serialized.toString()).toContain("flow_event=create");
   });
 });
+
+describe("P02-05 filtered liquidity flow projection", () => {
+  it("summarizes the same filtered, deduplicated, replayed event array with Decimal precision", () => {
+    const userA = "0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    const userB = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const duplicate = event("duplicate", 100, {
+      event_type: "add",
+      usd_value: "9007199254740993.000000000000000001",
+      user: userA,
+    });
+    const removedByReorg = event("orphan", 101, {
+      event_type: "remove",
+      usd_value: "7",
+      user: userB,
+    });
+    const replacement = event("replacement", 101, {
+      event_type: "remove",
+      tx_hash: `0x${"33".repeat(32)}`,
+      usd_value: "0.000000000000000001",
+      user: userA,
+    });
+    const create = event("create", 102, {
+      event_type: "create",
+      usd_value: null,
+      user: userB,
+    });
+    const unknownRemove = event("unknown-remove", 103, {
+      event_type: "remove",
+      usd_value: null,
+      user: userB,
+      version: "v4",
+    });
+    const filteredOut = event("filtered-v4-add", 104, {
+      usd_value: "1000",
+      user: userB,
+      version: "v4",
+    });
+
+    let state = reduceLiquidityFlow(initialLiquidityFlowState(0), {
+      records: [duplicate, duplicate, removedByReorg],
+      type: "backfill",
+    });
+    state = reduceLiquidityFlow(state, { type: "pause" });
+    for (const record of [tombstone(removedByReorg), replacement, create, unknownRemove, filteredOut]) {
+      state = reduceLiquidityFlow(state, { record, type: "event" });
+    }
+    state = reduceLiquidityFlow(state, { type: "resume" });
+
+    const projection = buildLiquidityFlowProjection(
+      state.events,
+      { ...defaultFilters(), generation: "v3" },
+      { protocols: ["pcsv3"], sort: "net", watchedAddresses: [], watchedOnly: false },
+    );
+
+    expect(projection.events.map(({ id }) => id)).toEqual(["create", "replacement", "duplicate"]);
+    expect(projection.summary).toEqual({
+      completeness: "complete",
+      eventCount: 3,
+      inflowUsd: "9007199254740993.000000000000000001",
+      netUsd: "9007199254740993",
+      outflowUsd: "0.000000000000000001",
+      uniqueAddressCount: 2,
+      unvaluedEventCount: 0,
+      valuedEventCount: 2,
+      valuedSubtotalUsd: "9007199254740993.000000000000000002",
+    });
+
+    const partial = buildLiquidityFlowProjection(
+      state.events,
+      { ...defaultFilters(), generation: "v4" },
+      { protocols: ["pcsv3"], sort: "net", watchedAddresses: [], watchedOnly: false },
+    );
+    expect(partial.events.map(({ id }) => id)).toEqual(["filtered-v4-add", "unknown-remove"]);
+    expect(partial.summary).toEqual({
+      completeness: "partial",
+      eventCount: 2,
+      inflowUsd: "1000",
+      netUsd: "1000",
+      outflowUsd: "0",
+      uniqueAddressCount: 1,
+      unvaluedEventCount: 1,
+      valuedEventCount: 1,
+      valuedSubtotalUsd: "1000",
+    });
+  });
+
+  it("aggregates canonical users and pools with partial grouping and stable address ties", () => {
+    const addressA = "0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    const addressB = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const addressC = "0xcccccccccccccccccccccccccccccccccccccccc";
+    const idleAddress = "0xdddddddddddddddddddddddddddddddddddddddd";
+    const poolId = `0x${"44".repeat(32)}` as const;
+    const events = [
+      event("a-add", 200, { pool_address: null, pool_id: poolId, usd_value: "10", user: addressA }),
+      event("a-remove", 200, {
+        event_type: "remove",
+        pool_address: null,
+        pool_id: poolId.toUpperCase() as `0x${string}`,
+        usd_value: "2",
+        user: addressA.toLowerCase(),
+      }),
+      event("b-create", 200, { event_type: "create", usd_value: null, user: addressB }),
+      event("b-add", 199, { usd_value: "8", user: addressB }),
+      event("c-add", 200, { usd_value: "8", user: addressC }),
+      event("c-remove-unknown", 201, {
+        event_type: "remove",
+        usd_value: null,
+        user: addressC,
+      }),
+      event("no-user", 202, { usd_value: "50", user: null }),
+    ];
+    const options = {
+      protocols: ["pcsv3"] as const,
+      watchedAddresses: [addressA, idleAddress],
+      watchedOnly: false,
+    };
+
+    const byNet = buildLiquidityFlowProjection(events, defaultFilters(), {
+      ...options,
+      sort: "net",
+    }).addresses;
+    expect(byNet.map(({ address }) => address)).toEqual([
+      addressA.toLowerCase(),
+      addressB,
+      addressC,
+    ]);
+    expect(byNet[0]).toMatchObject({
+      completeness: "complete",
+      eventCount: 2,
+      inflowUsd: "10",
+      netUsd: "8",
+      outflowUsd: "2",
+      poolCount: 1,
+      recentTs: 200,
+    });
+    expect(byNet[2]).toMatchObject({
+      completeness: "partial",
+      eventCount: 2,
+      netUsd: "8",
+      unvaluedEventCount: 1,
+    });
+
+    expect(
+      buildLiquidityFlowProjection(events, defaultFilters(), {
+        ...options,
+        sort: "count",
+      }).addresses.map(({ address }) => address),
+    ).toEqual([addressA.toLowerCase(), addressC, addressB]);
+    expect(
+      buildLiquidityFlowProjection(events, defaultFilters(), {
+        ...options,
+        sort: "recent",
+      }).addresses.map(({ address }) => address),
+    ).toEqual([addressC, addressA.toLowerCase(), addressB]);
+
+    const watched = buildLiquidityFlowProjection(events, defaultFilters(), {
+      ...options,
+      sort: "net",
+      watchedOnly: true,
+    });
+    expect(watched.events.map(({ id }) => id)).toEqual(["a-add", "a-remove"]);
+    expect(watched.summary.eventCount).toBe(2);
+    expect(watched.addresses).toEqual([
+      expect.objectContaining({ address: addressA.toLowerCase(), idle: false }),
+      expect.objectContaining({ address: idleAddress, eventCount: 0, idle: true, poolCount: 0 }),
+    ]);
+  });
+});
+
+function defaultFilters(): LiquidityFlowUiFilters {
+  return {
+    eventType: "all",
+    generation: "all",
+    minUsd: "",
+    nftId: "",
+    pool: "",
+    token: "",
+    user: "",
+  };
+}
