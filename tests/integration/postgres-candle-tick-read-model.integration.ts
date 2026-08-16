@@ -281,9 +281,21 @@ describe("P02-10 PostgreSQL Candle/Tick read model", () => {
     try {
       await client.query("BEGIN");
       await client.query(migration.down);
-      expect(await tables()).toEqual([]);
+      const removed = await client.query<{ table_name: string }>(
+        `SELECT table_name FROM information_schema.tables
+          WHERE table_schema = 'public'
+            AND table_name IN ('market_candles', 'market_tick_liquidity', 'market_read_model_states')
+          ORDER BY table_name`,
+      );
+      expect(removed.rows).toEqual([]);
       await client.query(migration.up);
-      expect(await tables()).toHaveLength(3);
+      const restored = await client.query<{ table_name: string }>(
+        `SELECT table_name FROM information_schema.tables
+          WHERE table_schema = 'public'
+            AND table_name IN ('market_candles', 'market_tick_liquidity', 'market_read_model_states')
+          ORDER BY table_name`,
+      );
+      expect(restored.rows).toHaveLength(3);
     } finally {
       await client.query("ROLLBACK");
       client.release();
