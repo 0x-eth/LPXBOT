@@ -103,7 +103,6 @@ async function installFixture(page: Page): Promise<void> {
             gas: { baseGwei: null, ethereumGwei: null },
             online: null,
             pingMs: null,
-            recommendedPools: null,
             taskCounts: { paused: null, running: null, stopped: null },
           },
         },
@@ -113,7 +112,7 @@ async function installFixture(page: Page): Promise<void> {
       status: 200,
     }),
   );
-  await page.route("**/api/stats/stream", (route) =>
+  await page.route("**/api/stats/stream**", (route) =>
     route.fulfill({
       body: "",
       contentType: "text/event-stream",

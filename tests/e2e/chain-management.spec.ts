@@ -192,7 +192,6 @@ async function installFixture(
           gas: { baseGwei: null, ethereumGwei: null },
           online: true,
           pingMs: null,
-          recommendedPools: null,
           taskCounts: { paused: null, running: null, stopped: null },
         },
       },
@@ -200,7 +199,7 @@ async function installFixture(
       success: true,
     }),
   );
-  await context.route("**/api/stats/stream", (route) =>
+  await context.route("**/api/stats/stream**", (route) =>
     route.fulfill({
       body: "",
       contentType: "text/event-stream",

@@ -186,7 +186,6 @@ async function installFixture(context: BrowserContext, state: FixtureState): Pro
             gas: { baseGwei: 0.006, ethereumGwei: 0.232 },
             online: true,
             pingMs: 84,
-            recommendedPools: ["USDT / utility", "USDT / WBNB"],
             taskCounts: { paused: 1, running: 1, stopped: 1 },
           },
         },
@@ -196,10 +195,10 @@ async function installFixture(context: BrowserContext, state: FixtureState): Pro
       status: 200,
     }),
   );
-  await context.route("**/api/stats/stream", (route) =>
+  await context.route("**/api/stats/stream**", (route) =>
     route.fulfill({
       body:
-        'id: 20\nevent: snapshot\ndata: {"type":"snapshot","observedAt":"2026-08-14T09:30:00.000Z","sequence":20,"stats":{"fps":60,"gas":{"baseGwei":0.006,"ethereumGwei":0.232},"online":true,"pingMs":84,"recommendedPools":["USDT / utility","USDT / WBNB"],"taskCounts":{"paused":1,"running":1,"stopped":1}}}\n\n' +
+        'id: 20\nevent: snapshot\ndata: {"type":"snapshot","observedAt":"2026-08-14T09:30:00.000Z","sequence":20,"stats":{"fps":60,"gas":{"baseGwei":0.006,"ethereumGwei":0.232},"online":true,"pingMs":84,"taskCounts":{"paused":1,"running":1,"stopped":1}}}\n\n' +
         'id: 21\nevent: heartbeat\ndata: {"type":"heartbeat","observedAt":"2026-08-14T09:30:01.000Z","sequence":21}\n\n',
       contentType: "text/event-stream",
       headers: { "Cache-Control": "no-cache, no-store, must-revalidate" },
@@ -228,12 +227,14 @@ async function installPersistentStatsStream(page: Page): Promise<void> {
     const nativeFetch = globalThis.fetch.bind(globalThis);
     globalThis.fetch = (input, init) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-      if (!url.endsWith("/api/stats/stream")) return nativeFetch(input, init);
+      if (new URL(url, window.location.href).pathname !== "/api/stats/stream") {
+        return nativeFetch(input, init);
+      }
       const stream = new ReadableStream<Uint8Array>({
         start(controller) {
           controller.enqueue(
             new TextEncoder().encode(
-              'id: 20\nevent: snapshot\ndata: {"type":"snapshot","observedAt":"2026-08-14T09:30:00.000Z","sequence":20,"stats":{"fps":60,"gas":{"baseGwei":0.006,"ethereumGwei":0.232},"online":true,"pingMs":84,"recommendedPools":["USDT / utility","USDT / WBNB"],"taskCounts":{"paused":1,"running":1,"stopped":1}}}\n\n',
+              'id: 20\nevent: snapshot\ndata: {"type":"snapshot","observedAt":"2026-08-14T09:30:00.000Z","sequence":20,"stats":{"fps":60,"gas":{"baseGwei":0.006,"ethereumGwei":0.232},"online":true,"pingMs":84,"taskCounts":{"paused":1,"running":1,"stopped":1}}}\n\n',
             ),
           );
         },
@@ -484,17 +485,18 @@ test("SHELL-02 renders real fixture values on desktop and compact stable badges 
   await installPersistentStatsStream(page);
   await installFixture(context, state);
   await page.goto("/tasks/running");
+  const statusBar = page.getByRole("contentinfo", { name: "实时状态" });
+  await expect(statusBar).toBeVisible();
   if (testInfo.project.name === "chromium-mobile") {
-    await expect(page.getByRole("status", { name: "实时状态" })).toHaveCount(0);
     await expect(
       page.locator(".mobile-navigation-shell .nav-badge-slot").filter({ hasText: "1" }).first(),
     ).toBeVisible();
   } else {
-    await expect(page.getByRole("status", { name: "实时状态" })).toContainText("在线");
-    await expect(page.getByRole("status", { name: "实时状态" })).toContainText("Base 0.006");
-    await expect(page.getByRole("status", { name: "实时状态" })).toContainText("ETH 0.232");
-    await expect(page.getByRole("status", { name: "实时状态" })).toContainText("FPS 60");
-    await expect(page.getByRole("status", { name: "实时状态" })).toContainText("PING 84ms");
+    await expect(statusBar).toContainText("在线");
+    await expect(statusBar).toContainText("Base 0.006");
+    await expect(statusBar).toContainText("ETH 0.232");
+    await expect(statusBar).toContainText("FPS 60");
+    await expect(statusBar).toContainText("PING 84ms");
     await expect(
       page.locator(".app-header .nav-badge-slot").filter({ hasText: "1" }).first(),
     ).toBeVisible();

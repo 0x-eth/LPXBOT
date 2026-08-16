@@ -17,7 +17,9 @@ test("LPBot renders without browser runtime failures", async ({ page }) => {
     const nativeFetch = globalThis.fetch.bind(globalThis);
     globalThis.fetch = (input, init) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-      if (!url.endsWith("/api/stats/stream")) return nativeFetch(input, init);
+      if (new URL(url, window.location.href).pathname !== "/api/stats/stream") {
+        return nativeFetch(input, init);
+      }
       return Promise.resolve(
         new Response(new ReadableStream<Uint8Array>(), {
           headers: { "Content-Type": "text/event-stream" },
