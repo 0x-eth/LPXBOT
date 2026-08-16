@@ -79,6 +79,7 @@ async function fixture(rateLimit = { max: 60, timeWindowMs: 60_000 }) {
   const sessionToken = await issueFixtureSession(
     sessionStore,
     "2a000000-0000-4000-8000-000000000001",
+    new Date("2026-08-16T01:00:00.000Z"),
   );
   const provider = new ByTokenProvider();
   const app = buildApiApp({
