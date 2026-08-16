@@ -1,14 +1,36 @@
 import type {
+  RecommendedPoolRow,
+  RecommendedPoolsSnapshotEvent,
   ShellGasStats,
   ShellStats,
   ShellStatsEvent,
   ShellStatsPatch,
   ShellTaskCounts,
 } from "@lpbot/api-contract";
+import { Decimal } from "decimal.js";
+
+export type RecommendedPoolsStatus =
+  | "loading"
+  | "ready"
+  | "empty"
+  | "unavailable"
+  | "reconnecting"
+  | "stale";
+
+export interface RecommendedPoolsState {
+  cursor: string | null;
+  observedAt: string | null;
+  pools: RecommendedPoolRow[];
+  selectionHash: string | null;
+  sourceVersion: string | null;
+  sourceWindowEnd: string | null;
+  status: RecommendedPoolsStatus;
+}
 
 export interface ShellStatsState {
   connected: boolean;
   observedAt: string | null;
+  recommendations: RecommendedPoolsState;
   sequence: number;
   stats: ShellStats | null;
 }
@@ -20,7 +42,8 @@ export interface ShellStatsDisplay {
   online: string;
   paused: string;
   ping: string;
-  recommendedPools: string[];
+  recommendationStatus: RecommendedPoolsStatus;
+  recommendedPools: RecommendedPoolRow[];
   running: string;
   stopped: string;
 }
@@ -36,6 +59,12 @@ type ShellStatsListener = (state: ShellStatsState) => void;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasExactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
+  const actual = Object.keys(value).sort();
+  const expected = [...keys].sort();
+  return actual.length === expected.length && actual.every((key, index) => key === expected[index]);
 }
 
 function isNullableNumber(value: unknown): value is number | null {
@@ -84,21 +113,9 @@ function parseCounts(value: unknown, complete: boolean): Partial<ShellTaskCounts
   return value as Partial<ShellTaskCounts>;
 }
 
-function parsePools(value: unknown): string[] | null | undefined {
-  if (value === null) return null;
-  if (
-    !Array.isArray(value) ||
-    value.length > 3 ||
-    !value.every((pool) => typeof pool === "string" && pool.length >= 1 && pool.length <= 64)
-  ) {
-    return undefined;
-  }
-  return value;
-}
-
 function parseStats(value: unknown, complete: boolean): ShellStats | ShellStatsPatch | null {
   if (!isRecord(value)) return null;
-  const allowed = new Set(["fps", "gas", "online", "pingMs", "recommendedPools", "taskCounts"]);
+  const allowed = new Set(["fps", "gas", "online", "pingMs", "taskCounts"]);
   if (Object.keys(value).some((key) => !allowed.has(key))) return null;
   if (complete && [...allowed].some((key) => !Object.hasOwn(value, key))) return null;
   if (Object.hasOwn(value, "fps") && !isNullableNumber(value.fps)) return null;
@@ -114,23 +131,153 @@ function parseStats(value: unknown, complete: boolean): ShellStats | ShellStatsP
   const taskCounts = Object.hasOwn(value, "taskCounts")
     ? parseCounts(value.taskCounts, complete)
     : undefined;
-  const recommendedPools = Object.hasOwn(value, "recommendedPools")
-    ? parsePools(value.recommendedPools)
-    : undefined;
-  if (gas === null || taskCounts === null || recommendedPools === undefined) return null;
+  if (gas === null || taskCounts === null) return null;
   return value as unknown as ShellStats | ShellStatsPatch;
 }
 
-export function parseShellStatsEvent(value: unknown): ShellStatsEvent | null {
+const addressPattern = /^0x[0-9a-f]{40}$/u;
+const poolIdPattern = /^0x[0-9a-f]{64}$/u;
+const hashPattern = /^sha256:[0-9a-f]{64}$/u;
+const protocols = new Set(["pcsv3", "univ3", "pcsv4", "univ4"]);
+const recommendationRowKeys = [
+  "chainId",
+  "feePips",
+  "feesUsd",
+  "poolAddress",
+  "poolId",
+  "poolKey",
+  "protocol",
+  "token0Address",
+  "token0Symbol",
+  "token1Address",
+  "token1Symbol",
+] as const;
+
+function validSymbol(value: unknown): value is string | null {
+  return (
+    value === null ||
+    (typeof value === "string" &&
+      value.length >= 1 &&
+      value.length <= 64 &&
+      !/[\u0000-\u001f\u007f]/u.test(value))
+  );
+}
+
+function validPositiveDecimal(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    const decimal = new Decimal(value);
+    return decimal.isFinite() && decimal.gt(0);
+  } catch {
+    return false;
+  }
+}
+
+function parseRecommendedPoolRow(value: unknown): RecommendedPoolRow | null {
+  if (!isRecord(value) || !hasExactKeys(value, recommendationRowKeys)) return null;
   if (
-    !isRecord(value) ||
-    !validObservedAt(value.observedAt) ||
-    !validSequence(value.sequence) ||
-    typeof value.type !== "string"
+    value.chainId !== 56 ||
+    typeof value.protocol !== "string" ||
+    !protocols.has(value.protocol) ||
+    !addressPattern.test(String(value.token0Address)) ||
+    !addressPattern.test(String(value.token1Address)) ||
+    !validSymbol(value.token0Symbol) ||
+    !validSymbol(value.token1Symbol) ||
+    !validPositiveDecimal(value.feesUsd) ||
+    (value.feePips !== null &&
+      (typeof value.feePips !== "string" || !/^(?:0|[1-9][0-9]*)$/u.test(value.feePips)))
   ) {
     return null;
   }
+  const v3 = value.protocol === "pcsv3" || value.protocol === "univ3";
+  const identity = v3 ? value.poolAddress : value.poolId;
+  if (
+    (v3 &&
+      (typeof value.poolAddress !== "string" ||
+        !addressPattern.test(value.poolAddress) ||
+        value.poolId !== null)) ||
+    (!v3 &&
+      (typeof value.poolId !== "string" ||
+        !poolIdPattern.test(value.poolId) ||
+        value.poolAddress !== null)) ||
+    typeof value.poolKey !== "string" ||
+    value.poolKey !== `56:${identity}`
+  ) {
+    return null;
+  }
+  return value as unknown as RecommendedPoolRow;
+}
+
+function decodeBase64Url(value: string): string | null {
+  if (!/^[A-Za-z0-9_-]+$/u.test(value)) return null;
+  try {
+    const base64 = value.replaceAll("-", "+").replaceAll("_", "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const binary = globalThis.atob(padded);
+    return new TextDecoder().decode(Uint8Array.from(binary, (character) => character.charCodeAt(0)));
+  } catch {
+    return null;
+  }
+}
+
+function validRecommendationCursor(event: RecommendedPoolsSnapshotEvent): boolean {
+  const [prefix, version, chain, limit, sourceVersion, sourceWindowEnd, hash, ...extra] =
+    event.cursor.split(":");
+  return (
+    prefix === "rec-pools" &&
+    version === "v1" &&
+    chain === "bsc" &&
+    typeof limit === "string" &&
+    /^(?:[1-9]|1[0-9]|20)$/u.test(limit) &&
+    typeof sourceVersion === "string" &&
+    decodeBase64Url(sourceVersion) === event.sourceVersion &&
+    typeof sourceWindowEnd === "string" &&
+    decodeBase64Url(sourceWindowEnd) === event.sourceWindowEnd &&
+    hash === event.selectionHash.slice("sha256:".length) &&
+    extra.length === 0
+  );
+}
+
+function parseRecommendationEvent(value: Record<string, unknown>): RecommendedPoolsSnapshotEvent | null {
+  if (
+    !hasExactKeys(value, [
+      "cursor",
+      "observedAt",
+      "pools",
+      "selectionHash",
+      "sourceVersion",
+      "sourceWindow",
+      "sourceWindowEnd",
+      "type",
+    ]) ||
+    value.type !== "rec_pools_snapshot" ||
+    typeof value.cursor !== "string" ||
+    !validObservedAt(value.observedAt) ||
+    !Array.isArray(value.pools) ||
+    value.pools.length > 20 ||
+    !hashPattern.test(String(value.selectionHash)) ||
+    typeof value.sourceVersion !== "string" ||
+    value.sourceVersion.length < 1 ||
+    value.sourceVersion.length > 256 ||
+    value.sourceWindow !== 5 ||
+    !validObservedAt(value.sourceWindowEnd)
+  ) {
+    return null;
+  }
+  const pools = value.pools.map(parseRecommendedPoolRow);
+  if (pools.some((pool) => pool === null)) return null;
+  const event = { ...value, pools } as unknown as RecommendedPoolsSnapshotEvent;
+  return validRecommendationCursor(event) ? event : null;
+}
+
+export function parseShellStatsEvent(value: unknown): ShellStatsEvent | null {
+  if (!isRecord(value) || typeof value.type !== "string") return null;
+  if (value.type === "rec_pools_snapshot") return parseRecommendationEvent(value);
+  if (!validObservedAt(value.observedAt)) return null;
   if (value.type === "snapshot") {
+    if (!hasExactKeys(value, ["observedAt", "sequence", "stats", "type"]) || !validSequence(value.sequence)) {
+      return null;
+    }
     const stats = parseStats(value.stats, true);
     if (!stats) return null;
     return {
@@ -141,6 +288,9 @@ export function parseShellStatsEvent(value: unknown): ShellStatsEvent | null {
     };
   }
   if (value.type === "update") {
+    if (!hasExactKeys(value, ["observedAt", "sequence", "stats", "type"]) || !validSequence(value.sequence)) {
+      return null;
+    }
     const stats = parseStats(value.stats, false);
     if (!stats) return null;
     return {
@@ -150,24 +300,34 @@ export function parseShellStatsEvent(value: unknown): ShellStatsEvent | null {
       type: value.type,
     };
   }
-  if (value.type === "rec_pools_snapshot") {
-    const recommendedPools = parsePools(value.recommendedPools);
-    if (recommendedPools === undefined) return null;
-    return {
-      observedAt: value.observedAt,
-      recommendedPools,
-      sequence: value.sequence,
-      type: value.type,
-    };
-  }
   if (value.type === "heartbeat") {
+    if (
+      !hasExactKeys(value, ["observedAt", "sequence", "type"]) ||
+      (value.sequence !== null && !validSequence(value.sequence))
+    ) {
+      return null;
+    }
     return { observedAt: value.observedAt, sequence: value.sequence, type: value.type };
   }
   return null;
 }
 
 export function createShellStatsState(): ShellStatsState {
-  return { connected: false, observedAt: null, sequence: -1, stats: null };
+  return {
+    connected: false,
+    observedAt: null,
+    recommendations: {
+      cursor: null,
+      observedAt: null,
+      pools: [],
+      selectionHash: null,
+      sourceVersion: null,
+      sourceWindowEnd: null,
+      status: "loading",
+    },
+    sequence: -1,
+    stats: null,
+  };
 }
 
 function mergeStats(current: ShellStats, patch: ShellStatsPatch): ShellStats {
@@ -183,6 +343,38 @@ export function reduceShellStatsEvent(
   state: ShellStatsState,
   event: ShellStatsEvent,
 ): ShellStatsState {
+  if (event.type === "rec_pools_snapshot") {
+    const current = state.recommendations;
+    if (event.cursor === current.cursor) return state;
+    if (current.sourceWindowEnd !== null) {
+      const windowOrder = Date.parse(event.sourceWindowEnd) - Date.parse(current.sourceWindowEnd);
+      if (windowOrder < 0) return state;
+      if (windowOrder === 0 && current.sourceVersion !== null) {
+        try {
+          if (BigInt(event.sourceVersion) < BigInt(current.sourceVersion)) return state;
+        } catch {
+          // Opaque source versions are ordered by the server cursor.
+        }
+      }
+    }
+    return {
+      ...state,
+      connected: true,
+      observedAt: event.observedAt,
+      recommendations: {
+        cursor: event.cursor,
+        observedAt: event.observedAt,
+        pools: structuredClone(event.pools),
+        selectionHash: event.selectionHash,
+        sourceVersion: event.sourceVersion,
+        sourceWindowEnd: event.sourceWindowEnd,
+        status: event.pools.length === 0 ? "empty" : "ready",
+      },
+    };
+  }
+  if (event.type === "heartbeat" && event.sequence === null) {
+    return { ...state, connected: true, observedAt: event.observedAt };
+  }
   if (event.sequence < state.sequence) return state;
   if (event.sequence === state.sequence && event.type !== "snapshot") return state;
   if (event.type === "snapshot") {
@@ -197,21 +389,28 @@ export function reduceShellStatsEvent(
     return { ...state, connected: true, observedAt: event.observedAt, sequence: event.sequence };
   }
   if (!state.stats) return state;
-  if (event.type === "rec_pools_snapshot") {
-    return {
-      ...state,
-      connected: true,
-      observedAt: event.observedAt,
-      sequence: event.sequence,
-      stats: { ...state.stats, recommendedPools: event.recommendedPools },
-    };
-  }
   return {
     ...state,
     connected: true,
     observedAt: event.observedAt,
     sequence: event.sequence,
     stats: mergeStats(state.stats, event.stats),
+  };
+}
+
+export function markShellStatsDisconnected(state: ShellStatsState, now = new Date()): ShellStatsState {
+  if (!Number.isFinite(now.getTime())) throw new RangeError("Stats disconnect clock is invalid");
+  const recommendationObservedAt = state.recommendations.observedAt;
+  const stale =
+    recommendationObservedAt !== null &&
+    now.getTime() - Date.parse(recommendationObservedAt) > 30_000;
+  return {
+    ...state,
+    connected: false,
+    recommendations: {
+      ...state.recommendations,
+      status: stale ? "stale" : "reconnecting",
+    },
   };
 }
 
@@ -228,7 +427,8 @@ export function shellStatsDisplay(state: ShellStatsState): ShellStatsDisplay {
     online: stats?.online === true ? "在线" : stats?.online === false ? "离线" : "不可用",
     paused: valueOrUnavailable(stats?.taskCounts.paused ?? null),
     ping: valueOrUnavailable(stats?.pingMs ?? null, "ms"),
-    recommendedPools: stats?.recommendedPools ?? [],
+    recommendationStatus: state.recommendations.status,
+    recommendedPools: state.recommendations.pools.slice(0, 3),
     running: valueOrUnavailable(stats?.taskCounts.running ?? null),
     stopped: valueOrUnavailable(stats?.taskCounts.stopped ?? null),
   };
