@@ -61,7 +61,7 @@ export type ProtocolGeneration = "v3" | "v4";
 export interface ProtocolDeployment {
   abiHash: `sha256:${string}`;
   chainId: 56;
-  deploymentVersion: "1.0.0";
+  deploymentVersion: string;
   evidenceRefs: readonly string[];
   factory: `0x${string}` | null;
   generation: ProtocolGeneration;
@@ -151,6 +151,7 @@ const addressPattern = /^0x[0-9a-f]{40}$/u;
 const codeHashPattern = /^0x[0-9a-f]{64}$/u;
 const abiHashPattern = /^sha256:[0-9a-f]{64}$/u;
 const decimalBlockPattern = /^(?:0|[1-9][0-9]*)$/u;
+const semanticVersionPattern = /^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$/u;
 
 function deploymentAddress(deployment: ProtocolDeployment): `0x${string}` {
   const address = deployment.factory ?? deployment.poolManager;
@@ -165,18 +166,20 @@ function invalid(message: string): never {
 export function validateProtocolDeploymentRegistry<T extends readonly ProtocolDeployment[]>(
   deployments: T,
 ): T {
-  const identities = new Set<string>();
+  const ranges = new Map<string, { from: bigint; to: bigint | null }[]>();
   for (const deployment of deployments) {
     const expected = protocolIdentity[deployment.protocolId];
     if (
       deployment.schemaVersion !== 1 ||
-      deployment.deploymentVersion !== "1.0.0" ||
       deployment.chainId !== 56 ||
       !expected ||
       expected.platformId !== deployment.platformId ||
       expected.generation !== deployment.generation
     ) {
       invalid(`identity mismatch for protocol ${String(deployment.protocolId)}`);
+    }
+    if (!semanticVersionPattern.test(deployment.deploymentVersion)) {
+      invalid(`${deployment.platformId} deploymentVersion must be semantic versioning`);
     }
     const hasFactory = deployment.factory !== null;
     const hasPoolManager = deployment.poolManager !== null;
@@ -209,9 +212,19 @@ export function validateProtocolDeploymentRegistry<T extends readonly ProtocolDe
     ) {
       invalid(`${deployment.platformId} evidence references are missing`);
     }
-    const identity = `${deployment.chainId}:${deployment.platformId}:${deployment.validFromBlock}`;
-    if (identities.has(identity)) invalid(`duplicate deployment ${identity}`);
-    identities.add(identity);
+    const rangeKey = `${deployment.chainId}:${deployment.platformId}`;
+    const from = BigInt(deployment.validFromBlock);
+    const to = deployment.validToBlock === null ? null : BigInt(deployment.validToBlock);
+    const protocolRanges = ranges.get(rangeKey) ?? [];
+    if (
+      protocolRanges.some(
+        (range) => (range.to === null || from <= range.to) && (to === null || range.from <= to),
+      )
+    ) {
+      invalid(`overlapping deployment ranges for ${rangeKey}`);
+    }
+    protocolRanges.push({ from, to });
+    ranges.set(rangeKey, protocolRanges);
   }
   return deployments;
 }

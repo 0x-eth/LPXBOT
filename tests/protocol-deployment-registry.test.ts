@@ -66,6 +66,28 @@ describe("P02-03 BSC protocol deployment registry", () => {
     }
   });
 
+  it("accepts sequential deployment versions and rejects overlapping validity ranges", () => {
+    const current = {
+      ...BSC_PROTOCOL_DEPLOYMENTS[0]!,
+      validToBlock: "30000000",
+    } satisfies ProtocolDeployment;
+    const replacement = {
+      ...current,
+      deploymentVersion: "1.1.0",
+      factory: "0x0000000000000000000000000000000000000056",
+      validFromBlock: "30000001",
+      validToBlock: null,
+    } satisfies ProtocolDeployment;
+
+    expect(validateProtocolDeploymentRegistry([current, replacement])).toEqual([
+      current,
+      replacement,
+    ]);
+    expect(() =>
+      validateProtocolDeploymentRegistry([current, { ...replacement, validFromBlock: "30000000" }]),
+    ).toThrowError(/PROTOCOL_DEPLOYMENT_INVALID: overlapping/u);
+  });
+
   it("rejects wrong chains, mixed contract kinds, inverted ranges, and malformed hashes", () => {
     const valid = BSC_PROTOCOL_DEPLOYMENTS[0]!;
     const invalid = [
@@ -74,6 +96,7 @@ describe("P02-03 BSC protocol deployment registry", () => {
       { ...valid, validToBlock: "1" },
       { ...valid, runtimeCodeHash: "0x00" },
       { ...valid, abiHash: "sha256:not-a-hash" },
+      { ...valid, deploymentVersion: "latest" },
     ];
 
     for (const deployment of invalid) {
