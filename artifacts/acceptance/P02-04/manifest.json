@@ -8,7 +8,7 @@
   "tests": [
     {
       "id": "T-UNIT",
-      "command": "focused liquidity flow and DEX Vitest suites; pnpm format:check; pnpm lint; pnpm typecheck; pnpm test; pnpm build",
+      "command": "focused liquidity flow and DEX Vitest suites; pnpm format:check; pnpm lint; pnpm typecheck; pnpm test; pnpm build; pnpm check:all",
       "result": "passed",
       "evidencePath": "artifacts/acceptance/P02-04/command-output.md"
     },
@@ -74,6 +74,6 @@
     "No external RPC, Golden recapture, signature, broadcast, funds operation, RPC write or production secret is used.",
     "P02-01, P02-02 and P02-03 acceptance directories remain byte-identical to the start of P02-04."
   ],
-  "completedAt": "2026-08-16T04:52:36.000Z",
-  "commit": "88431036106ff4df64bd6e6bf718e31a5940fa0d"
+  "completedAt": "2026-08-16T05:19:01.000Z",
+  "commit": "9671506182bb9a7b827d0450066d7f2577278e0a"
 }
