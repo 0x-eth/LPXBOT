@@ -380,7 +380,7 @@ describe("P02-05 filtered liquidity flow projection", () => {
         pool_address: null,
         pool_id: poolId.toUpperCase() as `0x${string}`,
         usd_value: "2",
-        user: addressA.toLowerCase(),
+        user: addressA.toLowerCase() as `0x${string}`,
       }),
       event("b-create", 200, { event_type: "create", usd_value: null, user: addressB }),
       event("b-add", 199, { usd_value: "8", user: addressB }),
