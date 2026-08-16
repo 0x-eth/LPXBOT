@@ -141,8 +141,9 @@ function parseWireEvents(body: string) {
 describe("P02-04 public liquidity flow SSE", () => {
   it("maps canonical backfill/event/heartbeat to the frozen wire protocol", async () => {
     const { app, provider } = fixture();
+    const lastEventId = "flow:v1:56:7:7f7716e0a6d1f681";
     const response = await app.inject({
-      headers: { accept: "text/event-stream" },
+      headers: { accept: "text/event-stream", "last-event-id": lastEventId },
       method: "GET",
       url:
         "/api/liquidity-adds/stream?since=1765843200000" +
@@ -161,6 +162,7 @@ describe("P02-04 public liquidity flow SSE", () => {
     expect(response.body).toContain(": heartbeat");
     expect(provider.contexts[0]).toMatchObject({
       nftId: "42",
+      lastEventId,
       pool: flowEvent.pool_address,
       since: 1_765_843_200_000,
       token: flowEvent.token0_address,

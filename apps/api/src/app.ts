@@ -974,9 +974,15 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         reply.raw.once("error", () => controller.abort());
         await writeSseChunk(reply, controller, "retry: 3000\n\n");
 
+        const lastEventHeader = request.headers["last-event-id"];
+        const lastEventId =
+          typeof lastEventHeader === "string" && lastEventHeader.length <= 256
+            ? lastEventHeader
+            : null;
         try {
           for await (const envelope of options.liquidityFlowProvider.subscribe({
             ...filter,
+            lastEventId,
             signal: controller.signal,
           })) {
             if (controller.signal.aborted) break;

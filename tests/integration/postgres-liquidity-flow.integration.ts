@@ -77,12 +77,19 @@ function reorgRunner(): IndexerRunner {
 async function takeFlow(
   provider: PostgresLiquidityFlowProvider,
   count: number,
-  filter: Partial<{ nftId: string; pool: `0x${string}`; token: `0x${string}`; user: `0x${string}` }> = {},
+  filter: Partial<{
+    lastEventId: string;
+    nftId: string;
+    pool: `0x${string}`;
+    token: `0x${string}`;
+    user: `0x${string}`;
+  }> = {},
 ): Promise<LiquidityFlowCanonicalEnvelope[]> {
   const controller = new AbortController();
   const result: LiquidityFlowCanonicalEnvelope[] = [];
   for await (const envelope of provider.subscribe({
     nftId: filter.nftId ?? null,
+    lastEventId: filter.lastEventId ?? null,
     pool: filter.pool ?? null,
     signal: controller.signal,
     since: 0,
@@ -306,6 +313,25 @@ describe("P02-04 PostgreSQL liquidity flow read model", () => {
       now: () => new Date("2026-08-16T00:06:00.000Z"),
       pollMilliseconds: 1,
     });
+
+    const retained = await pool.query<{ cursor: string }>(
+      "SELECT cursor FROM liquidity_flow_outbox WHERE sequence = 1",
+    );
+    const replay = await takeFlow(provider, 2, { lastEventId: retained.rows[0]!.cursor });
+    expect(replay).toMatchObject([
+      {
+        data: { record_type: "tombstone" },
+        eventType: "liquidity.event",
+        mode: "diff",
+        sequence: "2",
+      },
+      {
+        data: { record_type: "event" },
+        eventType: "liquidity.event",
+        mode: "diff",
+        sequence: "3",
+      },
+    ]);
 
     const [backfillEnvelope, heartbeat] = await takeFlow(provider, 2);
     const backfill = backfillEnvelope!.data as LiquidityFlowBackfill;

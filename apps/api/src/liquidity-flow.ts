@@ -10,6 +10,7 @@ import type {
 import type { Pool } from "pg";
 
 export interface LiquidityFlowStreamContext extends LiquidityFlowFilter {
+  lastEventId: string | null;
   signal: AbortSignal;
 }
 
