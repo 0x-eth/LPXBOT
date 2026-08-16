@@ -518,7 +518,58 @@ function flowTypeLabel(type: LiquidityFlowEvent["event_type"]): string {
   return { add: "加池", create: "新池", remove: "撤池" }[type];
 }
 
-function FlowTable({ events }: { events: readonly LiquidityFlowEvent[] }) {
+function FlowStats({ summary }: { summary: LiquidityFlowSummary }) {
+  const partial = summary.completeness === "partial";
+  const valuationCount = summary.valuedEventCount + summary.unvaluedEventCount;
+  const money = (value: string) => `${partial ? "已估值 " : ""}${decimalDisplay(value, "$ ")}`;
+  return (
+    <dl
+      aria-label="流动性统计"
+      className="flow-stat-strip"
+      data-completeness={summary.completeness}
+      role="group"
+    >
+      <div data-metric="inflow">
+        <dt>流入</dt>
+        <dd title={summary.inflowUsd}>{money(summary.inflowUsd)}</dd>
+      </div>
+      <div data-metric="outflow">
+        <dt>流出</dt>
+        <dd title={summary.outflowUsd}>{money(summary.outflowUsd)}</dd>
+      </div>
+      <div data-metric="net">
+        <dt>净额</dt>
+        <dd title={summary.netUsd}>{money(summary.netUsd)}</dd>
+      </div>
+      <div data-metric="events">
+        <dt>笔数</dt>
+        <dd>{summary.eventCount}</dd>
+      </div>
+      <div data-metric="addresses">
+        <dt>地址数</dt>
+        <dd>{summary.uniqueAddressCount}</dd>
+      </div>
+      <div data-metric="completeness">
+        <dt>估值完整性</dt>
+        <dd>
+          {partial
+            ? `${summary.valuedEventCount} / ${valuationCount} 已估值 · ${summary.unvaluedEventCount} 未估值`
+            : `完整 · ${summary.valuedEventCount} / ${valuationCount}`}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
+function FlowTable({
+  events,
+  remarkState,
+  watched,
+}: {
+  events: readonly LiquidityFlowEvent[];
+  remarkState: AddressRemarksState;
+  watched: ReadonlySet<string>;
+}) {
   return (
     <div className="flow-table-shell">
       <table aria-label="流动性事件列表" className="flow-table">
@@ -549,7 +600,10 @@ function FlowTable({ events }: { events: readonly LiquidityFlowEvent[] }) {
                 {shortIdentity(event.pool_address ?? event.pool_id)}
               </td>
               <td data-label="User" title={event.user ?? undefined}>
-                {shortIdentity(event.user)}
+                {event.user ? addressRemarkLabel(remarkState, event.user) || shortIdentity(event.user) : "--"}
+                {event.user && watched.has(event.user.toLowerCase()) ? (
+                  <Star aria-label="已关注" className="flow-user-watch" fill="currentColor" size={11} />
+                ) : null}
               </td>
               <td data-label="NFT">{event.nft_id ? `#${event.nft_id}` : "--"}</td>
               <td data-label="USD" title={event.usd_value ?? undefined}>
@@ -563,6 +617,267 @@ function FlowTable({ events }: { events: readonly LiquidityFlowEvent[] }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+function addressNetDisplay(row: LiquidityFlowAddressAggregate): string {
+  if (row.idle) return "--";
+  const value = new Decimal(row.netUsd);
+  const sign = value.isNegative() ? "-" : "+";
+  const amount = decimalDisplay(value.abs().toFixed(), "$ ");
+  return `${row.completeness === "partial" ? "已估值 " : ""}${sign}${amount}`;
+}
+
+function AddressTable({
+  editing,
+  filter,
+  remarks,
+  rows,
+  toggleWatch,
+  watched,
+}: {
+  editing(address: EvmAddress): void;
+  filter(address: EvmAddress): void;
+  remarks: AddressRemarksState;
+  rows: readonly LiquidityFlowAddressAggregate[];
+  toggleWatch(address: EvmAddress): void;
+  watched: ReadonlySet<string>;
+}) {
+  return (
+    <div className="flow-address-table-shell">
+      <table aria-label="地址聚合" className="flow-address-table">
+        <thead>
+          <tr>
+            {[
+              "地址",
+              "备注",
+              "净额",
+              "笔数",
+              "池数",
+              "最近",
+              "状态",
+              "操作",
+            ].map((label) => (
+              <th key={label} scope="col">
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const personal = remarks.remarks.get(row.address);
+            const shared = remarks.shared.get(row.address);
+            const label = personal?.label || shared?.label || "--";
+            const isWatched = watched.has(row.address);
+            const pending = remarks.pending.has(row.address);
+            return (
+              <tr key={row.address}>
+                <td data-label="地址" title={row.address}>
+                  <span className="flow-address-identity">{shortIdentity(row.address)}</span>
+                  {isWatched ? <Star aria-label="已关注" fill="currentColor" size={12} /> : null}
+                </td>
+                <td data-label="备注" title={label === "--" ? undefined : label}>
+                  <span>{label}</span>
+                  {!personal?.label && shared ? (
+                    <small aria-label={`${shared.votes} 票`}>{shared.votes} 票</small>
+                  ) : null}
+                </td>
+                <td data-label="净额" title={row.idle ? undefined : row.netUsd}>
+                  {addressNetDisplay(row)}
+                </td>
+                <td data-label="笔数">{row.eventCount}</td>
+                <td data-label="池数">{row.poolCount}</td>
+                <td data-label="最近">
+                  {row.recentTs === null ? (
+                    "--"
+                  ) : (
+                    <time dateTime={new Date(row.recentTs).toISOString()}>
+                      {new Date(row.recentTs).toISOString().slice(11, 19)}
+                    </time>
+                  )}
+                </td>
+                <td data-label="状态">
+                  {row.idle ? (
+                    <span className="flow-valuation-state" data-state="idle">
+                      idle
+                    </span>
+                  ) : row.completeness === "partial" ? (
+                    <span className="flow-valuation-state" data-state="partial">
+                      partial
+                    </span>
+                  ) : (
+                    <span className="flow-valuation-state" data-state="complete">
+                      完整
+                    </span>
+                  )}
+                </td>
+                <td data-label="操作">
+                  <div className="flow-address-actions">
+                    <button
+                      aria-label={`筛选 ${row.address}`}
+                      onClick={() => filter(row.address)}
+                      title="筛选地址"
+                      type="button"
+                    >
+                      <Filter aria-hidden="true" size={14} />
+                    </button>
+                    <button
+                      aria-label={`复制 ${row.address}`}
+                      onClick={() => void navigator.clipboard.writeText(row.address)}
+                      title="复制地址"
+                      type="button"
+                    >
+                      <Copy aria-hidden="true" size={14} />
+                    </button>
+                    <a
+                      aria-label={`在 BscScan 查看 ${row.address}`}
+                      href={`https://bscscan.com/address/${row.address}`}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                      title="在 BscScan 查看"
+                    >
+                      <ExternalLink aria-hidden="true" size={14} />
+                    </a>
+                    <button
+                      aria-label={`编辑备注 ${row.address}`}
+                      onClick={() => editing(row.address)}
+                      title="编辑备注"
+                      type="button"
+                    >
+                      <Tag aria-hidden="true" size={14} />
+                    </button>
+                    <button
+                      aria-label={`${isWatched ? "取消关注" : "关注"} ${row.address}`}
+                      disabled={pending}
+                      onClick={() => toggleWatch(row.address)}
+                      title={isWatched ? "取消关注" : "关注"}
+                      type="button"
+                    >
+                      <Star aria-hidden="true" fill={isWatched ? "currentColor" : "none"} size={14} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AddressRemarkDialog({
+  address,
+  close,
+  remove,
+  remarks,
+  save,
+}: {
+  address: EvmAddress | null;
+  close(): void;
+  remove(address: EvmAddress): Promise<boolean>;
+  remarks: AddressRemarksState;
+  save(request: { address: EvmAddress; label: string; watched: boolean }): Promise<boolean>;
+}) {
+  const personal = address ? remarks.remarks.get(address) : undefined;
+  const shared = address ? remarks.shared.get(address) : undefined;
+  const [label, setLabel] = useState("");
+  const [watched, setWatched] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!address) return;
+    setLabel(remarks.drafts.get(address) ?? personal?.label ?? "");
+    setWatched(personal?.watched ?? false);
+    setError(null);
+  }, [address, personal?.label, personal?.watched, remarks.drafts]);
+
+  const submit = async () => {
+    if (!address) return;
+    setSaving(true);
+    setError(null);
+    const saved = await save({ address, label: label.trim(), watched });
+    setSaving(false);
+    if (saved) close();
+    else setError("备注保存失败，请重试");
+  };
+
+  const deleteRemark = async () => {
+    if (!address) return;
+    setSaving(true);
+    setError(null);
+    const deleted = await remove(address);
+    setSaving(false);
+    if (deleted) close();
+    else setError("备注删除失败，请重试");
+  };
+
+  return (
+    <Dialog.Root onOpenChange={(open) => !open && close()} open={address !== null}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="remark-dialog-backdrop" />
+        <Dialog.Content aria-describedby="address-remark-description" className="remark-dialog">
+          <div className="remark-dialog-heading">
+            <Dialog.Title>地址备注</Dialog.Title>
+            <Dialog.Close asChild>
+              <button aria-label="关闭地址备注" type="button">
+                <X aria-hidden="true" size={17} />
+              </button>
+            </Dialog.Close>
+          </div>
+          <Dialog.Description id="address-remark-description">
+            个人备注优先显示；未设置个人备注时使用共享票数最高的标签。
+          </Dialog.Description>
+          <code>{address}</code>
+          <label>
+            <span>备注标签</span>
+            <input
+              autoFocus
+              onChange={(event) => setLabel([...event.target.value].slice(0, 32).join(""))}
+              spellCheck={false}
+              value={label}
+            />
+          </label>
+          {shared ? (
+            <p className="remark-shared-label">
+              共享默认：<span>{shared.label}</span> · {shared.votes} 票
+            </p>
+          ) : null}
+          <label className="remark-watch-toggle">
+            <input
+              checked={watched}
+              onChange={(event) => setWatched(event.target.checked)}
+              type="checkbox"
+            />
+            <Star aria-hidden="true" fill={watched ? "currentColor" : "none"} size={15} />
+            <span>加入关注</span>
+          </label>
+          {error ? (
+            <p className="remark-dialog-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <div className="remark-dialog-actions">
+            {personal ? (
+              <button disabled={saving} onClick={() => void deleteRemark()} type="button">
+                <Trash2 aria-hidden="true" size={15} />
+                删除
+              </button>
+            ) : null}
+            <Dialog.Close asChild>
+              <button className="remark-dialog-cancel" disabled={saving} type="button">
+                取消
+              </button>
+            </Dialog.Close>
+            <button className="remark-dialog-save" disabled={saving} onClick={() => void submit()} type="button">
+              {saving ? "保存中" : "保存"}
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
@@ -583,6 +898,7 @@ export function PoolsPage() {
   const fixture = fixtureState(location.search);
   const poolClient = useMemo(() => new PoolsClient(), []);
   const flowClient = useMemo(() => new LiquidityFlowClient(), []);
+  const remarkClient = useMemo(() => new AddressRemarksClient(), []);
   const [minutes, setMinutes] = useState<MarketWindowMinutes>(5);
   const [protocols, setProtocols] = useState<LiquidityFlowProtocol[]>(() =>
     protocolsFromSearch(location.search),
@@ -598,6 +914,48 @@ export function PoolsPage() {
   const [flowFilters, setFlowFilters] = useState<LiquidityFlowUiFilters>(() =>
     parseLiquidityFlowUiFilters(location.search),
   );
+  const [flowView, setFlowView] = useState<"address" | "stream">("stream");
+  const [addressSort, setAddressSort] = useState<LiquidityFlowAddressSort>("net");
+  const [watchedOnly, setWatchedOnly] = useState(false);
+  const [remarkState, remarkDispatch] = useReducer(
+    reduceAddressRemarks,
+    undefined,
+    initialAddressRemarksState,
+  );
+  const [editingAddress, setEditingAddress] = useState<EvmAddress | null>(null);
+  const remarkOperation = useRef(0);
+
+  const loadRemarks = useCallback(async () => {
+    remarkDispatch({ type: "loading" });
+    try {
+      const response = await remarkClient.get();
+      remarkDispatch({ response, type: "loaded" });
+    } catch (error) {
+      remarkDispatch({
+        code: error instanceof AddressRemarksRequestError ? error.code : "ADDRESS_REMARKS_FAILED",
+        type: "load-failed",
+      });
+    }
+  }, [remarkClient]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    remarkDispatch({ type: "loading" });
+    void remarkClient.get(controller.signal).then(
+      (response) => remarkDispatch({ response, type: "loaded" }),
+      (error: unknown) => {
+        if (controller.signal.aborted) return;
+        remarkDispatch({
+          code:
+            error instanceof AddressRemarksRequestError
+              ? error.code
+              : "ADDRESS_REMARKS_FAILED",
+          type: "load-failed",
+        });
+      },
+    );
+    return () => controller.abort();
+  }, [remarkClient]);
 
   useEffect(() => {
     flowStateRef.current = flowState;
@@ -750,7 +1108,82 @@ export function PoolsPage() {
       ? []
       : fixtureFlowEvents
     : flowState.events;
-  const visibleFlowEvents = applyLiquidityFlowFilters(baseFlowEvents, flowFilters);
+  const watched = useMemo(() => watchedAddressSet(remarkState), [remarkState]);
+  const flowProjection = useMemo(
+    () =>
+      buildLiquidityFlowProjection(baseFlowEvents, flowFilters, {
+        protocols,
+        sort: addressSort,
+        watchedAddresses: [...watched],
+        watchedOnly,
+      }),
+    [addressSort, baseFlowEvents, flowFilters, protocols, watched, watchedOnly],
+  );
+
+  const saveRemark = useCallback(
+    async (request: { address: EvmAddress; label: string; watched: boolean }) => {
+      const operationId = ++remarkOperation.current;
+      remarkDispatch({ operationId, request, type: "put-optimistic" });
+      try {
+        const remark = await remarkClient.put(request);
+        remarkDispatch({
+          address: request.address,
+          operationId,
+          remark,
+          type: "mutation-succeeded",
+        });
+        void loadRemarks();
+        return true;
+      } catch (error) {
+        remarkDispatch({
+          address: request.address,
+          code:
+            error instanceof AddressRemarksRequestError ? error.code : "ADDRESS_REMARK_SAVE_FAILED",
+          operationId,
+          type: "mutation-failed",
+        });
+        return false;
+      }
+    },
+    [loadRemarks, remarkClient],
+  );
+
+  const removeRemark = useCallback(
+    async (address: EvmAddress) => {
+      const operationId = ++remarkOperation.current;
+      remarkDispatch({ address, operationId, type: "delete-optimistic" });
+      try {
+        await remarkClient.delete(address);
+        remarkDispatch({ address, operationId, remark: null, type: "mutation-succeeded" });
+        void loadRemarks();
+        return true;
+      } catch (error) {
+        remarkDispatch({
+          address,
+          code:
+            error instanceof AddressRemarksRequestError
+              ? error.code
+              : "ADDRESS_REMARK_DELETE_FAILED",
+          operationId,
+          type: "mutation-failed",
+        });
+        return false;
+      }
+    },
+    [loadRemarks, remarkClient],
+  );
+
+  const toggleWatched = useCallback(
+    (address: EvmAddress) => {
+      const personal = remarkState.remarks.get(address);
+      void saveRemark({
+        address,
+        label: personal?.label ?? "",
+        watched: !personal?.watched,
+      });
+    },
+    [remarkState.remarks, saveRemark],
+  );
 
   const selectWindow = (next: MarketWindowMinutes) => {
     setMinutes(next);
