@@ -1259,6 +1259,7 @@ function serverFilters(filters: LiquidityFlowUiFilters): LiquidityFlowServerFilt
 export function PoolsPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { preferences, update: updatePreferences } = useUserPreferences();
   const fixture = fixtureState(location.search);
   const poolClient = useMemo(() => new PoolsClient(), []);
   const flowClient = useMemo(() => new LiquidityFlowClient(), []);
@@ -1269,6 +1270,19 @@ export function PoolsPage() {
   );
   const [retry, setRetry] = useState(0);
   const [state, dispatch] = useReducer(reducePoolStream, undefined, initialPoolStreamState);
+  const [poolSearchState, poolSearchDispatch] = useReducer(
+    reducePoolSearch,
+    undefined,
+    initialPoolSearchState,
+  );
+  const initialSearch = parsePoolSearchParameters(location.search);
+  const [poolSearchMode, setPoolSearchMode] = useState<PoolSearchMode>(
+    initialSearch?.mode ?? "token",
+  );
+  const [poolSearchQuery, setPoolSearchQuery] = useState(initialSearch?.query ?? "");
+  const [poolSearchRefresh, setPoolSearchRefresh] = useState(0);
+  const poolSearchManager = useRef(new PoolSearchRequestManager());
+  const [expandedPoolGroups, setExpandedPoolGroups] = useState<Set<string>>(() => new Set());
   const latestEventAt = useRef<number | null>(null);
   const [flowState, flowDispatch] = useReducer(reduceLiquidityFlow, 0, initialLiquidityFlowState);
   const flowStateRef = useRef(flowState);
@@ -1450,14 +1464,115 @@ export function PoolsPage() {
   }, [fixture]);
 
   const connection = fixture ?? state.connection;
-  const selectedProtocols = new Set(protocols);
-  const poolRows = (
-    fixture
-      ? fixture === "ready" || fixture === "stale" || fixture === "reconnecting"
-        ? fixturePoolRows
-        : []
-      : state.rows
-  ).filter(({ protocol }) => selectedProtocols.has(protocol));
+  const selectedProtocols = useMemo(() => new Set(protocols), [protocols]);
+  const poolRows = useMemo(
+    () =>
+      (fixture
+        ? fixture === "ready" || fixture === "stale" || fixture === "reconnecting"
+          ? fixturePoolRows
+          : []
+        : state.rows
+      ).filter(({ protocol }) => selectedProtocols.has(protocol)),
+    [fixture, selectedProtocols, state.rows],
+  );
+  const poolSearchParameters = useMemo(
+    () => parsePoolSearchParameters(location.search),
+    [location.search],
+  );
+  const poolModeRows = poolSearchParameters?.mode === "pool" ? poolRows : null;
+  const poolModeConnection = poolSearchParameters?.mode === "pool" ? connection : null;
+
+  useEffect(() => {
+    const parameters = poolSearchParameters;
+    if (!parameters) {
+      poolSearchManager.current.clear();
+      poolSearchDispatch({ type: "clear" });
+      return;
+    }
+    setPoolSearchMode(parameters.mode);
+    setPoolSearchQuery(parameters.query);
+    const request = poolSearchManager.current.start();
+    poolSearchDispatch({
+      mode: parameters.mode,
+      query: parameters.query,
+      requestId: request.requestId,
+      type: "start",
+    });
+    if (!parameters.valid) {
+      poolSearchDispatch({ requestId: request.requestId, type: "invalid" });
+      return () => poolSearchManager.current.clear();
+    }
+    if (parameters.mode === "pool") {
+      if (poolModeConnection === "reconnecting" || poolModeConnection === "stale") {
+        poolSearchDispatch({ type: "reconnecting" });
+      } else if (poolModeConnection === "error") {
+        poolSearchDispatch({ code: "MARKET_SEARCH_UNAVAILABLE", requestId: request.requestId, type: "error" });
+      } else if (poolModeConnection !== "loading") {
+        poolSearchDispatch({
+          requestId: request.requestId,
+          rows: filterPoolsByIdentity(poolModeRows ?? [], parameters.query),
+          type: "success",
+        });
+      }
+      return () => poolSearchManager.current.clear();
+    }
+    const address = validTokenSearchAddress(parameters.query)!;
+    void poolClient.getByToken(address, request.signal, protocols).then(
+      (rows) => {
+        if (!poolSearchManager.current.isCurrent(request.requestId)) return;
+        poolSearchDispatch({ requestId: request.requestId, rows, type: "success" });
+      },
+      (error: unknown) => {
+        if (request.signal.aborted || !poolSearchManager.current.isCurrent(request.requestId)) return;
+        poolSearchDispatch({
+          code: error instanceof Error ? error.message : "MARKET_TOKEN_REQUEST_FAILED",
+          requestId: request.requestId,
+          type: "error",
+        });
+      },
+    );
+    return () => poolSearchManager.current.clear();
+  }, [
+    poolClient,
+    poolModeConnection,
+    poolModeRows,
+    poolSearchParameters,
+    poolSearchRefresh,
+    protocols,
+  ]);
+
+  const activePoolRows = poolSearchParameters ? poolSearchState.rows : poolRows;
+  const searchedToken =
+    poolSearchParameters?.mode === "token" && poolSearchParameters.valid
+      ? validTokenSearchAddress(poolSearchParameters.query)
+      : null;
+  const poolGroups = useMemo(
+    () =>
+      groupPoolRows(
+        activePoolRows,
+        searchedToken ? { tokenAddress: searchedToken, type: "token-search" } : { type: "default" },
+      ),
+    [activePoolRows, searchedToken],
+  );
+  useEffect(() => {
+    setExpandedPoolGroups((current) => {
+      const next = reconcileExpandedPoolGroups(current, poolGroups);
+      if (next.size === current.size && [...next].every((key) => current.has(key))) return current;
+      return next;
+    });
+  }, [poolGroups]);
+  const visiblePoolRows = useMemo(
+    () => flattenPoolGroups(poolGroups, expandedPoolGroups),
+    [expandedPoolGroups, poolGroups],
+  );
+  const poolColumns = useMemo(
+    () => normalizePoolColumns(preferences.poolColumns),
+    [preferences.poolColumns],
+  );
+  const savePoolColumns = useCallback(
+    (columns: PoolColumnPreference[]) => updatePreferences({ poolColumns: columns }),
+    [updatePreferences],
+  );
   const explicitFlowConnection = fixtureFlowState(location.search, fixture);
   const flowConnection = fixturePaused
     ? "paused-hidden"
@@ -1576,6 +1691,30 @@ export function PoolsPage() {
     setFlowView("stream");
   };
 
+  const submitPoolSearch = () => {
+    const query = poolSearchQuery.trim();
+    const search = writePoolSearchParameters(location.search, { mode: poolSearchMode, query });
+    if (search === location.search) setPoolSearchRefresh((value) => value + 1);
+    else void navigate({ pathname: location.pathname, search }, { replace: true });
+  };
+
+  const clearPoolSearch = () => {
+    poolSearchManager.current.clear();
+    poolSearchDispatch({ type: "clear" });
+    setPoolSearchQuery("");
+    const search = writePoolSearchParameters(location.search, null);
+    void navigate({ pathname: location.pathname, search }, { replace: true });
+  };
+
+  const togglePoolGroup = useCallback((groupKey: string) => {
+    setExpandedPoolGroups((current) => {
+      const next = new Set(current);
+      if (next.has(groupKey)) next.delete(groupKey);
+      else next.add(groupKey);
+      return next;
+    });
+  }, []);
+
   return (
     <main
       aria-busy={connection === "loading" ? "true" : undefined}
@@ -1615,13 +1754,24 @@ export function PoolsPage() {
         <DexFilter protocols={protocols} update={updateProtocols} />
       </div>
 
-      {connection === "loading" ? (
+      <PoolSearchControls
+        clear={clearPoolSearch}
+        mode={poolSearchMode}
+        query={poolSearchQuery}
+        refresh={() => setPoolSearchRefresh((value) => value + 1)}
+        setMode={setPoolSearchMode}
+        setQuery={setPoolSearchQuery}
+        state={poolSearchState}
+        submit={submitPoolSearch}
+      />
+
+      {!poolSearchParameters && connection === "loading" ? (
         <div className="pools-loading" role="status">
           <span className="spinner spinner-small" aria-hidden="true" />
           <span>正在加载市场数据</span>
         </div>
       ) : null}
-      {connection === "error" ? (
+      {!poolSearchParameters && connection === "error" ? (
         <div className="pools-error">
           <AlertTriangle aria-hidden="true" size={20} />
           <p role="alert">市场数据暂不可用</p>
@@ -1635,12 +1785,19 @@ export function PoolsPage() {
           </button>
         </div>
       ) : null}
-      {connection === "empty" || (connection !== "loading" && poolRows.length === 0) ? (
+      {!poolSearchParameters &&
+      (connection === "empty" || (connection !== "loading" && poolRows.length === 0)) ? (
         <div className="pools-empty" role="status">
           <p>当前过滤条件暂无池数据</p>
         </div>
       ) : null}
-      {poolRows.length > 0 ? <PoolTable rows={poolRows} /> : null}
+      <div className="pool-table-toolbar">
+        <span>{poolGroups.length} 组</span>
+        <PoolColumnDialog columns={poolColumns} save={savePoolColumns} />
+      </div>
+      {visiblePoolRows.length > 0 ? (
+        <PoolTable columns={poolColumns} rows={visiblePoolRows} toggleGroup={togglePoolGroup} />
+      ) : null}
 
       <section
         aria-busy={flowConnection === "loading-backfill" ? "true" : undefined}
