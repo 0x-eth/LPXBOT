@@ -214,7 +214,7 @@
       "validFromBlock": null,
       "runtimeCodeHash": null,
       "capturedAt": "2026-08-16T01:49:34.326Z",
-      "sha256": "72ae419cac312ff08506f38808861321e9a39233a45a11748dbd90074522eb66",
+      "sha256": "6a0268068b9d8381121a08d4b76c7588ed5a6f1c2e69873f6412d010e3c608be",
       "rpcUrlRecorded": false,
       "allowedMethods": [
         "eth_chainId",

@@ -32,6 +32,7 @@
     "annotate:p02-03-signs": "node scripts/annotate-p02-03-sign-evidence.mjs",
     "finalize:p01-reference": "node scripts/finalize-p01-reference-artifacts.mjs",
     "finalize:p02-reference": "node scripts/finalize-p02-reference-artifacts.mjs",
+    "finalize:p02-03": "node scripts/finalize-p02-03-acceptance.mjs",
     "infra:down": "bash scripts/infra.sh down",
     "infra:logs": "bash scripts/infra.sh logs",
     "infra:reset": "bash scripts/infra.sh reset",

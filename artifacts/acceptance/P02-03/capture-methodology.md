@@ -33,6 +33,7 @@ Each supported protocol/event pair is fixed by transaction hash, log index, emit
 - the exact log and `removed` flag;
 - the full transaction receipt;
 - a projected block header including `hash`, `parentHash`, `timestamp`, roots and gas fields;
+- an RFC3339 delivery timestamp derived from the header's integer Unix timestamp;
 - the event contract runtime code hash observed at the capture head and its observation block;
 - the capture timestamp;
 - prerequisite V3 `PoolCreated` or V4 `Initialize` evidence when the event needs a catalog identity;
@@ -60,6 +61,7 @@ pnpm --filter @lpbot/chain-adapters build
 pnpm generate:p02-03-golden
 pnpm annotate:p02-03-signs
 pnpm exec vitest run tests/production-chain-decoder.test.ts tests/viem-bsc-log-source.test.ts
+pnpm finalize:p02-03
 ```
 
 `sha256sums.txt` covers the acceptance tree except itself. The capture RPC URL is absent from every artifact.
