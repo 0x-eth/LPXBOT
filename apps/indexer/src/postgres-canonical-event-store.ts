@@ -98,8 +98,11 @@ function toMarketPoolRow(row: PoolMetricRow): MarketPoolRow {
   return {
     ...row,
     chainId: 56,
+    hooks: row.hooks as MarketPoolRow["hooks"],
     poolAddress: row.poolAddress as MarketPoolRow["poolAddress"],
     poolId: row.poolId as MarketPoolRow["poolId"],
+    token0Address: row.token0Address as MarketPoolRow["token0Address"],
+    token1Address: row.token1Address as MarketPoolRow["token1Address"],
   };
 }
 

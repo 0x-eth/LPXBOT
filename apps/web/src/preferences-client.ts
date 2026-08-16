@@ -1,9 +1,11 @@
 import {
   colorThemeKeys,
   navigationKeys,
+  poolColumnKeys,
   userPreferenceSchemaVersion,
   type ColorTheme,
   type NavigationKey,
+  type PoolColumnKey,
   type UpdateUserPreferencesRequest,
   type UserPreferences,
   type VersionedUserPreferences,
@@ -54,9 +56,39 @@ function parseNavigation(value: unknown): UserPreferences["navConfig"] | null {
   return result;
 }
 
+function parsePoolColumns(value: unknown): UserPreferences["poolColumns"] | null {
+  if (!Array.isArray(value) || value.length !== poolColumnKeys.length) return null;
+  const seen = new Set<PoolColumnKey>();
+  const result: UserPreferences["poolColumns"] = [];
+  for (const item of value) {
+    if (
+      !isRecord(item) ||
+      typeof item.key !== "string" ||
+      !poolColumnKeys.includes(item.key as PoolColumnKey) ||
+      typeof item.visible !== "boolean" ||
+      seen.has(item.key as PoolColumnKey)
+    ) {
+      return null;
+    }
+    const key = item.key as PoolColumnKey;
+    seen.add(key);
+    result.push({ key, visible: item.visible });
+  }
+  if (
+    result[0]?.key !== "pool" ||
+    !result[0].visible ||
+    result.at(-1)?.key !== "actions" ||
+    !result.at(-1)!.visible
+  ) {
+    return null;
+  }
+  return result;
+}
+
 function parsePreferences(value: unknown): UserPreferences | null {
   if (!isRecord(value)) return null;
   const navConfig = parseNavigation(value.navConfig);
+  const poolColumns = parsePoolColumns(value.poolColumns);
   const colorTheme =
     typeof value.colorTheme === "string" && colorThemeKeys.includes(value.colorTheme as ColorTheme)
       ? (value.colorTheme as ColorTheme)
@@ -68,6 +100,7 @@ function parsePreferences(value: unknown): UserPreferences | null {
       : undefined;
   if (
     !navConfig ||
+    !poolColumns ||
     !colorTheme ||
     customColor === undefined ||
     (colorTheme === "custom" && customColor === null) ||
@@ -83,6 +116,7 @@ function parsePreferences(value: unknown): UserPreferences | null {
     colorTheme,
     customColor,
     navConfig,
+    poolColumns,
     poolsPanelCollapsed: value.poolsPanelCollapsed,
     showHotPools: value.showHotPools,
     showScanTab: value.showScanTab,

@@ -32,7 +32,7 @@ function isPoolColumnKey(value: unknown): value is PoolColumnKey {
 }
 
 export function normalizePoolColumns(value: unknown): PoolColumnPreference[] {
-  if (!Array.isArray(value)) return structuredClone(DEFAULT_POOL_COLUMNS);
+  if (!Array.isArray(value)) return DEFAULT_POOL_COLUMNS.map((column) => ({ ...column }));
   const middle: PoolColumnPreference[] = [];
   const seen = new Set<PoolColumnKey>();
   for (const item of value) {

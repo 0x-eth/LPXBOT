@@ -71,27 +71,40 @@ const basePoolRow: MarketPoolRow = {
   activeTvlUsd: null,
   chainId: 56,
   fdvUsd: "184250000.25",
+  feePips: "2500",
   feeActiveTvl: null,
   feesUsd: "428.125000000000000001",
   feeTvl: "0.00428125000000000001",
+  hooks: null,
   poolAddress: "0x1111111111111111111111111111111111111111",
   poolId: null,
+  poolKey: "56:0x1111111111111111111111111111111111111111",
   protocol: "pcsv3",
+  tickSpacing: "50",
+  token0Address: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
   token0Symbol: "WBNB",
+  token1Address: "0x55d398326f99059ff775485246999027b3197955",
   token1Symbol: "USDT",
   transactionCount: "37",
   tvlUsd: "100000.000000000000000001",
   volumeUsd: "248921.75",
 };
 
-const fixturePoolRows: MarketPoolRow[] = liquidityFlowProtocols.map((protocol, index) => ({
-  ...basePoolRow,
-  fdvUsd: new Decimal(basePoolRow.fdvUsd!).plus(index * 1_000_000).toString(),
-  feesUsd: new Decimal(basePoolRow.feesUsd!).minus(index * 36).toString(),
-  poolAddress: `0x${String(index + 1).repeat(40)}` as MarketPoolRow["poolAddress"],
-  protocol,
-  token0Symbol: index === 0 ? "WBNB" : ["CAKE", "USDC", "ETH"][index - 1]!,
-}));
+const fixturePoolRows: MarketPoolRow[] = liquidityFlowProtocols.map((protocol, index) => {
+  const poolAddress = `0x${String(index + 1).repeat(40)}` as const;
+  return {
+    ...basePoolRow,
+    fdvUsd: new Decimal(basePoolRow.fdvUsd!).plus(index * 1_000_000).toString(),
+    feesUsd: new Decimal(basePoolRow.feesUsd!).minus(index * 36).toString(),
+    poolAddress,
+    poolKey: `56:${poolAddress}`,
+    protocol,
+    token0Address: (index < 2
+      ? basePoolRow.token0Address
+      : `0x${String.fromCharCode(97 + index).repeat(40)}`) as MarketPoolRow["token0Address"],
+    token0Symbol: index === 0 ? "WBNB" : ["WBNB", "USDC", "ETH"][index - 1]!,
+  };
+});
 
 function fixtureFlowEvent(
   id: string,
