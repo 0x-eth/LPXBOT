@@ -9,6 +9,9 @@ const FUNCTION_MATRIX_PATH = path.join(ROOT, "docs/FUNCTION_MATRIX.md");
 const TRACEABILITY_PATH = path.join(ROOT, "docs/TRACEABILITY_MATRIX.md");
 const MANIFEST_PATH = path.join(ROOT, "artifacts/acceptance/P02-02/manifest.json");
 const P02_04_MANIFEST_PATH = path.join(ROOT, "artifacts/acceptance/P02-04/manifest.json");
+const P02_05_ROOT = path.join(ROOT, "artifacts/acceptance/P02-05");
+const P02_05_MANIFEST_PATH = path.join(P02_05_ROOT, "manifest.json");
+const P02_05_GAPS_PATH = path.join(P02_05_ROOT, "gap-resolution.json");
 const EXPECTED_ACCEPTED_COMMIT = "73998c6f22e499f7063207ec1d497766b6714d29";
 const EXPECTED_FEATURE_IDS = [
   ...Array.from({ length: 16 }, (_, index) => `POOL-${String(index + 1).padStart(2, "0")}`),
@@ -17,7 +20,12 @@ const EXPECTED_FEATURE_IDS = [
 ];
 const P02_02_FEATURE_IDS = ["POOL-01", "POOL-02", "POOL-04", "POOL-16"];
 const P02_04_FEATURE_IDS = ["POOL-03", "FLOW-01", "FLOW-02"];
-const IMPLEMENTED_FEATURE_IDS = [...P02_02_FEATURE_IDS, ...P02_04_FEATURE_IDS];
+const P02_05_FEATURE_IDS = ["FLOW-03", "FLOW-04", "FLOW-05"];
+const IMPLEMENTED_FEATURE_IDS = [
+  ...P02_02_FEATURE_IDS,
+  ...P02_04_FEATURE_IDS,
+  ...P02_05_FEATURE_IDS,
+];
 const REQUIRED_EVIDENCE_IDS = [
   "E-DATA",
   "E-REC",
@@ -88,7 +96,7 @@ function assertRepositoryPath(value, label) {
   return resolved;
 }
 
-test("P02 status table keeps exactly seven fixture-verified features implemented", async () => {
+test("P02 status table keeps exactly ten fixture-verified features implemented", async () => {
   const markdown = await readFile(TRACEABILITY_PATH, "utf8");
   const rows = p02StatusRows(markdown);
   assert.deepEqual(sorted(rows.keys()), sorted(EXPECTED_FEATURE_IDS));
@@ -113,9 +121,64 @@ test("P02 status table keeps exactly seven fixture-verified features implemented
   }
 
   assert.deepEqual(sorted(implemented), sorted(IMPLEMENTED_FEATURE_IDS));
-  assert.equal(planned.length, 16);
-  assert.match(markdown, /`implemented-assumed`\s*\|\s*25\s*\|/);
-  assert.match(markdown, /(?:其余|remaining)\s*`planned`\s*\|\s*171\s*\|/i);
+  assert.equal(planned.length, 13);
+  assert.match(markdown, /`implemented-assumed`\s*\|\s*28\s*\|/);
+  assert.match(markdown, /(?:其余|remaining)\s*`planned`\s*\|\s*168\s*\|/i);
+});
+
+test("P02-05 owns only FLOW-03/04/05 with the required local evidence", async () => {
+  const [manifest, gaps, functionMatrix, traceabilityMarkdown] = await Promise.all([
+    readFile(P02_05_MANIFEST_PATH, "utf8").then(JSON.parse),
+    readFile(P02_05_GAPS_PATH, "utf8").then(JSON.parse),
+    readFile(FUNCTION_MATRIX_PATH, "utf8"),
+    readFile(TRACEABILITY_PATH, "utf8"),
+  ]);
+  assert.equal(manifest.workItemId, "P02-05");
+  assert.equal(manifest.phase, "P02");
+  assert.equal(manifest.risk, "R1");
+  assert.equal(manifest.status, "accepted-with-gaps");
+  assert.deepEqual(sorted(manifest.featureIds), sorted(P02_05_FEATURE_IDS));
+
+  const markedFunctionIds = functionMatrix
+    .split("\n")
+    .filter((line) => line.includes("`implemented-assumed`（P02-05）"))
+    .map((line) => line.split("|")[1]?.trim())
+    .filter((id) => EXPECTED_FEATURE_IDS.includes(id));
+  assert.deepEqual(sorted(markedFunctionIds), sorted(P02_05_FEATURE_IDS));
+
+  const traceability = traceabilityRows(traceabilityMarkdown);
+  const manifestTests = new Set(manifest.tests.map(({ id }) => id));
+  const manifestEvidence = new Set(manifest.evidence.map(({ id }) => id));
+  for (const featureId of P02_05_FEATURE_IDS) {
+    const minimums = traceability.get(featureId);
+    assert.ok(minimums, `${featureId} is missing from TRACEABILITY_MATRIX`);
+    for (const testId of minimums.tests) {
+      assert.ok(manifestTests.has(testId), `${featureId} is missing ${testId}`);
+    }
+    for (const evidenceId of minimums.evidence) {
+      assert.ok(manifestEvidence.has(evidenceId), `${featureId} is missing ${evidenceId}`);
+    }
+  }
+
+  assert.deepEqual(
+    sorted(manifest.evidence.map(({ id }) => id)),
+    sorted(["E-DATA", "E-SSE", "E-API", "E-UI", "E-VIS", "E-RBAC", "E-SEC"]),
+  );
+  for (const evidence of manifest.evidence) {
+    await access(assertRepositoryPath(evidence.path, evidence.id));
+  }
+
+  const gapById = new Map(gaps.items.map((item) => [item.id, item]));
+  assert.equal(gapById.get("GAP-FLOW-USD-VALUATION")?.status, "unresolved");
+  assert.equal(gapById.get("GAP-FINALITY-DEPTH")?.status, "unresolved");
+
+  const assumptions = manifest.assumptions.join("\n");
+  assert.match(assumptions, /other 13 P02 feature IDs remain planned/);
+  assert.match(assumptions, /GAP-FLOW-USD-VALUATION remains unresolved/);
+  assert.match(assumptions, /GAP-FINALITY-DEPTH remains unresolved/);
+  assert.match(assumptions, /No event is marked finalized/);
+  assert.match(assumptions, /local-fixture-verified only/);
+  assert.doesNotMatch(assumptions, /parity-verified|released/);
 });
 
 test("P02-04 owns only POOL-03 and FLOW-01/02 with local fixture evidence", async () => {
