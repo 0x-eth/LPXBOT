@@ -1,5 +1,8 @@
 import type { MarketPoolRow, MarketPoolSnapshot } from "@lpbot/api-contract";
-import { selectRecommendedPools } from "../apps/api/src/recommended-pools.js";
+import {
+  recommendationSelectionHash,
+  selectRecommendedPools,
+} from "../apps/api/src/recommended-pools.js";
 import { describe, expect, it } from "vitest";
 
 const address = (digit: string): `0x${string}` => `0x${digit.repeat(40)}`;
@@ -70,5 +73,51 @@ describe("P02-09 recommended pool selection", () => {
       expect.objectContaining({ feesUsd: "9.999999999999999999", poolKey: `56:${address("1")}` }),
     ]);
     expect(selected[2]?.token0Symbol).toBe("WBNB");
+  });
+
+  it("returns an array while filtering null, non-positive, malformed, and incomplete rows", () => {
+    const selected = selectRecommendedPools(
+      snapshot([
+        row("1", null),
+        row("2", "0"),
+        row("3", "-0.1"),
+        row("4", "not-a-decimal"),
+        row("5", "1", { poolKey: `1:${address("5")}` }),
+        row("6", "1", { token0Address: null }),
+      ]),
+      3,
+    );
+
+    expect(selected).toEqual([]);
+    expect(selectRecommendedPools(snapshot([]), 20)).toEqual([]);
+  });
+
+  it("rejects non-BSC/non-five-minute sources and limits outside 1..20", () => {
+    expect(() => selectRecommendedPools({ ...snapshot([]), minutes: 15 }, 3)).toThrow(
+      "RECOMMENDATION_SOURCE_INVALID",
+    );
+    for (const limit of [0, 21, 1.5, Number.NaN]) {
+      expect(() => selectRecommendedPools(snapshot([]), limit)).toThrow(
+        "RECOMMENDATION_LIMIT_INVALID",
+      );
+    }
+  });
+
+  it("hashes ordered wire rows and changes for any display-field replacement", () => {
+    const rows = selectRecommendedPools(
+      snapshot([row("1", "2.5000", { token0Symbol: null }), row("2", "1")]),
+      3,
+    );
+    const hash = recommendationSelectionHash(rows);
+
+    expect(hash).toMatch(/^sha256:[0-9a-f]{64}$/u);
+    expect(recommendationSelectionHash(structuredClone(rows))).toBe(hash);
+    expect(recommendationSelectionHash([{ ...rows[0]!, feesUsd: "2.5001" }, rows[1]!])).not.toBe(
+      hash,
+    );
+    expect(
+      recommendationSelectionHash([{ ...rows[0]!, token0Symbol: "WBNB" }, rows[1]!]),
+    ).not.toBe(hash);
+    expect(recommendationSelectionHash([...rows].reverse())).not.toBe(hash);
   });
 });

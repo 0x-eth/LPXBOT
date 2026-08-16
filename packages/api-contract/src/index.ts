@@ -219,6 +219,20 @@ export interface ShellGasStats {
   ethereumGwei: number | null;
 }
 
+export interface RecommendedPoolRow {
+  chainId: 56;
+  feePips: string | null;
+  feesUsd: string;
+  poolAddress: EvmAddress | null;
+  poolId: `0x${string}` | null;
+  poolKey: string;
+  protocol: MarketProtocol;
+  token0Address: EvmAddress;
+  token0Symbol: string | null;
+  token1Address: EvmAddress;
+  token1Symbol: string | null;
+}
+
 export interface ShellStats {
   fps: number | null;
   gas: ShellGasStats;

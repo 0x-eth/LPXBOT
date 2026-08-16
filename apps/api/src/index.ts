@@ -65,6 +65,7 @@ export type {
   ShellStatsProvider,
   ShellStatsSubscriptionContext,
 } from "./shell-stats.js";
+export { selectRecommendedPools } from "./recommended-pools.js";
 export {
   defaultUserPreferences,
   defaultVersionedUserPreferences,
