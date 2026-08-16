@@ -7,23 +7,8 @@ import {
   type MarketWindowMinutes,
 } from "@lpbot/api-contract";
 import { Decimal } from "decimal.js";
-import {
-  AlertTriangle,
-  Pause,
-  Play,
-  RefreshCw,
-  RotateCcw,
-  Wifi,
-  WifiOff,
-} from "lucide-react";
-import {
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from "react";
+import { AlertTriangle, Pause, Play, RefreshCw, RotateCcw, Wifi, WifiOff } from "lucide-react";
+import { useEffect, useMemo, useReducer, useRef, useState, type KeyboardEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { LiquidityFlowClient, type LiquidityFlowServerFilters } from "./liquidity-flow-client";
@@ -145,7 +130,10 @@ function fixtureState(search: string): PoolsFixtureState | null {
     : null;
 }
 
-function fixtureFlowState(search: string, fixture: PoolsFixtureState | null): FlowConnection | null {
+function fixtureFlowState(
+  search: string,
+  fixture: PoolsFixtureState | null,
+): FlowConnection | null {
   if (!fixture) return null;
   const explicit = new URLSearchParams(search).get("flow_state");
   const states: FlowConnection[] = [
@@ -389,32 +377,34 @@ function FlowFilters({
   filters: LiquidityFlowUiFilters;
   update(filters: LiquidityFlowUiFilters): void;
 }) {
-  const set = <K extends keyof LiquidityFlowUiFilters>(
-    key: K,
-    value: LiquidityFlowUiFilters[K],
-  ) => update({ ...filters, [key]: value });
+  const set = <K extends keyof LiquidityFlowUiFilters>(key: K, value: LiquidityFlowUiFilters[K]) =>
+    update({ ...filters, [key]: value });
   return (
     <div className="flow-filter-area">
       <div className="flow-primary-filters">
         <FlowSegment
           label="事件类型"
           onChange={(value) => set("eventType", value)}
-          options={[
-            { label: "全部事件", value: "all" },
-            { label: "加池", value: "add" },
-            { label: "撤池", value: "remove" },
-            { label: "新池", value: "create" },
-          ] as const}
+          options={
+            [
+              { label: "全部事件", value: "all" },
+              { label: "加池", value: "add" },
+              { label: "撤池", value: "remove" },
+              { label: "新池", value: "create" },
+            ] as const
+          }
           value={filters.eventType}
         />
         <FlowSegment
           label="协议版本"
           onChange={(value) => set("generation", value)}
-          options={[
-            { label: "全部版本", value: "all" },
-            { label: "V3", value: "v3" },
-            { label: "V4", value: "v4" },
-          ] as const}
+          options={
+            [
+              { label: "全部版本", value: "all" },
+              { label: "V3", value: "v3" },
+              { label: "V4", value: "v4" },
+            ] as const
+          }
           value={filters.generation}
         />
         <label className="flow-minimum-filter">
@@ -472,16 +462,7 @@ function FlowTable({ events }: { events: readonly LiquidityFlowEvent[] }) {
       <table aria-label="流动性事件列表" className="flow-table">
         <thead>
           <tr>
-            {[
-              "时间",
-              "协议",
-              "事件",
-              "Pool",
-              "User",
-              "NFT",
-              "USD",
-              "Transaction",
-            ].map((label) => (
+            {["时间", "协议", "事件", "Pool", "User", "NFT", "USD", "Transaction"].map((label) => (
               <th key={label} scope="col">
                 {label}
               </th>
@@ -525,9 +506,7 @@ function FlowTable({ events }: { events: readonly LiquidityFlowEvent[] }) {
 
 function serverFilters(filters: LiquidityFlowUiFilters): LiquidityFlowServerFilters {
   const address = (value: string) => (/^0x[0-9a-fA-F]{40}$/u.test(value) ? value : "");
-  const pool = /^0x(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$/u.test(filters.pool)
-    ? filters.pool
-    : "";
+  const pool = /^0x(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$/u.test(filters.pool) ? filters.pool : "";
   return {
     nftId: /^(?:0|[1-9][0-9]*)$/u.test(filters.nftId) ? filters.nftId : "",
     pool,
@@ -565,7 +544,10 @@ export function PoolsPage() {
 
   flowStateRef.current = flowState;
 
-  const updateSearch = (nextProtocols: readonly LiquidityFlowProtocol[], next: LiquidityFlowUiFilters) => {
+  const updateSearch = (
+    nextProtocols: readonly LiquidityFlowProtocol[],
+    next: LiquidityFlowUiFilters,
+  ) => {
     const parameters = new URLSearchParams(location.search);
     for (const key of [
       "dex",
@@ -583,7 +565,10 @@ export function PoolsPage() {
       parameters.set("dex", nextProtocols.join(","));
     }
     for (const [key, value] of serializeLiquidityFlowUiFilters(next)) parameters.set(key, value);
-    void navigate({ pathname: location.pathname, search: `?${parameters.toString()}` }, { replace: true });
+    void navigate(
+      { pathname: location.pathname, search: `?${parameters.toString()}` },
+      { replace: true },
+    );
   };
 
   const updateProtocols = (next: LiquidityFlowProtocol[]) => {
@@ -679,23 +664,28 @@ export function PoolsPage() {
 
   useEffect(() => {
     if (fixture) return;
-    const onVisibility = () =>
-      flowDispatch({ type: document.hidden ? "pause" : "resume" });
+    const onVisibility = () => flowDispatch({ type: document.hidden ? "pause" : "resume" });
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [fixture]);
 
   const connection = fixture ?? state.connection;
   const selectedProtocols = new Set(protocols);
-  const poolRows = (fixture ? (fixture === "ready" || fixture === "stale" || fixture === "reconnecting" ? fixturePoolRows : []) : state.rows).filter(
-    ({ protocol }) => selectedProtocols.has(protocol),
-  );
+  const poolRows = (
+    fixture
+      ? fixture === "ready" || fixture === "stale" || fixture === "reconnecting"
+        ? fixturePoolRows
+        : []
+      : state.rows
+  ).filter(({ protocol }) => selectedProtocols.has(protocol));
   const explicitFlowConnection = fixtureFlowState(location.search, fixture);
   const flowConnection = fixturePaused
     ? "paused-hidden"
     : (explicitFlowConnection ?? flowState.connection);
   const baseFlowEvents = fixture
-    ? flowConnection === "loading-backfill" || flowConnection === "empty" || flowConnection === "error"
+    ? flowConnection === "loading-backfill" ||
+      flowConnection === "empty" ||
+      flowConnection === "error"
       ? []
       : fixtureFlowEvents
     : flowState.events;
@@ -804,9 +794,7 @@ export function PoolsPage() {
               {flowConnectionLabel(flowConnection)}
             </span>
             <button
-              aria-label={
-                flowConnection === "paused-hidden" ? "恢复流动性事件" : "暂停流动性事件"
-              }
+              aria-label={flowConnection === "paused-hidden" ? "恢复流动性事件" : "暂停流动性事件"}
               className="flow-pause-button"
               id={flowConnection === "paused-hidden" ? "flow-resume" : "flow-pause"}
               onClick={toggleFlowPause}
@@ -842,7 +830,9 @@ export function PoolsPage() {
             ) : null}
           </div>
         ) : null}
-        {flowConnection !== "loading-backfill" && flowConnection !== "error" && visibleFlowEvents.length === 0 ? (
+        {flowConnection !== "loading-backfill" &&
+        flowConnection !== "error" &&
+        visibleFlowEvents.length === 0 ? (
           <div className="flow-operational-state" role="status">
             当前过滤条件暂无流动性事件
           </div>

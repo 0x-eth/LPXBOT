@@ -54,7 +54,7 @@ test("POOL-01/02/04/16 render the usable local tracer row", async ({ page }, tes
   await page.screenshot({
     animations: "disabled",
     caret: "hide",
-    path: `artifacts/acceptance/P02-02/ui/pools-ready-${testInfo.project.name}.png`,
+    path: `artifacts/acceptance/P02-04/ui/pools-ready-${testInfo.project.name}.png`,
   });
 });
 
