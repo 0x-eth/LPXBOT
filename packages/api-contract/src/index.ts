@@ -73,6 +73,43 @@ export interface SessionView {
 
 export type EvmAddress = `0x${string}`;
 
+export interface AddressRemark {
+  address: EvmAddress;
+  label: string;
+  watched: boolean;
+}
+
+export interface SharedRemark {
+  address: EvmAddress;
+  label: string;
+  votes: number;
+}
+
+export interface AddressRemarksResponse {
+  remarks: AddressRemark[];
+  shared: SharedRemark[];
+}
+
+export interface PutAddressRemarkRequest {
+  address: EvmAddress;
+  label: string;
+  watched: boolean;
+}
+
+export interface PutAddressRemarkResponse {
+  remark: AddressRemark | null;
+}
+
+export interface DeleteAddressRemarkResponse {
+  deleted: boolean;
+}
+
+export const addressRemarksContracts = {
+  delete: { method: "DELETE", path: "/api/address-remarks/{address}" },
+  get: { method: "GET", path: "/api/address-remarks" },
+  put: { method: "PUT", path: "/api/address-remarks" },
+} as const;
+
 export const userPreferenceSchemaVersion = 2 as const;
 
 export const navigationKeys = [

@@ -39,6 +39,15 @@ import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest }
 
 import { sessionCookieName, setBrowserSessionCookie } from "./browser-session-cookie.js";
 import {
+  addressRemarkChainId,
+  AddressRemarkValidationError,
+  canonicalAddressRemarkAddress,
+  parseAddressRemarkPutRequest,
+  type AddressRemarkAllowedAudit,
+  type AddressRemarkAuditAction,
+  type AddressRemarkStore,
+} from "./address-remarks.js";
+import {
   ChainPolicyStoreError,
   type ChainAccessPolicyStore,
   type ChainAccessPolicyView,
@@ -66,6 +75,8 @@ export interface RegionPolicyResult {
 }
 
 export interface ApiAppOptions {
+  addressRemarkRateLimit?: ChainManagementRateLimit;
+  addressRemarkStore?: AddressRemarkStore;
   authRateLimits?: AuthRateLimits;
   chainActivityProvider?: ChainActivityProvider;
   chainManagementRateLimit?: ChainManagementRateLimit;
@@ -460,6 +471,20 @@ function telegramBotConfigured(options: ApiAppOptions): options is ApiAppOptions
 
 export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   const now = options.now ?? (() => new Date());
+  const addressRemarkRateLimit: ChainManagementRateLimit = {
+    max: 30,
+    timeWindowMs: 60_000,
+    ...options.addressRemarkRateLimit,
+  };
+  if (
+    !Number.isSafeInteger(addressRemarkRateLimit.max) ||
+    addressRemarkRateLimit.max <= 0 ||
+    !Number.isSafeInteger(addressRemarkRateLimit.timeWindowMs) ||
+    addressRemarkRateLimit.timeWindowMs <= 0
+  ) {
+    throw new RangeError("Address remark rate limits must be positive integers");
+  }
+  const addressRemarkLimiter = new FixedWindowRateLimiter();
   const chainManagementRateLimit: ChainManagementRateLimit = {
     max: 10,
     timeWindowMs: 60_000,
@@ -667,6 +692,32 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       requestId: request.id,
       resultCode,
       sessionId: session?.id ?? null,
+    });
+  };
+
+  const addressRemarkAudit = (
+    action: AddressRemarkAuditAction,
+    address: ReturnType<typeof canonicalAddressRemarkAddress> | null,
+    request: FastifyRequest,
+    session: StoredSession,
+  ): AddressRemarkAllowedAudit => ({
+    action,
+    actorUserId: session.userId,
+    address,
+    chainId: addressRemarkChainId,
+    createdAt: now(),
+    requestId: request.id,
+    sessionId: session.id,
+  });
+
+  const recordDeniedAddressRemark = async (
+    audit: AddressRemarkAllowedAudit,
+    resultCode: string,
+  ) => {
+    await options.addressRemarkStore?.recordDenied({
+      ...audit,
+      outcome: "denied",
+      resultCode,
     });
   };
 
@@ -1189,6 +1240,166 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       const value =
         (await options.preferencesStore.get(session.userId)) ?? defaultVersionedUserPreferences();
       return createSuccessEnvelope(value, request.id);
+    });
+
+    app.get("/api/address-remarks", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.addressRemarkStore) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "ADDRESS_REMARKS_UNAVAILABLE",
+            message: "Address remarks are not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      const response = await options.addressRemarkStore.list({
+        chainId: addressRemarkChainId,
+        userId: session.userId,
+      });
+      return createSuccessEnvelope(response, request.id);
+    });
+
+    app.put("/api/address-remarks", { bodyLimit: 2_048 }, async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.addressRemarkStore) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "ADDRESS_REMARKS_UNAVAILABLE",
+            message: "Address remarks are not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+
+      let parsed;
+      try {
+        parsed = parseAddressRemarkPutRequest(request.body);
+      } catch (error) {
+        if (!(error instanceof AddressRemarkValidationError)) throw error;
+        let address = null;
+        try {
+          address = canonicalAddressRemarkAddress(
+            typeof request.body === "object" && request.body !== null
+              ? (request.body as { address?: unknown }).address
+              : null,
+          );
+        } catch {
+          address = null;
+        }
+        await recordDeniedAddressRemark(
+          addressRemarkAudit("address-remark.put", address, request, session),
+          "ADDRESS_REMARK_INVALID",
+        );
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "ADDRESS_REMARK_INVALID",
+            message: "Address remark request is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+
+      const audit = addressRemarkAudit("address-remark.put", parsed.address, request, session);
+      if (
+        !addressRemarkLimiter.consume(
+          session.id,
+          addressRemarkRateLimit.max,
+          addressRemarkRateLimit.timeWindowMs,
+          now().getTime(),
+        )
+      ) {
+        await recordDeniedAddressRemark(audit, "RATE_LIMITED");
+        return reply.code(429).send(
+          createErrorEnvelope({
+            code: "RATE_LIMITED",
+            message: "Too many address remark requests",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+
+      const remark = await options.addressRemarkStore.put({
+        ...parsed,
+        audit,
+        chainId: addressRemarkChainId,
+        updatedAt: now(),
+        userId: session.userId,
+      });
+      return createSuccessEnvelope({ remark }, request.id);
+    });
+
+    app.delete("/api/address-remarks/:address", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.addressRemarkStore) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "ADDRESS_REMARKS_UNAVAILABLE",
+            message: "Address remarks are not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+
+      let address;
+      try {
+        address = canonicalAddressRemarkAddress(
+          (request.params as { address?: unknown }).address,
+        );
+      } catch (error) {
+        if (!(error instanceof AddressRemarkValidationError)) throw error;
+        await recordDeniedAddressRemark(
+          addressRemarkAudit("address-remark.delete", null, request, session),
+          "ADDRESS_REMARK_INVALID",
+        );
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "ADDRESS_REMARK_INVALID",
+            message: "Address remark address is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+
+      const audit = addressRemarkAudit("address-remark.delete", address, request, session);
+      if (
+        !addressRemarkLimiter.consume(
+          session.id,
+          addressRemarkRateLimit.max,
+          addressRemarkRateLimit.timeWindowMs,
+          now().getTime(),
+        )
+      ) {
+        await recordDeniedAddressRemark(audit, "RATE_LIMITED");
+        return reply.code(429).send(
+          createErrorEnvelope({
+            code: "RATE_LIMITED",
+            message: "Too many address remark requests",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      const deleted = await options.addressRemarkStore.delete({
+        address,
+        audit,
+        chainId: addressRemarkChainId,
+        deletedAt: now(),
+        userId: session.userId,
+      });
+      return createSuccessEnvelope({ deleted }, request.id);
     });
 
     app.patch("/api/user/preferences", async (request, reply) => {

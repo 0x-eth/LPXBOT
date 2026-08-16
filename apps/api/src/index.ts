@@ -19,6 +19,21 @@ export type { LoginWalletAuthEnvironment } from "./login-wallet-auth-config.js";
 export { PostgresSessionStore } from "./postgres-session-store.js";
 export { PostgresChainAccessPolicyStore } from "./postgres-chain-access-policy-store.js";
 export { PostgresUserPreferencesStore } from "./postgres-user-preferences-store.js";
+export {
+  addressRemarkChainId,
+  AddressRemarkValidationError,
+  canonicalAddressRemarkAddress,
+  parseAddressRemarkPutRequest,
+} from "./address-remarks.js";
+export type {
+  AddressRemarkAllowedAudit,
+  AddressRemarkAuditAction,
+  AddressRemarkAuditInput,
+  AddressRemarkAuditOutcome,
+  AddressRemarkDeleteInput,
+  AddressRemarkPutInput,
+  AddressRemarkStore,
+} from "./address-remarks.js";
 export { PostgresMarketPoolsProvider } from "./market-pools.js";
 export type {
   MarketPoolsContext,
