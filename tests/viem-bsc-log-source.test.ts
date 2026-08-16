@@ -164,7 +164,7 @@ describe("P02-03 ViemBscLogSource", () => {
 
   it("shares one block-header read across logs from the same canonical block", async () => {
     const blockHash = `0x${"64".repeat(32)}`;
-    const rpc = await mockRpc(({ method, params }) => {
+    const rpc = await mockRpc(({ method }) => {
       if (method === "eth_chainId") {
         return { body: { id: 1, jsonrpc: "2.0", result: "0x38" } };
       }
