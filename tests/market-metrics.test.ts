@@ -8,6 +8,8 @@ import { describe, expect, it } from "vitest";
 
 const poolA = "0x1111111111111111111111111111111111111111";
 const poolB = "0x2222222222222222222222222222222222222222";
+const token0 = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const token1 = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 function swap(
   eventId: string,
@@ -23,12 +25,17 @@ function swap(
     kind: "swap",
     market,
     pool: {
+      feePips: "2500",
+      hooks: null,
       poolAddress,
       poolId: null,
       protocol: "pcsv3",
+      tickSpacing: "50",
+      token0Address: token0,
       token0Symbol: "WBNB",
+      token1Address: token1,
       token1Symbol: "USDT",
-    },
+    } as MarketMetricEvent["pool"],
     reverted: false,
     transactionHash,
   };
@@ -117,6 +124,65 @@ describe("P02-02 arbitrary-precision market windows", () => {
       tvlUsd: null,
       volumeUsd: null,
     });
+  });
+
+  it("projects stable V3 and V4 pool identities without inventing metadata", () => {
+    const v4PoolId = `0x${"44".repeat(32)}`;
+    const v3 = swap("v3", poolA, "2026-08-16T00:59:10.000Z", "0xv3", {
+      fdvUsd: null,
+      feesUsd: null,
+      tvlUsd: null,
+      volumeUsd: null,
+    });
+    const v4 = {
+      ...swap("v4", poolA, "2026-08-16T00:59:20.000Z", "0xv4", {
+        fdvUsd: null,
+        feesUsd: null,
+        tvlUsd: null,
+        volumeUsd: null,
+      }),
+      pool: {
+        feePips: "100",
+        hooks: "0xcccccccccccccccccccccccccccccccccccccccc",
+        poolAddress: null,
+        poolId: v4PoolId,
+        protocol: "univ4" as const,
+        tickSpacing: "1",
+        token0Address: token0,
+        token0Symbol: null,
+        token1Address: token1,
+        token1Symbol: null,
+      },
+    } as MarketMetricEvent;
+
+    const rows = computeMarketWindows([v3, v4], {
+      end: "2026-08-16T01:00:00.000Z",
+      windowComplete: true,
+      windows: [1],
+    })[0]!.rows;
+
+    expect(rows).toEqual([
+      expect.objectContaining({
+        feePips: "2500",
+        hooks: null,
+        poolKey: `56:${poolA}`,
+        tickSpacing: "50",
+        token0Address: token0,
+        token0Symbol: "WBNB",
+        token1Address: token1,
+        token1Symbol: "USDT",
+      }),
+      expect.objectContaining({
+        feePips: "100",
+        hooks: "0xcccccccccccccccccccccccccccccccccccccccc",
+        poolKey: `56:${v4PoolId}`,
+        tickSpacing: "1",
+        token0Address: token0,
+        token0Symbol: null,
+        token1Address: token1,
+        token1Symbol: null,
+      }),
+    ]);
   });
 
   it("sorts by unrounded values, puts null last in both directions, and uses stable ties", () => {
