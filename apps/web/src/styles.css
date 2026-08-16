@@ -1037,9 +1037,68 @@ input:focus-visible,
 
 .pool-name-line strong {
   min-width: 0;
+  flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.pool-label-chip {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 24px;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  overflow: hidden;
+  color: #8d2d28;
+  border: 1px solid #e6aaa6;
+  border-radius: 4px;
+  background: #fff2f1;
+  cursor: pointer;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+html[data-theme="dark"] .pool-label-chip {
+  color: #ffb2ad;
+  border-color: #70403d;
+  background: #321e1d;
+}
+
+.pool-label-chip:hover {
+  filter: brightness(0.97);
+}
+
+.pool-label-chip[data-label-id="stable-volume-price"],
+.pool-label-chip[data-label-id="yield-stable"],
+.pool-label-chip[data-label-id="lp-inflow"] {
+  color: #0c665c;
+  border-color: #88c9bd;
+  background: #eaf8f5;
+}
+
+html[data-theme="dark"] .pool-label-chip[data-label-id="stable-volume-price"],
+html[data-theme="dark"] .pool-label-chip[data-label-id="yield-stable"],
+html[data-theme="dark"] .pool-label-chip[data-label-id="lp-inflow"] {
+  color: #8de1d0;
+  border-color: #356a61;
+  background: #17312d;
+}
+
+.pool-label-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pool-label-more {
+  flex: 0 0 auto;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
 }
 
 .pool-group-toggle {
@@ -2152,6 +2211,152 @@ html[data-theme="dark"] .flow-stat-strip[data-completeness="partial"] [data-metr
 .pool-column-dialog-actions button:disabled {
   cursor: wait;
   opacity: 0.55;
+}
+
+.pool-label-dialog {
+  position: fixed;
+  z-index: 41;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: min(calc(100vw - 28px), 560px);
+  max-height: calc(100dvh - 28px);
+  gap: 14px;
+  padding: 20px;
+  overflow: auto;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgb(20 24 26 / 22%);
+  transform: translate(-50%, -50%);
+}
+
+.pool-label-dialog-heading,
+.pool-label-detail-title,
+.pool-label-dialog-version {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pool-label-dialog-heading > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.pool-label-dialog-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.pool-label-dialog-heading code {
+  overflow-wrap: anywhere;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.pool-label-dialog-heading button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  padding: 0;
+  color: var(--muted-foreground);
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  place-items: center;
+}
+
+.pool-label-dialog-heading button:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.pool-label-detail-list,
+.pool-label-reason-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.pool-label-detail-list {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.pool-label-detail-list > li {
+  display: grid;
+  gap: 8px;
+  padding: 12px 2px;
+}
+
+.pool-label-detail-list > li + li {
+  border-top: 1px solid var(--border);
+}
+
+.pool-label-detail-title strong {
+  font-size: 0.82rem;
+}
+
+.pool-label-detail-title span {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pool-label-reason-list {
+  display: grid;
+  gap: 6px;
+}
+
+.pool-label-reason-list li {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: baseline;
+}
+
+.pool-label-reason-list code,
+.pool-label-reason-list span,
+.pool-label-dialog-version span,
+.pool-label-dialog-version time {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.68rem;
+  letter-spacing: 0;
+}
+
+.pool-label-reason-list code {
+  color: var(--text);
+}
+
+.pool-label-reason-list span,
+.pool-label-dialog-version {
+  color: var(--muted-foreground);
+}
+
+.pool-label-dialog-version {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 520px) {
+  .pool-label-dialog {
+    padding: 16px;
+  }
+
+  .pool-label-reason-list li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+  }
 }
 
 @media (min-width: 1100px) {
