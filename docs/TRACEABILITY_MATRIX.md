@@ -3,7 +3,7 @@
 > 基线日期：2026-08-13  
 > 范围源：[功能矩阵](./FUNCTION_MATRIX.md)  
 > 阶段源：[开发路线图](./DEVELOPMENT_ROADMAP.md)  
-> 当前状态：P01 的 18 项功能及 P02 的 16 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 162 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
+> 当前状态：P01 的 18 项功能及 P02 的 17 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 161 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
 
 ## 1. 使用规则
 
@@ -289,7 +289,7 @@
 
 #### P02 当前实现与证据状态
 
-P02-02、P02-04、P02-05、P02-06 与 P02-07 只验证 BSC chainId 56 的本地 fixture 纵向路径。以下 16 项只有 `local-fixture-verified` 证据，因此均为 `implemented-assumed`；没有项目达到 `parity-verified` 或 `released`。其余 7 个 P02 ID 明确保留 `planned`，P02-01 继续是无实现所有权的冻结参考契约，aTVL、Fee/aTVL、`GAP-FLOW-USD-VALUATION`、既有 USD/公式缺口与 `GAP-FINALITY-DEPTH` 继续 unresolved。
+P02-02、P02-04、P02-05、P02-06、P02-07 与 P02-08 只验证 BSC chainId 56 的本地 fixture 纵向路径。以下 17 项只有 `local-fixture-verified` 证据，因此均为 `implemented-assumed`；没有项目达到 `parity-verified` 或 `released`。其余 6 个 P02 ID 明确保留 `planned`，P02-01 继续是无实现所有权的冻结参考契约，aTVL、Fee/aTVL、`GAP-LABEL-ALGORITHM`、`GAP-FLOW-USD-VALUATION`、既有 USD/公式缺口与 `GAP-FINALITY-DEPTH` 继续 unresolved。
 
 <!-- P02_STATUS_TABLE_START -->
 | ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
@@ -300,7 +300,7 @@ P02-02、P02-04、P02-05、P02-06 与 P02-07 只验证 BSC chainId 56 的本地 
 | POOL-04 | `implemented-assumed` | [Decimal metrics](../packages/market-metrics/src/index.ts), [API contract](../packages/api-contract/src/index.ts), [Pool table](../apps/web/src/pools-page.tsx) | [T-UNIT](../tests/market-metrics.test.ts), [T-API](../tests/market-pools-api.test.ts), [T-UI/T-VIS](../tests/e2e/pools.spec.ts) | [P02-02](../artifacts/acceptance/P02-02/manifest.json); local-fixture-verified; aTVL fields remain null |
 | POOL-05 | `implemented-assumed` | [Decimal metrics](../packages/market-metrics/src/index.ts), [API contract](../packages/api-contract/src/index.ts), [Column state](../apps/web/src/pool-table-state.ts), [Web](../apps/web/src/pools-page.tsx) | [T-UNIT](../tests/pool-yield.test.ts), [T-API](../tests/market-pools-api.test.ts), [T-SSE](../tests/pool-comparison.test.ts), [T-UI](../tests/e2e/p02-07-pool-analysis.spec.ts) | [P02-07](../artifacts/acceptance/P02-07/manifest.json); local-fixture-verified; Fee/TVL is current-window and unannualized; aTVL and Fee/aTVL remain unresolved |
 | POOL-06 | `implemented-assumed` | [Filter state](../apps/web/src/pool-filter-state.ts), [Grouping and columns](../apps/web/src/pool-table-state.ts), [Web controls](../apps/web/src/pools-page.tsx) | [T-UNIT](../tests/pool-advanced-filters.test.ts), [T-SSE](../tests/pool-comparison.test.ts), [T-UI/T-VIS](../tests/e2e/p02-07-pool-analysis.spec.ts) | [P02-07](../artifacts/acceptance/P02-07/manifest.json); local-fixture-verified; URL-restorable Decimal ranges and known-symbol Han exclusion |
-| POOL-07 | `planned` | 未实现 | 未实现 | P02-01 reference-only; no implementation evidence |
+| POOL-07 | `implemented-assumed` | [Rule contract and Decimal engine](../packages/market-metrics/src/pool-labels.ts), [Transactional projection](../apps/indexer/src/postgres-canonical-event-store.ts), [API contract](../packages/api-contract/src/index.ts), [SSE client](../apps/web/src/pools-client.ts), [Pool UI](../apps/web/src/pools-page.tsx), [Preferences UI](../apps/web/src/settings-interface.tsx) | [T-UNIT](../tests/pool-labels.test.ts), [T-API/T-SSE](../tests/market-pools-api.test.ts), [T-SSE/T-UI](../tests/pool-label-stream.test.ts), [T-REC](../tests/integration/postgres-market-indexer.integration.ts), [T-API/T-REC](../tests/integration/postgres-user-preferences.integration.ts), [T-UI/T-VIS](../tests/e2e/p02-08-pool-labels.spec.ts) | [P02-08](../artifacts/acceptance/P02-08/manifest.json); local-fixture-verified; locally-defined rules; `GAP-LABEL-ALGORITHM` unresolved |
 | POOL-08 | `implemented-assumed` | [Catalog store](../apps/indexer/src/postgres-canonical-event-store.ts), [Catalog migration](../infra/migrations/20260816000400_create_market_pool_catalog.sql), [Token API](../apps/api/src/market-pools.ts), [HTTP route](../apps/api/src/app.ts), [Search state](../apps/web/src/pool-search-state.ts), [Web](../apps/web/src/pools-page.tsx) | [T-UNIT](../tests/pool-search-state.test.ts), [T-API](../tests/pools-by-token-api.test.ts), [T-REC](../tests/integration/postgres-market-indexer.integration.ts), [T-UI](../tests/e2e/p02-06-pool-discovery.spec.ts) | [P02-06](../artifacts/acceptance/P02-06/manifest.json); local-fixture-verified; BSC chainId 56 only; no external RPC |
 | POOL-09 | `implemented-assumed` | [Canonical grouping](../apps/web/src/pool-table-state.ts), [SSE integration](../apps/web/src/pools-page.tsx) | [T-UNIT/T-SSE](../tests/pool-grouping.test.ts), [T-UI/T-VIS](../tests/e2e/p02-06-pool-discovery.spec.ts) | [P02-06](../artifacts/acceptance/P02-06/manifest.json); local-fixture-verified; frozen BSC quote-token registry |
 | POOL-10 | `implemented-assumed` | [Preferences contract](../packages/api-contract/src/index.ts), [Preferences validation](../apps/api/src/user-preferences.ts), [PostgreSQL store](../apps/api/src/postgres-user-preferences-store.ts), [Column state](../apps/web/src/pool-table-state.ts), [Web](../apps/web/src/pools-page.tsx) | [T-UNIT](../tests/pool-columns.test.ts), [T-API](../tests/user-preferences-api.test.ts), [T-REC](../tests/integration/postgres-user-preferences.integration.ts), [T-UI/T-VIS](../tests/e2e/p02-06-pool-discovery.spec.ts) | [P02-06](../artifacts/acceptance/P02-06/manifest.json); local-fixture-verified; schema v3 revision conflicts and cross-device restore |
@@ -346,10 +346,10 @@ P02-02、P02-04、P02-05、P02-06 与 P02-07 只验证 BSC chainId 56 的本地 
 |---|---:|---|
 | 功能矩阵稳定 ID | 196 | 已全部映射 |
 | 追踪表稳定 ID | 196 | 必须由自动检查保持相等 |
-| 当前产品实现 | 34 | P01 的 18 项和 P02 的 16 项完成阶段实现 |
-| `implemented-assumed` | 34 | 目标对照或 live 证据仍不完整 |
+| 当前产品实现 | 35 | P01 的 18 项和 P02 的 17 项完成阶段实现 |
+| `implemented-assumed` | 35 | 目标对照或 live 证据仍不完整 |
 | `parity-verified` | 0 | 不由 accepted work item 自动提升 |
 | `released` | 0 | 尚无 staging、监控和回滚完整证明 |
-| 其余 `planned` | 162 | P02 仍有 7 项 planned；P03-P13 状态未改变 |
+| 其余 `planned` | 161 | P02 仍有 6 项 planned；P03-P13 状态未改变 |
 
 建议 CI 检查逻辑：从 `FUNCTION_MATRIX.md` 与本文件抽取 `^[A-Z]+-[0-9]{2}$`，比较去重集合；再检查每行非空的阶段、测试和证据列。任何新增功能 ID 必须先进入范围源和本表。

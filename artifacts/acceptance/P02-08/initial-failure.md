@@ -25,3 +25,11 @@ pnpm exec playwright test tests/e2e/p02-08-pool-labels.spec.ts --project=chromiu
 Result: expected failure, 2 tests failed because no pool-label trigger or expanded detail layer existed.
 
 No production implementation was changed before these failures were captured.
+
+## Contract-completeness failures found during review
+
+- A missing-history assertion then failed because high-fee and crowded labels ignored their frozen minimum-sample values and could emit from an aggregate row with an empty event window.
+- A partial-price-history assertion failed because a null `sqrtPriceX96` was skipped, allowing a volatile label to be derived across a gap in the canonical sequence.
+- The P02 governance test was updated before status/evidence files and failed on the old 16/7 counts plus missing P02-08 manifest and checksum inventories.
+
+Each red state was reproduced before its implementation or governance update.

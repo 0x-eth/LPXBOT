@@ -212,10 +212,7 @@ test("P02-08 owns only POOL-07 and keeps its local label contract explicitly non
     contract.rules.map(({ priority }) => priority),
     [...contract.rules.map(({ priority }) => priority)].sort((left, right) => left - right),
   );
-  assert.equal(
-    gaps.items.find(({ id }) => id === "GAP-LABEL-ALGORITHM")?.status,
-    "unresolved",
-  );
+  assert.equal(gaps.items.find(({ id }) => id === "GAP-LABEL-ALGORITHM")?.status, "unresolved");
 
   const assumptions = manifest.assumptions.join("\n");
   assert.match(assumptions, /locally-defined/);
@@ -239,13 +236,17 @@ test("P02-08 Golden output freezes complete, ordered label records", async () =>
     ["high-fee-rate", "crowded", "lp-inflow"],
   );
   for (const label of output.labels) {
-    assert.deepEqual(sorted(Object.keys(label)),
-      sorted(["id", "label", "score", "reasons", "ruleVersion", "computedAt"]));
+    assert.deepEqual(
+      sorted(Object.keys(label)),
+      sorted(["id", "label", "score", "reasons", "ruleVersion", "computedAt"]),
+    );
     assert.ok(label.score >= 0 && label.score <= 100);
     assert.ok(label.reasons.length > 0);
     for (const reason of label.reasons) {
-      assert.deepEqual(sorted(Object.keys(reason)),
-        sorted(["code", "window", "observed", "threshold", "operator"]));
+      assert.deepEqual(
+        sorted(Object.keys(reason)),
+        sorted(["code", "window", "observed", "threshold", "operator"]),
+      );
     }
   }
 });

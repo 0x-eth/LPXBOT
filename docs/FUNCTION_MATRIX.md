@@ -148,7 +148,7 @@
 | POOL-04 | Fees/Vol/TVL/Txs/FDV | UI+API | USER | R0 | 单位、空值、趋势和精度 |
 | POOL-05 | Fee/TVL 与 Fee/aTVL | UI+API | USER | R0 | Fee/TVL 当前窗口口径；Fee/aTVL 保持 unresolved；`implemented-assumed`（P02-07） |
 | POOL-06 | 高级范围筛选 | UI+BUNDLE | USER | R0 | 量、Fee、收益率、aTVL、TVL、交易数、协议、Hook/中文排除；`implemented-assumed`（P02-07） |
-| POOL-07 | 标签信号 | UI+BUNDLE | USER | R0 | 高费率、量稳价稳、收益稳定/飙升/衰退、拥挤、波动、LP 动向等 |
+| POOL-07 | 标签信号 | UI+BUNDLE | USER | R0 | 高费率、量稳价稳、收益稳定/飙升/衰退、拥挤、波动、LP 动向；`implemented-assumed`（P02-08，locally-defined；`GAP-LABEL-ALGORITHM` unresolved） |
 | POOL-08 | 地址/Token 搜索 | UI+API | USER | R0 | 池地址、token 关联池；清除和无结果状态；`implemented-assumed`（P02-06，BSC only） |
 | POOL-09 | 同 token 池折叠与分组 | UI+BUNDLE | USER | R0 | 组内展开、排序、`+N` 标记；`implemented-assumed`（P02-06） |
 | POOL-10 | 列显隐、拖动排序与重置 | UI+BUNDLE | USER | R1 | Pool/操作锁定，偏好跨设备同步；`implemented-assumed`（P02-06） |

@@ -127,7 +127,8 @@ docs/
 - 原始日志以 `(chainId, txHash, logIndex)` 唯一；规范化事件以版本化 decoder 产生。
 - reorg 时标记孤块数据、回滚派生 rollup，再从共同祖先重放。
 - 以 1/5/15/30/60 分钟桶聚合 Fees、Volume、TVL、Txs、FDV、aTVL；公式带 `metricVersion`。
-- 标签引擎读取固定版本的窗口数据，输出 `label + score + reasons + computedAt`，以便 golden 校准。
+- 标签引擎与市场窗口在同一 PostgreSQL 投影事务内读取 canonical 事件；`canonicalRevision`、`windowEnd`、`metricVersion` 与 `labelRuleVersion` 随 snapshot/diff 同步发布，reorg 从剩余 canonical 事件重算。
+- 标签规则集中在版本化、locally-defined 契约中，输出稳定排序的 `id + label + score + reasons + ruleVersion + computedAt`；缺失输入不补零，价格变化只使用连续 `sqrtPriceX96` 序列。`GAP-LABEL-ALGORITHM` 在目标 Golden 校准前保持 unresolved。
 - 排名稳定键为 `metric desc, chainId, poolKey`，同分时不会随机换位。
 
 ### 4.5 Signer 与钱包
@@ -164,7 +165,7 @@ docs/
 | `chain_registry_versions` | chain/protocol addresses、code hashes、valid blocks | 已发布版本不可原地改写 |
 | `pools` | chainId、protocol、version、poolAddress/poolId、PoolKey | 规范化 pool identity 唯一 |
 | `pool_events` | block/tx/log、event type、amounts、ticks | reorg aware、原始整数 |
-| `market_snapshots` | window、metricVersion、values、freshness | 可重算、可追溯 |
+| `market_snapshots` | window、canonicalRevision、metricVersion、labelRuleVersion、values、freshness | 可重算、可追溯 |
 | `tasks` | configVersion、status、wallet/pool、lease、cooldown | optimistic version；单一 active operation |
 | `task_trigger_state` | out-of-range count/since、rule counters | 重启不丢失 |
 | `task_segments` | start/end、capital in/out、fees、PnL basis | 只追加修正，不覆盖历史 |
