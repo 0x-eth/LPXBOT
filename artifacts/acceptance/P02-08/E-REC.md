@@ -6,3 +6,5 @@
 - Migration down/up coverage includes the label-context migration in dependency order.
 - User preference schema v4 rows migrate to v5 without revision changes. Navigation order/visibility, theme, color, pool-column order/visibility, panel, hot-pool, scan-tab, and task-view values remain intact while `showPoolLabels` defaults to true.
 - An explicit false `showPoolLabels` value survives normalization, persistence, reload, and the existing optimistic revision boundary.
+
+The final PostgreSQL gate passed 11 integration files and 45 tests after migration and deterministic seed each completed twice.
