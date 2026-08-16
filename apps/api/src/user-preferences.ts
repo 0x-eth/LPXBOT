@@ -2,10 +2,13 @@ import {
   colorThemeKeys,
   defaultUserPreferences as contractDefaultUserPreferences,
   navigationKeys,
+  poolColumnKeys,
   userPreferenceSchemaVersion,
   type ColorTheme,
   type NavigationKey,
   type NavigationPreference,
+  type PoolColumnKey,
+  type PoolColumnPreference,
   type UpdateUserPreferencesRequest,
   type UserPreferences,
   type VersionedUserPreferences,
@@ -40,6 +43,7 @@ const preferenceKeys = [
   "colorTheme",
   "customColor",
   "navConfig",
+  "poolColumns",
   "poolsPanelCollapsed",
   "showHotPools",
   "showScanTab",
@@ -48,6 +52,7 @@ const preferenceKeys = [
 ] as const satisfies ReadonlyArray<keyof UserPreferences>;
 const preferenceKeySet = new Set<string>(preferenceKeys);
 const navigationKeySet = new Set<string>(navigationKeys);
+const poolColumnKeySet = new Set<string>(poolColumnKeys);
 const colorThemeKeySet = new Set<string>(colorThemeKeys);
 const customColorPattern = /^#[0-9A-F]{6}$/u;
 
@@ -65,6 +70,10 @@ function isNavigationKey(value: unknown): value is NavigationKey {
 
 function isColorTheme(value: unknown): value is ColorTheme {
   return typeof value === "string" && colorThemeKeySet.has(value);
+}
+
+function isPoolColumnKey(value: unknown): value is PoolColumnKey {
+  return typeof value === "string" && poolColumnKeySet.has(value);
 }
 
 function normalizeCustomColor(value: unknown): string | null {
@@ -99,6 +108,65 @@ function validateNavigation(value: unknown): NavigationPreference[] {
   return normalized;
 }
 
+function validatePoolColumns(value: unknown): PoolColumnPreference[] {
+  if (!Array.isArray(value) || value.length !== poolColumnKeys.length) {
+    throw new UserPreferencesValidationError();
+  }
+  const seen = new Set<PoolColumnKey>();
+  const normalized = value.map((item) => {
+    if (
+      !isRecord(item) ||
+      Object.keys(item).length !== 2 ||
+      !isPoolColumnKey(item.key) ||
+      typeof item.visible !== "boolean" ||
+      seen.has(item.key)
+    ) {
+      throw new UserPreferencesValidationError();
+    }
+    seen.add(item.key);
+    return { key: item.key, visible: item.visible };
+  });
+  if (
+    seen.size !== poolColumnKeys.length ||
+    !normalized.find(({ key }) => key === "pool")?.visible ||
+    !normalized.find(({ key }) => key === "actions")?.visible ||
+    normalized[0]?.key !== "pool" ||
+    normalized.at(-1)?.key !== "actions"
+  ) {
+    throw new UserPreferencesValidationError();
+  }
+  return normalized;
+}
+
+function normalizePoolColumns(value: unknown): PoolColumnPreference[] {
+  const middle: PoolColumnPreference[] = [];
+  const seen = new Set<PoolColumnKey>();
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (
+        !isRecord(item) ||
+        !isPoolColumnKey(item.key) ||
+        typeof item.visible !== "boolean" ||
+        seen.has(item.key)
+      ) {
+        continue;
+      }
+      seen.add(item.key);
+      if (item.key !== "pool" && item.key !== "actions") {
+        middle.push({ key: item.key, visible: item.visible });
+      }
+    }
+  }
+  for (const key of poolColumnKeys.slice(1, -1)) {
+    if (!seen.has(key)) middle.push({ key, visible: true });
+  }
+  return [
+    { key: "pool", visible: true },
+    ...middle,
+    { key: "actions", visible: true },
+  ];
+}
+
 function validateCompletePreferences(value: Record<string, unknown>): UserPreferences {
   if (Object.keys(value).length !== preferenceKeys.length || !ownKeysAre(value, preferenceKeySet)) {
     throw new UserPreferencesValidationError();
@@ -124,6 +192,7 @@ function validateCompletePreferences(value: Record<string, unknown>): UserPrefer
     colorTheme: value.colorTheme,
     customColor,
     navConfig: validateNavigation(value.navConfig),
+    poolColumns: validatePoolColumns(value.poolColumns),
     poolsPanelCollapsed,
     showHotPools,
     showScanTab,
@@ -202,6 +271,7 @@ export function normalizeStoredUserPreferences(value: unknown): UserPreferences 
     colorTheme: normalizedColorTheme,
     customColor,
     navConfig: [...ordered].map(([key, visible]) => ({ key, visible })),
+    poolColumns: normalizePoolColumns(raw.poolColumns),
     poolsPanelCollapsed:
       typeof raw.poolsPanelCollapsed === "boolean"
         ? raw.poolsPanelCollapsed
