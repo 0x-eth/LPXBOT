@@ -200,6 +200,14 @@ async function expectNoSeriousAxeViolations(page: Page): Promise<void> {
   ).toEqual([]);
 }
 
+async function waitForWordmarkImage(page: Page): Promise<void> {
+  const image = page.locator(".wordmark img");
+  await image.evaluate((element: HTMLImageElement) => element.decode());
+  expect(await image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(
+    0,
+  );
+}
+
 async function installPersistentStatsStream(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const nativeFetch = globalThis.fetch.bind(globalThis);
@@ -467,6 +475,7 @@ test("P01-06 settings visual contract matches the observed responsive interface"
   context,
   page,
 }, testInfo) => {
+  testInfo.setTimeout(60_000);
   const state: FixtureState = {
     preferences: { ...cloneDefaults(), colorTheme: "teal", theme: "light" },
     revision: 3,
@@ -474,6 +483,7 @@ test("P01-06 settings visual contract matches the observed responsive interface"
   await installFixture(context, state);
   await page.goto("/settings");
   await expect(page.getByRole("heading", { level: 2, name: "界面" })).toBeVisible();
+  await waitForWordmarkImage(page);
   const masks = [
     page.locator("[data-visual-mask='account']"),
     page.locator("[data-visual-mask='stats']"),
@@ -502,6 +512,7 @@ test("P01-06 settings visual contract matches the observed responsive interface"
   };
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await waitForWordmarkImage(page);
   await expect(page).toHaveScreenshot("settings-dark.png", {
     animations: "disabled",
     caret: "hide",

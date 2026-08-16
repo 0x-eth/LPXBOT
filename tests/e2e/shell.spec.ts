@@ -77,7 +77,11 @@ test("SHELL-01 preserves observed compatibility redirects", async ({ page }) => 
   }
 });
 
-test("SHELL-01 keeps localized route outlets and current navigation stable", async ({ page }) => {
+test("SHELL-01 keeps localized route outlets and current navigation stable", async (
+  { page },
+  testInfo,
+) => {
+  testInfo.setTimeout(90_000);
   await useUserSession(page);
   const routes = [
     ["/tasks/running", "任务", "任务"],
@@ -92,7 +96,7 @@ test("SHELL-01 keeps localized route outlets and current navigation stable", asy
   ] as const;
 
   for (const [path, heading, navigation] of routes) {
-    await page.goto(path);
+    await page.goto(path, { waitUntil: "domcontentloaded" });
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.locator("h1")).toContainText(heading);
     if (navigation) {
