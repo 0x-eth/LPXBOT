@@ -8,7 +8,6 @@ import type {
   MarketPoolsByTokenContext,
   MarketPoolsContext,
   MarketPoolsProvider,
-  MarketPoolsStreamContext,
 } from "../apps/api/src/market-pools.js";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -65,7 +64,7 @@ class ByTokenProvider implements MarketPoolsProvider {
     };
   }
 
-  async *subscribe(_context: MarketPoolsStreamContext): AsyncIterable<MarketStreamEnvelope> {}
+  async *subscribe(): AsyncIterable<MarketStreamEnvelope> {}
 }
 
 const apps: Array<{ close(): Promise<void> }> = [];

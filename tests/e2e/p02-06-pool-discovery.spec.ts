@@ -8,15 +8,7 @@ const quoteToken = "0x55d398326f99059ff775485246999027b3197955";
 const v3Pool = "0x1111111111111111111111111111111111111111";
 const v4Pool = `0x${"3".repeat(64)}`;
 
-type PoolColumnKey =
-  | "pool"
-  | "protocol"
-  | "fees"
-  | "volume"
-  | "tvl"
-  | "txs"
-  | "fdv"
-  | "actions";
+type PoolColumnKey = "pool" | "protocol" | "fees" | "volume" | "tvl" | "txs" | "fdv" | "actions";
 
 interface ColumnPreference {
   key: PoolColumnKey;
@@ -213,7 +205,9 @@ test("POOL-08 cancels stale Token searches and keeps pool identity semantics exp
         await route.fulfill({
           contentType: "application/json",
           json: {
-            data: [tokenPoolRow("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", tokenA, "FIRST", "99")],
+            data: [
+              tokenPoolRow("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", tokenA, "FIRST", "99"),
+            ],
             requestId: "req-token-a",
             success: true,
           },
@@ -227,7 +221,11 @@ test("POOL-08 cancels stale Token searches and keeps pool identity semantics exp
       await route.fulfill({
         contentType: "application/json",
         json: {
-          error: { code: "MARKET_TOKEN_UNAVAILABLE", requestId: "req-token-error", retryable: true },
+          error: {
+            code: "MARKET_TOKEN_UNAVAILABLE",
+            requestId: "req-token-error",
+            retryable: true,
+          },
           success: false,
         },
         status: 503,
@@ -286,9 +284,7 @@ test("POOL-08 cancels stale Token searches and keeps pool identity semantics exp
   await search.getByRole("button", { name: "搜索", exact: true }).click();
   await expect(search).toHaveAttribute("data-search-state", "no-results");
 
-  await page.goto(
-    `/pools?fixture=pools-reconnecting&pool_search_mode=pool&pool_search=${v3Pool}`,
-  );
+  await page.goto(`/pools?fixture=pools-reconnecting&pool_search_mode=pool&pool_search=${v3Pool}`);
   await expect(search).toHaveAttribute("data-search-state", "reconnecting");
 });
 
@@ -361,9 +357,9 @@ test("POOL-10 persists locked column preferences and rolls back failures and con
   await expect(dialog.locator('[data-column-key="pool"] input')).toBeDisabled();
   await expect(dialog.locator('[data-column-key="actions"] input')).toBeDisabled();
   await dialog.locator('[data-column-key="volume"] input').uncheck();
-  await dialog.locator('[data-column-key="fdv"]').dragTo(
-    dialog.locator('[data-column-key="protocol"]'),
-  );
+  await dialog
+    .locator('[data-column-key="fdv"]')
+    .dragTo(dialog.locator('[data-column-key="protocol"]'));
   await dialog.getByRole("button", { name: "下移 FDV" }).click();
   await dialog.getByRole("button", { name: "保存", exact: true }).click();
   await expect(dialog).toBeHidden();
