@@ -218,6 +218,18 @@ importers:
 
   packages/api-contract: {}
 
+  packages/chain-adapters:
+    dependencies:
+      '@lpbot/chain-registry':
+        specifier: workspace:*
+        version: link:../chain-registry
+      '@lpbot/market-metrics':
+        specifier: workspace:*
+        version: link:../market-metrics
+      viem:
+        specifier: 2.55.16
+        version: 2.55.16(typescript@6.0.3)(zod@4.4.3)
+
   packages/chain-registry:
     dependencies:
       viem:
