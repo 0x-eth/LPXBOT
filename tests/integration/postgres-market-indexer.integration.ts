@@ -637,6 +637,7 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
   it("replaces recommendations from the canonical five-minute snapshot after a reorg", async () => {
     const fixture = structuredClone(readP02Fixture("reorg"));
     for (const entry of fixture.input) {
+      entry.fixtureDecoded.kind = "swap";
       entry.fixtureDecoded.pool.token0 = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
       entry.fixtureDecoded.pool.token1 = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     }
@@ -655,6 +656,15 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
       minutes: 5,
       protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
     });
+    expect(originalSource.rows).toEqual([
+      expect.objectContaining({
+        feesUsd: "100",
+        poolId: "0x4444444444444444444444444444444444444444444444444444444444444444",
+        protocol: "univ4",
+        token0Address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        token1Address: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      }),
+    ]);
     const original = selectRecommendedPools(originalSource, 3);
 
     await runner(fixture.input).runOnce();
