@@ -312,7 +312,10 @@ test("POOL-09 groups by canonical token, preserves member order and is visually 
   const defaultToggle = table.getByRole("button", { name: /^展开池分组/u });
   await expect(defaultToggle).toContainText("+1");
   await defaultToggle.click();
-  await expect(defaultToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(table.getByRole("button", { name: /^折叠池分组/u })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
   await expect(table.locator("tbody tr")).toHaveCount(4);
 
   const search = page.getByRole("region", { name: "池搜索" });
