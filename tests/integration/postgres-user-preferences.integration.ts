@@ -15,6 +15,7 @@ if (!databaseUrl) throw new Error("DATABASE_URL is required for PostgreSQL integ
 const userIds = [
   "26000000-0000-4000-8000-000000000001",
   "26000000-0000-4000-8000-000000000002",
+  "26000000-0000-4000-8000-000000000003",
 ] as const;
 const pool = new Pool({ connectionString: databaseUrl, max: 4 });
 const now = new Date("2026-08-14T09:00:00.000Z");
@@ -25,8 +26,9 @@ beforeAll(async () => {
     `INSERT INTO users (
        id, role, tier, status, display_name, avatar_url, created_at, updated_at
      ) VALUES
-       ($1, 'user', 'normal', 'active', 'Preference A', NULL, $3, $3),
-       ($2, 'user', 'normal', 'active', 'Preference B', NULL, $3, $3)`,
+       ($1, 'user', 'normal', 'active', 'Preference A', NULL, $4, $4),
+       ($2, 'user', 'normal', 'active', 'Preference B', NULL, $4, $4),
+       ($3, 'user', 'normal', 'active', 'Preference C', NULL, $4, $4)`,
     [...userIds, now],
   );
 });
@@ -190,6 +192,80 @@ describe("P01-06 PostgreSQL user preferences", () => {
       colorTheme: "blue",
       taskViewMode: "list",
     });
+    await app.close();
+  });
+
+  it("migrates a schema v3 column layout to v4 without losing order or other preferences", async () => {
+    const oldColumns = [
+      { key: "pool", visible: true },
+      { key: "fdv", visible: false },
+      { key: "fees", visible: true },
+      { key: "protocol", visible: true },
+      { key: "volume", visible: false },
+      { key: "tvl", visible: true },
+      { key: "txs", visible: true },
+      { key: "actions", visible: true },
+    ];
+    await pool.query(
+      `INSERT INTO user_preferences (
+         user_id, schema_version, revision, preferences, created_at, updated_at
+       ) VALUES ($1, 3, 9, $2::jsonb, $3, $3)`,
+      [
+        userIds[2],
+        JSON.stringify({
+          colorTheme: "teal",
+          customColor: null,
+          navConfig: [
+            { key: "wallets", visible: false },
+            { key: "tasks", visible: true },
+            { key: "pools", visible: true },
+            { key: "strategies", visible: true },
+            { key: "activity", visible: true },
+            { key: "chat", visible: true },
+          ],
+          poolColumns: oldColumns,
+          poolsPanelCollapsed: true,
+          showHotPools: true,
+          showScanTab: false,
+          taskViewMode: "list",
+          theme: "dark",
+        }),
+        now,
+      ],
+    );
+    const app = createApp();
+    const migrated = await app.inject({
+      headers: { cookie: `lpbot_session=${await session(userIds[2])}` },
+      method: "GET",
+      url: "/api/user/preferences",
+    });
+
+    expect(migrated.statusCode).toBe(200);
+    expect(migrated.json().data).toMatchObject({
+      preferences: {
+        colorTheme: "teal",
+        poolsPanelCollapsed: true,
+        showHotPools: true,
+        showScanTab: false,
+        taskViewMode: "list",
+        theme: "dark",
+      },
+      revision: 9,
+      schemaVersion: 4,
+    });
+    expect(migrated.json().data.preferences.poolColumns).toEqual([
+      ...oldColumns.slice(0, -1),
+      { key: "feeTvl", visible: true },
+      { key: "feeActiveTvl", visible: true },
+      oldColumns.at(-1),
+    ]);
+    const stored = await pool.query<{ revision: string; schema_version: number }>(
+      `SELECT revision::text, schema_version
+         FROM user_preferences
+        WHERE user_id = $1`,
+      [userIds[2]],
+    );
+    expect(stored.rows).toEqual([{ revision: "9", schema_version: 4 }]);
     await app.close();
   });
 
