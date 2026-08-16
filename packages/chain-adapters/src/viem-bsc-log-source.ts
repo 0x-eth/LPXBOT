@@ -20,6 +20,7 @@ export const READONLY_BSC_RPC_METHODS = [
 export type ReadonlyBscRpcMethod = (typeof READONLY_BSC_RPC_METHODS)[number];
 
 const allowedMethods = new Set<string>(READONLY_BSC_RPC_METHODS);
+const MAX_CACHED_BLOCK_HEADERS = 1_024;
 
 interface RpcBlock {
   hash: Hex;
@@ -118,6 +119,7 @@ export class ViemBscLogSource implements RawLogSource {
   readonly #client: ReturnType<typeof createPublicClient>;
   readonly #fetch: typeof fetch;
   readonly #fromBlock: bigint;
+  readonly #headerCache = new Map<string, Promise<RpcBlock>>();
   readonly #maxAttempts: number;
   readonly #maxBlockSpan: bigint;
   readonly #maxPagesPerRead: number;
@@ -235,6 +237,34 @@ export class ViemBscLogSource implements RawLogSource {
     return block;
   }
 
+  async #headerForLog(log: RawChainLog): Promise<RpcBlock> {
+    const key = log.blockNumber;
+    const cached = this.#headerCache.get(key);
+    if (cached) {
+      try {
+        const header = await cached;
+        if (log.removed || lowerHex(header.hash) === log.blockHash) return header;
+      } catch (error) {
+        if (this.#headerCache.get(key) === cached) this.#headerCache.delete(key);
+        throw error;
+      }
+      this.#headerCache.delete(key);
+    }
+
+    const pending = this.#block(BigInt(log.blockNumber));
+    this.#headerCache.set(key, pending);
+    if (this.#headerCache.size > MAX_CACHED_BLOCK_HEADERS) {
+      const oldest = this.#headerCache.keys().next().value;
+      if (oldest !== undefined) this.#headerCache.delete(oldest);
+    }
+    try {
+      return await pending;
+    } catch (error) {
+      if (this.#headerCache.get(key) === pending) this.#headerCache.delete(key);
+      throw error;
+    }
+  }
+
   async #logs(fromBlock: bigint, toBlock: bigint): Promise<RpcLog[]> {
     const filter: Record<string, unknown> = {
       fromBlock: toHex(fromBlock),
@@ -276,7 +306,7 @@ export class ViemBscLogSource implements RawLogSource {
   }
 
   async #delivery(log: RawChainLog): Promise<RawLogDelivery> {
-    const header = await this.#block(BigInt(log.blockNumber));
+    const header = await this.#headerForLog(log);
     if (
       decimalQuantity(header.number) !== log.blockNumber ||
       (!log.removed && lowerHex(header.hash) !== log.blockHash)

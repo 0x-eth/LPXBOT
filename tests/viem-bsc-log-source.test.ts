@@ -162,6 +162,59 @@ describe("P02-03 ViemBscLogSource", () => {
     });
   });
 
+  it("shares one block-header read across logs from the same canonical block", async () => {
+    const blockHash = `0x${"64".repeat(32)}`;
+    const rpc = await mockRpc(({ method, params }) => {
+      if (method === "eth_chainId") {
+        return { body: { id: 1, jsonrpc: "2.0", result: "0x38" } };
+      }
+      if (method === "eth_getBlockByNumber") {
+        return {
+          body: {
+            id: 1,
+            jsonrpc: "2.0",
+            result: {
+              hash: blockHash,
+              number: "0x64",
+              parentHash: `0x${"63".repeat(32)}`,
+              timestamp: "0x64",
+            },
+          },
+        };
+      }
+      if (method === "eth_getLogs") {
+        const base = {
+          address: "0x0000000000000000000000000000000000000056",
+          blockHash,
+          blockNumber: "0x64",
+          data: "0x",
+          removed: false,
+          topics: [`0x${"11".repeat(32)}`],
+          transactionHash: `0x${"22".repeat(32)}`,
+        };
+        return {
+          body: {
+            id: 1,
+            jsonrpc: "2.0",
+            result: [
+              { ...base, logIndex: "0x0", transactionIndex: "0x0" },
+              { ...base, logIndex: "0x1", transactionIndex: "0x0" },
+            ],
+          },
+        };
+      }
+      throw new Error(`unexpected ${method}`);
+    });
+    const source = new ViemBscLogSource({ fromBlock: "100", rpcUrl: rpc.url });
+
+    await expect(source.read(null)).resolves.toMatchObject({ deliveries: [{}, {}] });
+    expect(
+      rpc.calls.filter(
+        ({ method, params }) => method === "eth_getBlockByNumber" && params[0] === "0x64",
+      ),
+    ).toHaveLength(1);
+  });
+
   it("continues after a bounded empty scan window on the next read", async () => {
     const rpc = await mockRpc(({ method, params }) => {
       if (method === "eth_chainId") {
