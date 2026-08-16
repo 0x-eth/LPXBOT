@@ -144,7 +144,7 @@
 |---|---|---|---|---|---|
 | POOL-01 | 多链手续费热门池排行 | UI+API+BUNDLE | USER | R0 | SSE 快照/增量、断线重连、排序稳定 |
 | POOL-02 | 时间窗 1/5/15/30/60 分钟 | API+BUNDLE | USER | R0 | UI 当前快捷窗与 API 均覆盖 |
-| POOL-03 | DEX/V3/V4 过滤 | UI+API | USER | R0 | pcsv3/univ3/pcsv4/univ4；按链裁剪 |
+| POOL-03 | DEX/V3/V4 过滤 | UI+API | USER | R0 | pcsv3/univ3/pcsv4/univ4；按链裁剪；`implemented-assumed`（P02-04） |
 | POOL-04 | Fees/Vol/TVL/Txs/FDV | UI+API | USER | R0 | 单位、空值、趋势和精度 |
 | POOL-05 | Fee/TVL 与 Fee/aTVL | UI+API | USER | R0 | 活跃流动性公式需用生产样本校准 |
 | POOL-06 | 高级范围筛选 | UI+BUNDLE | USER | R0 | 量、Fee、收益率、aTVL、TVL、交易数、协议、Hook/中文排除 |
@@ -163,8 +163,8 @@
 
 | ID | 功能 | 证据 | 权限 | 风险 | 复现与验收要点 |
 |---|---|---|---|---|---|
-| FLOW-01 | 实时加池/撤池/新池流 | UI+BUNDLE | USER | R0 | 交易 hash、NFT、tick、区间、金额、地址、Hook |
-| FLOW-02 | 链、事件、V3/V4、token、金额筛选 | UI+BUNDLE | USER | R0 | 断线后回填且去重 |
+| FLOW-01 | 实时加池/撤池/新池流 | UI+BUNDLE | USER | R0 | 交易 hash、NFT、tick、区间、金额、地址、Hook；`implemented-assumed`（P02-04） |
+| FLOW-02 | 链、事件、V3/V4、token、金额筛选 | UI+BUNDLE | USER | R0 | 断线后回填且去重；`implemented-assumed`（P02-04） |
 | FLOW-03 | 流入/流出/净额统计 | UI+BUNDLE | USER | R0 | 当前过滤范围一致 |
 | FLOW-04 | 按地址聚合 | UI+BUNDLE | USER | R0 | 净额/笔数/最近排序、池数、地址操作 |
 | FLOW-05 | 地址备注/地址簿 | UI+BUNDLE | USER | R1 | 流动性流、钱包和扫描页复用统一备注 |
@@ -347,4 +347,3 @@
 - `R3/R4` 必须额外有交易 fixture、前后余额、allowance、NFT owner、receipt/log 和失败恢复证据。
 - `PRO/ADMIN + BUNDLE` 在没有对应账号证据时可实现，但验收状态只能是 `implemented-assumed`，不能标记 `parity-verified`。
 - 新版 lpbot.cc 出现新增/变更时，先更新本矩阵和证据，再改代码。
-

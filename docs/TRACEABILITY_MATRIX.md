@@ -3,7 +3,7 @@
 > 基线日期：2026-08-13  
 > 范围源：[功能矩阵](./FUNCTION_MATRIX.md)  
 > 阶段源：[开发路线图](./DEVELOPMENT_ROADMAP.md)  
-> 当前状态：P01 的 18 项功能和 P02-02 的 4 项功能已完成阶段实现，因目标对照、生产 decoder 和 live 证据缺口均保持 `implemented-assumed`；其余 174 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
+> 当前状态：P01 的 18 项功能及 P02 的 7 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 171 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
 
 ## 1. 使用规则
 
@@ -289,14 +289,14 @@
 
 #### P02 当前实现与证据状态
 
-P02-02 只验证 BSC chainId 56 的本地 fixture 纵向路径。以下 4 项只有 `local-fixture-verified` 证据，因此均为 `implemented-assumed`；没有项目达到 `parity-verified` 或 `released`。其余 19 个 P02 ID 明确保留 `planned`，P02-01 继续是无实现所有权的冻结参考契约。
+P02-02 与 P02-04 只验证 BSC chainId 56 的本地 fixture 纵向路径。以下 7 项只有 `local-fixture-verified` 证据，因此均为 `implemented-assumed`；没有项目达到 `parity-verified` 或 `released`。其余 16 个 P02 ID 明确保留 `planned`，P02-01 继续是无实现所有权的冻结参考契约，`GAP-FINALITY-DEPTH` 继续 unresolved。
 
 <!-- P02_STATUS_TABLE_START -->
 | ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
 |---|---|---|---|---|
 | POOL-01 | `implemented-assumed` | [Indexer](../apps/indexer/src/index.ts), [PostgreSQL store](../apps/indexer/src/postgres-canonical-event-store.ts), [Metrics](../packages/market-metrics/src/index.ts), [API](../apps/api/src/market-pools.ts), [Web](../apps/web/src/pools-page.tsx) | [T-UNIT](../tests/market-metrics.test.ts), [T-API/T-SSE](../tests/market-pools-api.test.ts), [T-REC/T-PERF](../tests/integration/postgres-market-indexer.integration.ts), [T-UI/T-VIS](../tests/e2e/pools.spec.ts) | [P02-02](../artifacts/acceptance/P02-02/manifest.json); local-fixture-verified; BSC chainId 56 only |
 | POOL-02 | `implemented-assumed` | [Window contracts](../packages/api-contract/src/index.ts), [Metrics](../packages/market-metrics/src/index.ts), [API](../apps/api/src/app.ts), [Web control](../apps/web/src/pools-page.tsx) | [T-UNIT](../tests/market-metrics.test.ts), [T-API](../tests/market-pools-api.test.ts), [T-UI](../tests/e2e/pools.spec.ts) | [P02-02](../artifacts/acceptance/P02-02/manifest.json); local-fixture-verified |
-| POOL-03 | `planned` | 未实现 | 未实现 | P02-01 reference-only; no implementation evidence |
+| POOL-03 | `implemented-assumed` | [DEX contract](../packages/api-contract/src/index.ts), [Snapshot/SSE provider](../apps/api/src/market-pools.ts), [HTTP validation](../apps/api/src/app.ts), [Web client](../apps/web/src/pools-client.ts), [Web controls](../apps/web/src/pools-page.tsx) | [T-UNIT](../tests/liquidity-flow-contract.test.ts), [T-API/T-SSE](../tests/market-pools-api.test.ts), [T-UI](../tests/pools-stream-client.test.ts), [T-UI/T-VIS](../tests/e2e/liquidity-flow.spec.ts) | [P02-04](../artifacts/acceptance/P02-04/manifest.json); local-fixture-verified; BSC chainId 56 only |
 | POOL-04 | `implemented-assumed` | [Decimal metrics](../packages/market-metrics/src/index.ts), [API contract](../packages/api-contract/src/index.ts), [Pool table](../apps/web/src/pools-page.tsx) | [T-UNIT](../tests/market-metrics.test.ts), [T-API](../tests/market-pools-api.test.ts), [T-UI/T-VIS](../tests/e2e/pools.spec.ts) | [P02-02](../artifacts/acceptance/P02-02/manifest.json); local-fixture-verified; aTVL fields remain null |
 | POOL-05 | `planned` | aTVL and Fee/aTVL unresolved | 未实现 | P02-01 reference-only; no implementation evidence |
 | POOL-06 | `planned` | 未实现 | 未实现 | P02-01 reference-only; no implementation evidence |
@@ -310,8 +310,8 @@ P02-02 只验证 BSC chainId 56 的本地 fixture 纵向路径。以下 4 项只
 | POOL-14 | `planned` | 未实现 | 未实现 | P02-01 reference-only; no implementation evidence |
 | POOL-15 | `planned` | 未实现 | 未实现 | P02-01 reference-only; no implementation evidence |
 | POOL-16 | `implemented-assumed` | [SSE contract](../packages/api-contract/src/index.ts), [Replay provider](../apps/api/src/market-pools.ts), [HTTP stream](../apps/api/src/app.ts), [Durable outbox](../infra/migrations/20260816000100_create_market_indexer.sql) | [T-API/T-SSE](../tests/market-pools-api.test.ts), [T-REC/T-PERF](../tests/integration/postgres-market-indexer.integration.ts), [T-UI](../tests/pools-stream-client.test.ts) | [P02-02](../artifacts/acceptance/P02-02/manifest.json); local-fixture-verified |
-| FLOW-01 | `planned` | 未实现 | 未实现 | P02-01 reference-only; no implementation evidence |
-| FLOW-02 | `planned` | 未实现 | 未实现 | P02-01 reference-only; no implementation evidence |
+| FLOW-01 | `implemented-assumed` | [Versioned contract](../packages/api-contract/src/index.ts), [Golden projection](../apps/indexer/src/liquidity-flow.ts), [Transactional store](../apps/indexer/src/postgres-canonical-event-store.ts), [Read-only SSE](../apps/api/src/liquidity-flow.ts), [Web panel](../apps/web/src/pools-page.tsx) | [T-UNIT](../tests/liquidity-flow-projection.test.ts), [T-SSE](../tests/liquidity-flow-api.test.ts), [T-REC](../tests/integration/postgres-liquidity-flow.integration.ts), [T-UI](../tests/liquidity-flow-client.test.ts), [T-UI/T-VIS](../tests/e2e/liquidity-flow.spec.ts) | [P02-04](../artifacts/acceptance/P02-04/manifest.json); local-fixture-verified; observed/reverted only; nullable values are not inferred |
+| FLOW-02 | `implemented-assumed` | [Filter contract](../packages/api-contract/src/index.ts), [Backfill provider](../apps/api/src/liquidity-flow.ts), [HTTP validation](../apps/api/src/app.ts), [Client reconnect/state](../apps/web/src/liquidity-flow-client.ts), [UI filtering](../apps/web/src/liquidity-flow-state.ts) | [T-UNIT/T-UI](../tests/liquidity-flow-client.test.ts), [T-SSE](../tests/liquidity-flow-api.test.ts), [T-REC](../tests/integration/postgres-liquidity-flow.integration.ts), [T-UI/T-VIS](../tests/e2e/liquidity-flow.spec.ts) | [P02-04](../artifacts/acceptance/P02-04/manifest.json); local-fixture-verified; retained-cursor replay and reorg tombstones |
 | FLOW-03 | `planned` | 未实现 | 未实现 | P02-01 reference-only; no implementation evidence |
 | FLOW-04 | `planned` | 未实现 | 未实现 | P02-01 reference-only; no implementation evidence |
 | FLOW-05 | `planned` | 未实现 | 未实现 | P02-01 reference-only; no implementation evidence |
@@ -346,10 +346,10 @@ P02-02 只验证 BSC chainId 56 的本地 fixture 纵向路径。以下 4 项只
 |---|---:|---|
 | 功能矩阵稳定 ID | 196 | 已全部映射 |
 | 追踪表稳定 ID | 196 | 必须由自动检查保持相等 |
-| 当前产品实现 | 22 | P01 的 18 项和 P02-02 的 4 项完成阶段实现 |
-| `implemented-assumed` | 22 | 目标对照、生产 decoder 或 live 证据仍不完整 |
+| 当前产品实现 | 25 | P01 的 18 项和 P02 的 7 项完成阶段实现 |
+| `implemented-assumed` | 25 | 目标对照或 live 证据仍不完整 |
 | `parity-verified` | 0 | 不由 accepted work item 自动提升 |
 | `released` | 0 | 尚无 staging、监控和回滚完整证明 |
-| 其余 `planned` | 174 | P02 仍有 19 项 planned；P03-P13 状态未改变 |
+| 其余 `planned` | 171 | P02 仍有 16 项 planned；P03-P13 状态未改变 |
 
 建议 CI 检查逻辑：从 `FUNCTION_MATRIX.md` 与本文件抽取 `^[A-Z]+-[0-9]{2}$`，比较去重集合；再检查每行非空的阶段、测试和证据列。任何新增功能 ID 必须先进入范围源和本表。
