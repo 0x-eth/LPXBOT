@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@lpbot/api-contract": "workspace:*",
+    "@lpbot/chain-adapters": "workspace:*",
     "@lpbot/chain-registry": "workspace:*",
     "@lpbot/market-metrics": "workspace:*",
     "@lpbot/observability": "workspace:*",
