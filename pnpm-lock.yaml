@@ -218,7 +218,11 @@ importers:
 
   packages/api-contract: {}
 
-  packages/chain-registry: {}
+  packages/chain-registry:
+    dependencies:
+      viem:
+        specifier: 2.55.16
+        version: 2.55.16(typescript@6.0.3)(zod@4.4.3)
 
   packages/domain: {}
 
