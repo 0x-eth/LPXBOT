@@ -4,12 +4,15 @@ import type {
   PoolColumnKey,
   PoolColumnPreference,
 } from "@lpbot/api-contract";
+import { Decimal } from "decimal.js";
 
 export const POOL_COLUMN_KEYS = [
   "pool",
   "protocol",
   "fees",
   "volume",
+  "feeTvl",
+  "feeActiveTvl",
   "tvl",
   "txs",
   "fdv",
@@ -22,6 +25,16 @@ export const DEFAULT_POOL_COLUMNS: readonly PoolColumnPreference[] = Object.free
 
 const poolColumnKeySet = new Set<string>(POOL_COLUMN_KEYS);
 const lockedPoolColumnKeys = new Set<PoolColumnKey>(["pool", "actions"]);
+
+export function formatPoolRatioPercent(value: string | null): string {
+  if (value === null) return "不可用";
+  const decimal = new Decimal(value);
+  if (!decimal.isFinite()) return "不可用";
+  return `${decimal
+    .times(100)
+    .toDecimalPlaces(4, Decimal.ROUND_HALF_EVEN)
+    .toFixed()}%`;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

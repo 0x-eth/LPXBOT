@@ -110,13 +110,15 @@ export const addressRemarksContracts = {
   put: { method: "PUT", path: "/api/address-remarks" },
 } as const;
 
-export const userPreferenceSchemaVersion = 3 as const;
+export const userPreferenceSchemaVersion = 4 as const;
 
 export const poolColumnKeys = [
   "pool",
   "protocol",
   "fees",
   "volume",
+  "feeTvl",
+  "feeActiveTvl",
   "tvl",
   "txs",
   "fdv",

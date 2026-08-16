@@ -92,6 +92,13 @@ function decimalString(value: Decimal): string {
   return value.isZero() ? "0" : value.toFixed();
 }
 
+export function calculateFeeTvl(feesUsd: string | null, tvlUsd: string | null): string | null {
+  if (feesUsd === null || tvlUsd === null) return null;
+  const tvl = decimal(tvlUsd);
+  if (tvl.lessThanOrEqualTo(0)) return null;
+  return decimalString(decimal(feesUsd).dividedBy(tvl));
+}
+
 export function poolMetricKey(
   row: Pick<PoolMetricRow, "chainId" | "poolAddress" | "poolId">,
 ): string {
@@ -156,10 +163,7 @@ function rowForPool(
   const identity = allPoolEventsBeforeEnd[0] ?? first;
   const feesUsd = metricSum(poolEvents, "feesUsd", windowComplete);
   const tvlUsd = latestPointValue(allPoolEventsBeforeEnd, "tvlUsd");
-  const feeTvl =
-    feesUsd !== null && tvlUsd !== null && decimal(tvlUsd).greaterThan(0)
-      ? decimalString(decimal(feesUsd).dividedBy(decimal(tvlUsd)))
-      : null;
+  const feeTvl = calculateFeeTvl(feesUsd, tvlUsd);
   return {
     activeTvlUsd: null,
     chainId: first.chainId,
