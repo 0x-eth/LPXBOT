@@ -92,7 +92,8 @@ function numericQuantity(value: Hex, label: string): number {
 function afterCursor(log: RawChainLog, cursor: IndexerCursor): boolean {
   const logBlock = BigInt(log.blockNumber);
   const cursorBlock = BigInt(cursor.blockNumber);
-  if (log.removed || log.blockHash !== cursor.blockHash.toLowerCase()) return logBlock >= cursorBlock;
+  if (log.removed || log.blockHash !== cursor.blockHash.toLowerCase())
+    return logBlock >= cursorBlock;
   if (logBlock !== cursorBlock) return logBlock > cursorBlock;
   if (log.transactionIndex !== cursor.transactionIndex) {
     return log.transactionIndex > cursor.transactionIndex;
@@ -291,13 +292,8 @@ export class ViemBscLogSource implements RawLogSource {
   async getCode(address: `0x${string}`, blockNumber: "latest" | string): Promise<Hex> {
     await this.#ensureChain();
     const blockTag =
-      blockNumber === "latest"
-        ? blockNumber
-        : toHex(decimalBlock(blockNumber, "blockNumber"));
-    const code = await this.#rpc<Hex>("eth_getCode", [
-      address.toLowerCase(),
-      blockTag,
-    ]);
+      blockNumber === "latest" ? blockNumber : toHex(decimalBlock(blockNumber, "blockNumber"));
+    const code = await this.#rpc<Hex>("eth_getCode", [address.toLowerCase(), blockTag]);
     if (typeof code !== "string" || !code.startsWith("0x")) {
       throw new Error("RPC_CODE_RESPONSE_INVALID");
     }
@@ -311,9 +307,8 @@ export class ViemBscLogSource implements RawLogSource {
     const head = BigInt(latest.number);
     let fromBlock = after ? BigInt(after.blockNumber) : this.#fromBlock;
     for (let page = 0; page < this.#maxPagesPerRead && fromBlock <= head; page += 1) {
-      const toBlock = fromBlock + this.#maxBlockSpan - 1n < head
-        ? fromBlock + this.#maxBlockSpan - 1n
-        : head;
+      const toBlock =
+        fromBlock + this.#maxBlockSpan - 1n < head ? fromBlock + this.#maxBlockSpan - 1n : head;
       const logs = (await this.#logs(fromBlock, toBlock)).map((log) => this.#normalizeLog(log));
       const eligible = after ? logs.filter((log) => afterCursor(log, after)) : logs;
       if (eligible.length > 0) {

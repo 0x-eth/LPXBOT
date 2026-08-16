@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-03",
+  "phase": "P02",
+  "risk": "R1",
+  "status": "accepted-with-gaps",
+  "featureIds": [],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm format:check; pnpm lint; pnpm typecheck; pnpm test; pnpm build",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-03/command-output.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "offline registry, decoder golden, startup and mock RPC Vitest suites; forge fmt --check; forge build; pnpm test:contracts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-03/E-CHAIN.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "mock RPC cursor/reorg suites; P02-01/P02-02 regression; pnpm test:postgres",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-03/E-REC.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm test:postgres including migration down/up and complete cycle",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-03/E-OPS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "Gitleaks full-history scan; pnpm audit:dependencies; read-only RPC policy tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-03/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-CHAIN", "path": "artifacts/acceptance/P02-03/E-CHAIN.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P02-03/E-DATA.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P02-03/E-REC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P02-03/E-SEC.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P02-03/E-OPS.md" }
+  ],
+  "assumptions": [
+    "P02-02's four implemented-assumed feature IDs remain unchanged and the other 19 P02 feature IDs remain planned; P02-03 has featureIds [].",
+    "The requested chainId-56 decoder event set is evidence-complete for univ3, pcsv3, univ4 and pcsv4, but unsupported events outside that requested set are not promoted.",
+    "GAP-FINALITY-DEPTH remains unresolved; this task does not select a confirmation depth or release finality policy.",
+    "P02-01, P02-02 and all earlier acceptance artifacts remain byte-identical to baseline e640d97ca9e9fe99683f919d454ea6bf7b3a607b.",
+    "No target-site write request, RPC write method, production secret, signature, broadcast or funds operation was used."
+  ],
+  "completedAt": "2026-08-16T01:59:45.000Z",
+  "commit": null
+}

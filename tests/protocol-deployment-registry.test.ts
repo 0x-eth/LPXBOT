@@ -105,9 +105,6 @@ describe("P02-03 BSC protocol deployment registry", () => {
     expect(result.failures).toEqual([
       expect.objectContaining({ platformId: "pcsv3", reason: "runtime-code-hash-mismatch" }),
     ]);
-    expect(getCode).toHaveBeenCalledWith(
-      "0xdb1d10011ad0ff90774d0c6bb92e5c5c8b4461f7",
-      "latest",
-    );
+    expect(getCode).toHaveBeenCalledWith("0xdb1d10011ad0ff90774d0c6bb92e5c5c8b4461f7", "latest");
   });
 });

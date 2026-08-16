@@ -19,22 +19,15 @@ const EXPECTED_TOPICS = {
     Collect: "0x70935338e69775456a85ddef226c395fb668b63fa0115f5f20610b388e6ca9c0",
     Mint: "0x7a53080ba414158be7ec69b987b5fb7d07dee101fe85488f0853ae16239d0bde",
     PoolCreated: "0x783cca1c0412dd0d695e784568c96da2e9c22ff989357a2e8b1d9b2b4e6b7118",
-    SwapPancake:
-      "0x19b47279256b2a23a1665c810c8d55a1758940ee09377d4f8d26497a3577dc83",
-    SwapUniswap:
-      "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67",
+    SwapPancake: "0x19b47279256b2a23a1665c810c8d55a1758940ee09377d4f8d26497a3577dc83",
+    SwapUniswap: "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67",
   },
   v4: {
-    InitializePancake:
-      "0x426cc62fe6a33a40ba2788c2c87a9c34ee4582b95bc9fa5a7bb7ae70b750b99c",
-    InitializeUniswap:
-      "0xdd466e674ea557f56295e2d0218a125ea4b4f0f6f3307b95f85e6110838d6438",
-    ModifyLiquidity:
-      "0xf208f4912782fd25c7f114ca3723a2d5dd6f3bcc3ac8db5af63baa85f711d5ec",
-    SwapPancake:
-      "0x04206ad2b7c0f463bff3dd4f33c5735b0f2957a351e4f79763a4fa9e775dd237",
-    SwapUniswap:
-      "0x40e9cecb9f5f1f1c5b9c97dec2917b7ee92e57ba5563708daca94dd84ad7112f",
+    InitializePancake: "0x426cc62fe6a33a40ba2788c2c87a9c34ee4582b95bc9fa5a7bb7ae70b750b99c",
+    InitializeUniswap: "0xdd466e674ea557f56295e2d0218a125ea4b4f0f6f3307b95f85e6110838d6438",
+    ModifyLiquidity: "0xf208f4912782fd25c7f114ca3723a2d5dd6f3bcc3ac8db5af63baa85f711d5ec",
+    SwapPancake: "0x04206ad2b7c0f463bff3dd4f33c5735b0f2957a351e4f79763a4fa9e775dd237",
+    SwapUniswap: "0x40e9cecb9f5f1f1c5b9c97dec2917b7ee92e57ba5563708daca94dd84ad7112f",
   },
 } as const;
 
@@ -125,9 +118,9 @@ describe("P02-03 production BSC event decoder", () => {
     expect(BigInt(decodedSwap!.amount0!) * BigInt(decodedSwap!.amount1!)).toBeLessThan(0n);
     expect(BigInt(decodedMint!.liquidityDelta!)).toBeGreaterThan(0n);
     expect(BigInt(decodedBurn!.liquidityDelta!)).toBeLessThan(0n);
-    expect(
-      BigInt(decodedCollect!.amount0!) <= 0n && BigInt(decodedCollect!.amount1!) <= 0n,
-    ).toBe(true);
+    expect(BigInt(decodedCollect!.amount0!) <= 0n && BigInt(decodedCollect!.amount1!) <= 0n).toBe(
+      true,
+    );
     expect(BigInt(decodedV4Add!.liquidityDelta!)).toBeGreaterThan(0n);
     for (const event of decoded) {
       expect(event.payload.positionId).toBeNull();
@@ -187,12 +180,7 @@ describe("P02-03 production BSC event decoder", () => {
       },
     });
     v3.log.data = encodeAbiParameters(
-      [
-        { type: "address" },
-        { type: "uint128" },
-        { type: "uint256" },
-        { type: "uint256" },
-      ],
+      [{ type: "address" }, { type: "uint128" }, { type: "uint256" }, { type: "uint256" }],
       ["0x0000000000000000000000000000000000000002", maxUint128, 1n, 2n],
     );
     const decodedV3 = await decoder.decode(v3);
@@ -208,12 +196,7 @@ describe("P02-03 production BSC event decoder", () => {
     const v4 = structuredClone(v4Raw.delivery);
     const minInt256 = -(1n << 255n);
     v4.log.data = encodeAbiParameters(
-      [
-        { type: "int24" },
-        { type: "int24" },
-        { type: "int256" },
-        { type: "bytes32" },
-      ],
+      [{ type: "int24" }, { type: "int24" }, { type: "int256" }, { type: "bytes32" }],
       [-887_272, 887_272, minInt256, `0x${"00".repeat(32)}`],
     );
     const decodedV4 = await decoder.decode(v4);
@@ -235,9 +218,7 @@ describe("P02-03 production BSC event decoder", () => {
     await expect(decoder.decode(readGolden("univ4", "Initialize").delivery)).rejects.toThrow(
       /DECODER_QUARANTINED: abi-conflict/u,
     );
-    expect(decoder.quarantined).toEqual([
-      expect.objectContaining({ reason: "abi-conflict" }),
-    ]);
+    expect(decoder.quarantined).toEqual([expect.objectContaining({ reason: "abi-conflict" })]);
   });
 
   it("rejects a protocol-specific V4 topic at the other protocol manager", async () => {
@@ -245,8 +226,6 @@ describe("P02-03 production BSC event decoder", () => {
     const delivery = structuredClone(readGolden("univ4", "Initialize").delivery);
     delivery.log.address = BSC_PROTOCOL_DEPLOYMENTS[3]!.poolManager!;
 
-    await expect(decoder.decode(delivery)).rejects.toThrow(
-      /DECODER_QUARANTINED: wrong-protocol/u,
-    );
+    await expect(decoder.decode(delivery)).rejects.toThrow(/DECODER_QUARANTINED: wrong-protocol/u);
   });
 });

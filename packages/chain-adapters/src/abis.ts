@@ -73,15 +73,11 @@ export const PROTOCOL_EVENT_TOPICS = {
     InitializeUniswap: eventTopic(
       "Initialize(bytes32,address,address,uint24,int24,address,uint160,int24)",
     ),
-    ModifyLiquidity: eventTopic(
-      "ModifyLiquidity(bytes32,address,int24,int24,int256,bytes32)",
-    ),
+    ModifyLiquidity: eventTopic("ModifyLiquidity(bytes32,address,int24,int24,int256,bytes32)"),
     SwapPancake: eventTopic(
       "Swap(bytes32,address,int128,int128,uint160,uint128,int24,uint24,uint16)",
     ),
-    SwapUniswap: eventTopic(
-      "Swap(bytes32,address,int128,int128,uint160,uint128,int24,uint24)",
-    ),
+    SwapUniswap: eventTopic("Swap(bytes32,address,int128,int128,uint160,uint128,int24,uint24)"),
   },
 } as const;
 

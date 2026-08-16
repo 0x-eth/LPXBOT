@@ -14,17 +14,8 @@ import {
   type Hex,
 } from "viem";
 
-import {
-  PROTOCOL_ABI_HASHES,
-  PROTOCOL_EVENT_ABIS,
-  PROTOCOL_EVENT_TOPICS,
-} from "./abis.js";
-import type {
-  IndexerCursor,
-  NormalizedPoolEvent,
-  RawChainLog,
-  RawLogDelivery,
-} from "./types.js";
+import { PROTOCOL_ABI_HASHES, PROTOCOL_EVENT_ABIS, PROTOCOL_EVENT_TOPICS } from "./abis.js";
+import type { IndexerCursor, NormalizedPoolEvent, RawChainLog, RawLogDelivery } from "./types.js";
 
 export type QuarantineReason =
   | "abi-conflict"
@@ -211,14 +202,7 @@ function pcsv4PoolId(
         { type: "uint24" },
         { type: "bytes32" },
       ],
-      [
-        args.currency0,
-        args.currency1,
-        args.hooks,
-        poolManager,
-        args.fee,
-        args.parameters,
-      ],
+      [args.currency0, args.currency1, args.hooks, poolManager, args.fee, args.parameters],
     ),
   );
 }
@@ -302,8 +286,7 @@ export class ProductionBscEventDecoder {
         topic0 !== PROTOCOL_EVENT_TOPICS.v3.SwapPancake &&
         topic0 !== PROTOCOL_EVENT_TOPICS.v3.SwapUniswap
           ? true
-          : (pool.platformId === "pcsv3") ===
-            (topic0 === PROTOCOL_EVENT_TOPICS.v3.SwapPancake);
+          : (pool.platformId === "pcsv3") === (topic0 === PROTOCOL_EVENT_TOPICS.v3.SwapPancake);
       if (!swapMatches) return this.#reject(delivery, "wrong-protocol");
     } else {
       return this.#reject(delivery, "unknown-topic");

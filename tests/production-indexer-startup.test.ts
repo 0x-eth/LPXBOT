@@ -1,6 +1,9 @@
 import { createServer, type Server } from "node:http";
 
-import { initializeProductionIndexerAdapters, validateProductionIndexerConfig } from "../apps/indexer/src/index.js";
+import {
+  initializeProductionIndexerAdapters,
+  validateProductionIndexerConfig,
+} from "../apps/indexer/src/index.js";
 import { BSC_PROTOCOL_DEPLOYMENTS } from "../packages/chain-registry/src/index.js";
 import { afterEach, describe, expect, it } from "vitest";
 import { keccak256 } from "viem";
@@ -32,7 +35,9 @@ async function codeRpc(codeForAddress: (address: string) => string): Promise<str
 
 afterEach(async () => {
   await Promise.all(
-    servers.splice(0).map((server) => new Promise<void>((resolve) => server.close(() => resolve()))),
+    servers
+      .splice(0)
+      .map((server) => new Promise<void>((resolve) => server.close(() => resolve()))),
   );
 });
 
@@ -51,8 +56,9 @@ describe("P02-03 production indexer startup", () => {
   it("accepts only registry-backed chain-56 config and keeps the RPC URL environment-only", () => {
     const config = configForCode("0x6000");
     expect(validateProductionIndexerConfig(config)).toBe(config);
-    expect(() => validateProductionIndexerConfig({ ...config, rpcUrl: "http://example.invalid" }))
-      .toThrowError(/BSC_RPC_URL_ENV_ONLY/u);
+    expect(() =>
+      validateProductionIndexerConfig({ ...config, rpcUrl: "http://example.invalid" }),
+    ).toThrowError(/BSC_RPC_URL_ENV_ONLY/u);
   });
 
   it("enables all four decoders only when every runtime code hash matches", async () => {

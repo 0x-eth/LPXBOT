@@ -80,9 +80,7 @@ export async function initializeProductionIndexerAdapters(
       fromBlock: config.fromBlock,
       ...(config.maxAttempts === undefined ? {} : { maxAttempts: config.maxAttempts }),
       ...(config.maxBlockSpan === undefined ? {} : { maxBlockSpan: config.maxBlockSpan }),
-      ...(config.maxPagesPerRead === undefined
-        ? {}
-        : { maxPagesPerRead: config.maxPagesPerRead }),
+      ...(config.maxPagesPerRead === undefined ? {} : { maxPagesPerRead: config.maxPagesPerRead }),
       ...(config.retryBaseMilliseconds === undefined
         ? {}
         : { retryBaseMilliseconds: config.retryBaseMilliseconds }),

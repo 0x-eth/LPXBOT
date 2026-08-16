@@ -32,7 +32,11 @@ async function mockRpc(
       response.setHeader("content-type", "application/json");
       response.end(
         JSON.stringify(
-          result.body ?? { id: rpc.id, jsonrpc: "2.0", result: rpc.method === "eth_chainId" ? "0x38" : null },
+          result.body ?? {
+            id: rpc.id,
+            jsonrpc: "2.0",
+            result: rpc.method === "eth_chainId" ? "0x38" : null,
+          },
         ),
       );
     });
@@ -47,7 +51,9 @@ async function mockRpc(
 afterEach(async () => {
   for (const server of servers) server.closeAllConnections();
   await Promise.all(
-    servers.splice(0).map((server) => new Promise<void>((resolve) => server.close(() => resolve()))),
+    servers
+      .splice(0)
+      .map((server) => new Promise<void>((resolve) => server.close(() => resolve()))),
   );
 });
 
@@ -87,7 +93,13 @@ describe("P02-03 ViemBscLogSource", () => {
     const rpc = await mockRpc(({ method, params }) => {
       if (method === "eth_chainId") return { body: { id: 1, jsonrpc: "2.0", result: "0x38" } };
       if (method === "eth_getBlockByNumber" && params[0] === "latest") {
-        return { body: { id: 1, jsonrpc: "2.0", result: block("0x69", `0x${"69".repeat(32)}`, `0x${"68".repeat(32)}`) } };
+        return {
+          body: {
+            id: 1,
+            jsonrpc: "2.0",
+            result: block("0x69", `0x${"69".repeat(32)}`, `0x${"68".repeat(32)}`),
+          },
+        };
       }
       if (method === "eth_getLogs") {
         const filter = params[0] as { fromBlock: string; toBlock: string };
@@ -115,7 +127,13 @@ describe("P02-03 ViemBscLogSource", () => {
         return { body: { id: 1, jsonrpc: "2.0", result: [] } };
       }
       if (method === "eth_getBlockByNumber" && params[0] === "0x68") {
-        return { body: { id: 1, jsonrpc: "2.0", result: block("0x68", `0x${"68".repeat(32)}`, `0x${"67".repeat(32)}`) } };
+        return {
+          body: {
+            id: 1,
+            jsonrpc: "2.0",
+            result: block("0x68", `0x${"68".repeat(32)}`, `0x${"67".repeat(32)}`),
+          },
+        };
       }
       throw new Error(`unexpected ${method}`);
     });
@@ -153,7 +171,12 @@ describe("P02-03 ViemBscLogSource", () => {
           body: {
             id: 1,
             jsonrpc: "2.0",
-            result: { hash: `0x${"70".repeat(32)}`, number: "0x70", parentHash: `0x${"6f".repeat(32)}`, timestamp: "0x70" },
+            result: {
+              hash: `0x${"70".repeat(32)}`,
+              number: "0x70",
+              parentHash: `0x${"6f".repeat(32)}`,
+              timestamp: "0x70",
+            },
           },
         };
       }
@@ -184,7 +207,12 @@ describe("P02-03 ViemBscLogSource", () => {
           body: {
             id: 1,
             jsonrpc: "2.0",
-            result: { hash: `0x${"70".repeat(32)}`, number: "0x70", parentHash: `0x${"6f".repeat(32)}`, timestamp: "0x70" },
+            result: {
+              hash: `0x${"70".repeat(32)}`,
+              number: "0x70",
+              parentHash: `0x${"6f".repeat(32)}`,
+              timestamp: "0x70",
+            },
           },
         };
       }
@@ -260,7 +288,12 @@ describe("P02-03 ViemBscLogSource", () => {
           body: {
             id: 1,
             jsonrpc: "2.0",
-            result: { hash: `0x${"dd".repeat(32)}`, number: "0x65", parentHash: unexpectedParent, timestamp: "0x65" },
+            result: {
+              hash: `0x${"dd".repeat(32)}`,
+              number: "0x65",
+              parentHash: unexpectedParent,
+              timestamp: "0x65",
+            },
           },
         };
       }
@@ -278,8 +311,20 @@ describe("P02-03 ViemBscLogSource", () => {
             jsonrpc: "2.0",
             result: [
               { ...base, blockHash: oldHash, blockNumber: "0x64", logIndex: "0x1", removed: true },
-              { ...base, blockHash: replacementHash, blockNumber: "0x64", logIndex: "0x0", removed: false },
-              { ...base, blockHash: `0x${"dd".repeat(32)}`, blockNumber: "0x65", logIndex: "0x0", removed: false },
+              {
+                ...base,
+                blockHash: replacementHash,
+                blockNumber: "0x64",
+                logIndex: "0x0",
+                removed: false,
+              },
+              {
+                ...base,
+                blockHash: `0x${"dd".repeat(32)}`,
+                blockNumber: "0x65",
+                logIndex: "0x0",
+                removed: false,
+              },
             ],
           },
         };
@@ -314,11 +359,13 @@ describe("P02-03 ViemBscLogSource", () => {
     const restarted = await new ViemBscLogSource({ fromBlock: "1", rpcUrl: rpc.url }).read(cursor);
 
     for (const page of [first, restarted]) {
-      expect(page?.deliveries.map(({ block, log }) => ({
-        blockHash: block.blockHash,
-        parentHash: block.parentHash,
-        removed: log.removed,
-      }))).toEqual([
+      expect(
+        page?.deliveries.map(({ block, log }) => ({
+          blockHash: block.blockHash,
+          parentHash: block.parentHash,
+          removed: log.removed,
+        })),
+      ).toEqual([
         { blockHash: oldHash, parentHash: unexpectedParent, removed: true },
         { blockHash: replacementHash, parentHash: unexpectedParent, removed: false },
         { blockHash: `0x${"dd".repeat(32)}`, parentHash: unexpectedParent, removed: false },
