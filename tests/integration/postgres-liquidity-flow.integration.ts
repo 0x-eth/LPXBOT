@@ -244,6 +244,25 @@ describe("P02-04 PostgreSQL liquidity flow read model", () => {
       now: () => new Date("2026-08-16T03:01:00.000Z"),
       pollMilliseconds: 1,
     });
+    const durableOrder = await pool.query<{ id: string; sequence: string }>(
+      `SELECT sequence::text, payload->>'id' AS id
+         FROM liquidity_flow_outbox
+        ORDER BY sequence`,
+    );
+    expect(durableOrder.rows.slice(-3)).toEqual([
+      {
+        id: "eb56e2cf006282c2a07bdc2fc563014b1390560763a27618bd3ffe95a2485370",
+        sequence: "8",
+      },
+      {
+        id: "d12fab3e18894c97163abe2cd1b544bb9037694403572feb79021688267c1d76",
+        sequence: "9",
+      },
+      {
+        id: "ccf15384ff3ce1450c0f574c3d3ee8652df091c511a832452214a596dccee2b2",
+        sequence: "10",
+      },
+    ]);
 
     const [boundedEnvelope] = await takeFlow(provider, 1);
     const bounded = boundedEnvelope!.data as LiquidityFlowBackfill;
