@@ -961,6 +961,7 @@ input:focus-visible,
 .flow-table-shell {
   width: 100%;
   min-width: 0;
+  overflow-x: auto;
   border-top: 1px solid var(--border);
 }
 
@@ -1053,6 +1054,466 @@ html[data-theme="dark"] .flow-status[data-state="live"] {
 
 html[data-theme="dark"] .flow-type-create {
   color: #f2bf62;
+}
+
+.flow-stat-strip {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.flow-stat-strip > div {
+  display: grid;
+  min-width: 0;
+  min-height: 66px;
+  align-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.flow-stat-strip > div + div {
+  border-left: 1px solid var(--border);
+}
+
+.flow-stat-strip dt {
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.flow-stat-strip dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.flow-stat-strip[data-completeness="partial"] [data-metric="inflow"] dd,
+.flow-stat-strip[data-completeness="partial"] [data-metric="outflow"] dd,
+.flow-stat-strip[data-completeness="partial"] [data-metric="net"] dd,
+.flow-stat-strip[data-completeness="partial"] [data-metric="completeness"] dd {
+  color: #8a5a00;
+}
+
+html[data-theme="dark"] .flow-stat-strip[data-completeness="partial"] [data-metric] dd {
+  color: #f2bf62;
+}
+
+.flow-view-toolbar,
+.flow-view-heading,
+.remark-load-state {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.flow-view-toolbar {
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.flow-view-toolbar .flow-segment {
+  width: min(260px, 100%);
+}
+
+.flow-watched-filter {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.flow-watched-filter[aria-pressed="true"] {
+  color: var(--focus-ring);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.flow-views {
+  min-width: 0;
+  border-top: 1px solid var(--border);
+}
+
+.flow-view-pane {
+  display: none;
+  min-width: 0;
+}
+
+.flow-view-pane[data-active="true"] {
+  display: block;
+}
+
+.flow-view-heading {
+  min-height: 48px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--border);
+}
+
+.flow-view-heading > strong {
+  color: var(--text);
+  font-size: 0.76rem;
+}
+
+.flow-view-heading > span {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+
+.flow-view-heading .flow-segment {
+  width: min(220px, 65%);
+  min-height: 32px;
+}
+
+.flow-view-heading .flow-segment button {
+  min-height: 24px;
+}
+
+.flow-user-watch {
+  margin-left: 4px;
+  color: var(--focus-ring);
+  vertical-align: middle;
+}
+
+.remark-load-state {
+  min-height: 42px;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 10px;
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.7rem;
+}
+
+.remark-load-error {
+  color: var(--danger);
+}
+
+.remark-load-state button {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 5px;
+  margin-left: 5px;
+  padding: 3px 7px;
+  color: inherit;
+  border: 1px solid currentcolor;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.68rem;
+}
+
+.flow-address-table-shell {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.flow-address-table {
+  width: 100%;
+  min-width: 680px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  color: var(--text);
+}
+
+.flow-address-table th,
+.flow-address-table td {
+  min-width: 0;
+  padding: 10px 7px;
+  overflow-wrap: anywhere;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.flow-address-table th {
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.64rem;
+}
+
+.flow-address-table td {
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.flow-address-table tbody tr + tr {
+  border-top: 1px solid var(--border);
+}
+
+.flow-address-table th:nth-child(1) {
+  width: 17%;
+}
+.flow-address-table th:nth-child(2) {
+  width: 16%;
+}
+.flow-address-table th:nth-child(3) {
+  width: 15%;
+}
+.flow-address-table th:nth-child(4),
+.flow-address-table th:nth-child(5) {
+  width: 7%;
+}
+.flow-address-table th:nth-child(6) {
+  width: 12%;
+}
+.flow-address-table th:nth-child(7) {
+  width: 9%;
+}
+.flow-address-table th:nth-child(8) {
+  width: 17%;
+}
+
+.flow-address-table td:nth-child(1),
+.flow-address-table td:nth-child(3),
+.flow-address-table td:nth-child(4),
+.flow-address-table td:nth-child(5),
+.flow-address-table td:nth-child(6) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.flow-address-table td:nth-child(1) {
+  align-items: center;
+  gap: 4px;
+}
+
+.flow-address-table td:nth-child(2) small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted-foreground);
+  font-size: 0.6rem;
+}
+
+.flow-address-identity {
+  white-space: nowrap;
+}
+
+.flow-valuation-state {
+  display: inline-flex;
+  min-height: 21px;
+  align-items: center;
+  padding: 2px 5px;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.flow-valuation-state[data-state="partial"] {
+  color: #8a5a00;
+  border-color: color-mix(in srgb, #8a5a00 42%, var(--border));
+}
+
+.flow-valuation-state[data-state="idle"] {
+  color: var(--muted-foreground);
+  border-style: dashed;
+}
+
+.flow-address-actions {
+  display: grid;
+  grid-template-columns: repeat(5, 27px);
+  gap: 2px;
+}
+
+.flow-address-actions button,
+.flow-address-actions a {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  padding: 0;
+  color: var(--muted-foreground);
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  place-items: center;
+}
+
+.flow-address-actions button:hover,
+.flow-address-actions a:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.flow-address-actions button:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.remark-dialog-backdrop {
+  position: fixed;
+  z-index: 40;
+  background: rgb(18 22 24 / 52%);
+  inset: 0;
+}
+
+.remark-dialog {
+  position: fixed;
+  z-index: 41;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: min(calc(100vw - 32px), 420px);
+  max-height: calc(100dvh - 32px);
+  gap: 13px;
+  padding: 20px;
+  overflow-y: auto;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgb(20 24 26 / 22%);
+  transform: translate(-50%, -50%);
+}
+
+.remark-dialog-heading,
+.remark-dialog-actions,
+.remark-watch-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.remark-dialog-heading {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.remark-dialog-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.remark-dialog-heading button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--muted-foreground);
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  place-items: center;
+}
+
+.remark-dialog > p,
+.remark-dialog > code {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+
+.remark-dialog > label:not(.remark-watch-toggle) {
+  display: grid;
+  gap: 7px;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.remark-dialog input[type="text"],
+.remark-dialog > label:not(.remark-watch-toggle) input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--background);
+}
+
+.remark-shared-label span {
+  color: var(--text);
+}
+
+.remark-watch-toggle {
+  min-height: 38px;
+  gap: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.76rem;
+}
+
+.remark-dialog-error {
+  color: var(--danger) !important;
+}
+
+.remark-dialog-actions {
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.remark-dialog-actions button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 0.72rem;
+}
+
+.remark-dialog-actions button:first-child:not(.remark-dialog-cancel):not(.remark-dialog-save) {
+  margin-right: auto;
+  color: var(--danger);
+}
+
+.remark-dialog-actions .remark-dialog-save {
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+  background: var(--accent);
+  font-weight: 700;
+}
+
+.remark-dialog-actions button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+@media (min-width: 1100px) {
+  .flow-views {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .flow-view-pane,
+  .flow-view-pane[data-active="true"] {
+    display: block;
+  }
+
+  .flow-address-view {
+    border-left: 1px solid var(--border);
+  }
+
+  .flow-table {
+    min-width: 720px;
+  }
 }
 
 .status-bar-reserved {
