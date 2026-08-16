@@ -45,3 +45,11 @@ targetRules = ["generic-api-key"]
 paths = ['''^artifacts/lpbot/2026-08-13/assets/index-CL-zNRW4\.js$''']
 regexTarget = "match"
 regexes = ['''e\.TokenType=[A-Za-z_$][A-Za-z0-9_$]*''']
+
+[[allowlists]]
+description = "P02-03 chain golden files record public ERC-20 token contract addresses, not authentication tokens."
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = ['''^artifacts/acceptance/P02-03/golden/(?:raw|normalized)/(?:univ3|pcsv3|univ4|pcsv4)/[A-Za-z]+\.json$''']
+regexTarget = "match"
+regexes = ['''token[01]":\s*"0x[0-9a-f]{40}"''']
