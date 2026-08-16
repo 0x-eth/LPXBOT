@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type {
   MarketPoolRow,
   MarketPoolSnapshot,
@@ -39,8 +41,12 @@ function candidate(row: MarketPoolRow, index: number) {
   } catch {
     return null;
   }
-  if (!fees.isFinite() || !fees.isPositive()) return null;
+  if (!fees.isFinite() || !fees.gt(0)) return null;
   return { fees, index, row };
+}
+
+export function recommendationSelectionHash(rows: readonly RecommendedPoolRow[]): string {
+  return `sha256:${createHash("sha256").update(JSON.stringify(rows)).digest("hex")}`;
 }
 
 function toWireRow(row: MarketPoolRow): RecommendedPoolRow {
