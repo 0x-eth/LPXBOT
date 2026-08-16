@@ -10,10 +10,7 @@ import {
 } from "../apps/web/src/pool-filter-state.js";
 import { describe, expect, it } from "vitest";
 
-function row(
-  suffix: string,
-  overrides: Partial<MarketPoolRow> = {},
-): MarketPoolRow {
+function row(suffix: string, overrides: Partial<MarketPoolRow> = {}): MarketPoolRow {
   const poolAddress = `0x${suffix.repeat(40)}` as MarketPoolRow["poolAddress"];
   return {
     activeTvlUsd: null,
@@ -78,11 +75,7 @@ const rows: MarketPoolRow[] = [
   }),
 ];
 
-function enabledRange(
-  key: PoolNumericFilterKey,
-  min: string,
-  max: string,
-): PoolAdvancedFilters {
+function enabledRange(key: PoolNumericFilterKey, min: string, max: string): PoolAdvancedFilters {
   const filters = defaultPoolAdvancedFilters();
   filters.ranges[key] = { enabled: true, max, min };
   return filters;
@@ -131,7 +124,10 @@ describe("P02-07 advanced pool filters", () => {
   it("excludes null rows whenever a numeric filter is enabled", () => {
     for (const key of ["fees", "feeTvl", "tvl", "txs", "volume"] as const) {
       const filtered = filterAndSortPoolRows(rows, enabledRange(key, "", ""));
-      expect(filtered.map(({ poolKey }) => poolKey), key).not.toContain(rows[3]!.poolKey);
+      expect(
+        filtered.map(({ poolKey }) => poolKey),
+        key,
+      ).not.toContain(rows[3]!.poolKey);
     }
     expect(filterAndSortPoolRows(rows, enabledRange("activeTvl", "", ""))).toEqual([]);
     expect(filterAndSortPoolRows(rows, enabledRange("feeActiveTvl", "", ""))).toEqual([]);
@@ -171,12 +167,7 @@ describe("P02-07 advanced pool filters", () => {
       "?pool_versions=v5&pool_fees=20:10&pool_txs=one:2&pool_hook=maybe",
     );
     expect(invalid.valid).toBe(false);
-    expect(invalid.issues).toEqual([
-      "pool_versions",
-      "pool_fees",
-      "pool_txs",
-      "pool_hook",
-    ]);
+    expect(invalid.issues).toEqual(["pool_versions", "pool_fees", "pool_txs", "pool_hook"]);
     expect(validatePoolAdvancedFilters(invalid.filters)).toBe(false);
   });
 
@@ -203,7 +194,9 @@ describe("P02-07 advanced pool filters", () => {
     const unresolved = structuredClone(descending);
     unresolved.sortBy = "feeActiveTvl";
     expect(filterAndSortPoolRows(rows, unresolved).map(({ poolKey }) => poolKey)).toEqual(
-      [...rows].sort((left, right) => left.poolKey.localeCompare(right.poolKey)).map(({ poolKey }) => poolKey),
+      [...rows]
+        .sort((left, right) => left.poolKey.localeCompare(right.poolKey))
+        .map(({ poolKey }) => poolKey),
     );
   });
 });

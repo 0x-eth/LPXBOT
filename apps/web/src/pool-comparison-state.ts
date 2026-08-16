@@ -3,11 +3,7 @@ import { Decimal } from "decimal.js";
 
 import { formatPoolRatioPercent } from "./pool-table-state.js";
 
-export type PoolComparisonStatus =
-  | "none-selected"
-  | "one-selected"
-  | "ready"
-  | "limit-reached";
+export type PoolComparisonStatus = "none-selected" | "one-selected" | "ready" | "limit-reached";
 
 export interface PoolSnapshotBinding {
   asOf: string;
@@ -22,13 +18,7 @@ export interface PoolComparisonState {
 }
 
 export type PoolComparisonMetricKey =
-  | "fees"
-  | "volume"
-  | "tvl"
-  | "activeTvl"
-  | "feeTvl"
-  | "txs"
-  | "feeTier";
+  "fees" | "volume" | "tvl" | "activeTvl" | "feeTvl" | "txs" | "feeTier";
 
 export interface PoolComparisonMetricValue {
   display: string;

@@ -3336,6 +3336,14 @@ html[data-theme="dark"] .chain-operation-success {
     justify-content: flex-start;
   }
 
+  .pool-filter-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pool-filter-han {
+    justify-self: start;
+  }
+
   .flow-primary-filters {
     grid-template-columns: minmax(240px, 1.2fr) minmax(190px, 0.8fr);
   }
@@ -3517,12 +3525,29 @@ html[data-theme="dark"] .chain-operation-success {
     white-space: normal;
   }
 
+  .pool-numeric-filters,
+  .pool-filter-options {
+    grid-template-columns: 1fr;
+  }
+
+  .pool-numeric-filter {
+    grid-template-columns: minmax(88px, 0.75fr) repeat(2, minmax(90px, 1fr));
+  }
+
+  .pool-filter-actions button {
+    flex: 1;
+  }
+
   .pools-table-shell {
     overflow-x: auto;
   }
 
   .pools-table {
-    width: 760px;
+    width: 1040px;
+  }
+
+  .pool-comparison-table {
+    width: 680px;
   }
 
   .numeric-full {

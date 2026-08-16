@@ -77,7 +77,9 @@ async function installFixture(page: Page): Promise<void> {
   );
 }
 
-test("POOL-05/06 expose precise yield columns and restorable advanced filters", async ({ page }) => {
+test("POOL-05/06 expose precise yield columns and restorable advanced filters", async ({
+  page,
+}) => {
   await installFixture(page);
   await page.goto("/pools?fixture=pools-ready");
 

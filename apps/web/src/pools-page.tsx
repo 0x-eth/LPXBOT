@@ -160,8 +160,7 @@ const fixturePoolRows: MarketPoolRow[] = liquidityFlowProtocols.map((protocol, i
     fdvUsd: new Decimal(basePoolRow.fdvUsd!).plus(index * 1_000_000).toString(),
     feesUsd,
     feeTvl: new Decimal(feesUsd).dividedBy(basePoolRow.tvlUsd!).toString(),
-    hooks:
-      v4 && index === 3 ? "0x4444444444444444444444444444444444444444" : null,
+    hooks: v4 && index === 3 ? "0x4444444444444444444444444444444444444444" : null,
     poolAddress,
     poolId,
     poolKey: `56:${identity}`,
@@ -678,7 +677,10 @@ function PoolAdvancedFilterControls({
   setOpen(open: boolean): void;
   update(filters: PoolAdvancedFilters): void;
 }) {
-  const updateRange = (key: PoolNumericFilterKey, value: Partial<PoolAdvancedFilters["ranges"][PoolNumericFilterKey]>) => {
+  const updateRange = (
+    key: PoolNumericFilterKey,
+    value: Partial<PoolAdvancedFilters["ranges"][PoolNumericFilterKey]>,
+  ) => {
     update({
       ...draft,
       ranges: {
@@ -688,11 +690,7 @@ function PoolAdvancedFilterControls({
     });
   };
   return (
-    <section
-      aria-label="高级筛选"
-      className="pool-advanced-filter"
-      data-filter-state={filterState}
-    >
+    <section aria-label="高级筛选" className="pool-advanced-filter" data-filter-state={filterState}>
       <div className="pool-advanced-filter-heading">
         <button
           aria-expanded={open}
@@ -704,13 +702,15 @@ function PoolAdvancedFilterControls({
           <span>高级筛选</span>
         </button>
         <span className="pool-filter-state" data-state={filterState} role="status">
-          {{
-            applied: "已应用",
-            dirty: "待应用",
-            invalid: "条件无效",
-            "no-results": "无结果",
-            pristine: "未筛选",
-          }[filterState]}
+          {
+            {
+              applied: "已应用",
+              dirty: "待应用",
+              invalid: "条件无效",
+              "no-results": "无结果",
+              pristine: "未筛选",
+            }[filterState]
+          }
         </span>
       </div>
       {open ? (
@@ -827,9 +827,7 @@ function PoolAdvancedFilterControls({
             <label className="pool-filter-han">
               <input
                 checked={draft.excludeHanTokens}
-                onChange={(event) =>
-                  update({ ...draft, excludeHanTokens: event.target.checked })
-                }
+                onChange={(event) => update({ ...draft, excludeHanTokens: event.target.checked })}
                 type="checkbox"
               />
               <span>排除中文 Token</span>
@@ -873,11 +871,7 @@ function PoolComparisonPanel({
   const status = view?.status ?? state.status;
   const pools = view?.pools ?? [];
   return (
-    <section
-      aria-label="池对比"
-      className="pool-comparison"
-      data-comparison-state={status}
-    >
+    <section aria-label="池对比" className="pool-comparison" data-comparison-state={status}>
       <div className="pool-comparison-heading">
         <div>
           <h2>池对比</h2>
@@ -2032,8 +2026,7 @@ export function PoolsPage() {
     setComparisonState((current) => reconcilePoolComparison(current, comparisonSnapshot));
   }, [comparisonSnapshot]);
   const comparisonView = useMemo(
-    () =>
-      comparisonSnapshot ? buildPoolComparison(comparisonState, comparisonSnapshot) : null,
+    () => (comparisonSnapshot ? buildPoolComparison(comparisonState, comparisonSnapshot) : null),
     [comparisonSnapshot, comparisonState],
   );
   const comparisonSelectedKeys = useMemo(
@@ -2206,9 +2199,7 @@ export function PoolsPage() {
   const toggleComparison = useCallback(
     (poolKey: string) => {
       if (!comparisonSnapshot) return;
-      setComparisonState((current) =>
-        togglePoolComparison(current, poolKey, comparisonSnapshot),
-      );
+      setComparisonState((current) => togglePoolComparison(current, poolKey, comparisonSnapshot));
     },
     [comparisonSnapshot],
   );

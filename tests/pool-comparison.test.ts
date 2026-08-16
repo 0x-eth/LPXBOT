@@ -45,7 +45,10 @@ const poolB = row("2", { feesUsd: "10", feePips: "500", transactionCount: "4" })
 const poolC = row("3", { feesUsd: null, feePips: null, feeTvl: null, transactionCount: null });
 const poolD = row("4");
 
-function snapshot(version: string, rows: MarketPoolRow[] = [poolA, poolB, poolC, poolD]): MarketPoolSnapshot {
+function snapshot(
+  version: string,
+  rows: MarketPoolRow[] = [poolA, poolB, poolC, poolD],
+): MarketPoolSnapshot {
   return {
     chainId: 56,
     generatedAt: "2026-08-16T01:00:01.000Z",
@@ -127,9 +130,9 @@ describe("P02-07 same-snapshot pool comparison", () => {
       true,
     );
     expect(
-      comparison.metrics.find(({ key }) => key === "fees")!.values.map(
-        ({ isBest, poolKey }) => [poolKey, isBest],
-      ),
+      comparison.metrics
+        .find(({ key }) => key === "fees")!
+        .values.map(({ isBest, poolKey }) => [poolKey, isBest]),
     ).toEqual([
       [poolA.poolKey, true],
       [poolB.poolKey, false],
@@ -149,7 +152,11 @@ describe("P02-07 same-snapshot pool comparison", () => {
       event: envelope("1", "pools.snapshot", initialSnapshot),
       type: "event",
     });
-    let selection = togglePoolComparison(initialPoolComparisonState(), poolA.poolKey, stream.snapshot!);
+    let selection = togglePoolComparison(
+      initialPoolComparisonState(),
+      poolA.poolKey,
+      stream.snapshot!,
+    );
     selection = togglePoolComparison(selection, poolB.poolKey, stream.snapshot!);
 
     stream = reducePoolStream(stream, {

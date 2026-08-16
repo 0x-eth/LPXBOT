@@ -30,10 +30,7 @@ export function formatPoolRatioPercent(value: string | null): string {
   if (value === null) return "不可用";
   const decimal = new Decimal(value);
   if (!decimal.isFinite()) return "不可用";
-  return `${decimal
-    .times(100)
-    .toDecimalPlaces(4, Decimal.ROUND_HALF_EVEN)
-    .toFixed()}%`;
+  return `${decimal.times(100).toDecimalPlaces(4, Decimal.ROUND_HALF_EVEN).toFixed()}%`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

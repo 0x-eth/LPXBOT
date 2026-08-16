@@ -54,9 +54,7 @@ const rangeQueryKeys: Record<PoolNumericFilterKey, string> = {
   txs: "pool_txs",
   volume: "pool_volume",
 };
-const queryRangeEntries = poolNumericFilterKeys.map(
-  (key) => [key, rangeQueryKeys[key]] as const,
-);
+const queryRangeEntries = poolNumericFilterKeys.map((key) => [key, rangeQueryKeys[key]] as const);
 const filterQueryKeys = [
   "pool_versions",
   ...queryRangeEntries.map(([, queryKey]) => queryKey),
