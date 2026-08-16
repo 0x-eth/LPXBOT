@@ -10,6 +10,48 @@ import { BSC_PROTOCOL_DEPLOYMENTS } from "../packages/chain-registry/src/index.j
 import { describe, expect, it } from "vitest";
 
 const root = path.resolve("artifacts/acceptance/P02-03");
+const stableImplementationCommit = "52aef88f99b3701ee5218a4ca1d19b051d211639";
+const hostedCiRun = "31923619152";
+const hostedCiAttempt = 2;
+const hostedCiCompletedAt = "2026-08-16T03:23:59.000Z";
+const hostedCiJobs = [
+  {
+    completedAt: "2026-08-16T03:15:47Z",
+    id: "95107894904",
+    name: "Quality",
+    startedAt: "2026-08-16T03:14:16Z",
+  },
+  {
+    completedAt: "2026-08-16T03:14:37Z",
+    id: "95107894873",
+    name: "Governance",
+    startedAt: "2026-08-16T03:14:16Z",
+  },
+  {
+    completedAt: "2026-08-16T03:23:58Z",
+    id: "95107894879",
+    name: "Browser",
+    startedAt: "2026-08-16T03:14:16Z",
+  },
+  {
+    completedAt: "2026-08-16T03:14:26Z",
+    id: "95107894888",
+    name: "Contracts",
+    startedAt: "2026-08-16T03:14:16Z",
+  },
+  {
+    completedAt: "2026-08-16T03:15:31Z",
+    id: "95107894917",
+    name: "Infrastructure",
+    startedAt: "2026-08-16T03:14:17Z",
+  },
+  {
+    completedAt: "2026-08-16T03:14:36Z",
+    id: "95107894900",
+    name: "Security",
+    startedAt: "2026-08-16T03:14:17Z",
+  },
+] as const;
 
 function json(file: string) {
   return JSON.parse(readFileSync(path.join(root, file), "utf8"));
@@ -208,12 +250,51 @@ describe("P02-03 acceptance integrity", () => {
     }
   });
 
-  it("uses the requested featureless accepted-with-gaps manifest", () => {
-    expect(json("manifest.json")).toMatchObject({
+  it("records hosted CI proof without overstating acceptance", () => {
+    const manifest = json("manifest.json");
+    expect(manifest).toMatchObject({
+      commit: stableImplementationCommit,
+      completedAt: hostedCiCompletedAt,
       featureIds: [],
       risk: "R1",
       status: "accepted-with-gaps",
       workItemId: "P02-03",
     });
+    expect(manifest.featureIds).toEqual([]);
+
+    const assumptions = manifest.assumptions.join("\n");
+    expect(assumptions).toContain(`run ${hostedCiRun} attempt ${String(hostedCiAttempt)}`);
+    expect(assumptions).toContain("all concluded success with non-empty steps");
+    for (const job of hostedCiJobs) {
+      expect(assumptions).toContain(`${job.name} ${job.id}`);
+    }
+
+    const commandOutput = readFileSync(path.join(root, "command-output.md"), "utf8");
+    expect(commandOutput).toContain(`Run: \`${hostedCiRun}\``);
+    expect(commandOutput).toContain(`Attempt: \`${String(hostedCiAttempt)}\``);
+    expect(commandOutput).toContain(`Head SHA: \`${stableImplementationCommit}\``);
+    expect(commandOutput).toContain(`Completed: \`${hostedCiCompletedAt}\``);
+    for (const job of hostedCiJobs) {
+      expect(commandOutput).toContain(
+        `| ${job.name} | \`${job.id}\` | \`${job.startedAt}\` | \`${job.completedAt}\` | \`success\` |`,
+      );
+    }
+    expect(commandOutput).toContain("Attempt: `1`");
+    expect(commandOutput).toContain("`steps: []`");
+    expect(commandOutput).toContain("not a test failure");
+    expect(commandOutput).toContain("recent account payments have failed or your spending limit");
+
+    const operations = readFileSync(path.join(root, "E-OPS.md"), "utf8");
+    expect(operations).toContain(`Stable implementation commit: \`${stableImplementationCommit}\``);
+    expect(operations).toContain(`Hosted CI run: \`${hostedCiRun}\``);
+    expect(operations).toContain(`Hosted CI attempt: \`${String(hostedCiAttempt)}\``);
+    for (const job of hostedCiJobs) {
+      expect(operations).toContain(`| ${job.name} | \`${job.id}\` | \`success\` |`);
+    }
+
+    const finalityGap = json("gap-resolution.json").items.find(
+      ({ id }: { id: string }) => id === "GAP-FINALITY-DEPTH",
+    );
+    expect(finalityGap).toMatchObject({ status: "unresolved" });
   });
 });
