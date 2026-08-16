@@ -45,6 +45,7 @@ async function mockRpc(
 }
 
 afterEach(async () => {
+  for (const server of servers) server.closeAllConnections();
   await Promise.all(
     servers.splice(0).map((server) => new Promise<void>((resolve) => server.close(() => resolve()))),
   );
@@ -218,5 +219,110 @@ describe("P02-03 ViemBscLogSource", () => {
     await expect(
       new ViemBscLogSource({ fromBlock: "1", rpcUrl: wrongChain.url }).read(null),
     ).rejects.toThrow(/RPC_CHAIN_UNSUPPORTED/u);
+  });
+
+  it("bounds timeout retries", async () => {
+    const delays: number[] = [];
+    const server = createServer((_request, response) => {
+      setTimeout(() => {
+        if (!response.destroyed) {
+          response.setHeader("content-type", "application/json");
+          response.end(JSON.stringify({ id: 1, jsonrpc: "2.0", result: "0x38" }));
+        }
+      }, 100);
+    });
+    servers.push(server);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("mock RPC did not bind");
+    const source = new ViemBscLogSource({
+      fromBlock: "1",
+      maxAttempts: 2,
+      rpcUrl: `http://127.0.0.1:${address.port}`,
+      sleep: async (milliseconds) => {
+        delays.push(milliseconds);
+      },
+      timeoutMilliseconds: 5,
+    });
+
+    await expect(source.read(null)).rejects.toThrow(/RPC_REQUEST_FAILED: eth_chainId/u);
+    expect(delays).toEqual([100]);
+  });
+
+  it("passes removed logs, a same-height replacement, and discontinuous parents to reorg handling", async () => {
+    const oldHash = `0x${"aa".repeat(32)}`;
+    const replacementHash = `0x${"bb".repeat(32)}`;
+    const unexpectedParent = `0x${"cc".repeat(32)}`;
+    const rpc = await mockRpc(({ method, params }) => {
+      if (method === "eth_chainId") return { body: { id: 1, jsonrpc: "2.0", result: "0x38" } };
+      if (method === "eth_getBlockByNumber" && params[0] === "latest") {
+        return {
+          body: {
+            id: 1,
+            jsonrpc: "2.0",
+            result: { hash: `0x${"dd".repeat(32)}`, number: "0x65", parentHash: unexpectedParent, timestamp: "0x65" },
+          },
+        };
+      }
+      if (method === "eth_getLogs") {
+        const base = {
+          address: "0x0000000000000000000000000000000000000056",
+          data: "0x",
+          topics: [`0x${"11".repeat(32)}`],
+          transactionHash: `0x${"22".repeat(32)}`,
+          transactionIndex: "0x1",
+        };
+        return {
+          body: {
+            id: 1,
+            jsonrpc: "2.0",
+            result: [
+              { ...base, blockHash: oldHash, blockNumber: "0x64", logIndex: "0x1", removed: true },
+              { ...base, blockHash: replacementHash, blockNumber: "0x64", logIndex: "0x0", removed: false },
+              { ...base, blockHash: `0x${"dd".repeat(32)}`, blockNumber: "0x65", logIndex: "0x0", removed: false },
+            ],
+          },
+        };
+      }
+      if (method === "eth_getBlockByNumber") {
+        const number = params[0] as string;
+        return {
+          body: {
+            id: 1,
+            jsonrpc: "2.0",
+            result: {
+              hash: number === "0x64" ? replacementHash : `0x${"dd".repeat(32)}`,
+              number,
+              parentHash: unexpectedParent,
+              timestamp: number,
+            },
+          },
+        };
+      }
+      throw new Error(`unexpected ${method}`);
+    });
+    const cursor = {
+      blockHash: oldHash,
+      blockNumber: "100",
+      chainId: 56,
+      logIndex: 2,
+      transactionIndex: 1,
+      value: "old-branch",
+    };
+
+    const first = await new ViemBscLogSource({ fromBlock: "1", rpcUrl: rpc.url }).read(cursor);
+    const restarted = await new ViemBscLogSource({ fromBlock: "1", rpcUrl: rpc.url }).read(cursor);
+
+    for (const page of [first, restarted]) {
+      expect(page?.deliveries.map(({ block, log }) => ({
+        blockHash: block.blockHash,
+        parentHash: block.parentHash,
+        removed: log.removed,
+      }))).toEqual([
+        { blockHash: oldHash, parentHash: unexpectedParent, removed: true },
+        { blockHash: replacementHash, parentHash: unexpectedParent, removed: false },
+        { blockHash: `0x${"dd".repeat(32)}`, parentHash: unexpectedParent, removed: false },
+      ]);
+    }
   });
 });

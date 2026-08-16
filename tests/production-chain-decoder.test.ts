@@ -8,6 +8,7 @@ import {
   type QuarantinedLog,
 } from "../packages/chain-adapters/src/index.js";
 import { BSC_PROTOCOL_DEPLOYMENTS } from "../packages/chain-registry/src/index.js";
+import { encodeAbiParameters, encodeEventTopics } from "viem";
 import { describe, expect, it } from "vitest";
 
 const acceptanceRoot = path.resolve("artifacts/acceptance/P02-03");
@@ -152,5 +153,100 @@ describe("P02-03 production BSC event decoder", () => {
 
     await expect(decoder.decode(fixture)).rejects.toThrow(/DECODER_QUARANTINED/u);
     expect(quarantined).toHaveLength(1);
+  });
+
+  it("decodes protocol tick and liquidity integer boundaries without truncation", async () => {
+    const decoder = new ProductionBscEventDecoder({ deployments: BSC_PROTOCOL_DEPLOYMENTS });
+    const v3Raw = readGolden("univ3", "Mint");
+    for (const prerequisite of v3Raw.prerequisites ?? []) {
+      await decoder.decode(prerequisite.delivery);
+    }
+    const v3 = structuredClone(v3Raw.delivery);
+    const maxUint128 = (1n << 128n) - 1n;
+    v3.log.topics = encodeEventTopics({
+      abi: [
+        {
+          name: "Mint",
+          type: "event",
+          inputs: [
+            { name: "sender", type: "address" },
+            { indexed: true, name: "owner", type: "address" },
+            { indexed: true, name: "tickLower", type: "int24" },
+            { indexed: true, name: "tickUpper", type: "int24" },
+            { name: "amount", type: "uint128" },
+            { name: "amount0", type: "uint256" },
+            { name: "amount1", type: "uint256" },
+          ],
+        },
+      ] as const,
+      eventName: "Mint",
+      args: {
+        owner: "0x0000000000000000000000000000000000000001",
+        tickLower: -887_272,
+        tickUpper: 887_272,
+      },
+    });
+    v3.log.data = encodeAbiParameters(
+      [
+        { type: "address" },
+        { type: "uint128" },
+        { type: "uint256" },
+        { type: "uint256" },
+      ],
+      ["0x0000000000000000000000000000000000000002", maxUint128, 1n, 2n],
+    );
+    const decodedV3 = await decoder.decode(v3);
+    expect(decodedV3).toMatchObject({
+      liquidityDelta: maxUint128.toString(),
+      payload: { tickLower: "-887272", tickUpper: "887272" },
+    });
+
+    const v4Raw = readGolden("univ4", "ModifyLiquidity");
+    for (const prerequisite of v4Raw.prerequisites ?? []) {
+      await decoder.decode(prerequisite.delivery);
+    }
+    const v4 = structuredClone(v4Raw.delivery);
+    const minInt256 = -(1n << 255n);
+    v4.log.data = encodeAbiParameters(
+      [
+        { type: "int24" },
+        { type: "int24" },
+        { type: "int256" },
+        { type: "bytes32" },
+      ],
+      [-887_272, 887_272, minInt256, `0x${"00".repeat(32)}`],
+    );
+    const decodedV4 = await decoder.decode(v4);
+    expect(decodedV4).toMatchObject({
+      kind: "liquidity.remove",
+      liquidityDelta: minInt256.toString(),
+      payload: { tickLower: "-887272", tickUpper: "887272" },
+    });
+  });
+
+  it("quarantines a deployment ABI hash conflict before decoding", async () => {
+    const deployments = BSC_PROTOCOL_DEPLOYMENTS.map((deployment) =>
+      deployment.platformId === "univ4"
+        ? { ...deployment, abiHash: `sha256:${"11".repeat(32)}` as const }
+        : deployment,
+    );
+    const decoder = new ProductionBscEventDecoder({ deployments });
+
+    await expect(decoder.decode(readGolden("univ4", "Initialize").delivery)).rejects.toThrow(
+      /DECODER_QUARANTINED: abi-conflict/u,
+    );
+    expect(decoder.quarantined).toEqual([
+      expect.objectContaining({ reason: "abi-conflict" }),
+    ]);
+  });
+
+  it("rejects a protocol-specific V4 topic at the other protocol manager", async () => {
+    const decoder = new ProductionBscEventDecoder({ deployments: BSC_PROTOCOL_DEPLOYMENTS });
+    const delivery = structuredClone(readGolden("univ4", "Initialize").delivery);
+    delivery.log.address = BSC_PROTOCOL_DEPLOYMENTS[3]!.poolManager!;
+
+    await expect(decoder.decode(delivery)).rejects.toThrow(
+      /DECODER_QUARANTINED: wrong-protocol/u,
+    );
   });
 });

@@ -234,7 +234,7 @@ export interface ProtocolDeploymentFailure {
 export interface VerifyProtocolDeploymentCodeOptions {
   chainId: number;
   deployments: readonly ProtocolDeployment[];
-  getCode(address: `0x${string}`, blockNumber: string): Promise<Hex>;
+  getCode(address: `0x${string}`, blockNumber: "latest" | string): Promise<Hex>;
 }
 
 export interface ProtocolDeploymentVerification {
@@ -254,7 +254,7 @@ export async function verifyProtocolDeploymentCode(
       continue;
     }
     try {
-      const code = await options.getCode(deploymentAddress(deployment), deployment.validFromBlock);
+      const code = await options.getCode(deploymentAddress(deployment), "latest");
       if (code === "0x") {
         failures.push({ platformId: deployment.platformId, reason: "runtime-code-empty" });
       } else if (keccak256(code).toLowerCase() !== deployment.runtimeCodeHash) {

@@ -288,11 +288,15 @@ export class ViemBscLogSource implements RawLogSource {
     return receipt;
   }
 
-  async getCode(address: `0x${string}`, blockNumber: string): Promise<Hex> {
+  async getCode(address: `0x${string}`, blockNumber: "latest" | string): Promise<Hex> {
     await this.#ensureChain();
+    const blockTag =
+      blockNumber === "latest"
+        ? blockNumber
+        : toHex(decimalBlock(blockNumber, "blockNumber"));
     const code = await this.#rpc<Hex>("eth_getCode", [
       address.toLowerCase(),
-      toHex(decimalBlock(blockNumber, "blockNumber")),
+      blockTag,
     ]);
     if (typeof code !== "string" || !code.startsWith("0x")) {
       throw new Error("RPC_CODE_RESPONSE_INVALID");

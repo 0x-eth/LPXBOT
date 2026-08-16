@@ -87,8 +87,6 @@ export interface ProductionBscEventDecoderOptions {
   quarantine?: QuarantineSink;
 }
 
-const nullQuarantine: QuarantineSink = { write: () => undefined };
-
 function lower(value: string): string {
   return value.toLowerCase();
 }
@@ -230,14 +228,15 @@ export class ProductionBscEventDecoder {
   readonly #deployments: readonly ProtocolDeployment[];
   readonly #factoryByAddress = new Map<string, ProtocolDeployment>();
   readonly #managerByAddress = new Map<string, ProtocolDeployment>();
-  readonly #quarantine: QuarantineSink;
+  readonly #quarantine: QuarantineSink | undefined;
+  readonly #quarantined: QuarantinedLog[] = [];
   readonly #v3Pools = new Map<string, V3PoolIdentity>();
   readonly #v4Pools = new Map<string, V4PoolIdentity>();
 
   constructor(options: ProductionBscEventDecoderOptions) {
     validateProtocolDeploymentRegistry(options.deployments);
     this.#deployments = [...options.deployments];
-    this.#quarantine = options.quarantine ?? nullQuarantine;
+    this.#quarantine = options.quarantine;
     for (const deployment of this.#deployments) {
       if (deployment.abiHash !== PROTOCOL_ABI_HASHES[deployment.platformId]) {
         this.#conflictingAbis.add(deployment.platformId);
@@ -248,15 +247,21 @@ export class ProductionBscEventDecoder {
   }
 
   async #reject(delivery: RawLogDelivery, reason: QuarantineReason): Promise<never> {
-    await this.#quarantine.write({
+    const entry = {
       address: lower(delivery.log.address),
       blockNumber: delivery.log.blockNumber,
       chainId: delivery.log.chainId,
       reason,
       topic0: delivery.log.topics[0]?.toLowerCase() ?? null,
       transactionHash: lower(delivery.log.transactionHash),
-    });
+    } satisfies QuarantinedLog;
+    this.#quarantined.push(entry);
+    await this.#quarantine?.write(entry);
     throw new Error(`DECODER_QUARANTINED: ${reason}`);
+  }
+
+  get quarantined(): readonly QuarantinedLog[] {
+    return this.#quarantined.map((entry) => ({ ...entry }));
   }
 
   #deploymentInRange(deployment: ProtocolDeployment, blockNumber: string): boolean {
