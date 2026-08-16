@@ -23,19 +23,46 @@ The Linux visual command used `mcr.microsoft.com/playwright:v1.62.1-noble@sha256
 
 ## Final local gates
 
-The final gate run records `format:check`, `lint`, `typecheck`, `test`, `build`, `check:all`, full Playwright, infrastructure/PostgreSQL, Gitleaks, dependency audit, and contract results after the checksum-covered tree is complete.
+The final gate run was repeated after the checksum-covered P02-05 tree was complete:
 
-## Hosted CI provenance
+```text
+pnpm format:check: passed
+pnpm lint: 14/14 tasks passed
+pnpm typecheck: 21/21 tasks passed
+pnpm test: 46/46 Vitest files and 281/281 tests passed; 39/39 governance tests passed
+pnpm build: 14/14 tasks passed
+pnpm check:all: passed
+pnpm test:e2e: 118 passed, 4 skipped (122 total)
+pnpm test:infra: 8/8 tests passed
+pnpm test:postgres: 11/11 files and 39/39 tests passed
+pnpm test:contracts: 3/3 tests passed
+pnpm audit:dependencies: no known vulnerabilities
+Gitleaks 8.30.1 full-history scan: 510 commits, 20.05 MB, no leaks
+Gitleaks 8.24.3 compatibility scan: 510 commits, 20.05 MB, no leaks
+```
 
-Runs `31935869553` attempts 1 and 2 for implementation anchor `fc3aeb78f25f66b4aa54a30db83876215b6701c2` both ended with all six Jobs reporting `steps: []`; no runner executed repository commands. They are allocation history only and are not accepted as remote execution evidence.
+## GitHub Actions runner provenance
 
-The accepted Hosted CI run is added only after Quality, Governance, Browser, Contracts, Infrastructure, and Security each report `conclusion: success` with non-empty steps. The final HEAD is then checked independently to avoid treating local equivalents as a remote run.
+GitHub-hosted allocation attempts made before the temporary runner was registered ended with `steps: []` because the account could not allocate hosted minutes. No repository command ran in those attempts, so they are allocation history only and are not remote execution evidence. Self-hosted run `31937474147` executed real steps but failed Security and is also not accepted.
+
+The accepted GitHub Actions evidence is push run [`31938091566`](https://github.com/0x-eth/LPXBOT/actions/runs/31938091566) for commit `4b9e7b01383ee1d7197f4c482eab82acf20ce745`, completed `2026-08-16T09:16:38Z`. GitHub dispatched every Job to repository runner ID `22`, name `p02-05-colima-arm64`, labels `self-hosted`, `Linux`, `ARM64`, `p02-05-arm64`, runner version `2.336.0`. The runner was a temporary repo-scoped process inside Colima `0.10.3`, Ubuntu `24.04.4 LTS` arm64, Linux `6.8.0-117-generic`, 4 CPUs, 8 GB RAM, Docker `29.5.2`, hosted by macOS `15.7.4` arm64. It is explicitly self-hosted GitHub Actions provenance, not GitHub-hosted provenance and not a local-equivalent substitution.
+
+```text
+Contracts      job 95143075205  success  9 steps   3/3 Foundry tests
+Infrastructure job 95143075207  success 17 steps   migrations/seed repeated; 8/8 infrastructure and 39/39 PostgreSQL tests
+Governance     job 95143075217  success 15 steps   baseline, 196 IDs, docs, manifests and reference checks
+Browser        job 95143075226  success 12 steps   118 passed, 4 skipped; failure-only upload step skipped by condition
+Security       job 95143075246  success 10 steps   Gitleaks passed; dependency audit found no known vulnerabilities
+Quality        job 95143075250  success 13 steps   format, lint 14/14, typecheck 21/21, test and build
+```
+
+The Security action checked the incoming push commit according to its push-event range. The independent Gitleaks 8.30.1 and action-compatible 8.24.3 commands above both scanned the full 510-commit repository history; this distinction is retained instead of representing a local command as a GitHub-hosted scan.
 
 ## Frozen boundaries
 
 ```text
 requested baseline: de0a846b137777f710f53f25f47f276b43d43b7c
-stable implementation anchor: fc3aeb78f25f66b4aa54a30db83876215b6701c2
+stable implementation anchor: 4b9e7b01383ee1d7197f4c482eab82acf20ce745
 P02-01 tree: ab14275c2df97d44f86c2970d441495dd94fbe82
 P02-02 tree: a5cd9382933646f73fba0c5fc8fe2297fabe0354
 P02-03 tree: 82304becc026450cfc0f9c032f623ed965cd8817
