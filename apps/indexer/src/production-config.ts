@@ -10,7 +10,15 @@ import {
   verifyProtocolDeploymentCode,
   type ProtocolDeployment,
   type ProtocolDeploymentVerification,
+  type ProtocolPlatformId,
 } from "@lpbot/chain-registry";
+
+const requiredBscProtocols = [
+  "univ3",
+  "pcsv3",
+  "univ4",
+  "pcsv4",
+] as const satisfies readonly ProtocolPlatformId[];
 
 export interface ProductionIndexerConfig {
   chainId: 56;
@@ -91,18 +99,32 @@ export async function initializeProductionIndexerAdapters(
     },
     environment,
   );
-  const deploymentVerification = await verifyProtocolDeploymentCode({
+  const verifiedDeployments = await verifyProtocolDeploymentCode({
     chainId: config.chainId,
     deployments: config.deployments,
     getCode: (address, blockNumber) => source.getCode(address, blockNumber),
   });
+  const configuredProtocols = new Set(config.deployments.map(({ platformId }) => platformId));
+  const deploymentVerification: ProtocolDeploymentVerification = {
+    enabled: verifiedDeployments.enabled,
+    failures: [
+      ...verifiedDeployments.failures,
+      ...requiredBscProtocols
+        .filter((platformId) => !configuredProtocols.has(platformId))
+        .map((platformId) => ({ platformId, reason: "deployment-missing" as const })),
+    ],
+  };
   const decoder = new ProductionBscEventDecoder({
     deployments: deploymentVerification.enabled,
   });
   const chainAccessConfigurationComplete =
     findRegisteredChain(config.chainId)?.configurationComplete ?? false;
+  const enabledProtocols = new Set(
+    deploymentVerification.enabled.map(({ platformId }) => platformId),
+  );
   const marketDecoderComplete =
-    deploymentVerification.enabled.length === 4 && deploymentVerification.failures.length === 0;
+    requiredBscProtocols.every((platformId) => enabledProtocols.has(platformId)) &&
+    deploymentVerification.failures.length === 0;
   return {
     chainAccessConfigurationComplete,
     decoder,

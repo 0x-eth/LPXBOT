@@ -235,6 +235,7 @@ export function displayProtocolAddress(deployment: ProtocolDeployment): `0x${str
 
 export type ProtocolDeploymentFailureReason =
   | "chain-id-mismatch"
+  | "deployment-missing"
   | "runtime-code-empty"
   | "runtime-code-hash-mismatch"
   | "runtime-code-read-failed";

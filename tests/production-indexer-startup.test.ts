@@ -91,4 +91,28 @@ describe("P02-03 production indexer startup", () => {
       { platformId: "univ4", reason: "runtime-code-hash-mismatch" },
     ]);
   });
+
+  it("does not mistake four deployment versions of one protocol for four-protocol coverage", async () => {
+    const code = "0x6000" as const;
+    const source = configForCode(code).deployments[0]!;
+    const deployments = [
+      { ...source, deploymentVersion: "1.0.0", validFromBlock: "1", validToBlock: "1" },
+      { ...source, deploymentVersion: "1.1.0", validFromBlock: "2", validToBlock: "2" },
+      { ...source, deploymentVersion: "1.2.0", validFromBlock: "3", validToBlock: "3" },
+      { ...source, deploymentVersion: "1.3.0", validFromBlock: "4", validToBlock: null },
+    ] as const;
+    const rpcUrl = await codeRpc(() => code);
+
+    const initialized = await initializeProductionIndexerAdapters(
+      { chainId: 56, deployments, fromBlock: "1" },
+      { BSC_RPC_URL: rpcUrl },
+    );
+
+    expect(initialized.marketDecoderComplete).toBe(false);
+    expect(initialized.deploymentVerification.failures).toEqual([
+      { platformId: "pcsv3", reason: "deployment-missing" },
+      { platformId: "univ4", reason: "deployment-missing" },
+      { platformId: "pcsv4", reason: "deployment-missing" },
+    ]);
+  });
 });
