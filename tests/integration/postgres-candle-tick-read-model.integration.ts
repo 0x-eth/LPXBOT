@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { PostgresMarketChartsProvider } from "../../apps/api/src/market-charts.js";
 import { PostgresCanonicalEventStore } from "../../apps/indexer/src/index.js";
 import type {
   CanonicalCommit,
@@ -444,5 +445,96 @@ describe("P02-10 PostgreSQL Candle/Tick read model", () => {
       { current_tick: 120, pool_key: `56:${poolB}`, version: "1" },
     ]);
     expect(JSON.stringify(candles.rows)).not.toContain("90071992547409931234567890");
+  });
+
+  it("loads latest-N Candles ascending, reverses token1 and preserves empty/null behavior", async () => {
+    const store = new PostgresCanonicalEventStore(pool);
+    await store.commit(commit(initialEntries(), "2026-08-17T00:05:00.000Z"));
+    await pool.query("DELETE FROM market_candles WHERE pool_key = $1", [`56:${poolA}`]);
+    await pool.query(
+      `INSERT INTO market_candles
+         (pool_key, chain_id, bar, bucket_start, open, high, low, close,
+          volume0_raw, volume1_raw, updated_at)
+       VALUES
+         ($1, 56, '5m', '2026-08-17T00:00:00.000Z', 1, 4, 1, 2, 10, 20, $2),
+         ($1, 56, '5m', '2026-08-17T00:05:00.000Z', 2, 8, 2, 4, 30, 40, $2),
+         ($1, 56, '5m', '2026-08-17T00:10:00.000Z', 4, 16, 4, 8, 50, 60, $2)`,
+      [`56:${poolA}`, "2026-08-17T00:11:00.000Z"],
+    );
+    const provider = new PostgresMarketChartsProvider(pool);
+
+    const token0Candles = await provider.getCandles({
+      bar: "5m",
+      chainId: 56,
+      limit: 2,
+      poolKey: `56:${poolA}`,
+      token: token0,
+    });
+    expect(token0Candles.candles).toEqual([
+      { close: "4", high: "8", low: "2", open: "2", ts: 1_786_925_100, volume: "30" },
+      { close: "8", high: "16", low: "4", open: "4", ts: 1_786_925_400, volume: "50" },
+    ]);
+
+    const token1Candles = await provider.getCandles({
+      bar: "5m",
+      chainId: 56,
+      limit: 2,
+      poolKey: `56:${poolA}`,
+      token: token1,
+    });
+    expect(token1Candles).toMatchObject({
+      direction: "token1",
+      priceUnit: "token0-raw/token1-raw",
+      volumeUnit: { kind: "raw-integer", token: token1 },
+    });
+    expect(token1Candles.candles).toEqual([
+      {
+        close: "0.25",
+        high: "0.5",
+        low: "0.125",
+        open: "0.5",
+        ts: 1_786_925_100,
+        volume: "40",
+      },
+      {
+        close: "0.125",
+        high: "0.25",
+        low: "0.0625",
+        open: "0.25",
+        ts: 1_786_925_400,
+        volume: "60",
+      },
+    ]);
+
+    await pool.query("DELETE FROM market_candles WHERE pool_key = $1", [`56:${poolA}`]);
+    await expect(
+      provider.getCandles({
+        bar: "5m",
+        chainId: 56,
+        limit: 200,
+        poolKey: `56:${poolA}`,
+        token: token0,
+      }),
+    ).resolves.toMatchObject({ candles: [], poolKey: `56:${poolA}` });
+
+    await pool.query("UPDATE market_read_model_states SET current_tick = NULL WHERE pool_key = $1", [
+      `56:${poolA}`,
+    ]);
+    const ticks = await provider.getTickLiquidity({
+      chainId: 56,
+      decimals0: null,
+      decimals1: null,
+      identity: poolA,
+      protocol: "univ3",
+      range: 10,
+      tickSpacing: 60,
+    });
+    expect(ticks).toMatchObject({
+      currentTick: null,
+      decimals0: null,
+      decimals1: null,
+      poolKey: `56:${poolA}`,
+      ticks: [],
+    });
   });
 });

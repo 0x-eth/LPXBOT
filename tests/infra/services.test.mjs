@@ -105,7 +105,7 @@ test("PostgreSQL exposes TimescaleDB, pgcrypto, and migration history", () => {
     query(
       "SELECT string_agg(tablename, ',' ORDER BY tablename) FROM pg_tables WHERE schemaname = 'public'",
     ),
-    "access_audit_events,address_remark_audit_events,address_remarks,app_metadata,auth_login_wallets,auth_wallet_challenges,canonical_chain_blocks,chain_access_management_audit_events,chain_access_policies,chain_access_policy_history,indexer_cursors,integrity_quarantine,liquidity_flow_events,liquidity_flow_outbox,market_pool_catalog,market_snapshots,market_stream_outbox,normalized_pool_events,raw_chain_logs,schema_migrations,sessions,telegram_bot_login_intents,telegram_identities,telegram_init_data_replays,user_preferences,users",
+    "access_audit_events,address_remark_audit_events,address_remarks,app_metadata,auth_login_wallets,auth_wallet_challenges,canonical_chain_blocks,chain_access_management_audit_events,chain_access_policies,chain_access_policy_history,indexer_cursors,integrity_quarantine,liquidity_flow_events,liquidity_flow_outbox,market_candles,market_pool_catalog,market_read_model_states,market_snapshots,market_stream_outbox,market_tick_liquidity,normalized_pool_events,raw_chain_logs,schema_migrations,sessions,telegram_bot_login_intents,telegram_identities,telegram_init_data_replays,user_preferences,users",
   );
 });
 

@@ -194,6 +194,7 @@ beforeAll(async () => {
     "20260816000200_create_liquidity_flow.sql",
     "20260816000400_create_market_pool_catalog.sql",
     "20260816000500_add_market_label_context.sql",
+    "20260817000100_create_candle_tick_read_models.sql",
   ];
   for (const filename of migrationFiles) {
     const source = readFileSync(path.join(repositoryRoot, "infra/migrations", filename), "utf8");
@@ -203,7 +204,8 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await pool.query(
-    `TRUNCATE liquidity_flow_outbox, liquidity_flow_events, market_pool_catalog,
+    `TRUNCATE market_tick_liquidity, market_candles, market_read_model_states,
+      liquidity_flow_outbox, liquidity_flow_events, market_pool_catalog,
       market_stream_outbox, market_snapshots, integrity_quarantine,
       normalized_pool_events, raw_chain_logs, canonical_chain_blocks, indexer_cursors
       RESTART IDENTITY CASCADE`,
