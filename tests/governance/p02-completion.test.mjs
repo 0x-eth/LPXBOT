@@ -13,6 +13,8 @@ const P02_04_MANIFEST_PATH = path.join(ROOT, "artifacts/acceptance/P02-04/manife
 const P02_05_ROOT = path.join(ROOT, "artifacts/acceptance/P02-05");
 const P02_05_MANIFEST_PATH = path.join(P02_05_ROOT, "manifest.json");
 const P02_05_GAPS_PATH = path.join(P02_05_ROOT, "gap-resolution.json");
+const P02_06_ROOT = path.join(ROOT, "artifacts/acceptance/P02-06");
+const P02_06_MANIFEST_PATH = path.join(P02_06_ROOT, "manifest.json");
 const EXPECTED_ACCEPTED_COMMIT = "73998c6f22e499f7063207ec1d497766b6714d29";
 const EXPECTED_FEATURE_IDS = [
   ...Array.from({ length: 16 }, (_, index) => `POOL-${String(index + 1).padStart(2, "0")}`),
@@ -22,10 +24,12 @@ const EXPECTED_FEATURE_IDS = [
 const P02_02_FEATURE_IDS = ["POOL-01", "POOL-02", "POOL-04", "POOL-16"];
 const P02_04_FEATURE_IDS = ["POOL-03", "FLOW-01", "FLOW-02"];
 const P02_05_FEATURE_IDS = ["FLOW-03", "FLOW-04", "FLOW-05"];
+const P02_06_FEATURE_IDS = ["POOL-08", "POOL-09", "POOL-10"];
 const IMPLEMENTED_FEATURE_IDS = [
   ...P02_02_FEATURE_IDS,
   ...P02_04_FEATURE_IDS,
   ...P02_05_FEATURE_IDS,
+  ...P02_06_FEATURE_IDS,
 ];
 const REQUIRED_EVIDENCE_IDS = [
   "E-DATA",
@@ -108,7 +112,7 @@ async function acceptanceFiles(directory, prefix = "") {
   return files.sort();
 }
 
-test("P02 status table keeps exactly ten fixture-verified features implemented", async () => {
+test("P02 status table keeps exactly thirteen fixture-verified features implemented", async () => {
   const markdown = await readFile(TRACEABILITY_PATH, "utf8");
   const rows = p02StatusRows(markdown);
   assert.deepEqual(sorted(rows.keys()), sorted(EXPECTED_FEATURE_IDS));
@@ -133,9 +137,86 @@ test("P02 status table keeps exactly ten fixture-verified features implemented",
   }
 
   assert.deepEqual(sorted(implemented), sorted(IMPLEMENTED_FEATURE_IDS));
-  assert.equal(planned.length, 13);
-  assert.match(markdown, /`implemented-assumed`\s*\|\s*28\s*\|/);
-  assert.match(markdown, /(?:其余|remaining)\s*`planned`\s*\|\s*168\s*\|/i);
+  assert.equal(planned.length, 10);
+  assert.match(markdown, /`implemented-assumed`\s*\|\s*31\s*\|/);
+  assert.match(markdown, /(?:其余|remaining)\s*`planned`\s*\|\s*165\s*\|/i);
+});
+
+test("P02-06 owns only POOL-08/09/10 with the required local evidence", async () => {
+  const [manifest, functionMatrix, traceabilityMarkdown] = await Promise.all([
+    readFile(P02_06_MANIFEST_PATH, "utf8").then(JSON.parse),
+    readFile(FUNCTION_MATRIX_PATH, "utf8"),
+    readFile(TRACEABILITY_PATH, "utf8"),
+  ]);
+  assert.equal(manifest.workItemId, "P02-06");
+  assert.equal(manifest.phase, "P02");
+  assert.equal(manifest.risk, "R1");
+  assert.equal(manifest.status, "accepted-with-gaps");
+  assert.deepEqual(sorted(manifest.featureIds), sorted(P02_06_FEATURE_IDS));
+
+  const markedFunctionIds = functionMatrix
+    .split("\n")
+    .filter((line) => line.includes("`implemented-assumed`（P02-06"))
+    .map((line) => line.split("|")[1]?.trim())
+    .filter((id) => EXPECTED_FEATURE_IDS.includes(id));
+  assert.deepEqual(sorted(markedFunctionIds), sorted(P02_06_FEATURE_IDS));
+
+  const traceability = traceabilityRows(traceabilityMarkdown);
+  const manifestTests = new Set(manifest.tests.map(({ id }) => id));
+  const manifestEvidence = new Set(manifest.evidence.map(({ id }) => id));
+  for (const featureId of P02_06_FEATURE_IDS) {
+    const minimums = traceability.get(featureId);
+    assert.ok(minimums, `${featureId} is missing from TRACEABILITY_MATRIX`);
+    for (const testId of minimums.tests) {
+      assert.ok(manifestTests.has(testId), `${featureId} is missing ${testId}`);
+    }
+    for (const evidenceId of minimums.evidence) {
+      assert.ok(manifestEvidence.has(evidenceId), `${featureId} is missing ${evidenceId}`);
+    }
+  }
+
+  assert.deepEqual(
+    sorted(manifest.evidence.map(({ id }) => id)),
+    sorted(["E-API", "E-DATA", "E-SSE", "E-REC", "E-UI", "E-VIS", "E-RBAC", "E-SEC"]),
+  );
+  for (const evidence of manifest.evidence) {
+    await access(assertRepositoryPath(evidence.path, evidence.id));
+  }
+
+  const assumptions = manifest.assumptions.join("\n");
+  assert.match(assumptions, /local-fixture-verified only/);
+  assert.match(assumptions, /BSC chainId 56 is the only implemented chain/);
+  assert.match(assumptions, /POOL-15 creator attribution remains planned/);
+  assert.match(assumptions, /GAP-FINALITY-DEPTH remains unresolved/);
+  assert.match(assumptions, /existing USD and formula gaps remain unresolved/);
+  assert.match(assumptions, /P02-01 through P02-05 acceptance directories remain byte-identical/);
+  assert.doesNotMatch(assumptions, /parity-verified|released/);
+});
+
+test("P02-06 sha256 inventory covers every acceptance file except itself", async () => {
+  const checksumText = await readFile(path.join(P02_06_ROOT, "sha256sums.txt"), "utf8");
+  const checksums = new Map(
+    checksumText
+      .trim()
+      .split("\n")
+      .map((line) => {
+        const match = line.match(/^([0-9a-f]{64}) {2}(.+)$/u);
+        assert.ok(match, `invalid P02-06 checksum row: ${line}`);
+        return [match[2], match[1]];
+      }),
+  );
+  const files = (await acceptanceFiles(P02_06_ROOT)).filter(
+    (file) => file !== "sha256sums.txt",
+  );
+  assert.deepEqual([...checksums.keys()].sort(), files);
+  for (const file of files) {
+    const bytes = await readFile(path.join(P02_06_ROOT, file));
+    assert.equal(
+      checksums.get(file),
+      createHash("sha256").update(bytes).digest("hex"),
+      `${file} checksum`,
+    );
+  }
 });
 
 test("P02-05 owns only FLOW-03/04/05 with the required local evidence", async () => {
