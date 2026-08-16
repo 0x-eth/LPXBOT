@@ -1,7 +1,6 @@
 import {
   canonicalizeLiquidityProtocols,
   liquidityFlowProtocols,
-  type LiquidityFlowConnection,
   type LiquidityFlowEvent,
   type LiquidityFlowProtocol,
   type MarketPoolRow,
