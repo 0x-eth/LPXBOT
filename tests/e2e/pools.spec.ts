@@ -66,7 +66,9 @@ for (const state of ["loading", "empty", "error", "stale", "reconnecting"] as co
     if (state === "loading") {
       await expect(page.locator("main")).toHaveAttribute("aria-busy", "true");
     }
-    if (state === "error") await expect(page.getByRole("alert")).toBeVisible();
+    if (state === "error") {
+      await expect(page.getByRole("alert", { name: "市场数据暂不可用" })).toBeVisible();
+    }
     if (state === "stale" || state === "reconnecting") {
       await expect(page.getByRole("table", { name: "BSC 热门池" })).toBeVisible();
     }
