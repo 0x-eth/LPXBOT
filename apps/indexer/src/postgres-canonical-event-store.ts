@@ -9,8 +9,12 @@ import type {
   MarketStreamEnvelope,
 } from "@lpbot/api-contract";
 import {
+  MARKET_METRIC_VERSION,
+  POOL_LABEL_RULE_CONTRACT,
+  computePoolLabels,
   computeMarketWindows,
   poolMetricKey,
+  type ComputedPoolLabel,
   type MarketMetricEvent,
   type MarketWindowResult,
   type PoolMetricRow,
@@ -47,14 +51,21 @@ interface StoredMetricEvent {
   pool_address: string | null;
   pool_id: string | null;
   protocol: MarketMetricEvent["pool"]["protocol"];
+  liquidity_delta: string | null;
+  sqrt_price_x96: string | null;
   tick_spacing: string | null;
   token0: string | null;
   token1: string | null;
   transaction_hash: string;
 }
 
+interface ProjectedPoolMetricRow extends PoolMetricRow {
+  labelRuleVersion: string;
+  labels: ComputedPoolLabel[];
+}
+
 interface CurrentSnapshotRow {
-  rows: PoolMetricRow[];
+  rows: ProjectedPoolMetricRow[];
   snapshot_hash: string;
   version: string;
 }
@@ -93,7 +104,7 @@ function payloadHash(value: unknown): string {
   return createHash("sha256").update(stableJson(value)).digest("hex");
 }
 
-function toMarketPoolRow(row: PoolMetricRow): MarketPoolRow {
+function toMarketPoolRow(row: ProjectedPoolMetricRow): MarketPoolRow {
   if (row.chainId !== 56) throw new RangeError("MARKET_CHAIN_UNSUPPORTED");
   return {
     ...row,
@@ -111,12 +122,18 @@ function identityFromAffected(row: AffectedPoolRow): string | null {
   return identity ? `${row.chain_id}:${identity.toLowerCase()}` : null;
 }
 
-function changedRows(previous: readonly PoolMetricRow[], current: readonly PoolMetricRow[]) {
+function changedRows(
+  previous: readonly ProjectedPoolMetricRow[],
+  current: readonly ProjectedPoolMetricRow[],
+) {
   const previousByKey = new Map(previous.map((row) => [poolMetricKey(row), stableJson(row)]));
   return current.filter((row) => previousByKey.get(poolMetricKey(row)) !== stableJson(row));
 }
 
-function removedRows(previous: readonly PoolMetricRow[], current: readonly PoolMetricRow[]) {
+function removedRows(
+  previous: readonly ProjectedPoolMetricRow[],
+  current: readonly ProjectedPoolMetricRow[],
+) {
   const currentKeys = new Set(current.map(poolMetricKey));
   return previous.map(poolMetricKey).filter((key) => !currentKeys.has(key));
 }
@@ -810,7 +827,8 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     const result = await client.query<StoredMetricEvent>(
       `SELECT event_id, chain_id::text, block_timestamp, transaction_hash, kind,
               protocol, pool_address, pool_id, token0, token1, fee_pips::text,
-              tick_spacing::text, hooks, market_data, finality
+              tick_spacing::text, hooks, market_data, finality,
+              liquidity_delta::text, sqrt_price_x96::text
          FROM normalized_pool_events
         WHERE chain_id = 56 AND canonical AND block_timestamp < $1
         ORDER BY block_timestamp, block_number, transaction_index, log_index, transaction_hash`,
@@ -821,6 +839,7 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
       chainId: Number(row.chain_id),
       eventId: row.event_id,
       kind: row.kind,
+      liquidityDelta: row.liquidity_delta,
       market: row.market_data,
       pool: {
         feePips: row.fee_pips,
@@ -835,6 +854,7 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
         token1Symbol: row.market_data.token1Symbol ?? null,
       },
       reverted: row.finality === "reverted",
+      sqrtPriceX96: row.sqrt_price_x96,
       transactionHash: row.transaction_hash,
     }));
   }
@@ -849,12 +869,30 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
       end: commit.evaluationTime,
       windowComplete: true,
     });
+    const canonicalRevision = `canonical:v1:${payloadHash(events)}`;
     const sourceCursor = await this.#getCursor(client, commit.chainId);
     for (const window of windows) {
+      const projected: MarketWindowResult & { rows: ProjectedPoolMetricRow[] } = {
+        ...window,
+        rows: window.rows.map((row) => ({
+          ...row,
+          labelRuleVersion: POOL_LABEL_RULE_CONTRACT.ruleVersion,
+          labels: computePoolLabels({
+            canonicalRevision,
+            events,
+            metricVersion: MARKET_METRIC_VERSION,
+            row,
+            windowEnd: window.end,
+            windowMinutes: window.minutes,
+            windowStart: window.start,
+          }),
+        })),
+      };
       await this.#persistWindow(
         client,
         commit,
-        window,
+        projected,
+        canonicalRevision,
         sourceCursor?.value ?? null,
         forcedTombstones,
       );
@@ -864,7 +902,8 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
   async #persistWindow(
     client: PoolClient,
     commit: CanonicalCommit,
-    window: MarketWindowResult,
+    window: MarketWindowResult & { rows: ProjectedPoolMetricRow[] },
+    canonicalRevision: string,
     sourceCursor: string | null,
     forcedTombstones: ReadonlySet<string>,
   ): Promise<void> {
@@ -893,8 +932,9 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     await client.query(
       `INSERT INTO market_snapshots (
          stream_key, chain_id, window_minutes, window_start, window_end,
-         version, source_cursor, snapshot_hash, rows, canonical, created_at
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, true, $10)`,
+         version, source_cursor, canonical_revision, metric_version, label_rule_version,
+         snapshot_hash, rows, canonical, created_at
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, true, $13)`,
       [
         streamKey,
         commit.chainId,
@@ -903,6 +943,9 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
         window.end,
         version,
         sourceCursor,
+        canonicalRevision,
+        MARKET_METRIC_VERSION,
+        POOL_LABEL_RULE_CONTRACT.ruleVersion,
         hash,
         stableJson(rows),
         commit.evaluationTime,
@@ -928,8 +971,10 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     let mode: MarketStreamEnvelope["mode"];
     if (!previous) {
       data = {
+        canonicalRevision,
         chainId: 56,
         generatedAt: commit.evaluationTime,
+        metricVersion: MARKET_METRIC_VERSION,
         minutes: window.minutes,
         rows: marketRows,
         version,
@@ -941,11 +986,14 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     } else {
       const tombstones = new Set([...removedRows(previous.rows, rows), ...forcedTombstones]);
       data = {
+        canonicalRevision,
+        metricVersion: MARKET_METRIC_VERSION,
         tombstones: [...tombstones].sort(),
         upserts: changedRows(previous.rows, rows)
           .filter((row) => !forcedTombstones.has(poolMetricKey(row)))
           .map(toMarketPoolRow),
         version,
+        windowEnd: window.end,
       };
       eventType = "pools.diff";
       mode = "diff";

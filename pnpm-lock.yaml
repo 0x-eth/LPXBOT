@@ -86,6 +86,9 @@ importers:
       '@lpbot/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@lpbot/market-metrics':
+        specifier: workspace:*
+        version: link:../../packages/market-metrics
       '@lpbot/observability':
         specifier: workspace:*
         version: link:../../packages/observability

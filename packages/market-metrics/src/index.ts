@@ -2,6 +2,7 @@ import { domainPackage } from "@lpbot/domain";
 import { Decimal } from "decimal.js";
 
 export const MARKET_WINDOWS = [1, 5, 15, 30, 60] as const;
+export const MARKET_METRIC_VERSION = "market-metrics/v1" as const;
 
 export type MarketWindowMinutes = (typeof MARKET_WINDOWS)[number];
 export type MarketMetricKind =

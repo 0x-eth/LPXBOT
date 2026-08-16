@@ -12,6 +12,7 @@ import {
   type MarketStreamEnvelope,
   type MarketWindowMinutes,
 } from "@lpbot/api-contract";
+import { MARKET_METRIC_VERSION, POOL_LABEL_RULE_CONTRACT } from "@lpbot/market-metrics";
 import type { Pool, PoolClient } from "pg";
 
 export interface MarketPoolsContext {
@@ -40,7 +41,9 @@ export interface MarketPoolsProvider {
 }
 
 interface SnapshotRow {
+  canonical_revision: string;
   created_at: Date;
+  metric_version: string;
   rows: MarketPoolRow[];
   version: string;
   window_end: Date;
@@ -213,6 +216,8 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
         feesUsd: fees5m,
         feeTvl: current?.feeTvl ?? null,
         hooks: row.hooks as MarketPoolByTokenRow["hooks"],
+        labelRuleVersion: current?.labelRuleVersion ?? POOL_LABEL_RULE_CONTRACT.ruleVersion,
+        labels: current?.labels ?? [],
         poolAddress: row.pool_address as MarketPoolByTokenRow["poolAddress"],
         poolId: row.pool_id as MarketPoolByTokenRow["poolId"],
         poolKey: row.pool_key,
@@ -235,7 +240,8 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
 
   async getTopFees(context: MarketPoolsContext): Promise<MarketPoolSnapshot> {
     const result = await this.#pool.query<SnapshotRow>(
-      `SELECT version::text, window_start, window_end, rows, created_at
+      `SELECT version::text, window_start, window_end, rows, created_at,
+              canonical_revision, metric_version
          FROM market_snapshots
         WHERE stream_key = $1 AND canonical`,
       [storageStreamKey(context)],
@@ -410,7 +416,8 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
     context: MarketPoolsContext,
   ): Promise<MarketPoolSnapshot> {
     const result = await client.query<SnapshotRow>(
-      `SELECT version::text, window_start, window_end, rows, created_at
+      `SELECT version::text, window_start, window_end, rows, created_at,
+              canonical_revision, metric_version
          FROM market_snapshots WHERE stream_key = $1 AND canonical`,
       [storageStreamKey(context)],
     );
@@ -420,8 +427,10 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
 
   #snapshot(context: MarketPoolsContext, row: SnapshotRow): MarketPoolSnapshot {
     return {
+      canonicalRevision: row.canonical_revision,
       chainId: context.chainId,
       generatedAt: row.created_at.toISOString(),
+      metricVersion: row.metric_version,
       minutes: context.minutes,
       rows: row.rows,
       version: row.version,
@@ -433,8 +442,10 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
   #emptySnapshot(context: MarketPoolsContext): MarketPoolSnapshot {
     const now = this.#validNow();
     return {
+      canonicalRevision: "canonical:v1:empty",
       chainId: context.chainId,
       generatedAt: now.toISOString(),
+      metricVersion: MARKET_METRIC_VERSION,
       minutes: context.minutes,
       rows: [],
       version: "0",
@@ -512,3 +523,4 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
     );
   }
 }
+  metric_version: string;

@@ -22,6 +22,7 @@
     "@lpbot/api-contract": "workspace:*",
     "@lpbot/chain-registry": "workspace:*",
     "@lpbot/domain": "workspace:*",
+    "@lpbot/market-metrics": "workspace:*",
     "@lpbot/observability": "workspace:*",
     "@lpbot/security": "workspace:*",
     "fastify": "5.12.0",
