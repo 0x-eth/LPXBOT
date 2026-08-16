@@ -39,15 +39,19 @@ export function buildLiquidityFlowStreamUrl(
   return `/api/liquidity-adds/stream?${parameters.toString()}`;
 }
 
-function parseSseBlock(block: string): { data: string; event: string } | "heartbeat" | null {
+function parseSseBlock(
+  block: string,
+): { data: string; event: string; id: string | null } | "heartbeat" | null {
   if (block.startsWith(":")) return "heartbeat";
   let event = "message";
+  let id: string | null = null;
   const data: string[] = [];
   for (const line of block.split("\n")) {
     if (line.startsWith("event:")) event = line.slice(6).trim();
+    if (line.startsWith("id:")) id = line.slice(3).trim() || null;
     if (line.startsWith("data:")) data.push(line.slice(5).trimStart());
   }
-  return data.length > 0 ? { data: data.join("\n"), event } : null;
+  return data.length > 0 ? { data: data.join("\n"), event, id } : null;
 }
 
 function wait(milliseconds: number, signal: AbortSignal): Promise<void> {
@@ -69,6 +73,7 @@ export class LiquidityFlowClient {
   ): LiquidityFlowSubscription {
     const lifetime = new AbortController();
     let request: AbortController | null = null;
+    let lastEventId: string | null = null;
 
     const run = async () => {
       let attempt = 0;
@@ -77,9 +82,11 @@ export class LiquidityFlowClient {
         const abortRequest = () => request?.abort();
         lifetime.signal.addEventListener("abort", abortRequest, { once: true });
         try {
+          const headers: Record<string, string> = { Accept: "text/event-stream" };
+          if (lastEventId) headers["Last-Event-ID"] = lastEventId;
           const response = await fetch(buildLiquidityFlowStreamUrl(callbacks.getSince(), filters), {
             credentials: "include",
-            headers: { Accept: "text/event-stream" },
+            headers,
             signal: request.signal,
           });
           if (!response.ok || !response.headers.get("content-type")?.startsWith("text/event-stream")) {
@@ -105,8 +112,10 @@ export class LiquidityFlowClient {
               if (message === "heartbeat") callbacks.onHeartbeat();
               else if (message?.event === "backfill") {
                 callbacks.onBackfill(JSON.parse(message.data) as LiquidityFlowBackfill);
+                if (message.id) lastEventId = message.id;
               } else if (message?.event === "liquidity-add") {
                 callbacks.onEvent(JSON.parse(message.data) as LiquidityFlowRecord);
+                if (message.id) lastEventId = message.id;
               }
               boundary = buffered.indexOf("\n\n");
             }

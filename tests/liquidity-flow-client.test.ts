@@ -11,8 +11,16 @@ import {
   serializeLiquidityFlowUiFilters,
   type LiquidityFlowUiFilters,
 } from "../apps/web/src/liquidity-flow-state.js";
-import { buildLiquidityFlowStreamUrl } from "../apps/web/src/liquidity-flow-client.js";
-import { describe, expect, it } from "vitest";
+import {
+  buildLiquidityFlowStreamUrl,
+  LiquidityFlowClient,
+} from "../apps/web/src/liquidity-flow-client.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 function event(
   id: string,
@@ -91,6 +99,67 @@ describe("P02-04 liquidity flow client state", () => {
         "&token=0x2222222222222222222222222222222222222222" +
         "&user=0x4444444444444444444444444444444444444444&nft_id=42",
     );
+  });
+
+  it("reconnects from the latest SSE id while advancing since by event timestamp", async () => {
+    const encoder = new TextEncoder();
+    const record = event("retained", 300);
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(
+          encoder.encode(
+            `id: ${record.cursor}\nevent: backfill\ndata: ${JSON.stringify({
+              cursor: record.cursor,
+              event_type: "liquidity.backfill",
+              events: [record],
+              has_more: false,
+              schema_version: "1.0.0",
+              stream_key: "liquidity-flow:56:pool=*:token=*:user=*:nft=*",
+            })}\n\n`,
+          ),
+        );
+        controller.close();
+      },
+    });
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(body, { headers: { "Content-Type": "text/event-stream" }, status: 200 }),
+      )
+      .mockImplementationOnce((_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("Aborted", "AbortError")),
+          );
+        }),
+      );
+    vi.stubGlobal("fetch", fetcher);
+    vi.stubGlobal("window", globalThis);
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    let since = 0;
+    const subscription = new LiquidityFlowClient().subscribe(
+      { nftId: "", pool: "", token: "", user: "" },
+      {
+        getSince: () => since,
+        onBackfill: (backfill) => {
+          since = Math.max(since, ...backfill.events.map(({ ts }) => ts));
+        },
+        onError: vi.fn(),
+        onEvent: vi.fn(),
+        onHeartbeat: vi.fn(),
+        onOpen: vi.fn(),
+        onReconnecting: vi.fn(),
+      },
+    );
+
+    await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+    expect(fetcher.mock.calls[1]).toEqual([
+      "/api/liquidity-adds/stream?since=300",
+      expect.objectContaining({
+        headers: { Accept: "text/event-stream", "Last-Event-ID": record.cursor },
+      }),
+    ]);
+    subscription.close();
   });
 
   it("deduplicates stable ids, sorts out-of-order backfill, and advances since by ts", () => {
