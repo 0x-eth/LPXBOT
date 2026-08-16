@@ -671,18 +671,30 @@ function PoolTable({
   columns,
   comparisonCandidateKeys,
   comparisonSelectedKeys,
+  expandedMarketPoolKey,
+  marketFixtureState,
+  marketRefreshMs,
+  marketRefreshSignal,
+  marketStale,
   rows,
   showLabels,
   toggleComparison,
   toggleGroup,
+  toggleMarket,
 }: {
   columns: readonly PoolColumnPreference[];
   comparisonCandidateKeys: ReadonlySet<string>;
   comparisonSelectedKeys: ReadonlySet<string>;
+  expandedMarketPoolKey: string | null;
+  marketFixtureState: MarketDetailFixtureState | null;
+  marketRefreshMs: number;
+  marketRefreshSignal: number;
+  marketStale: boolean;
   rows: readonly VisiblePoolRow[];
   showLabels: boolean;
   toggleComparison(poolKey: string): void;
   toggleGroup(groupKey: string): void;
+  toggleMarket(poolKey: string): void;
 }) {
   const visibleColumns = columns.filter(({ visible }) => visible);
   return (
@@ -698,26 +710,45 @@ function PoolTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((visibleRow) => (
-            <tr
-              data-group-member={!visibleRow.isHeader ? "true" : undefined}
-              data-pool-label-count={showLabels ? visibleRow.row.labels.length : 0}
-              key={visibleRow.row.poolKey}
-            >
-              {visibleColumns.map(({ key }) => (
-                <PoolTableCell
-                  column={key}
-                  comparisonEnabled={comparisonCandidateKeys.has(visibleRow.row.poolKey)}
-                  comparisonSelected={comparisonSelectedKeys.has(visibleRow.row.poolKey)}
-                  key={key}
-                  showLabels={showLabels}
-                  toggleComparison={toggleComparison}
-                  toggleGroup={toggleGroup}
-                  visibleRow={visibleRow}
-                />
-              ))}
-            </tr>
-          ))}
+          {rows.map((visibleRow) => {
+            const marketExpanded = expandedMarketPoolKey === visibleRow.row.poolKey;
+            return (
+              <Fragment key={visibleRow.row.poolKey}>
+                <tr
+                  data-group-member={!visibleRow.isHeader ? "true" : undefined}
+                  data-pool-label-count={showLabels ? visibleRow.row.labels.length : 0}
+                >
+                  {visibleColumns.map(({ key }) => (
+                    <PoolTableCell
+                      column={key}
+                      comparisonEnabled={comparisonCandidateKeys.has(visibleRow.row.poolKey)}
+                      comparisonSelected={comparisonSelectedKeys.has(visibleRow.row.poolKey)}
+                      key={key}
+                      marketExpanded={marketExpanded}
+                      showLabels={showLabels}
+                      toggleComparison={toggleComparison}
+                      toggleGroup={toggleGroup}
+                      toggleMarket={toggleMarket}
+                      visibleRow={visibleRow}
+                    />
+                  ))}
+                </tr>
+                {marketExpanded ? (
+                  <tr className="pool-market-detail-row">
+                    <td className="pool-market-detail-cell" colSpan={visibleColumns.length}>
+                      <PoolMarketDetail
+                        fixtureState={marketFixtureState}
+                        refreshMs={marketRefreshMs}
+                        refreshSignal={marketRefreshSignal}
+                        row={visibleRow.row}
+                        stale={marketStale}
+                      />
+                    </td>
+                  </tr>
+                ) : null}
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -1817,6 +1848,8 @@ export function PoolsPage() {
   );
   const { preferences, update: updatePreferences } = useUserPreferences();
   const fixture = fixtureState(location.search);
+  const marketFixtureState = fixtureMarketDetailState(location.search);
+  const marketRefreshMs = marketDetailRefreshMs(location.search);
   const poolClient = useMemo(() => new PoolsClient(), []);
   const flowClient = useMemo(() => new LiquidityFlowClient(), []);
   const remarkClient = useMemo(() => new AddressRemarksClient(), []);
@@ -1840,6 +1873,9 @@ export function PoolsPage() {
   const [poolSearchRefresh, setPoolSearchRefresh] = useState(0);
   const poolSearchManager = useRef(new PoolSearchRequestManager());
   const [expandedPoolGroups, setExpandedPoolGroups] = useState<Set<string>>(() => new Set());
+  const [expandedMarketPoolKey, setExpandedMarketPoolKey] = useState<string | null>(null);
+  const expandedMarketPoolKeyRef = useRef<string | null>(null);
+  const [marketRefreshSignal, setMarketRefreshSignal] = useState(0);
   const [advancedFilterDraft, setAdvancedFilterDraft] = useState<PoolAdvancedFilters>(() =>
     structuredClone(parsedAdvancedFilters.filters),
   );
@@ -1979,6 +2015,21 @@ export function PoolsPage() {
             onError: () => dispatch({ type: "reconnecting" }),
             onEvent: (event) => {
               latestEventAt.current = Date.now();
+              const activePoolKey = expandedMarketPoolKeyRef.current;
+              if (
+                activePoolKey &&
+                event.eventType === "pools.diff" &&
+                event.data &&
+                "upserts" in event.data
+              ) {
+                if (event.data.upserts.some(({ poolKey }) => poolKey === activePoolKey)) {
+                  setMarketRefreshSignal((value) => value + 1);
+                }
+                if (event.data.tombstones.some((poolKey) => poolKey === activePoolKey)) {
+                  expandedMarketPoolKeyRef.current = null;
+                  setExpandedMarketPoolKey(null);
+                }
+              }
               dispatch({ event, type: "event" });
             },
             onOpen: () => {
@@ -2183,6 +2234,15 @@ export function PoolsPage() {
     () => flattenPoolGroups(poolGroups, expandedPoolGroups),
     [expandedPoolGroups, poolGroups],
   );
+  useEffect(() => {
+    if (
+      expandedMarketPoolKey &&
+      !visiblePoolRows.some(({ row }) => row.poolKey === expandedMarketPoolKey)
+    ) {
+      expandedMarketPoolKeyRef.current = null;
+      setExpandedMarketPoolKey(null);
+    }
+  }, [expandedMarketPoolKey, visiblePoolRows]);
   const poolColumns = useMemo(
     () => normalizePoolColumns(preferences.poolColumns),
     [preferences.poolColumns],
@@ -2400,6 +2460,14 @@ export function PoolsPage() {
     });
   }, []);
 
+  const toggleMarketPool = useCallback((poolKey: string) => {
+    setExpandedMarketPoolKey((current) => {
+      const next = current === poolKey ? null : poolKey;
+      expandedMarketPoolKeyRef.current = next;
+      return next;
+    });
+  }, []);
+
   return (
     <main
       aria-busy={connection === "loading" ? "true" : undefined}
@@ -2503,10 +2571,16 @@ export function PoolsPage() {
           columns={poolColumns}
           comparisonCandidateKeys={comparisonCandidateKeys}
           comparisonSelectedKeys={comparisonSelectedKeys}
+          expandedMarketPoolKey={expandedMarketPoolKey}
+          marketFixtureState={marketFixtureState}
+          marketRefreshMs={marketRefreshMs}
+          marketRefreshSignal={marketRefreshSignal}
+          marketStale={connection === "stale" || connection === "reconnecting"}
           rows={visiblePoolRows}
           showLabels={preferences.showPoolLabels}
           toggleComparison={toggleComparison}
           toggleGroup={togglePoolGroup}
+          toggleMarket={toggleMarketPool}
         />
       ) : null}
 
