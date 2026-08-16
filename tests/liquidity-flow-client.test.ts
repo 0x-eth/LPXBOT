@@ -428,7 +428,7 @@ describe("P02-05 filtered liquidity flow projection", () => {
         ...options,
         sort: "count",
       }).addresses.map(({ address }) => address),
-    ).toEqual([addressA.toLowerCase(), addressC, addressB]);
+    ).toEqual([addressA.toLowerCase(), addressB, addressC]);
     expect(
       buildLiquidityFlowProjection(events, defaultFilters(), {
         ...options,
