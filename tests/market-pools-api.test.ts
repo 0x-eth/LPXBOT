@@ -61,6 +61,10 @@ class FiniteMarketProvider implements MarketPoolsProvider {
   snapshotContexts: MarketPoolsContext[] = [];
   streamContexts: MarketPoolsStreamContext[] = [];
 
+  async getByToken(): Promise<[]> {
+    return [];
+  }
+
   async getTopFees(context: MarketPoolsContext): Promise<MarketPoolSnapshot> {
     this.snapshotContexts.push(context);
     return {

@@ -391,7 +391,7 @@ export interface MarketPoolRow {
   token0Symbol: string | null;
   token1Address: EvmAddress | null;
   token1Symbol: string | null;
-  transactionCount: string;
+  transactionCount: string | null;
   tvlUsd: string | null;
   volumeUsd: string | null;
 }

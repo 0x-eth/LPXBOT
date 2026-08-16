@@ -53,6 +53,20 @@ interface OutboxRow {
   sequence: string;
 }
 
+interface CatalogByTokenRow {
+  fee_pips: string | null;
+  five_minute: MarketPoolRow | null;
+  hooks: string | null;
+  one_hour: MarketPoolRow | null;
+  pool_address: string | null;
+  pool_id: string | null;
+  pool_key: string;
+  protocol: LiquidityFlowProtocol;
+  tick_spacing: string | null;
+  token0: string;
+  token1: string;
+}
+
 export interface PostgresMarketPoolsProviderOptions {
   heartbeatMilliseconds?: number;
   now?: () => Date;
@@ -137,6 +151,86 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
     ) {
       throw new RangeError("Market stream intervals must be positive integers");
     }
+  }
+
+  async getByToken(context: MarketPoolsByTokenContext): Promise<MarketPoolByTokenRow[]> {
+    const metric = context.sort === "fees" ? "feesUsd" : "volumeUsd";
+    const result = await this.#pool.query<CatalogByTokenRow>(
+      `WITH current_windows AS (
+         SELECT window_minutes, rows
+           FROM market_snapshots
+          WHERE chain_id = $1 AND canonical AND window_minutes IN (5, 60)
+       )
+       SELECT catalog.pool_key, catalog.protocol, catalog.pool_address, catalog.pool_id,
+              catalog.token0, catalog.token1, catalog.fee_pips::text,
+              catalog.tick_spacing::text, catalog.hooks,
+              five.row AS five_minute, hour.row AS one_hour
+         FROM market_pool_catalog AS catalog
+         LEFT JOIN LATERAL (
+           SELECT item AS row
+             FROM current_windows AS snapshot_window,
+                  LATERAL jsonb_array_elements(snapshot_window.rows) AS item
+            WHERE snapshot_window.window_minutes = 5
+              AND COALESCE(
+                item->>'poolKey',
+                item->>'chainId' || ':' || lower(COALESCE(item->>'poolAddress', item->>'poolId'))
+              ) = catalog.pool_key
+            LIMIT 1
+         ) AS five ON true
+         LEFT JOIN LATERAL (
+           SELECT item AS row
+             FROM current_windows AS snapshot_window,
+                  LATERAL jsonb_array_elements(snapshot_window.rows) AS item
+            WHERE snapshot_window.window_minutes = 60
+              AND COALESCE(
+                item->>'poolKey',
+                item->>'chainId' || ':' || lower(COALESCE(item->>'poolAddress', item->>'poolId'))
+              ) = catalog.pool_key
+            LIMIT 1
+         ) AS hour ON true
+        WHERE catalog.chain_id = $1
+          AND (catalog.token0 = $2 OR catalog.token1 = $2)
+          AND catalog.protocol = ANY($3::text[])
+        ORDER BY (five.row->>$4)::numeric DESC NULLS LAST,
+                 (hour.row->>$4)::numeric DESC NULLS LAST,
+                 catalog.pool_key
+        LIMIT $5`,
+      [context.chainId, context.address.toLowerCase(), context.protocols, metric, context.limit],
+    );
+    return result.rows.map((row) => {
+      const current = row.five_minute ?? row.one_hour;
+      const fees5m = row.five_minute?.feesUsd ?? null;
+      const volume5m = row.five_minute?.volumeUsd ?? null;
+      const transactionCount5m = row.five_minute?.transactionCount ?? null;
+      return {
+        activeTvlUsd: null,
+        chainId: 56,
+        fdvUsd: current?.fdvUsd ?? null,
+        feeActiveTvl: null,
+        feePips: row.fee_pips,
+        fees1h: row.one_hour?.feesUsd ?? null,
+        fees5m,
+        feesUsd: fees5m,
+        feeTvl: current?.feeTvl ?? null,
+        hooks: row.hooks as MarketPoolByTokenRow["hooks"],
+        poolAddress: row.pool_address as MarketPoolByTokenRow["poolAddress"],
+        poolId: row.pool_id as MarketPoolByTokenRow["poolId"],
+        poolKey: row.pool_key,
+        protocol: row.protocol,
+        tickSpacing: row.tick_spacing,
+        token0Address: row.token0 as MarketPoolByTokenRow["token0Address"],
+        token0Symbol: current?.token0Symbol ?? null,
+        token1Address: row.token1 as MarketPoolByTokenRow["token1Address"],
+        token1Symbol: current?.token1Symbol ?? null,
+        transactionCount: transactionCount5m,
+        transactionCount1h: row.one_hour?.transactionCount ?? null,
+        transactionCount5m,
+        tvlUsd: current?.tvlUsd ?? null,
+        volume1h: row.one_hour?.volumeUsd ?? null,
+        volume5m,
+        volumeUsd: volume5m,
+      };
+    });
   }
 
   async getTopFees(context: MarketPoolsContext): Promise<MarketPoolSnapshot> {
