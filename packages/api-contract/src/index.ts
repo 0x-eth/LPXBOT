@@ -233,6 +233,7 @@ export interface LiquidityFlowEvent {
   id: string;
   in_range: null;
   liquidity_delta: string | null;
+  log_index: number;
   nft_id: null;
   pool_address: EvmAddress | null;
   pool_id: `0x${string}` | null;
@@ -246,6 +247,7 @@ export interface LiquidityFlowEvent {
   token1_symbol: null;
   ts: number;
   tx_hash: `0x${string}`;
+  tx_index: number;
   user: EvmAddress | null;
   usd_value: null;
   version: "v3" | "v4";

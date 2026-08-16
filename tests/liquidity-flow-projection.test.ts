@@ -86,6 +86,6 @@ describe("P02-04 liquidity flow projection", () => {
         left < right ? -1 : left > right ? 1 : 0,
       ),
     );
-    expect(new Set(stable.map(({ id }) => id))).toHaveSize(stable.length);
+    expect(new Set(stable.map(({ id }) => id)).size).toBe(stable.length);
   });
 });

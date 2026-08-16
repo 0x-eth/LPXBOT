@@ -24,6 +24,11 @@ export type {
 export { compareRawLogDeliveries, IndexerRunner } from "./runner.js";
 export type { IndexerRunnerOptions } from "./runner.js";
 export { PostgresCanonicalEventStore } from "./postgres-canonical-event-store.js";
+export {
+  compareLiquidityFlowEvents,
+  projectLiquidityFlowEvent,
+  stableLiquidityFlowEvents,
+} from "./liquidity-flow.js";
 export type {
   CanonicalCommit,
   CanonicalEventStore,
