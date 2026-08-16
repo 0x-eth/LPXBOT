@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -71,7 +72,8 @@ function fixture(
   const address = options.poolAddress ?? poolA;
   const logIndex = options.logIndex ?? 0;
   const transactionIndex = options.transactionIndex ?? 0;
-  const transactionHash = hex(id.padEnd(2, "0").slice(0, 2));
+  const digest = createHash("sha256").update(id).digest("hex");
+  const transactionHash = `0x${digest}` as const;
   const cursor = {
     blockHash: options.blockHash,
     blockNumber: options.blockNumber,
@@ -94,7 +96,7 @@ function fixture(
       blockHash: options.blockHash,
       blockNumber: options.blockNumber,
       chainId: 56,
-      data: `0x${id}`,
+      data: `0x${digest.slice(0, 2)}`,
       logIndex,
       removed,
       topics: [hex("ef")],
@@ -113,7 +115,7 @@ function fixture(
       chainId: 56,
       contractAddress: address,
       cursor,
-      eventId: `event-${id}-${options.blockHash}`,
+      eventId: createHash("sha256").update(`${id}:${options.blockHash}`).digest("hex"),
       finality: removed ? "reverted" : "observed",
       kind: options.kind,
       liquidityDelta: options.liquidityDelta ?? null,
