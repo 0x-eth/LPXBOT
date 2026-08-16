@@ -90,8 +90,8 @@ async function fixture(
   const provider = options.provider === undefined ? new FixtureChartsProvider() : options.provider;
   const app = buildApiApp({
     maintenance: { enabled: false, message: null, until: null },
-    marketChartsProvider: provider ?? undefined,
-    marketChartsRateLimit: options.rateLimit,
+    ...(provider ? { marketChartsProvider: provider } : {}),
+    ...(options.rateLimit ? { marketChartsRateLimit: options.rateLimit } : {}),
     now: () => new Date("2026-08-17T00:05:00.000Z"),
     regionPolicy: () => ({ blocked: false, code: null, message: null }),
     sessionStore,
