@@ -404,7 +404,7 @@ test("POOL-10 persists locked column preferences and rolls back failures and con
   await dialog.getByRole("button", { name: "保存", exact: true }).click();
   await expect(dialog.getByRole("alert")).toHaveText("列设置保存失败");
   await dialog.getByRole("button", { name: "关闭列设置" }).click();
-  await expect(table.getByRole("columnheader", { name: "TVL" })).toHaveCount(0);
+  await expect(table.getByRole("columnheader", { exact: true, name: "TVL" })).toHaveCount(0);
   await expect(table.getByRole("columnheader", { name: "Volume" })).toBeVisible();
 
   await openColumns();

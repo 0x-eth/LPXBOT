@@ -63,7 +63,7 @@ test("POOL-01/02/04/16 render the usable local tracer row", async ({ page }) => 
     "Txs",
     "FDV",
   ]) {
-    await expect(table.getByRole("columnheader", { name: heading })).toBeVisible();
+    await expect(table.getByRole("columnheader", { exact: true, name: heading })).toBeVisible();
   }
   await expect(table.getByRole("row", { name: /WBNB.*USDT.*PancakeSwap V3/u })).toBeVisible();
   await expect(table.getByRole("columnheader", { name: "Fee/aTVL" })).toBeVisible();

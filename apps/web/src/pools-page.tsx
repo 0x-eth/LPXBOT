@@ -898,7 +898,12 @@ function PoolComparisonPanel({
         </div>
       ) : null}
       {view && pools.length >= 2 ? (
-        <div className="pool-comparison-table-shell">
+        <div
+          aria-label="池对比指标滚动区域"
+          className="pool-comparison-table-shell"
+          role="region"
+          tabIndex={0}
+        >
           <table aria-label="池对比指标" className="pool-comparison-table">
             <thead>
               <tr>
