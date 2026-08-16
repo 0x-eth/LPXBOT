@@ -5,10 +5,7 @@ import type {
   ShellStatsSnapshot,
 } from "../packages/api-contract/src/index.js";
 import { buildApiApp } from "../apps/api/src/index.js";
-import type {
-  MarketPoolsContext,
-  MarketPoolsProvider,
-} from "../apps/api/src/market-pools.js";
+import type { MarketPoolsContext, MarketPoolsProvider } from "../apps/api/src/market-pools.js";
 import type { ShellStatsProvider } from "../apps/api/src/shell-stats.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
