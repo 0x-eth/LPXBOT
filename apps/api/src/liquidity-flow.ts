@@ -101,36 +101,44 @@ export class PostgresLiquidityFlowProvider implements LiquidityFlowProvider {
     context: LiquidityFlowStreamContext,
   ): AsyncIterable<LiquidityFlowCanonicalEnvelope> {
     const key = liquidityFlowStreamKey(context);
-    const watermark = await this.#watermark();
-    const rows = await this.#backfill(context, watermark.sequence);
-    const hasMore = rows.length > this.#backfillLimit;
-    const selected = (hasMore ? rows.slice(0, this.#backfillLimit) : rows).reverse();
-    const records = selected
-      .map(({ payload }) => payload)
-      .filter((record): record is LiquidityFlowRecord => record !== null);
-    const cursor = selected.at(-1)?.cursor ?? watermark.cursor ?? null;
-    const backfillSequence = selected.at(-1)?.sequence ?? watermark.sequence;
-    const backfill: LiquidityFlowBackfill = {
-      cursor,
-      event_type: "liquidity.backfill",
-      events: records,
-      has_more: hasMore,
-      schema_version: "1.0.0",
-      stream_key: key,
-    };
-    yield {
-      cursor: cursor ?? "flow:v1:56:0:empty",
-      data: backfill,
-      emittedAt: this.#validNow().toISOString(),
-      epoch: "1",
-      eventType: "liquidity.backfill",
-      mode: "snapshot",
-      schemaVersion: "1.0.0",
-      sequence: backfillSequence,
-      streamKey: key,
-    };
+    const retainedSequence = context.lastEventId
+      ? await this.#retainedSequence(context.lastEventId)
+      : null;
+    let sequence: string;
+    if (retainedSequence !== null) {
+      sequence = retainedSequence;
+    } else {
+      const watermark = await this.#watermark();
+      const rows = await this.#backfill(context, watermark.sequence);
+      const hasMore = rows.length > this.#backfillLimit;
+      const selected = (hasMore ? rows.slice(0, this.#backfillLimit) : rows).reverse();
+      const records = selected
+        .map(({ payload }) => payload)
+        .filter((record): record is LiquidityFlowRecord => record !== null);
+      const cursor = selected.at(-1)?.cursor ?? watermark.cursor ?? null;
+      const backfillSequence = selected.at(-1)?.sequence ?? watermark.sequence;
+      const backfill: LiquidityFlowBackfill = {
+        cursor,
+        event_type: "liquidity.backfill",
+        events: records,
+        has_more: hasMore,
+        schema_version: "1.0.0",
+        stream_key: key,
+      };
+      yield {
+        cursor: cursor ?? "flow:v1:56:0:empty",
+        data: backfill,
+        emittedAt: this.#validNow().toISOString(),
+        epoch: "1",
+        eventType: "liquidity.backfill",
+        mode: "snapshot",
+        schemaVersion: "1.0.0",
+        sequence: backfillSequence,
+        streamKey: key,
+      };
+      sequence = watermark.sequence;
+    }
 
-    let sequence = watermark.sequence;
     while (!context.signal.aborted) {
       const live = await this.#after(sequence);
       if (live.length > 0) {
@@ -189,6 +197,16 @@ export class PostgresLiquidityFlowProvider implements LiquidityFlowProvider {
         LIMIT 1`,
     );
     return result.rows[0] ?? { cursor: "", sequence: "0" };
+  }
+
+  async #retainedSequence(cursor: string): Promise<string | null> {
+    const result = await this.#pool.query<{ sequence: string }>(
+      `SELECT sequence::text
+         FROM liquidity_flow_outbox
+        WHERE chain_id = 56 AND cursor = $1`,
+      [cursor],
+    );
+    return result.rows[0]?.sequence ?? null;
   }
 
   async #backfill(
