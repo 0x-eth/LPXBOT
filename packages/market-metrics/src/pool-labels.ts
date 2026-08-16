@@ -287,10 +287,16 @@ export function computePoolLabels(input: ComputePoolLabelsInput): ComputedPoolLa
     throw new RangeError("Pool labels require canonical and metric revisions");
   }
   const events = canonicalEvents(input);
+  const swapCount = events.filter(({ kind }) => kind === "swap").length;
   const window = `${input.windowMinutes}m`;
   const candidates: ComputedPoolLabel[] = [];
 
-  if (input.row.feeTvl !== null && input.row.feesUsd !== null && input.row.tvlUsd !== null) {
+  if (
+    swapCount >= contract.minimumSamples["high-fee-rate"] &&
+    input.row.feeTvl !== null &&
+    input.row.feesUsd !== null &&
+    input.row.tvlUsd !== null
+  ) {
     const observed = decimal(input.row.feeTvl);
     const threshold = decimal(contract.thresholds.highFeeRateFeeTvl);
     if (observed.greaterThanOrEqualTo(threshold)) {
@@ -355,7 +361,6 @@ export function computePoolLabels(input: ComputePoolLabelsInput): ComputedPoolLa
     }
   }
 
-  const swapCount = events.filter(({ kind }) => kind === "swap").length;
   if (swapCount >= contract.minimumSamples["stable-volume-price"]) {
     const dispersion = volumeDispersion(events);
     const changes = priceChanges(events);
@@ -392,7 +397,7 @@ export function computePoolLabels(input: ComputePoolLabelsInput): ComputedPoolLa
     }
   }
 
-  if (input.row.transactionCount !== null) {
+  if (swapCount >= contract.minimumSamples.crowded && input.row.transactionCount !== null) {
     const observed = decimal(input.row.transactionCount);
     const threshold = decimal(contract.thresholds.crowdedTransactionCountMin);
     if (observed.greaterThanOrEqualTo(threshold)) {

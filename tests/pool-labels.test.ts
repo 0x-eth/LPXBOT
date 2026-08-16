@@ -112,7 +112,7 @@ describe("P02-08 versioned pool label rule contract", () => {
   it.each([
     {
       expected: "high-fee-rate",
-      events: [],
+      events: [event("001", 30)],
       metricRow: row({ feeTvl: "0.01", feesUsd: "10", tvlUsd: "1000" }),
       reason: "FEE_TVL_GTE_THRESHOLD",
     },
@@ -162,7 +162,7 @@ describe("P02-08 versioned pool label rule contract", () => {
     },
     {
       expected: "crowded",
-      events: [],
+      events: [event("005", 30)],
       metricRow: row({ transactionCount: "20" }),
       reason: "TRANSACTION_COUNT_GTE_THRESHOLD",
     },
@@ -221,6 +221,8 @@ describe("P02-08 versioned pool label rule contract", () => {
 
   it("omits labels for nulls, missing samples and missing history instead of filling values", () => {
     expect(labels([], row())).toEqual([]);
+    expect(labels([], row({ feeTvl: "0.01", feesUsd: "10", tvlUsd: "1000" }))).toEqual([]);
+    expect(labels([], row({ transactionCount: "20" }))).toEqual([]);
     expect(
       labels(
         [event("801", 30, { market: { feesUsd: null, tvlUsd: null }, sqrtPriceX96: null })],
@@ -242,6 +244,7 @@ describe("P02-08 versioned pool label rule contract", () => {
     const repeated = event("901", 30, { kind: "liquidity.add", liquidityDelta: "5" });
     const result = labels(
       [
+        event("900", 15),
         repeated,
         structuredClone(repeated),
         event("902", 90, { kind: "liquidity.remove", liquidityDelta: "-3" }),
@@ -259,12 +262,13 @@ describe("P02-08 versioned pool label rule contract", () => {
 
   it("is idempotent and makes a rule-version change visible without changing input", () => {
     const input = row({ transactionCount: "20" });
-    const first = labels([], input);
-    expect(labels([], structuredClone(input))).toEqual(first);
+    const history = [event("a00", 30)];
+    const first = labels(history, input);
+    expect(labels(structuredClone(history), structuredClone(input))).toEqual(first);
 
     const nextContract = structuredClone(POOL_LABEL_RULE_CONTRACT) as PoolLabelRuleContract;
     nextContract.ruleVersion = "pool-labels/local-v2";
-    const next = labels([], input, nextContract);
+    const next = labels(history, input, nextContract);
     expect(next.map(({ id }) => id)).toEqual(first.map(({ id }) => id));
     expect(next.every(({ ruleVersion }) => ruleVersion === "pool-labels/local-v2")).toBe(true);
     expect(next).not.toEqual(first);

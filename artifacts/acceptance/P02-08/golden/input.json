@@ -30,6 +30,26 @@
   },
   "events": [
     {
+      "blockTimestamp": "2026-08-16T00:57:30.000Z",
+      "chainId": 56,
+      "eventId": "golden-swap",
+      "kind": "swap",
+      "liquidityDelta": null,
+      "market": {
+        "feesUsd": "10",
+        "tvlUsd": "1000",
+        "volumeUsd": null
+      },
+      "pool": {
+        "poolAddress": "0x1111111111111111111111111111111111111111",
+        "poolId": null,
+        "protocol": "pcsv3"
+      },
+      "reverted": false,
+      "sqrtPriceX96": null,
+      "transactionHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
       "blockTimestamp": "2026-08-16T00:55:30.000Z",
       "chainId": 56,
       "eventId": "golden-lp-add",
