@@ -13,6 +13,7 @@ interface PreferenceFixture {
   colorTheme: string;
   customColor: string | null;
   navConfig: Array<{ key: string; visible: boolean }>;
+  poolColumns: Array<{ key: string; visible: boolean }>;
   poolsPanelCollapsed: boolean;
   showHotPools: boolean;
   showScanTab: boolean;
@@ -38,6 +39,16 @@ const defaultPreferences: PreferenceFixture = {
     { key: "activity", visible: true },
     { key: "wallets", visible: true },
     { key: "chat", visible: true },
+  ],
+  poolColumns: [
+    { key: "pool", visible: true },
+    { key: "protocol", visible: true },
+    { key: "fees", visible: true },
+    { key: "volume", visible: true },
+    { key: "tvl", visible: true },
+    { key: "txs", visible: true },
+    { key: "fdv", visible: true },
+    { key: "actions", visible: true },
   ],
   poolsPanelCollapsed: false,
   showHotPools: false,
@@ -70,7 +81,7 @@ async function fulfillPreferences(route: Route, state: FixtureState): Promise<vo
         data: {
           preferences: state.preferences,
           revision: state.revision,
-          schemaVersion: 2,
+          schemaVersion: 3,
           updatedAt: state.revision === 0 ? null : "2026-08-14T09:30:00.000Z",
         },
         requestId: "req-preferences-e2e",
@@ -128,7 +139,7 @@ async function fulfillPreferences(route: Route, state: FixtureState): Promise<vo
       data: {
         preferences: state.preferences,
         revision: state.revision,
-        schemaVersion: 2,
+        schemaVersion: 3,
         updatedAt: "2026-08-14T09:30:00.000Z",
       },
       requestId: "req-preferences-saved",
