@@ -26,6 +26,16 @@ export type {
   RawLogPage,
   RawLogSource,
 } from "./types.js";
+export {
+  createViemBscLogSourceFromEnv,
+  READONLY_BSC_RPC_METHODS,
+  ViemBscLogSource,
+} from "./viem-bsc-log-source.js";
+export type {
+  ReadonlyBscRpcMethod,
+  ViemBscLogSourceEnvOptions,
+  ViemBscLogSourceOptions,
+} from "./viem-bsc-log-source.js";
 
 export const chainAdaptersPackage = {
   name: "@lpbot/chain-adapters",

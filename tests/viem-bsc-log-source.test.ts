@@ -90,7 +90,7 @@ describe("P02-03 ViemBscLogSource", () => {
       }
       if (method === "eth_getLogs") {
         const filter = params[0] as { fromBlock: string; toBlock: string };
-        if (filter.fromBlock === "0x66") {
+        if (filter.fromBlock === "0x68") {
           return {
             body: {
               id: 1,
