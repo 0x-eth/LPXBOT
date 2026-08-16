@@ -47,6 +47,10 @@ const flowMigrationPath = path.join(
   repositoryRoot,
   "infra/migrations/20260816000200_create_liquidity_flow.sql",
 );
+const catalogMigrationPath = path.join(
+  repositoryRoot,
+  "infra/migrations/20260816000400_create_market_pool_catalog.sql",
+);
 const goldenDirectory = path.join(repositoryRoot, "artifacts/acceptance/P02-02/golden");
 
 function normalMarketProjection(
@@ -628,28 +632,33 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
     expect(after.rows).toEqual(before.rows);
   });
 
-  it("runs the market and flow migrations down and up in dependency order", async () => {
+  it("runs the market, flow and catalog migrations down and up in dependency order", async () => {
     const market = migrationSections(readFileSync(migrationPath, "utf8"));
     const flow = migrationSections(readFileSync(flowMigrationPath, "utf8"));
+    const catalog = migrationSections(readFileSync(catalogMigrationPath, "utf8"));
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
+      await client.query(catalog.down);
       await client.query(flow.down);
       await client.query(market.down);
-      const removed = await client.query<{ flow: boolean; market: boolean }>(
+      const removed = await client.query<{ catalog: boolean; flow: boolean; market: boolean }>(
         `SELECT
+           to_regclass('public.market_pool_catalog') IS NOT NULL AS catalog,
            to_regclass('public.liquidity_flow_outbox') IS NOT NULL AS flow,
            to_regclass('public.market_stream_outbox') IS NOT NULL AS market`,
       );
-      expect(removed.rows).toEqual([{ flow: false, market: false }]);
+      expect(removed.rows).toEqual([{ catalog: false, flow: false, market: false }]);
       await client.query(market.up);
       await client.query(flow.up);
-      const restored = await client.query<{ flow: boolean; market: boolean }>(
+      await client.query(catalog.up);
+      const restored = await client.query<{ catalog: boolean; flow: boolean; market: boolean }>(
         `SELECT
+           to_regclass('public.market_pool_catalog') IS NOT NULL AS catalog,
            to_regclass('public.liquidity_flow_outbox') IS NOT NULL AS flow,
            to_regclass('public.market_stream_outbox') IS NOT NULL AS market`,
       );
-      expect(restored.rows).toEqual([{ flow: true, market: true }]);
+      expect(restored.rows).toEqual([{ catalog: true, flow: true, market: true }]);
     } finally {
       await client.query("ROLLBACK");
       client.release();
