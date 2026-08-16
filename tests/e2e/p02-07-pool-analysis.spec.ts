@@ -172,7 +172,10 @@ test("advanced filtering and comparison are keyboard, mobile, and axe clean", as
     "data-comparison-state",
     "one-selected",
   );
-  await table.getByRole("button", { name: /^选择对比/u }).first().click();
+  await table
+    .getByRole("button", { name: /^选择对比/u })
+    .first()
+    .click();
   await expect(page.getByRole("region", { name: "池对比" })).toHaveAttribute(
     "data-comparison-state",
     "ready",

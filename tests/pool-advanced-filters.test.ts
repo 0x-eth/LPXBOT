@@ -169,6 +169,9 @@ describe("P02-07 advanced pool filters", () => {
     expect(invalid.valid).toBe(false);
     expect(invalid.issues).toEqual(["pool_versions", "pool_fees", "pool_txs", "pool_hook"]);
     expect(validatePoolAdvancedFilters(invalid.filters)).toBe(false);
+
+    const duplicate = parsePoolAdvancedFilters("?pool_hook=present&pool_hook=absent");
+    expect(duplicate).toMatchObject({ issues: ["pool_hook"], valid: false });
   });
 
   it("sorts raw Decimal values stably with null last in both directions", () => {

@@ -178,9 +178,9 @@ describe("P02-07 same-snapshot pool comparison", () => {
     const refreshed = buildPoolComparison(selection, stream.snapshot!);
     expect(refreshed.binding.snapshotVersion).toBe("2");
     expect(refreshed.pools.find(({ poolKey }) => poolKey === poolA.poolKey)?.feesUsd).toBe("99");
-    expect(filterAndSortPoolRows(stream.snapshot!.rows, feeFilter).map(({ poolKey }) => poolKey)).toEqual([
-      poolA.poolKey,
-    ]);
+    expect(
+      filterAndSortPoolRows(stream.snapshot!.rows, feeFilter).map(({ poolKey }) => poolKey),
+    ).toEqual([poolA.poolKey]);
 
     stream = reducePoolStream(stream, {
       event: envelope("3", "pools.diff", {
