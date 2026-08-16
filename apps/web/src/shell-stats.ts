@@ -375,8 +375,12 @@ export function reduceShellStatsEvent(
       },
     };
   }
-  if (event.type === "heartbeat" && event.sequence === null) {
-    return { ...state, connected: true, observedAt: event.observedAt };
+  if (event.type === "heartbeat") {
+    if (event.sequence === null) {
+      return { ...state, connected: true, observedAt: event.observedAt };
+    }
+    if (event.sequence < state.sequence || event.sequence === state.sequence) return state;
+    return { ...state, connected: true, observedAt: event.observedAt, sequence: event.sequence };
   }
   if (event.sequence < state.sequence) return state;
   if (event.sequence === state.sequence && event.type !== "snapshot") return state;
@@ -388,9 +392,6 @@ export function reduceShellStatsEvent(
       sequence: event.sequence,
       stats: structuredClone(event.stats),
     };
-  }
-  if (event.type === "heartbeat") {
-    return { ...state, connected: true, observedAt: event.observedAt, sequence: event.sequence };
   }
   if (!state.stats) return state;
   return {

@@ -4,6 +4,8 @@ import type {
 } from "../packages/api-contract/src/index.js";
 import {
   createShellStatsState,
+  recommendedPoolDisplay,
+  recommendedPoolSearchPath,
   markShellStatsDisconnected,
   parseShellStatsEvent,
   reduceShellStatsEvent,
@@ -97,5 +99,18 @@ describe("P02-09 recommended pool client state", () => {
       connected: false,
       recommendations: { pools: [row], status: "stale" },
     });
+  });
+
+  it("formats unknown symbols from addresses and links only to the existing pool search", () => {
+    expect(recommendedPoolDisplay(row)).toEqual({
+      fees: "$12.50",
+      pair: "WBNB / 0xbbbb...bbbb",
+    });
+    expect(recommendedPoolSearchPath(row)).toBe(
+      "/pools?pool_search_mode=pool&pool_search=0x1111111111111111111111111111111111111111",
+    );
+    expect(recommendedPoolDisplay({ ...row, feesUsd: "1234567.899" }).fees).toBe(
+      "$1,234,567.90",
+    );
   });
 });

@@ -15,7 +15,6 @@ const snapshot: ShellStatsSnapshot = {
     gas: { baseGwei: 0.006, ethereumGwei: 0.232 },
     online: true,
     pingMs: 84,
-    recommendedPools: ["USDT / utility", "WBNB / TUT"],
     taskCounts: { paused: 1, running: 1, stopped: 1 },
   },
 };
@@ -46,12 +45,6 @@ class FiniteStatsProvider implements ShellStatsProvider {
       sequence: 41,
       stats: { pingMs: 999 },
       type: "update",
-    };
-    yield {
-      observedAt,
-      recommendedPools: ["USDT / WBNB"],
-      sequence: 42,
-      type: "rec_pools_snapshot",
     };
     yield { observedAt, sequence: 43, type: "heartbeat" };
   }

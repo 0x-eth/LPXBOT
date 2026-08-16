@@ -1436,7 +1436,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         reply.raw.once("close", close);
         await writeSseChunk(reply, controller, "retry: 1000\n\n");
 
-        const writeEvent = async (event: { cursor?: string; sequence?: number; type: string }) => {
+        const writeEvent = async (event: {
+          cursor?: string;
+          sequence?: number | null;
+          type: string;
+        }) => {
           const identifier =
             event.type === "rec_pools_snapshot"
               ? event.cursor
@@ -1444,7 +1448,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
                 ? event.sequence
                 : undefined;
           const chunk =
-            (identifier === undefined ? "" : `id: ${identifier}\n`) +
+            (identifier === undefined || identifier === null ? "" : `id: ${identifier}\n`) +
             `event: ${event.type}\n` +
             `data: ${JSON.stringify(event)}\n\n`;
           return writeSseChunk(reply, controller, chunk);

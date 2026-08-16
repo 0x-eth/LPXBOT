@@ -123,7 +123,6 @@ class FiniteStatsProvider implements ShellStatsProvider {
         gas: { baseGwei: null, ethereumGwei: null },
         online: null,
         pingMs: null,
-        recommendedPools: null,
         taskCounts: { paused: null, running: null, stopped: null },
       },
     };
