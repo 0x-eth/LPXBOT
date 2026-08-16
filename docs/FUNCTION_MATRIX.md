@@ -153,7 +153,7 @@
 | POOL-09 | 同 token 池折叠与分组 | UI+BUNDLE | USER | R0 | 组内展开、排序、`+N` 标记；`implemented-assumed`（P02-06） |
 | POOL-10 | 列显隐、拖动排序与重置 | UI+BUNDLE | USER | R1 | Pool/操作锁定，偏好跨设备同步；`implemented-assumed`（P02-06） |
 | POOL-11 | 池对比 | UI+BUNDLE | USER | R0 | Fees、Volume、TVL、活跃 TVL、Fee/TVL、Txs、Fee Tier；`implemented-assumed`（P02-07） |
-| POOL-12 | K 线和 Tick 流动性 | UI+API | USER | R0 | V4 PoolKey/tickSpacing，历史加载、自动刷新 |
+| POOL-12 | K 线和 Tick 流动性 | UI+API | USER | R0 | V4 PoolKey/tickSpacing，历史加载、自动刷新；`implemented-assumed`（P02-10，locally-defined；`GAP-API-CANDLE-QUOTE` 与 `GAP-UI-TICK-LIQUIDITY-MAPPING` unresolved） |
 | POOL-13 | 右键/更多操作 | UI+BUNDLE | USER | R1 | 复制、创建任务、屏蔽、聊天室、动向、监控等 |
 | POOL-14 | Token/池屏蔽 | UI+BUNDLE | USER | R1 | 排行、监控和策略统一跳过；管理/恢复 |
 | POOL-15 | 创建历史和创建者归属 | UI+BUNDLE | USER/ADMIN | R0/R1 | 旧数据无记录、池已存在等状态 |
