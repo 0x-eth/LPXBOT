@@ -147,7 +147,7 @@ describe("P02-03 acceptance integrity", () => {
         .trim()
         .split("\n")
         .map((line) => {
-          const match = line.match(/^([0-9a-f]{64})  (.+)$/u);
+          const match = line.match(/^([0-9a-f]{64}) {2}(.+)$/u);
           if (!match) throw new Error(`invalid P02-03 checksum row: ${line}`);
           return [match[2]!, match[1]!] as const;
         }),
