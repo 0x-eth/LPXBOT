@@ -10,6 +10,10 @@ import {
   reconcilePoolComparison,
   togglePoolComparison,
 } from "../apps/web/src/pool-comparison-state.js";
+import {
+  defaultPoolAdvancedFilters,
+  filterAndSortPoolRows,
+} from "../apps/web/src/pool-filter-state.js";
 import { initialPoolStreamState, reducePoolStream } from "../apps/web/src/pools-stream-state.js";
 import { describe, expect, it } from "vitest";
 
@@ -158,6 +162,9 @@ describe("P02-07 same-snapshot pool comparison", () => {
       stream.snapshot!,
     );
     selection = togglePoolComparison(selection, poolB.poolKey, stream.snapshot!);
+    const feeFilter = defaultPoolAdvancedFilters();
+    feeFilter.ranges.fees = { enabled: true, max: "", min: "50" };
+    expect(filterAndSortPoolRows(stream.snapshot!.rows, feeFilter)).toEqual([]);
 
     stream = reducePoolStream(stream, {
       event: envelope("2", "pools.diff", {
@@ -171,6 +178,9 @@ describe("P02-07 same-snapshot pool comparison", () => {
     const refreshed = buildPoolComparison(selection, stream.snapshot!);
     expect(refreshed.binding.snapshotVersion).toBe("2");
     expect(refreshed.pools.find(({ poolKey }) => poolKey === poolA.poolKey)?.feesUsd).toBe("99");
+    expect(filterAndSortPoolRows(stream.snapshot!.rows, feeFilter).map(({ poolKey }) => poolKey)).toEqual([
+      poolA.poolKey,
+    ]);
 
     stream = reducePoolStream(stream, {
       event: envelope("3", "pools.diff", {

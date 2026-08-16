@@ -172,6 +172,11 @@ test("advanced filtering and comparison are keyboard, mobile, and axe clean", as
     "data-comparison-state",
     "one-selected",
   );
+  await table.getByRole("button", { name: /^选择对比/u }).first().click();
+  await expect(page.getByRole("region", { name: "池对比" })).toHaveAttribute(
+    "data-comparison-state",
+    "ready",
+  );
   await page.getByRole("button", { name: "展开高级筛选" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByLabel("Volume 最小值")).toBeVisible();
