@@ -240,13 +240,55 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
   }
 
   async getTopFees(context: MarketPoolsContext): Promise<MarketPoolSnapshot> {
-    const result = await this.#pool.query<SnapshotRow>(
+    const signal = context.signal;
+    const aborted = () => {
+      const error = new Error("Canonical market snapshot query was aborted");
+      error.name = "AbortError";
+      return error;
+    };
+    if (signal?.aborted) throw aborted();
+    const client = await this.#pool.connect();
+    if (signal?.aborted) {
+      const error = aborted();
+      client.release(error);
+      throw error;
+    }
+    const query = client.query<SnapshotRow>(
       `SELECT version::text, window_start, window_end, rows, created_at,
               canonical_revision, metric_version
          FROM market_snapshots
         WHERE stream_key = $1 AND canonical`,
       [storageStreamKey(context)],
     );
+    const result = await new Promise<Awaited<typeof query>>((resolve, reject) => {
+      let settled = false;
+      const finish = (callback: () => void) => {
+        if (settled) return;
+        settled = true;
+        signal?.removeEventListener("abort", onAbort);
+        callback();
+      };
+      const onAbort = () => {
+        const error = aborted();
+        finish(() => {
+          client.release(error);
+          reject(error);
+        });
+      };
+      signal?.addEventListener("abort", onAbort, { once: true });
+      void query.then(
+        (value) =>
+          finish(() => {
+            client.release();
+            resolve(value);
+          }),
+        (error: unknown) =>
+          finish(() => {
+            client.release(error instanceof Error ? error : new Error("Market query failed"));
+            reject(error);
+          }),
+      );
+    });
     const row = result.rows[0];
     return this.#filterSnapshot(
       context,
