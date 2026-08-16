@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-06",
+  "phase": "P02",
+  "risk": "R1",
+  "status": "accepted-with-gaps",
+  "featureIds": ["POOL-08", "POOL-09", "POOL-10"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm exec vitest run tests/market-metrics.test.ts tests/market-pools-api.test.ts tests/pools-stream-client.test.ts tests/pools-by-token-api.test.ts tests/pool-search-state.test.ts tests/pool-grouping.test.ts tests/pool-columns.test.ts tests/user-preferences-api.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-06/command-output.md"
+    },
+    {
+      "id": "T-API",
+      "command": "pnpm exec vitest run tests/pools-by-token-api.test.ts tests/user-preferences-api.test.ts tests/market-pools-api.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-06/E-API.md"
+    },
+    {
+      "id": "T-SSE",
+      "command": "focused market reducer, grouping, snapshot/diff and PostgreSQL replay/reorg tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-06/E-SSE.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "pnpm test:postgres including catalog replay/reorg/replacement and cross-device preference recovery",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-06/E-REC.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "clean/repeat migration plus reverse-down/up PostgreSQL catalog cycle and preference schema migration",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-06/E-DATA.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm exec playwright test tests/e2e/p02-06-pool-discovery.spec.ts; pnpm test:e2e",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-06/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "P02-06 desktop/mobile screenshots, axe serious/critical scan and root-overflow assertions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-06/E-VIS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "full-history Gitleaks; pnpm audit:dependencies; focused validation and RBAC tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-06/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P02-06/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P02-06/E-DATA.md" },
+    { "id": "E-SSE", "path": "artifacts/acceptance/P02-06/E-SSE.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P02-06/E-REC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P02-06/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P02-06/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P02-06/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P02-06/E-SEC.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only; POOL-08, POOL-09 and POOL-10 remain implemented-assumed.",
+    "BSC chainId 56 is the only implemented chain; Base and every other chain remain unclaimed.",
+    "POOL-05, POOL-06, POOL-07, POOL-11 through POOL-15, STATS-01 and STATS-02 remain planned.",
+    "POOL-15 creator attribution remains planned; creatorAddress is not inferred.",
+    "GAP-FINALITY-DEPTH remains unresolved. No event is marked finalized.",
+    "GAP-FLOW-USD-VALUATION and the existing USD and formula gaps remain unresolved; missing symbols, prices, TVL and FDV remain null.",
+    "No external RPC, metadata fetch, price fetch, production secret, signature, broadcast, funds operation or new chain sample is used.",
+    "P02-01 through P02-05 acceptance directories remain byte-identical to their pre-P02-06 hash list."
+  ],
+  "completedAt": null,
+  "commit": null
+}

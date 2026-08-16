@@ -22,6 +22,7 @@ Run `pnpm check:acceptance` to validate every manifest and evidence path.
 - `P00-06` contains the current-state P00 completion audit, a clean-worktree full-stack run, migration/cleanup evidence, security boundaries, and the final six-job GitHub Actions result. Its status remains `accepted-with-gaps` only because the historical P00-01/P00-02 standalone packages do not exist.
 - P00-01 has a frozen artifact manifest and checksums but no work-item acceptance package. This is a recorded evidence gap; no retrospective report is synthesized.
 - P00-02 has no standalone work-item acceptance package. Its quality-gate results appear only where they were actually recorded in `P00-03/06-quality-gates.md`; no separate report is synthesized.
+- `P02-06` contains the BSC-only reorg-aware pool catalog, Token/pool search, canonical Token grouping, versioned cross-device column preferences, desktop/mobile visual captures, security boundaries, and six-job GitHub Actions provenance. `POOL-08`, `POOL-09`, and `POOL-10` remain `implemented-assumed`; the work item remains `accepted-with-gaps`.
 
 ## Framework Boundary
 
