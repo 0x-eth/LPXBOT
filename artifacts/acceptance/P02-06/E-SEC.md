@@ -7,4 +7,4 @@
 - Search cancellation combines `AbortController` with a monotonically increasing generation, so both cooperative cancellation and non-cooperative late responses are contained.
 - Column preferences are normalized on the server and client. Unknown or duplicate stored columns are discarded, locked columns are reconstructed, and unrelated P01 preferences are preserved.
 - P02-06 adds no external RPC, crawler, Token metadata source, price source, creator inference, signer, transaction builder, broadcast, funds action, or production secret use.
-- Full-history Gitleaks and `pnpm audit:dependencies` are final gates and are recorded in `command-output.md`.
+- Local Gitleaks 8.30.1 scanned the full 550-commit history (20.20 MB) with no leaks, and `pnpm audit:dependencies` found no known vulnerabilities. GitHub Actions Security job `95159507483` independently passed its incoming-push Gitleaks and dependency-audit steps; the different scan ranges are recorded explicitly in `command-output.md`.
