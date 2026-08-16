@@ -1,5 +1,7 @@
 import type { MarketPoolRow, MarketPoolSnapshot } from "@lpbot/api-contract";
 import {
+  parseRecommendedPoolsCursor,
+  recommendedPoolsCursor,
   recommendationSelectionHash,
   selectRecommendedPools,
 } from "../apps/api/src/recommended-pools.js";
@@ -119,5 +121,25 @@ describe("P02-09 recommended pool selection", () => {
       recommendationSelectionHash([{ ...rows[0]!, token0Symbol: "WBNB" }, rows[1]!]),
     ).not.toBe(hash);
     expect(recommendationSelectionHash([...rows].reverse())).not.toBe(hash);
+  });
+
+  it("binds resume cursors to the chain, limit, source position, and selection hash", () => {
+    const selectionHash = `sha256:${"a".repeat(64)}`;
+    const cursor = recommendedPoolsCursor({
+      chain: "bsc",
+      limit: 3,
+      selectionHash,
+      sourceVersion: "canonical:revision:12",
+      sourceWindowEnd: "2026-08-17T01:05:00.000Z",
+    });
+
+    expect(parseRecommendedPoolsCursor(cursor, { chain: "bsc", limit: 3 })).toEqual({
+      selectionHash,
+      sourceVersion: "canonical:revision:12",
+      sourceWindowEnd: "2026-08-17T01:05:00.000Z",
+    });
+    expect(parseRecommendedPoolsCursor(cursor, { chain: "bsc", limit: 4 })).toBeNull();
+    expect(parseRecommendedPoolsCursor("rec-pools:v1:bsc:3:bad", { chain: "bsc", limit: 3 })).toBeNull();
+    expect(parseRecommendedPoolsCursor("market:v1:top-fees:56:5", { chain: "bsc", limit: 3 })).toBeNull();
   });
 });

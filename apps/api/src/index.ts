@@ -67,6 +67,7 @@ export type {
 } from "./shell-stats.js";
 export {
   createRecommendedPoolsEventStream,
+  parseRecommendedPoolsCursor,
   recommendedPoolsCursor,
   recommendationSelectionHash,
   selectRecommendedPools,

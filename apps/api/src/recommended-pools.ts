@@ -127,6 +127,16 @@ function cursorPart(value: string): string {
   return Buffer.from(value).toString("base64url");
 }
 
+function decodeCursorPart(value: string): string | null {
+  if (!/^[A-Za-z0-9_-]+$/u.test(value)) return null;
+  try {
+    const decoded = Buffer.from(value, "base64url").toString("utf8");
+    return decoded && cursorPart(decoded) === value ? decoded : null;
+  } catch {
+    return null;
+  }
+}
+
 export function recommendedPoolsCursor(input: {
   chain: "bsc";
   limit: number;
@@ -153,6 +163,38 @@ export function recommendedPoolsCursor(input: {
     cursorPart(input.sourceWindowEnd),
     input.selectionHash.slice("sha256:".length),
   ].join(":");
+}
+
+export function parseRecommendedPoolsCursor(
+  cursor: string,
+  filter: { chain: "bsc"; limit: number },
+): { selectionHash: string; sourceVersion: string; sourceWindowEnd: string } | null {
+  const [prefix, version, chain, limit, encodedVersion, encodedWindowEnd, hash, ...extra] =
+    cursor.split(":");
+  if (
+    prefix !== "rec-pools" ||
+    version !== "v1" ||
+    chain !== filter.chain ||
+    limit !== String(filter.limit) ||
+    !encodedVersion ||
+    !encodedWindowEnd ||
+    !hash ||
+    extra.length > 0
+  ) {
+    return null;
+  }
+  const sourceVersion = decodeCursorPart(encodedVersion);
+  const sourceWindowEnd = decodeCursorPart(encodedWindowEnd);
+  const selectionHash = `sha256:${hash}`;
+  if (
+    !sourceVersion ||
+    !sourceWindowEnd ||
+    !Number.isFinite(Date.parse(sourceWindowEnd)) ||
+    !selectionHashPattern.test(selectionHash)
+  ) {
+    return null;
+  }
+  return { selectionHash, sourceVersion, sourceWindowEnd };
 }
 
 function snapshotEvent(
