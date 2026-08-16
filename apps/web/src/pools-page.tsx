@@ -1206,6 +1206,11 @@ export function PoolsPage() {
     });
   };
 
+  const filterAddress = (address: EvmAddress) => {
+    updateFlowFilters({ ...flowFilters, user: address });
+    setFlowView("stream");
+  };
+
   return (
     <main
       aria-busy={connection === "loading" ? "true" : undefined}
@@ -1306,6 +1311,31 @@ export function PoolsPage() {
 
         <FlowFilters filters={flowFilters} update={updateFlowFilters} />
 
+        {baseFlowEvents.length > 0 ? <FlowStats summary={flowProjection.summary} /> : null}
+
+        <div className="flow-view-toolbar">
+          <FlowSegment
+            label="流动性视图"
+            onChange={setFlowView}
+            options={
+              [
+                { label: "实时", value: "stream" },
+                { label: "地址", value: "address" },
+              ] as const
+            }
+            value={flowView}
+          />
+          <button
+            aria-pressed={watchedOnly}
+            className="flow-watched-filter"
+            onClick={() => setWatchedOnly((value) => !value)}
+            type="button"
+          >
+            <Star aria-hidden="true" fill={watchedOnly ? "currentColor" : "none"} size={14} />
+            只看关注地址
+          </button>
+        </div>
+
         {flowConnection === "loading-backfill" ? (
           <div className="flow-operational-state" role="status">
             <span className="spinner spinner-small" aria-hidden="true" />
@@ -1324,15 +1354,80 @@ export function PoolsPage() {
             ) : null}
           </div>
         ) : null}
-        {flowConnection !== "loading-backfill" &&
-        flowConnection !== "error" &&
-        visibleFlowEvents.length === 0 ? (
-          <div className="flow-operational-state" role="status">
-            当前过滤条件暂无流动性事件
+        {flowConnection !== "loading-backfill" && flowConnection !== "error" ? (
+          <div className="flow-views" data-view={flowView}>
+            <div className="flow-view-pane flow-stream-view" data-active={flowView === "stream"}>
+              <div className="flow-view-heading">
+                <strong>实时事件</strong>
+                <span>{flowProjection.events.length} 笔</span>
+              </div>
+              {flowProjection.events.length === 0 ? (
+                <div className="flow-operational-state" role="status">
+                  当前过滤条件暂无流动性事件
+                </div>
+              ) : (
+                <FlowTable events={flowProjection.events} remarkState={remarkState} watched={watched} />
+              )}
+            </div>
+            <div className="flow-view-pane flow-address-view" data-active={flowView === "address"}>
+              <div className="flow-view-heading">
+                <strong>地址聚合</strong>
+                <FlowSegment
+                  label="地址排序"
+                  onChange={setAddressSort}
+                  options={
+                    [
+                      { label: "净额", value: "net" },
+                      { label: "笔数", value: "count" },
+                      { label: "最近", value: "recent" },
+                    ] as const
+                  }
+                  value={addressSort}
+                />
+              </div>
+              {remarkState.status === "loading" ? (
+                <div className="remark-load-state" role="status">
+                  <span className="spinner spinner-small" aria-hidden="true" />
+                  正在加载备注
+                </div>
+              ) : null}
+              {remarkState.status === "error" ? (
+                <div className="remark-load-state remark-load-error">
+                  <AlertTriangle aria-hidden="true" size={16} />
+                  <span role="alert">备注加载失败</span>
+                  <button onClick={() => void loadRemarks()} type="button">
+                    <RefreshCw aria-hidden="true" size={14} />
+                    重试加载备注
+                  </button>
+                </div>
+              ) : null}
+              {flowProjection.addresses.length === 0 ? (
+                <div className="flow-operational-state" role="status">
+                  {watchedOnly && watched.size === 0
+                    ? "还没有关注地址"
+                    : "当前过滤条件暂无地址"}
+                </div>
+              ) : (
+                <AddressTable
+                  editing={setEditingAddress}
+                  filter={filterAddress}
+                  remarks={remarkState}
+                  rows={flowProjection.addresses}
+                  toggleWatch={toggleWatched}
+                  watched={watched}
+                />
+              )}
+            </div>
           </div>
         ) : null}
-        {visibleFlowEvents.length > 0 ? <FlowTable events={visibleFlowEvents} /> : null}
       </section>
+      <AddressRemarkDialog
+        address={editingAddress}
+        close={() => setEditingAddress(null)}
+        remarks={remarkState}
+        remove={removeRemark}
+        save={saveRemark}
+      />
     </main>
   );
 }
