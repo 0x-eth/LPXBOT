@@ -98,21 +98,21 @@ describe("P02-07 advanced pool filters", () => {
     v4.generations = ["v4"];
     expect(filterAndSortPoolRows(rows, v4).map(({ poolKey }) => poolKey)).toHaveLength(2);
 
-    const expectedByRange: Record<PoolNumericFilterKey, number> = {
-      activeTvl: 0,
-      feeActiveTvl: 0,
-      fees: 2,
-      feeTvl: 2,
-      tvl: 2,
-      txs: 2,
-      volume: 2,
+    const cases: Record<PoolNumericFilterKey, { bounds: [string, string]; count: number }> = {
+      activeTvl: { bounds: ["", ""], count: 0 },
+      feeActiveTvl: { bounds: ["", ""], count: 0 },
+      fees: { bounds: ["10", "20"], count: 2 },
+      feeTvl: { bounds: ["0.01", "0.02"], count: 2 },
+      tvl: { bounds: ["900", "2000"], count: 2 },
+      txs: { bounds: ["8", "12"], count: 2 },
+      volume: { bounds: ["100", "300"], count: 2 },
     };
-    for (const key of Object.keys(expectedByRange) as PoolNumericFilterKey[]) {
-      const bounds = key === "feeTvl" ? ["0.01", "0.02"] : ["8", "300"];
+    for (const key of Object.keys(cases) as PoolNumericFilterKey[]) {
+      const { bounds, count } = cases[key];
       expect(
         filterAndSortPoolRows(rows, enabledRange(key, bounds[0]!, bounds[1]!)),
         key,
-      ).toHaveLength(expectedByRange[key]);
+      ).toHaveLength(count);
     }
 
     const withHook = defaultPoolAdvancedFilters();
