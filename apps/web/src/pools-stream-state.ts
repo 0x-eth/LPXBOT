@@ -137,7 +137,16 @@ export function reducePoolStream(
       return { ...state, connection: "reconnecting", errorCode: "STREAM_DIFF_WITHOUT_BASE" };
     }
     rows = applyDiff(rows, event.data);
-    if (snapshot) snapshot = { ...snapshot, rows, version: event.data.version };
+    if (snapshot) {
+      snapshot = {
+        ...snapshot,
+        canonicalRevision: event.data.canonicalRevision,
+        metricVersion: event.data.metricVersion,
+        rows,
+        version: event.data.version,
+        windowEnd: event.data.windowEnd,
+      };
+    }
   } else if (event.data !== null) {
     return { ...state, connection: "error", errorCode: "STREAM_HEARTBEAT_INVALID" };
   }
