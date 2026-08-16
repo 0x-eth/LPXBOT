@@ -1681,6 +1681,163 @@ html[data-theme="dark"] .flow-stat-strip[data-completeness="partial"] [data-metr
   opacity: 0.55;
 }
 
+.pool-column-dialog {
+  position: fixed;
+  z-index: 41;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: min(calc(100vw - 32px), 430px);
+  max-height: calc(100dvh - 32px);
+  gap: 14px;
+  padding: 20px;
+  overflow-y: auto;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgb(20 24 26 / 22%);
+  transform: translate(-50%, -50%);
+}
+
+.pool-column-dialog-heading,
+.pool-column-dialog-actions,
+.pool-column-list li,
+.pool-column-list label,
+.pool-column-move {
+  display: flex;
+  align-items: center;
+}
+
+.pool-column-dialog-heading {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pool-column-dialog-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.pool-column-dialog-heading button,
+.pool-column-move button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--muted-foreground);
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  place-items: center;
+}
+
+.pool-column-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.pool-column-list li {
+  min-height: 46px;
+  gap: 8px;
+  padding: 5px 2px;
+}
+
+.pool-column-list li + li {
+  border-top: 1px solid var(--border);
+}
+
+.pool-column-list li[draggable="true"] {
+  cursor: grab;
+}
+
+.pool-column-grip {
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+}
+
+.pool-column-list label {
+  min-width: 0;
+  flex: 1;
+  gap: 9px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.pool-column-list input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--focus-ring);
+}
+
+.pool-column-lock {
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+}
+
+.pool-column-move {
+  gap: 1px;
+}
+
+.pool-column-move button:hover:not(:disabled),
+.pool-column-dialog-heading button:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.pool-column-move button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.pool-column-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.72rem;
+}
+
+.pool-column-dialog-actions {
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pool-column-dialog-actions button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 0.72rem;
+}
+
+.pool-column-dialog-actions button:first-child {
+  margin-right: auto;
+}
+
+.pool-column-dialog-actions button:last-child {
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+  background: var(--accent);
+  font-weight: 700;
+}
+
+.pool-column-dialog-actions button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 @media (min-width: 1100px) {
   .flow-views {
     display: grid;
