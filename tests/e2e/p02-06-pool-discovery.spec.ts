@@ -97,6 +97,8 @@ function tokenPoolRow(
     feesUsd: fees5m,
     feeTvl: null,
     hooks: null,
+    labelRuleVersion: "pool-labels/local-v1",
+    labels: [],
     poolAddress,
     poolId: null,
     poolKey: `56:${poolAddress}`,
