@@ -126,10 +126,17 @@ export class PostgresMarketChartsProvider implements MarketChartsProvider {
     );
     const oriented = orientCanonicalCandles(result.rows.map(canonicalBaseCandle), direction);
     const timestamps = new Set<number>();
-    const candles = oriented.map(({ poolKey: _poolKey, ...candle }) => {
+    const candles = oriented.map((candle) => {
       if (timestamps.has(candle.ts)) throw new Error("MARKET_CANDLE_TIMESTAMP_DUPLICATE");
       timestamps.add(candle.ts);
-      return candle;
+      return {
+        close: candle.close,
+        high: candle.high,
+        low: candle.low,
+        open: candle.open,
+        ts: candle.ts,
+        volume: candle.volume,
+      };
     });
     return {
       ...metadata(pool),

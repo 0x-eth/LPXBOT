@@ -277,8 +277,15 @@ export function orientCanonicalCandles(
 ): OrientedCandle[] {
   return input.map((candle) => {
     if (direction === "token0") {
-      const { volume0, volume1: _volume1, ...values } = candle;
-      return { ...values, volume: volume0 };
+      return {
+        close: candle.close,
+        high: candle.high,
+        low: candle.low,
+        open: candle.open,
+        poolKey: candle.poolKey,
+        ts: candle.ts,
+        volume: candle.volume0,
+      };
     }
     if (direction !== "token1") throw new RangeError("CANDLE_DIRECTION_INVALID");
     const inverse = (value: string) =>
