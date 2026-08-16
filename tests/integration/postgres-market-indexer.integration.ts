@@ -650,7 +650,7 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
       });
     const provider = new PostgresMarketPoolsProvider(pool);
 
-    await runner(fixture.input.slice(0, 2)).runOnce();
+    await runner(fixture.input.slice(0, 1)).runOnce();
     const originalSource = await provider.getTopFees({
       chainId: 56,
       minutes: 5,
