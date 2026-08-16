@@ -142,6 +142,7 @@ beforeAll(async () => {
     "20260815000200_remove_user_allowed_chain_ids.sql",
     "20260816000100_create_market_indexer.sql",
     "20260816000200_create_liquidity_flow.sql",
+    "20260816000400_create_market_pool_catalog.sql",
   ];
   for (const filename of migrationFiles) {
     const source = readFileSync(path.join(repositoryRoot, "infra/migrations", filename), "utf8");
@@ -151,7 +152,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await pool.query(
-    `TRUNCATE liquidity_flow_outbox, liquidity_flow_events,
+    `TRUNCATE liquidity_flow_outbox, liquidity_flow_events, market_pool_catalog,
       market_stream_outbox, market_snapshots, integrity_quarantine,
       normalized_pool_events, raw_chain_logs, canonical_chain_blocks, indexer_cursors
       RESTART IDENTITY CASCADE`,

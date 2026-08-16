@@ -36,7 +36,9 @@ interface StoredMetricEvent {
   block_timestamp: Date;
   chain_id: string;
   event_id: string;
+  fee_pips: string | null;
   finality: string;
+  hooks: string | null;
   kind: MarketMetricEvent["kind"];
   market_data: MarketMetricEvent["market"] & {
     token0Symbol?: string | null;
@@ -45,6 +47,9 @@ interface StoredMetricEvent {
   pool_address: string | null;
   pool_id: string | null;
   protocol: MarketMetricEvent["pool"]["protocol"];
+  tick_spacing: string | null;
+  token0: string | null;
+  token1: string | null;
   transaction_hash: string;
 }
 
@@ -169,12 +174,20 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
       let duplicateCount = 0;
       let revertedCount = 0;
       let pending = false;
+      const pendingPoolKeys = new Set<string>();
       let lastAccepted: NormalizedPoolEvent | null = null;
 
       const flushAccepted = async () => {
         if (!pending || !lastAccepted) return;
         await this.#writeCursor(client, lastAccepted.cursor, commit.evaluationTime);
+        await this.#rebuildPoolCatalog(
+          client,
+          commit.chainId,
+          pendingPoolKeys,
+          commit.evaluationTime,
+        );
         await this.#recomputeAndPersist(client, commit, new Set());
+        pendingPoolKeys.clear();
         pending = false;
       };
 
@@ -191,6 +204,12 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
           );
           revertedCount += reverted.count;
           if (reverted.count > 0) {
+            await this.#rebuildPoolCatalog(
+              client,
+              commit.chainId,
+              reverted.poolKeys,
+              commit.evaluationTime,
+            );
             await this.#recomputeAndPersist(client, commit, reverted.poolKeys);
           }
           continue;
@@ -240,6 +259,12 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
           const reverted = await this.#revertFromHeight(client, commit, reorgHeight, null);
           revertedCount += reverted.count;
           if (reverted.count > 0) {
+            await this.#rebuildPoolCatalog(
+              client,
+              commit.chainId,
+              reverted.poolKeys,
+              commit.evaluationTime,
+            );
             await this.#recomputeAndPersist(client, commit, reverted.poolKeys);
           }
         }
@@ -256,6 +281,13 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
         await this.#insertFlowEvent(client, event, commit.evaluationTime);
         acceptedCount += 1;
         lastAccepted = event;
+        pendingPoolKeys.add(
+          poolMetricKey({
+            chainId: event.chainId,
+            poolAddress: event.pool.poolAddress,
+            poolId: event.pool.poolId,
+          }),
+        );
         pending = true;
       }
 
@@ -731,10 +763,51 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
     );
   }
 
+  async #rebuildPoolCatalog(
+    client: PoolClient,
+    chainId: number,
+    poolKeys: ReadonlySet<string>,
+    updatedAt: string,
+  ): Promise<void> {
+    const keys = [...poolKeys].sort();
+    if (keys.length === 0) return;
+    await client.query(
+      `DELETE FROM market_pool_catalog
+        WHERE chain_id = $1 AND pool_key = ANY($2::text[])`,
+      [chainId, keys],
+    );
+    await client.query(
+      `INSERT INTO market_pool_catalog (
+         pool_key, chain_id, protocol, protocol_generation, pool_address, pool_id,
+         token0, token1, fee_pips, tick_spacing, hooks, first_observed_block,
+         first_observed_at, first_observed_transaction_hash, created_event_id, updated_at
+       )
+       SELECT DISTINCT ON (identity.pool_key)
+         identity.pool_key, event.chain_id, event.protocol, event.protocol_generation,
+         lower(event.pool_address), lower(event.pool_id), lower(event.token0), lower(event.token1),
+         event.fee_pips, event.tick_spacing, lower(event.hooks), event.block_number,
+         event.block_timestamp, lower(event.transaction_hash), event.event_id, $3
+       FROM normalized_pool_events AS event
+       CROSS JOIN LATERAL (
+         SELECT event.chain_id::text || ':' || lower(COALESCE(event.pool_address, event.pool_id))
+           AS pool_key
+       ) AS identity
+       WHERE event.chain_id = $1
+         AND event.canonical
+         AND event.token0 IS NOT NULL
+         AND event.token1 IS NOT NULL
+         AND identity.pool_key = ANY($2::text[])
+       ORDER BY identity.pool_key, event.block_number, event.transaction_index,
+                event.log_index, event.transaction_hash, event.event_id`,
+      [chainId, keys, updatedAt],
+    );
+  }
+
   async #metricEvents(client: PoolClient, evaluationTime: string): Promise<MarketMetricEvent[]> {
     const result = await client.query<StoredMetricEvent>(
       `SELECT event_id, chain_id::text, block_timestamp, transaction_hash, kind,
-              protocol, pool_address, pool_id, market_data, finality
+              protocol, pool_address, pool_id, token0, token1, fee_pips::text,
+              tick_spacing::text, hooks, market_data, finality
          FROM normalized_pool_events
         WHERE chain_id = 56 AND canonical AND block_timestamp < $1
         ORDER BY block_timestamp, block_number, transaction_index, log_index, transaction_hash`,
@@ -747,10 +820,15 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
       kind: row.kind,
       market: row.market_data,
       pool: {
+        feePips: row.fee_pips,
+        hooks: row.hooks,
         poolAddress: row.pool_address,
         poolId: row.pool_id,
         protocol: row.protocol,
+        tickSpacing: row.tick_spacing,
+        token0Address: row.token0,
         token0Symbol: row.market_data.token0Symbol ?? null,
+        token1Address: row.token1,
         token1Symbol: row.market_data.token1Symbol ?? null,
       },
       reverted: row.finality === "reverted",
