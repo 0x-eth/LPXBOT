@@ -64,10 +64,18 @@ function finiteDecimalNumber(value: string): number | null {
 
 function candlesAreRenderable(response: MarketCandlesResponse): boolean {
   return response.candles.every((candle) =>
-    [candle.open, candle.high, candle.low, candle.close, candle.volume].every(
+    [candle.open, candle.high, candle.low, candle.close].every(
       (value) => finiteDecimalNumber(value) !== null,
     ),
   );
+}
+
+function candleVolumeScalePower(response: MarketCandlesResponse): number {
+  const maximum = response.candles.reduce(
+    (current, candle) => Decimal.max(current, candle.volume),
+    new Decimal(0),
+  );
+  return Math.max(0, maximum.e - 12);
 }
 
 function shortRevision(revision: string): string {
@@ -84,6 +92,8 @@ function CandleChart({ response }: { response: MarketCandlesResponse }) {
     const text = style.getPropertyValue("--text").trim() || "#17191b";
     const border = style.getPropertyValue("--border").trim() || "#e1e5e6";
     const surface = style.getPropertyValue("--surface").trim() || "#ffffff";
+    const volumeScalePower = candleVolumeScalePower(response);
+    const volumeDivisor = new Decimal(10).pow(volumeScalePower);
     const chart = createChart(element, {
       autoSize: true,
       height: 280,
@@ -117,7 +127,15 @@ function CandleChart({ response }: { response: MarketCandlesResponse }) {
     });
     const volume = chart.addSeries(HistogramSeries, {
       color: "#8a9499",
-      priceFormat: { type: "volume" },
+      priceFormat: {
+        formatter: (value: number) =>
+          new Decimal(value)
+            .times(volumeDivisor)
+            .toDecimalPlaces(0, Decimal.ROUND_HALF_EVEN)
+            .toString(),
+        minMove: 0.01,
+        type: "custom",
+      },
       priceScaleId: "volume",
     });
     chart.priceScale("volume").applyOptions({
@@ -138,7 +156,7 @@ function CandleChart({ response }: { response: MarketCandlesResponse }) {
           ? "rgba(8, 127, 91, 0.38)"
           : "rgba(181, 65, 59, 0.38)",
         time: candle.ts as UTCTimestamp,
-        value: finiteDecimalNumber(candle.volume)!,
+        value: new Decimal(candle.volume).dividedBy(volumeDivisor).toNumber(),
       })),
     );
     chart.timeScale().fitContent();
@@ -573,7 +591,12 @@ export function PoolMarketDetail({
           {current?.kind === "candles" ? (
             <div>
               <dt>单位</dt>
-              <dd>{current.response.priceUnit} · volume raw integer</dd>
+              <dd>
+                {current.response.priceUnit} · volume raw integer
+                {candleVolumeScalePower(current.response) > 0
+                  ? ` · histogram / 10^${candleVolumeScalePower(current.response)}`
+                  : ""}
+              </dd>
             </div>
           ) : (
             <div>
