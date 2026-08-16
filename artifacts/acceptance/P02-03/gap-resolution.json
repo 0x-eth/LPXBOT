@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-03",
+  "direction": "forward-only",
+  "sourceGapArtifact": "artifacts/acceptance/P02-01/gaps.json",
+  "sourceGapArtifactModified": false,
+  "items": [
+    {
+      "id": "GAP-EVENT-ABI-TOPICS",
+      "status": "resolved",
+      "scope": "The requested five V3 and three V4 market events for univ3, pcsv3, univ4 and pcsv4.",
+      "evidence": ["abi-index.json", "source-manifest.json", "golden/raw", "golden/normalized"],
+      "details": [
+        { "protocol": "univ3", "status": "resolved", "events": ["PoolCreated", "Swap", "Mint", "Burn", "Collect"] },
+        { "protocol": "pcsv3", "status": "resolved", "events": ["PoolCreated", "Swap", "Mint", "Burn", "Collect"] },
+        { "protocol": "univ4", "status": "resolved", "events": ["Initialize", "Swap", "ModifyLiquidity"] },
+        { "protocol": "pcsv4", "status": "resolved", "events": ["Initialize", "Swap", "ModifyLiquidity"] }
+      ]
+    },
+    {
+      "id": "GAP-EVENT-PROTOCOL-ADDRESSES",
+      "status": "resolved",
+      "scope": "Chain-56 factory/PoolManager routing and dynamic V3 pool or V4 PoolKey identity for the four supported protocols.",
+      "evidence": ["deployment-registry.json", "source-manifest.json", "golden/raw"],
+      "details": [
+        { "protocol": "univ3", "status": "resolved" },
+        { "protocol": "pcsv3", "status": "resolved" },
+        { "protocol": "univ4", "status": "resolved" },
+        { "protocol": "pcsv4", "status": "resolved" }
+      ]
+    },
+    {
+      "id": "GAP-EVENT-AMOUNT-SIGNS",
+      "status": "resolved",
+      "scope": "Signed amount and liquidity mappings for every supported event in all four protocols.",
+      "evidence": ["golden/raw", "golden/normalized", "capture-methodology.md"],
+      "details": [
+        { "protocol": "univ3", "status": "resolved", "crossCheck": "pool receipt transfer deltas" },
+        { "protocol": "pcsv3", "status": "resolved", "crossCheck": "pool receipt transfer deltas" },
+        { "protocol": "univ4", "status": "resolved", "crossCheck": "PoolManager receipt transfer deltas; V4 BalanceDelta is inverse custody flow" },
+        { "protocol": "pcsv4", "status": "resolved", "crossCheck": "official Vault receipt transfer deltas; V4 BalanceDelta is inverse custody flow" }
+      ]
+    },
+    {
+      "id": "GAP-BLOCK-TIMESTAMP-SOURCE",
+      "status": "resolved",
+      "scope": "Read-only eth_getBlockByNumber enrichment supplies decimal timestamp and parentHash and preserves reorg inputs.",
+      "evidence": ["golden/raw", "E-REC.md", "E-CHAIN.md"]
+    },
+    {
+      "id": "GAP-FINALITY-DEPTH",
+      "status": "unresolved",
+      "scope": "No BSC confirmation depth is selected by P02-03.",
+      "requiredEvidence": "An operations decision recording confirmation depth, finality source and rollback SLO."
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-03",
+  "chainId": 56,
+  "identityPolicy": {
+    "v3": "factory PoolCreated establishes lowercase poolAddress identity; pool events must route through that catalog",
+    "v4": "PoolManager Initialize establishes PoolId plus the protocol-specific PoolKey; PoolId is recomputed before catalog insertion"
+  },
+  "supported": [
+    { "protocol": "univ3", "event": "PoolCreated", "kind": "pool.created", "golden": "golden/raw/univ3/PoolCreated.json" },
+    { "protocol": "univ3", "event": "Swap", "kind": "swap", "golden": "golden/raw/univ3/Swap.json" },
+    { "protocol": "univ3", "event": "Mint", "kind": "liquidity.add", "golden": "golden/raw/univ3/Mint.json" },
+    { "protocol": "univ3", "event": "Burn", "kind": "liquidity.remove", "golden": "golden/raw/univ3/Burn.json" },
+    { "protocol": "univ3", "event": "Collect", "kind": "collect", "golden": "golden/raw/univ3/Collect.json" },
+    { "protocol": "pcsv3", "event": "PoolCreated", "kind": "pool.created", "golden": "golden/raw/pcsv3/PoolCreated.json" },
+    { "protocol": "pcsv3", "event": "Swap", "kind": "swap", "golden": "golden/raw/pcsv3/Swap.json" },
+    { "protocol": "pcsv3", "event": "Mint", "kind": "liquidity.add", "golden": "golden/raw/pcsv3/Mint.json" },
+    { "protocol": "pcsv3", "event": "Burn", "kind": "liquidity.remove", "golden": "golden/raw/pcsv3/Burn.json" },
+    { "protocol": "pcsv3", "event": "Collect", "kind": "collect", "golden": "golden/raw/pcsv3/Collect.json" },
+    { "protocol": "univ4", "event": "Initialize", "kind": "pool.created", "golden": "golden/raw/univ4/Initialize.json" },
+    { "protocol": "univ4", "event": "Swap", "kind": "swap", "golden": "golden/raw/univ4/Swap.json" },
+    { "protocol": "univ4", "event": "ModifyLiquidity", "kind": "liquidity.add or liquidity.remove from signed delta", "golden": "golden/raw/univ4/ModifyLiquidity.json" },
+    { "protocol": "pcsv4", "event": "Initialize", "kind": "pool.created", "golden": "golden/raw/pcsv4/Initialize.json" },
+    { "protocol": "pcsv4", "event": "Swap", "kind": "swap", "golden": "golden/raw/pcsv4/Swap.json" },
+    { "protocol": "pcsv4", "event": "ModifyLiquidity", "kind": "liquidity.add or liquidity.remove from signed delta", "golden": "golden/raw/pcsv4/ModifyLiquidity.json" }
+  ],
+  "unsupported": [
+    { "protocol": "univ3", "event": "Initialize", "reason": "outside the P02-03 V3 support contract; no production mapping is asserted" },
+    { "protocol": "pcsv3", "event": "Initialize", "reason": "outside the P02-03 V3 support contract; no production mapping is asserted" },
+    { "protocol": "univ4", "event": "Donate", "reason": "outside the requested market event set; no normalized semantic is asserted" },
+    { "protocol": "pcsv4", "event": "Donate", "reason": "outside the requested market event set; no normalized semantic is asserted" }
+  ],
+  "quarantine": [
+    "unknown topic",
+    "wrong chain",
+    "wrong address",
+    "wrong protocol-specific topic",
+    "unregistered V3 pool or V4 PoolId",
+    "ABI hash conflict",
+    "malformed or truncated data",
+    "PoolId/PoolKey mismatch",
+    "event outside deployment block range"
+  ]
+}

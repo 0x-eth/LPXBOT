@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-03",
+  "canonicalization": "SHA-256 of JSON.stringify(viem parseAbi output) in listed event order",
+  "protocols": [
+    {
+      "protocolId": 1,
+      "platformId": "univ3",
+      "generation": "v3",
+      "abiHash": "sha256:462410c6e3d0ed2537e30a6da51006ca5154cbd2e3f43331bb792134590488b8",
+      "sourceRef": "SRC-UNIV3-ABI",
+      "events": [
+        {
+          "name": "PoolCreated",
+          "signature": "PoolCreated(address,address,uint24,int24,address)",
+          "topic0": "0x783cca1c0412dd0d695e784568c96da2e9c22ff989357a2e8b1d9b2b4e6b7118"
+        },
+        {
+          "name": "Swap",
+          "signature": "Swap(address,address,int256,int256,uint160,uint128,int24)",
+          "topic0": "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67"
+        },
+        {
+          "name": "Mint",
+          "signature": "Mint(address,address,int24,int24,uint128,uint256,uint256)",
+          "topic0": "0x7a53080ba414158be7ec69b987b5fb7d07dee101fe85488f0853ae16239d0bde"
+        },
+        {
+          "name": "Burn",
+          "signature": "Burn(address,int24,int24,uint128,uint256,uint256)",
+          "topic0": "0x0c396cd989a39f4459b5fa1aed6a9a8dcdbc45908acfd67e028cd568da98982c"
+        },
+        {
+          "name": "Collect",
+          "signature": "Collect(address,address,int24,int24,uint128,uint128)",
+          "topic0": "0x70935338e69775456a85ddef226c395fb668b63fa0115f5f20610b388e6ca9c0"
+        }
+      ]
+    },
+    {
+      "protocolId": 2,
+      "platformId": "pcsv3",
+      "generation": "v3",
+      "abiHash": "sha256:3a010d793511297a187cf8bac7e1eeba8e4b1a1c3a800ce12f8b657d28a3db66",
+      "sourceRef": "SRC-PCSV3-ABI",
+      "events": [
+        {
+          "name": "PoolCreated",
+          "signature": "PoolCreated(address,address,uint24,int24,address)",
+          "topic0": "0x783cca1c0412dd0d695e784568c96da2e9c22ff989357a2e8b1d9b2b4e6b7118"
+        },
+        {
+          "name": "Swap",
+          "signature": "Swap(address,address,int256,int256,uint160,uint128,int24,uint128,uint128)",
+          "topic0": "0x19b47279256b2a23a1665c810c8d55a1758940ee09377d4f8d26497a3577dc83"
+        },
+        {
+          "name": "Mint",
+          "signature": "Mint(address,address,int24,int24,uint128,uint256,uint256)",
+          "topic0": "0x7a53080ba414158be7ec69b987b5fb7d07dee101fe85488f0853ae16239d0bde"
+        },
+        {
+          "name": "Burn",
+          "signature": "Burn(address,int24,int24,uint128,uint256,uint256)",
+          "topic0": "0x0c396cd989a39f4459b5fa1aed6a9a8dcdbc45908acfd67e028cd568da98982c"
+        },
+        {
+          "name": "Collect",
+          "signature": "Collect(address,address,int24,int24,uint128,uint128)",
+          "topic0": "0x70935338e69775456a85ddef226c395fb668b63fa0115f5f20610b388e6ca9c0"
+        }
+      ]
+    },
+    {
+      "protocolId": 4,
+      "platformId": "univ4",
+      "generation": "v4",
+      "abiHash": "sha256:2bc13431c8b4ae1430e4fd9fd7458db2b997bcfa5041fded4c0d2332cff1802e",
+      "sourceRef": "SRC-UNIV4-ABI",
+      "events": [
+        {
+          "name": "Initialize",
+          "signature": "Initialize(bytes32,address,address,uint24,int24,address,uint160,int24)",
+          "topic0": "0xdd466e674ea557f56295e2d0218a125ea4b4f0f6f3307b95f85e6110838d6438"
+        },
+        {
+          "name": "Swap",
+          "signature": "Swap(bytes32,address,int128,int128,uint160,uint128,int24,uint24)",
+          "topic0": "0x40e9cecb9f5f1f1c5b9c97dec2917b7ee92e57ba5563708daca94dd84ad7112f"
+        },
+        {
+          "name": "ModifyLiquidity",
+          "signature": "ModifyLiquidity(bytes32,address,int24,int24,int256,bytes32)",
+          "topic0": "0xf208f4912782fd25c7f114ca3723a2d5dd6f3bcc3ac8db5af63baa85f711d5ec"
+        }
+      ]
+    },
+    {
+      "protocolId": 5,
+      "platformId": "pcsv4",
+      "generation": "v4",
+      "abiHash": "sha256:cc9f30f76eebd726c3795966ecd6e5f044aee707b285287130cadb994b44ec9c",
+      "sourceRef": "SRC-PCSV4-ABI",
+      "events": [
+        {
+          "name": "Initialize",
+          "signature": "Initialize(bytes32,address,address,address,uint24,bytes32,uint160,int24)",
+          "topic0": "0x426cc62fe6a33a40ba2788c2c87a9c34ee4582b95bc9fa5a7bb7ae70b750b99c"
+        },
+        {
+          "name": "Swap",
+          "signature": "Swap(bytes32,address,int128,int128,uint160,uint128,int24,uint24,uint16)",
+          "topic0": "0x04206ad2b7c0f463bff3dd4f33c5735b0f2957a351e4f79763a4fa9e775dd237"
+        },
+        {
+          "name": "ModifyLiquidity",
+          "signature": "ModifyLiquidity(bytes32,address,int24,int24,int256,bytes32)",
+          "topic0": "0xf208f4912782fd25c7f114ca3723a2d5dd6f3bcc3ac8db5af63baa85f711d5ec"
+        }
+      ]
+    }
+  ]
+}
