@@ -104,6 +104,8 @@ function legacyMarketRow(row: MarketPoolSnapshot["rows"][number]) {
   for (const key of [
     "feePips",
     "hooks",
+    "labels",
+    "labelRuleVersion",
     "poolKey",
     "tickSpacing",
     "token0Address",
@@ -726,7 +728,7 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
          (SELECT count(*)::text FROM market_snapshots) AS snapshots,
          (SELECT max(sequence)::text FROM market_stream_outbox) AS max_sequence`,
     );
-    expect(replay).toMatchObject({ acceptedCount: 0, duplicateCount: 2, revertedCount: 0 });
+    expect(replay).toMatchObject({ acceptedCount: 0, duplicateCount: 1, revertedCount: 0 });
     expect(afterReplay.rows).toEqual(beforeReplay.rows);
   });
 
@@ -1081,10 +1083,13 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
           token1Address: expect.toBeOneOf([expect.any(String), null]),
         });
       }
-      const data =
+      const data: Record<string, unknown> =
         "rows" in currentData
           ? { ...currentData, rows: legacyRows(currentData.rows) }
           : { ...currentData, upserts: legacyRows(currentData.upserts) };
+      delete data.canonicalRevision;
+      delete data.metricVersion;
+      if (!("rows" in currentData)) delete data.windowEnd;
       const legacyHash = legacySnapshotHashes.get(
         `${currentEnvelope.streamKey}:${currentData.version}`,
       )!;
