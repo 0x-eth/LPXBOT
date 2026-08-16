@@ -20,6 +20,7 @@
     "check:p01-reference": "node scripts/check-p01-reference-artifacts.mjs",
     "check:p02-reference": "node scripts/check-p02-reference-artifacts.mjs",
     "check:traceability": "node scripts/check-traceability.mjs",
+    "capture:p02-03": "node scripts/capture-p02-03-golden.mjs",
     "changeset": "changeset",
     "changeset:status": "changeset status",
     "db:migrate": "bash scripts/db.sh migrate",
