@@ -160,11 +160,7 @@ function normalizePoolColumns(value: unknown): PoolColumnPreference[] {
   for (const key of poolColumnKeys.slice(1, -1)) {
     if (!seen.has(key)) middle.push({ key, visible: true });
   }
-  return [
-    { key: "pool", visible: true },
-    ...middle,
-    { key: "actions", visible: true },
-  ];
+  return [{ key: "pool", visible: true }, ...middle, { key: "actions", visible: true }];
 }
 
 function validateCompletePreferences(value: Record<string, unknown>): UserPreferences {

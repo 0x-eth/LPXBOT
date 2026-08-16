@@ -2,13 +2,7 @@ import type { EvmAddress, MarketPoolRow } from "@lpbot/api-contract";
 
 export type PoolSearchMode = "pool" | "token";
 export type PoolSearchStatus =
-  | "pristine"
-  | "loading"
-  | "ready"
-  | "no-results"
-  | "invalid"
-  | "error"
-  | "reconnecting";
+  "pristine" | "loading" | "ready" | "no-results" | "invalid" | "error" | "reconnecting";
 
 export interface PoolSearchParameters {
   mode: PoolSearchMode;
@@ -77,12 +71,13 @@ export function filterPoolsByIdentity(
 ): MarketPoolRow[] {
   const identity = query.toLowerCase();
   if (!poolIdentityPattern.test(identity)) return [];
-  return rows.filter(
-    (row) => (row.poolAddress ?? row.poolId)?.toLowerCase() === identity,
-  );
+  return rows.filter((row) => (row.poolAddress ?? row.poolId)?.toLowerCase() === identity);
 }
 
-export function reducePoolSearch(state: PoolSearchState, action: PoolSearchAction): PoolSearchState {
+export function reducePoolSearch(
+  state: PoolSearchState,
+  action: PoolSearchAction,
+): PoolSearchState {
   if (action.type === "clear") return initialPoolSearchState();
   if (action.type === "reconnecting") {
     return state.status === "pristine" ? state : { ...state, status: "reconnecting" };

@@ -9,12 +9,15 @@ See `initial-failure.md`. Catalog, identity contract, by-token API, search reduc
 ## Focused verification
 
 ```text
-P02-06 focused unit/API/SSE/preferences Vitest suites: passed
-PostgreSQL market indexer suite: 13/13 passed
-PostgreSQL preferences suite: 3/3 passed
+P02-06 focused unit/API/SSE/preferences Vitest suites: 8 files, 43/43 passed
+PostgreSQL integration after repeat migrate/seed: 11 files, 42/42 passed
+PostgreSQL market indexer subset: 13/13 passed
+PostgreSQL preferences subset: 3/3 passed
 Full Playwright suite: 124 passed, 4 skipped
 P02-01 through P02-05 acceptance trees: byte-identical to the pre-work hash list
 ```
+
+The first aggregate PostgreSQL gate exposed one missing `market_pool_catalog` entry in the full migration-cycle table inventory and ran against an unseeded local policy table. The inventory assertion was updated, then the CI-order sequence (`db:migrate` twice, `db:seed` twice, `test:postgres`) passed 42/42. No business assertion was weakened.
 
 ## Final local gates
 

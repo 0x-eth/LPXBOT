@@ -75,9 +75,7 @@ describe("P02-06 pool search state", () => {
     expect(filterPoolsByIdentity(rows, poolId.toUpperCase().replace("0X", "0x"))).toEqual([
       rows[1],
     ]);
-    expect(filterPoolsByIdentity(rows, "0xcccccccccccccccccccccccccccccccccccccccc")).toEqual(
-      [],
-    );
+    expect(filterPoolsByIdentity(rows, "0xcccccccccccccccccccccccccccccccccccccccc")).toEqual([]);
   });
 
   it("ignores late responses and exposes loading, ready, no-results, invalid, error and reconnecting", () => {
@@ -106,9 +104,9 @@ describe("P02-06 pool search state", () => {
     });
     expect(ready.status).toBe("ready");
     expect(reducePoolSearch(second, { requestId: 2, type: "invalid" }).status).toBe("invalid");
-    expect(reducePoolSearch(second, { code: "NETWORK_ERROR", requestId: 2, type: "error" }).status).toBe(
-      "error",
-    );
+    expect(
+      reducePoolSearch(second, { code: "NETWORK_ERROR", requestId: 2, type: "error" }).status,
+    ).toBe("error");
     expect(reducePoolSearch(ready, { type: "reconnecting" }).status).toBe("reconnecting");
     expect(reducePoolSearch(ready, { type: "clear" })).toEqual(initialPoolSearchState());
   });

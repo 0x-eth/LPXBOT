@@ -205,9 +205,7 @@ test("P02-06 sha256 inventory covers every acceptance file except itself", async
         return [match[2], match[1]];
       }),
   );
-  const files = (await acceptanceFiles(P02_06_ROOT)).filter(
-    (file) => file !== "sha256sums.txt",
-  );
+  const files = (await acceptanceFiles(P02_06_ROOT)).filter((file) => file !== "sha256sums.txt");
   assert.deepEqual([...checksums.keys()].sort(), files);
   for (const file of files) {
     const bytes = await readFile(path.join(P02_06_ROOT, file));
