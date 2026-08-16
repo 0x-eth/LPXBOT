@@ -78,12 +78,16 @@ describe("P02-08 label API/SSE client contract", () => {
     });
     expect(parseMarketStreamEnvelope(structuredClone(snapshot))).toEqual(snapshot);
 
-    const noLabels = structuredClone(snapshot) as unknown as Record<string, any>;
-    delete noLabels.data.rows[0].labels;
+    const noLabels = structuredClone(snapshot) as unknown as {
+      data: { rows: Array<{ labels?: unknown }> };
+    };
+    delete noLabels.data.rows[0]!.labels;
     expect(() => parseMarketStreamEnvelope(noLabels)).toThrow("MARKET_STREAM_RESPONSE_INVALID");
 
-    const badScore = structuredClone(snapshot) as unknown as Record<string, any>;
-    badScore.data.rows[0].labels[0].score = 101;
+    const badScore = structuredClone(snapshot) as unknown as {
+      data: { rows: Array<{ labels: Array<{ score: number }> }> };
+    };
+    badScore.data.rows[0]!.labels[0]!.score = 101;
     expect(() => parseMarketStreamEnvelope(badScore)).toThrow("MARKET_STREAM_RESPONSE_INVALID");
   });
 
