@@ -20,5 +20,8 @@
     "@lpbot/chain-registry": "workspace:*",
     "@lpbot/market-metrics": "workspace:*",
     "viem": "2.55.16"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1"
   }
 }

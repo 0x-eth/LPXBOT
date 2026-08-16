@@ -149,18 +149,6 @@ function emptyPayload(eventName: string): Record<string, string | null> {
   };
 }
 
-function basePool(): NormalizedPoolEvent["pool"] {
-  return {
-    feePips: null,
-    hooks: null,
-    poolAddress: null,
-    poolId: null,
-    tickSpacing: null,
-    token0: null,
-    token1: null,
-  };
-}
-
 function decodeWithAbi(abi: Abi, delivery: RawLogDelivery) {
   return decodeEventLog({
     abi,
@@ -322,17 +310,14 @@ export class ProductionBscEventDecoder {
     if (this.#conflictingAbis.has(deployment.platformId)) {
       return this.#reject(delivery, "abi-conflict");
     }
-    const expectedV4Topic =
-      deployment.platformId === "univ4"
-        ? [PROTOCOL_EVENT_TOPICS.v4.InitializeUniswap, PROTOCOL_EVENT_TOPICS.v4.SwapUniswap]
-        : deployment.platformId === "pcsv4"
-          ? [PROTOCOL_EVENT_TOPICS.v4.InitializePancake, PROTOCOL_EVENT_TOPICS.v4.SwapPancake]
-          : [];
-    if (
-      deployment.generation === "v4" &&
-      (topic0.includes("initialize") || topic0.includes("swap")) &&
-      !expectedV4Topic.includes(topic0 as Hex)
-    ) {
+    const wrongV4ProtocolTopic =
+      (deployment.platformId === "univ4" &&
+        (topic0 === PROTOCOL_EVENT_TOPICS.v4.InitializePancake ||
+          topic0 === PROTOCOL_EVENT_TOPICS.v4.SwapPancake)) ||
+      (deployment.platformId === "pcsv4" &&
+        (topic0 === PROTOCOL_EVENT_TOPICS.v4.InitializeUniswap ||
+          topic0 === PROTOCOL_EVENT_TOPICS.v4.SwapUniswap));
+    if (wrongV4ProtocolTopic) {
       return this.#reject(delivery, "wrong-protocol");
     }
     return deployment;
@@ -343,10 +328,12 @@ export class ProductionBscEventDecoder {
     deployment: ProtocolDeployment,
   ): Promise<DecodedFields> {
     const decoded = decodeWithAbi(PROTOCOL_EVENT_ABIS[deployment.platformId], delivery);
-    const args = decoded.args as Record<string, bigint | number | string>;
-    const payload = emptyPayload(decoded.eventName);
+    const args = decoded.args as unknown as Record<string, bigint | number | string>;
+    const eventName = decoded.eventName;
+    if (!eventName) return this.#reject(delivery, "malformed-log");
+    const payload = emptyPayload(eventName);
     const protocol = deployment.platformId as "univ3" | "pcsv3";
-    if (decoded.eventName === "PoolCreated") {
+    if (eventName === "PoolCreated") {
       const pool: V3PoolIdentity = {
         feePips: decimal(args.fee as number),
         platformId: protocol,
@@ -391,7 +378,7 @@ export class ProductionBscEventDecoder {
       token0: pool.token0,
       token1: pool.token1,
     };
-    if (decoded.eventName === "Swap") {
+    if (eventName === "Swap") {
       const amount0 = decimal(args.amount0 as bigint);
       const amount1 = decimal(args.amount1 as bigint);
       const sqrtPriceX96 = decimal(args.sqrtPriceX96 as bigint);
@@ -423,7 +410,7 @@ export class ProductionBscEventDecoder {
     payload.owner = lower(args.owner as string);
     payload.tickLower = tickLower;
     payload.tickUpper = tickUpper;
-    if (decoded.eventName === "Mint") {
+    if (eventName === "Mint") {
       const amount0 = decimal(args.amount0 as bigint);
       const amount1 = decimal(args.amount1 as bigint);
       const liquidityDelta = decimal(args.amount as bigint);
@@ -443,7 +430,7 @@ export class ProductionBscEventDecoder {
         sqrtPriceX96: null,
       };
     }
-    if (decoded.eventName === "Burn") {
+    if (eventName === "Burn") {
       const amount0 = negative(args.amount0 as bigint);
       const amount1 = negative(args.amount1 as bigint);
       const liquidityDelta = negative(args.amount as bigint);
@@ -462,7 +449,7 @@ export class ProductionBscEventDecoder {
         sqrtPriceX96: null,
       };
     }
-    if (decoded.eventName === "Collect") {
+    if (eventName === "Collect") {
       const amount0 = negative(args.amount0 as bigint);
       const amount1 = negative(args.amount1 as bigint);
       payload.amount0 = amount0;
@@ -488,11 +475,13 @@ export class ProductionBscEventDecoder {
     deployment: ProtocolDeployment,
   ): Promise<DecodedFields> {
     const decoded = decodeWithAbi(PROTOCOL_EVENT_ABIS[deployment.platformId], delivery);
-    const args = decoded.args as Record<string, bigint | number | string>;
-    const payload = emptyPayload(decoded.eventName);
+    const args = decoded.args as unknown as Record<string, bigint | number | string>;
+    const eventName = decoded.eventName;
+    if (!eventName) return this.#reject(delivery, "malformed-log");
+    const payload = emptyPayload(eventName);
     const protocol = deployment.platformId as "univ4" | "pcsv4";
     const poolId = lower(args.id as string);
-    if (decoded.eventName === "Initialize") {
+    if (eventName === "Initialize") {
       const manager = deployment.poolManager as Address;
       const hooks = lower(args.hooks as string);
       const parameters = protocol === "pcsv4" ? lower(args.parameters as string) : null;
@@ -571,7 +560,7 @@ export class ProductionBscEventDecoder {
       token1: pool.token1,
     };
     payload.sender = lower(args.sender as string);
-    if (decoded.eventName === "Swap") {
+    if (eventName === "Swap") {
       const amount0 = decimal(args.amount0 as bigint);
       const amount1 = decimal(args.amount1 as bigint);
       const sqrtPriceX96 = decimal(args.sqrtPriceX96 as bigint);
@@ -595,7 +584,7 @@ export class ProductionBscEventDecoder {
         sqrtPriceX96,
       };
     }
-    if (decoded.eventName === "ModifyLiquidity") {
+    if (eventName === "ModifyLiquidity") {
       const liquidityDelta = decimal(args.liquidityDelta as bigint);
       payload.liquidityDelta = liquidityDelta;
       payload.salt = lower(args.salt as string);

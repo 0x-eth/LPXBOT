@@ -229,6 +229,10 @@ importers:
       viem:
         specifier: 2.55.16
         version: 2.55.16(typescript@6.0.3)(zod@4.4.3)
+    devDependencies:
+      '@types/node':
+        specifier: 22.20.1
+        version: 22.20.1
 
   packages/chain-registry:
     dependencies:
