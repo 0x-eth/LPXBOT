@@ -74,7 +74,9 @@ describe("P02-05 address remarks web client", () => {
       { remarks: [{ address: address.toUpperCase(), label: "Mine", watched: true }], shared: [] },
     ];
     for (const data of responses) {
-      const client = new AddressRemarksClient(vi.fn<typeof fetch>().mockResolvedValue(success(data)));
+      const client = new AddressRemarksClient(
+        vi.fn<typeof fetch>().mockResolvedValue(success(data)),
+      );
       await expect(client.get()).rejects.toMatchObject({
         code: "INVALID_RESPONSE",
         name: "AddressRemarksRequestError",

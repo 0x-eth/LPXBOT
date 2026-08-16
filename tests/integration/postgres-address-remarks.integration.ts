@@ -179,7 +179,11 @@ describe("P02-05 PostgreSQL address remarks", () => {
 
   it("enforces canonical and control-free labels in PostgreSQL and keeps audits append-only", async () => {
     const invalidRows = [
-      ["0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", "Valid", "address_remarks_canonical_address_valid"],
+      [
+        "0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        "Valid",
+        "address_remarks_canonical_address_valid",
+      ],
       ["0xcccccccccccccccccccccccccccccccccccccccc", " padded ", "address_remarks_label_valid"],
       ["0xdddddddddddddddddddddddddddddddddddddddd", "x".repeat(33), "address_remarks_label_valid"],
       ["0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "line\nbreak", "address_remarks_label_valid"],

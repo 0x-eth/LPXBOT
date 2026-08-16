@@ -112,7 +112,11 @@ describe("P02-05 address remarks API", () => {
     const saved = await app.inject({
       headers: session(tokenA),
       method: "PUT",
-      payload: { address: address.toUpperCase().replace("0X", "0x"), label: "  Whale  ", watched: true },
+      payload: {
+        address: address.toUpperCase().replace("0X", "0x"),
+        label: "  Whale  ",
+        watched: true,
+      },
       url: "/api/address-remarks",
     });
     expect(saved.statusCode).toBe(200);

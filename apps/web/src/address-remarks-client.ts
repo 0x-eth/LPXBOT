@@ -84,7 +84,8 @@ function parseList(value: unknown): AddressRemarksResponse | null {
   }
   const personalAddresses = new Set(remarks.map((remark) => remark!.address));
   const sharedAddresses = new Set(shared.map((remark) => remark!.address));
-  if (personalAddresses.size !== remarks.length || sharedAddresses.size !== shared.length) return null;
+  if (personalAddresses.size !== remarks.length || sharedAddresses.size !== shared.length)
+    return null;
   return {
     remarks: remarks as AddressRemark[],
     shared: shared as SharedRemark[],

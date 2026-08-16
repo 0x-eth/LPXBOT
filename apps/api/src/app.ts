@@ -1354,9 +1354,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
 
       let address;
       try {
-        address = canonicalAddressRemarkAddress(
-          (request.params as { address?: unknown }).address,
-        );
+        address = canonicalAddressRemarkAddress((request.params as { address?: unknown }).address);
       } catch (error) {
         if (!(error instanceof AddressRemarkValidationError)) throw error;
         await recordDeniedAddressRemark(

@@ -2929,6 +2929,42 @@ html[data-theme="dark"] .chain-operation-success {
     grid-template-columns: 1fr;
   }
 
+  .flow-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .flow-stat-strip > div {
+    min-height: 58px;
+    padding: 9px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .flow-stat-strip > div:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .flow-stat-strip > div:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .flow-stat-strip dd {
+    font-size: 0.7rem;
+  }
+
+  .flow-view-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .flow-view-toolbar .flow-segment,
+  .flow-watched-filter {
+    width: 100%;
+  }
+
+  .flow-watched-filter {
+    justify-content: center;
+  }
+
   .flow-minimum-filter,
   .flow-clear-button {
     grid-column: auto;
@@ -2984,6 +3020,59 @@ html[data-theme="dark"] .chain-operation-success {
     font-size: 0.62rem;
     font-weight: 700;
     text-align: left;
+  }
+
+  .flow-address-table,
+  .flow-address-table tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .flow-address-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .flow-address-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid var(--border);
+  }
+
+  .flow-address-table td {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 6px;
+    padding: 9px 6px;
+    font-size: 0.66rem;
+    text-align: right;
+  }
+
+  .flow-address-table td::before {
+    color: var(--muted-foreground);
+    content: attr(data-label);
+    font-family: Inter, Arial, ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .flow-address-table td:first-child,
+  .flow-address-table td:nth-child(2),
+  .flow-address-table td:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .flow-address-actions {
+    justify-content: end;
   }
 
   .interface-section-heading {

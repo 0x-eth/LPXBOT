@@ -113,7 +113,9 @@ test("FLOW-03/04 share filtered projection and expose stable watched address ope
     addressTable.getByRole("link", { name: `在 BscScan 查看 ${addressA}` }),
   ).toHaveAttribute("href", `https://bscscan.com/address/${addressA}`);
   for (const action of ["筛选", "复制", "编辑备注", "取消关注"]) {
-    await expect(addressTable.getByRole("button", { name: new RegExp(`^${action}`, "u") })).toBeVisible();
+    await expect(
+      addressTable.getByRole("button", { name: new RegExp(`^${action}`, "u") }),
+    ).toBeVisible();
   }
   await expect(addressTable.getByRole("button", { name: /资金|任务|转账|建仓/u })).toHaveCount(0);
 
@@ -123,7 +125,9 @@ test("FLOW-03/04 share filtered projection and expose stable watched address ope
   ).toEqual([]);
 });
 
-test("FLOW-05 optimistic save rolls back exactly and preserves the user's input", async ({ page }) => {
+test("FLOW-05 optimistic save rolls back exactly and preserves the user's input", async ({
+  page,
+}) => {
   await useSession(page);
   let failNextPut = true;
   let personal = { address: addressA, label: "核心 LP", watched: true };

@@ -152,11 +152,7 @@ export class PostgresAddressRemarkStore implements AddressRemarkStore {
         [input.userId, input.chainId, input.address],
       );
       const deleted = result.rowCount === 1;
-      await this.#insertAllowedAudit(
-        client,
-        input.audit,
-        deleted ? "DELETED" : "ALREADY_ABSENT",
-      );
+      await this.#insertAllowedAudit(client, input.audit, deleted ? "DELETED" : "ALREADY_ABSENT");
       await client.query("COMMIT");
       return deleted;
     } catch (error) {
@@ -176,9 +172,6 @@ export class PostgresAddressRemarkStore implements AddressRemarkStore {
     input: AddressRemarkPutInput["audit"] | AddressRemarkDeleteInput["audit"],
     resultCode: string,
   ): Promise<void> {
-    await client.query(
-      insertAuditSql,
-      auditValues({ ...input, outcome: "allowed", resultCode }),
-    );
+    await client.query(insertAuditSql, auditValues({ ...input, outcome: "allowed", resultCode }));
   }
 }

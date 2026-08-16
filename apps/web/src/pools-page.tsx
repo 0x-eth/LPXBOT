@@ -1,7 +1,6 @@
 import {
   canonicalizeLiquidityProtocols,
   liquidityFlowProtocols,
-  type AddressRemark,
   type EvmAddress,
   type LiquidityFlowEvent,
   type LiquidityFlowProtocol,
@@ -37,10 +36,7 @@ import {
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import {
-  AddressRemarksClient,
-  AddressRemarksRequestError,
-} from "./address-remarks-client.js";
+import { AddressRemarksClient, AddressRemarksRequestError } from "./address-remarks-client.js";
 import {
   addressRemarkLabel,
   initialAddressRemarksState,
@@ -50,7 +46,6 @@ import {
 } from "./address-remarks-state.js";
 import { LiquidityFlowClient, type LiquidityFlowServerFilters } from "./liquidity-flow-client";
 import {
-  applyLiquidityFlowFilters,
   buildLiquidityFlowProjection,
   defaultLiquidityFlowUiFilters,
   initialLiquidityFlowState,
@@ -600,9 +595,16 @@ function FlowTable({
                 {shortIdentity(event.pool_address ?? event.pool_id)}
               </td>
               <td data-label="User" title={event.user ?? undefined}>
-                {event.user ? addressRemarkLabel(remarkState, event.user) || shortIdentity(event.user) : "--"}
+                {event.user
+                  ? addressRemarkLabel(remarkState, event.user) || shortIdentity(event.user)
+                  : "--"}
                 {event.user && watched.has(event.user.toLowerCase()) ? (
-                  <Star aria-label="已关注" className="flow-user-watch" fill="currentColor" size={11} />
+                  <Star
+                    aria-label="已关注"
+                    className="flow-user-watch"
+                    fill="currentColor"
+                    size={11}
+                  />
                 ) : null}
               </td>
               <td data-label="NFT">{event.nft_id ? `#${event.nft_id}` : "--"}</td>
@@ -648,16 +650,7 @@ function AddressTable({
       <table aria-label="地址聚合" className="flow-address-table">
         <thead>
           <tr>
-            {[
-              "地址",
-              "备注",
-              "净额",
-              "笔数",
-              "池数",
-              "最近",
-              "状态",
-              "操作",
-            ].map((label) => (
+            {["地址", "备注", "净额", "笔数", "池数", "最近", "状态", "操作"].map((label) => (
               <th key={label} scope="col">
                 {label}
               </th>
@@ -754,7 +747,11 @@ function AddressTable({
                       title={isWatched ? "取消关注" : "关注"}
                       type="button"
                     >
-                      <Star aria-hidden="true" fill={isWatched ? "currentColor" : "none"} size={14} />
+                      <Star
+                        aria-hidden="true"
+                        fill={isWatched ? "currentColor" : "none"}
+                        size={14}
+                      />
                     </button>
                   </div>
                 </td>
@@ -871,7 +868,12 @@ function AddressRemarkDialog({
                 取消
               </button>
             </Dialog.Close>
-            <button className="remark-dialog-save" disabled={saving} onClick={() => void submit()} type="button">
+            <button
+              className="remark-dialog-save"
+              disabled={saving}
+              onClick={() => void submit()}
+              type="button"
+            >
               {saving ? "保存中" : "保存"}
             </button>
           </div>
@@ -946,10 +948,7 @@ export function PoolsPage() {
       (error: unknown) => {
         if (controller.signal.aborted) return;
         remarkDispatch({
-          code:
-            error instanceof AddressRemarksRequestError
-              ? error.code
-              : "ADDRESS_REMARKS_FAILED",
+          code: error instanceof AddressRemarksRequestError ? error.code : "ADDRESS_REMARKS_FAILED",
           type: "load-failed",
         });
       },
@@ -1314,7 +1313,7 @@ export function PoolsPage() {
         {baseFlowEvents.length > 0 ? <FlowStats summary={flowProjection.summary} /> : null}
 
         <div className="flow-view-toolbar">
-          <FlowSegment
+          <FlowSegment<"address" | "stream">
             label="流动性视图"
             onChange={setFlowView}
             options={
@@ -1366,13 +1365,17 @@ export function PoolsPage() {
                   当前过滤条件暂无流动性事件
                 </div>
               ) : (
-                <FlowTable events={flowProjection.events} remarkState={remarkState} watched={watched} />
+                <FlowTable
+                  events={flowProjection.events}
+                  remarkState={remarkState}
+                  watched={watched}
+                />
               )}
             </div>
             <div className="flow-view-pane flow-address-view" data-active={flowView === "address"}>
               <div className="flow-view-heading">
                 <strong>地址聚合</strong>
-                <FlowSegment
+                <FlowSegment<LiquidityFlowAddressSort>
                   label="地址排序"
                   onChange={setAddressSort}
                   options={
@@ -1403,9 +1406,7 @@ export function PoolsPage() {
               ) : null}
               {flowProjection.addresses.length === 0 ? (
                 <div className="flow-operational-state" role="status">
-                  {watchedOnly && watched.size === 0
-                    ? "还没有关注地址"
-                    : "当前过滤条件暂无地址"}
+                  {watchedOnly && watched.size === 0 ? "还没有关注地址" : "当前过滤条件暂无地址"}
                 </div>
               ) : (
                 <AddressTable
