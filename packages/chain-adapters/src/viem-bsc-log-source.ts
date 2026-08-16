@@ -277,6 +277,12 @@ export class ViemBscLogSource implements RawLogSource {
 
   async #delivery(log: RawChainLog): Promise<RawLogDelivery> {
     const header = await this.#block(BigInt(log.blockNumber));
+    if (
+      decimalQuantity(header.number) !== log.blockNumber ||
+      (!log.removed && lowerHex(header.hash) !== log.blockHash)
+    ) {
+      throw new Error("RPC_BLOCK_HEADER_MISMATCH");
+    }
     const block: RawChainBlock = {
       blockHash: log.blockHash,
       blockNumber: log.blockNumber,

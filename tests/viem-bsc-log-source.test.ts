@@ -243,6 +243,70 @@ describe("P02-03 ViemBscLogSource", () => {
     ]);
   });
 
+  it("rejects a non-removed log when its fetched block header is from another branch", async () => {
+    const logHash = `0x${"aa".repeat(32)}`;
+    const headerHash = `0x${"bb".repeat(32)}`;
+    const rpc = await mockRpc(({ method, params }) => {
+      if (method === "eth_chainId") {
+        return { body: { id: 1, jsonrpc: "2.0", result: "0x38" } };
+      }
+      if (method === "eth_getBlockByNumber" && params[0] === "latest") {
+        return {
+          body: {
+            id: 1,
+            jsonrpc: "2.0",
+            result: {
+              hash: headerHash,
+              number: "0x64",
+              parentHash: `0x${"99".repeat(32)}`,
+              timestamp: "0x64",
+            },
+          },
+        };
+      }
+      if (method === "eth_getLogs") {
+        return {
+          body: {
+            id: 1,
+            jsonrpc: "2.0",
+            result: [
+              {
+                address: "0x0000000000000000000000000000000000000056",
+                blockHash: logHash,
+                blockNumber: "0x64",
+                data: "0x",
+                logIndex: "0x0",
+                removed: false,
+                topics: [`0x${"11".repeat(32)}`],
+                transactionHash: `0x${"22".repeat(32)}`,
+                transactionIndex: "0x0",
+              },
+            ],
+          },
+        };
+      }
+      if (method === "eth_getBlockByNumber" && params[0] === "0x64") {
+        return {
+          body: {
+            id: 1,
+            jsonrpc: "2.0",
+            result: {
+              hash: headerHash,
+              number: "0x64",
+              parentHash: `0x${"99".repeat(32)}`,
+              timestamp: "0x64",
+            },
+          },
+        };
+      }
+      throw new Error(`unexpected ${method}`);
+    });
+
+    await expect(
+      new ViemBscLogSource({ fromBlock: "100", rpcUrl: rpc.url }).read(null),
+    ).rejects.toThrow(/RPC_BLOCK_HEADER_MISMATCH/u);
+  });
+
   it("retries 429/5xx with a bound and resumes after the cursor within its block", async () => {
     const delays: number[] = [];
     const rpc = await mockRpc(({ method, params }, attempt) => {
