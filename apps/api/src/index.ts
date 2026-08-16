@@ -25,6 +25,12 @@ export type {
   MarketPoolsStreamContext,
   PostgresMarketPoolsProviderOptions,
 } from "./market-pools.js";
+export { PostgresLiquidityFlowProvider, liquidityFlowStreamKey } from "./liquidity-flow.js";
+export type {
+  LiquidityFlowProvider,
+  LiquidityFlowStreamContext,
+  PostgresLiquidityFlowProviderOptions,
+} from "./liquidity-flow.js";
 export { ChainPolicyStoreError } from "./chain-access-policies.js";
 export type {
   ChainAccessPolicyChange,
