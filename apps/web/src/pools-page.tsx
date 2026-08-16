@@ -1289,6 +1289,7 @@ export function PoolsPage() {
     initialSearch?.mode ?? "token",
   );
   const [poolSearchQuery, setPoolSearchQuery] = useState(initialSearch?.query ?? "");
+  const [poolSearchLocation, setPoolSearchLocation] = useState(location.search);
   const [poolSearchRefresh, setPoolSearchRefresh] = useState(0);
   const poolSearchManager = useRef(new PoolSearchRequestManager());
   const [expandedPoolGroups, setExpandedPoolGroups] = useState<Set<string>>(() => new Set());
@@ -1311,6 +1312,13 @@ export function PoolsPage() {
   );
   const [editingAddress, setEditingAddress] = useState<EvmAddress | null>(null);
   const remarkOperation = useRef(0);
+
+  if (poolSearchLocation !== location.search) {
+    const next = parsePoolSearchParameters(location.search);
+    setPoolSearchLocation(location.search);
+    setPoolSearchMode(next?.mode ?? poolSearchMode);
+    setPoolSearchQuery(next?.query ?? "");
+  }
 
   const loadRemarks = useCallback(async () => {
     remarkDispatch({ type: "loading" });
@@ -1493,14 +1501,13 @@ export function PoolsPage() {
 
   useEffect(() => {
     const parameters = poolSearchParameters;
+    const manager = poolSearchManager.current;
     if (!parameters) {
-      poolSearchManager.current.clear();
+      manager.clear();
       poolSearchDispatch({ type: "clear" });
       return;
     }
-    setPoolSearchMode(parameters.mode);
-    setPoolSearchQuery(parameters.query);
-    const request = poolSearchManager.current.start();
+    const request = manager.start();
     poolSearchDispatch({
       mode: parameters.mode,
       query: parameters.query,
@@ -1509,7 +1516,7 @@ export function PoolsPage() {
     });
     if (!parameters.valid) {
       poolSearchDispatch({ requestId: request.requestId, type: "invalid" });
-      return () => poolSearchManager.current.clear();
+      return () => manager.clear();
     }
     if (parameters.mode === "pool") {
       if (poolModeConnection === "reconnecting" || poolModeConnection === "stale") {
@@ -1527,17 +1534,16 @@ export function PoolsPage() {
           type: "success",
         });
       }
-      return () => poolSearchManager.current.clear();
+      return () => manager.clear();
     }
     const address = validTokenSearchAddress(parameters.query)!;
     void poolClient.getByToken(address, request.signal, protocols).then(
       (rows) => {
-        if (!poolSearchManager.current.isCurrent(request.requestId)) return;
+        if (!manager.isCurrent(request.requestId)) return;
         poolSearchDispatch({ requestId: request.requestId, rows, type: "success" });
       },
       (error: unknown) => {
-        if (request.signal.aborted || !poolSearchManager.current.isCurrent(request.requestId))
-          return;
+        if (request.signal.aborted || !manager.isCurrent(request.requestId)) return;
         poolSearchDispatch({
           code: error instanceof Error ? error.message : "MARKET_TOKEN_REQUEST_FAILED",
           requestId: request.requestId,
@@ -1545,7 +1551,7 @@ export function PoolsPage() {
         });
       },
     );
-    return () => poolSearchManager.current.clear();
+    return () => manager.clear();
   }, [
     poolClient,
     poolModeConnection,
@@ -1568,13 +1574,19 @@ export function PoolsPage() {
       ),
     [activePoolRows, searchedToken],
   );
-  useEffect(() => {
+  const expandablePoolGroupSignature = poolGroups
+    .filter(({ members }) => members.length > 1)
+    .map(({ groupKey }) => groupKey)
+    .join("\u0000");
+  const [poolGroupSignature, setPoolGroupSignature] = useState(expandablePoolGroupSignature);
+  if (poolGroupSignature !== expandablePoolGroupSignature) {
+    setPoolGroupSignature(expandablePoolGroupSignature);
     setExpandedPoolGroups((current) => {
       const next = reconcileExpandedPoolGroups(current, poolGroups);
       if (next.size === current.size && [...next].every((key) => current.has(key))) return current;
       return next;
     });
-  }, [poolGroups]);
+  }
   const visiblePoolRows = useMemo(
     () => flattenPoolGroups(poolGroups, expandedPoolGroups),
     [expandedPoolGroups, poolGroups],
