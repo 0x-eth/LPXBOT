@@ -145,4 +145,72 @@ describe("P02-09 recommendation polling stream", () => {
     expect(vi.getTimerCount()).toBe(0);
     expect((await iterator.next()).done).toBe(true);
   });
+
+  it("pushes member, wire-order, and display-field replacements", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(observedAt);
+    const provider = new MutableMarketProvider();
+    const controller = new AbortController();
+    const firstRow = marketSnapshot("1").rows[0]!;
+    const secondAddress = `0x${"2".repeat(40)}` as const;
+    const secondRow: MarketPoolRow = {
+      ...firstRow,
+      feesUsd: "11",
+      poolAddress: secondAddress,
+      poolKey: `56:${secondAddress}`,
+      token0Address: `0x${"c".repeat(40)}`,
+      token0Symbol: "USDC",
+    };
+    provider.current = { ...marketSnapshot("1"), rows: [firstRow, secondRow] };
+    const iterator = createRecommendedPoolsEventStream({
+      chain: "bsc",
+      heartbeatMilliseconds: 60_000,
+      limit: 3,
+      provider,
+      scheduler: fakeScheduler(),
+      signal: controller.signal,
+    })[Symbol.asyncIterator]();
+
+    expect((await iterator.next()).value).toMatchObject({
+      pools: [{ poolKey: firstRow.poolKey }, { poolKey: secondRow.poolKey }],
+      sourceVersion: "1",
+    });
+
+    const member = iterator.next();
+    provider.current = { ...marketSnapshot("2"), rows: [firstRow] };
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect((await member).value).toMatchObject({
+      pools: [{ poolKey: firstRow.poolKey }],
+      sourceVersion: "2",
+    });
+
+    const reordered = iterator.next();
+    provider.current = {
+      ...marketSnapshot("3"),
+      rows: [firstRow, { ...secondRow, feesUsd: "13" }],
+    };
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect((await reordered).value).toMatchObject({
+      pools: [{ poolKey: secondRow.poolKey }, { poolKey: firstRow.poolKey }],
+      sourceVersion: "3",
+    });
+
+    const display = iterator.next();
+    provider.current = {
+      ...marketSnapshot("4"),
+      rows: [firstRow, { ...secondRow, feesUsd: "13", token1Symbol: "BUSD" }],
+    };
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect((await display).value).toMatchObject({
+      pools: [
+        expect.objectContaining({ poolKey: secondRow.poolKey, token1Symbol: "BUSD" }),
+        expect.objectContaining({ poolKey: firstRow.poolKey, token1Symbol: "USDT" }),
+      ],
+      sourceVersion: "4",
+    });
+
+    controller.abort();
+    await iterator.return?.();
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });
