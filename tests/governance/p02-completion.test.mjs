@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -96,6 +97,17 @@ function assertRepositoryPath(value, label) {
   return resolved;
 }
 
+async function acceptanceFiles(directory, prefix = "") {
+  const files = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const relative = path.posix.join(prefix, entry.name);
+    if (entry.isDirectory())
+      files.push(...(await acceptanceFiles(path.join(directory, entry.name), relative)));
+    else if (entry.isFile()) files.push(relative);
+  }
+  return files.sort();
+}
+
 test("P02 status table keeps exactly ten fixture-verified features implemented", async () => {
   const markdown = await readFile(TRACEABILITY_PATH, "utf8");
   const rows = p02StatusRows(markdown);
@@ -179,6 +191,30 @@ test("P02-05 owns only FLOW-03/04/05 with the required local evidence", async ()
   assert.match(assumptions, /No event is marked finalized/);
   assert.match(assumptions, /local-fixture-verified only/);
   assert.doesNotMatch(assumptions, /parity-verified|released/);
+});
+
+test("P02-05 sha256 inventory covers every acceptance file except itself", async () => {
+  const checksumText = await readFile(path.join(P02_05_ROOT, "sha256sums.txt"), "utf8");
+  const checksums = new Map(
+    checksumText
+      .trim()
+      .split("\n")
+      .map((line) => {
+        const match = line.match(/^([0-9a-f]{64}) {2}(.+)$/u);
+        assert.ok(match, `invalid P02-05 checksum row: ${line}`);
+        return [match[2], match[1]];
+      }),
+  );
+  const files = (await acceptanceFiles(P02_05_ROOT)).filter((file) => file !== "sha256sums.txt");
+  assert.deepEqual([...checksums.keys()].sort(), files);
+  for (const file of files) {
+    const bytes = await readFile(path.join(P02_05_ROOT, file));
+    assert.equal(
+      checksums.get(file),
+      createHash("sha256").update(bytes).digest("hex"),
+      `${file} checksum`,
+    );
+  }
 });
 
 test("P02-04 owns only POOL-03 and FLOW-01/02 with local fixture evidence", async () => {

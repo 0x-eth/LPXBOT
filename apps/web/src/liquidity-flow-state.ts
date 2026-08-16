@@ -349,7 +349,9 @@ function aggregateLiquidityFlowAddresses(
       return (right.recentTs ?? -1) - (left.recentTs ?? -1);
     }
     if (options.sort === "net") {
-      const order = new MoneyDecimal(right.netUsd).abs().comparedTo(new MoneyDecimal(left.netUsd).abs());
+      const order = new MoneyDecimal(right.netUsd)
+        .abs()
+        .comparedTo(new MoneyDecimal(left.netUsd).abs());
       if (order !== 0) return order;
     }
     return compareAddress(left.address, right.address);

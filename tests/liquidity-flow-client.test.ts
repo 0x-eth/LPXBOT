@@ -324,7 +324,13 @@ describe("P02-05 filtered liquidity flow projection", () => {
       type: "backfill",
     });
     state = reduceLiquidityFlow(state, { type: "pause" });
-    for (const record of [tombstone(removedByReorg), replacement, create, unknownRemove, filteredOut]) {
+    for (const record of [
+      tombstone(removedByReorg),
+      replacement,
+      create,
+      unknownRemove,
+      filteredOut,
+    ]) {
       state = reduceLiquidityFlow(state, { record, type: "event" });
     }
     state = reduceLiquidityFlow(state, { type: "resume" });
