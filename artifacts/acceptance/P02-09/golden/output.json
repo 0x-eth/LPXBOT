@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "pools": [
+    {
+      "chainId": 56,
+      "feePips": "500",
+      "feesUsd": "10.000000000000000001",
+      "poolAddress": "0x1111111111111111111111111111111111111111",
+      "poolId": null,
+      "poolKey": "56:0x1111111111111111111111111111111111111111",
+      "protocol": "pcsv3",
+      "token0Address": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "token0Symbol": "WBNB",
+      "token1Address": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "token1Symbol": "USDT"
+    },
+    {
+      "chainId": 56,
+      "feePips": "3000",
+      "feesUsd": "10.000000000000000001",
+      "poolAddress": "0x2222222222222222222222222222222222222222",
+      "poolId": null,
+      "poolKey": "56:0x2222222222222222222222222222222222222222",
+      "protocol": "univ3",
+      "token0Address": "0xcccccccccccccccccccccccccccccccccccccccc",
+      "token0Symbol": null,
+      "token1Address": "0xdddddddddddddddddddddddddddddddddddddddd",
+      "token1Symbol": "USDC"
+    },
+    {
+      "chainId": 56,
+      "feePips": null,
+      "feesUsd": "9.5",
+      "poolAddress": null,
+      "poolId": "0x3333333333333333333333333333333333333333333333333333333333333333",
+      "poolKey": "56:0x3333333333333333333333333333333333333333333333333333333333333333",
+      "protocol": "pcsv4",
+      "token0Address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "token0Symbol": "TOKEN",
+      "token1Address": "0xffffffffffffffffffffffffffffffffffffffff",
+      "token1Symbol": null
+    }
+  ],
+  "selectionHash": "sha256:c57dc7ae2fbb5be41b4f3d4971da6543f4afada672bf759c163478bb7efdfbaf",
+  "cursor": "rec-pools:v1:bsc:3:MTI:MjAyNi0wOC0xN1QwMTo1NTowMC4wMDBa:c57dc7ae2fbb5be41b4f3d4971da6543f4afada672bf759c163478bb7efdfbaf",
+  "sourceVersion": "12",
+  "sourceWindow": 5,
+  "sourceWindowEnd": "2026-08-17T01:55:00.000Z"
+}

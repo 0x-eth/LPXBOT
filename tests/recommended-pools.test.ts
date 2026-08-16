@@ -1,4 +1,5 @@
 import type { MarketPoolRow, MarketPoolSnapshot } from "../packages/api-contract/src/index.js";
+import { readFileSync } from "node:fs";
 import {
   parseRecommendedPoolsCursor,
   recommendedPoolsCursor,
@@ -152,5 +153,38 @@ describe("P02-09 recommended pool selection", () => {
     expect(
       parseRecommendedPoolsCursor("market:v1:top-fees:56:5", { chain: "bsc", limit: 3 }),
     ).toBeNull();
+  });
+
+  it("matches the frozen P02-09 recommendation Golden", () => {
+    const input = JSON.parse(
+      readFileSync(
+        new URL("../artifacts/acceptance/P02-09/golden/input.json", import.meta.url),
+        "utf8",
+      ),
+    ) as { chain: "bsc"; limit: number; snapshot: MarketPoolSnapshot };
+    const output = JSON.parse(
+      readFileSync(
+        new URL("../artifacts/acceptance/P02-09/golden/output.json", import.meta.url),
+        "utf8",
+      ),
+    ) as {
+      cursor: string;
+      pools: ReturnType<typeof selectRecommendedPools>;
+      selectionHash: string;
+    };
+    const pools = selectRecommendedPools(input.snapshot, input.limit);
+    const selectionHash = recommendationSelectionHash(pools);
+
+    expect(pools).toEqual(output.pools);
+    expect(selectionHash).toBe(output.selectionHash);
+    expect(
+      recommendedPoolsCursor({
+        chain: input.chain,
+        limit: input.limit,
+        selectionHash,
+        sourceVersion: input.snapshot.version,
+        sourceWindowEnd: input.snapshot.windowEnd,
+      }),
+    ).toBe(output.cursor);
   });
 });
