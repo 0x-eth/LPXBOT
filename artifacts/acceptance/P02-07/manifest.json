@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-07",
+  "phase": "P02",
+  "risk": "R1",
+  "status": "accepted-with-gaps",
+  "featureIds": ["POOL-05", "POOL-06", "POOL-11"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm exec vitest run focused P02-07 metric, filter, comparison and column suites",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-07/E-DATA.md"
+    },
+    {
+      "id": "T-API",
+      "command": "focused market-pools, by-token and user-preferences API suites",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-07/E-API.md"
+    },
+    {
+      "id": "T-SSE",
+      "command": "focused pool stream and comparison snapshot/diff suites",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-07/E-SSE.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "repeat migrate/seed and pnpm test:postgres",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-07/E-DATA.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm exec playwright test tests/e2e/p02-07-pool-analysis.spec.ts --workers=1",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-07/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile screenshots, keyboard, focus, overflow and axe assertions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-07/E-VIS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "Gitleaks full-history and pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-07/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P02-07/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P02-07/E-DATA.md" },
+    { "id": "E-SSE", "path": "artifacts/acceptance/P02-07/E-SSE.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P02-07/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P02-07/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P02-07/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P02-07/E-SEC.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only; POOL-05, POOL-06 and POOL-11 remain implemented-assumed.",
+    "BSC chainId 56 is the only implemented chain; every other chain remains unclaimed.",
+    "Fee/TVL is unannualized Fees divided by TVL for the current window and is null when either input is missing or TVL is not positive.",
+    "aTVL and Fee/aTVL remain unresolved and null; neither is inferred or replaced with zero.",
+    "Pool comparison selection remains session-only and binds every selected row to one window, snapshot version and as-of time.",
+    "POOL-07, POOL-12 through POOL-15, STATS-01 and STATS-02 remain planned; labels, candles, ticks, business context actions, blocking and creator attribution are not implemented.",
+    "P02-01 through P02-06 acceptance directories remain byte-identical to the pre-P02-07 hash list.",
+    "No external RPC, metadata fetch, price fetch, production secret, signature, broadcast, funds operation or new chain sample is used."
+  ],
+  "completedAt": null,
+  "commit": "3d8f8192c89286e969c5919fa7f05dfee91a4cd0"
+}
