@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "candle-tick/local-v1",
+  "evidenceLevel": "locally-defined",
+  "parityStatus": "not-parity-verified",
+  "chainId": 56,
+  "source": {
+    "kind": "canonical-events",
+    "events": ["Initialize", "Swap", "Mint", "Burn", "ModifyLiquidity"],
+    "externalRpc": false,
+    "tokenMetadataFetch": false
+  },
+  "canonicalOrdering": [
+    "blockNumber:bigint-asc",
+    "transactionIndex:integer-asc",
+    "logIndex:integer-asc",
+    "eventId:byte-asc"
+  ],
+  "candles": {
+    "baseBar": "1m",
+    "aggregateBars": ["5m", "15m", "1H", "4H", "1D"],
+    "price": {
+      "source": "canonical-sqrtPriceX96",
+      "token0": "token1-raw/token0-raw",
+      "token1": "token0-raw/token1-raw",
+      "usd": false,
+      "token1Ohlc": "open=1/open;high=1/low;low=1/high;close=1/close"
+    },
+    "volume": {
+      "unit": "selected-base-token-raw-integer-absolute",
+      "token0": "sum(abs(amount0))",
+      "token1": "sum(abs(amount1))",
+      "displayScalingChangesApiUnit": false
+    },
+    "bucket": {
+      "boundary": "half-open-utc-[floor(timestamp/bar)*bar,next-boundary)",
+      "emptyPolicy": "omit",
+      "interpolate": false,
+      "forwardFill": false
+    },
+    "rounding": {
+      "engine": "decimal.js",
+      "precision": 96,
+      "mode": "ROUND_HALF_EVEN",
+      "wireFormat": "base-10-string"
+    },
+    "query": {
+      "selection": "latest-N-buckets",
+      "returnOrder": "ts-asc",
+      "limit": { "minimum": 1, "maximum": 1000, "default": 200 },
+      "duplicateTimestamp": "CANDLE_TIMESTAMP_DUPLICATE"
+    }
+  },
+  "ticks": {
+    "eventApplication": {
+      "lower": "liquidityNet += liquidityDelta",
+      "upper": "liquidityNet -= liquidityDelta",
+      "zeroBoundary": "omit"
+    },
+    "identity": {
+      "v3": "poolAddress",
+      "v4": "poolId",
+      "tickSpacing": "must-match-catalog"
+    },
+    "currentTick": "latest-canonical-Initialize-or-Swap",
+    "range": {
+      "minimum": 5,
+      "maximum": 50,
+      "bounds": "currentTick-plus-or-minus-range-times-tickSpacing"
+    },
+    "ordering": "tickIdx-asc",
+    "price": {
+      "engine": "decimal.js",
+      "price0": "1.0001^tickIdx adjusted by decimals0-decimals1",
+      "price1": "1/price0"
+    }
+  },
+  "poolResolution": {
+    "uiRequiresPoolKey": true,
+    "tokenOnly": "unique-pool-only",
+    "ambiguousError": "AMBIGUOUS_POOL",
+    "popularityFallback": false
+  },
+  "nullPolicy": {
+    "currentTickMissing": "currentTick=null;ticks=[]",
+    "unknownDecimals": "price0=null;price1=null",
+    "noCandleHistory": "candles=[]"
+  },
+  "revision": {
+    "fields": ["canonicalRevision", "version", "asOf", "source"],
+    "transactionBoundary": "canonical-events+read-model+snapshot+cursor"
+  },
+  "refresh": {
+    "periodMs": 15000,
+    "poolUpsertDebounceMs": 150,
+    "cancelOn": ["new-selection", "collapse", "pool-switch", "page-hidden"]
+  },
+  "unresolvedGapRefs": [
+    "GAP-API-CANDLE-QUOTE",
+    "GAP-UI-TICK-LIQUIDITY-MAPPING"
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "candle-tick/local-v1",
+  "protocol": "univ3",
+  "pool": {
+    "chainId": 56,
+    "poolAddress": "0x1111111111111111111111111111111111111111",
+    "poolId": null,
+    "token0": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "token1": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "tickSpacing": 60
+  },
+  "input": {
+    "currentTickEvents": [
+      { "kind": "Initialize", "blockNumber": "99", "tick": -60 },
+      { "kind": "Swap", "blockNumber": "103", "tick": 0 }
+    ],
+    "swaps": [
+      {
+        "eventId": "v3-swap-open",
+        "blockNumber": "103",
+        "transactionIndex": 0,
+        "logIndex": 0,
+        "blockTimestamp": "2026-08-17T00:00:10.000Z",
+        "sqrtPriceX96": "79228162514264337593543950336",
+        "amount0": "-900719925474099312345678901234567890",
+        "amount1": "7"
+      },
+      {
+        "eventId": "v3-swap-close",
+        "blockNumber": "104",
+        "transactionIndex": 0,
+        "logIndex": 0,
+        "blockTimestamp": "2026-08-17T00:00:59.999Z",
+        "sqrtPriceX96": "158456325028528675187087900672",
+        "amount0": "5",
+        "amount1": "-11"
+      }
+    ],
+    "liquidity": [
+      {
+        "kind": "Mint",
+        "liquidityDelta": "900719925474099312345678901234567890",
+        "tickLower": -887220,
+        "tickUpper": 887220
+      },
+      {
+        "kind": "Burn",
+        "liquidityDelta": "-900719925474099312345678901234567890",
+        "tickLower": -887220,
+        "tickUpper": 887220
+      },
+      { "kind": "Mint", "liquidityDelta": "5", "tickLower": -120, "tickUpper": 120 }
+    ]
+  },
+  "expected": {
+    "currentTick": 0,
+    "token0Candles": [
+      {
+        "ts": 1786924800,
+        "open": "1",
+        "high": "4",
+        "low": "1",
+        "close": "4",
+        "volume": "900719925474099312345678901234567895"
+      }
+    ],
+    "token1Candles": [
+      {
+        "ts": 1786924800,
+        "open": "1",
+        "high": "1",
+        "low": "0.25",
+        "close": "0.25",
+        "volume": "18"
+      }
+    ],
+    "ticks": [
+      { "tickIdx": -120, "liquidityNet": "5" },
+      { "tickIdx": 120, "liquidityNet": "-5" }
+    ]
+  }
+}

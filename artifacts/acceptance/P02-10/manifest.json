@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-10",
+  "phase": "P02",
+  "risk": "R1",
+  "status": "accepted-with-gaps",
+  "featureIds": ["POOL-12"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm exec vitest run tests/candle-tick-projection.test.ts tests/market-chart-client.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-10/E-DATA.md"
+    },
+    {
+      "id": "T-API",
+      "command": "pnpm exec vitest run tests/candle-tick-api.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-10/E-API.md"
+    },
+    {
+      "id": "T-SSE",
+      "command": "pnpm exec vitest run tests/market-chart-client.test.ts and focused pools SSE Playwright coverage",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-10/E-SSE.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "pnpm test:postgres including P02-10 duplicate, out-of-order, reorg and replacement coverage",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-10/E-REC.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm db:migrate twice plus PostgreSQL migration down/up restore coverage",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-10/E-DATA.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm exec playwright test tests/e2e/p02-10-candle-tick.spec.ts --workers=1",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-10/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile screenshots, keyboard, focus, overflow, following-row and axe assertions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-10/E-VIS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "Gitleaks full-history and pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-10/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P02-10/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P02-10/E-DATA.md" },
+    { "id": "E-SSE", "path": "artifacts/acceptance/P02-10/E-SSE.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P02-10/E-REC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P02-10/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P02-10/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P02-10/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P02-10/E-SEC.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only; POOL-12 remains implemented-assumed.",
+    "The Candle and Tick formulas and display mapping are locally defined; no production parity claim is made.",
+    "GAP-API-CANDLE-QUOTE remains unresolved.",
+    "GAP-UI-TICK-LIQUIDITY-MAPPING remains unresolved.",
+    "BSC chainId 56 is the only implemented chain; all other chains remain unclaimed.",
+    "P02-01 through P02-09 acceptance directories remain byte-identical to the pre-P02-10 hash inventory.",
+    "STATS-01, business actions, blocking, creator attribution, aTVL, and Fee/aTVL remain planned or unresolved.",
+    "No external RPC, metadata fetch, production sample fetch, price fetch, signer, transaction broadcast, or funds operation is used."
+  ],
+  "completedAt": "2026-08-16T20:11:10.000Z",
+  "commit": "57b91e9ffddbf4a22f5eea7c69e3329b6c89e4f8"
+}

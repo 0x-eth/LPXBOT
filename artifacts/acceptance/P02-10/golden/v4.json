@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "candle-tick/local-v1",
+  "protocol": "pcsv4",
+  "pool": {
+    "chainId": 56,
+    "poolAddress": null,
+    "poolId": "0x2222222222222222222222222222222222222222222222222222222222222222",
+    "token0": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "token1": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "tickSpacing": 10
+  },
+  "input": {
+    "events": [
+      { "kind": "Initialize", "blockNumber": "99", "tick": -11 },
+      {
+        "kind": "ModifyLiquidity",
+        "blockNumber": "100",
+        "liquidityDelta": "123456789012345678901234567890",
+        "tickLower": -20,
+        "tickUpper": 30
+      },
+      { "kind": "Swap", "blockNumber": "101", "tick": -1 }
+    ],
+    "range": 5,
+    "decimals0": null,
+    "decimals1": null
+  },
+  "expected": {
+    "currentTick": -1,
+    "ticks": [
+      { "tickIdx": -20, "liquidityNet": "123456789012345678901234567890" },
+      { "tickIdx": 30, "liquidityNet": "-123456789012345678901234567890" }
+    ],
+    "decimalsUnknown": [
+      {
+        "tickIdx": -20,
+        "liquidityNet": "123456789012345678901234567890",
+        "price0": null,
+        "price1": null
+      },
+      {
+        "tickIdx": 30,
+        "liquidityNet": "-123456789012345678901234567890",
+        "price0": null,
+        "price1": null
+      }
+    ]
+  }
+}
