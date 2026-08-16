@@ -548,6 +548,8 @@ test("CI defines six pinned, bounded jobs with real browser and contract gates",
   assert.match(cleanupSteps.map((step) => step.run).join("\n"), /infra:reset/);
 
   assert.equal(jobs.browser.name, "Browser");
+  assert.equal(jobs.browser.env.NO_PROXY, "127.0.0.1,localhost");
+  assert.equal(jobs.browser.env.no_proxy, "127.0.0.1,localhost");
   assert.equal(
     jobs.browser.container,
     `mcr.microsoft.com/playwright:v${packageJson.devDependencies["@playwright/test"]}-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e`,
