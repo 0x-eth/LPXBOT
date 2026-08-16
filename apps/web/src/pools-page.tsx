@@ -1961,6 +1961,10 @@ export function PoolsPage() {
     flowStateRef.current = flowState;
   }, [flowState]);
 
+  useEffect(() => {
+    expandedMarketPoolKeyRef.current = expandedMarketPoolKey;
+  }, [expandedMarketPoolKey]);
+
   const updateSearch = (
     nextProtocols: readonly LiquidityFlowProtocol[],
     next: LiquidityFlowUiFilters,
@@ -2234,15 +2238,12 @@ export function PoolsPage() {
     () => flattenPoolGroups(poolGroups, expandedPoolGroups),
     [expandedPoolGroups, poolGroups],
   );
-  useEffect(() => {
-    if (
-      expandedMarketPoolKey &&
-      !visiblePoolRows.some(({ row }) => row.poolKey === expandedMarketPoolKey)
-    ) {
-      expandedMarketPoolKeyRef.current = null;
-      setExpandedMarketPoolKey(null);
-    }
-  }, [expandedMarketPoolKey, visiblePoolRows]);
+  if (
+    expandedMarketPoolKey &&
+    !visiblePoolRows.some(({ row }) => row.poolKey === expandedMarketPoolKey)
+  ) {
+    setExpandedMarketPoolKey(null);
+  }
   const poolColumns = useMemo(
     () => normalizePoolColumns(preferences.poolColumns),
     [preferences.poolColumns],

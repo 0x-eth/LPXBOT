@@ -56,6 +56,11 @@ interface LoadedTicks {
 
 type LoadedMarketData = LoadedCandles | LoadedTicks;
 
+interface MarketLoadFailure {
+  selectionKey: string;
+  status: "error" | "invalid" | "unsupported";
+}
+
 export interface PoolMarketDetailProps {
   fixtureState: MarketDetailFixtureState | null;
   refreshMs: number;
@@ -158,7 +163,7 @@ function CandleChart({ response }: { response: MarketCandlesResponse }) {
       aria-label="K 线图"
       className="candle-chart-canvas"
       ref={container}
-      role="img"
+      role="group"
     />
   );
 }
@@ -252,7 +257,7 @@ export function PoolMarketDetail({
   const [reload, setReload] = useState(0);
   const [visible, setVisible] = useState(() => !document.hidden);
   const [loaded, setLoaded] = useState<LoadedMarketData | null>(null);
-  const [status, setStatus] = useState<MarketDetailStatus>("loading");
+  const [failure, setFailure] = useState<MarketLoadFailure | null>(null);
   const tabRefs = useRef<Record<MarketDetailTab, HTMLButtonElement | null>>({
     candles: null,
     ticks: null,
@@ -272,6 +277,10 @@ export function PoolMarketDetail({
       ? `${row.poolKey}:candles:${bar}:${token}`
       : `${row.poolKey}:ticks:${range}:${tickSpacing ?? "unknown"}`;
   const current = loaded?.selectionKey === selectionKey ? loaded : null;
+  const supported =
+    tab === "candles"
+      ? Boolean(token && /^56:0x(?:[0-9a-f]{40}|[0-9a-f]{64})$/u.test(row.poolKey))
+      : Boolean(identity && tickSpacing !== null);
 
   const selectTab = useCallback((next: MarketDetailTab, focus = false) => {
     setTab(next);
@@ -322,22 +331,15 @@ export function PoolMarketDetail({
   useEffect(() => {
     if (fixtureState !== null && fixtureState !== "stale") {
       manager.current.clear();
-      setLoaded(null);
-      setStatus(fixtureState);
       return;
     }
     if (!visible) return;
-    if (
-      (tab === "candles" && (!token || !/^56:0x(?:[0-9a-f]{40}|[0-9a-f]{64})$/u.test(row.poolKey))) ||
-      (tab === "ticks" && (!identity || tickSpacing === null))
-    ) {
+    if (!supported) {
       manager.current.clear();
-      setLoaded(null);
-      setStatus("unsupported");
       return;
     }
-    const request = manager.current.start(selectionKey);
-    if (!current) setStatus("loading");
+    const requestManager = manager.current;
+    const request = requestManager.start(selectionKey);
     const result =
       tab === "candles"
         ? client.getCandles(
@@ -357,10 +359,10 @@ export function PoolMarketDetail({
           );
     void result.then(
       (response) => {
-        if (!manager.current.isCurrent(request.requestId, selectionKey)) return;
+        if (!requestManager.isCurrent(request.requestId, selectionKey)) return;
         if (response.poolKey.toLowerCase() !== row.poolKey.toLowerCase()) {
           setLoaded(null);
-          setStatus("invalid");
+          setFailure({ selectionKey, status: "invalid" });
           return;
         }
         if (tab === "candles") {
@@ -371,40 +373,45 @@ export function PoolMarketDetail({
             !candlesAreRenderable(candles)
           ) {
             setLoaded(null);
-            setStatus("invalid");
+            setFailure({ selectionKey, status: "invalid" });
             return;
           }
           setLoaded({ kind: "candles", response: candles, selectionKey });
-          setStatus(candles.candles.length === 0 ? "empty" : fixtureState === "stale" || stale ? "stale" : "ready");
+          setFailure(null);
           return;
         }
         const ticks = response as MarketTickLiquidityResponse;
         if (ticks.range !== range || ticks.tickSpacing !== tickSpacing) {
           setLoaded(null);
-          setStatus("invalid");
+          setFailure({ selectionKey, status: "invalid" });
           return;
         }
         setLoaded({ kind: "ticks", response: ticks, selectionKey });
-        setStatus(ticks.ticks.length === 0 ? "empty" : fixtureState === "stale" || stale ? "stale" : "ready");
+        setFailure(null);
       },
       (error: unknown) => {
-        if (request.signal.aborted || !manager.current.isCurrent(request.requestId, selectionKey)) {
+        if (request.signal.aborted || !requestManager.isCurrent(request.requestId, selectionKey)) {
           return;
         }
         setLoaded(null);
-        const code = error instanceof MarketChartRequestError ? error.code : "";
-        setStatus(
+        const code =
+          error instanceof MarketChartRequestError
+            ? error.code
+            : error instanceof Error
+              ? error.message
+              : "";
+        const nextStatus =
           code.includes("RESPONSE_INVALID") ||
-            code === "TICK_SPACING_MISMATCH" ||
-            code === "TOKEN_NOT_IN_POOL"
+          code === "TICK_SPACING_MISMATCH" ||
+          code === "TOKEN_NOT_IN_POOL"
             ? "invalid"
             : code === "MARKET_POOL_NOT_FOUND"
               ? "unsupported"
-              : "error",
-        );
+              : "error";
+        setFailure({ selectionKey, status: nextStatus });
       },
     );
-    return () => manager.current.clear();
+    return () => requestManager.clear();
   }, [
     bar,
     client,
@@ -415,14 +422,30 @@ export function PoolMarketDetail({
     row.poolKey,
     row.protocol,
     selectionKey,
-    stale,
+    supported,
     tab,
     tickSpacing,
     token,
     visible,
   ]);
 
-  const displayStatus: MarketDetailStatus = current ? status : status === "unsupported" ? status : "loading";
+  let displayStatus: MarketDetailStatus;
+  if (fixtureState !== null && fixtureState !== "stale") {
+    displayStatus = fixtureState;
+  } else if (!supported) {
+    displayStatus = "unsupported";
+  } else if (failure?.selectionKey === selectionKey) {
+    displayStatus = failure.status;
+  } else if (!current) {
+    displayStatus = fixtureState === "stale" ? "stale" : "loading";
+  } else if (
+    (current.kind === "candles" && current.response.candles.length === 0) ||
+    (current.kind === "ticks" && current.response.ticks.length === 0)
+  ) {
+    displayStatus = "empty";
+  } else {
+    displayStatus = fixtureState === "stale" || stale ? "stale" : "ready";
+  }
   const message = statusText(displayStatus, tab);
   const response = current?.response;
   const panelId = `pool-market-panel-${row.poolKey.replace(/[^a-zA-Z0-9]/gu, "-")}`;
@@ -524,7 +547,6 @@ export function PoolMarketDetail({
       </div>
 
       <div
-        aria-labelledby={undefined}
         className="pool-market-panel"
         id={panelId}
         role="tabpanel"
