@@ -13,6 +13,20 @@ Gitleaks 8.30.1 full-history: 571 commits, 20.29 MB, no leaks
 Dependency audit: no known vulnerabilities
 ```
 
+## Final local gates
+
+```text
+pnpm format:check: passed
+pnpm lint: 14/14 tasks passed
+pnpm typecheck: 21/21 tasks passed
+pnpm test: build 14/14; Vitest 53/53 files and 323/323 tests; governance 43/43
+pnpm build: 14/14 tasks passed
+pnpm check:all: passed; 196/196 feature IDs and 17/17 manifests valid
+pnpm test:infra: 8/8 passed
+pnpm test:postgres: 11/11 files and 43/43 tests passed
+pnpm test:contracts: 3/3 Foundry tests passed
+```
+
 The first full browser invocation received an argument separator that left Playwright on its normal five-worker local setting; all 130 runnable tests passed. The dedicated P02-07 gate had already run explicitly with one worker and passed 6/6.
 
 No external RPC, production secret, signature, transaction broadcast, funds operation, metadata lookup, price lookup, creator lookup, label algorithm, candle, or tick sample was used.
