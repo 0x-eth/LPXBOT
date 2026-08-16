@@ -84,7 +84,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
     expect(defaults.json().data).toMatchObject({
       preferences: { colorTheme: "neutral", taskViewMode: "grid", theme: "system" },
       revision: 0,
-      schemaVersion: 2,
+      schemaVersion: 3,
       updatedAt: null,
     });
 
@@ -114,7 +114,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         WHERE user_id = $1`,
       [userIds[0]],
     );
-    expect(stored.rows).toEqual([{ owner: userIds[0], revision: "1", schema_version: 2 }]);
+    expect(stored.rows).toEqual([{ owner: userIds[0], revision: "1", schema_version: 3 }]);
     await app.close();
 
     const restoredApp = createApp();
@@ -171,7 +171,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         theme: "dark",
       },
       revision: 7,
-      schemaVersion: 2,
+      schemaVersion: 3,
     });
     const upgraded = await pool.query<{ revision: string; schema_version: number }>(
       `SELECT revision::text, schema_version
@@ -179,7 +179,7 @@ describe("P01-06 PostgreSQL user preferences", () => {
         WHERE user_id = $1`,
       [userIds[1]],
     );
-    expect(upgraded.rows).toEqual([{ revision: "7", schema_version: 2 }]);
+    expect(upgraded.rows).toEqual([{ revision: "7", schema_version: 3 }]);
 
     const isolated = await app.inject({
       headers: { cookie: `lpbot_session=${tokenA}` },
@@ -191,5 +191,79 @@ describe("P01-06 PostgreSQL user preferences", () => {
       taskViewMode: "list",
     });
     await app.close();
+  });
+
+  it("restores the same column layout after a second-device login and rejects its stale revision", async () => {
+    const [firstDeviceToken, secondDeviceToken] = await Promise.all([
+      session(userIds[0]),
+      session(userIds[0]),
+    ]);
+    const firstDevice = createApp();
+    const secondDevice = createApp();
+    const [firstView, secondView] = await Promise.all([
+      firstDevice.inject({
+        headers: { cookie: `lpbot_session=${firstDeviceToken}` },
+        method: "GET",
+        url: "/api/user/preferences",
+      }),
+      secondDevice.inject({
+        headers: { cookie: `lpbot_session=${secondDeviceToken}` },
+        method: "GET",
+        url: "/api/user/preferences",
+      }),
+    ]);
+    expect(firstView.json().data.revision).toBe(secondView.json().data.revision);
+    const columns = [
+      { key: "pool", visible: true },
+      { key: "fdv", visible: false },
+      { key: "fees", visible: true },
+      { key: "protocol", visible: true },
+      { key: "volume", visible: false },
+      { key: "tvl", visible: true },
+      { key: "txs", visible: true },
+      { key: "actions", visible: true },
+    ];
+
+    const saved = await firstDevice.inject({
+      headers: { cookie: `lpbot_session=${firstDeviceToken}` },
+      method: "PATCH",
+      payload: {
+        changes: { poolColumns: columns },
+        expectedRevision: firstView.json().data.revision,
+      },
+      url: "/api/user/preferences",
+    });
+    expect(saved.statusCode).toBe(200);
+    expect(saved.json().data.preferences.poolColumns).toEqual(columns);
+
+    const stale = await secondDevice.inject({
+      headers: { cookie: `lpbot_session=${secondDeviceToken}` },
+      method: "PATCH",
+      payload: {
+        changes: { poolColumns: columns.map((column) => ({ ...column, visible: true })) },
+        expectedRevision: secondView.json().data.revision,
+      },
+      url: "/api/user/preferences",
+    });
+    expect(stale.statusCode).toBe(409);
+
+    await Promise.all([firstDevice.close(), secondDevice.close()]);
+    const relogged = createApp();
+    const restored = await relogged.inject({
+      headers: { cookie: `lpbot_session=${await session(userIds[0])}` },
+      method: "GET",
+      url: "/api/user/preferences",
+    });
+    expect(restored.json().data).toMatchObject({
+      preferences: {
+        poolColumns: columns,
+        poolsPanelCollapsed: expect.any(Boolean),
+        showHotPools: expect.any(Boolean),
+        showScanTab: expect.any(Boolean),
+      },
+      revision: saved.json().data.revision,
+      schemaVersion: 3,
+    });
+    await relogged.close();
   });
 });
