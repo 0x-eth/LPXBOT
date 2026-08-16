@@ -78,7 +78,7 @@ describe("P02-10 canonical Candle projection", () => {
         low: "4",
         open: "4",
         poolKey: `56:${poolAddress}`,
-        ts: 1_776_038_400,
+        ts: 1_786_924_800,
         volume0: "900719925474099312345678901234567895",
         volume1: "18",
       },
@@ -88,7 +88,7 @@ describe("P02-10 canonical Candle projection", () => {
         low: "1",
         open: "1",
         poolKey: `56:${poolAddress}`,
-        ts: 1_776_038_460,
+        ts: 1_786_924_860,
         volume0: "2",
         volume1: "3",
       },
@@ -116,7 +116,7 @@ describe("P02-10 canonical Candle projection", () => {
     ]);
 
     expect(aggregateCanonicalCandles(base, "5m", 2).map(({ ts }) => ts)).toEqual([
-      1_776_039_000, 1_776_124_800,
+      1_786_925_400, 1_787_011_200,
     ]);
     expect(aggregateCanonicalCandles(base, "5m", 10)).toHaveLength(3);
     expect(aggregateCanonicalCandles(base, "15m", 10)[0]).toMatchObject({
@@ -197,7 +197,12 @@ describe("P02-10 canonical Tick liquidity projection", () => {
       sqrtPriceX96: null,
     });
 
-    const projected = projectCanonicalTickLiquidity([mint, burn, remaining]);
+    const projected = projectCanonicalTickLiquidity([
+      mint,
+      burn,
+      remaining,
+      canonicalEvent("current", { blockNumber: "103" }),
+    ]);
     expect(projected).toMatchObject({ currentTick: 0, tickSpacing: 60 });
     expect(projected.ticks).toEqual([
       { liquidityNet: "5", tickIdx: -120 },
@@ -249,6 +254,7 @@ describe("P02-10 canonical Tick liquidity projection", () => {
 
   it("selects range * tickSpacing and computes Decimal prices only with both valid decimals", () => {
     const events = [
+      canonicalEvent("current"),
       canonicalEvent("left", {
         kind: "liquidity.add",
         liquidityDelta: "10",

@@ -289,3 +289,23 @@ export {
   type PoolLabelRule,
   type PoolLabelRuleContract,
 } from "./pool-labels.js";
+
+export {
+  CANDLE_BARS,
+  CANDLE_TICK_CONTRACT_VERSION,
+  aggregateCanonicalCandles,
+  orientCanonicalCandles,
+  projectCanonicalOneMinuteCandles,
+  projectCanonicalTickLiquidity,
+  selectTickLiquidityRange,
+  sqrtPriceX96ToToken0Price,
+  type CandleBar,
+  type CandlePriceDirection,
+  type CandleTickCanonicalEvent,
+  type CanonicalBaseCandle,
+  type CanonicalTickBoundary,
+  type CanonicalTickLiquidity,
+  type OrientedCandle,
+  type PricedTickBoundary,
+  type SelectedTickLiquidity,
+} from "./candle-tick.js";
