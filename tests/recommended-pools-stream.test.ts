@@ -2,7 +2,7 @@ import type {
   MarketPoolRow,
   MarketPoolSnapshot,
   RecommendedPoolsSnapshotEvent,
-} from "@lpbot/api-contract";
+} from "../packages/api-contract/src/index.js";
 import type { MarketPoolsContext, MarketPoolsProvider } from "../apps/api/src/market-pools.js";
 import {
   createRecommendedPoolsEventStream,

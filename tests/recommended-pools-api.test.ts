@@ -3,7 +3,7 @@ import type {
   MarketStreamEnvelope,
   ShellStatsEvent,
   ShellStatsSnapshot,
-} from "@lpbot/api-contract";
+} from "../packages/api-contract/src/index.js";
 import { buildApiApp } from "../apps/api/src/index.js";
 import type {
   MarketPoolsByTokenContext,

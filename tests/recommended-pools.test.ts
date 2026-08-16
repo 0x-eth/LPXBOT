@@ -1,4 +1,7 @@
-import type { MarketPoolRow, MarketPoolSnapshot } from "@lpbot/api-contract";
+import type {
+  MarketPoolRow,
+  MarketPoolSnapshot,
+} from "../packages/api-contract/src/index.js";
 import {
   parseRecommendedPoolsCursor,
   recommendedPoolsCursor,
