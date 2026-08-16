@@ -13,8 +13,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { issueFixtureSession, SessionFixtureStore } from "./helpers/session-fixture.js";
 
 const snapshot: MarketPoolSnapshot = {
+  canonicalRevision: "canonical:v1:test",
   chainId: 56,
   generatedAt: "2026-08-16T01:00:00.000Z",
+  metricVersion: "market-metrics/v1",
   minutes: 5,
   rows: [
     {
@@ -26,6 +28,8 @@ const snapshot: MarketPoolSnapshot = {
       feesUsd: "42.125",
       feeTvl: "0.0042125",
       hooks: null,
+      labelRuleVersion: "pool-labels/local-v1",
+      labels: [],
       poolAddress: "0x1111111111111111111111111111111111111111",
       poolId: null,
       poolKey: "56:0x1111111111111111111111111111111111111111",
@@ -90,11 +94,14 @@ class FiniteMarketProvider implements MarketPoolsProvider {
       yield { ...envelope("7", "pools.snapshot", filteredSnapshot), streamKey: key };
     yield {
       ...envelope("8", "pools.diff", {
+        canonicalRevision: "canonical:v1:test-2",
+        metricVersion: "market-metrics/v1",
         tombstones: [],
         upserts: context.protocols.includes("pcsv3")
           ? [{ ...snapshot.rows[0]!, feesUsd: "43" }]
           : [],
         version: "8",
+        windowEnd: "2026-08-16T01:00:00.000Z",
       }),
       streamKey: key,
     };

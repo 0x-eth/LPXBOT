@@ -25,6 +25,8 @@ const row: MarketPoolByTokenRow = {
   feesUsd: "2",
   feeTvl: null,
   hooks: null,
+  labelRuleVersion: "pool-labels/local-v1",
+  labels: [],
   poolAddress: "0x1111111111111111111111111111111111111111",
   poolId: null,
   poolKey: "56:0x1111111111111111111111111111111111111111",
@@ -54,8 +56,10 @@ class ByTokenProvider implements MarketPoolsProvider {
   async getTopFees(context: MarketPoolsContext): Promise<MarketPoolSnapshot> {
     const now = "2026-08-16T01:00:00.000Z";
     return {
+      canonicalRevision: "canonical:v1:empty",
       chainId: 56,
       generatedAt: now,
+      metricVersion: "market-metrics/v1",
       minutes: context.minutes,
       rows: [],
       version: "0",

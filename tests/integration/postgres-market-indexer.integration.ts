@@ -397,6 +397,8 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
       feesUsd,
       feeTvl: null,
       hooks: entry.hooks as `0x${string}` | null,
+      labelRuleVersion: "pool-labels/local-v1",
+      labels: [],
       poolAddress: entry.pool_address as `0x${string}` | null,
       poolId: entry.pool_id as `0x${string}` | null,
       poolKey: entry.pool_key,

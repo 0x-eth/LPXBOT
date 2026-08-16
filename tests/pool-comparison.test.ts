@@ -28,6 +28,8 @@ function row(suffix: string, overrides: Partial<MarketPoolRow> = {}): MarketPool
     feesUsd: "10",
     feeTvl: "0.01",
     hooks: null,
+    labelRuleVersion: "pool-labels/local-v1",
+    labels: [],
     poolAddress,
     poolId: null,
     poolKey: `56:${poolAddress}`,
@@ -54,8 +56,10 @@ function snapshot(
   rows: MarketPoolRow[] = [poolA, poolB, poolC, poolD],
 ): MarketPoolSnapshot {
   return {
+    canonicalRevision: "canonical:v1:test",
     chainId: 56,
     generatedAt: "2026-08-16T01:00:01.000Z",
+    metricVersion: "market-metrics/v1",
     minutes: 5,
     rows,
     version,
@@ -168,9 +172,12 @@ describe("P02-07 same-snapshot pool comparison", () => {
 
     stream = reducePoolStream(stream, {
       event: envelope("2", "pools.diff", {
+        canonicalRevision: "canonical:v1:test-2",
+        metricVersion: "market-metrics/v1",
         tombstones: [],
         upserts: [{ ...poolA, feesUsd: "99" }],
         version: "2",
+        windowEnd: "2026-08-16T01:00:00.000Z",
       }),
       type: "event",
     });
@@ -184,9 +191,12 @@ describe("P02-07 same-snapshot pool comparison", () => {
 
     stream = reducePoolStream(stream, {
       event: envelope("3", "pools.diff", {
+        canonicalRevision: "canonical:v1:test-3",
+        metricVersion: "market-metrics/v1",
         tombstones: [poolB.poolKey],
         upserts: [],
         version: "3",
+        windowEnd: "2026-08-16T01:00:00.000Z",
       }),
       type: "event",
     });

@@ -30,6 +30,7 @@ const preferences: UserPreferences = {
   ],
   poolsPanelCollapsed: false,
   showHotPools: false,
+  showPoolLabels: true,
   showScanTab: true,
   taskViewMode: "grid",
   theme: "system",

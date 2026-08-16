@@ -12,6 +12,8 @@ const row = {
   feesUsd: "2",
   feeTvl: "0.02",
   hooks: null,
+  labelRuleVersion: "pool-labels/local-v1",
+  labels: [],
   poolAddress: "0x1111111111111111111111111111111111111111" as const,
   poolId: null,
   poolKey: "56:0x1111111111111111111111111111111111111111",
@@ -24,6 +26,15 @@ const row = {
   transactionCount: "3",
   tvlUsd: "100",
   volumeUsd: "20",
+};
+
+const snapshotContext = {
+  canonicalRevision: "canonical:v1:test",
+  metricVersion: "market-metrics/v1",
+};
+const diffContext = {
+  ...snapshotContext,
+  windowEnd: "2026-08-16T01:00:00.000Z",
 };
 
 function event(
@@ -67,6 +78,7 @@ describe("P02-02 pool stream client state", () => {
 
   it("applies snapshot, diff and heartbeat atomically in sequence", () => {
     const snapshot = event("4", "pools.snapshot", {
+      ...snapshotContext,
       chainId: 56,
       generatedAt: "2026-08-16T01:00:00.000Z",
       minutes: 5,
@@ -76,6 +88,7 @@ describe("P02-02 pool stream client state", () => {
       windowStart: "2026-08-16T00:55:00.000Z",
     });
     const diff = event("5", "pools.diff", {
+      ...diffContext,
       tombstones: [],
       upserts: [{ ...row, feesUsd: "3" }],
       version: "5",
@@ -97,6 +110,7 @@ describe("P02-02 pool stream client state", () => {
 
   it("ignores exact duplicates and reconnects without applying gaps", () => {
     const snapshot = event("4", "pools.snapshot", {
+      ...snapshotContext,
       chainId: 56,
       generatedAt: "2026-08-16T01:00:00.000Z",
       minutes: 5,
@@ -110,6 +124,7 @@ describe("P02-02 pool stream client state", () => {
 
     const gapped = reducePoolStream(ready, {
       event: event("6", "pools.diff", {
+        ...diffContext,
         tombstones: [],
         upserts: [{ ...row, feesUsd: "999" }],
         version: "6",
@@ -123,6 +138,7 @@ describe("P02-02 pool stream client state", () => {
 
   it("requires a snapshot on epoch change and retains last good rows when stale", () => {
     const snapshot = event("1", "pools.snapshot", {
+      ...snapshotContext,
       chainId: 56,
       generatedAt: "2026-08-16T01:00:00.000Z",
       minutes: 5,
@@ -133,7 +149,12 @@ describe("P02-02 pool stream client state", () => {
     });
     const ready = reducePoolStream(initialPoolStreamState(), { event: snapshot, type: "event" });
     const invalidEpoch = reducePoolStream(ready, {
-      event: event("1", "pools.diff", { tombstones: [], upserts: [], version: "2" }, "2"),
+      event: event(
+        "1",
+        "pools.diff",
+        { ...diffContext, tombstones: [], upserts: [], version: "2" },
+        "2",
+      ),
       type: "event",
     });
     expect(invalidEpoch.connection).toBe("reconnecting");
@@ -151,6 +172,7 @@ describe("P02-02 pool stream client state", () => {
       poolAddress: "0x2222222222222222222222222222222222222222" as const,
     };
     const snapshot = event("1", "pools.snapshot", {
+      ...snapshotContext,
       chainId: 56,
       generatedAt: "2026-08-16T01:00:00.000Z",
       minutes: 5,
@@ -162,6 +184,7 @@ describe("P02-02 pool stream client state", () => {
     const ready = reducePoolStream(initialPoolStreamState(), { event: snapshot, type: "event" });
     const sorted = reducePoolStream(ready, {
       event: event("2", "pools.diff", {
+        ...diffContext,
         tombstones: [],
         upserts: [lowerFeeRow],
         version: "2",

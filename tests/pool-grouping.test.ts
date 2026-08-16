@@ -28,6 +28,8 @@ function row(
     feesUsd: "10",
     feeTvl: null,
     hooks: null,
+    labelRuleVersion: "pool-labels/local-v1",
+    labels: [],
     poolAddress,
     poolId: null,
     poolKey: `56:${poolAddress}`,
@@ -48,8 +50,10 @@ function snapshotEvent(rows: MarketPoolRow[]): MarketStreamEnvelope {
   return {
     cursor: "group-cursor-1",
     data: {
+      canonicalRevision: "canonical:v1:test",
       chainId: 56,
       generatedAt: "2026-08-16T01:00:00.000Z",
+      metricVersion: "market-metrics/v1",
       minutes: 5,
       rows,
       version: "1",
@@ -115,9 +119,12 @@ describe("P02-06 canonical token grouping", () => {
         ...snapshotEvent([]),
         cursor: "group-cursor-2",
         data: {
+          canonicalRevision: "canonical:v1:test-2",
+          metricVersion: "market-metrics/v1",
           tombstones: [rows[2]!.poolKey],
           upserts: [{ ...rows[1]!, feesUsd: "99" }],
           version: "2",
+          windowEnd: "2026-08-16T01:00:00.000Z",
         },
         eventType: "pools.diff",
         mode: "diff",

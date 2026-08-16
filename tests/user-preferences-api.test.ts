@@ -42,6 +42,7 @@ const defaultPreferences: UserPreferences = {
   ],
   poolsPanelCollapsed: false,
   showHotPools: false,
+  showPoolLabels: true,
   showScanTab: true,
   taskViewMode: "grid",
   theme: "system",
@@ -64,7 +65,7 @@ class MemoryPreferencesStore implements UserPreferencesStore {
         current: current ?? {
           preferences: structuredClone(defaultPreferences),
           revision: 0,
-          schemaVersion: 4,
+          schemaVersion: 5,
           updatedAt: null,
         },
         status: "conflict",
@@ -73,7 +74,7 @@ class MemoryPreferencesStore implements UserPreferencesStore {
     const next: VersionedUserPreferences = {
       preferences: structuredClone(input.preferences),
       revision: revision + 1,
-      schemaVersion: 4,
+      schemaVersion: 5,
       updatedAt: input.updatedAt.toISOString(),
     };
     this.records.set(input.userId, next);

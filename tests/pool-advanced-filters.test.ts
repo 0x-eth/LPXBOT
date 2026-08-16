@@ -21,6 +21,8 @@ function row(suffix: string, overrides: Partial<MarketPoolRow> = {}): MarketPool
     feesUsd: "10",
     feeTvl: "0.01",
     hooks: null,
+    labelRuleVersion: "pool-labels/local-v1",
+    labels: [],
     poolAddress,
     poolId: null,
     poolKey: `56:${poolAddress}`,

@@ -23,6 +23,8 @@ function row(identity: string): MarketPoolRow {
     feesUsd: null,
     feeTvl: null,
     hooks: null,
+    labelRuleVersion: "pool-labels/local-v1",
+    labels: [],
     poolAddress: v3 ? (identity as `0x${string}`) : null,
     poolId: v3 ? null : (identity as `0x${string}`),
     poolKey: `56:${identity.toLowerCase()}`,
