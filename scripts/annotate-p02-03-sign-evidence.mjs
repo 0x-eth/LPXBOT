@@ -30,6 +30,16 @@ function transferDelta(receipt, token, account) {
   return delta;
 }
 
+function normalizeBlockTimestamps(capture) {
+  if (!capture.blockHeader?.timestamp || !capture.delivery?.block) {
+    throw new Error(`${capture.protocol}/${capture.eventName}: captured block timestamp missing`);
+  }
+  capture.delivery.block.blockTimestamp = new Date(
+    Number(BigInt(capture.blockHeader.timestamp) * 1_000n),
+  ).toISOString();
+  for (const prerequisite of capture.prerequisites ?? []) normalizeBlockTimestamps(prerequisite);
+}
+
 function evidenceFor(raw, normalized) {
   if (normalized.amount0 === null && normalized.amount1 === null && normalized.liquidityDelta === null) {
     return {
@@ -136,6 +146,7 @@ async function main() {
         readFile(rawPath, "utf8").then(JSON.parse),
         readFile(normalizedPath, "utf8").then(JSON.parse),
       ]);
+      normalizeBlockTimestamps(raw);
       const artifact = {
         ...raw,
         amountSignEvidence: evidenceFor(raw, normalized),

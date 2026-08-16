@@ -98,6 +98,7 @@ describe("P02-03 acceptance integrity", () => {
         schemaVersion: 1,
       });
       expect(normalized).toMatchObject({ chainId: 56, schemaVersion: "1.0.0" });
+      expect(normalized.blockTimestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u);
     }
   });
 

@@ -81,6 +81,14 @@ function decimalQuantity(value: Hex): string {
   return String(BigInt(value));
 }
 
+function blockTimestamp(value: Hex): string {
+  const milliseconds = BigInt(value) * 1_000n;
+  if (milliseconds > 8_640_000_000_000_000n) {
+    throw new RangeError("RPC_BLOCK_TIMESTAMP_INVALID");
+  }
+  return new Date(Number(milliseconds)).toISOString();
+}
+
 function numericQuantity(value: Hex, label: string): number {
   const number = Number(BigInt(value));
   if (!Number.isSafeInteger(number) || number < 0) {
@@ -119,12 +127,16 @@ export class ViemBscLogSource implements RawLogSource {
   readonly #timeoutMilliseconds: number;
   readonly #topics: readonly `0x${string}`[];
   #chainVerified = false;
+  #nextScanBlock: bigint;
   #requestId = 0;
+  #scanAfterValue: string | null = null;
+  #scanInitialized = false;
 
   constructor(options: ViemBscLogSourceOptions) {
     if (!options.rpcUrl) throw new Error("BSC_RPC_URL_MISSING");
     this.#rpcUrl = options.rpcUrl;
     this.#fromBlock = decimalBlock(options.fromBlock, "fromBlock");
+    this.#nextScanBlock = this.#fromBlock;
     this.#maxAttempts = positiveInteger(options.maxAttempts ?? 3, "maxAttempts");
     this.#maxBlockSpan = BigInt(positiveInteger(options.maxBlockSpan ?? 2_000, "maxBlockSpan"));
     this.#maxPagesPerRead = positiveInteger(options.maxPagesPerRead ?? 16, "maxPagesPerRead");
@@ -268,7 +280,7 @@ export class ViemBscLogSource implements RawLogSource {
     const block: RawChainBlock = {
       blockHash: log.blockHash,
       blockNumber: log.blockNumber,
-      blockTimestamp: decimalQuantity(header.timestamp),
+      blockTimestamp: blockTimestamp(header.timestamp),
       chainId: 56,
       parentHash: lowerHex(header.parentHash),
     };
@@ -305,7 +317,13 @@ export class ViemBscLogSource implements RawLogSource {
     if (after && after.chainId !== 56) throw new Error("RPC_CURSOR_CHAIN_UNSUPPORTED");
     const latest = await this.#block("latest");
     const head = BigInt(latest.number);
-    let fromBlock = after ? BigInt(after.blockNumber) : this.#fromBlock;
+    const scanAfterValue = after?.value ?? null;
+    if (!this.#scanInitialized || scanAfterValue !== this.#scanAfterValue) {
+      this.#nextScanBlock = after ? BigInt(after.blockNumber) : this.#fromBlock;
+      this.#scanAfterValue = scanAfterValue;
+      this.#scanInitialized = true;
+    }
+    let fromBlock = this.#nextScanBlock;
     for (let page = 0; page < this.#maxPagesPerRead && fromBlock <= head; page += 1) {
       const toBlock =
         fromBlock + this.#maxBlockSpan - 1n < head ? fromBlock + this.#maxBlockSpan - 1n : head;
@@ -316,6 +334,7 @@ export class ViemBscLogSource implements RawLogSource {
         return { chainId: 56, deliveries };
       }
       fromBlock = toBlock + 1n;
+      this.#nextScanBlock = fromBlock;
     }
     return null;
   }

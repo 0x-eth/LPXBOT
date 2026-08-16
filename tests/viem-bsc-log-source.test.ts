@@ -155,11 +155,92 @@ describe("P02-03 ViemBscLogSource", () => {
     ]);
     expect(page?.deliveries[0]).toMatchObject({
       block: {
-        blockTimestamp: "100",
+        blockTimestamp: "1970-01-01T00:01:40.000Z",
         parentHash: `0x${"67".repeat(32)}`,
       },
       log: { blockNumber: "104", chainId: 56, logIndex: 1 },
     });
+  });
+
+  it("continues after a bounded empty scan window on the next read", async () => {
+    const rpc = await mockRpc(({ method, params }) => {
+      if (method === "eth_chainId") {
+        return { body: { id: 1, jsonrpc: "2.0", result: "0x38" } };
+      }
+      if (method === "eth_getBlockByNumber" && params[0] === "latest") {
+        return {
+          body: {
+            id: 1,
+            jsonrpc: "2.0",
+            result: {
+              hash: `0x${"6e".repeat(32)}`,
+              number: "0x6e",
+              parentHash: `0x${"6d".repeat(32)}`,
+              timestamp: "0x6e",
+            },
+          },
+        };
+      }
+      if (method === "eth_getLogs") {
+        const filter = params[0] as { fromBlock: string };
+        if (filter.fromBlock !== "0x6c") {
+          return { body: { id: 1, jsonrpc: "2.0", result: [] } };
+        }
+        return {
+          body: {
+            id: 1,
+            jsonrpc: "2.0",
+            result: [
+              {
+                address: "0x0000000000000000000000000000000000000056",
+                blockHash: `0x${"6c".repeat(32)}`,
+                blockNumber: "0x6c",
+                data: "0x",
+                logIndex: "0x0",
+                removed: false,
+                topics: [`0x${"11".repeat(32)}`],
+                transactionHash: `0x${"22".repeat(32)}`,
+                transactionIndex: "0x0",
+              },
+            ],
+          },
+        };
+      }
+      if (method === "eth_getBlockByNumber" && params[0] === "0x6c") {
+        return {
+          body: {
+            id: 1,
+            jsonrpc: "2.0",
+            result: {
+              hash: `0x${"6c".repeat(32)}`,
+              number: "0x6c",
+              parentHash: `0x${"6b".repeat(32)}`,
+              timestamp: "0x6c",
+            },
+          },
+        };
+      }
+      throw new Error(`unexpected ${method}`);
+    });
+    const source = new ViemBscLogSource({
+      fromBlock: "100",
+      maxBlockSpan: 2,
+      maxPagesPerRead: 2,
+      rpcUrl: rpc.url,
+    });
+
+    expect(await source.read(null)).toBeNull();
+    expect(await source.read(null)).toBeNull();
+    expect((await source.read(null))?.deliveries[0]?.log.blockNumber).toBe("108");
+    expect(
+      rpc.calls.filter(({ method }) => method === "eth_getLogs").map(({ params }) => params[0]),
+    ).toEqual([
+      expect.objectContaining({ fromBlock: "0x64", toBlock: "0x65" }),
+      expect.objectContaining({ fromBlock: "0x66", toBlock: "0x67" }),
+      expect.objectContaining({ fromBlock: "0x68", toBlock: "0x69" }),
+      expect.objectContaining({ fromBlock: "0x6a", toBlock: "0x6b" }),
+      expect.objectContaining({ fromBlock: "0x6c", toBlock: "0x6d" }),
+    ]);
   });
 
   it("retries 429/5xx with a bound and resumes after the cursor within its block", async () => {

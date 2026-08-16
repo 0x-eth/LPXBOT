@@ -244,12 +244,16 @@ function findLog(receipt, plan) {
   return matches[0];
 }
 
+function blockTimestamp(timestamp) {
+  return new Date(Number(BigInt(timestamp) * 1_000n)).toISOString();
+}
+
 function delivery(log, header) {
   return {
     block: {
       blockHash: log.blockHash.toLowerCase(),
       blockNumber: String(BigInt(log.blockNumber)),
-      blockTimestamp: String(BigInt(header.timestamp)),
+      blockTimestamp: blockTimestamp(header.timestamp),
       chainId: CHAIN_ID,
       parentHash: header.parentHash.toLowerCase(),
     },
