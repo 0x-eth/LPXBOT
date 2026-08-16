@@ -260,7 +260,24 @@ describe("P02-02 real PostgreSQL canonical indexer", () => {
         normalized_pool_events, raw_chain_logs, canonical_chain_blocks, indexer_cursors,
         market_pool_catalog RESTART IDENTITY CASCADE`,
     );
-    await runnerFor("duplicate").runner.runOnce();
+    const duplicate = structuredClone(readP02Fixture("duplicate"));
+    for (const entry of duplicate.input) {
+      entry.fixtureDecoded.pool = {
+        feePips: "3000",
+        hooks: null,
+        poolAddress: "0x4242424242424242424242424242424242424242",
+        poolId: null,
+        tickSpacing: "60",
+        token0: "0x5151515151515151515151515151515151515151",
+        token1: "0x5252525252525252525252525252525252525252",
+      };
+    }
+    await new IndexerRunner({
+      decoder: new FixtureEventDecoder(duplicate.input),
+      evaluationTime: () => new Date("2026-08-16T00:05:00.000Z"),
+      source: new FixtureRawLogSource(duplicate.input, fixtureBlockTimestamp),
+      store: new PostgresCanonicalEventStore(pool),
+    }).runOnce();
     expect((await pool.query("SELECT count(*)::text AS count FROM market_pool_catalog")).rows).toEqual(
       [{ count: "1" }],
     );
