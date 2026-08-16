@@ -252,7 +252,7 @@ describe("P02-04 PostgreSQL liquidity flow read model", () => {
     const durableOrder = await pool.query<{ id: string; sequence: string }>(
       `SELECT sequence::text, payload->>'id' AS id
          FROM liquidity_flow_outbox
-        ORDER BY sequence`,
+        ORDER BY liquidity_flow_outbox.sequence`,
     );
     expect(durableOrder.rows.slice(-3)).toEqual([
       {

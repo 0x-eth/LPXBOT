@@ -5,6 +5,7 @@ import type {
 import { buildApiApp } from "../apps/api/src/index.js";
 import type {
   MarketPoolsProvider,
+  MarketPoolsContext,
   MarketPoolsStreamContext,
 } from "../apps/api/src/market-pools.js";
 import { afterEach, describe, expect, it } from "vitest";
@@ -57,21 +58,33 @@ function envelope(
 }
 
 class FiniteMarketProvider implements MarketPoolsProvider {
+  snapshotContexts: MarketPoolsContext[] = [];
   streamContexts: MarketPoolsStreamContext[] = [];
 
-  async getTopFees(): Promise<MarketPoolSnapshot> {
-    return structuredClone(snapshot);
+  async getTopFees(context: MarketPoolsContext): Promise<MarketPoolSnapshot> {
+    this.snapshotContexts.push(context);
+    return {
+      ...structuredClone(snapshot),
+      rows: snapshot.rows.filter(({ protocol }) => context.protocols.includes(protocol)),
+    };
   }
 
   async *subscribe(context: MarketPoolsStreamContext): AsyncIterable<MarketStreamEnvelope> {
     this.streamContexts.push(context);
-    if (!context.lastEventId) yield envelope("7", "pools.snapshot", snapshot);
-    yield envelope("8", "pools.diff", {
+    const key =
+      context.protocols.length === 4
+        ? "top-fees:56:5"
+        : `top-fees:56:5:dex=${context.protocols.join(",")}`;
+    const filteredSnapshot = await this.getTopFees(context);
+    if (!context.lastEventId) yield { ...envelope("7", "pools.snapshot", filteredSnapshot), streamKey: key };
+    yield { ...envelope("8", "pools.diff", {
       tombstones: [],
-      upserts: [{ ...snapshot.rows[0]!, feesUsd: "43" }],
+      upserts: context.protocols.includes("pcsv3")
+        ? [{ ...snapshot.rows[0]!, feesUsd: "43" }]
+        : [],
       version: "8",
-    });
-    yield envelope("9", "heartbeat", null);
+    }), streamKey: key };
+    yield { ...envelope("9", "heartbeat", null), streamKey: key };
   }
 }
 
@@ -163,8 +176,59 @@ describe("P02-02 top-fees API and replayable SSE", () => {
       chainId: 56,
       lastEventId,
       minutes: 5,
+      protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
     });
   });
+
+  it("normalizes DEX sets identically for snapshot and stream, including empty results", async () => {
+    const { app, provider, token } = await fixture();
+    const headers = { cookie: `lpbot_session=${token}` };
+    const combined = await app.inject({
+      headers,
+      method: "GET",
+      url: "/api/pools/top-fees/5?chainId=56&dex=univ4,pcsv3,univ4",
+    });
+    const empty = await app.inject({
+      headers,
+      method: "GET",
+      url: "/api/pools/top-fees/5?chainId=56&dex=univ4",
+    });
+    const stream = await app.inject({
+      headers: { ...headers, accept: "text/event-stream" },
+      method: "GET",
+      url: "/api/pools/top-fees/5/stream?chainId=56&dex=univ4,pcsv3,univ4",
+    });
+
+    expect(combined.statusCode).toBe(200);
+    expect(combined.json().data.rows.map(({ protocol }: { protocol: string }) => protocol)).toEqual([
+      "pcsv3",
+    ]);
+    expect(empty.statusCode).toBe(200);
+    expect(empty.json().data.rows).toEqual([]);
+    expect(provider.snapshotContexts.map(({ protocols }) => protocols)).toContainEqual([
+      "pcsv3",
+      "univ4",
+    ]);
+    expect(provider.streamContexts[0]?.protocols).toEqual(["pcsv3", "univ4"]);
+    expect(parseSse(stream.body).every(({ payload }) =>
+      payload.streamKey === "top-fees:56:5:dex=pcsv3,univ4",
+    )).toBe(true);
+  });
+
+  it.each(["", "pcsv2", "pcsv3,", "pcsv3,ethereum"])(
+    "rejects an invalid DEX collection: %s",
+    async (dex) => {
+      const { app, token } = await fixture();
+      const response = await app.inject({
+        headers: { cookie: `lpbot_session=${token}` },
+        method: "GET",
+        url: `/api/pools/top-fees/5?chainId=56&dex=${encodeURIComponent(dex)}`,
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error.code).toBe("MARKET_QUERY_INVALID");
+    },
+  );
 
   it("rejects anonymous requests before opening the stream", async () => {
     const { app, provider } = await fixture();

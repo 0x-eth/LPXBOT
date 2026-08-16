@@ -437,7 +437,7 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
       `SELECT sequence::text
          FROM liquidity_flow_outbox
         WHERE chain_id = 56
-        ORDER BY sequence DESC
+        ORDER BY liquidity_flow_outbox.sequence DESC
         LIMIT 1
         FOR UPDATE`,
     );

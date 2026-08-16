@@ -177,7 +177,7 @@ export class PostgresLiquidityFlowProvider implements LiquidityFlowProvider {
       `SELECT sequence::text, cursor
          FROM liquidity_flow_outbox
         WHERE chain_id = 56
-        ORDER BY sequence DESC
+        ORDER BY liquidity_flow_outbox.sequence DESC
         LIMIT 1`,
     );
     return result.rows[0] ?? { cursor: "", sequence: "0" };
@@ -198,7 +198,7 @@ export class PostgresLiquidityFlowProvider implements LiquidityFlowProvider {
           AND ($4::text IS NULL OR token0 = $4 OR token1 = $4)
           AND ($5::text IS NULL OR user_address = $5)
           AND ($6::text IS NULL OR nft_id::text = $6)
-        ORDER BY sequence DESC
+        ORDER BY liquidity_flow_outbox.sequence DESC
         LIMIT $7`,
       [
         watermark,
@@ -218,7 +218,7 @@ export class PostgresLiquidityFlowProvider implements LiquidityFlowProvider {
       `SELECT sequence::text, cursor, record_type, payload, created_at
          FROM liquidity_flow_outbox
         WHERE chain_id = 56 AND sequence > $1
-        ORDER BY sequence
+        ORDER BY liquidity_flow_outbox.sequence
         LIMIT 500`,
       [sequence],
     );
@@ -237,7 +237,7 @@ export class PostgresLiquidityFlowProvider implements LiquidityFlowProvider {
         `SELECT sequence::text, cursor, record_type, payload, created_at
            FROM liquidity_flow_outbox
           WHERE chain_id = 56
-          ORDER BY sequence DESC
+          ORDER BY liquidity_flow_outbox.sequence DESC
           LIMIT 1
           FOR UPDATE`,
       );
