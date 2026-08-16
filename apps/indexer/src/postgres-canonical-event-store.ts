@@ -441,9 +441,7 @@ export class PostgresCanonicalEventStore implements CanonicalEventStore {
         LIMIT 1
         FOR UPDATE`,
     );
-    const sequence = latest.rows[0]
-      ? (BigInt(latest.rows[0].sequence) + 1n).toString()
-      : "1";
+    const sequence = latest.rows[0] ? (BigInt(latest.rows[0].sequence) + 1n).toString() : "1";
     const digest = payloadHash({ recordType, relatedEventId, sequence }).slice(0, 16);
     return { cursor: `flow:v1:56:${sequence}:${digest}`, sequence };
   }

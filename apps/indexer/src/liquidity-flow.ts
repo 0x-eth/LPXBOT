@@ -1,8 +1,4 @@
-import type {
-  EvmAddress,
-  LiquidityFlowEvent,
-  LiquidityFlowEventType,
-} from "@lpbot/api-contract";
+import type { EvmAddress, LiquidityFlowEvent, LiquidityFlowEventType } from "@lpbot/api-contract";
 
 import type { NormalizedPoolEvent } from "./types.js";
 
@@ -20,9 +16,7 @@ function payloadValue(event: NormalizedPoolEvent, key: string): string | null {
   return event.payload[key] ?? null;
 }
 
-export function projectLiquidityFlowEvent(
-  event: NormalizedPoolEvent,
-): LiquidityFlowEvent | null {
+export function projectLiquidityFlowEvent(event: NormalizedPoolEvent): LiquidityFlowEvent | null {
   const eventType = eventTypeByKind[event.kind];
   if (!eventType || event.chainId !== 56 || event.removed || event.finality !== "observed") {
     return null;

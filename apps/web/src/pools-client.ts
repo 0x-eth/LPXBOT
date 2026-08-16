@@ -5,10 +5,7 @@ import type {
   MarketWindowMinutes,
   SuccessEnvelope,
 } from "@lpbot/api-contract";
-import {
-  canonicalizeLiquidityProtocols,
-  liquidityFlowProtocols,
-} from "@lpbot/api-contract";
+import { canonicalizeLiquidityProtocols, liquidityFlowProtocols } from "@lpbot/api-contract";
 
 export interface PoolStreamSubscription {
   close(): void;

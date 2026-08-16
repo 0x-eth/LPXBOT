@@ -76,14 +76,18 @@ class FiniteMarketProvider implements MarketPoolsProvider {
         ? "top-fees:56:5"
         : `top-fees:56:5:dex=${context.protocols.join(",")}`;
     const filteredSnapshot = await this.getTopFees(context);
-    if (!context.lastEventId) yield { ...envelope("7", "pools.snapshot", filteredSnapshot), streamKey: key };
-    yield { ...envelope("8", "pools.diff", {
-      tombstones: [],
-      upserts: context.protocols.includes("pcsv3")
-        ? [{ ...snapshot.rows[0]!, feesUsd: "43" }]
-        : [],
-      version: "8",
-    }), streamKey: key };
+    if (!context.lastEventId)
+      yield { ...envelope("7", "pools.snapshot", filteredSnapshot), streamKey: key };
+    yield {
+      ...envelope("8", "pools.diff", {
+        tombstones: [],
+        upserts: context.protocols.includes("pcsv3")
+          ? [{ ...snapshot.rows[0]!, feesUsd: "43" }]
+          : [],
+        version: "8",
+      }),
+      streamKey: key,
+    };
     yield { ...envelope("9", "heartbeat", null), streamKey: key };
   }
 }
@@ -200,9 +204,9 @@ describe("P02-02 top-fees API and replayable SSE", () => {
     });
 
     expect(combined.statusCode).toBe(200);
-    expect(combined.json().data.rows.map(({ protocol }: { protocol: string }) => protocol)).toEqual([
-      "pcsv3",
-    ]);
+    expect(combined.json().data.rows.map(({ protocol }: { protocol: string }) => protocol)).toEqual(
+      ["pcsv3"],
+    );
     expect(empty.statusCode).toBe(200);
     expect(empty.json().data.rows).toEqual([]);
     expect(provider.snapshotContexts.map(({ protocols }) => protocols)).toContainEqual([
@@ -210,9 +214,11 @@ describe("P02-02 top-fees API and replayable SSE", () => {
       "univ4",
     ]);
     expect(provider.streamContexts[0]?.protocols).toEqual(["pcsv3", "univ4"]);
-    expect(parseSse(stream.body).every(({ payload }) =>
-      payload.streamKey === "top-fees:56:5:dex=pcsv3,univ4",
-    )).toBe(true);
+    expect(
+      parseSse(stream.body).every(
+        ({ payload }) => payload.streamKey === "top-fees:56:5:dex=pcsv3,univ4",
+      ),
+    ).toBe(true);
   });
 
   it.each(["", "pcsv2", "pcsv3,", "pcsv3,ethereum"])(

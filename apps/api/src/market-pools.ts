@@ -136,7 +136,10 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
       [storageStreamKey(context)],
     );
     const row = result.rows[0];
-    return this.#filterSnapshot(context, row ? this.#snapshot(context, row) : this.#emptySnapshot(context));
+    return this.#filterSnapshot(
+      context,
+      row ? this.#snapshot(context, row) : this.#emptySnapshot(context),
+    );
   }
 
   async *subscribe(context: MarketPoolsStreamContext): AsyncIterable<MarketStreamEnvelope> {
@@ -335,10 +338,7 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
     };
   }
 
-  #filterSnapshot(
-    context: MarketPoolsContext,
-    snapshot: MarketPoolSnapshot,
-  ): MarketPoolSnapshot {
+  #filterSnapshot(context: MarketPoolsContext, snapshot: MarketPoolSnapshot): MarketPoolSnapshot {
     const protocols = new Set(context.protocols);
     return {
       ...snapshot,

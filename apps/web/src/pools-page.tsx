@@ -528,12 +528,7 @@ export function PoolsPage() {
   const [retry, setRetry] = useState(0);
   const [state, dispatch] = useReducer(reducePoolStream, undefined, initialPoolStreamState);
   const latestEventAt = useRef<number | null>(null);
-  const initialSince = useMemo(() => Date.now() - 30 * 60_000, []);
-  const [flowState, flowDispatch] = useReducer(
-    reduceLiquidityFlow,
-    initialSince,
-    initialLiquidityFlowState,
-  );
+  const [flowState, flowDispatch] = useReducer(reduceLiquidityFlow, 0, initialLiquidityFlowState);
   const flowStateRef = useRef(flowState);
   const latestFlowAt = useRef<number | null>(null);
   const [flowRetry, setFlowRetry] = useState(0);
@@ -542,7 +537,9 @@ export function PoolsPage() {
     parseLiquidityFlowUiFilters(location.search),
   );
 
-  flowStateRef.current = flowState;
+  useEffect(() => {
+    flowStateRef.current = flowState;
+  }, [flowState]);
 
   const updateSearch = (
     nextProtocols: readonly LiquidityFlowProtocol[],
@@ -629,8 +626,10 @@ export function PoolsPage() {
   const remoteFilters = useMemo(() => serverFilters(flowFilters), [flowFilters]);
   useEffect(() => {
     if (fixture) return;
+    const initialSince = Date.now() - 30 * 60_000;
+    flowStateRef.current = initialLiquidityFlowState(initialSince);
     latestFlowAt.current = Date.now();
-    flowDispatch({ type: "loading" });
+    flowDispatch({ since: initialSince, type: "loading" });
     const subscription = flowClient.subscribe(remoteFilters, {
       getSince: () => flowStateRef.current.since,
       onBackfill: (backfill) => {

@@ -2,13 +2,7 @@ import type { LiquidityFlowEvent, LiquidityFlowRecord } from "@lpbot/api-contrac
 import { Decimal } from "decimal.js";
 
 export type LiquidityFlowConnection =
-  | "loading-backfill"
-  | "live"
-  | "paused-hidden"
-  | "empty"
-  | "error"
-  | "stale"
-  | "reconnecting";
+  "loading-backfill" | "live" | "paused-hidden" | "empty" | "error" | "stale" | "reconnecting";
 
 export interface LiquidityFlowState {
   buffered: LiquidityFlowRecord[];
@@ -24,7 +18,8 @@ export type LiquidityFlowAction =
   | { records: readonly LiquidityFlowRecord[]; type: "backfill" }
   | { record: LiquidityFlowRecord; type: "event" }
   | { code: string; type: "error" }
-  | { type: "heartbeat" | "loading" | "pause" | "reconnecting" | "resume" | "stale" };
+  | { since?: number; type: "loading" }
+  | { type: "heartbeat" | "pause" | "reconnecting" | "resume" | "stale" };
 
 export interface LiquidityFlowUiFilters {
   eventType: "all" | LiquidityFlowEvent["event_type"];
@@ -100,7 +95,9 @@ export function reduceLiquidityFlow(
   state: LiquidityFlowState,
   action: LiquidityFlowAction,
 ): LiquidityFlowState {
-  if (action.type === "loading") return initialLiquidityFlowState(state.since);
+  if (action.type === "loading") {
+    return initialLiquidityFlowState(action.since ?? state.since);
+  }
   if (action.type === "pause") return { ...state, connection: "paused-hidden" };
   if (action.type === "resume") {
     const resumed = state.buffered.reduce(applyRecord, { ...state, buffered: [] });
@@ -168,9 +165,7 @@ export function applyLiquidityFlowFilters(
   });
 }
 
-export function serializeLiquidityFlowUiFilters(
-  filters: LiquidityFlowUiFilters,
-): URLSearchParams {
+export function serializeLiquidityFlowUiFilters(filters: LiquidityFlowUiFilters): URLSearchParams {
   const parameters = new URLSearchParams();
   if (filters.eventType !== "all") parameters.set("flow_event", filters.eventType);
   if (filters.generation !== "all") parameters.set("flow_version", filters.generation);
@@ -190,9 +185,7 @@ export function parseLiquidityFlowUiFilters(
   const generation = parameters.get("flow_version");
   return {
     eventType:
-      eventType === "create" || eventType === "add" || eventType === "remove"
-        ? eventType
-        : "all",
+      eventType === "create" || eventType === "add" || eventType === "remove" ? eventType : "all",
     generation: generation === "v3" || generation === "v4" ? generation : "all",
     minUsd: parameters.get("min_usd") ?? "",
     nftId: parameters.get("nft_id") ?? "",

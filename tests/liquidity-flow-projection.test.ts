@@ -43,15 +43,18 @@ describe("P02-04 liquidity flow projection", () => {
       .filter((event) => event !== null);
 
     expect(projected).toHaveLength(10);
-    expect(projected.reduce<Record<string, number>>((counts, event) => {
-      counts[event.event_type] = (counts[event.event_type] ?? 0) + 1;
-      return counts;
-    }, {})).toEqual({ add: 4, create: 4, remove: 2 });
+    expect(
+      projected.reduce<Record<string, number>>((counts, event) => {
+        counts[event.event_type] = (counts[event.event_type] ?? 0) + 1;
+        return counts;
+      }, {}),
+    ).toEqual({ add: 4, create: 4, remove: 2 });
     expect(new Set(projected.map(({ dex }) => dex))).toEqual(
       new Set(["pcsv3", "univ3", "pcsv4", "univ4"]),
     );
-    expect(projected.every(({ chain_id, finality }) => chain_id === 56 && finality === "observed"))
-      .toBe(true);
+    expect(
+      projected.every(({ chain_id, finality }) => chain_id === 56 && finality === "observed"),
+    ).toBe(true);
   });
 
   it("keeps all non-authoritative display fields null, including V4 token amounts", () => {
