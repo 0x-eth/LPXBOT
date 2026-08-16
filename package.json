@@ -28,6 +28,7 @@
     "db:status": "bash scripts/db.sh status",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
+    "generate:p02-03-golden": "node scripts/generate-p02-03-normalized.mjs",
     "finalize:p01-reference": "node scripts/finalize-p01-reference-artifacts.mjs",
     "finalize:p02-reference": "node scripts/finalize-p02-reference-artifacts.mjs",
     "infra:down": "bash scripts/infra.sh down",
