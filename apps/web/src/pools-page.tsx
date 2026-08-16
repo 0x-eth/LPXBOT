@@ -1677,6 +1677,7 @@ export function PoolsPage() {
   const [advancedFilterValidationFailed, setAdvancedFilterValidationFailed] = useState(
     !parsedAdvancedFilters.valid,
   );
+  const [advancedFilterLocation, setAdvancedFilterLocation] = useState(location.search);
   const [comparisonState, setComparisonState] = useState<PoolComparisonState>(
     initialPoolComparisonState,
   );
@@ -1700,7 +1701,8 @@ export function PoolsPage() {
   const [editingAddress, setEditingAddress] = useState<EvmAddress | null>(null);
   const remarkOperation = useRef(0);
 
-  useEffect(() => {
+  if (advancedFilterLocation !== location.search) {
+    setAdvancedFilterLocation(location.search);
     setAdvancedFilterDraft(structuredClone(parsedAdvancedFilters.filters));
     setAdvancedFilterValidationFailed(!parsedAdvancedFilters.valid);
     if (
@@ -1709,7 +1711,7 @@ export function PoolsPage() {
     ) {
       setAdvancedFilterOpen(true);
     }
-  }, [parsedAdvancedFilters]);
+  }
 
   if (poolSearchLocation !== location.search) {
     const next = parsePoolSearchParameters(location.search);
@@ -2021,10 +2023,23 @@ export function PoolsPage() {
     if (fixture) return fixturePoolSnapshot(minutes, poolRows);
     return state.snapshot ? { ...state.snapshot, rows: poolRows } : null;
   }, [fixture, minutes, poolRows, state.snapshot]);
-  useEffect(() => {
-    if (!comparisonSnapshot) return;
-    setComparisonState((current) => reconcilePoolComparison(current, comparisonSnapshot));
-  }, [comparisonSnapshot]);
+  const comparisonSnapshotSignature = comparisonSnapshot
+    ? [
+        comparisonSnapshot.minutes,
+        comparisonSnapshot.version,
+        comparisonSnapshot.windowEnd,
+        ...comparisonSnapshot.rows.map(({ poolKey }) => poolKey),
+      ].join("\u0000")
+    : "none";
+  const [comparisonStateSignature, setComparisonStateSignature] = useState(
+    comparisonSnapshotSignature,
+  );
+  if (comparisonStateSignature !== comparisonSnapshotSignature) {
+    setComparisonStateSignature(comparisonSnapshotSignature);
+    if (comparisonSnapshot) {
+      setComparisonState((current) => reconcilePoolComparison(current, comparisonSnapshot));
+    }
+  }
   const comparisonView = useMemo(
     () => (comparisonSnapshot ? buildPoolComparison(comparisonState, comparisonSnapshot) : null),
     [comparisonSnapshot, comparisonState],
