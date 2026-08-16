@@ -6,7 +6,7 @@ Local verification completed on `2026-08-16` without `BSC_RPC_URL`. See `initial
 
 ```text
 pnpm exec vitest run tests/protocol-deployment-registry.test.ts tests/production-chain-decoder.test.ts tests/production-indexer-startup.test.ts tests/viem-bsc-log-source.test.ts tests/p02-03-acceptance.test.ts tests/p02-03-capture-policy.test.ts
-Result: passed (6 files, 52 tests)
+Result: passed (6 files, 54 tests)
 ```
 
 The fixed official ABI/deployment URLs were fetched read-only at their recorded revisions and piped directly to SHA-256. All 10 source files and both V3 concatenated interface hashes matched `source-manifest.json`.
