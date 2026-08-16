@@ -76,6 +76,8 @@ describe("P01 complete PostgreSQL migration cycle", () => {
 
     expect(await publicTables()).toEqual([
       "access_audit_events",
+      "address_remark_audit_events",
+      "address_remarks",
       "app_metadata",
       "auth_login_wallets",
       "auth_wallet_challenges",
@@ -116,6 +118,8 @@ describe("P01 complete PostgreSQL migration cycle", () => {
     expect(extensions.rows.map(({ extname }) => extname)).toEqual(["pgcrypto", "timescaledb"]);
     expect(await publicTables()).toEqual([
       "access_audit_events",
+      "address_remark_audit_events",
+      "address_remarks",
       "app_metadata",
       "auth_login_wallets",
       "auth_wallet_challenges",

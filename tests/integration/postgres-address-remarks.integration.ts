@@ -175,12 +175,12 @@ describe("P02-05 PostgreSQL address remarks", () => {
 
   it("enforces canonical and control-free labels in PostgreSQL and keeps audits append-only", async () => {
     const invalidRows = [
-      [address.toUpperCase().replace("0X", "0x"), "Valid"],
-      [address, " padded "],
-      [address, "x".repeat(33)],
-      [address, "line\nbreak"],
+      ["0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", "Valid", "address_remarks_canonical_address_valid"],
+      ["0xcccccccccccccccccccccccccccccccccccccccc", " padded ", "address_remarks_label_valid"],
+      ["0xdddddddddddddddddddddddddddddddddddddddd", "x".repeat(33), "address_remarks_label_valid"],
+      ["0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "line\nbreak", "address_remarks_label_valid"],
     ] as const;
-    for (const [candidateAddress, label] of invalidRows) {
+    for (const [candidateAddress, label, constraint] of invalidRows) {
       await expect(
         pool.query(
           `INSERT INTO address_remarks (
@@ -188,7 +188,7 @@ describe("P02-05 PostgreSQL address remarks", () => {
            ) VALUES ($1, 56, $2, $3, false, $4, $4)`,
           [userIds[0], candidateAddress, label, now],
         ),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ constraint });
     }
 
     const token = await session(userIds[0]);
