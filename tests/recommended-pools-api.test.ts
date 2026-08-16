@@ -33,6 +33,40 @@ function emptySnapshot(version = "7"): MarketPoolSnapshot {
   };
 }
 
+function populatedSnapshot(version: string, feesUsd: string): MarketPoolSnapshot {
+  const poolAddress = `0x${"1".repeat(40)}` as const;
+  return {
+    ...emptySnapshot(version),
+    canonicalRevision: `canonical:reorg:${version}`,
+    rows: [
+      {
+        activeTvlUsd: null,
+        chainId: 56,
+        fdvUsd: null,
+        feeActiveTvl: null,
+        feePips: "500",
+        feesUsd,
+        feeTvl: null,
+        hooks: null,
+        labelRuleVersion: "pool-labels/local-v1",
+        labels: [],
+        poolAddress,
+        poolId: null,
+        poolKey: `56:${poolAddress}`,
+        protocol: "pcsv3",
+        tickSpacing: "10",
+        token0Address: `0x${"a".repeat(40)}`,
+        token0Symbol: "WBNB",
+        token1Address: `0x${"b".repeat(40)}`,
+        token1Symbol: "USDT",
+        transactionCount: null,
+        tvlUsd: null,
+        volumeUsd: null,
+      },
+    ],
+  };
+}
+
 class EmptyMarketProvider implements MarketPoolsProvider {
   contexts: MarketPoolsContext[] = [];
   current = emptySnapshot();
@@ -47,6 +81,33 @@ class EmptyMarketProvider implements MarketPoolsProvider {
   }
 
   async *subscribe(_context: MarketPoolsStreamContext): AsyncIterable<MarketStreamEnvelope> {}
+}
+
+class ReplacingMarketProvider extends EmptyMarketProvider {
+  override async getTopFees(context: MarketPoolsContext): Promise<MarketPoolSnapshot> {
+    const snapshot = this.contexts.length === 0 ? populatedSnapshot("7", "12.5") : populatedSnapshot("8", "9.25");
+    this.contexts.push(context);
+    return snapshot;
+  }
+}
+
+class BlockingMarketProvider extends EmptyMarketProvider {
+  aborted = false;
+
+  override async getTopFees(context: MarketPoolsContext): Promise<MarketPoolSnapshot> {
+    this.contexts.push(context);
+    if (this.contexts.length === 1) return populatedSnapshot("7", "12.5");
+    return new Promise((_resolve, reject) => {
+      context.signal?.addEventListener(
+        "abort",
+        () => {
+          this.aborted = true;
+          reject(new DOMException("Aborted", "AbortError"));
+        },
+        { once: true },
+      );
+    });
+  }
 }
 
 class FiniteStatsProvider implements ShellStatsProvider {
@@ -131,6 +192,7 @@ async function readSseFrames(
   response: Response,
   count: number,
   controller: AbortController,
+  close = true,
 ): Promise<SseFrame[]> {
   const reader = response.body!.getReader();
   const decoder = new TextDecoder();
@@ -151,8 +213,12 @@ async function readSseFrames(
       }
     }
   } finally {
-    controller.abort();
-    await reader.cancel().catch(() => undefined);
+    if (close) {
+      controller.abort();
+      await reader.cancel().catch(() => undefined);
+    } else {
+      reader.releaseLock();
+    }
   }
   return frames;
 }
@@ -335,5 +401,40 @@ describe("P02-09 recommendation stream HTTP boundary", () => {
     });
     expect(limited.statusCode).toBe(429);
     expect(limited.json().error.code).toBe("RATE_LIMITED");
+  });
+
+  it("emits a reorg replacement when the ordered wire payload changes", async () => {
+    const marketPoolsProvider = new ReplacingMarketProvider();
+    const { app, token } = await fixture({
+      heartbeatMilliseconds: 1_000,
+      marketPoolsProvider,
+      pollMilliseconds: 10,
+    });
+    const controller = new AbortController();
+    const response = await openSse(app, token, "/api/stats/stream?chain=bsc", controller);
+    const frames = await readSseFrames(response, 2, controller);
+
+    expect(frames.map(({ event }) => event)).toEqual([
+      "rec_pools_snapshot",
+      "rec_pools_snapshot",
+    ]);
+    expect(frames.map(({ payload }) => payload.sourceVersion)).toEqual(["7", "8"]);
+    expect(frames[0]?.payload.selectionHash).not.toBe(frames[1]?.payload.selectionHash);
+    expect(frames[1]?.payload.pools).toEqual([
+      expect.objectContaining({ feesUsd: "9.25" }),
+    ]);
+  });
+
+  it("aborts an in-flight canonical snapshot read when the client disconnects", async () => {
+    const marketPoolsProvider = new BlockingMarketProvider();
+    const { app, token } = await fixture({ marketPoolsProvider, pollMilliseconds: 10 });
+    const controller = new AbortController();
+    const response = await openSse(app, token, "/api/stats/stream?chain=bsc", controller);
+    await readSseFrames(response, 1, controller, false);
+    await vi.waitFor(() => expect(marketPoolsProvider.contexts).toHaveLength(2));
+
+    controller.abort();
+    await vi.waitFor(() => expect(marketPoolsProvider.aborted).toBe(true));
+    expect(marketPoolsProvider.contexts[1]?.signal?.aborted).toBe(true);
   });
 });
