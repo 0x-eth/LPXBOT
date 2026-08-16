@@ -1,9 +1,43 @@
-import type { MarketPoolRow, MarketWindowMinutes } from "@lpbot/api-contract";
+import {
+  canonicalizeLiquidityProtocols,
+  liquidityFlowProtocols,
+  type LiquidityFlowConnection,
+  type LiquidityFlowEvent,
+  type LiquidityFlowProtocol,
+  type MarketPoolRow,
+  type MarketWindowMinutes,
+} from "@lpbot/api-contract";
 import { Decimal } from "decimal.js";
-import { AlertTriangle, RefreshCw, Wifi, WifiOff } from "lucide-react";
-import { useEffect, useMemo, useReducer, useRef, useState, type KeyboardEvent } from "react";
-import { useLocation } from "react-router-dom";
+import {
+  AlertTriangle,
+  Pause,
+  Play,
+  RefreshCw,
+  RotateCcw,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
+import { LiquidityFlowClient, type LiquidityFlowServerFilters } from "./liquidity-flow-client";
+import {
+  applyLiquidityFlowFilters,
+  defaultLiquidityFlowUiFilters,
+  initialLiquidityFlowState,
+  parseLiquidityFlowUiFilters,
+  reduceLiquidityFlow,
+  serializeLiquidityFlowUiFilters,
+  type LiquidityFlowConnection as FlowConnection,
+  type LiquidityFlowUiFilters,
+} from "./liquidity-flow-state";
 import { PoolsClient } from "./pools-client";
 import {
   initialPoolStreamState,
@@ -13,7 +47,7 @@ import {
 
 const windows = [1, 5, 15, 30, 60] as const;
 
-const fixtureRow: MarketPoolRow = {
+const basePoolRow: MarketPoolRow = {
   activeTvlUsd: null,
   chainId: 56,
   fdvUsd: "184250000.25",
@@ -30,6 +64,76 @@ const fixtureRow: MarketPoolRow = {
   volumeUsd: "248921.75",
 };
 
+const fixturePoolRows: MarketPoolRow[] = liquidityFlowProtocols.map((protocol, index) => ({
+  ...basePoolRow,
+  fdvUsd: new Decimal(basePoolRow.fdvUsd!).plus(index * 1_000_000).toString(),
+  feesUsd: new Decimal(basePoolRow.feesUsd!).minus(index * 36).toString(),
+  poolAddress: `0x${String(index + 1).repeat(40)}` as MarketPoolRow["poolAddress"],
+  protocol,
+  token0Symbol: index === 0 ? "WBNB" : ["CAKE", "USDC", "ETH"][index - 1]!,
+}));
+
+function fixtureFlowEvent(
+  id: string,
+  ts: number,
+  overrides: Partial<LiquidityFlowEvent>,
+): LiquidityFlowEvent {
+  return {
+    amount0: null,
+    amount1: null,
+    block_hash: `0x${"11".repeat(32)}`,
+    block_number: String(116_184_000 + ts),
+    chain_id: 56,
+    cursor: `flow:fixture:${id}`,
+    dex: "pcsv3",
+    event_type: "add",
+    finality: "observed",
+    hooks: null,
+    id,
+    in_range: null,
+    liquidity_delta: "1000",
+    log_index: 1,
+    nft_id: null,
+    pool_address: "0x1111111111111111111111111111111111111111",
+    pool_id: null,
+    record_type: "event",
+    schema_version: "1.0.0",
+    tick_lower: null,
+    tick_upper: null,
+    token0_address: "0x2222222222222222222222222222222222222222",
+    token0_symbol: null,
+    token1_address: "0x3333333333333333333333333333333333333333",
+    token1_symbol: null,
+    ts,
+    tx_hash: `0x${"22".repeat(32)}`,
+    tx_index: 1,
+    usd_value: null,
+    user: "0x4444444444444444444444444444444444444444",
+    version: "v3",
+    ...overrides,
+  };
+}
+
+const fixtureFlowEvents: LiquidityFlowEvent[] = [
+  fixtureFlowEvent("flow-univ4-remove", 1_765_843_203_000, {
+    dex: "univ4",
+    event_type: "remove",
+    nft_id: "42",
+    usd_value: "125.5",
+    version: "v4",
+  }),
+  fixtureFlowEvent("flow-pcsv4-remove", 1_765_843_202_000, {
+    dex: "pcsv4",
+    event_type: "remove",
+    version: "v4",
+  }),
+  fixtureFlowEvent("flow-univ3-create", 1_765_843_201_000, {
+    dex: "univ3",
+    event_type: "create",
+  }),
+  fixtureFlowEvent("flow-pcsv3-add", 1_765_843_200_000, {}),
+];
+
 type PoolsFixtureState = PoolConnectionState;
 
 function fixtureState(search: string): PoolsFixtureState | null {
@@ -42,8 +146,42 @@ function fixtureState(search: string): PoolsFixtureState | null {
     : null;
 }
 
-function protocolName(protocol: MarketPoolRow["protocol"]): string {
-  const names: Record<MarketPoolRow["protocol"], string> = {
+function fixtureFlowState(search: string, fixture: PoolsFixtureState | null): FlowConnection | null {
+  if (!fixture) return null;
+  const explicit = new URLSearchParams(search).get("flow_state");
+  const states: FlowConnection[] = [
+    "loading-backfill",
+    "live",
+    "paused-hidden",
+    "empty",
+    "error",
+    "stale",
+    "reconnecting",
+  ];
+  if (explicit && states.includes(explicit as FlowConnection)) return explicit as FlowConnection;
+  const byPoolState: Record<PoolsFixtureState, FlowConnection> = {
+    empty: "empty",
+    error: "error",
+    loading: "loading-backfill",
+    ready: "live",
+    reconnecting: "reconnecting",
+    stale: "stale",
+  };
+  return byPoolState[fixture];
+}
+
+function protocolsFromSearch(search: string): LiquidityFlowProtocol[] {
+  try {
+    return canonicalizeLiquidityProtocols(
+      new URLSearchParams(search).get("dex")?.split(",") ?? liquidityFlowProtocols,
+    );
+  } catch {
+    return [...liquidityFlowProtocols];
+  }
+}
+
+function protocolName(protocol: LiquidityFlowProtocol): string {
+  const names: Record<LiquidityFlowProtocol, string> = {
     pcsv3: "PancakeSwap V3",
     pcsv4: "PancakeSwap V4",
     univ3: "Uniswap V3",
@@ -99,16 +237,12 @@ function NumericValue({
   );
 }
 
-function poolIdentity(row: MarketPoolRow): string {
-  const value = row.poolAddress ?? row.poolId ?? "unknown";
+function shortIdentity(value: string | null): string {
+  if (!value) return "--";
   return value.length > 14 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
 }
 
-function fixtureRows(state: PoolsFixtureState | null): MarketPoolRow[] {
-  return state === "ready" || state === "stale" || state === "reconnecting" ? [fixtureRow] : [];
-}
-
-function connectionLabel(connection: PoolConnectionState): string {
+function poolConnectionLabel(connection: PoolConnectionState): string {
   const labels: Record<PoolConnectionState, string> = {
     empty: "实时 · 暂无池数据",
     error: "连接失败",
@@ -130,7 +264,7 @@ function ConnectionStatus({ connection }: { connection: PoolConnectionState }) {
       role="status"
     >
       <Icon aria-hidden="true" size={15} />
-      <span>{connectionLabel(connection)}</span>
+      <span>{poolConnectionLabel(connection)}</span>
     </div>
   );
 }
@@ -157,7 +291,7 @@ function PoolTable({ rows }: { rows: readonly MarketPoolRow[] }) {
                   <strong>
                     {row.token0Symbol ?? "?"} / {row.token1Symbol ?? "?"}
                   </strong>
-                  <span className="pool-address">{poolIdentity(row)}</span>
+                  <span className="pool-address">{shortIdentity(identity)}</span>
                 </td>
                 <td data-label="协议">{protocolName(row.protocol)}</td>
                 <NumericValue label="Fees" prefix="$ " value={row.feesUsd} />
@@ -174,14 +308,294 @@ function PoolTable({ rows }: { rows: readonly MarketPoolRow[] }) {
   );
 }
 
+function DexFilter({
+  protocols,
+  update,
+}: {
+  protocols: readonly LiquidityFlowProtocol[];
+  update(protocols: LiquidityFlowProtocol[]): void;
+}) {
+  const selected = new Set(protocols);
+  return (
+    <fieldset className="pool-dex-filter">
+      <legend>DEX 过滤</legend>
+      <div className="pool-dex-options">
+        {liquidityFlowProtocols.map((protocol) => (
+          <label key={protocol}>
+            <input
+              checked={selected.has(protocol)}
+              disabled={selected.has(protocol) && selected.size === 1}
+              onChange={(event) => {
+                const next = new Set(selected);
+                if (event.target.checked) next.add(protocol);
+                else next.delete(protocol);
+                update(canonicalizeLiquidityProtocols([...next]));
+              }}
+              type="checkbox"
+            />
+            <span>{protocolName(protocol)}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+function flowConnectionLabel(connection: FlowConnection): string {
+  const labels: Record<FlowConnection, string> = {
+    empty: "暂无事件",
+    error: "连接失败",
+    "loading-backfill": "回填中",
+    live: "实时",
+    "paused-hidden": "已暂停",
+    reconnecting: "重连中",
+    stale: "数据陈旧",
+  };
+  return labels[connection];
+}
+
+function FlowSegment<T extends string>({
+  label,
+  onChange,
+  options,
+  value,
+}: {
+  label: string;
+  onChange(value: T): void;
+  options: readonly { label: string; value: T }[];
+  value: T;
+}) {
+  return (
+    <div aria-label={label} className="flow-segment" role="radiogroup">
+      {options.map((option) => (
+        <button
+          aria-checked={value === option.value}
+          key={option.value}
+          onClick={() => onChange(option.value)}
+          role="radio"
+          tabIndex={value === option.value ? 0 : -1}
+          type="button"
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function FlowFilters({
+  filters,
+  update,
+}: {
+  filters: LiquidityFlowUiFilters;
+  update(filters: LiquidityFlowUiFilters): void;
+}) {
+  const set = <K extends keyof LiquidityFlowUiFilters>(
+    key: K,
+    value: LiquidityFlowUiFilters[K],
+  ) => update({ ...filters, [key]: value });
+  return (
+    <div className="flow-filter-area">
+      <div className="flow-primary-filters">
+        <FlowSegment
+          label="事件类型"
+          onChange={(value) => set("eventType", value)}
+          options={[
+            { label: "全部事件", value: "all" },
+            { label: "加池", value: "add" },
+            { label: "撤池", value: "remove" },
+            { label: "新池", value: "create" },
+          ] as const}
+          value={filters.eventType}
+        />
+        <FlowSegment
+          label="协议版本"
+          onChange={(value) => set("generation", value)}
+          options={[
+            { label: "全部版本", value: "all" },
+            { label: "V3", value: "v3" },
+            { label: "V4", value: "v4" },
+          ] as const}
+          value={filters.generation}
+        />
+        <label className="flow-minimum-filter">
+          <span>最低 USD</span>
+          <input
+            inputMode="decimal"
+            min="0"
+            onChange={(event) => set("minUsd", event.target.value)}
+            type="number"
+            value={filters.minUsd}
+          />
+        </label>
+      </div>
+      <div className="flow-address-filters">
+        {(
+          [
+            ["token", "Token"],
+            ["pool", "Pool"],
+            ["user", "User"],
+            ["nftId", "NFT"],
+          ] as const
+        ).map(([key, label]) => (
+          <label key={key}>
+            <span>{label}</span>
+            <input
+              inputMode={key === "nftId" ? "numeric" : "text"}
+              onChange={(event) => set(key, event.target.value)}
+              spellCheck={false}
+              type={key === "nftId" ? "number" : "search"}
+              value={filters[key]}
+            />
+          </label>
+        ))}
+        <button
+          aria-label="清除流动性筛选"
+          className="flow-clear-button"
+          onClick={() => update({ ...defaultLiquidityFlowUiFilters })}
+          type="button"
+        >
+          <RotateCcw aria-hidden="true" size={15} />
+          清除
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function flowTypeLabel(type: LiquidityFlowEvent["event_type"]): string {
+  return { add: "加池", create: "新池", remove: "撤池" }[type];
+}
+
+function FlowTable({ events }: { events: readonly LiquidityFlowEvent[] }) {
+  return (
+    <div className="flow-table-shell">
+      <table aria-label="流动性事件列表" className="flow-table">
+        <thead>
+          <tr>
+            {[
+              "时间",
+              "协议",
+              "事件",
+              "Pool",
+              "User",
+              "NFT",
+              "USD",
+              "Transaction",
+            ].map((label) => (
+              <th key={label} scope="col">
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {events.map((event) => (
+            <tr key={event.id}>
+              <td data-label="时间">
+                <time dateTime={new Date(event.ts).toISOString()}>
+                  {new Date(event.ts).toISOString().slice(11, 19)}
+                </time>
+              </td>
+              <td data-label="协议">{protocolName(event.dex)}</td>
+              <td data-label="事件">
+                <span className={`flow-type flow-type-${event.event_type}`}>
+                  {flowTypeLabel(event.event_type)}
+                </span>
+              </td>
+              <td data-label="Pool" title={event.pool_address ?? event.pool_id ?? undefined}>
+                {shortIdentity(event.pool_address ?? event.pool_id)}
+              </td>
+              <td data-label="User" title={event.user ?? undefined}>
+                {shortIdentity(event.user)}
+              </td>
+              <td data-label="NFT">{event.nft_id ? `#${event.nft_id}` : "--"}</td>
+              <td data-label="USD" title={event.usd_value ?? undefined}>
+                {decimalDisplay(event.usd_value, "$ ")}
+              </td>
+              <td data-label="Transaction" title={event.tx_hash}>
+                {shortIdentity(event.tx_hash)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function serverFilters(filters: LiquidityFlowUiFilters): LiquidityFlowServerFilters {
+  const address = (value: string) => (/^0x[0-9a-fA-F]{40}$/u.test(value) ? value : "");
+  const pool = /^0x(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$/u.test(filters.pool)
+    ? filters.pool
+    : "";
+  return {
+    nftId: /^(?:0|[1-9][0-9]*)$/u.test(filters.nftId) ? filters.nftId : "",
+    pool,
+    token: address(filters.token),
+    user: address(filters.user),
+  };
+}
+
 export function PoolsPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const fixture = fixtureState(location.search);
-  const client = useMemo(() => new PoolsClient(), []);
+  const poolClient = useMemo(() => new PoolsClient(), []);
+  const flowClient = useMemo(() => new LiquidityFlowClient(), []);
   const [minutes, setMinutes] = useState<MarketWindowMinutes>(5);
+  const [protocols, setProtocols] = useState<LiquidityFlowProtocol[]>(() =>
+    protocolsFromSearch(location.search),
+  );
   const [retry, setRetry] = useState(0);
   const [state, dispatch] = useReducer(reducePoolStream, undefined, initialPoolStreamState);
   const latestEventAt = useRef<number | null>(null);
+  const initialSince = useMemo(() => Date.now() - 30 * 60_000, []);
+  const [flowState, flowDispatch] = useReducer(
+    reduceLiquidityFlow,
+    initialSince,
+    initialLiquidityFlowState,
+  );
+  const flowStateRef = useRef(flowState);
+  const latestFlowAt = useRef<number | null>(null);
+  const [flowRetry, setFlowRetry] = useState(0);
+  const [fixturePaused, setFixturePaused] = useState(false);
+  const [flowFilters, setFlowFilters] = useState<LiquidityFlowUiFilters>(() =>
+    parseLiquidityFlowUiFilters(location.search),
+  );
+
+  flowStateRef.current = flowState;
+
+  const updateSearch = (nextProtocols: readonly LiquidityFlowProtocol[], next: LiquidityFlowUiFilters) => {
+    const parameters = new URLSearchParams(location.search);
+    for (const key of [
+      "dex",
+      "flow_event",
+      "flow_version",
+      "min_usd",
+      "pool",
+      "token",
+      "user",
+      "nft_id",
+    ]) {
+      parameters.delete(key);
+    }
+    if (nextProtocols.length !== liquidityFlowProtocols.length) {
+      parameters.set("dex", nextProtocols.join(","));
+    }
+    for (const [key, value] of serializeLiquidityFlowUiFilters(next)) parameters.set(key, value);
+    void navigate({ pathname: location.pathname, search: `?${parameters.toString()}` }, { replace: true });
+  };
+
+  const updateProtocols = (next: LiquidityFlowProtocol[]) => {
+    setProtocols(next);
+    updateSearch(next, flowFilters);
+  };
+
+  const updateFlowFilters = (next: LiquidityFlowUiFilters) => {
+    setFlowFilters(next);
+    updateSearch(protocols, next);
+  };
 
   useEffect(() => {
     if (fixture) return;
@@ -189,21 +603,25 @@ export function PoolsPage() {
     latestEventAt.current = Date.now();
     dispatch({ type: "loading" });
     let subscription: ReturnType<PoolsClient["subscribe"]> | null = null;
-    void client
-      .getSnapshot(minutes, controller.signal)
+    void poolClient
+      .getSnapshot(minutes, controller.signal, protocols)
       .then((snapshot) => {
         if (controller.signal.aborted) return;
         dispatch({ snapshot, type: "http-snapshot" });
-        subscription = client.subscribe(minutes, {
-          onError: () => dispatch({ type: "reconnecting" }),
-          onEvent: (event) => {
-            latestEventAt.current = Date.now();
-            dispatch({ event, type: "event" });
+        subscription = poolClient.subscribe(
+          minutes,
+          {
+            onError: () => dispatch({ type: "reconnecting" }),
+            onEvent: (event) => {
+              latestEventAt.current = Date.now();
+              dispatch({ event, type: "event" });
+            },
+            onOpen: () => {
+              latestEventAt.current = Date.now();
+            },
           },
-          onOpen: () => {
-            latestEventAt.current = Date.now();
-          },
-        });
+          protocols,
+        );
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
@@ -222,10 +640,67 @@ export function PoolsPage() {
       subscription?.close();
       window.clearInterval(staleTimer);
     };
-  }, [client, fixture, minutes, retry]);
+  }, [fixture, minutes, poolClient, protocols, retry]);
+
+  const remoteFilters = useMemo(() => serverFilters(flowFilters), [flowFilters]);
+  useEffect(() => {
+    if (fixture) return;
+    latestFlowAt.current = Date.now();
+    flowDispatch({ type: "loading" });
+    const subscription = flowClient.subscribe(remoteFilters, {
+      getSince: () => flowStateRef.current.since,
+      onBackfill: (backfill) => {
+        latestFlowAt.current = Date.now();
+        flowDispatch({ records: backfill.events, type: "backfill" });
+      },
+      onError: (code) => flowDispatch({ code, type: "error" }),
+      onEvent: (record) => {
+        latestFlowAt.current = Date.now();
+        flowDispatch({ record, type: "event" });
+      },
+      onHeartbeat: () => {
+        latestFlowAt.current = Date.now();
+        flowDispatch({ type: "heartbeat" });
+      },
+      onOpen: () => {
+        latestFlowAt.current = Date.now();
+      },
+      onReconnecting: () => flowDispatch({ type: "reconnecting" }),
+    });
+    const staleTimer = window.setInterval(() => {
+      if (latestFlowAt.current !== null && Date.now() - latestFlowAt.current > 25_000) {
+        flowDispatch({ type: "stale" });
+      }
+    }, 1_000);
+    return () => {
+      subscription.close();
+      window.clearInterval(staleTimer);
+    };
+  }, [fixture, flowClient, flowRetry, remoteFilters]);
+
+  useEffect(() => {
+    if (fixture) return;
+    const onVisibility = () =>
+      flowDispatch({ type: document.hidden ? "pause" : "resume" });
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [fixture]);
 
   const connection = fixture ?? state.connection;
-  const rows = fixture ? fixtureRows(fixture) : state.rows;
+  const selectedProtocols = new Set(protocols);
+  const poolRows = (fixture ? (fixture === "ready" || fixture === "stale" || fixture === "reconnecting" ? fixturePoolRows : []) : state.rows).filter(
+    ({ protocol }) => selectedProtocols.has(protocol),
+  );
+  const explicitFlowConnection = fixtureFlowState(location.search, fixture);
+  const flowConnection = fixturePaused
+    ? "paused-hidden"
+    : (explicitFlowConnection ?? flowState.connection);
+  const baseFlowEvents = fixture
+    ? flowConnection === "loading-backfill" || flowConnection === "empty" || flowConnection === "error"
+      ? []
+      : fixtureFlowEvents
+    : flowState.events;
+  const visibleFlowEvents = applyLiquidityFlowFilters(baseFlowEvents, flowFilters);
 
   const selectWindow = (next: MarketWindowMinutes) => {
     setMinutes(next);
@@ -239,6 +714,15 @@ export function PoolsPage() {
     selectWindow(next);
   };
 
+  const toggleFlowPause = () => {
+    const paused = flowConnection === "paused-hidden";
+    if (fixture) setFixturePaused(!paused);
+    else flowDispatch({ type: paused ? "resume" : "pause" });
+    window.requestAnimationFrame(() => {
+      document.getElementById(paused ? "flow-pause" : "flow-resume")?.focus();
+    });
+  };
+
   return (
     <main
       aria-busy={connection === "loading" ? "true" : undefined}
@@ -247,7 +731,7 @@ export function PoolsPage() {
     >
       <div className="pools-heading">
         <div>
-          <p className="eyebrow">BSC · 单池 tracer</p>
+          <p className="eyebrow">BSC · 四协议实时读模型</p>
           <h1>
             <span>热门池</span>
             <span className="sr-only">池子发现 Pools</span>
@@ -256,23 +740,26 @@ export function PoolsPage() {
         <ConnectionStatus connection={connection} />
       </div>
 
-      <div aria-label="时间窗" className="pool-window-control" role="radiogroup">
-        {windows.map((value, index) => (
-          <button
-            aria-checked={minutes === value}
-            aria-label={`${value} 分钟`}
-            className="pool-window-option"
-            id={`pool-window-${value}`}
-            key={value}
-            onClick={() => selectWindow(value)}
-            onKeyDown={(event) => onWindowKeyDown(event, index)}
-            role="radio"
-            tabIndex={minutes === value ? 0 : -1}
-            type="button"
-          >
-            {value}m
-          </button>
-        ))}
+      <div className="pool-controls">
+        <div aria-label="时间窗" className="pool-window-control" role="radiogroup">
+          {windows.map((value, index) => (
+            <button
+              aria-checked={minutes === value}
+              aria-label={`${value} 分钟`}
+              className="pool-window-option"
+              id={`pool-window-${value}`}
+              key={value}
+              onClick={() => selectWindow(value)}
+              onKeyDown={(event) => onWindowKeyDown(event, index)}
+              role="radio"
+              tabIndex={minutes === value ? 0 : -1}
+              type="button"
+            >
+              {value}m
+            </button>
+          ))}
+        </div>
+        <DexFilter protocols={protocols} update={updateProtocols} />
       </div>
 
       {connection === "loading" ? (
@@ -295,12 +782,74 @@ export function PoolsPage() {
           </button>
         </div>
       ) : null}
-      {connection === "empty" ? (
+      {connection === "empty" || (connection !== "loading" && poolRows.length === 0) ? (
         <div className="pools-empty" role="status">
-          <p>当前窗口暂无池数据</p>
+          <p>当前过滤条件暂无池数据</p>
         </div>
       ) : null}
-      {rows.length > 0 ? <PoolTable rows={rows} /> : null}
+      {poolRows.length > 0 ? <PoolTable rows={poolRows} /> : null}
+
+      <section
+        aria-busy={flowConnection === "loading-backfill" ? "true" : undefined}
+        aria-label="流动性事件"
+        className="liquidity-flow-panel"
+        data-flow-state={flowConnection}
+      >
+        <div className="flow-heading">
+          <div>
+            <h2>流动性事件</h2>
+            <p>BSC · create / add / remove</p>
+          </div>
+          <div className="flow-heading-actions">
+            <span className="flow-status" data-state={flowConnection} role="status">
+              {flowConnectionLabel(flowConnection)}
+            </span>
+            <button
+              aria-label={
+                flowConnection === "paused-hidden" ? "恢复流动性事件" : "暂停流动性事件"
+              }
+              className="flow-pause-button"
+              id={flowConnection === "paused-hidden" ? "flow-resume" : "flow-pause"}
+              onClick={toggleFlowPause}
+              title={flowConnection === "paused-hidden" ? "恢复" : "暂停"}
+              type="button"
+            >
+              {flowConnection === "paused-hidden" ? (
+                <Play aria-hidden="true" size={16} />
+              ) : (
+                <Pause aria-hidden="true" size={16} />
+              )}
+            </button>
+          </div>
+        </div>
+
+        <FlowFilters filters={flowFilters} update={updateFlowFilters} />
+
+        {flowConnection === "loading-backfill" ? (
+          <div className="flow-operational-state" role="status">
+            <span className="spinner spinner-small" aria-hidden="true" />
+            正在回填历史事件
+          </div>
+        ) : null}
+        {flowConnection === "error" ? (
+          <div className="flow-operational-state flow-operational-error">
+            <AlertTriangle aria-hidden="true" size={18} />
+            <p role="alert">流动性事件暂不可用</p>
+            {!fixture ? (
+              <button onClick={() => setFlowRetry((value) => value + 1)} type="button">
+                <RefreshCw aria-hidden="true" size={15} />
+                重试
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+        {flowConnection !== "loading-backfill" && flowConnection !== "error" && visibleFlowEvents.length === 0 ? (
+          <div className="flow-operational-state" role="status">
+            当前过滤条件暂无流动性事件
+          </div>
+        ) : null}
+        {visibleFlowEvents.length > 0 ? <FlowTable events={visibleFlowEvents} /> : null}
+      </section>
     </main>
   );
 }
