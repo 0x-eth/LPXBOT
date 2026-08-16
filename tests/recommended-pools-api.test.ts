@@ -6,10 +6,8 @@ import type {
 } from "../packages/api-contract/src/index.js";
 import { buildApiApp } from "../apps/api/src/index.js";
 import type {
-  MarketPoolsByTokenContext,
   MarketPoolsContext,
   MarketPoolsProvider,
-  MarketPoolsStreamContext,
 } from "../apps/api/src/market-pools.js";
 import type { ShellStatsProvider } from "../apps/api/src/shell-stats.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -71,7 +69,7 @@ class EmptyMarketProvider implements MarketPoolsProvider {
   contexts: MarketPoolsContext[] = [];
   current = emptySnapshot();
 
-  async getByToken(_context: MarketPoolsByTokenContext): Promise<[]> {
+  async getByToken(): Promise<[]> {
     return [];
   }
 
@@ -80,7 +78,7 @@ class EmptyMarketProvider implements MarketPoolsProvider {
     return structuredClone(this.current);
   }
 
-  async *subscribe(_context: MarketPoolsStreamContext): AsyncIterable<MarketStreamEnvelope> {}
+  async *subscribe(): AsyncIterable<MarketStreamEnvelope> {}
 }
 
 class ReplacingMarketProvider extends EmptyMarketProvider {

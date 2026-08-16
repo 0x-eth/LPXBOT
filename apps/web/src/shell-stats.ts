@@ -157,7 +157,10 @@ function validSymbol(value: unknown): value is string | null {
     (typeof value === "string" &&
       value.length >= 1 &&
       value.length <= 64 &&
-      !/[\u0000-\u001f\u007f]/u.test(value))
+      ![...value].some((character) => {
+        const codePoint = character.codePointAt(0)!;
+        return codePoint <= 31 || codePoint === 127;
+      }))
   );
 }
 
