@@ -64,6 +64,12 @@ function headers(token: string) {
 
 describe("P02-05 PostgreSQL address remarks", () => {
   it("migrates the user/chain/address key and keeps successful writes with their audits atomic", async () => {
+    const auditBaseline = await pool.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+         FROM address_remark_audit_events
+        WHERE actor_user_id = $1 AND action = 'address-remark.put' AND outcome = 'allowed'`,
+      [userIds[0]],
+    );
     const columns = await pool.query<{ column_name: string }>(
       `SELECT column_name
          FROM information_schema.columns
@@ -118,7 +124,9 @@ describe("P02-05 PostgreSQL address remarks", () => {
         WHERE actor_user_id = $1 AND action = 'address-remark.put' AND outcome = 'allowed'`,
       [userIds[0]],
     );
-    expect(audits.rows).toEqual([{ count: "2" }]);
+    expect(audits.rows).toEqual([
+      { count: String(Number(auditBaseline.rows[0]?.count ?? "0") + 2) },
+    ]);
     await app.close();
   });
 

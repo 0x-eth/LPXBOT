@@ -52,9 +52,18 @@ CREATE INDEX address_remark_audit_actor_created_idx
 CREATE INDEX address_remark_audit_created_idx
   ON address_remark_audit_events (created_at DESC);
 
+CREATE FUNCTION reject_address_remark_audit_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RAISE EXCEPTION 'address remark audit events are append-only';
+END;
+$$;
+
 CREATE TRIGGER address_remark_audit_append_only
 BEFORE UPDATE OR DELETE ON address_remark_audit_events
-FOR EACH ROW EXECUTE FUNCTION reject_append_only_mutation();
+FOR EACH ROW EXECUTE FUNCTION reject_address_remark_audit_mutation();
 
 COMMENT ON TABLE address_remarks IS
   'User-owned BSC address labels and watch state; labels also contribute anonymous shared votes.';
@@ -65,4 +74,5 @@ COMMENT ON TABLE address_remark_audit_events IS
 
 DROP TRIGGER address_remark_audit_append_only ON address_remark_audit_events;
 DROP TABLE address_remark_audit_events;
+DROP FUNCTION reject_address_remark_audit_mutation();
 DROP TABLE address_remarks;
