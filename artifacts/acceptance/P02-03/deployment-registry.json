@@ -7,6 +7,9 @@
   "runtimeVerificationBlock": "latest",
   "deployments": [
     {
+      "schemaVersion": 1,
+      "deploymentVersion": "1.0.0",
+      "chainId": 56,
       "protocolId": 1,
       "platformId": "univ3",
       "generation": "v3",
@@ -21,6 +24,9 @@
       "evidenceRefs": ["SRC-UNIV3-ABI", "SRC-UNIV3-BSC-DEPLOYMENT", "CHAIN-UNIV3-FACTORY"]
     },
     {
+      "schemaVersion": 1,
+      "deploymentVersion": "1.0.0",
+      "chainId": 56,
       "protocolId": 2,
       "platformId": "pcsv3",
       "generation": "v3",
@@ -35,6 +41,9 @@
       "evidenceRefs": ["SRC-PCSV3-ABI", "SRC-PCSV3-BSC-DEPLOYMENT", "CHAIN-PCSV3-FACTORY"]
     },
     {
+      "schemaVersion": 1,
+      "deploymentVersion": "1.0.0",
+      "chainId": 56,
       "protocolId": 4,
       "platformId": "univ4",
       "generation": "v4",
@@ -49,6 +58,9 @@
       "evidenceRefs": ["SRC-UNIV4-ABI", "SRC-UNIV4-BSC-DEPLOYMENT", "CHAIN-UNIV4-POOL-MANAGER"]
     },
     {
+      "schemaVersion": 1,
+      "deploymentVersion": "1.0.0",
+      "chainId": 56,
       "protocolId": 5,
       "platformId": "pcsv4",
       "generation": "v4",

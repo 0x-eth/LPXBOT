@@ -131,6 +131,29 @@ describe("P02-03 production BSC event decoder", () => {
     }
   });
 
+  it("routes a historical log through the deployment version active at its block", async () => {
+    const raw = readGolden("univ4", "Initialize");
+    const historicalBlock = raw.delivery.log.blockNumber;
+    const deployments = BSC_PROTOCOL_DEPLOYMENTS.flatMap((deployment) =>
+      deployment.platformId === "univ4"
+        ? [
+            { ...deployment, validToBlock: historicalBlock },
+            {
+              ...deployment,
+              deploymentVersion: "1.1.0",
+              validFromBlock: String(BigInt(historicalBlock) + 1n),
+            },
+          ]
+        : [deployment],
+    );
+    const decoder = new ProductionBscEventDecoder({ deployments });
+
+    await expect(decoder.decode(raw.delivery)).resolves.toMatchObject({
+      blockNumber: historicalBlock,
+      protocol: "univ4",
+    });
+  });
+
   it.each([
     ["unknown-topic", { topic: `0x${"12".repeat(32)}` }],
     ["wrong-address", { address: "0x0000000000000000000000000000000000000056" }],

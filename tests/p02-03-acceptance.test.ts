@@ -34,6 +34,8 @@ describe("P02-03 acceptance integrity", () => {
     expect(
       registry.deployments.map((deployment: Record<string, unknown>) => ({
         abiHash: deployment.abiHash,
+        chainId: deployment.chainId,
+        deploymentVersion: deployment.deploymentVersion,
         evidenceRefs: deployment.evidenceRefs,
         factory: deployment.factory,
         generation: deployment.generation,
@@ -41,12 +43,15 @@ describe("P02-03 acceptance integrity", () => {
         poolManager: deployment.poolManager,
         protocolId: deployment.protocolId,
         runtimeCodeHash: deployment.runtimeCodeHash,
+        schemaVersion: deployment.schemaVersion,
         validFromBlock: deployment.validFromBlock,
         validToBlock: deployment.validToBlock,
       })),
     ).toEqual(
       BSC_PROTOCOL_DEPLOYMENTS.map((deployment) => ({
         abiHash: deployment.abiHash,
+        chainId: deployment.chainId,
+        deploymentVersion: deployment.deploymentVersion,
         evidenceRefs: [...deployment.evidenceRefs],
         factory: deployment.factory,
         generation: deployment.generation,
@@ -54,6 +59,7 @@ describe("P02-03 acceptance integrity", () => {
         poolManager: deployment.poolManager,
         protocolId: deployment.protocolId,
         runtimeCodeHash: deployment.runtimeCodeHash,
+        schemaVersion: deployment.schemaVersion,
         validFromBlock: deployment.validFromBlock,
         validToBlock: deployment.validToBlock,
       })),
