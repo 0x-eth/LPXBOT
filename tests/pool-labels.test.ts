@@ -1,4 +1,5 @@
 import type { MarketPoolRow } from "../packages/api-contract/src/index.js";
+import { readFileSync } from "node:fs";
 import {
   POOL_LABEL_RULE_CONTRACT,
   computePoolLabels,
@@ -291,5 +292,28 @@ describe("P02-08 versioned pool label rule contract", () => {
       row(),
     );
     expect(afterSecondReorg).toEqual([]);
+  });
+
+  it("reproduces the frozen local Golden output byte-for-structure", () => {
+    const root = new URL("../artifacts/acceptance/P02-08/", import.meta.url);
+    const input = JSON.parse(readFileSync(new URL("golden/input.json", root), "utf8")) as {
+      canonicalRevision: string;
+      events: MarketMetricEvent[];
+      metricVersion: string;
+      row: MarketPoolRow;
+      windowEnd: string;
+      windowMinutes: 5;
+      windowStart: string;
+    };
+    const expected = JSON.parse(readFileSync(new URL("golden/output.json", root), "utf8"));
+    expect(computePoolLabels({ ...input, ruleContract: POOL_LABEL_RULE_CONTRACT })).toEqual(
+      expected.labels,
+    );
+    expect(expected).toMatchObject({
+      canonicalRevision: input.canonicalRevision,
+      labelRuleVersion: POOL_LABEL_RULE_CONTRACT.ruleVersion,
+      metricVersion: input.metricVersion,
+      windowEnd: input.windowEnd,
+    });
   });
 });

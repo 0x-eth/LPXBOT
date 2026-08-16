@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "1.0.0",
+  "ruleVersion": "pool-labels/local-v1",
+  "evidenceLevel": "locally-defined",
+  "parityStatus": "not-parity-verified",
+  "unresolvedGap": "GAP-LABEL-ALGORITHM",
+  "inputWindow": {
+    "supportedMinutes": [1, 5, 15, 30, 60],
+    "startBoundary": "inclusive",
+    "endBoundary": "exclusive",
+    "canonicalEventsOnly": true,
+    "yieldComparison": "prior-half-vs-current-half",
+    "priceSource": "canonical-sqrtPriceX96-sequence-only",
+    "usdPriceConstruction": "forbidden"
+  },
+  "minimumSamples": {
+    "high-fee-rate": 1,
+    "stable-volume-price": 4,
+    "yield-half": 2,
+    "crowded": 1,
+    "volatile": 3,
+    "lp-direction": 2
+  },
+  "thresholds": {
+    "highFeeRateFeeTvl": "0.01",
+    "stableVolumeDispersionMax": "0.2",
+    "stablePriceChangeMax": "0.002001",
+    "yieldStableAbsoluteChangeMax": "0.1",
+    "yieldSurgeChangeMin": "0.5",
+    "yieldDeclineChangeMax": "-0.3",
+    "crowdedTransactionCountMin": "20",
+    "volatilePriceChangeMin": "0.0201",
+    "lpDirectionDominanceMin": "0.25"
+  },
+  "rules": [
+    {
+      "id": "high-fee-rate",
+      "label": "高费率",
+      "priority": 10,
+      "exclusiveGroup": null
+    },
+    {
+      "id": "yield-surge",
+      "label": "收益飙升",
+      "priority": 20,
+      "exclusiveGroup": "yield-trend"
+    },
+    {
+      "id": "yield-decline",
+      "label": "收益衰退",
+      "priority": 21,
+      "exclusiveGroup": "yield-trend"
+    },
+    {
+      "id": "yield-stable",
+      "label": "收益稳定",
+      "priority": 22,
+      "exclusiveGroup": "yield-trend"
+    },
+    {
+      "id": "stable-volume-price",
+      "label": "量稳价稳",
+      "priority": 30,
+      "exclusiveGroup": null
+    },
+    {
+      "id": "crowded",
+      "label": "拥挤",
+      "priority": 40,
+      "exclusiveGroup": null
+    },
+    {
+      "id": "volatile",
+      "label": "波动",
+      "priority": 50,
+      "exclusiveGroup": null
+    },
+    {
+      "id": "lp-inflow",
+      "label": "LP 流入",
+      "priority": 60,
+      "exclusiveGroup": "lp-direction"
+    },
+    {
+      "id": "lp-outflow",
+      "label": "LP 流出",
+      "priority": 61,
+      "exclusiveGroup": "lp-direction"
+    }
+  ],
+  "scoreRange": {
+    "min": 0,
+    "max": 100,
+    "thresholdScore": 50,
+    "rounding": "floor"
+  },
+  "nullPolicy": "omit-label",
+  "ordering": "priority-ascending-then-id-ascending",
+  "deduplication": "id"
+}

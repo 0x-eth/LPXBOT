@@ -1,0 +1,56 @@
+{
+  "canonicalRevision": "canonical:v1:golden-001",
+  "metricVersion": "market-metrics/v1",
+  "windowEnd": "2026-08-16T01:00:00.000Z",
+  "labelRuleVersion": "pool-labels/local-v1",
+  "labels": [
+    {
+      "id": "high-fee-rate",
+      "label": "高费率",
+      "score": 50,
+      "reasons": [
+        {
+          "code": "FEE_TVL_GTE_THRESHOLD",
+          "window": "5m",
+          "observed": "0.01",
+          "threshold": "0.01",
+          "operator": ">="
+        }
+      ],
+      "ruleVersion": "pool-labels/local-v1",
+      "computedAt": "2026-08-16T01:00:00.000Z"
+    },
+    {
+      "id": "crowded",
+      "label": "拥挤",
+      "score": 50,
+      "reasons": [
+        {
+          "code": "TRANSACTION_COUNT_GTE_THRESHOLD",
+          "window": "5m",
+          "observed": "20",
+          "threshold": "20",
+          "operator": ">="
+        }
+      ],
+      "ruleVersion": "pool-labels/local-v1",
+      "computedAt": "2026-08-16T01:00:00.000Z"
+    },
+    {
+      "id": "lp-inflow",
+      "label": "LP 流入",
+      "score": 50,
+      "reasons": [
+        {
+          "code": "LP_NET_FLOW_GTE_THRESHOLD",
+          "window": "5m",
+          "observed": "0.25",
+          "threshold": "0.25",
+          "operator": ">="
+        }
+      ],
+      "ruleVersion": "pool-labels/local-v1",
+      "computedAt": "2026-08-16T01:00:00.000Z"
+    }
+  ]
+}

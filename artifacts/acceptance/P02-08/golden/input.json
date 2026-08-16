@@ -1,0 +1,65 @@
+{
+  "canonicalRevision": "canonical:v1:golden-001",
+  "metricVersion": "market-metrics/v1",
+  "windowStart": "2026-08-16T00:55:00.000Z",
+  "windowEnd": "2026-08-16T01:00:00.000Z",
+  "windowMinutes": 5,
+  "row": {
+    "activeTvlUsd": null,
+    "chainId": 56,
+    "fdvUsd": null,
+    "feeActiveTvl": null,
+    "feePips": "2500",
+    "feesUsd": "10",
+    "feeTvl": "0.01",
+    "hooks": null,
+    "labelRuleVersion": "pool-labels/local-v1",
+    "labels": [],
+    "poolAddress": "0x1111111111111111111111111111111111111111",
+    "poolId": null,
+    "poolKey": "56:0x1111111111111111111111111111111111111111",
+    "protocol": "pcsv3",
+    "tickSpacing": "50",
+    "token0Address": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "token0Symbol": "WBNB",
+    "token1Address": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "token1Symbol": "USDT",
+    "transactionCount": "20",
+    "tvlUsd": "1000",
+    "volumeUsd": null
+  },
+  "events": [
+    {
+      "blockTimestamp": "2026-08-16T00:55:30.000Z",
+      "chainId": 56,
+      "eventId": "golden-lp-add",
+      "kind": "liquidity.add",
+      "liquidityDelta": "5",
+      "market": {},
+      "pool": {
+        "poolAddress": "0x1111111111111111111111111111111111111111",
+        "poolId": null,
+        "protocol": "pcsv3"
+      },
+      "reverted": false,
+      "sqrtPriceX96": null,
+      "transactionHash": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+      "blockTimestamp": "2026-08-16T00:56:30.000Z",
+      "chainId": 56,
+      "eventId": "golden-lp-remove",
+      "kind": "liquidity.remove",
+      "liquidityDelta": "-3",
+      "market": {},
+      "pool": {
+        "poolAddress": "0x1111111111111111111111111111111111111111",
+        "poolId": null,
+        "protocol": "pcsv3"
+      },
+      "reverted": false,
+      "sqrtPriceX96": null,
+      "transactionHash": "0x0000000000000000000000000000000000000000000000000000000000000002"
+    }
+  ]
+}
