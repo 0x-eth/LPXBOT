@@ -1,0 +1,331 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "monitor-domain/local-v1",
+  "workItemId": "P03-01",
+  "implementationStatus": "planned",
+  "evidenceLevel": "locally-defined",
+  "monitor": {
+    "aggregate": "PoolMonitor",
+    "requiredFields": [
+      "monitorId",
+      "userId",
+      "revision",
+      "name",
+      "poolKey",
+      "windowMinutes",
+      "enabled",
+      "conditions",
+      "createdAt",
+      "updatedAt",
+      "enabledAt",
+      "disabledAt"
+    ],
+    "monitorId": {
+      "type": "UUID",
+      "authority": "server-generated",
+      "immutable": true,
+      "opaqueToClients": true
+    },
+    "userId": {
+      "type": "internal-user-id",
+      "authority": "authenticated-session",
+      "mutable": false,
+      "clientSupplied": false,
+      "crossOwnerResult": "not-found"
+    },
+    "revision": {
+      "type": "positive-safe-integer",
+      "initial": 1,
+      "increment": "each-effective-mutation",
+      "noOp": "does-not-increment",
+      "concurrency": "compare-expectedRevision"
+    },
+    "name": {
+      "type": "string",
+      "minimumCodePoints": 1,
+      "maximumCodePoints": 120,
+      "normalization": "Unicode-NFC-trimmed"
+    },
+    "poolKey": {
+      "source": "P02 stable poolKey",
+      "immutableAfterCreate": true,
+      "symbolAccepted": false
+    },
+    "windowMinutes": {
+      "allowed": [1, 5, 15, 30, 60],
+      "immutableWhileEnabled": true
+    },
+    "lifecycle": {
+      "states": ["disabled", "enabled"],
+      "initial": "disabled",
+      "enabledProjection": "state == enabled",
+      "transitions": [
+        { "from": "disabled", "command": "enable", "to": "enabled" },
+        { "from": "enabled", "command": "disable", "to": "disabled" }
+      ],
+      "idempotentSameState": "no-op",
+      "enablePreconditions": [
+        "owned-by-current-user",
+        "at-least-one-enabled-condition",
+        "no-unresolved-condition",
+        "P02-11-pool-eligible"
+      ]
+    },
+    "timeFields": {
+      "createdAt": {
+        "type": "RFC3339 UTC",
+        "authority": "server",
+        "immutable": true
+      },
+      "updatedAt": {
+        "type": "RFC3339 UTC",
+        "authority": "server",
+        "changesWithRevision": true
+      },
+      "enabledAt": {
+        "type": ["RFC3339 UTC", "null"],
+        "authority": "server",
+        "meaning": "most recent effective enable transition"
+      },
+      "disabledAt": {
+        "type": ["RFC3339 UTC", "null"],
+        "authority": "server",
+        "meaning": "most recent effective disable transition"
+      }
+    }
+  },
+  "conditions": {
+    "combination": "AND",
+    "evaluationOrder": "configuration-order-with-short-circuit",
+    "disabledConditions": "excluded-from-conjunction",
+    "zeroEnabledConditions": "invalid-monitor-no-match",
+    "maximumConditions": 16,
+    "decimalEncoding": "finite canonical base-10 string",
+    "metricConditions": [
+      {
+        "id": "volumeUsd",
+        "label": "Volume",
+        "valueType": "decimal-string",
+        "operators": ["gte", "lte"],
+        "unit": "USD",
+        "status": "frozen"
+      },
+      {
+        "id": "feesUsd",
+        "label": "Fee",
+        "valueType": "decimal-string",
+        "operators": ["gte", "lte"],
+        "unit": "USD",
+        "status": "frozen"
+      },
+      {
+        "id": "feeTvlRatio",
+        "label": "Fee/TVL",
+        "valueType": "decimal-string",
+        "operators": ["gte", "lte"],
+        "unit": "ratio",
+        "status": "frozen",
+        "formulaAuthority": "P02 metric version"
+      },
+      {
+        "id": "tvlUsd",
+        "label": "TVL",
+        "valueType": "decimal-string",
+        "operators": ["gte", "lte"],
+        "unit": "USD",
+        "status": "frozen"
+      },
+      {
+        "id": "transactionCount",
+        "label": "Transactions",
+        "valueType": "non-negative-safe-integer",
+        "operators": ["gte", "lte"],
+        "unit": "count",
+        "status": "frozen"
+      },
+      {
+        "id": "metricVersion",
+        "label": "Metric version",
+        "valueType": "non-empty-string",
+        "operators": ["eq"],
+        "unit": "version",
+        "status": "frozen"
+      }
+    ],
+    "unresolved": [
+      {
+        "id": "activeTvlUsd",
+        "label": "active TVL",
+        "status": "unresolved",
+        "configurable": false,
+        "matchable": false,
+        "gapId": "GAP-P03-ACTIVE-TVL"
+      },
+      {
+        "id": "feeAtvlRatio",
+        "label": "Fee/aTVL",
+        "status": "unresolved",
+        "configurable": false,
+        "matchable": false,
+        "gapId": "GAP-P03-FEE-ATVL"
+      }
+    ],
+    "poolFilters": {
+      "excludeHanToken": {
+        "requiredWhenEnabled": true,
+        "source": "canonical token display names and symbols",
+        "unknownMetadata": "no-match"
+      },
+      "excludeHook": {
+        "requiredWhenEnabled": true,
+        "source": "canonical pool hook classification",
+        "unknownClassification": "no-match"
+      }
+    }
+  },
+  "evaluationInput": {
+    "requiredFields": ["poolKey", "windowEnd", "generatedAt", "metricVersion"],
+    "poolKey": {
+      "stability": "P02-stable-poolKey",
+      "normalization": "exact canonical bytes"
+    },
+    "windowEnd": {
+      "type": "RFC3339 UTC",
+      "semantics": "exclusive end of the P02 [start,end) metric window"
+    },
+    "generatedAt": {
+      "type": "RFC3339 UTC",
+      "semantics": "server time at which this exact metric generation became ready"
+    },
+    "metricVersion": {
+      "type": "non-empty-string",
+      "semantics": "exact arithmetic and source contract version"
+    },
+    "additionalFields": [
+      "windowStart",
+      "sourceGenerationId",
+      "replacesGenerationId",
+      "canonicalBlockHash",
+      "ready",
+      "partial",
+      "metrics",
+      "token0Address",
+      "token1Address",
+      "hasHanToken",
+      "hasHook",
+      "blocklistHash"
+    ],
+    "identityBinding": "poolKey + windowEnd + generatedAt + metricVersion are copied byte-for-byte into candidate evidence"
+  },
+  "freshness": {
+    "clock": "server-UTC",
+    "evaluatedAtAuthority": "server",
+    "maxAgeSeconds": 120,
+    "ageFormula": "evaluatedAt - generatedAt",
+    "boundary": "age <= maxAgeSeconds",
+    "futureGeneratedAt": "no-match",
+    "windowEndAfterGeneratedAt": "no-match",
+    "metricVersionMismatch": "no-match",
+    "clockFailure": "no-match"
+  },
+  "failClosedMetricStates": [
+    "missing",
+    "null",
+    "non-finite",
+    "not-ready",
+    "partial-required-metric",
+    "stale"
+  ],
+  "eligibility": {
+    "order": [
+      "authenticate-owner",
+      "monitor-enabled",
+      "input-identity-and-version",
+      "freshness-and-readiness",
+      "P02-11-blocklist",
+      "Han-and-Hook-filters",
+      "conditions-AND"
+    ],
+    "failureResult": "no-match-with-reason",
+    "blocklist": {
+      "authority": "server",
+      "source": "artifacts/acceptance/P02-11/blocklist-action-contract.json",
+      "snapshotScope": "current user",
+      "blockedWhen": [
+        "poolKey-blocked",
+        "token0Address-blocked",
+        "token1Address-blocked"
+      ],
+      "symbolMatching": false,
+      "missingOrUnreadySnapshot": "no-match",
+      "bindingEvidence": "blocklistHash"
+    }
+  },
+  "evaluator": {
+    "kind": "deterministic-pure-function",
+    "networkIo": "forbidden",
+    "clockIo": "forbidden-evaluatedAt-is-input",
+    "storageIo": "forbidden",
+    "effects": [],
+    "output": ["no-match", "candidate"],
+    "candidatePersistence": "caller-owned",
+    "delivery": "out-of-scope-for-evaluator"
+  },
+  "ordering": {
+    "partitionKey": ["monitorId", "poolKey", "metricVersion"],
+    "logicalOrder": ["windowEnd:asc", "generatedAt:asc", "sourceGenerationId:byte-asc"],
+    "duplicateInput": "same logical candidate evaluated idempotently",
+    "outOfOrderInput": "buffer-or-sort-before-advancing-high-watermark",
+    "olderThanHighWatermark": "evaluate-only-if-candidate-key-has-no-terminal-record"
+  },
+  "candidate": {
+    "requiredFields": [
+      "candidateKey",
+      "monitorId",
+      "userId",
+      "monitorRevision",
+      "poolKey",
+      "windowEnd",
+      "generatedAt",
+      "metricVersion",
+      "sourceGenerationId",
+      "blocklistHash",
+      "matchedConditions",
+      "createdAt"
+    ],
+    "candidateKey": {
+      "algorithm": "SHA-256",
+      "encoding": "lowercase hexadecimal",
+      "canonicalInput": "monitor-candidate/v1\\n{monitorId}\\n{revision}\\n{poolKey}\\n{windowEnd}\\n{metricVersion}",
+      "normalization": {
+        "revision": "canonical unsigned decimal",
+        "poolKey": "P02 canonical form",
+        "windowEnd": "RFC3339 UTC with Z",
+        "metricVersion": "exact case-sensitive bytes"
+      }
+    },
+    "generatedAt": {
+      "binding": "evidence-field-not-key-field",
+      "reason": "a canonical reorg replacement for the same logical window must retain the candidate key"
+    },
+    "duplicateResult": "same-candidate-key",
+    "reorgReplacement": {
+      "sameLogicalWindow": "same-candidate-key",
+      "pendingOrRetryWait": "atomically-replace-evidence-with-newer-canonical-generation",
+      "leased": "replacement-visible-after-lease-expiry-or-token-guarded-completion",
+      "deliveredOrDead": "record-suppression-and-never-create-second-notification",
+      "olderReplacement": "ignore"
+    }
+  },
+  "unresolvedRefs": [
+    "GAP-P03-ACTIVE-TVL",
+    "GAP-P03-FEE-ATVL",
+    "GAP-P03-TARGET-MONITOR-PARITY"
+  ],
+  "boundaries": {
+    "runtimeCode": false,
+    "databaseMigration": false,
+    "worker": false,
+    "networkIo": false
+  }
+}
