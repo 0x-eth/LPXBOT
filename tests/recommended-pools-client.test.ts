@@ -114,7 +114,9 @@ describe("P02-09 recommended pool client state", () => {
       ...event,
       cursor: `rec-pools:v2:bsc:3:${blocklistHash.slice("sha256:".length)}:${Buffer.from(
         event.sourceVersion,
-      ).toString("base64url")}:${Buffer.from(event.sourceWindowEnd).toString("base64url")}:${event.selectionHash.slice("sha256:".length)}`,
+      ).toString(
+        "base64url",
+      )}:${Buffer.from(event.sourceWindowEnd).toString("base64url")}:${event.selectionHash.slice("sha256:".length)}`,
     };
 
     expect(parseShellStatsEvent(v2)).toEqual(v2);
