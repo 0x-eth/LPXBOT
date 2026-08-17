@@ -4,6 +4,8 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 const userId = "12000000-0000-4000-8000-000000000301";
 const poolKey = `56:0x${"1".repeat(40)}`;
 const secondPoolKey = `56:0x${"2".repeat(40)}`;
+const thirdPoolKey = `56:0x${"3".repeat(64)}`;
+const fourthPoolKey = `56:0x${"4".repeat(64)}`;
 
 function attribution(overrides: Record<string, unknown> = {}) {
   return {
@@ -187,6 +189,87 @@ test("POOL-15 shows personal creation history on desktop and mobile with focus r
   await expect(trigger).toBeFocused();
 });
 
+test("POOL-15 exposes history loading, empty, error and stable pagination states", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "Operational states run once.");
+  await installBase(page, "user");
+  let firstRoute: Route | null = null;
+  let calls = 0;
+  await page.route("**/api/pools/create-history?**", async (route) => {
+    calls += 1;
+    if (calls === 1) {
+      firstRoute = route;
+      return;
+    }
+    if (calls === 2) {
+      await route.fulfill({
+        contentType: "application/json",
+        json: {
+          error: { code: "POOL_PROVENANCE_UNAVAILABLE", retryable: true },
+          requestId: "history-error",
+          success: false,
+        },
+        status: 503,
+      });
+      return;
+    }
+    if (calls === 3) {
+      expect(new URL(route.request().url()).searchParams.get("cursor")).toBeNull();
+      await route.fulfill({
+        contentType: "application/json",
+        json: {
+          data: { items: [attribution()], nextCursor: "history-page-2" },
+          requestId: "history-first-page",
+          success: true,
+        },
+      });
+      return;
+    }
+    expect(new URL(route.request().url()).searchParams.get("cursor")).toBe("history-page-2");
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        data: {
+          items: [
+            attribution({
+              completedAt: "2026-08-17T09:00:00.000Z",
+              operationId: "12000000-0000-4000-8000-000000000002",
+              poolKey: secondPoolKey,
+              protocol: "univ3",
+            }),
+          ],
+          nextCursor: null,
+        },
+        requestId: "history-second-page",
+        success: true,
+      },
+    });
+  });
+  await page.goto("/pools?fixture=pools-ready");
+
+  const trigger = page.getByRole("button", { name: "创建历史" });
+  await trigger.click();
+  let dialog = page.getByRole("dialog", { name: "创建历史" });
+  await expect(dialog.getByText("正在加载创建历史")).toBeVisible();
+  await expect.poll(() => firstRoute !== null).toBe(true);
+  await firstRoute!.fulfill({
+    contentType: "application/json",
+    json: { data: { items: [], nextCursor: null }, requestId: "history-empty", success: true },
+  });
+  await expect(dialog.getByText("还没有平台创建记录")).toBeVisible();
+  await dialog.getByRole("button", { name: "关闭创建历史" }).click();
+
+  await trigger.click();
+  dialog = page.getByRole("dialog", { name: "创建历史" });
+  await expect(dialog.getByRole("alert")).toContainText("创建历史加载失败");
+  await dialog.getByRole("button", { name: "重试创建历史" }).click();
+  await expect(dialog.getByText("PancakeSwap V3")).toBeVisible();
+  await dialog.getByRole("button", { name: "加载更多创建历史" }).click();
+  await expect(dialog.getByText("Uniswap V3")).toBeVisible();
+  expect(calls).toBe(4);
+});
+
 test("POOL-15 batches visible admin rows once and ordinary users render no creator entry", async ({
   page,
 }, testInfo) => {
@@ -249,6 +332,107 @@ test("POOL-15 batches visible admin rows once and ordinary users render no creat
   await expect(ordinary.getByRole("button", { name: /查看池子创建者/u })).toHaveCount(0);
   expect(ordinaryAdminCalls).toBe(0);
   await ordinary.close();
+});
+
+test("POOL-15 renders null, partial, deleted-user, malformed and batch-error admin states", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "Admin operational states run once.");
+  await installBase(page, "admin");
+  await page.route("**/api/pools/create-history?**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      json: { data: { items: [], nextCursor: null }, requestId: "history-empty", success: true },
+    }),
+  );
+  let calls = 0;
+  await page.route("**/api/admin/pool-creators", async (route) => {
+    calls += 1;
+    if (calls === 3) {
+      await route.fulfill({
+        contentType: "application/json",
+        json: {
+          error: { code: "POOL_PROVENANCE_UNAVAILABLE", retryable: true },
+          requestId: "batch-error",
+          success: false,
+        },
+        status: 503,
+      });
+      return;
+    }
+    const body = route.request().postDataJSON() as { poolKeys: string[] };
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        data: {
+          results: body.poolKeys.map((identity) => {
+            if (identity === poolKey) return { creator: null, identity };
+            if (identity === secondPoolKey) {
+              return {
+                creator: {
+                  ...attribution({ poolKey: secondPoolKey, protocol: "univ3" }),
+                  creatorProfile: null,
+                },
+                identity,
+              };
+            }
+            if (identity === thirdPoolKey) {
+              return {
+                creator: attribution({ outcome: "invented", poolKey: thirdPoolKey, protocol: "pcsv4" }),
+                identity,
+              };
+            }
+            return {
+              creator: attribution({
+                creatorAddress: null,
+                outcome: "already_exists",
+                poolKey: fourthPoolKey,
+                protocol: "univ4",
+                txHash: null,
+              }),
+              identity,
+            };
+          }),
+        },
+        requestId: `batch-partial-${calls}`,
+        success: true,
+      },
+    });
+  });
+  await page.goto("/pools?fixture=pools-ready");
+  await expect.poll(() => calls).toBe(1);
+  await expect(page.getByText("部分创建记录不可用")).toBeVisible();
+
+  await page.getByRole("button", { name: `查看池子创建者 0x${"1".repeat(40)}` }).click();
+  let dialog = page.getByRole("dialog", { name: "池子创建者" });
+  await expect(dialog).toContainText("非本平台创建，或创建于本功能上线前");
+  await dialog.getByRole("button", { name: "关闭池子创建者" }).click();
+
+  await page.getByRole("button", { name: `查看池子创建者 0x${"3".repeat(64)}` }).click();
+  dialog = page.getByRole("dialog", { name: "池子创建者" });
+  await expect(dialog).toContainText("创建记录格式异常");
+  await dialog.getByRole("button", { name: "关闭池子创建者" }).click();
+
+  await page.getByRole("button", { name: `查看池子创建者 0x${"4".repeat(64)}` }).click();
+  dialog = page.getByRole("dialog", { name: "池子创建者" });
+  await expect(dialog).toContainText("创建时池子已存在，可能非本平台首创");
+  await dialog.getByRole("button", { name: "关闭池子创建者" }).click();
+
+  await page.getByRole("button", { name: /展开池分组/u }).click();
+  await expect.poll(() => calls).toBe(2);
+  await page.getByRole("button", { name: `查看池子创建者 0x${"2".repeat(40)}` }).click();
+  dialog = page.getByRole("dialog", { name: "池子创建者" });
+  await expect(dialog).toContainText("用户已删除");
+  await expect(dialog).toContainText(userId);
+  await dialog.getByRole("button", { name: "关闭池子创建者" }).click();
+
+  await page.getByRole("button", { name: "展开高级筛选" }).click();
+  await page.getByRole("checkbox", { name: "V4" }).uncheck();
+  await page.getByRole("button", { name: "应用筛选" }).click();
+  await expect.poll(() => calls).toBe(3);
+  await page.getByRole("button", { name: `查看池子创建者 0x${"1".repeat(40)}` }).click();
+  dialog = page.getByRole("dialog", { name: "池子创建者" });
+  await expect(dialog.getByRole("alert")).toContainText("创建归属加载失败");
 });
 
 test("POOL-15 cancels filtered admin batches and ignores their late response", async ({
