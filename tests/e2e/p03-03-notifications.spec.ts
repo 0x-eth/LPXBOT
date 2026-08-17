@@ -259,7 +259,12 @@ async function notificationRoute(route: Route, state: NotificationRouteState): P
   }
   if (request.method() === "PATCH") {
     const body = request.postDataJSON() as {
-      changes: Partial<Pick<DestinationFixture, "enabled" | "name">>;
+      changes: {
+        categories?: NotificationCategory[];
+        config?: Record<string, unknown>;
+        enabled?: boolean;
+        name?: string;
+      };
       expectedRevision: number;
     };
     if (state.conflictNext || body.expectedRevision !== destination.revision) {
@@ -272,7 +277,25 @@ async function notificationRoute(route: Route, state: NotificationRouteState): P
       });
       return;
     }
-    Object.assign(destination, body.changes, { revision: destination.revision + 1 });
+    if (body.changes.categories) destination.categories = body.changes.categories;
+    if (body.changes.enabled !== undefined) destination.enabled = body.changes.enabled;
+    if (body.changes.name !== undefined) destination.name = body.changes.name;
+    if (body.changes.config) {
+      destination.config = {
+        ...destination.config,
+        ...Object.fromEntries(
+          Object.entries(body.changes.config).filter(
+            ([key]) => key !== "botToken" && key !== "signingSecret",
+          ),
+        ),
+        secretConfigured:
+          destination.config.secretConfigured ||
+          Object.hasOwn(body.changes.config, "botToken") ||
+          Object.hasOwn(body.changes.config, "signingSecret"),
+        secretRef: destination.config.secretRef,
+      } as DestinationFixture["config"];
+    }
+    destination.revision += 1;
     state.destinationWrites += 1;
     await route.fulfill({ contentType: "application/json", json: envelope(destination) });
     return;
