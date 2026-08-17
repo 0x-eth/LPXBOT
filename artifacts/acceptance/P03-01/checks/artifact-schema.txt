@@ -1,1 +1,11 @@
-PENDING: populated after manifest and fixture schema checks pass.
+P03-01 artifact schema checks
+
+Result: passed
+
+- artifact-manifest.json validates against schemas/p03-reference-artifacts.schema.json.
+- The schema fixes workItemId P03-01, phase P03, risk R0, the requested baseline,
+  reference-only scope, empty featureIds, check results, reference records, and
+  SHA-256 file inventory records.
+- All 6 fixture records have a versioned p03-fixture://.../v1 schemaId.
+- Every fixture is valid JSON with schemaVersion 1, fixtureOnly true,
+  networkAccess false, input, expected, byte count, and SHA-256 digest.

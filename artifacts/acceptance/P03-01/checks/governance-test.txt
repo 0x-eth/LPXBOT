@@ -1,1 +1,15 @@
-PENDING: populated after the focused P03-01 governance suite passes.
+P03-01 focused governance checks
+
+Runtime: Node.js v22.23.1, pnpm 11.17.0
+
+Command: node --test tests/governance/p03-reference.test.mjs
+Result: passed
+Tests: 13 passed, 0 failed
+
+Command: pnpm check:p03-reference
+Result: passed
+Summary: 0 implemented-assumed, 8 planned, 6 offline fixtures
+
+The checks cover required artifacts, JSON Schema validation, API/domain/delivery/
+security/UI contracts, fixture truth tables, candidate and HMAC known-answer
+vectors, baseline references, P00-P02 byte integrity, and P03 checksum coverage.

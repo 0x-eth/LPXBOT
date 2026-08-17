@@ -1,1 +1,14 @@
-PENDING: populated after Gitleaks and the dependency audit pass.
+P03-01 security gates
+
+Result: passed
+
+- Gitleaks 8.30.1 full-history Git scan: no leaks found.
+- pnpm audit:dependencies: passed with no reported advisories.
+
+The generic-api-key scanner initially classified four deterministic candidateKey
+SHA-256 fixture values as possible credentials. The repository rule now allows
+only a 64-character lowercase hexadecimal secret capture in exactly
+evaluation-cases.json or reorg-replacement.json under P03-01 fixtures. A second
+full-history scan passed. No credential, provider token, destination secret, real
+Telegram request, Webhook request, DNS lookup, or external network delivery was
+used by P03-01 fixtures.

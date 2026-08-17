@@ -1,1 +1,12 @@
-PENDING: populated after every baseline P00-P02 acceptance file is verified byte-for-byte.
+P03-01 prior acceptance integrity
+
+Baseline: 059d1b56e50a877ec0391a9188eae55dff1c6354
+Result: passed
+Frozen files: 397
+Algorithm: SHA-256
+Inventory: prior-acceptance-sha256s.txt
+
+The governance test derives the exhaustive P00-P02 acceptance path set from the
+baseline Git tree, compares it with the frozen inventory, hashes each current
+file, and independently hashes the corresponding baseline blob. All path sets
+and digests match byte-for-byte. No P00, P01, or P02 acceptance artifact changed.

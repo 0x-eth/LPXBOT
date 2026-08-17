@@ -37,15 +37,15 @@
     },
     {
       "path": "checks/artifact-schema.txt",
-      "bytes": 66,
-      "sha256": "4deca3c47573758dd34cadd997a74161d4e4e0140dd7e8d2e3fbcac65dc0b890",
+      "bytes": 545,
+      "sha256": "1de65fbc8d671d869251b621d54c5f446967e0ade565f2321b01fb4c5c21aad6",
       "mediaType": "text/plain",
       "category": "check"
     },
     {
       "path": "checks/governance-test.txt",
-      "bytes": 69,
-      "sha256": "3e62098f33bbf839c7937d9c8ad6b19b395bd00663ae94d03e3a36f3286519f0",
+      "bytes": 531,
+      "sha256": "3fd945279037bd9aeb638392744dabd6a7ba6653ea5c37e9f388e8bb8e5c5c9d",
       "mediaType": "text/plain",
       "category": "check"
     },
@@ -58,22 +58,22 @@
     },
     {
       "path": "checks/prior-acceptance-integrity.txt",
-      "bytes": 91,
-      "sha256": "e1a9b648fe5eeee98281e73a27c0aed28bcf3bf3e20a6db58eefee1869f69e75",
+      "bytes": 497,
+      "sha256": "8f58a51fcd67d37ff30df6d83f237940ed9a08f69780018b6b539a88ba282d3d",
       "mediaType": "text/plain",
       "category": "check"
     },
     {
       "path": "checks/quality-gates.txt",
-      "bytes": 83,
-      "sha256": "83d3d67f5b698c531616bed6e45c9cb8bc49357afe26b6cd85e458d14cc97afc",
+      "bytes": 652,
+      "sha256": "26137fe64b59fc8c598f4ea264daab0df2acac26c93b9653221ffaed2ecbcfa3",
       "mediaType": "text/plain",
       "category": "check"
     },
     {
       "path": "checks/security-audit.txt",
-      "bytes": 65,
-      "sha256": "85ef0d7925a7bb25912e79b7cec885de40ce04b76e83d26b392d3433a1b8076e",
+      "bytes": 655,
+      "sha256": "dfd418b19c06ae037fbcaf4dd5cc655c6f8a4a3084f4074bb28ff8f3eb19e702",
       "mediaType": "text/plain",
       "category": "check"
     },
