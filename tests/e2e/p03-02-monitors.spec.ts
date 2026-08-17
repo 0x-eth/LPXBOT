@@ -323,8 +323,14 @@ test("MON-01 creates a disabled BSC monitor from loading and empty states", asyn
   await page.getByRole("button", { name: "新建监控" }).click();
   const editor = page.getByRole("dialog", { name: "新建监控" });
   await expect(editor.getByLabel("监控名称")).toBeFocused();
-  await expect(editor.getByRole("option", { name: "active TVL（不可用）" })).toBeDisabled();
-  await expect(editor.getByRole("option", { name: "Fee/aTVL（不可用）" })).toBeDisabled();
+  await expect(editor.getByRole("option", { name: "active TVL（不可用）" })).toHaveAttribute(
+    "disabled",
+    "",
+  );
+  await expect(editor.getByRole("option", { name: "Fee/aTVL（不可用）" })).toHaveAttribute(
+    "disabled",
+    "",
+  );
   await editor.getByLabel("监控名称").fill("BSC 成交量");
   await editor.getByLabel("Pool Key").fill(poolKey);
   await editor.getByLabel("阈值 1").fill("1000.25");

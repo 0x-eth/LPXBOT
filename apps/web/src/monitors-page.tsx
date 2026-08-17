@@ -505,7 +505,7 @@ export function MonitorsPage() {
         pageRef.current = next;
         setPage(next);
         setLoadState("ready");
-      } catch (error) {
+      } catch {
         if (signal?.aborted) return;
         setLoadState(pageRef.current ? "stale" : "error");
       }
