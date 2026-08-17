@@ -6,6 +6,7 @@ import type { Pool, PoolClient } from "pg";
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const telegramUserIdPattern = /^[1-9][0-9]{0,18}$/u;
 const maximumPostgresBigint = 9_223_372_036_854_775_807n;
+export const shellStatsHeartbeatMilliseconds = 25_000;
 
 export interface AuthoritativeTaskStatusStatsInput {
   observedAt: string;
@@ -523,7 +524,7 @@ export class PostgresShellStatsProvider implements ShellStatsProvider {
 
   constructor(pool: Pool, options: PostgresShellStatsProviderOptions = {}) {
     this.#pool = pool;
-    this.#heartbeatMilliseconds = options.heartbeatMilliseconds ?? 25_000;
+    this.#heartbeatMilliseconds = options.heartbeatMilliseconds ?? shellStatsHeartbeatMilliseconds;
     this.#now = options.now ?? (() => new Date());
     this.#pollMilliseconds = options.pollMilliseconds ?? 500;
     if (

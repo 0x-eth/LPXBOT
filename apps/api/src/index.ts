@@ -125,6 +125,7 @@ export {
   canonicalTaskStatusStatsInput,
   PostgresShellStatsProvider,
   PostgresTaskStatusStatsPublisher,
+  shellStatsHeartbeatMilliseconds,
   ShellStatsUnavailableError,
   TaskStatusStatsValidationError,
 } from "./shell-stats.js";

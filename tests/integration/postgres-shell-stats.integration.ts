@@ -73,8 +73,19 @@ describe("P02-13 PostgreSQL task status projection", () => {
     await expect(provider.getSnapshot({ scope: userScope(users[0]) })).rejects.toBeInstanceOf(
       ShellStatsUnavailableError,
     );
+    await publisher.publish({
+      observedAt,
+      paused: 2,
+      running: 3,
+      sourceRevision: 1,
+      stopped: 4,
+      userId: users[0],
+    });
+    await expect(provider.getSnapshot({ scope: userScope(users[0]) })).rejects.toBeInstanceOf(
+      ShellStatsUnavailableError,
+    );
     await publisher.completeBackfill({ observedAt });
-    expect(await provider.getSnapshot({ scope: userScope(users[0]) })).toMatchObject({
+    expect(await provider.getSnapshot({ scope: userScope(users[1]) })).toMatchObject({
       sequence: 0,
       stats: {
         fps: null,
@@ -91,11 +102,11 @@ describe("P02-13 PostgreSQL task status projection", () => {
       running: 0,
       sourceRevision: 1,
       stopped: 0,
-      userId: users[0],
+      userId: users[1],
     });
     const stored = await pool.query<{ source_revision: string }>(
       "SELECT source_revision::text FROM task_status_stats_user_snapshots WHERE user_id = $1",
-      [users[0]],
+      [users[1]],
     );
     expect(stored.rows).toEqual([{ source_revision: "1" }]);
   });
@@ -279,5 +290,18 @@ describe("P02-13 PostgreSQL task status projection", () => {
     const after = await provider.getSnapshot({ scope: globalScope });
     expect(after.sequence).toBeGreaterThan(before.sequence);
     expect(after.stats.taskCounts).toEqual({ paused: 0, running: 0, stopped: 0 });
+  });
+
+  it("fails closed when a persisted content hash is inconsistent", async () => {
+    const publisher = new PostgresTaskStatusStatsPublisher(pool);
+    const provider = new PostgresShellStatsProvider(pool);
+    await publisher.completeBackfill({ observedAt });
+    await pool.query(
+      "UPDATE task_status_stats_stream_heads SET content_hash = $1 WHERE scope_key = 'global'",
+      [`sha256:${"0".repeat(64)}`],
+    );
+    await expect(provider.getSnapshot({ scope: globalScope })).rejects.toBeInstanceOf(
+      ShellStatsUnavailableError,
+    );
   });
 });

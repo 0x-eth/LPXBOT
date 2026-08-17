@@ -3382,8 +3382,8 @@ html[data-theme="dark"] .pool-provenance-warning {
 
 .status-task-count {
   display: inline-grid;
-  width: 58px;
-  grid-template-columns: auto minmax(24px, 1fr);
+  width: 76px;
+  grid-template-columns: auto minmax(40px, 1fr);
   align-items: center;
   gap: 4px;
 }

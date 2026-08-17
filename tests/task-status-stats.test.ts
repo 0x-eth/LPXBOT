@@ -1,5 +1,6 @@
 import {
   canonicalTaskStatusStatsInput,
+  shellStatsHeartbeatMilliseconds,
   TaskStatusStatsValidationError,
   type AuthoritativeTaskStatusStatsInput,
 } from "../apps/api/src/shell-stats.js";
@@ -16,6 +17,7 @@ const validInput: AuthoritativeTaskStatusStatsInput = {
 
 describe("P02-13 authoritative task status statistics contract", () => {
   it("accepts absolute non-negative safe counts and derives total exactly once", () => {
+    expect(shellStatsHeartbeatMilliseconds).toBe(25_000);
     expect(canonicalTaskStatusStatsInput(validInput)).toEqual({
       ...validInput,
       total: 10,
