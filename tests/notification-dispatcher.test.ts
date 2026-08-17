@@ -194,6 +194,112 @@ describe("P03-04 notification Dispatcher", () => {
     expect(item.attemptCount).toBe(0);
   });
 
+  it("never starts provider I/O after the claimed lease budget is exhausted", async () => {
+    const item = delivery();
+    const outbox = new FixtureOutbox([item]);
+    let adapterCalls = 0;
+    const dispatcher = new NotificationDispatcher({
+      adapters: {
+        telegram: { deliver: async () => ({ status: "delivered" as const }) },
+        webhook: {
+          async deliver() {
+            adapterCalls += 1;
+            return { status: "delivered" as const };
+          },
+        },
+      },
+      destinations: { resolve: async () => readyDestination(item) },
+      leaseOwner: "dispatcher-fixture-expired",
+      now: () => new Date("2026-08-18T00:01:00.000Z"),
+      outbox,
+      secrets: { read: async () => "fixture" },
+    });
+
+    await expect(dispatcher.dispatchBatch()).resolves.toEqual({
+      claimed: 1,
+      delivered: 0,
+      failed: 0,
+      late: 1,
+      retrying: 0,
+    });
+    expect(adapterCalls).toBe(0);
+    expect(outbox.calls.map(({ method }) => method)).toEqual(["peekDue", "claimDue"]);
+  });
+
+  it.each([
+    ["missing-ref", "SECRET_REF_MISSING", null],
+    ["missing-value", "SECRET_NOT_FOUND", "missing"],
+    ["store-error", "SECRET_STORE_UNAVAILABLE", "throws"],
+  ] as const)("fails closed for %s secret state", async (_caseName, errorCode, secretState) => {
+    const item = delivery();
+    const outbox = new FixtureOutbox([item]);
+    let adapterCalls = 0;
+    const dispatcher = new NotificationDispatcher({
+      adapters: {
+        telegram: { deliver: async () => ({ status: "delivered" as const }) },
+        webhook: {
+          async deliver() {
+            adapterCalls += 1;
+            return { status: "delivered" as const };
+          },
+        },
+      },
+      destinations: {
+        resolve: async () =>
+          readyDestination(
+            item,
+            secretState === null
+              ? {
+                  config: {
+                    method: "POST",
+                    secretRef: null,
+                    template: {},
+                    url: "https://hooks.fixture.example/event",
+                  },
+                }
+              : {},
+          ),
+      },
+      leaseOwner: "dispatcher-fixture-secret",
+      now: () => new Date("2026-08-18T00:00:00.000Z"),
+      outbox,
+      secrets: {
+        async read() {
+          if (secretState === "throws") throw new Error("fixture store unavailable");
+          return null;
+        },
+      },
+    });
+
+    await expect(dispatcher.dispatchBatch()).resolves.toMatchObject(
+      errorCode === "SECRET_STORE_UNAVAILABLE" ? { retrying: 1 } : { failed: 1 },
+    );
+    expect(adapterCalls).toBe(0);
+    expect(outbox.calls.at(-1)).toMatchObject({ input: { errorCode } });
+  });
+
+  it("enforces the configured batch cap at claim", async () => {
+    const first = delivery({ deliveryId: "delivery-1" });
+    const second = delivery({ deliveryId: "delivery-2" });
+    const outbox = new FixtureOutbox([first, second]);
+    const dispatcher = new NotificationDispatcher({
+      adapters: {
+        telegram: { deliver: async () => ({ status: "delivered" as const }) },
+        webhook: { deliver: async () => ({ status: "delivered" as const }) },
+      },
+      batchLimit: 1,
+      destinations: { resolve: async (item) => readyDestination(item) },
+      leaseOwner: "dispatcher-fixture-batch",
+      now: () => new Date("2026-08-18T00:00:00.000Z"),
+      outbox,
+      secrets: { read: async () => "fixture" },
+    });
+    await expect(dispatcher.dispatchBatch()).resolves.toMatchObject({ claimed: 1, delivered: 1 });
+    expect(outbox.calls.find(({ method }) => method === "claimDue")).toMatchObject({
+      input: { limit: 1 },
+    });
+  });
+
   it.each([
     ["not-found", "DESTINATION_NOT_FOUND"],
     ["disabled", "DESTINATION_DISABLED"],
