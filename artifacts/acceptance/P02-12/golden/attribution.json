@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "earliest-created",
+      "poolKey": "56:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "attempts": [
+        {
+          "operationId": "12000000-0000-4000-8000-000000000001",
+          "userId": "12000000-0000-4000-8000-000000000101",
+          "chainId": 56,
+          "poolKey": "56:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "protocol": "pcsv3",
+          "creatorAddress": null,
+          "feePips": "2500",
+          "txHash": null,
+          "outcome": "already_exists",
+          "completedAt": "2026-08-17T08:00:00.000Z",
+          "schemaVersion": 1
+        },
+        {
+          "operationId": "12000000-0000-4000-8000-000000000002",
+          "userId": "12000000-0000-4000-8000-000000000102",
+          "chainId": 56,
+          "poolKey": "56:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "protocol": "pcsv3",
+          "creatorAddress": "0x1111111111111111111111111111111111111111",
+          "feePips": "2500",
+          "txHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "outcome": "created",
+          "completedAt": "2026-08-17T09:00:00.000Z",
+          "schemaVersion": 1
+        },
+        {
+          "operationId": "12000000-0000-4000-8000-000000000003",
+          "userId": "12000000-0000-4000-8000-000000000103",
+          "chainId": 56,
+          "poolKey": "56:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "protocol": "pcsv3",
+          "creatorAddress": "0x2222222222222222222222222222222222222222",
+          "feePips": "2500",
+          "txHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "outcome": "created",
+          "completedAt": "2026-08-17T10:00:00.000Z",
+          "schemaVersion": 1
+        }
+      ],
+      "expected": {
+        "creatorProfile": {
+          "avatarUrl": null,
+          "displayName": "Earliest Creator",
+          "telegramId": "8800102"
+        },
+        "record": {
+          "operationId": "12000000-0000-4000-8000-000000000002",
+          "userId": "12000000-0000-4000-8000-000000000102",
+          "chainId": 56,
+          "poolKey": "56:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "protocol": "pcsv3",
+          "creatorAddress": "0x1111111111111111111111111111111111111111",
+          "feePips": "2500",
+          "txHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "outcome": "created",
+          "completedAt": "2026-08-17T09:00:00.000Z",
+          "schemaVersion": 1
+        },
+        "warning": null
+      }
+    },
+    {
+      "id": "already-exists-fallback",
+      "poolKey": "56:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "attempts": [
+        {
+          "operationId": "12000000-0000-4000-8000-000000000004",
+          "userId": "12000000-0000-4000-8000-000000000104",
+          "chainId": 56,
+          "poolKey": "56:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "protocol": "univ4",
+          "creatorAddress": null,
+          "feePips": "3000",
+          "txHash": null,
+          "outcome": "already_exists",
+          "completedAt": "2026-08-17T08:30:00.000Z",
+          "schemaVersion": 1
+        },
+        {
+          "operationId": "12000000-0000-4000-8000-000000000005",
+          "userId": "12000000-0000-4000-8000-000000000105",
+          "chainId": 56,
+          "poolKey": "56:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "protocol": "univ4",
+          "creatorAddress": null,
+          "feePips": "3000",
+          "txHash": null,
+          "outcome": "already_exists",
+          "completedAt": "2026-08-17T09:30:00.000Z",
+          "schemaVersion": 1
+        }
+      ],
+      "expected": {
+        "creatorProfile": {
+          "avatarUrl": null,
+          "displayName": "Fallback User",
+          "telegramId": null
+        },
+        "record": {
+          "operationId": "12000000-0000-4000-8000-000000000004",
+          "userId": "12000000-0000-4000-8000-000000000104",
+          "chainId": 56,
+          "poolKey": "56:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "protocol": "univ4",
+          "creatorAddress": null,
+          "feePips": "3000",
+          "txHash": null,
+          "outcome": "already_exists",
+          "completedAt": "2026-08-17T08:30:00.000Z",
+          "schemaVersion": 1
+        },
+        "warning": "ALREADY_EXISTS_NOT_PLATFORM_FIRST"
+      }
+    },
+    {
+      "id": "no-record",
+      "poolKey": "56:0xcccccccccccccccccccccccccccccccccccccccc",
+      "attempts": [],
+      "expected": null
+    },
+    {
+      "id": "deleted-user",
+      "poolKey": "56:0xdddddddddddddddddddddddddddddddddddddddd",
+      "attempts": [
+        {
+          "operationId": "12000000-0000-4000-8000-000000000006",
+          "userId": "12000000-0000-4000-8000-000000000106",
+          "chainId": 56,
+          "poolKey": "56:0xdddddddddddddddddddddddddddddddddddddddd",
+          "protocol": "univ3",
+          "creatorAddress": "0x3333333333333333333333333333333333333333",
+          "feePips": "500",
+          "txHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "outcome": "created",
+          "completedAt": "2026-08-17T10:15:00.000Z",
+          "schemaVersion": 1
+        }
+      ],
+      "expected": {
+        "creatorProfile": null,
+        "record": {
+          "operationId": "12000000-0000-4000-8000-000000000006",
+          "userId": "12000000-0000-4000-8000-000000000106",
+          "chainId": 56,
+          "poolKey": "56:0xdddddddddddddddddddddddddddddddddddddddd",
+          "protocol": "univ3",
+          "creatorAddress": "0x3333333333333333333333333333333333333333",
+          "feePips": "500",
+          "txHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "outcome": "created",
+          "completedAt": "2026-08-17T10:15:00.000Z",
+          "schemaVersion": 1
+        },
+        "warning": null
+      }
+    }
+  ]
+}

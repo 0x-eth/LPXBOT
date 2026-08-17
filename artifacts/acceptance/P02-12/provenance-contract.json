@@ -1,0 +1,95 @@
+{
+  "contractVersion": "pool-creation-provenance/local-v1",
+  "evidenceLevel": "locally-defined",
+  "parityStatus": "not-parity-verified",
+  "chainId": 56,
+  "creatorMeaning": "user-who-completed-a-platform-recorded-create-operation",
+  "creatorNeverInferredFrom": [
+    "transaction.from",
+    "PoolCreated",
+    "Initialize",
+    "first-Mint",
+    "market-pool-catalog",
+    "token-owner"
+  ],
+  "record": {
+    "requiredFields": [
+      "operationId",
+      "userId",
+      "chainId",
+      "poolKey",
+      "protocol",
+      "creatorAddress",
+      "feePips",
+      "txHash",
+      "outcome",
+      "completedAt",
+      "schemaVersion"
+    ],
+    "outcomes": ["created", "already_exists"],
+    "alreadyExistsProvesPlatformFirst": false,
+    "schemaVersion": 1,
+    "newCreatedRequires": ["creatorAddress", "txHash"],
+    "legacyNullableFields": ["creatorAddress", "txHash"]
+  },
+  "identity": {
+    "format": "56:0x followed by 40 V3 or 64 V4 lowercase hexadecimal characters",
+    "mixedCaseInput": "canonicalize-to-lowercase",
+    "v3Bytes": 20,
+    "v4Bytes": 32,
+    "fuzzyOrMixedBatchIdentity": "reject"
+  },
+  "noRecord": {
+    "meaning": "not-platform-created-or-predates-feature",
+    "successValues": [null, []]
+  },
+  "recorder": {
+    "visibility": "internal-port-only",
+    "httpWriteEndpoint": false,
+    "operationIdReplay": "same-payload-idempotent",
+    "operationIdConflict": "reject-and-record-safe-payload-hash-evidence"
+  },
+  "storage": {
+    "mode": "append-only-postgresql-ledger",
+    "historyOrder": ["completedAt-desc", "id-desc"],
+    "userForeignKey": false,
+    "deletedUserRecordsRetained": true
+  },
+  "attribution": {
+    "firstChoice": "earliest-created",
+    "fallback": "earliest-already_exists-with-warning",
+    "fallbackWarning": "ALREADY_EXISTS_NOT_PLATFORM_FIRST"
+  },
+  "catalog": {
+    "identityNormalizationAndValidation": true,
+    "attributionSource": false
+  },
+  "api": {
+    "history": {
+      "method": "GET",
+      "path": "/api/pools/create-history",
+      "authorization": "current-user-only"
+    },
+    "single": {
+      "method": "GET",
+      "path": "/api/admin/pool-creators",
+      "identity": "V3-address",
+      "authorization": "admin-only"
+    },
+    "batch": {
+      "method": "POST",
+      "path": "/api/admin/pool-creators",
+      "identityForms": ["addresses", "poolKeys"],
+      "maximumIdentities": 100,
+      "authorization": "admin-only"
+    },
+    "cacheControl": "no-store",
+    "writeEndpoint": false
+  },
+  "boundaries": {
+    "externalRpc": false,
+    "transactionSenderLookup": false,
+    "metadataFetch": false,
+    "signingBroadcastOrFunds": false
+  }
+}
