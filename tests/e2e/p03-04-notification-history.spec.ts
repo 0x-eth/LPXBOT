@@ -235,7 +235,7 @@ test("MON-05 notification history supports responsive scanning, filters, paginat
   await expect(history.locator(".notification-history-status", { hasText: "失败" })).toHaveCount(0);
   await page.getByLabel("投递状态").selectOption("");
   await page.getByLabel("监控筛选").selectOption(monitorB);
-  await expect(page.getByText("Fee watch", { exact: true })).toBeVisible();
+  await expect(history.getByText("Fee watch", { exact: true })).toBeVisible();
 
   await page.getByLabel("监控筛选").selectOption("");
   const detailsButton = page.getByRole("button", { name: /查看投递.*102/u }).first();
