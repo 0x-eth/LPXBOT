@@ -83,6 +83,7 @@ export function parseMonitor(value: unknown, status = 0): Monitor {
     !exactKeys(value, [
       "conditions",
       "createdAt",
+      "destinationIds",
       "disabledAt",
       "enabled",
       "enabledAt",
@@ -98,6 +99,11 @@ export function parseMonitor(value: unknown, status = 0): Monitor {
     ]) ||
     !Array.isArray(value.conditions) ||
     value.conditions.length > monitorConditionLimit ||
+    !Array.isArray(value.destinationIds) ||
+    value.destinationIds.some(
+      (destinationId) => typeof destinationId !== "string" || !uuidPattern.test(destinationId),
+    ) ||
+    new Set(value.destinationIds).size !== value.destinationIds.length ||
     !isTimestamp(value.createdAt) ||
     !(value.disabledAt === null || isTimestamp(value.disabledAt)) ||
     typeof value.enabled !== "boolean" ||

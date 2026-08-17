@@ -111,6 +111,30 @@ function expectNoCredential(value: unknown): void {
 }
 
 describe("P03-03 notification preferences API", () => {
+  it("exposes only the current user's Telegram destination option", async () => {
+    const { app, tokenA, tokenB } = await fixture();
+
+    const unauthenticated = await app.inject({
+      method: "GET",
+      url: "/api/notification-destinations/options",
+    });
+    expect(unauthenticated.statusCode).toBe(401);
+
+    const [optionA, optionB] = await Promise.all(
+      [tokenA, tokenB].map((token) =>
+        app.inject({
+          headers: auth(token),
+          method: "GET",
+          url: "/api/notification-destinations/options",
+        }),
+      ),
+    );
+    expect(optionA.json().data).toEqual({ telegramIdentityId: telegramA });
+    expect(optionB.json().data).toEqual({ telegramIdentityId: telegramB });
+    expectNoCredential(optionA.json());
+    expectNoCredential(optionB.json());
+  });
+
   it("defaults every category off and isolates CAS updates by current user", async () => {
     const { app, tokenA, tokenB } = await fixture();
     expect(
