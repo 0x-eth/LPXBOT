@@ -304,6 +304,63 @@ describe("P03-04 PostgreSQL notification delivery history", () => {
     expect(state.rows).toEqual([{ attempt_count: 0, state: "pending" }]);
   });
 
+  it("atomically resets history when replacement recovers an expired lease", async () => {
+    const outbox = new PostgresMonitorCandidateOutboxRepository(pool);
+    const original = candidate({
+      monitorId: monitorA,
+      userId: userA,
+      windowEnd: "2026-08-17T16:56:30.000Z",
+    });
+    const destination = {
+      channel: "webhook" as const,
+      destinationId: destinationA,
+      destinationRevision: 1,
+      payload: { conditionSummary: "volumeUsd gte 1000", poolKey },
+    };
+    const committed = await outbox.commitCandidate({
+      candidate: original,
+      destinations: [destination],
+    });
+    const deliveryId = committed.deliveries[0]!.deliveryId;
+    await outbox.claimDue({
+      deliveryIds: [deliveryId],
+      leaseOwner: "dispatcher-replacement-first",
+      limit: 1,
+    });
+    await pool.query(
+      "UPDATE notification_outbox SET lease_expires_at = clock_timestamp() - interval '1 second' WHERE delivery_id = $1",
+      [deliveryId],
+    );
+
+    await expect(
+      outbox.commitCandidate({
+        candidate: {
+          ...original,
+          createdAt: "2026-08-17T17:00:01.000Z",
+          generatedAt: "2026-08-17T17:00:01.000Z",
+          sourceGenerationId: "generation-history-replacement",
+        },
+        destinations: [{ ...destination, payload: { ...destination.payload, replacement: true } }],
+      }),
+    ).resolves.toMatchObject({ evidenceAction: "replaced" });
+
+    const projection = await pool.query<{
+      attempt_count: number;
+      history_status: string;
+      outbox_state: string;
+    }>(
+      `SELECT outbox.state AS outbox_state, history.status AS history_status,
+              history.attempt_count
+         FROM notification_outbox AS outbox
+         JOIN notification_delivery_history AS history USING (delivery_id)
+        WHERE outbox.delivery_id = $1`,
+      [deliveryId],
+    );
+    expect(projection.rows).toEqual([
+      { attempt_count: 1, history_status: "pending", outbox_state: "pending" },
+    ]);
+  });
+
   it("checks the current destination state before loading the exact bound revision", async () => {
     const destinations = new PostgresDispatchDestinationStore(pool);
     const dispatchDelivery = {

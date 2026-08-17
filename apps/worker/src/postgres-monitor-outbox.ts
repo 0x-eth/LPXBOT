@@ -737,7 +737,7 @@ export class PostgresMonitorCandidateOutboxRepository {
         destinationId: destination.destinationId,
         destinationRevision: destination.destinationRevision,
       });
-      await client.query(
+      const updated = await client.query<{ delivery_id: string }>(
         `UPDATE notification_outbox
             SET payload = $2::jsonb,
                 state = CASE
@@ -762,9 +762,30 @@ export class PostgresMonitorCandidateOutboxRepository {
             AND (
               state IN ('pending', 'retry-wait')
               OR (state = 'leased' AND lease_expires_at <= clock_timestamp())
-            )`,
+            )
+          RETURNING delivery_id::text`,
         [dedupeKey, JSON.stringify(destination.payload), candidate.createdAt],
       );
+      if (updated.rows[0]) {
+        const history = await client.query(
+          `UPDATE notification_delivery_history AS history
+              SET status = CASE outbox.state
+                    WHEN 'retry-wait' THEN 'retrying'
+                    ELSE 'pending'
+                  END,
+                  attempt_count = outbox.attempt_count,
+                  next_retry_at = outbox.next_attempt_at,
+                  delivered_at = NULL,
+                  error_code = outbox.last_error_code,
+                  provider_acknowledgement = NULL,
+                  updated_at = outbox.updated_at
+             FROM notification_outbox AS outbox
+            WHERE history.delivery_id = outbox.delivery_id
+              AND outbox.delivery_id = $1`,
+          [updated.rows[0].delivery_id],
+        );
+        if (history.rowCount !== 1) throw new Error("OUTBOX_HISTORY_SYNC_FAILED");
+      }
     }
   }
 
