@@ -115,6 +115,20 @@ export const poolBlocklistContracts = {
   patch: { method: "PATCH", path: "/api/user/pool-blocklist" },
 } as const;
 
+export const poolActionIntentSchemaVersion = 1 as const;
+export type PoolActionIntentAction = "create-task" | "create-monitor" | "share-chat";
+
+export interface PoolActionIntent {
+  action: PoolActionIntentAction;
+  chainId: 56;
+  poolAddress: EvmAddress | null;
+  poolId: `0x${string}` | null;
+  poolKey: BscPoolKey;
+  schemaVersion: typeof poolActionIntentSchemaVersion;
+  token0Address: EvmAddress | null;
+  token1Address: EvmAddress | null;
+}
+
 export interface AddressRemark {
   address: EvmAddress;
   label: string;
