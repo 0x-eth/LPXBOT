@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "schemaId": "p03-fixture://outbox-recovery/v1",
+  "scenario": "outbox-recovery",
+  "fixtureOnly": true,
+  "networkAccess": false,
+  "description": "State-machine fixtures for duplicate insert, expired lease recovery, retry, and permanent failure.",
+  "input": {
+    "leaseDurationSeconds": 60,
+    "maxAttempts": 6,
+    "backoffSeconds": [30, 120, 600, 1800, 3600],
+    "scenarios": [
+      {
+        "id": "duplicate-consumption",
+        "events": ["insert", "insert-same-dedupe-key", "insert-same-dedupe-key"],
+        "expected": {
+          "outboxRows": 1,
+          "state": "pending",
+          "attemptCount": 0,
+          "sameDeliveryIdReturned": true
+        }
+      },
+      {
+        "id": "crash-after-lease",
+        "events": [
+          "claim-at-2026-08-17T09:06:00Z",
+          "attempt-count-becomes-1",
+          "process-crash",
+          "lease-expires-at-2026-08-17T09:07:00Z",
+          "claim-with-new-token"
+        ],
+        "expected": {
+          "reclaimable": true,
+          "attemptAfterReclaim": 2,
+          "oldTokenCanComplete": false,
+          "outboxRows": 1
+        }
+      },
+      {
+        "id": "retry-then-deliver",
+        "events": [
+          "claim-attempt-1",
+          "HTTP-503",
+          "retry-wait-30-seconds-plus-deterministic-jitter",
+          "claim-attempt-2",
+          "HTTP-204"
+        ],
+        "expected": {
+          "states": ["pending", "leased", "retry-wait", "leased", "delivered"],
+          "attemptCount": 2,
+          "finalState": "delivered",
+          "marketWorkerBlocked": false
+        }
+      },
+      {
+        "id": "permanent-failure",
+        "events": ["claim-attempt-1", "unsafe-webhook-target"],
+        "expected": {
+          "states": ["pending", "leased", "dead"],
+          "attemptCount": 1,
+          "finalState": "dead",
+          "nextAttemptAt": null,
+          "marketWorkerBlocked": false
+        }
+      }
+    ]
+  },
+  "expected": {
+    "terminalStates": ["delivered", "dead"],
+    "duplicateRows": 0,
+    "lateLeaseCompletion": "ignored",
+    "providerFailureScope": "outbox-only"
+  }
+}

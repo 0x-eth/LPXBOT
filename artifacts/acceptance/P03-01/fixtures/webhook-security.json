@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "schemaId": "p03-fixture://webhook-security/v1",
+  "scenario": "webhook-security",
+  "fixtureOnly": true,
+  "networkAccess": false,
+  "description": "Offline rendering and HMAC known-answer fixtures for Webhook and Telegram messages.",
+  "input": {
+    "sink": "local-sink://p03-01",
+    "templateCases": [
+      {
+        "id": "get-percent-escaping",
+        "method": "GET",
+        "template": "alert={{monitor.name}}&pool={{pool.key}}",
+        "values": {
+          "monitor.name": "A&B / ready?",
+          "pool.key": "56:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "expected": {
+          "renderedQuery": "alert=A%26B%20%2F%20ready%3F&pool=56%3A0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      {
+        "id": "post-json-escaping",
+        "method": "POST",
+        "template": { "message": "{{condition.summary}}" },
+        "values": { "condition.summary": "Fee >= \"10\"\nready" },
+        "expected": { "renderedBody": "{\"message\":\"Fee >= \\\"10\\\"\\nready\"}" }
+      },
+      {
+        "id": "telegram-html-escaping",
+        "method": "TELEGRAM",
+        "template": "<b>{{monitor.name}}</b>",
+        "values": { "monitor.name": "<Pool & ready>" },
+        "expected": { "rendered": "<b>&lt;Pool &amp; ready&gt;</b>" }
+      },
+      {
+        "id": "unknown-variable",
+        "method": "POST",
+        "template": { "value": "{{internal.secret}}" },
+        "values": {},
+        "expected": { "error": "UNKNOWN_TEMPLATE_VARIABLE", "networkCalls": 0 }
+      },
+      {
+        "id": "oversize-expanded-body",
+        "method": "POST",
+        "template": { "value": "{{condition.summary}}" },
+        "expandedBodyBytes": 65537,
+        "expected": { "error": "BODY_TOO_LARGE", "networkCalls": 0 }
+      }
+    ],
+    "signature": {
+      "fixtureKey": "p03-fixture-hmac-key-material-01",
+      "timestamp": "1786957800",
+      "deliveryId": "delivery-fixture-0001",
+      "method": "POST",
+      "pathAndQuery": "/hooks/lp?source=monitor",
+      "body": "{\"deliveryId\":\"delivery-fixture-0001\",\"poolKey\":\"56:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"message\":\"Fee > 10 & ready\"}"
+    }
+  },
+  "expected": {
+    "signature": {
+      "bodySha256": "d927a9e954ec0bbbcf629a6a33b7123dd325b6e0b3b06595f945d2a53f96bfbd",
+      "canonicalInput": "v1\n1786957800\ndelivery-fixture-0001\nPOST\n/hooks/lp?source=monitor\nd927a9e954ec0bbbcf629a6a33b7123dd325b6e0b3b06595f945d2a53f96bfbd",
+      "value": "v1=72ce04cf2832ce4160a617b67889b97583a0ef000e1ff8389eed53bcf57fe1c5"
+    },
+    "networkCalls": 0,
+    "sink": "local-sink://p03-01"
+  }
+}

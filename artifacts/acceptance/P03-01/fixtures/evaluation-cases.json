@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "schemaId": "p03-fixture://evaluation-cases/v1",
+  "scenario": "evaluation-cases",
+  "fixtureOnly": true,
+  "networkAccess": false,
+  "description": "Golden truth table for AND conditions, exact boundaries, freshness, fail-closed metric states, unresolved metrics, and P02-11 eligibility.",
+  "input": {
+    "evaluatedAt": "2026-08-17T09:07:30Z",
+    "monitor": {
+      "monitorId": "11111111-1111-4111-8111-111111111111",
+      "userId": "user-fixture-001",
+      "revision": 3,
+      "poolKey": "56:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "windowMinutes": 5,
+      "enabled": true,
+      "conditions": [
+        { "id": "volumeUsd", "enabled": true, "operator": "gte", "value": "1000" },
+        { "id": "feesUsd", "enabled": true, "operator": "gte", "value": "10" },
+        {
+          "id": "metricVersion",
+          "enabled": true,
+          "operator": "eq",
+          "value": "market-metrics/v1"
+        }
+      ]
+    },
+    "snapshotDefaults": {
+      "poolKey": "56:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "windowStart": "2026-08-17T09:00:00Z",
+      "windowEnd": "2026-08-17T09:05:00Z",
+      "generatedAt": "2026-08-17T09:05:30Z",
+      "metricVersion": "market-metrics/v1",
+      "sourceGenerationId": "generation-fixture-001",
+      "canonicalBlockHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "ready": true,
+      "partial": false,
+      "token0Address": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "token1Address": "0xcccccccccccccccccccccccccccccccccccccccc",
+      "hasHanToken": false,
+      "hasHook": false,
+      "blocklistHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "metrics": {
+        "volumeUsd": { "state": "value", "value": "1000" },
+        "feesUsd": { "state": "value", "value": "10" },
+        "feeTvlRatio": { "state": "value", "value": "0.001" },
+        "tvlUsd": { "state": "value", "value": "10000" },
+        "transactionCount": { "state": "value", "value": 25 }
+      }
+    },
+    "cases": [
+      {
+        "id": "all-and-match",
+        "patch": {},
+        "expected": {
+          "matched": true,
+          "candidateKey": "5835a4499d16bcbac214e8c99753bcf3d5d7b06f100b0ced9c19a179d8ee4909"
+        }
+      },
+      {
+        "id": "one-and-condition-fails",
+        "patch": { "metrics.feesUsd.value": "9.999999" },
+        "expected": { "matched": false, "reason": "CONDITION_FALSE" }
+      },
+      {
+        "id": "exact-lower-boundary",
+        "patch": { "metrics.volumeUsd.value": "1000.000" },
+        "expected": {
+          "matched": true,
+          "candidateKey": "5835a4499d16bcbac214e8c99753bcf3d5d7b06f100b0ced9c19a179d8ee4909"
+        }
+      },
+      {
+        "id": "just-below-lower-boundary",
+        "patch": { "metrics.volumeUsd.value": "999.999999" },
+        "expected": { "matched": false, "reason": "CONDITION_FALSE" }
+      },
+      {
+        "id": "exact-freshness-boundary",
+        "patch": { "generatedAt": "2026-08-17T09:05:30Z" },
+        "expected": {
+          "matched": true,
+          "candidateKey": "5835a4499d16bcbac214e8c99753bcf3d5d7b06f100b0ced9c19a179d8ee4909"
+        }
+      },
+      {
+        "id": "stale-beyond-boundary",
+        "patch": { "generatedAt": "2026-08-17T09:05:29Z" },
+        "expected": { "matched": false, "reason": "STALE" }
+      },
+      {
+        "id": "metric-missing",
+        "remove": ["metrics.feesUsd"],
+        "expected": { "matched": false, "reason": "METRIC_MISSING" }
+      },
+      {
+        "id": "metric-null",
+        "patch": { "metrics.feesUsd": { "state": "null", "value": null } },
+        "expected": { "matched": false, "reason": "METRIC_NULL" }
+      },
+      {
+        "id": "metric-non-finite",
+        "patch": { "metrics.feesUsd": { "state": "non-finite", "value": "NaN" } },
+        "expected": { "matched": false, "reason": "METRIC_NON_FINITE" }
+      },
+      {
+        "id": "snapshot-not-ready",
+        "patch": { "ready": false },
+        "expected": { "matched": false, "reason": "SNAPSHOT_NOT_READY" }
+      },
+      {
+        "id": "snapshot-partial-required-metric",
+        "patch": { "partial": true, "partialFields": ["feesUsd"] },
+        "expected": { "matched": false, "reason": "REQUIRED_METRIC_PARTIAL" }
+      },
+      {
+        "id": "pool-blocklisted",
+        "patch": { "blockedIdentities": ["56:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"] },
+        "expected": { "matched": false, "reason": "POOL_NOT_ELIGIBLE" }
+      },
+      {
+        "id": "token-blocklisted",
+        "patch": { "blockedIdentities": ["0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"] },
+        "expected": { "matched": false, "reason": "POOL_NOT_ELIGIBLE" }
+      },
+      {
+        "id": "active-tvl-unresolved",
+        "conditionPatch": {
+          "append": { "id": "activeTvlUsd", "enabled": true, "operator": "gte", "value": "1" }
+        },
+        "expected": { "matched": false, "reason": "UNSUPPORTED_METRIC" }
+      },
+      {
+        "id": "fee-atvl-unresolved",
+        "conditionPatch": {
+          "append": { "id": "feeAtvlRatio", "enabled": true, "operator": "gte", "value": "0.1" }
+        },
+        "expected": { "matched": false, "reason": "UNSUPPORTED_METRIC" }
+      }
+    ]
+  },
+  "expected": {
+    "conditionCombination": "AND",
+    "freshnessBoundarySeconds": 120,
+    "unresolvedMetricsMatch": false,
+    "invalidMetricStatesMatch": false,
+    "blocklistAuthority": "server"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "schemaId": "p03-fixture://dedupe-ordering/v1",
+  "scenario": "dedupe-ordering",
+  "fixtureOnly": true,
+  "networkAccess": false,
+  "description": "A newer window arrives before an older window and the newer input is delivered twice.",
+  "input": {
+    "monitorId": "11111111-1111-4111-8111-111111111111",
+    "monitorRevision": 3,
+    "poolKey": "56:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "metricVersion": "market-metrics/v1",
+    "destinationId": "destination-fixture-001",
+    "destinationRevision": 2,
+    "deliveries": [
+      {
+        "deliverySequence": 1,
+        "windowEnd": "2026-08-17T09:10:00Z",
+        "generatedAt": "2026-08-17T09:10:30Z",
+        "sourceGenerationId": "generation-window-002"
+      },
+      {
+        "deliverySequence": 2,
+        "windowEnd": "2026-08-17T09:05:00Z",
+        "generatedAt": "2026-08-17T09:05:30Z",
+        "sourceGenerationId": "generation-window-001"
+      },
+      {
+        "deliverySequence": 3,
+        "windowEnd": "2026-08-17T09:10:00Z",
+        "generatedAt": "2026-08-17T09:10:30Z",
+        "sourceGenerationId": "generation-window-002"
+      }
+    ]
+  },
+  "expected": {
+    "arrivalWindowOrder": [
+      "2026-08-17T09:10:00Z",
+      "2026-08-17T09:05:00Z",
+      "2026-08-17T09:10:00Z"
+    ],
+    "evaluationWindowOrder": ["2026-08-17T09:05:00Z", "2026-08-17T09:10:00Z"],
+    "candidateKeys": [
+      "5835a4499d16bcbac214e8c99753bcf3d5d7b06f100b0ced9c19a179d8ee4909",
+      "91efca46ecf8d1931549ef473e883ffd7b8e0ab86687c46d48e348a40fb5c156"
+    ],
+    "uniqueCandidateCount": 2,
+    "uniqueOutboxCount": 2,
+    "duplicateCreatesSecondNotification": false,
+    "networkCallsByEvaluator": 0
+  }
+}
