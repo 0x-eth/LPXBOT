@@ -72,7 +72,7 @@ const defaultCapabilities: PoolActionCapabilities = {
   chatPrefill: true,
   clipboard: true,
   liquidityFlow: true,
-  monitorPrefill: false,
+  monitorPrefill: true,
   taskPrefill: true,
 };
 

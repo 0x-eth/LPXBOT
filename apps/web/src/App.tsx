@@ -63,6 +63,7 @@ import { parsePoolActionIntent } from "./pool-actions";
 import { PwaUpdateBridge } from "./pwa-updates";
 import { PoolsPage } from "./pools-page";
 import { InterfaceSettings } from "./settings-interface";
+import { MonitorsPage } from "./monitors-page";
 import { ShellStatsContextProvider, ShellStatusBar, useShellStats } from "./shell-stats-react";
 import { ApiShellStatsProvider, createShellStatsState, shellStatsDisplay } from "./shell-stats";
 import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
@@ -666,6 +667,7 @@ function localRouteFixtureState(search: string): LocalRouteFixtureState | null {
 function localRouteTitle(pathname: string): { localized: string; accessible: string } {
   if (pathname.startsWith("/tasks")) return { accessible: "Tasks", localized: "任务" };
   if (pathname.startsWith("/pools")) return { accessible: "Pools", localized: "池子发现" };
+  if (pathname.startsWith("/monitors")) return { accessible: "Monitors", localized: "监控" };
   if (pathname.startsWith("/strategies")) {
     return { accessible: "Strategies", localized: "自动策略" };
   }
@@ -758,6 +760,7 @@ function LegacyAllRedirect() {
 function mobileRouteTitle(pathname: string): string {
   if (pathname.startsWith("/tasks")) return "任务";
   if (pathname.startsWith("/pools")) return "池子";
+  if (pathname.startsWith("/monitors")) return "监控";
   if (pathname.startsWith("/strategies")) return "策略";
   if (pathname.startsWith("/activity")) return "日志";
   if (pathname.startsWith("/wallets")) return "钱包";
@@ -916,7 +919,7 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
               <Route path="/" element={<Navigate to="/tasks/running" replace />} />
               <Route path="/all" element={<Navigate to="/tasks/running" replace />} />
               <Route path="/all/:status" element={<LegacyAllRedirect />} />
-              <Route path="/monitors" element={<Navigate to="/pools" replace />} />
+              <Route path="/monitors" element={<MonitorsPage />} />
               <Route
                 path="/settings"
                 element={<SettingsPage client={client} session={state.session} />}
