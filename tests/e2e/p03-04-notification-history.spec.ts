@@ -210,7 +210,10 @@ test("MON-05 notification history supports responsive scanning, filters, paginat
   const state = { delayMilliseconds: 500, fail: false, items: historyFixtures() };
   await installFixture(page, state);
   await page.goto("/monitors");
-  await page.getByRole("tab", { name: "通知历史" }).click();
+  await page.getByRole("tab", { name: "监控规则" }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "通知历史" })).toBeFocused();
+  await expect(page.getByRole("tab", { name: "通知历史" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("status", { name: "正在加载通知历史" })).toBeVisible();
   const history = page.getByRole("region", { name: "通知历史" });
   await expect(history).toBeVisible();
