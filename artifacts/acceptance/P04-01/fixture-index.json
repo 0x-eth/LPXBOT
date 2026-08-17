@@ -15,48 +15,48 @@
       "scenario": "aad-tamper",
       "schemaId": "p04-fixture://aad-tamper/v1",
       "path": "fixtures/aad-tamper.json",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "bytes": 1746,
+      "sha256": "f82bfaa8ad1794c4db81a950b05185448d2af529b2f393598b94be10580b59c6"
     },
     {
       "id": "P04-FIXTURE-ARGON2ID-KAT-V1",
       "scenario": "argon2id-known-answer",
       "schemaId": "p04-fixture://argon2id-known-answer/v1",
       "path": "fixtures/argon2id-known-answer.json",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "bytes": 1040,
+      "sha256": "55c8d003c223637e85427b52675e5becc17a9ef3a99e2d3b43c520c0a62846a4"
     },
     {
       "id": "P04-FIXTURE-CRYPTO-KAT-V1",
       "scenario": "crypto-known-answer",
       "schemaId": "p04-fixture://crypto-known-answer/v1",
       "path": "fixtures/crypto-known-answer.json",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "bytes": 1363,
+      "sha256": "eaf7093fb9aacaa98617759291936f18c5469d327ea42efdedb84563f08f2b56"
     },
     {
       "id": "P04-FIXTURE-LIFECYCLE-RECOVERY-V1",
       "scenario": "lifecycle-recovery",
       "schemaId": "p04-fixture://lifecycle-recovery/v1",
       "path": "fixtures/lifecycle-recovery.json",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "bytes": 3974,
+      "sha256": "71142b87b829d231b70992da3173473b43c36f4ba6613ce7fa7e44857e3036ab"
     },
     {
       "id": "P04-FIXTURE-NONCE-CONCURRENCY-V1",
       "scenario": "nonce-concurrency",
       "schemaId": "p04-fixture://nonce-concurrency/v1",
       "path": "fixtures/nonce-concurrency.json",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "bytes": 2268,
+      "sha256": "9737299dae96463aad5f34545e8caa32b88fa57acd70016988ed83bfbf1b5cbd"
     },
     {
       "id": "P04-FIXTURE-REPLACEMENT-LINEAGE-V1",
       "scenario": "replacement-lineage",
       "schemaId": "p04-fixture://replacement-lineage/v1",
       "path": "fixtures/replacement-lineage.json",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "bytes": 2420,
+      "sha256": "1e3820e5858b544216987eadac11d280d70476c488435c3f4bf23816f6385c00"
     }
   ]
 }

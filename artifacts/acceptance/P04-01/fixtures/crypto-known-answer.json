@@ -26,7 +26,7 @@
     "lowercaseAddress": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",
     "aes256Gcm": {
       "ciphertextHex": "7dfe981649c93ab3ca75081d0f796953d7504e0e1bc257b1e7f9e2675e5454da",
-      "tagHex": "3cb4ac5b4acda3649e103bd7d67b5bd7"
+      "tagHex": "01cfcdb57ae2eaa33779c372989cd582"
     }
   }
 }

@@ -28,9 +28,9 @@
   "expected": {
     "original": {
       "ciphertextHex": "d23aa6706c981a0e1a7c42cec118f4f9d049ec9c878063ee6cf66c12498a5e0b",
-      "tagHex": "c59a9862b18c5c9b35e19cccc097aded"
+      "tagHex": "f8e1f98c81a3155c9c8864698e7023b8"
     },
-    "tamperedAadTagHex": "8ac28cbafbccf6a0ed1783f01d569f31",
+    "tamperedAadTagHex": "19fcea563965169523d8f3d28a8b5b24",
     "tamperedCiphertextHex": "d23aa6706c981a0f1a7c42cec118f4f9d049ec9c878063ee6cf66c12498a5e0b",
     "openResults": {
       "original": "not-executed",
