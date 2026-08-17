@@ -20,6 +20,7 @@ const v3PoolKey = `56:0x${"a".repeat(40)}`;
 const otherV3PoolKey = `56:0x${"b".repeat(40)}`;
 const v4PoolKey = `56:0x${"c".repeat(64)}`;
 const completedAt = "2026-08-17T10:00:00.000Z";
+const adapterOptions = { now: () => new Date("2026-08-17T12:00:00.000Z") };
 
 function record(
   operationSuffix: number,
@@ -54,7 +55,7 @@ beforeAll(async () => {
   );
   await pool.query(
     `INSERT INTO telegram_identities (telegram_user_id, user_id, created_at)
-     VALUES (8800201, $1, $3), (8800202, $2, $3), (8800203, $3, $3)`,
+     VALUES (8800201, $1, $4), (8800202, $2, $4), (8800203, $3, $4)`,
     [...users, new Date(completedAt)],
   );
 });
@@ -82,7 +83,7 @@ describe("P02-12 PostgreSQL pool creation provenance ledger", () => {
       "pool_creator_query_audit_events",
     ]);
 
-    const adapter = new PostgresPoolCreationProvenanceStore(pool);
+    const adapter = new PostgresPoolCreationProvenanceStore(pool, adapterOptions);
     const saved = await adapter.record(record(1));
     expect(saved.status).toBe("inserted");
     await expect(
@@ -109,7 +110,7 @@ describe("P02-12 PostgreSQL pool creation provenance ledger", () => {
   });
 
   it("is idempotent for the same operation payload and records only hashes for conflicts", async () => {
-    const adapter = new PostgresPoolCreationProvenanceStore(pool);
+    const adapter = new PostgresPoolCreationProvenanceStore(pool, adapterOptions);
     const input = record(2);
     expect(await adapter.record(input)).toMatchObject({ status: "inserted" });
     expect(await adapter.record(structuredClone(input))).toMatchObject({ status: "idempotent" });
@@ -140,18 +141,18 @@ describe("P02-12 PostgreSQL pool creation provenance ledger", () => {
 
   it("serializes concurrent writes and remains persistent across adapter recreation", async () => {
     const input = record(3);
-    const adapter = new PostgresPoolCreationProvenanceStore(pool);
+    const adapter = new PostgresPoolCreationProvenanceStore(pool, adapterOptions);
     const results = await Promise.all(Array.from({ length: 8 }, () => adapter.record(input)));
     expect(results.filter(({ status }) => status === "inserted")).toHaveLength(1);
     expect(results.filter(({ status }) => status === "idempotent")).toHaveLength(7);
 
-    const restarted = new PostgresPoolCreationProvenanceStore(pool);
+    const restarted = new PostgresPoolCreationProvenanceStore(pool, adapterOptions);
     const page = await restarted.listByUser({ cursor: null, limit: 100, userId: users[0] });
     expect(page.items.some(({ record: item }) => item.operationId === input.operationId)).toBe(true);
   });
 
   it("paginates completedAt and identity id in a stable descending order", async () => {
-    const adapter = new PostgresPoolCreationProvenanceStore(pool);
+    const adapter = new PostgresPoolCreationProvenanceStore(pool, adapterOptions);
     const inputs = [4, 5, 6, 7].map((suffix) =>
       record(suffix, {
         completedAt: suffix === 7 ? "2026-08-17T10:01:00.000Z" : completedAt,
@@ -179,7 +180,7 @@ describe("P02-12 PostgreSQL pool creation provenance ledger", () => {
   });
 
   it("chooses the earliest created attempt, falling back to warned already_exists", async () => {
-    const adapter = new PostgresPoolCreationProvenanceStore(pool);
+    const adapter = new PostgresPoolCreationProvenanceStore(pool, adapterOptions);
     await adapter.record(
       record(10, {
         completedAt: "2026-08-17T09:00:00.000Z",
@@ -240,7 +241,7 @@ describe("P02-12 PostgreSQL pool creation provenance ledger", () => {
   });
 
   it("isolates personal history and preserves a safe deleted-user attribution", async () => {
-    const adapter = new PostgresPoolCreationProvenanceStore(pool);
+    const adapter = new PostgresPoolCreationProvenanceStore(pool, adapterOptions);
     const deletedKey = `56:0x${"8".repeat(40)}`;
     const deletedRecord = record(20, { poolKey: deletedKey, userId: users[2] });
     await adapter.record(deletedRecord);
