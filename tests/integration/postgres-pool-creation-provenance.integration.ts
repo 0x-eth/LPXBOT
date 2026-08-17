@@ -3,6 +3,7 @@ import {
   PostgresPoolCreationProvenanceStore,
   type PoolCreationProvenanceRecord,
 } from "../../apps/api/src/index.js";
+import { createHash, randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -11,14 +12,14 @@ const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required for PostgreSQL integration tests");
 
 const pool = new Pool({ connectionString: databaseUrl, max: 12 });
-const users = [
-  "12000000-0000-4000-8000-000000000201",
-  "12000000-0000-4000-8000-000000000202",
-  "12000000-0000-4000-8000-000000000203",
-] as const;
-const v3PoolKey = `56:0x${"a".repeat(40)}`;
-const otherV3PoolKey = `56:0x${"b".repeat(40)}`;
-const v4PoolKey = `56:0x${"c".repeat(64)}`;
+const runId = randomUUID();
+const operationPrefix = `${randomUUID().slice(0, 24)}`;
+const users = [randomUUID(), randomUUID(), randomUUID()] as const;
+const identity = (label: string, length: 40 | 64) =>
+  `56:0x${createHash("sha256").update(`${runId}:${label}`).digest("hex").slice(0, length)}`;
+const v3PoolKey = identity("v3", 40);
+const otherV3PoolKey = identity("other-v3", 40);
+const v4PoolKey = identity("v4", 64);
 const completedAt = "2026-08-17T10:00:00.000Z";
 const adapterOptions = { now: () => new Date("2026-08-17T12:00:00.000Z") };
 
@@ -31,7 +32,7 @@ function record(
     completedAt,
     creatorAddress: `0x${"d".repeat(40)}`,
     feePips: "2500",
-    operationId: `12000000-0000-4000-8000-${String(operationSuffix).padStart(12, "0")}`,
+    operationId: `${operationPrefix}${String(operationSuffix).padStart(12, "0")}`,
     outcome: "created",
     poolKey: v3PoolKey,
     protocol: "pcsv3",
@@ -98,8 +99,29 @@ describe("P02-12 PostgreSQL pool creation provenance ledger", () => {
       ]),
     ).rejects.toMatchObject({ message: expect.stringContaining("append-only") });
 
+    expect(
+      await adapter.record(record(90, { poolKey: v3PoolKey.toUpperCase().replace("0X", "0x") })),
+    ).toMatchObject({ record: { poolKey: v3PoolKey }, status: "inserted" });
+    await expect(
+      pool.query(
+        `INSERT INTO pool_creation_provenance (
+           operation_id, user_id, chain_id, pool_key, protocol, creator_address,
+           fee_pips, tx_hash, outcome, completed_at, schema_version, payload_sha256, recorded_at
+         ) VALUES ($1, $2, 56, $3, 'pcsv3', $4, 2500, $5, 'created', $6, 1, $7, $8)`,
+        [
+          record(95).operationId,
+          users[0],
+          v3PoolKey.toUpperCase().replace("0X", "0x"),
+          record(95).creatorAddress,
+          record(95).txHash,
+          completedAt,
+          `sha256:${"0".repeat(64)}`,
+          adapterOptions.now(),
+        ],
+      ),
+    ).rejects.toThrow();
+
     for (const invalid of [
-      record(90, { poolKey: `56:0x${"A".repeat(40)}` }),
       record(91, { poolKey: v4PoolKey, protocol: "pcsv3" }),
       record(92, { creatorAddress: null }),
       record(93, { txHash: null }),
@@ -212,7 +234,7 @@ describe("P02-12 PostgreSQL pool creation provenance ledger", () => {
       warning: null,
     });
 
-    const fallbackKey = `56:0x${"f".repeat(64)}`;
+    const fallbackKey = identity("fallback", 64);
     await adapter.record(
       record(13, {
         completedAt: "2026-08-17T08:00:00.000Z",
@@ -237,12 +259,12 @@ describe("P02-12 PostgreSQL pool creation provenance ledger", () => {
       record: { operationId: record(13).operationId, outcome: "already_exists" },
       warning: "ALREADY_EXISTS_NOT_PLATFORM_FIRST",
     });
-    expect(await adapter.findAttribution(`56:0x${"9".repeat(64)}`)).toBeNull();
+    expect(await adapter.findAttribution(identity("missing", 64))).toBeNull();
   });
 
   it("isolates personal history and preserves a safe deleted-user attribution", async () => {
     const adapter = new PostgresPoolCreationProvenanceStore(pool, adapterOptions);
-    const deletedKey = `56:0x${"8".repeat(40)}`;
+    const deletedKey = identity("deleted", 40);
     const deletedRecord = record(20, { poolKey: deletedKey, userId: users[2] });
     await adapter.record(deletedRecord);
     expect((await adapter.listByUser({ cursor: null, limit: 100, userId: users[1] })).items).toEqual(
