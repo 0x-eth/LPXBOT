@@ -153,7 +153,8 @@ export function notificationDedupeKey(input: {
 }
 
 export class EmptyMonitorDestinationSelector implements MonitorDestinationSelector {
-  async select(_input: { userId: string }): Promise<MonitorDestinationSelection[]> {
+  async select(input: { userId: string }): Promise<MonitorDestinationSelection[]> {
+    void input;
     return [];
   }
 }
@@ -183,7 +184,8 @@ export class MonitorEvaluationWorker {
       for (const monitor of monitors) {
         evaluated += 1;
         const blocklist = await this.#blocklists.get(monitor.userId);
-        const { source: _source, ...snapshot } = projection;
+        const { source, ...snapshot } = projection;
+        void source;
         const result = evaluateMonitorSnapshot({
           evaluatedAt: input.evaluatedAt,
           monitor,
