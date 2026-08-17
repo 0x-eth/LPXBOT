@@ -34,6 +34,20 @@ Environment: local macOS fixture, PostgreSQL `127.0.0.1:15432`, pnpm 11.17.0. Th
 | `pnpm check:all` | baseline, 196-feature traceability, P00, docs, 24 manifests, and P01/P02/P03 reference checks passed |
 | Gitleaks full history | passed |
 | `pnpm audit:dependencies` | passed |
-| GitHub Actions six jobs | pending |
+| GitHub Actions six jobs | passed |
+
+## GitHub Actions
+
+Run: [32033703724](https://github.com/0x-eth/LPXBOT/actions/runs/32033703724)  
+Commit: `accb3d0e21e35196e74274b1992c1b7341479bfe`
+
+| Job | Conclusion |
+|---|---|
+| Quality | success |
+| Infrastructure | success |
+| Contracts | success |
+| Browser | success |
+| Security | success |
+| Governance | success |
 
 No network notification delivery, signing, transaction broadcast, or funds operation ran.
