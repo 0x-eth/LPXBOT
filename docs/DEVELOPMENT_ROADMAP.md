@@ -158,7 +158,7 @@ flowchart LR
 
 **功能：** `MON-01..06`, `NOTIFY-01..02`。
 
-**当前状态：** P03 为 6 项 `implemented-assumed`、2 项 `planned`。P03-03 已完成目的地 CRUD、分类偏好、每监控绑定、模板/HMAC 构造、事务性 Outbox selector 和显式 local-sink 测试；active TVL、Fee/aTVL、目标 UI parity、通知历史、live Telegram/Webhook delivery、完整 SSRF egress 与 delivery SLO 继续 unresolved，MON-05/MON-06 保持 `planned`，P03 尚未收官。
+**当前状态：** P03 功能实现收官，8 项均为 `implemented-assumed`、0 项为 `planned`，阶段保持 `accepted-with-gaps`。P03-04 已完成独立 Dispatcher、安全 Webhook/Telegram 适配器、原子通知历史投影、当前用户历史 API 与 desktop/mobile UI；所有投递验收均为注入式本地 fixture。active TVL、Fee/aTVL、目标 UI parity、live Telegram/Webhook delivery、delivery SLO 以及生产 retention 策略继续 unresolved，不标记 `parity-verified` 或 `released`。
 
 **工作：** 监控 CRUD/启停、多条件 AND、中文/Hook 排除、通知历史、分类 Telegram 通知和 GET/POST Webhook 模板。
 
