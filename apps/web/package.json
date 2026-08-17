@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@lpbot/api-contract": "workspace:*",
+    "@lpbot/domain": "workspace:*",
     "@radix-ui/react-alert-dialog": "^1.1.23",
     "@radix-ui/react-dialog": "^1.1.23",
     "decimal.js": "10.6.0",

@@ -23,6 +23,7 @@ import {
   Filter,
   GitCompareArrows,
   GripVertical,
+  EllipsisVertical,
   Pause,
   Play,
   RefreshCw,
@@ -52,6 +53,8 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { AddressRemarksClient, AddressRemarksRequestError } from "./address-remarks-client.js";
+import { PoolActionMenu, type PoolActionMenuState } from "./pool-action-menu.js";
+import type { PoolActionResult } from "./pool-actions.js";
 import {
   addressRemarkLabel,
   initialAddressRemarksState,
@@ -560,6 +563,7 @@ function PoolTableCell({
   comparisonEnabled,
   comparisonSelected,
   marketExpanded,
+  openActions,
   toggleComparison,
   toggleGroup,
   toggleMarket,
@@ -570,6 +574,7 @@ function PoolTableCell({
   comparisonEnabled: boolean;
   comparisonSelected: boolean;
   marketExpanded: boolean;
+  openActions(row: MarketPoolRow, trigger: HTMLElement, x: number, y: number): void;
   toggleComparison(poolKey: string): void;
   toggleGroup(groupKey: string): void;
   toggleMarket(poolKey: string): void;
@@ -653,12 +658,17 @@ function PoolTableCell({
         <GitCompareArrows aria-hidden="true" size={15} />
       </button>
       <button
-        aria-label={`复制池身份 ${identity}`}
-        onClick={() => void navigator.clipboard.writeText(identity)}
-        title="复制池身份"
+        aria-haspopup="menu"
+        aria-label={`更多池操作 ${identity}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          const bounds = event.currentTarget.getBoundingClientRect();
+          openActions(row, event.currentTarget, bounds.right, bounds.bottom + 4);
+        }}
+        title="更多操作"
         type="button"
       >
-        <Copy aria-hidden="true" size={15} />
+        <EllipsisVertical aria-hidden="true" size={15} />
       </button>
     </td>
   );
@@ -673,6 +683,7 @@ function PoolTable({
   marketRefreshMs,
   marketRefreshSignal,
   marketStale,
+  onPoolAction,
   rows,
   showLabels,
   toggleComparison,
@@ -687,6 +698,7 @@ function PoolTable({
   marketRefreshMs: number;
   marketRefreshSignal: number;
   marketStale: boolean;
+  onPoolAction(result: PoolActionResult, row: MarketPoolRow): void;
   rows: readonly VisiblePoolRow[];
   showLabels: boolean;
   toggleComparison(poolKey: string): void;
@@ -694,6 +706,21 @@ function PoolTable({
   toggleMarket(poolKey: string): void;
 }) {
   const visibleColumns = columns.filter(({ visible }) => visible);
+  const [actionMenu, setActionMenu] = useState<PoolActionMenuState | null>(null);
+  const closeActionMenu = useCallback(
+    (restoreFocus: boolean) => {
+      const trigger = actionMenu?.trigger;
+      setActionMenu(null);
+      if (restoreFocus && trigger) requestAnimationFrame(() => trigger.focus());
+    },
+    [actionMenu],
+  );
+  const openActions = useCallback(
+    (row: MarketPoolRow, trigger: HTMLElement, x: number, y: number) => {
+      setActionMenu({ row, trigger, x, y });
+    },
+    [],
+  );
   return (
     <div className="pools-table-shell">
       <table aria-label="BSC 热门池" className="pools-table">
@@ -714,6 +741,31 @@ function PoolTable({
                 <tr
                   data-group-member={!visibleRow.isHeader ? "true" : undefined}
                   data-pool-label-count={showLabels ? visibleRow.row.labels.length : 0}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openActions(
+                      visibleRow.row,
+                      event.currentTarget,
+                      event.clientX,
+                      event.clientY,
+                    );
+                  }}
+                  onKeyDown={(event) => {
+                    if (!(event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey))) {
+                      return;
+                    }
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const bounds = event.currentTarget.getBoundingClientRect();
+                    openActions(
+                      visibleRow.row,
+                      event.currentTarget,
+                      bounds.left + 24,
+                      bounds.top + 24,
+                    );
+                  }}
+                  tabIndex={0}
                 >
                   {visibleColumns.map(({ key }) => (
                     <PoolTableCell
@@ -722,6 +774,7 @@ function PoolTable({
                       comparisonSelected={comparisonSelectedKeys.has(visibleRow.row.poolKey)}
                       key={key}
                       marketExpanded={marketExpanded}
+                      openActions={openActions}
                       showLabels={showLabels}
                       toggleComparison={toggleComparison}
                       toggleGroup={toggleGroup}
@@ -748,6 +801,9 @@ function PoolTable({
           })}
         </tbody>
       </table>
+      {actionMenu ? (
+        <PoolActionMenu close={closeActionMenu} execute={onPoolAction} menu={actionMenu} />
+      ) : null}
     </div>
   );
 }
