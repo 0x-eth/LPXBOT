@@ -1,5 +1,5 @@
 import { poolBlocklistMaxEntries, type PoolBlocklistEntry } from "@lpbot/api-contract";
-import type { Pool, PoolClient, QueryResult } from "pg";
+import type { Pool, PoolClient, QueryResult, QueryResultRow } from "pg";
 
 import {
   createPoolBlocklistSnapshot,
@@ -9,18 +9,18 @@ import {
   type PoolBlocklistStore,
 } from "./pool-blocklist.js";
 
-interface SnapshotRow {
+interface SnapshotRow extends QueryResultRow {
   entries: unknown;
   revision: string;
   updated_at: Date | null;
 }
 
-interface RevisionRow {
+interface RevisionRow extends QueryResultRow {
   revision: string;
 }
 
 interface Queryable {
-  query<T extends Record<string, unknown>>(text: string, values?: unknown[]): Promise<QueryResult<T>>;
+  query<T extends QueryResultRow>(text: string, values?: unknown[]): Promise<QueryResult<T>>;
 }
 
 export interface PostgresPoolBlocklistStoreOptions {
@@ -110,7 +110,7 @@ export class PostgresPoolBlocklistStore implements PoolBlocklistStore {
             entry.chainId,
             entry.scope,
             entry.identity,
-            entry.label ?? null,
+            "label" in entry ? entry.label : null,
             input.updatedAt,
           ],
         );

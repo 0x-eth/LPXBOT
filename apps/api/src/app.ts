@@ -1930,6 +1930,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           success: false,
         });
       }
+      if (!("value" in result)) throw new Error("Pool blocklist mutation result is invalid");
       return createSuccessEnvelope(result.value, request.id);
     });
 
