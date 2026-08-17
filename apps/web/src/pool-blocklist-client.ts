@@ -17,7 +17,13 @@ interface ErrorBody {
 const hashPattern = /^sha256:[0-9a-f]{64}$/u;
 const poolKeyPattern = /^56:0x(?:[0-9a-f]{40}|[0-9a-f]{64})$/u;
 const addressPattern = /^0x[0-9a-f]{40}$/u;
-const controlPattern = /[\u0000-\u001f\u007f-\u009f]/u;
+
+function containsControlCharacter(value: string): boolean {
+  return [...value].some((character) => {
+    const codePoint = character.codePointAt(0)!;
+    return codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f);
+  });
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -51,7 +57,7 @@ function parseEntry(value: unknown): PoolBlocklistEntry | null {
       value.label !== value.label.trim() ||
       value.label.length === 0 ||
       [...value.label].length > poolBlocklistMaxLabelLength ||
-      controlPattern.test(value.label))
+      containsControlCharacter(value.label))
   ) {
     return null;
   }
