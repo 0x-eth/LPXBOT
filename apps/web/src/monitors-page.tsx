@@ -125,7 +125,11 @@ function draftConditionValid(condition: ConditionDraft): boolean {
   ) {
     return false;
   }
-  return condition.id !== "transactionCount" || /^\d+$/u.test(condition.value);
+  return (
+    condition.id !== "transactionCount" ||
+    (/^\d+$/u.test(condition.value) &&
+      BigInt(condition.value) <= BigInt(Number.MAX_SAFE_INTEGER))
+  );
 }
 
 function draftValid(draft: MonitorDraft): boolean {
