@@ -43,6 +43,11 @@ export interface NotificationSecretStore {
     secret: string;
     userId: string;
   }): Promise<{ secretRef: string }>;
+  read(input: {
+    kind: "telegram-bot-token" | "webhook-hmac";
+    secretRef: string;
+    userId: string;
+  }): Promise<string | null>;
 }
 
 export type NotificationPreferenceMutationResult =
@@ -413,7 +418,10 @@ function publicDestination(value: StoredDestination): NotificationDestination {
 }
 
 export class MemoryNotificationSecretStore implements NotificationSecretStore {
-  readonly #secrets = new Map<string, string>();
+  readonly #secrets = new Map<
+    string,
+    { kind: "telegram-bot-token" | "webhook-hmac"; secret: string; userId: string }
+  >();
   #sequence = 0;
 
   count(): number {
@@ -431,8 +439,17 @@ export class MemoryNotificationSecretStore implements NotificationSecretStore {
   }): Promise<{ secretRef: string }> {
     this.#sequence += 1;
     const secretRef = `secret-ref://fixture/${input.kind}/${this.#sequence}`;
-    this.#secrets.set(secretRef, input.secret);
+    this.#secrets.set(secretRef, { kind: input.kind, secret: input.secret, userId: input.userId });
     return { secretRef };
+  }
+
+  async read(input: {
+    kind: "telegram-bot-token" | "webhook-hmac";
+    secretRef: string;
+    userId: string;
+  }): Promise<string | null> {
+    const stored = this.#secrets.get(input.secretRef);
+    return stored?.kind === input.kind && stored.userId === input.userId ? stored.secret : null;
   }
 }
 

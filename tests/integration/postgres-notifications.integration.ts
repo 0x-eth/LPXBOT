@@ -53,7 +53,10 @@ const webhookDraft: DestinationDraft = {
 };
 
 class FixtureSecretStore implements NotificationSecretStore {
-  readonly values = new Map<string, string>();
+  readonly values = new Map<
+    string,
+    { kind: "telegram-bot-token" | "webhook-hmac"; secret: string; userId: string }
+  >();
   failDelete = false;
   failPut = false;
   #sequence = 0;
@@ -71,8 +74,17 @@ class FixtureSecretStore implements NotificationSecretStore {
     if (this.failPut) throw new Error("fixture secret put failure");
     this.#sequence += 1;
     const secretRef = `secret-ref://postgres-fixture/${input.kind}/${this.#sequence}`;
-    this.values.set(secretRef, input.secret);
+    this.values.set(secretRef, { kind: input.kind, secret: input.secret, userId: input.userId });
     return { secretRef };
+  }
+
+  async read(input: {
+    kind: "telegram-bot-token" | "webhook-hmac";
+    secretRef: string;
+    userId: string;
+  }): Promise<string | null> {
+    const stored = this.values.get(input.secretRef);
+    return stored?.kind === input.kind && stored.userId === input.userId ? stored.secret : null;
   }
 }
 
