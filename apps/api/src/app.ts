@@ -63,7 +63,14 @@ import {
   type MarketChartsProvider,
   type MarketTickLiquidityQuery,
 } from "./market-charts.js";
-import type { MarketPoolsByTokenContext, MarketPoolsProvider } from "./market-pools.js";
+import {
+  createMarketPoolEligibility,
+  filterEligibleMarketPoolRows,
+  filterMarketPoolSnapshot,
+  filterMarketStreamEnvelope,
+  type MarketPoolsByTokenContext,
+  type MarketPoolsProvider,
+} from "./market-pools.js";
 import {
   parsePoolBlocklistPatch,
   PoolBlocklistValidationError,
@@ -958,6 +965,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     });
     return resolved.session;
   };
+
+  const poolEligibility = async (userId: string) =>
+    options.poolBlocklistStore
+      ? createMarketPoolEligibility(await options.poolBlocklistStore.get(userId))
+      : undefined;
 
   const recordDeniedChainManagement = async (
     request: FastifyRequest,

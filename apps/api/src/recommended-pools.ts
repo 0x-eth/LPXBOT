@@ -10,7 +10,11 @@ import {
 } from "@lpbot/api-contract";
 import { Decimal } from "decimal.js";
 
-import type { MarketPoolsProvider } from "./market-pools.js";
+import {
+  filterEligibleMarketPoolRows,
+  type MarketPoolEligibility,
+  type MarketPoolsProvider,
+} from "./market-pools.js";
 
 const evmAddressPattern = /^0x[0-9a-f]{40}$/u;
 const poolIdPattern = /^0x[0-9a-f]{64}$/u;
@@ -25,6 +29,7 @@ export interface RecommendedPoolsScheduler {
 
 export interface RecommendedPoolsEventStreamOptions {
   chain: "bsc";
+  eligibility?: MarketPoolEligibility;
   heartbeatMilliseconds?: number;
   limit: number;
   pollMilliseconds?: number;
@@ -141,6 +146,7 @@ function decodeCursorPart(value: string): string | null {
 }
 
 export function recommendedPoolsCursor(input: {
+  blocklistHash?: string;
   chain: "bsc";
   limit: number;
   selectionHash: string;
@@ -157,6 +163,21 @@ export function recommendedPoolsCursor(input: {
   ) {
     throw new RangeError("RECOMMENDATION_CURSOR_INPUT_INVALID");
   }
+  if (input.blocklistHash !== undefined && !selectionHashPattern.test(input.blocklistHash)) {
+    throw new RangeError("RECOMMENDATION_CURSOR_INPUT_INVALID");
+  }
+  if (input.blocklistHash) {
+    return [
+      "rec-pools",
+      "v2",
+      input.chain,
+      String(input.limit),
+      input.blocklistHash.slice("sha256:".length),
+      cursorPart(input.sourceVersion),
+      cursorPart(input.sourceWindowEnd),
+      input.selectionHash.slice("sha256:".length),
+    ].join(":");
+  }
   return [
     "rec-pools",
     "v1",
@@ -170,8 +191,37 @@ export function recommendedPoolsCursor(input: {
 
 export function parseRecommendedPoolsCursor(
   cursor: string,
-  filter: { chain: "bsc"; limit: number },
-): { selectionHash: string; sourceVersion: string; sourceWindowEnd: string } | null {
+  filter: { blocklistHash?: string; chain: "bsc"; limit: number },
+): {
+  blocklistHash?: string;
+  selectionHash: string;
+  sourceVersion: string;
+  sourceWindowEnd: string;
+} | null {
+  if (filter.blocklistHash !== undefined) {
+    const [prefix, version, chain, limit, hash, encodedVersion, encodedWindowEnd, selection, ...extra] =
+      cursor.split(":");
+    const blocklistHash = `sha256:${hash}`;
+    const sourceVersion = encodedVersion ? decodeCursorPart(encodedVersion) : null;
+    const sourceWindowEnd = encodedWindowEnd ? decodeCursorPart(encodedWindowEnd) : null;
+    const selectionHash = `sha256:${selection}`;
+    if (
+      prefix !== "rec-pools" ||
+      version !== "v2" ||
+      chain !== filter.chain ||
+      limit !== String(filter.limit) ||
+      blocklistHash !== filter.blocklistHash ||
+      !selectionHashPattern.test(blocklistHash) ||
+      !sourceVersion ||
+      !sourceWindowEnd ||
+      !Number.isFinite(Date.parse(sourceWindowEnd)) ||
+      !selectionHashPattern.test(selectionHash) ||
+      extra.length > 0
+    ) {
+      return null;
+    }
+    return { blocklistHash, selectionHash, sourceVersion, sourceWindowEnd };
+  }
   const [prefix, version, chain, limit, encodedVersion, encodedWindowEnd, hash, ...extra] =
     cursor.split(":");
   if (
@@ -205,11 +255,13 @@ function snapshotEvent(
   chain: "bsc",
   limit: number,
   scheduler: RecommendedPoolsScheduler,
+  eligibility?: MarketPoolEligibility,
 ): RecommendedPoolsSnapshotEvent {
-  const pools = selectRecommendedPools(snapshot, limit);
+  const pools = selectRecommendedPools(snapshot, limit, eligibility);
   const selectionHash = recommendationSelectionHash(pools);
   return {
     cursor: recommendedPoolsCursor({
+      ...(eligibility ? { blocklistHash: eligibility.blocklistHash } : {}),
       chain,
       limit,
       selectionHash,
@@ -249,10 +301,12 @@ export async function* createRecommendedPoolsEventStream(
         minutes: 5,
         protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
         signal: options.signal,
+        ...(options.eligibility ? { eligibility: options.eligibility } : {}),
       }),
       options.chain,
       options.limit,
       scheduler,
+      options.eligibility,
     );
   const initial = await read();
   let selectionHash = initial.selectionHash;
@@ -323,6 +377,7 @@ function toWireRow(row: MarketPoolRow): RecommendedPoolRow {
 export function selectRecommendedPools(
   snapshot: MarketPoolSnapshot,
   limit: number,
+  eligibility?: MarketPoolEligibility,
 ): RecommendedPoolRow[] {
   if (snapshot.chainId !== 56 || snapshot.minutes !== 5) {
     throw new RangeError("RECOMMENDATION_SOURCE_INVALID");
@@ -331,7 +386,7 @@ export function selectRecommendedPools(
     throw new RangeError("RECOMMENDATION_LIMIT_INVALID");
   }
 
-  const ordered = snapshot.rows
+  const ordered = filterEligibleMarketPoolRows(snapshot.rows, eligibility)
     .map(candidate)
     .filter((value): value is NonNullable<typeof value> => value !== null)
     .sort((left, right) => {

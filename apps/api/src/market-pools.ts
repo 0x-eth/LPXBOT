@@ -11,12 +11,18 @@ import {
   type MarketPoolSnapshot,
   type MarketStreamEnvelope,
   type MarketWindowMinutes,
+  type PoolBlocklistSnapshot,
 } from "@lpbot/api-contract";
+import {
+  createPoolEligibilityPolicy,
+  type PoolEligibilityPolicy,
+} from "@lpbot/domain";
 import { MARKET_METRIC_VERSION, POOL_LABEL_RULE_CONTRACT } from "@lpbot/market-metrics";
 import type { Pool, PoolClient } from "pg";
 
 export interface MarketPoolsContext {
   chainId: 56;
+  eligibility?: MarketPoolEligibility;
   minutes: MarketWindowMinutes;
   protocols: readonly LiquidityFlowProtocol[];
   signal?: AbortSignal;
@@ -30,6 +36,7 @@ export interface MarketPoolsStreamContext extends MarketPoolsContext {
 export interface MarketPoolsByTokenContext {
   address: `0x${string}`;
   chainId: 56;
+  eligibility?: MarketPoolEligibility;
   limit: number;
   protocols: readonly LiquidityFlowProtocol[];
   sort: MarketPoolByTokenSort;
@@ -39,6 +46,62 @@ export interface MarketPoolsProvider {
   getByToken(context: MarketPoolsByTokenContext): Promise<MarketPoolByTokenRow[]>;
   getTopFees(context: MarketPoolsContext): Promise<MarketPoolSnapshot>;
   subscribe(context: MarketPoolsStreamContext): AsyncIterable<MarketStreamEnvelope>;
+}
+
+export interface MarketPoolEligibility extends PoolEligibilityPolicy {
+  readonly blockedPoolKeys: readonly string[];
+  readonly blockedTokenAddresses: readonly string[];
+}
+
+export interface MarketEligibilityCursorFilter {
+  blocklistHash: string;
+  protocols: readonly LiquidityFlowProtocol[];
+}
+
+export function createMarketPoolEligibility(
+  snapshot: Pick<PoolBlocklistSnapshot, "blocklistHash" | "entries">,
+): MarketPoolEligibility {
+  const policy = createPoolEligibilityPolicy(snapshot);
+  return {
+    ...policy,
+    blockedPoolKeys: snapshot.entries
+      .filter(({ scope }) => scope === "pool")
+      .map(({ identity }) => identity),
+    blockedTokenAddresses: snapshot.entries
+      .filter(({ scope }) => scope === "token")
+      .map(({ identity }) => identity),
+  };
+}
+
+export function filterEligibleMarketPoolRows<T extends MarketPoolRow | MarketPoolByTokenRow>(
+  rows: readonly T[],
+  eligibility: MarketPoolEligibility | undefined,
+): T[] {
+  return eligibility ? eligibility.filter(rows).candidates : [...rows];
+}
+
+export function filterMarketPoolSnapshot(
+  snapshot: MarketPoolSnapshot,
+  eligibility: MarketPoolEligibility | undefined,
+): MarketPoolSnapshot {
+  return { ...snapshot, rows: filterEligibleMarketPoolRows(snapshot.rows, eligibility) };
+}
+
+export function filterMarketStreamEnvelope(
+  envelope: MarketStreamEnvelope,
+  eligibility: MarketPoolEligibility | undefined,
+): MarketStreamEnvelope {
+  if (!eligibility || envelope.data === null) return envelope;
+  if ("rows" in envelope.data) {
+    return { ...envelope, data: filterMarketPoolSnapshot(envelope.data, eligibility) };
+  }
+  return {
+    ...envelope,
+    data: {
+      ...envelope.data,
+      upserts: filterEligibleMarketPoolRows(envelope.data.upserts, eligibility),
+    },
+  };
 }
 
 interface SnapshotRow {
@@ -82,22 +145,70 @@ function storageStreamKey(context: Pick<MarketPoolsContext, "chainId" | "minutes
 }
 
 function filteredStream(context: MarketPoolsContext): boolean {
-  return context.protocols.length !== 4;
+  return context.protocols.length !== 4 || context.eligibility !== undefined;
 }
 
 function wrapFilteredCursor(context: MarketPoolsContext, sourceCursor: string): string {
-  if (!filteredStream(context)) return sourceCursor;
+  if (context.eligibility) {
+    return wrapMarketEligibilityCursor(sourceCursor, {
+      blocklistHash: context.eligibility.blocklistHash,
+      protocols: context.protocols,
+    });
+  }
+  if (context.protocols.length === 4) return sourceCursor;
   const signature = digest(context.protocols.join(","));
   return `market-filter:v1:${signature}:${Buffer.from(sourceCursor).toString("base64url")}`;
 }
 
 function unwrapFilteredCursor(context: MarketPoolsContext, cursor: string): string | null {
-  if (!filteredStream(context)) return cursor;
+  if (context.eligibility) {
+    return parseMarketEligibilityCursor(cursor, {
+      blocklistHash: context.eligibility.blocklistHash,
+      protocols: context.protocols,
+    });
+  }
+  if (context.protocols.length === 4) return cursor;
   const [prefix, version, signature, encoded, ...extra] = cursor.split(":");
   if (
     prefix !== "market-filter" ||
     version !== "v1" ||
     signature !== digest(context.protocols.join(",")) ||
+    !encoded ||
+    extra.length > 0
+  ) {
+    return null;
+  }
+  try {
+    return Buffer.from(encoded, "base64url").toString("utf8") || null;
+  } catch {
+    return null;
+  }
+}
+
+export function wrapMarketEligibilityCursor(
+  sourceCursor: string,
+  filter: MarketEligibilityCursorFilter,
+): string {
+  const signature = digest({
+    blocklistHash: filter.blocklistHash,
+    protocols: [...filter.protocols],
+  });
+  return `market-filter:v2:${signature}:${Buffer.from(sourceCursor).toString("base64url")}`;
+}
+
+export function parseMarketEligibilityCursor(
+  cursor: string,
+  filter: MarketEligibilityCursorFilter,
+): string | null {
+  const [prefix, version, signature, encoded, ...extra] = cursor.split(":");
+  const expected = digest({
+    blocklistHash: filter.blocklistHash,
+    protocols: [...filter.protocols],
+  });
+  if (
+    prefix !== "market-filter" ||
+    version !== "v2" ||
+    signature !== expected ||
     !encoded ||
     extra.length > 0
   ) {
@@ -195,11 +306,21 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
         WHERE catalog.chain_id = $1
           AND (catalog.token0 = $2 OR catalog.token1 = $2)
           AND catalog.protocol = ANY($3::text[])
+          AND NOT (catalog.pool_key = ANY($6::text[]))
+          AND NOT (catalog.token0 = ANY($7::text[]) OR catalog.token1 = ANY($7::text[]))
         ORDER BY (five.row->>$4)::numeric DESC NULLS LAST,
                  (hour.row->>$4)::numeric DESC NULLS LAST,
                  catalog.pool_key
         LIMIT $5`,
-      [context.chainId, context.address.toLowerCase(), context.protocols, metric, context.limit],
+      [
+        context.chainId,
+        context.address.toLowerCase(),
+        context.protocols,
+        metric,
+        context.limit,
+        context.eligibility?.blockedPoolKeys ?? [],
+        context.eligibility?.blockedTokenAddresses ?? [],
+      ],
     );
     return result.rows.map((row) => {
       const current = row.five_minute ?? row.one_hour;
@@ -501,7 +622,10 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
     const protocols = new Set(context.protocols);
     return {
       ...snapshot,
-      rows: snapshot.rows.filter(({ protocol }) => protocols.has(protocol)),
+      rows: filterEligibleMarketPoolRows(
+        snapshot.rows.filter(({ protocol }) => protocols.has(protocol)),
+        context.eligibility,
+      ),
     };
   }
 
@@ -517,7 +641,10 @@ export class PostgresMarketPoolsProvider implements MarketPoolsProvider {
       const protocols = new Set(context.protocols);
       data = {
         ...data,
-        upserts: data.upserts.filter(({ protocol }) => protocols.has(protocol)),
+        upserts: filterEligibleMarketPoolRows(
+          data.upserts.filter(({ protocol }) => protocols.has(protocol)),
+          context.eligibility,
+        ),
       };
     }
     return {
