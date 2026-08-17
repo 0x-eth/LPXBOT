@@ -2,6 +2,7 @@ import type { ShellStatsEvent } from "../packages/api-contract/src/index.js";
 import {
   ApiShellStatsProvider,
   createShellStatsState,
+  parseShellStatsEvent,
   reduceShellStatsEvent,
   shellStatsDisplay,
 } from "../apps/web/src/shell-stats.js";
@@ -72,6 +73,61 @@ describe("P01-06 shell stats reducer", () => {
       type: "snapshot",
     });
     expect(shellStatsDisplay({ ...connected, connected: false })).toEqual(empty);
+  });
+
+  it("renders authoritative zeros explicitly and rejects late snapshots and updates", () => {
+    const zero = reduceShellStatsEvent(createShellStatsState(), {
+      observedAt,
+      sequence: 10,
+      stats: {
+        fps: null,
+        gas: { baseGwei: null, ethereumGwei: null },
+        online: null,
+        pingMs: null,
+        taskCounts: { paused: 0, running: 0, stopped: 0 },
+      },
+      type: "snapshot",
+    });
+    expect(shellStatsDisplay(zero)).toMatchObject({ paused: "0", running: "0", stopped: "0" });
+    expect(
+      reduceShellStatsEvent(zero, {
+        observedAt: "2026-08-14T09:16:00.000Z",
+        sequence: 9,
+        stats: { taskCounts: { running: 999 } },
+        type: "update",
+      }),
+    ).toBe(zero);
+    expect(
+      reduceShellStatsEvent(zero, {
+        observedAt: "2026-08-14T09:16:00.000Z",
+        sequence: 8,
+        stats: {
+          fps: null,
+          gas: { baseGwei: null, ethereumGwei: null },
+          online: true,
+          pingMs: null,
+          taskCounts: { paused: 9, running: 9, stopped: 9 },
+        },
+        type: "snapshot",
+      }),
+    ).toBe(zero);
+  });
+
+  it("rejects unsafe task counts and sequence values at the wire boundary", () => {
+    const event = {
+      observedAt,
+      sequence: 1,
+      stats: {
+        fps: null,
+        gas: { baseGwei: null, ethereumGwei: null },
+        online: null,
+        pingMs: null,
+        taskCounts: { paused: 0, running: Number.MAX_SAFE_INTEGER + 1, stopped: 0 },
+      },
+      type: "snapshot",
+    };
+    expect(parseShellStatsEvent(event)).toBeNull();
+    expect(parseShellStatsEvent({ ...event, sequence: Number.MAX_SAFE_INTEGER + 1 })).toBeNull();
   });
 });
 
@@ -186,5 +242,55 @@ describe("P01-06 API shell stats provider", () => {
     await vi.waitFor(() => expect(states.at(-1)?.recommendations.status).toBe("unavailable"));
     stop();
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses local receipt time for the heartbeat watchdog and reconnects with unknown stats", async () => {
+    vi.useFakeTimers();
+    try {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(
+            encoder.encode(
+              'event: snapshot\ndata: {"type":"snapshot","sequence":10,"observedAt":"2099-01-01T00:00:00.000Z","stats":{"online":null,"taskCounts":{"running":0,"paused":0,"stopped":0},"gas":{"baseGwei":null,"ethereumGwei":null},"fps":null,"pingMs":null}}\n\n',
+            ),
+          );
+          setTimeout(() => {
+            controller.enqueue(
+              encoder.encode(
+                'event: heartbeat\ndata: {"type":"heartbeat","sequence":null,"observedAt":"1999-01-01T00:00:00.000Z"}\n\n',
+              ),
+            );
+          }, 80);
+        },
+      });
+      const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(stream, { headers: { "Content-Type": "text/event-stream" }, status: 200 }),
+      );
+      const provider = new ApiShellStatsProvider({
+        fetcher,
+        heartbeatTimeoutMs: 100,
+        initialRetryMs: 1_000,
+        maxRetryMs: 1_000,
+      });
+      const states: ReturnType<typeof createShellStatsState>[] = [];
+      const stop = provider.subscribe((state) => states.push(state));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(states.at(-1)).toMatchObject({ connected: true, sequence: 10 });
+
+      await vi.advanceTimersByTimeAsync(150);
+      expect(states.at(-1)?.connected).toBe(true);
+      await vi.advanceTimersByTimeAsync(31);
+      expect(states.at(-1)?.connected).toBe(false);
+      expect(shellStatsDisplay(states.at(-1)!)).toMatchObject({
+        paused: "--",
+        running: "--",
+        stopped: "--",
+      });
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      stop();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
