@@ -20,7 +20,11 @@ describe("P03-04 notification secret read boundary", () => {
       store.read({ kind: "webhook-hmac", secretRef: stored.secretRef, userId: "user-b" }),
     ).resolves.toBeNull();
     await expect(
-      store.read({ kind: "webhook-hmac", secretRef: "secret-ref://fixture/missing", userId: "user-a" }),
+      store.read({
+        kind: "webhook-hmac",
+        secretRef: "secret-ref://fixture/missing",
+        userId: "user-a",
+      }),
     ).resolves.toBeNull();
 
     await store.delete(stored.secretRef);

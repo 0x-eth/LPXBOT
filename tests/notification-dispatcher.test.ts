@@ -313,33 +313,39 @@ describe("P03-04 notification Dispatcher", () => {
     ["not-found", "DESTINATION_NOT_FOUND"],
     ["disabled", "DESTINATION_DISABLED"],
     ["revision-not-found", "DESTINATION_REVISION_NOT_FOUND"],
-  ] as const)("marks a %s destination permanently failed before reading secrets", async (status, errorCode) => {
-    const item = delivery();
-    const outbox = new FixtureOutbox([item]);
-    let secretReads = 0;
-    const dispatcher = new NotificationDispatcher({
-      adapters: {
-        telegram: { deliver: async () => ({ status: "delivered" as const }) },
-        webhook: { deliver: async () => ({ status: "delivered" as const }) },
-      },
-      destinations: { resolve: async () => ({ status }) },
-      leaseOwner: "dispatcher-fixture-destination",
-      now: () => new Date("2026-08-18T00:00:00.000Z"),
-      outbox,
-      secrets: {
-        async read() {
-          secretReads += 1;
-          return "fixture";
+  ] as const)(
+    "marks a %s destination permanently failed before reading secrets",
+    async (status, errorCode) => {
+      const item = delivery();
+      const outbox = new FixtureOutbox([item]);
+      let secretReads = 0;
+      const dispatcher = new NotificationDispatcher({
+        adapters: {
+          telegram: { deliver: async () => ({ status: "delivered" as const }) },
+          webhook: { deliver: async () => ({ status: "delivered" as const }) },
         },
-      },
-    });
-    await expect(dispatcher.dispatchBatch()).resolves.toMatchObject({ failed: 1 });
-    expect(secretReads).toBe(0);
-    expect(outbox.calls.at(-1)).toMatchObject({ input: { errorCode }, method: "markDead" });
-  });
+        destinations: { resolve: async () => ({ status }) },
+        leaseOwner: "dispatcher-fixture-destination",
+        now: () => new Date("2026-08-18T00:00:00.000Z"),
+        outbox,
+        secrets: {
+          async read() {
+            secretReads += 1;
+            return "fixture";
+          },
+        },
+      });
+      await expect(dispatcher.dispatchBatch()).resolves.toMatchObject({ failed: 1 });
+      expect(secretReads).toBe(0);
+      expect(outbox.calls.at(-1)).toMatchObject({ input: { errorCode }, method: "markDead" });
+    },
+  );
 
   it("persists retry/dead classifications and ignores late lease results", async () => {
-    const retryItem = delivery({ deliveryId: "retry-delivery", destinationId: "retry-destination" });
+    const retryItem = delivery({
+      deliveryId: "retry-delivery",
+      destinationId: "retry-destination",
+    });
     const deadItem = delivery({ deliveryId: "dead-delivery", destinationId: "dead-destination" });
     const outbox = new FixtureOutbox([retryItem, deadItem]);
     outbox.markResult = false;

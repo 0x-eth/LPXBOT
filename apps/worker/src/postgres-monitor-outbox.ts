@@ -460,12 +460,7 @@ export class PostgresMonitorCandidateOutboxRepository {
                 provider_acknowledgement = $3,
                 updated_at = $4
           WHERE delivery_id = $1`,
-        [
-          input.deliveryId,
-          result.rows[0].delivered_at,
-          acknowledgement,
-          result.rows[0].updated_at,
-        ],
+        [input.deliveryId, result.rows[0].delivered_at, acknowledgement, result.rows[0].updated_at],
       );
       if (history.rowCount !== 1) throw new Error("OUTBOX_HISTORY_SYNC_FAILED");
       await client.query("COMMIT");
@@ -561,12 +556,7 @@ export class PostgresMonitorCandidateOutboxRepository {
                 provider_acknowledgement = NULL,
                 updated_at = $4
           WHERE delivery_id = $1`,
-        [
-          input.deliveryId,
-          result.rows[0].next_attempt_at,
-          errorCode,
-          result.rows[0].updated_at,
-        ],
+        [input.deliveryId, result.rows[0].next_attempt_at, errorCode, result.rows[0].updated_at],
       );
       if (history.rowCount !== 1) throw new Error("OUTBOX_HISTORY_SYNC_FAILED");
       await client.query("COMMIT");

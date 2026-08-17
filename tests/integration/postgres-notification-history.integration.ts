@@ -5,7 +5,10 @@ import { fileURLToPath } from "node:url";
 import { PostgresNotificationHistoryStore } from "../../apps/api/src/postgres-notification-history-store.js";
 import { PostgresDispatchDestinationStore } from "../../apps/dispatcher/src/postgres-dispatch-destination-store.js";
 import { PostgresMonitorCandidateOutboxRepository } from "../../apps/worker/src/postgres-monitor-outbox.js";
-import { monitorCandidateKey, type MonitorCandidate } from "../../packages/domain/src/monitor-evaluator.js";
+import {
+  monitorCandidateKey,
+  type MonitorCandidate,
+} from "../../packages/domain/src/monitor-evaluator.js";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -289,7 +292,9 @@ describe("P03-04 PostgreSQL notification delivery history", () => {
       ],
     });
     const deliveryId = committed.deliveries[0]!.deliveryId;
-    await pool.query("DELETE FROM notification_delivery_history WHERE delivery_id = $1", [deliveryId]);
+    await pool.query("DELETE FROM notification_delivery_history WHERE delivery_id = $1", [
+      deliveryId,
+    ]);
     await expect(
       outbox.claimDue({
         deliveryIds: [deliveryId],
@@ -387,7 +392,15 @@ describe("P03-04 PostgreSQL notification delivery history", () => {
              jsonb_build_object('method', 'POST', 'template', '{}'::jsonb, 'url', $5::text),
              $6, false, $7
            )`,
-          [destinationA, userA, revision, enabled, url, `secret-ref://fixture/current/${revision}`, createdAt],
+          [
+            destinationA,
+            userA,
+            revision,
+            enabled,
+            url,
+            `secret-ref://fixture/current/${revision}`,
+            createdAt,
+          ],
         );
         await client.query(
           `UPDATE notification_destinations
@@ -419,9 +432,9 @@ describe("P03-04 PostgreSQL notification delivery history", () => {
     await expect(
       destinations.resolve({ ...dispatchDelivery, destinationRevision: 99 }),
     ).resolves.toEqual({ status: "revision-not-found" });
-    await expect(
-      destinations.resolve({ ...dispatchDelivery, userId: userB }),
-    ).resolves.toEqual({ status: "not-found" });
+    await expect(destinations.resolve({ ...dispatchDelivery, userId: userB })).resolves.toEqual({
+      status: "not-found",
+    });
 
     await pool.query(
       "UPDATE notification_destinations SET deleted_at = $2, updated_at = $2 WHERE destination_id = $1",

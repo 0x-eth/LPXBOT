@@ -91,7 +91,13 @@ describe("P03-04 Telegram delivery adapter", () => {
   });
 
   it.each([
-    [429, { error_code: 429, ok: false, parameters: { retry_after: 90 } }, "retry", "TELEGRAM_RATE_LIMITED", 90],
+    [
+      429,
+      { error_code: 429, ok: false, parameters: { retry_after: 90 } },
+      "retry",
+      "TELEGRAM_RATE_LIMITED",
+      90,
+    ],
     [503, { error_code: 503, ok: false }, "retry", "TELEGRAM_PROVIDER_UNAVAILABLE", undefined],
     [401, { error_code: 401, ok: false }, "dead", "TELEGRAM_AUTHENTICATION_FAILED", undefined],
     [403, { error_code: 403, ok: false }, "dead", "TELEGRAM_PERMISSION_DENIED", undefined],

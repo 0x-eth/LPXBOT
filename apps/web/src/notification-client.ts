@@ -265,8 +265,10 @@ function parseNotificationHistoryItem(value: unknown, status: number): Notificat
     (value.destination.type !== "telegram" &&
       value.destination.type !== "webhook" &&
       value.destination.type !== "local-sink") ||
-    !(value.errorCode === null ||
-      (typeof value.errorCode === "string" && /^[A-Z][A-Z0-9_:-]{0,79}$/u.test(value.errorCode))) ||
+    !(
+      value.errorCode === null ||
+      (typeof value.errorCode === "string" && /^[A-Z][A-Z0-9_:-]{0,79}$/u.test(value.errorCode))
+    ) ||
     typeof value.monitorId !== "string" ||
     !uuidPattern.test(value.monitorId) ||
     typeof value.monitorName !== "string" ||
@@ -293,8 +295,12 @@ export function parseNotificationHistoryPage(value: unknown, status = 0): Notifi
     !isRecord(value) ||
     !exactKeys(value, ["items", "nextCursor"]) ||
     !Array.isArray(value.items) ||
-    !(value.nextCursor === null ||
-      (typeof value.nextCursor === "string" && value.nextCursor.length > 0 && value.nextCursor.length <= 256))
+    !(
+      value.nextCursor === null ||
+      (typeof value.nextCursor === "string" &&
+        value.nextCursor.length > 0 &&
+        value.nextCursor.length <= 256)
+    )
   ) {
     throw new NotificationRequestError("NOTIFICATION_RESPONSE_INVALID", true, status);
   }

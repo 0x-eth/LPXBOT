@@ -18,11 +18,7 @@ export interface NotificationDispatchOutbox {
     leaseOwner: string;
     limit: number;
   }): Promise<DispatchOutboxDelivery[]>;
-  markDead(input: {
-    deliveryId: string;
-    errorCode: string;
-    leaseToken: string;
-  }): Promise<boolean>;
+  markDead(input: { deliveryId: string; errorCode: string; leaseToken: string }): Promise<boolean>;
   markDelivered(input: {
     acknowledgement?: string;
     deliveryId: string;
@@ -204,7 +200,9 @@ function payloadString(payload: Record<string, unknown>, key: string): string {
 function templateValues(delivery: DispatchOutboxDelivery, timestamp: string) {
   const payload = delivery.payload;
   const metrics =
-    typeof payload.metrics === "object" && payload.metrics !== null && !Array.isArray(payload.metrics)
+    typeof payload.metrics === "object" &&
+    payload.metrics !== null &&
+    !Array.isArray(payload.metrics)
       ? (payload.metrics as Record<string, unknown>)
       : {};
   return {
@@ -365,7 +363,9 @@ export class NotificationDispatcher {
 
     const controller = new AbortController();
     const leaseExpiry = delivery.leaseExpiresAt ? Date.parse(delivery.leaseExpiresAt) : Number.NaN;
-    const budget = Number.isFinite(leaseExpiry) ? Math.max(0, leaseExpiry - this.#now().getTime()) : 0;
+    const budget = Number.isFinite(leaseExpiry)
+      ? Math.max(0, leaseExpiry - this.#now().getTime())
+      : 0;
     if (budget <= 0) return { kind: "late" };
     const timer = setTimeout(() => controller.abort(), budget);
     timer.unref?.();
@@ -405,12 +405,7 @@ export class NotificationDispatcher {
       return { kind: updated ? "delivered" : "late" };
     }
     if (result.status === "retry") {
-      return await this.#retry(
-        delivery,
-        leaseToken,
-        result.errorCode,
-        result.retryAfterSeconds,
-      );
+      return await this.#retry(delivery, leaseToken, result.errorCode, result.retryAfterSeconds);
     }
     return await this.#dead(delivery, leaseToken, result.errorCode);
   }

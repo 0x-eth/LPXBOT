@@ -879,11 +879,19 @@ function NotificationHistoryView({
           </label>
           <label>
             <span>开始时间</span>
-            <input onChange={(event) => setFrom(event.target.value)} type="datetime-local" value={from} />
+            <input
+              onChange={(event) => setFrom(event.target.value)}
+              type="datetime-local"
+              value={from}
+            />
           </label>
           <label>
             <span>结束时间</span>
-            <input onChange={(event) => setTo(event.target.value)} type="datetime-local" value={to} />
+            <input
+              onChange={(event) => setTo(event.target.value)}
+              type="datetime-local"
+              value={to}
+            />
           </label>
         </div>
         <button
@@ -948,12 +956,22 @@ function NotificationHistoryView({
             <tbody>
               {items.map((item) => (
                 <tr key={item.deliveryId}>
-                  <td><HistoryStatus status={item.status} /></td>
-                  <td><strong>{item.monitorName}</strong><small>{item.windowMinutes} 分钟</small></td>
-                  <td><span>{item.destination.name}</span><small>{item.destination.type}</small></td>
+                  <td>
+                    <HistoryStatus status={item.status} />
+                  </td>
+                  <td>
+                    <strong>{item.monitorName}</strong>
+                    <small>{item.windowMinutes} 分钟</small>
+                  </td>
+                  <td>
+                    <span>{item.destination.name}</span>
+                    <small>{item.destination.type}</small>
+                  </td>
                   <td>{item.attemptCount}</td>
                   <td>{historyTimestamp(item.nextRetryAt)}</td>
-                  <td><code>{item.errorCode ?? "—"}</code></td>
+                  <td>
+                    <code>{item.errorCode ?? "—"}</code>
+                  </td>
                   <td>{historyTimestamp(item.deliveredAt)}</td>
                   <td>{detailButton(item)}</td>
                 </tr>
@@ -974,10 +992,22 @@ function NotificationHistoryView({
               <strong>{item.monitorName}</strong>
               <span>{item.destination.name}</span>
               <dl>
-                <div><dt>尝试</dt><dd>{item.attemptCount}</dd></div>
-                <div><dt>下次重试</dt><dd>{historyTimestamp(item.nextRetryAt)}</dd></div>
-                <div><dt>错误码</dt><dd>{item.errorCode ?? "—"}</dd></div>
-                <div><dt>投递时间</dt><dd>{historyTimestamp(item.deliveredAt)}</dd></div>
+                <div>
+                  <dt>尝试</dt>
+                  <dd>{item.attemptCount}</dd>
+                </div>
+                <div>
+                  <dt>下次重试</dt>
+                  <dd>{historyTimestamp(item.nextRetryAt)}</dd>
+                </div>
+                <div>
+                  <dt>错误码</dt>
+                  <dd>{item.errorCode ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt>投递时间</dt>
+                  <dd>{historyTimestamp(item.deliveredAt)}</dd>
+                </div>
               </dl>
             </li>
           ))}
@@ -1246,38 +1276,40 @@ export function MonitorsPage() {
             <span className="sr-only">Monitors</span>
           </h1>
         </div>
-        {view === "monitors" ? <div className="monitor-heading-actions">
-          <span
-            aria-label={`${page?.enabledCount ?? 0} 个已启用，共 ${page?.totalCount ?? 0} 个监控`}
-            className="monitor-count"
-          >
-            {page?.enabledCount ?? 0}/{page?.totalCount ?? 0}
-          </span>
-          <button
-            aria-label="刷新监控"
-            className="icon-button tooltip-control"
-            data-tooltip="刷新"
-            disabled={loadState === "loading"}
-            onClick={() => void load()}
-            title="刷新监控"
-            type="button"
-          >
-            <RefreshCw
-              aria-hidden="true"
-              className={loadState === "loading" ? "spin-icon" : undefined}
-              size={18}
-            />
-          </button>
-          <button
-            className="command-button monitor-create-button"
-            onClick={(event) => openCreate(event.currentTarget)}
-            ref={newTrigger}
-            type="button"
-          >
-            <BellPlus aria-hidden="true" size={17} />
-            新建监控
-          </button>
-        </div> : null}
+        {view === "monitors" ? (
+          <div className="monitor-heading-actions">
+            <span
+              aria-label={`${page?.enabledCount ?? 0} 个已启用，共 ${page?.totalCount ?? 0} 个监控`}
+              className="monitor-count"
+            >
+              {page?.enabledCount ?? 0}/{page?.totalCount ?? 0}
+            </span>
+            <button
+              aria-label="刷新监控"
+              className="icon-button tooltip-control"
+              data-tooltip="刷新"
+              disabled={loadState === "loading"}
+              onClick={() => void load()}
+              title="刷新监控"
+              type="button"
+            >
+              <RefreshCw
+                aria-hidden="true"
+                className={loadState === "loading" ? "spin-icon" : undefined}
+                size={18}
+              />
+            </button>
+            <button
+              className="command-button monitor-create-button"
+              onClick={(event) => openCreate(event.currentTarget)}
+              ref={newTrigger}
+              type="button"
+            >
+              <BellPlus aria-hidden="true" size={17} />
+              新建监控
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <div aria-label="监控视图" className="monitor-view-tabs" role="tablist">
@@ -1322,171 +1354,174 @@ export function MonitorsPage() {
       </div>
 
       {view === "history" ? (
-        <div aria-labelledby="notification-history-tab" id="notification-history-panel" role="tabpanel">
+        <div
+          aria-labelledby="notification-history-tab"
+          id="notification-history-panel"
+          role="tabpanel"
+        >
           <NotificationHistoryView client={notificationClient} monitors={page?.items ?? []} />
         </div>
       ) : (
         <div aria-labelledby="monitor-rules-tab" id="monitor-rules-panel" role="tabpanel">
+          {loadState === "loading" && !page ? (
+            <div aria-label="正在加载监控" className="monitor-page-state" role="status">
+              <span aria-hidden="true" className="spinner spinner-small" />
+              <p>正在加载监控</p>
+            </div>
+          ) : null}
+          {loadState === "error" && !page ? (
+            <div className="monitor-page-state monitor-page-error" role="alert">
+              <CircleAlert aria-hidden="true" size={20} />
+              <p>加载监控失败</p>
+              <button className="secondary-button" onClick={() => void load()} type="button">
+                <RefreshCw aria-hidden="true" size={16} />
+                <span className="sr-only">重试加载监控</span>
+                重试
+              </button>
+            </div>
+          ) : null}
+          {loadState === "stale" && page ? (
+            <div className="monitor-stale" role="alert">
+              <CircleAlert aria-hidden="true" size={17} />
+              显示的是上次加载的数据
+            </div>
+          ) : null}
+          {page && page.items.length === 0 && loadState !== "loading" ? (
+            <div className="monitor-page-state monitor-page-empty" role="status">
+              <Inbox aria-hidden="true" size={22} />
+              <p>还没有监控</p>
+            </div>
+          ) : null}
 
-      {loadState === "loading" && !page ? (
-        <div aria-label="正在加载监控" className="monitor-page-state" role="status">
-          <span aria-hidden="true" className="spinner spinner-small" />
-          <p>正在加载监控</p>
-        </div>
-      ) : null}
-      {loadState === "error" && !page ? (
-        <div className="monitor-page-state monitor-page-error" role="alert">
-          <CircleAlert aria-hidden="true" size={20} />
-          <p>加载监控失败</p>
-          <button className="secondary-button" onClick={() => void load()} type="button">
-            <RefreshCw aria-hidden="true" size={16} />
-            <span className="sr-only">重试加载监控</span>
-            重试
-          </button>
-        </div>
-      ) : null}
-      {loadState === "stale" && page ? (
-        <div className="monitor-stale" role="alert">
-          <CircleAlert aria-hidden="true" size={17} />
-          显示的是上次加载的数据
-        </div>
-      ) : null}
-      {page && page.items.length === 0 && loadState !== "loading" ? (
-        <div className="monitor-page-state monitor-page-empty" role="status">
-          <Inbox aria-hidden="true" size={22} />
-          <p>还没有监控</p>
-        </div>
-      ) : null}
-
-      {page && page.items.length > 0 ? (
-        <section aria-label="监控列表" className="monitor-list">
-          {page.items.map((monitor) => {
-            const ready = monitor.conditions.some(({ enabled }) => enabled);
-            const status = monitor.enabled ? "运行中" : ready ? "已停用" : "未就绪";
-            return (
-              <article
-                aria-label={`监控 ${monitor.name}`}
-                className="monitor-row"
-                data-monitor-ready={ready}
-                key={monitor.monitorId}
-              >
-                <div className="monitor-row-primary">
-                  <div className="monitor-name-line">
-                    <h2>{monitor.name}</h2>
-                    <span data-enabled={monitor.enabled} data-ready={ready}>
-                      {status}
-                    </span>
-                  </div>
-                  <code title={monitor.poolKey}>{monitor.poolKey}</code>
-                  <p className="monitor-condition-summary">
-                    <ConditionSummary conditions={monitor.conditions} />
-                  </p>
-                </div>
-                <dl className="monitor-facts">
-                  <div>
-                    <dt>窗口</dt>
-                    <dd>{monitor.windowMinutes} 分钟</dd>
-                  </div>
-                  <div>
-                    <dt>条件</dt>
-                    <dd>{monitor.conditions.filter(({ enabled }) => enabled).length}</dd>
-                  </div>
-                  <div>
-                    <dt>排除</dt>
-                    <dd>
-                      {[
-                        monitor.excludeHanToken ? "中文 Token" : null,
-                        monitor.excludeHook ? "Hook" : null,
-                      ]
-                        .filter(Boolean)
-                        .join("、") || "无"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>通知</dt>
-                    <dd>{monitor.destinationIds.length} 个目的地</dd>
-                  </div>
-                </dl>
-                <div className="monitor-row-actions">
-                  <button
-                    aria-checked={monitor.enabled}
-                    aria-label={`${monitor.enabled ? "停用" : "启用"}监控 ${monitor.name}`}
-                    className="monitor-lifecycle-switch"
-                    disabled={!ready || busyId === monitor.monitorId}
-                    onClick={() => void setLifecycle(monitor)}
-                    role="switch"
-                    title={ready ? (monitor.enabled ? "停用监控" : "启用监控") : "监控未就绪"}
-                    type="button"
+          {page && page.items.length > 0 ? (
+            <section aria-label="监控列表" className="monitor-list">
+              {page.items.map((monitor) => {
+                const ready = monitor.conditions.some(({ enabled }) => enabled);
+                const status = monitor.enabled ? "运行中" : ready ? "已停用" : "未就绪";
+                return (
+                  <article
+                    aria-label={`监控 ${monitor.name}`}
+                    className="monitor-row"
+                    data-monitor-ready={ready}
+                    key={monitor.monitorId}
                   >
-                    <Power aria-hidden="true" size={16} />
-                    <span aria-hidden="true">{monitor.enabled ? "开" : "关"}</span>
-                  </button>
-                  <button
-                    aria-label={`编辑监控 ${monitor.name}`}
-                    className="icon-button tooltip-control"
-                    data-tooltip="编辑"
-                    disabled={busyId !== null}
-                    onClick={(event) => {
-                      editorTrigger.current = event.currentTarget;
-                      setEditor({
-                        conflict: false,
-                        draft: draftFromMonitor(monitor),
-                        mode: "edit",
-                        original: monitor,
-                      });
-                    }}
-                    title="编辑监控"
-                    type="button"
-                  >
-                    <Pencil aria-hidden="true" size={16} />
-                  </button>
-                  <button
-                    aria-label={`删除监控 ${monitor.name}`}
-                    className="icon-button danger-button tooltip-control"
-                    data-tooltip="删除"
-                    disabled={busyId !== null}
-                    onClick={(event) => {
-                      deleteTrigger.current = event.currentTarget;
-                      setPendingDelete(monitor);
-                    }}
-                    title="删除监控"
-                    type="button"
-                  >
-                    <Trash2 aria-hidden="true" size={16} />
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-        </section>
-      ) : null}
+                    <div className="monitor-row-primary">
+                      <div className="monitor-name-line">
+                        <h2>{monitor.name}</h2>
+                        <span data-enabled={monitor.enabled} data-ready={ready}>
+                          {status}
+                        </span>
+                      </div>
+                      <code title={monitor.poolKey}>{monitor.poolKey}</code>
+                      <p className="monitor-condition-summary">
+                        <ConditionSummary conditions={monitor.conditions} />
+                      </p>
+                    </div>
+                    <dl className="monitor-facts">
+                      <div>
+                        <dt>窗口</dt>
+                        <dd>{monitor.windowMinutes} 分钟</dd>
+                      </div>
+                      <div>
+                        <dt>条件</dt>
+                        <dd>{monitor.conditions.filter(({ enabled }) => enabled).length}</dd>
+                      </div>
+                      <div>
+                        <dt>排除</dt>
+                        <dd>
+                          {[
+                            monitor.excludeHanToken ? "中文 Token" : null,
+                            monitor.excludeHook ? "Hook" : null,
+                          ]
+                            .filter(Boolean)
+                            .join("、") || "无"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>通知</dt>
+                        <dd>{monitor.destinationIds.length} 个目的地</dd>
+                      </div>
+                    </dl>
+                    <div className="monitor-row-actions">
+                      <button
+                        aria-checked={monitor.enabled}
+                        aria-label={`${monitor.enabled ? "停用" : "启用"}监控 ${monitor.name}`}
+                        className="monitor-lifecycle-switch"
+                        disabled={!ready || busyId === monitor.monitorId}
+                        onClick={() => void setLifecycle(monitor)}
+                        role="switch"
+                        title={ready ? (monitor.enabled ? "停用监控" : "启用监控") : "监控未就绪"}
+                        type="button"
+                      >
+                        <Power aria-hidden="true" size={16} />
+                        <span aria-hidden="true">{monitor.enabled ? "开" : "关"}</span>
+                      </button>
+                      <button
+                        aria-label={`编辑监控 ${monitor.name}`}
+                        className="icon-button tooltip-control"
+                        data-tooltip="编辑"
+                        disabled={busyId !== null}
+                        onClick={(event) => {
+                          editorTrigger.current = event.currentTarget;
+                          setEditor({
+                            conflict: false,
+                            draft: draftFromMonitor(monitor),
+                            mode: "edit",
+                            original: monitor,
+                          });
+                        }}
+                        title="编辑监控"
+                        type="button"
+                      >
+                        <Pencil aria-hidden="true" size={16} />
+                      </button>
+                      <button
+                        aria-label={`删除监控 ${monitor.name}`}
+                        className="icon-button danger-button tooltip-control"
+                        data-tooltip="删除"
+                        disabled={busyId !== null}
+                        onClick={(event) => {
+                          deleteTrigger.current = event.currentTarget;
+                          setPendingDelete(monitor);
+                        }}
+                        title="删除监控"
+                        type="button"
+                      >
+                        <Trash2 aria-hidden="true" size={16} />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </section>
+          ) : null}
 
-      {editor ? (
-        <MonitorEditor
-          busy={busyId === "editor"}
-          close={closeEditor}
-          destinationLoadState={destinationLoadState}
-          destinations={destinations}
-          editor={editor}
-          onChange={setEditor}
-          onSubmit={() => void saveEditor()}
-          returnFocus={() => editorTrigger.current?.focus()}
-        />
-      ) : null}
+          {editor ? (
+            <MonitorEditor
+              busy={busyId === "editor"}
+              close={closeEditor}
+              destinationLoadState={destinationLoadState}
+              destinations={destinations}
+              editor={editor}
+              onChange={setEditor}
+              onSubmit={() => void saveEditor()}
+              returnFocus={() => editorTrigger.current?.focus()}
+            />
+          ) : null}
 
-      <ConfirmDialog
-        confirmIcon={<Trash2 aria-hidden="true" size={17} />}
-        confirmLabel="确认删除"
-        description={pendingDelete?.name ?? ""}
-        disabled={pendingDelete ? busyId === pendingDelete.monitorId : false}
-        onConfirm={() => void deleteMonitor()}
-        onOpenChange={(open) => {
-          if (!open && busyId === null) setPendingDelete(null);
-        }}
-        onReturnFocus={() => deleteTrigger.current?.focus()}
-        open={pendingDelete !== null}
-        title="删除监控"
-      />
+          <ConfirmDialog
+            confirmIcon={<Trash2 aria-hidden="true" size={17} />}
+            confirmLabel="确认删除"
+            description={pendingDelete?.name ?? ""}
+            disabled={pendingDelete ? busyId === pendingDelete.monitorId : false}
+            onConfirm={() => void deleteMonitor()}
+            onOpenChange={(open) => {
+              if (!open && busyId === null) setPendingDelete(null);
+            }}
+            onReturnFocus={() => deleteTrigger.current?.focus()}
+            open={pendingDelete !== null}
+            title="删除监控"
+          />
         </div>
       )}
     </main>

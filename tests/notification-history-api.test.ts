@@ -86,9 +86,9 @@ afterAll(async () => {
 describe("P03-04 notification history API", () => {
   it("requires a session, isolates the current user, and paginates by createdAt plus deliveryId", async () => {
     const { app, tokenA, tokenB } = await fixture();
-    expect((await app.inject({ method: "GET", url: "/api/notifications/history" })).statusCode).toBe(
-      401,
-    );
+    expect(
+      (await app.inject({ method: "GET", url: "/api/notifications/history" })).statusCode,
+    ).toBe(401);
 
     const first = await app.inject({
       headers: auth(tokenA),
@@ -97,10 +97,9 @@ describe("P03-04 notification history API", () => {
     });
     expect(first.statusCode).toBe(200);
     expect(first.headers["cache-control"]).toBe("no-store");
-    expect(first.json().data.items.map(({ deliveryId }: { deliveryId: string }) => deliveryId)).toEqual([
-      "38000000-0000-4000-8000-000000000103",
-      "38000000-0000-4000-8000-000000000102",
-    ]);
+    expect(
+      first.json().data.items.map(({ deliveryId }: { deliveryId: string }) => deliveryId),
+    ).toEqual(["38000000-0000-4000-8000-000000000103", "38000000-0000-4000-8000-000000000102"]);
     expect(first.json().data.nextCursor).toEqual(expect.any(String));
 
     const second = await app.inject({
@@ -108,10 +107,9 @@ describe("P03-04 notification history API", () => {
       method: "GET",
       url: `/api/notifications/history?limit=2&cursor=${encodeURIComponent(first.json().data.nextCursor)}`,
     });
-    expect(second.json().data.items.map(({ deliveryId }: { deliveryId: string }) => deliveryId)).toEqual([
-      "38000000-0000-4000-8000-000000000101",
-      "38000000-0000-4000-8000-000000000100",
-    ]);
+    expect(
+      second.json().data.items.map(({ deliveryId }: { deliveryId: string }) => deliveryId),
+    ).toEqual(["38000000-0000-4000-8000-000000000101", "38000000-0000-4000-8000-000000000100"]);
     expect(second.json().data.nextCursor).toBeNull();
 
     const otherUser = await app.inject({
@@ -120,9 +118,7 @@ describe("P03-04 notification history API", () => {
       url: "/api/notifications/history",
     });
     expect(otherUser.json().data.items).toHaveLength(1);
-    expect(otherUser.json().data.items[0].deliveryId).toBe(
-      "38000000-0000-4000-8000-000000000199",
-    );
+    expect(otherUser.json().data.items[0].deliveryId).toBe("38000000-0000-4000-8000-000000000199");
   });
 
   it("combines monitor, public status, and inclusive time filters", async () => {

@@ -111,29 +111,21 @@ export class NodeTelegramTransport implements TelegramTransport {
         request.destroy();
         finish(new TelegramTransportError("TELEGRAM_TOTAL_TIMEOUT"));
       };
-      request.once("error", () =>
-        finish(new TelegramTransportError("TELEGRAM_CONNECTION_RESET")),
-      );
+      request.once("error", () => finish(new TelegramTransportError("TELEGRAM_CONNECTION_RESET")));
       if (input.signal.aborted) {
         abort();
         return;
       }
       input.signal.addEventListener("abort", abort, { once: true });
-      firstByteTimer = setTimeout(
-        () => {
-          request.destroy();
-          finish(new TelegramTransportError("TELEGRAM_FIRST_BYTE_TIMEOUT"));
-        },
-        5_000,
-      );
+      firstByteTimer = setTimeout(() => {
+        request.destroy();
+        finish(new TelegramTransportError("TELEGRAM_FIRST_BYTE_TIMEOUT"));
+      }, 5_000);
       firstByteTimer.unref?.();
-      totalTimer = setTimeout(
-        () => {
-          request.destroy();
-          finish(new TelegramTransportError("TELEGRAM_TOTAL_TIMEOUT"));
-        },
-        10_000,
-      );
+      totalTimer = setTimeout(() => {
+        request.destroy();
+        finish(new TelegramTransportError("TELEGRAM_TOTAL_TIMEOUT"));
+      }, 10_000);
       totalTimer.unref?.();
       request.end(body);
     });
@@ -168,7 +160,8 @@ function retryAfter(body: unknown): number | undefined {
 
 function providerAcknowledgement(body: unknown): string {
   const raw =
-    isRecord(body) && isRecord(body.result) &&
+    isRecord(body) &&
+    isRecord(body.result) &&
     (typeof body.result.message_id === "string" || typeof body.result.message_id === "number")
       ? String(body.result.message_id)
       : "accepted";
@@ -252,8 +245,7 @@ export class TelegramDeliveryAdapter {
       return classify(response);
     } catch (error) {
       return {
-        errorCode:
-          error instanceof TelegramTransportError ? error.code : "TELEGRAM_NETWORK_ERROR",
+        errorCode: error instanceof TelegramTransportError ? error.code : "TELEGRAM_NETWORK_ERROR",
         status: "retry",
       };
     }

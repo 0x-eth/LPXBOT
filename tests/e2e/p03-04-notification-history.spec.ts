@@ -109,7 +109,10 @@ async function historyRoute(route: Route, state: HistoryState): Promise<void> {
   const page = status || monitorId ? items : cursor ? items.slice(3) : items.slice(0, 3);
   await route.fulfill({
     contentType: "application/json",
-    json: envelope({ items: page, nextCursor: !status && !monitorId && !cursor && items.length > 3 ? "next-page" : null }),
+    json: envelope({
+      items: page,
+      nextCursor: !status && !monitorId && !cursor && items.length > 3 ? "next-page" : null,
+    }),
   });
 }
 
@@ -213,13 +216,22 @@ test("MON-05 notification history supports responsive scanning, filters, paginat
   await page.getByRole("tab", { name: "监控规则" }).focus();
   await page.keyboard.press("ArrowRight");
   await expect(page.getByRole("tab", { name: "通知历史" })).toBeFocused();
-  await expect(page.getByRole("tab", { name: "通知历史" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: "通知历史" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
   await expect(page.getByRole("status", { name: "正在加载通知历史" })).toBeVisible();
   const history = page.getByRole("region", { name: "通知历史" });
   await expect(history).toBeVisible();
-  await expect(history.locator(".notification-history-status", { hasText: "待发送" })).toBeVisible();
-  await expect(history.locator(".notification-history-status", { hasText: "发送中" })).toBeVisible();
-  await expect(history.locator(".notification-history-status", { hasText: "重试中" })).toBeVisible();
+  await expect(
+    history.locator(".notification-history-status", { hasText: "待发送" }),
+  ).toBeVisible();
+  await expect(
+    history.locator(".notification-history-status", { hasText: "发送中" }),
+  ).toBeVisible();
+  await expect(
+    history.locator(".notification-history-status", { hasText: "重试中" }),
+  ).toBeVisible();
 
   if (testInfo.project.name.includes("mobile")) {
     await expect(page.getByRole("list", { name: "通知历史列表" })).toBeVisible();
@@ -230,7 +242,9 @@ test("MON-05 notification history supports responsive scanning, filters, paginat
   }
 
   await page.getByRole("button", { name: "加载更多通知历史" }).click();
-  await expect(history.locator(".notification-history-status", { hasText: "已送达" })).toBeVisible();
+  await expect(
+    history.locator(".notification-history-status", { hasText: "已送达" }),
+  ).toBeVisible();
   await expect(history.locator(".notification-history-status", { hasText: "失败" })).toBeVisible();
 
   await page.getByLabel("投递状态").selectOption("retrying");
@@ -268,7 +282,9 @@ test("MON-05 notification history supports responsive scanning, filters, paginat
   expect(screenshot.byteLength).toBeGreaterThan(10_000);
 });
 
-test("MON-05 notification history exposes error recovery and empty state", async ({ page }, testInfo) => {
+test("MON-05 notification history exposes error recovery and empty state", async ({
+  page,
+}, testInfo) => {
   test.skip(!testInfo.project.name.includes("desktop"), "State recovery runs once.");
   const state = { delayMilliseconds: 0, fail: true, items: historyFixtures() };
   await installFixture(page, state);
@@ -278,6 +294,8 @@ test("MON-05 notification history exposes error recovery and empty state", async
   state.fail = false;
   state.items = [];
   await page.getByRole("button", { name: "重试加载通知历史" }).click();
-  await expect(page.getByRole("status", { name: "通知历史为空" })).toContainText("没有符合条件的通知");
+  await expect(page.getByRole("status", { name: "通知历史为空" })).toContainText(
+    "没有符合条件的通知",
+  );
   await expectAccessibleAndContained(page);
 });

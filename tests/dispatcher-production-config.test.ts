@@ -22,9 +22,7 @@ describe("P03-04 production Dispatcher configuration", () => {
       delete options[missing];
       expect(() =>
         createProductionNotificationDispatcher(options as ProductionNotificationDispatcherOptions),
-      ).toThrow(
-        "DISPATCHER_PRODUCTION_CONFIG_INCOMPLETE",
-      );
+      ).toThrow("DISPATCHER_PRODUCTION_CONFIG_INCOMPLETE");
     },
   );
 

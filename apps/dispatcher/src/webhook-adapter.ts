@@ -21,9 +21,7 @@ const webhookTimeouts = {
 } as const;
 
 export type WebhookEgressErrorCode =
-  | "DNS_RESOLUTION_FAILED"
-  | "DNS_TIMEOUT"
-  | "UNSAFE_WEBHOOK_TARGET";
+  "DNS_RESOLUTION_FAILED" | "DNS_TIMEOUT" | "UNSAFE_WEBHOOK_TARGET";
 
 export class WebhookEgressError extends Error {
   readonly code: WebhookEgressErrorCode;
@@ -206,27 +204,21 @@ export class NodeHttpsWebhookTransport implements WebhookTransport {
         finish(
           input.signal.reason instanceof WebhookTransportError
             ? input.signal.reason
-          : new WebhookTransportError("TOTAL_TIMEOUT"),
+            : new WebhookTransportError("TOTAL_TIMEOUT"),
         );
       };
       request.once("socket", (socket) => {
-        connectTimer = setTimeout(
-          () => {
-            request.destroy();
-            finish(new WebhookTransportError("CONNECT_TIMEOUT"));
-          },
-          input.timeouts.connectMilliseconds,
-        );
+        connectTimer = setTimeout(() => {
+          request.destroy();
+          finish(new WebhookTransportError("CONNECT_TIMEOUT"));
+        }, input.timeouts.connectMilliseconds);
         connectTimer.unref?.();
         socket.once("connect", () => {
           if (connectTimer) clearTimeout(connectTimer);
-          tlsTimer = setTimeout(
-            () => {
-              request.destroy();
-              finish(new WebhookTransportError("TLS_TIMEOUT"));
-            },
-            input.timeouts.tlsMilliseconds,
-          );
+          tlsTimer = setTimeout(() => {
+            request.destroy();
+            finish(new WebhookTransportError("TLS_TIMEOUT"));
+          }, input.timeouts.tlsMilliseconds);
           tlsTimer.unref?.();
         });
         const tlsSocket = socket as TLSSocket;
@@ -237,13 +229,10 @@ export class NodeHttpsWebhookTransport implements WebhookTransport {
             finish(new WebhookTransportError("TLS_CERTIFICATE_INVALID"));
             return;
           }
-          firstByteTimer = setTimeout(
-            () => {
-              request.destroy();
-              finish(new WebhookTransportError("FIRST_BYTE_TIMEOUT"));
-            },
-            input.timeouts.firstByteMilliseconds,
-          );
+          firstByteTimer = setTimeout(() => {
+            request.destroy();
+            finish(new WebhookTransportError("FIRST_BYTE_TIMEOUT"));
+          }, input.timeouts.firstByteMilliseconds);
           firstByteTimer.unref?.();
         });
       });
@@ -253,13 +242,10 @@ export class NodeHttpsWebhookTransport implements WebhookTransport {
         return;
       }
       input.signal.addEventListener("abort", abort, { once: true });
-      totalTimer = setTimeout(
-        () => {
-          request.destroy();
-          finish(new WebhookTransportError("TOTAL_TIMEOUT"));
-        },
-        input.timeouts.totalMilliseconds,
-      );
+      totalTimer = setTimeout(() => {
+        request.destroy();
+        finish(new WebhookTransportError("TOTAL_TIMEOUT"));
+      }, input.timeouts.totalMilliseconds);
       totalTimer.unref?.();
       request.end(input.body);
     });
@@ -362,9 +348,7 @@ export function isPublicUnicastAddress(address: string): boolean {
   if (mapped !== null) {
     return !blockedIpv4.some(([network, prefix]) => ipv4InCidr(mapped, network, prefix));
   }
-  return !blockedIpv6.some(([network, prefix]) =>
-    ipv6InCidr(ipv6, parseIpv6(network)!, prefix),
-  );
+  return !blockedIpv6.some(([network, prefix]) => ipv6InCidr(ipv6, parseIpv6(network)!, prefix));
 }
 
 function validateUrl(url: URL): void {

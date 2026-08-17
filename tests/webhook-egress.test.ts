@@ -116,9 +116,9 @@ describe("P03-04 Webhook egress", () => {
         },
       },
     });
-    await expect(policy.resolveTarget(new URL("https://hooks.fixture.example/event"))).rejects.toMatchObject(
-      { code: "UNSAFE_WEBHOOK_TARGET" },
-    );
+    await expect(
+      policy.resolveTarget(new URL("https://hooks.fixture.example/event")),
+    ).rejects.toMatchObject({ code: "UNSAFE_WEBHOOK_TARGET" });
   });
 
   it("canonicalizes literal IPv6 without DNS and rejects unsafe URL components", async () => {
@@ -158,11 +158,9 @@ describe("P03-04 Webhook egress", () => {
       resolver: {
         async resolve(_hostname, { signal }) {
           return await new Promise((resolve) => {
-            signal.addEventListener(
-              "abort",
-              () => resolve({ addresses: ["93.184.216.34"] }),
-              { once: true },
-            );
+            signal.addEventListener("abort", () => resolve({ addresses: ["93.184.216.34"] }), {
+              once: true,
+            });
           });
         },
       },
@@ -257,9 +255,9 @@ describe("P03-04 Webhook egress", () => {
       new Set(["delivery-fixture-stable"]),
     );
     expect(new Set(requests.map(({ headers }) => headers["x-lpx-signature"])).size).toBe(3);
-    expect(requests.every(({ minimumTlsVersion, proxy }) => minimumTlsVersion === "TLSv1.2" && !proxy)).toBe(
-      true,
-    );
+    expect(
+      requests.every(({ minimumTlsVersion, proxy }) => minimumTlsVersion === "TLSv1.2" && !proxy),
+    ).toBe(true);
   });
 
   it("blocks a private redirect before the second HTTP request", async () => {
@@ -331,11 +329,14 @@ describe("P03-04 Webhook egress", () => {
   it("permits at most three redirects and re-resolves every connection", async () => {
     for (const redirectCount of [3, 4]) {
       const requests: WebhookHttpRequest[] = [];
-      const responses: WebhookHttpResponse[] = Array.from({ length: redirectCount }, (_, index) => ({
-        bodyBytes: 0,
-        headers: { location: `/hop-${index + 1}` },
-        status: 307,
-      }));
+      const responses: WebhookHttpResponse[] = Array.from(
+        { length: redirectCount },
+        (_, index) => ({
+          bodyBytes: 0,
+          headers: { location: `/hop-${index + 1}` },
+          status: 307,
+        }),
+      );
       if (redirectCount === 3) responses.push({ bodyBytes: 0, headers: {}, status: 204 });
       let resolutions = 0;
       const adapter = new WebhookDeliveryAdapter({
@@ -373,19 +374,22 @@ describe("P03-04 Webhook egress", () => {
     [503, "retry", 90],
     [400, "dead", undefined],
     [409, "dead", undefined],
-  ] as const)("classifies HTTP %i and bounded Retry-After", async (status, expected, retryAfter) => {
-    const fixtureAdapter = adapterForResponses("POST", [
-      {
-        bodyBytes: 0,
-        headers: retryAfter === undefined ? {} : { "retry-after": String(retryAfter) },
-        status,
-      },
-    ]);
-    const result = await fixtureAdapter.adapter.deliver(fixtureAdapter.input);
-    expect(result.status).toBe(expected);
-    if (expected === "retry") expect(result).toMatchObject({ errorCode: `HTTP_${status}` });
-    if (retryAfter !== undefined) expect(result).toMatchObject({ retryAfterSeconds: retryAfter });
-  });
+  ] as const)(
+    "classifies HTTP %i and bounded Retry-After",
+    async (status, expected, retryAfter) => {
+      const fixtureAdapter = adapterForResponses("POST", [
+        {
+          bodyBytes: 0,
+          headers: retryAfter === undefined ? {} : { "retry-after": String(retryAfter) },
+          status,
+        },
+      ]);
+      const result = await fixtureAdapter.adapter.deliver(fixtureAdapter.input);
+      expect(result.status).toBe(expected);
+      if (expected === "retry") expect(result).toMatchObject({ errorCode: `HTTP_${status}` });
+      if (retryAfter !== undefined) expect(result).toMatchObject({ retryAfterSeconds: retryAfter });
+    },
+  );
 
   it("parses HTTP-date Retry-After, caps it, and enforces response limits", async () => {
     const now = () => new Date("2026-08-18T00:00:00.000Z");

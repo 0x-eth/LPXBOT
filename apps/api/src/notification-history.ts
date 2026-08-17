@@ -112,7 +112,8 @@ export function parseNotificationHistoryQuery(value: unknown): NotificationHisto
   };
 }
 
-function publicItem({ userId: _userId, ...item }: StoredNotificationHistoryItem) {
+function publicItem({ userId, ...item }: StoredNotificationHistoryItem) {
+  void userId;
   return structuredClone(item);
 }
 

@@ -79,11 +79,7 @@ class PostgresDispatchOutbox implements NotificationDispatchOutbox {
     return await this.#repository.markDead(input);
   }
 
-  async markDelivered(input: {
-    acknowledgement?: string;
-    deliveryId: string;
-    leaseToken: string;
-  }) {
+  async markDelivered(input: { acknowledgement?: string; deliveryId: string; leaseToken: string }) {
     return await this.#repository.markDelivered(input);
   }
 

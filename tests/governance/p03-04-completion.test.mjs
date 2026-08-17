@@ -9,16 +9,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const ACCEPTANCE = path.join(ROOT, "artifacts/acceptance/P03-04");
 const MANIFEST = path.join(ACCEPTANCE, "manifest.json");
 const PRIOR_CHECKSUMS = path.join(ACCEPTANCE, "prior-acceptance-sha256s.txt");
-const REQUIRED_EVIDENCE = [
-  "E-API",
-  "E-DATA",
-  "E-OPS",
-  "E-RBAC",
-  "E-REC",
-  "E-SEC",
-  "E-UI",
-  "E-VIS",
-];
+const REQUIRED_EVIDENCE = ["E-API", "E-DATA", "E-OPS", "E-RBAC", "E-REC", "E-SEC", "E-UI", "E-VIS"];
 const REQUIRED_TESTS = ["T-API", "T-MIG", "T-REC", "T-SEC", "T-UI", "T-UNIT", "T-VIS"];
 
 function digest(value) {
@@ -46,7 +37,8 @@ async function filesBelow(directory, prefix = "") {
   const files = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const relative = path.posix.join(prefix, entry.name);
-    if (entry.isDirectory()) files.push(...(await filesBelow(path.join(directory, entry.name), relative)));
+    if (entry.isDirectory())
+      files.push(...(await filesBelow(path.join(directory, entry.name), relative)));
     else if (entry.isFile()) files.push(relative);
     else assert.fail(`unsupported acceptance entry ${relative}`);
   }
