@@ -55,7 +55,8 @@ export class PostgresMonitorEvaluationSource
       [poolKey],
     );
     return result.rows.map((row) => {
-      if (!Array.isArray(row.conditions)) throw new RangeError("Stored monitor conditions are invalid");
+      if (!Array.isArray(row.conditions))
+        throw new RangeError("Stored monitor conditions are invalid");
       return {
         conditions: structuredClone(row.conditions) as MonitorEvaluationCondition[],
         enabled: true,

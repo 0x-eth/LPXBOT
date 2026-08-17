@@ -14,12 +14,7 @@ export interface CanonicalMarketInputIdentity {
   windowEnd: string;
 }
 
-export type NotificationOutboxState =
-  | "pending"
-  | "leased"
-  | "retry-wait"
-  | "delivered"
-  | "dead";
+export type NotificationOutboxState = "pending" | "leased" | "retry-wait" | "delivered" | "dead";
 
 export interface MonitorDestinationSelection {
   channel: "telegram" | "webhook" | "local-sink";
@@ -104,7 +99,11 @@ export function candidateEvidenceDecision(input: {
     throw new RangeError("CANDIDATE_GENERATED_AT_INVALID");
   }
   const generationOrder =
-    (incomingGeneratedAt < currentGeneratedAt ? -1 : incomingGeneratedAt > currentGeneratedAt ? 1 : 0) ||
+    (incomingGeneratedAt < currentGeneratedAt
+      ? -1
+      : incomingGeneratedAt > currentGeneratedAt
+        ? 1
+        : 0) ||
     byteCompare(evidenceGenerationId(input.incoming), evidenceGenerationId(input.current));
   if (generationOrder <= 0) return "ignore";
   if (input.outboxStates.some((state) => state === "delivered" || state === "dead")) {
@@ -195,7 +194,8 @@ export function isOutboxClaimable(input: {
   if (!Number.isFinite(now)) return false;
   if (input.state === "pending") return true;
   if (input.state === "retry-wait") {
-    const next = input.nextAttemptAt === null ? Number.NaN : new Date(input.nextAttemptAt).getTime();
+    const next =
+      input.nextAttemptAt === null ? Number.NaN : new Date(input.nextAttemptAt).getTime();
     return Number.isFinite(next) && next <= now;
   }
   if (input.state === "leased") {

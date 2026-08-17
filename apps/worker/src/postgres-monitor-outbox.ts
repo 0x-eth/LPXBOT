@@ -19,11 +19,7 @@ export interface CommitMonitorCandidateInput {
 }
 
 export type CandidateEvidenceAction =
-  | "inserted"
-  | "unchanged"
-  | "replaced"
-  | "deferred"
-  | "suppressed";
+  "inserted" | "unchanged" | "replaced" | "deferred" | "suppressed";
 
 export interface NotificationOutboxDelivery {
   attemptCount: number;
@@ -125,7 +121,8 @@ function assertCredentialFree(value: unknown, seen = new WeakSet<object>()): voi
 
 function safeInteger(value: string, field: string): number {
   const parsed = Number(value);
-  if (!Number.isSafeInteger(parsed) || parsed < 0) throw new RangeError(`Stored ${field} is invalid`);
+  if (!Number.isSafeInteger(parsed) || parsed < 0)
+    throw new RangeError(`Stored ${field} is invalid`);
   return parsed;
 }
 

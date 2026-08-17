@@ -5,6 +5,7 @@ import {
   type Condition,
   type CreateMonitorRequest,
   type Monitor,
+  type MonitorMetric,
   type MonitorPage,
   type MonitorSupportedMetric,
 } from "@lpbot/api-contract";
@@ -20,14 +21,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { ConfirmDialog, useFeedback } from "./feedback.js";
@@ -60,8 +54,10 @@ type EditorState =
 const poolKeyPattern = /^56:0x(?:[0-9a-f]{40}|[0-9a-f]{64})$/u;
 const decimalPattern = /^(?:0|[1-9]\d*)(?:\.\d*[1-9])?$/u;
 
-const metricLabels: Readonly<Record<MonitorSupportedMetric, string>> = {
+const metricLabels: Readonly<Record<MonitorMetric, string>> = {
+  activeTvlUsd: "active TVL",
   feeTvlRatio: "Fee/TVL",
+  feeAtvlRatio: "Fee/aTVL",
   feesUsd: "手续费 (USD)",
   metricVersion: "指标版本",
   transactionCount: "交易数",
@@ -90,10 +86,16 @@ function blankDraft(poolKey = ""): MonitorDraft {
 
 function draftFromMonitor(monitor: Monitor): MonitorDraft {
   return {
-    conditions: monitor.conditions.map((condition) => ({
-      ...condition,
-      key: conditionKey(),
-    })),
+    conditions: monitor.conditions.map((condition) => {
+      if (!monitorSupportedMetrics.some((metric) => metric === condition.id)) {
+        throw new RangeError("Unsupported monitor metric");
+      }
+      return {
+        ...condition,
+        id: condition.id as MonitorSupportedMetric,
+        key: conditionKey(),
+      };
+    }),
     excludeHanToken: monitor.excludeHanToken,
     excludeHook: monitor.excludeHook,
     name: monitor.name,
@@ -104,7 +106,9 @@ function draftFromMonitor(monitor: Monitor): MonitorDraft {
 
 function draftConditionValid(condition: ConditionDraft): boolean {
   if (condition.id === "metricVersion") {
-    return condition.operator === "eq" && condition.value.length > 0 && condition.value.length <= 80;
+    return (
+      condition.operator === "eq" && condition.value.length > 0 && condition.value.length <= 80
+    );
   }
   if (
     (condition.operator !== "gte" && condition.operator !== "lte") ||
@@ -290,8 +294,9 @@ function MonitorEditor({
             </div>
 
             <fieldset className="monitor-condition-editor">
+              <legend className="sr-only">条件（AND）</legend>
               <div className="monitor-condition-heading">
-                <legend>条件（AND）</legend>
+                <strong aria-hidden="true">条件（AND）</strong>
                 <button
                   className="secondary-button"
                   disabled={busy || editor.draft.conditions.length >= monitorConditionLimit}
@@ -486,20 +491,26 @@ export function MonitorsPage() {
   const deleteTrigger = useRef<HTMLButtonElement | null>(null);
   const intentConsumed = useRef(false);
   const newTrigger = useRef<HTMLButtonElement | null>(null);
+  const pageRef = useRef<MonitorPage | null>(null);
+
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
-      if (!page) setLoadState("loading");
+      if (!pageRef.current) setLoadState("loading");
       try {
         const next = await client.list({}, signal);
+        pageRef.current = next;
         setPage(next);
         setLoadState("ready");
       } catch (error) {
         if (signal?.aborted) return;
-        setLoadState(page ? "stale" : "error");
+        setLoadState(pageRef.current ? "stale" : "error");
       }
     },
-    [client, page],
+    [client],
   );
 
   useEffect(() => {
@@ -574,7 +585,11 @@ export function MonitorsPage() {
         title: editor.mode === "create" ? "监控已创建" : "监控已更新",
       });
     } catch (error) {
-      if (error instanceof MonitorRequestError && error.code === "REVISION_CONFLICT" && error.current) {
+      if (
+        error instanceof MonitorRequestError &&
+        error.code === "REVISION_CONFLICT" &&
+        error.current
+      ) {
         setPage((current) => (current ? replaceMonitor(current, error.current!) : current));
         setEditor({
           conflict: true,
@@ -774,7 +789,10 @@ export function MonitorsPage() {
                   <div>
                     <dt>排除</dt>
                     <dd>
-                      {[monitor.excludeHanToken ? "中文 Token" : null, monitor.excludeHook ? "Hook" : null]
+                      {[
+                        monitor.excludeHanToken ? "中文 Token" : null,
+                        monitor.excludeHook ? "Hook" : null,
+                      ]
                         .filter(Boolean)
                         .join("、") || "无"}
                     </dd>
