@@ -4,11 +4,13 @@ import {
   renderTelegramMessage,
   type NotificationTemplateValues,
 } from "@lpbot/security";
+import https from "node:https";
 
 export type TelegramTransportErrorCode =
   | "TELEGRAM_CONNECT_TIMEOUT"
   | "TELEGRAM_CONNECTION_RESET"
   | "TELEGRAM_FIRST_BYTE_TIMEOUT"
+  | "TELEGRAM_RESPONSE_TOO_LARGE"
   | "TELEGRAM_TOTAL_TIMEOUT";
 
 export class TelegramTransportError extends Error {
@@ -41,6 +43,89 @@ export interface TelegramTransportResponse {
 
 export interface TelegramTransport {
   send(request: TelegramTransportRequest): Promise<TelegramTransportResponse>;
+}
+
+export class NodeTelegramTransport implements TelegramTransport {
+  async send(input: TelegramTransportRequest): Promise<TelegramTransportResponse> {
+    const body = JSON.stringify({
+      chat_id: input.chatId,
+      parse_mode: input.parseMode,
+      text: input.text,
+    });
+    return await new Promise<TelegramTransportResponse>((resolve, reject) => {
+      let settled = false;
+      const chunks: Buffer[] = [];
+      let bytes = 0;
+      const finish = (error?: TelegramTransportError, response?: TelegramTransportResponse) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(totalTimer);
+        clearTimeout(firstByteTimer);
+        input.signal.removeEventListener("abort", abort);
+        if (error) reject(error);
+        else resolve(response!);
+      };
+      const request = https.request(
+        {
+          agent: false,
+          headers: {
+            "content-length": Buffer.byteLength(body).toString(),
+            "content-type": "application/json; charset=utf-8",
+            "x-lpx-delivery-id": input.deliveryId,
+          },
+          hostname: "api.telegram.org",
+          method: "POST",
+          minVersion: "TLSv1.2",
+          path: `/bot${encodeURIComponent(input.botToken)}/sendMessage`,
+          rejectUnauthorized: true,
+          servername: "api.telegram.org",
+        },
+        (response) => {
+          clearTimeout(firstByteTimer);
+          response.on("data", (chunk: Buffer) => {
+            bytes += chunk.byteLength;
+            if (bytes > 65_536) {
+              request.destroy();
+              finish(new TelegramTransportError("TELEGRAM_RESPONSE_TOO_LARGE"));
+              return;
+            }
+            chunks.push(chunk);
+          });
+          response.once("end", () => {
+            let parsed: unknown = null;
+            try {
+              parsed = JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+            } catch {
+              // Invalid provider JSON is classified from the HTTP status by the adapter.
+            }
+            finish(undefined, { body: parsed, status: response.statusCode ?? 0 });
+          });
+          response.once("error", () =>
+            finish(new TelegramTransportError("TELEGRAM_CONNECTION_RESET")),
+          );
+        },
+      );
+      const abort = () => {
+        request.destroy();
+        finish(new TelegramTransportError("TELEGRAM_TOTAL_TIMEOUT"));
+      };
+      input.signal.addEventListener("abort", abort, { once: true });
+      request.once("error", () =>
+        finish(new TelegramTransportError("TELEGRAM_CONNECTION_RESET")),
+      );
+      const firstByteTimer = setTimeout(
+        () => finish(new TelegramTransportError("TELEGRAM_FIRST_BYTE_TIMEOUT")),
+        5_000,
+      );
+      firstByteTimer.unref?.();
+      const totalTimer = setTimeout(
+        () => finish(new TelegramTransportError("TELEGRAM_TOTAL_TIMEOUT")),
+        10_000,
+      );
+      totalTimer.unref?.();
+      request.end(body);
+    });
+  }
 }
 
 export interface TelegramDeliveryInput {

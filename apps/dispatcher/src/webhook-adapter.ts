@@ -1,4 +1,7 @@
+import { Resolver } from "node:dns/promises";
+import https from "node:https";
 import { isIP } from "node:net";
+import type { TLSSocket } from "node:tls";
 
 import {
   buildWebhookSignature,
@@ -88,6 +91,159 @@ export interface WebhookHttpResponse {
 
 export interface WebhookTransport {
   send(request: WebhookHttpRequest): Promise<WebhookHttpResponse>;
+}
+
+export class NodeWebhookResolver implements WebhookResolver {
+  readonly #resolver: Resolver;
+
+  constructor(resolver: Resolver = new Resolver()) {
+    this.#resolver = resolver;
+  }
+
+  async resolve(hostname: string, options: { signal: AbortSignal; timeoutMilliseconds: 2_000 }) {
+    void options.timeoutMilliseconds;
+    const seen = new Set<string>();
+    const chain: Array<{ addresses: string[]; hostname: string }> = [];
+    const resolveHost = async (host: string, depth: number): Promise<string[]> => {
+      if (depth > 8 || seen.has(host)) throw new WebhookEgressError("DNS_RESOLUTION_FAILED");
+      if (options.signal.aborted) throw options.signal.reason;
+      seen.add(host);
+      const [ipv4, ipv6, cnames] = await Promise.allSettled([
+        this.#resolver.resolve4(host),
+        this.#resolver.resolve6(host),
+        this.#resolver.resolveCname(host),
+      ]);
+      const addresses = [
+        ...(ipv4.status === "fulfilled" ? ipv4.value : []),
+        ...(ipv6.status === "fulfilled" ? ipv6.value : []),
+      ];
+      chain.push({ addresses, hostname: host });
+      const aliases = cnames.status === "fulfilled" ? cnames.value : [];
+      const aliasAddresses = (
+        await Promise.all(aliases.map((alias) => resolveHost(alias.toLowerCase(), depth + 1)))
+      ).flat();
+      if (options.signal.aborted) throw options.signal.reason;
+      return [...addresses, ...aliasAddresses];
+    };
+    const addresses = [...new Set(await resolveHost(hostname, 0))];
+    return { addresses, cnameChain: chain };
+  }
+}
+
+function webhookNetworkError(error: unknown): WebhookTransportError {
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String((error as { code?: unknown }).code)
+      : "";
+  if (/^(?:CERT_|ERR_TLS_CERT_|DEPTH_ZERO_SELF_SIGNED_CERT|SELF_SIGNED_CERT)/u.test(code)) {
+    return new WebhookTransportError("TLS_CERTIFICATE_INVALID");
+  }
+  return new WebhookTransportError(code === "ECONNRESET" ? "CONNECTION_RESET" : "CONNECTION_RESET");
+}
+
+export class NodeHttpsWebhookTransport implements WebhookTransport {
+  async send(input: WebhookHttpRequest): Promise<WebhookHttpResponse> {
+    const url = new URL(input.url);
+    return await new Promise<WebhookHttpResponse>((resolve, reject) => {
+      let settled = false;
+      let connectTimer: NodeJS.Timeout | undefined;
+      let firstByteTimer: NodeJS.Timeout | undefined;
+      let tlsTimer: NodeJS.Timeout | undefined;
+      let totalTimer: NodeJS.Timeout | undefined;
+      const clearTimers = () => {
+        if (connectTimer) clearTimeout(connectTimer);
+        if (firstByteTimer) clearTimeout(firstByteTimer);
+        if (tlsTimer) clearTimeout(tlsTimer);
+        if (totalTimer) clearTimeout(totalTimer);
+      };
+      const finish = (error?: WebhookTransportError, response?: WebhookHttpResponse) => {
+        if (settled) return;
+        settled = true;
+        clearTimers();
+        input.signal.removeEventListener("abort", abort);
+        if (error) reject(error);
+        else resolve(response!);
+      };
+      const request = https.request(
+        {
+          agent: false,
+          headers: input.headers,
+          hostname: url.hostname,
+          lookup: (_hostname, _options, callback) => {
+            callback(null, input.connectAddress, isIP(input.connectAddress));
+          },
+          method: input.method,
+          minVersion: input.minimumTlsVersion,
+          path: `${url.pathname}${url.search}`,
+          port: url.port === "" ? 443 : Number(url.port),
+          rejectUnauthorized: true,
+          servername: input.servername,
+        },
+        (response) => {
+          if (firstByteTimer) clearTimeout(firstByteTimer);
+          let bodyBytes = 0;
+          response.on("data", (chunk: Buffer) => {
+            bodyBytes += chunk.byteLength;
+            if (bodyBytes > 65_536) {
+              request.destroy();
+              finish(new WebhookTransportError("RESPONSE_TOO_LARGE"));
+            }
+          });
+          response.once("end", () => {
+            const headers = Object.fromEntries(
+              Object.entries(response.headers).map(([key, value]) => [
+                key.toLowerCase(),
+                Array.isArray(value) ? value[0] : value,
+              ]),
+            );
+            finish(undefined, { bodyBytes, headers, status: response.statusCode ?? 0 });
+          });
+          response.once("error", (error) => finish(webhookNetworkError(error)));
+        },
+      );
+      const abort = () => {
+        request.destroy();
+        finish(
+          input.signal.reason instanceof WebhookTransportError
+            ? input.signal.reason
+            : new WebhookTransportError("TOTAL_TIMEOUT"),
+        );
+      };
+      input.signal.addEventListener("abort", abort, { once: true });
+      request.once("socket", (socket) => {
+        connectTimer = setTimeout(
+          () => finish(new WebhookTransportError("CONNECT_TIMEOUT")),
+          input.timeouts.connectMilliseconds,
+        );
+        connectTimer.unref?.();
+        socket.once("connect", () => {
+          if (connectTimer) clearTimeout(connectTimer);
+        });
+        const tlsSocket = socket as TLSSocket;
+        tlsTimer = setTimeout(
+          () => finish(new WebhookTransportError("TLS_TIMEOUT")),
+          input.timeouts.tlsMilliseconds,
+        );
+        tlsTimer.unref?.();
+        tlsSocket.once("secureConnect", () => {
+          if (tlsTimer) clearTimeout(tlsTimer);
+          if (!tlsSocket.authorized) finish(new WebhookTransportError("TLS_CERTIFICATE_INVALID"));
+        });
+      });
+      request.once("error", (error) => finish(webhookNetworkError(error)));
+      firstByteTimer = setTimeout(
+        () => finish(new WebhookTransportError("FIRST_BYTE_TIMEOUT")),
+        input.timeouts.firstByteMilliseconds,
+      );
+      firstByteTimer.unref?.();
+      totalTimer = setTimeout(
+        () => finish(new WebhookTransportError("TOTAL_TIMEOUT")),
+        input.timeouts.totalMilliseconds,
+      );
+      totalTimer.unref?.();
+      request.end(input.body);
+    });
+  }
 }
 
 export type WebhookDeliveryResult =

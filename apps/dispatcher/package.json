@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@lpbot/security": "workspace:*",
+    "@lpbot/worker": "workspace:*",
     "pg": "8.23.0"
   },
   "devDependencies": {
