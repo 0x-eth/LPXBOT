@@ -33,6 +33,28 @@ export {
   parseMonitorListQuery,
   parseMonitorPatch,
 } from "./monitors.js";
+export {
+  defaultNotificationPreferences,
+  MemoryNotificationConfigurationStore,
+  MemoryNotificationSecretStore,
+  notificationDestinationPayloadHash,
+  NotificationValidationError,
+  parseDestinationDraft,
+  parseNotificationDestinationPatch,
+  parseNotificationExpectedRevision,
+  parseNotificationIdempotencyKey,
+  parseNotificationPreferencesPatch,
+  renderLocalSinkTest,
+} from "./notifications.js";
+export type {
+  NotificationConfigurationStore,
+  NotificationDestinationCreateResult,
+  NotificationDestinationDeleteResult,
+  NotificationDestinationMutationResult,
+  NotificationPreferenceMutationResult,
+  NotificationSecretStore,
+  NotificationValidationCode,
+} from "./notifications.js";
 export type {
   MonitorCreateInput,
   MonitorCreateResult,

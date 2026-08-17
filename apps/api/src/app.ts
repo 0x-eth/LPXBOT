@@ -83,6 +83,17 @@ import {
   type MonitorStore,
 } from "./monitors.js";
 import {
+  NotificationValidationError,
+  parseDestinationDraft,
+  parseNotificationDestinationPatch,
+  parseNotificationExpectedRevision,
+  parseNotificationIdempotencyKey,
+  parseNotificationPreferencesPatch,
+  renderLocalSinkTest,
+  type NotificationConfigurationStore,
+  type NotificationDestinationMutationResult,
+} from "./notifications.js";
+import {
   parsePoolBlocklistPatch,
   PoolBlocklistValidationError,
   type PoolBlocklistStore,
@@ -139,6 +150,7 @@ export interface ApiAppOptions {
   marketPoolsProvider?: MarketPoolsProvider;
   marketPoolsRateLimit?: PublicReadRateLimit;
   monitorStore?: MonitorStore;
+  notificationStore?: NotificationConfigurationStore;
   managementOrigin?: string;
   now?: () => Date;
   poolBlocklistRateLimit?: ChainManagementRateLimit;
