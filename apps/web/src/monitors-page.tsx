@@ -798,9 +798,6 @@ function NotificationHistoryView({
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoadState("loading");
-    setItems([]);
-    setNextCursor(null);
     void client
       .listHistory(query, controller.signal)
       .then((page) => {
@@ -813,6 +810,17 @@ function NotificationHistoryView({
       });
     return () => controller.abort();
   }, [client, query, reloadKey]);
+
+  const beginReload = () => {
+    setLoadState("loading");
+    setItems([]);
+    setNextCursor(null);
+  };
+
+  const reload = () => {
+    beginReload();
+    setReloadKey((value) => value + 1);
+  };
 
   const loadMore = async () => {
     if (!nextCursor || loadingMore) return;
@@ -853,9 +861,10 @@ function NotificationHistoryView({
           <label>
             <span>投递状态</span>
             <select
-              onChange={(event) =>
-                setDeliveryStatus(event.target.value as NotificationDeliveryStatus | "")
-              }
+              onChange={(event) => {
+                beginReload();
+                setDeliveryStatus(event.target.value as NotificationDeliveryStatus | "");
+              }}
               value={deliveryStatus}
             >
               <option value="">全部状态</option>
@@ -868,7 +877,13 @@ function NotificationHistoryView({
           </label>
           <label>
             <span>监控筛选</span>
-            <select onChange={(event) => setMonitorId(event.target.value)} value={monitorId}>
+            <select
+              onChange={(event) => {
+                beginReload();
+                setMonitorId(event.target.value);
+              }}
+              value={monitorId}
+            >
               <option value="">全部监控</option>
               {monitors.map((monitor) => (
                 <option key={monitor.monitorId} value={monitor.monitorId}>
@@ -880,7 +895,10 @@ function NotificationHistoryView({
           <label>
             <span>开始时间</span>
             <input
-              onChange={(event) => setFrom(event.target.value)}
+              onChange={(event) => {
+                beginReload();
+                setFrom(event.target.value);
+              }}
               type="datetime-local"
               value={from}
             />
@@ -888,7 +906,10 @@ function NotificationHistoryView({
           <label>
             <span>结束时间</span>
             <input
-              onChange={(event) => setTo(event.target.value)}
+              onChange={(event) => {
+                beginReload();
+                setTo(event.target.value);
+              }}
               type="datetime-local"
               value={to}
             />
@@ -899,7 +920,7 @@ function NotificationHistoryView({
           className="icon-button tooltip-control"
           data-tooltip="刷新"
           disabled={loadState === "loading"}
-          onClick={() => setReloadKey((value) => value + 1)}
+          onClick={reload}
           type="button"
         >
           <RefreshCw
@@ -923,7 +944,7 @@ function NotificationHistoryView({
           <button
             aria-label="重试加载通知历史"
             className="secondary-button"
-            onClick={() => setReloadKey((value) => value + 1)}
+            onClick={reload}
             type="button"
           >
             <RefreshCw aria-hidden="true" size={16} />
