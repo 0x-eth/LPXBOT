@@ -520,3 +520,102 @@ test("MON-04 recovers errors and destination conflicts while preserving keyboard
   await expect(page.getByText("还没有通知目的地")).toBeVisible();
   await expectAccessibleAndContained(page);
 });
+
+test("MON-04 binds owned destinations per monitor and persists destinationIds on create and edit", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "Monitor binding mutations run once.");
+  const notificationState = routeState();
+  const first = webhookDestination({ enabled: true, name: "Primary webhook" });
+  const disabled = webhookDestination({
+    destinationId: "35000000-0000-4000-8000-000000000012",
+    enabled: false,
+    name: "Paused webhook",
+  });
+  notificationState.destinations = [first, disabled];
+  const poolKey = `56:0x${"1".repeat(40)}`;
+  const monitorId = "35000000-0000-4000-8000-000000000020";
+  let createdRequest: Record<string, unknown> | null = null;
+  let patchedRequest: { changes: Record<string, unknown>; expectedRevision: number } | null = null;
+  let monitor: Record<string, unknown> | null = null;
+  await installApplicationFixture(page, notificationState);
+  await page.route("**/api/monitors**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (url.pathname === "/api/monitors" && request.method() === "GET") {
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({
+          enabledCount: 0,
+          items: monitor ? [monitor] : [],
+          nextCursor: null,
+          totalCount: monitor ? 1 : 0,
+        }),
+      });
+      return;
+    }
+    if (url.pathname === "/api/monitors" && request.method() === "POST") {
+      createdRequest = request.postDataJSON() as Record<string, unknown>;
+      monitor = {
+        ...createdRequest,
+        createdAt: timestamp,
+        disabledAt: timestamp,
+        enabled: false,
+        enabledAt: null,
+        monitorId,
+        revision: 1,
+        updatedAt: timestamp,
+        userId,
+      };
+      await route.fulfill({ contentType: "application/json", json: envelope(monitor), status: 201 });
+      return;
+    }
+    if (request.method() === "PATCH" && monitor) {
+      patchedRequest = request.postDataJSON() as {
+        changes: Record<string, unknown>;
+        expectedRevision: number;
+      };
+      monitor = {
+        ...monitor,
+        ...patchedRequest.changes,
+        revision: 2,
+        updatedAt: timestamp,
+      };
+      await route.fulfill({ contentType: "application/json", json: envelope(monitor) });
+      return;
+    }
+    await route.abort("failed");
+  });
+  await page.goto("/monitors");
+
+  await page.getByRole("button", { name: "新建监控" }).click();
+  let editor = page.getByRole("dialog", { name: "新建监控" });
+  const destinationGroup = editor.getByRole("group", { name: "通知目的地" });
+  await expect(destinationGroup.getByRole("checkbox", { name: "Primary webhook" })).toBeEnabled();
+  await expect(destinationGroup.getByRole("checkbox", { name: "Paused webhook" })).toBeDisabled();
+  await destinationGroup.getByRole("checkbox", { name: "Primary webhook" }).check();
+  await editor.getByLabel("监控名称").fill("Bound monitor");
+  await editor.getByLabel("Pool Key").fill(poolKey);
+  await editor.getByLabel("阈值 1").fill("1000");
+  await editor.getByRole("button", { name: "保存监控" }).click();
+  await expect(editor).toBeHidden();
+  expect(createdRequest).toMatchObject({ destinationIds: [first.destinationId] });
+  const row = page.getByRole("article", { name: "监控 Bound monitor" });
+  await expect(row).toContainText("1 个目的地");
+
+  await row.getByRole("button", { name: "编辑监控 Bound monitor" }).click();
+  editor = page.getByRole("dialog", { name: "编辑监控" });
+  const selected = editor.getByRole("checkbox", { name: "Primary webhook" });
+  await expect(selected).toBeChecked();
+  await selected.uncheck();
+  await editor.getByRole("button", { name: "保存监控" }).click();
+  await expect(editor).toBeHidden();
+  expect(patchedRequest).toMatchObject({
+    changes: { destinationIds: [] },
+    expectedRevision: 1,
+  });
+  await expect(page.getByRole("article", { name: "监控 Bound monitor" })).toContainText(
+    "0 个目的地",
+  );
+  await expectAccessibleAndContained(page);
+});

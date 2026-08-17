@@ -8,6 +8,7 @@ import {
   type MonitorMetric,
   type MonitorPage,
   type MonitorSupportedMetric,
+  type NotificationDestination,
 } from "@lpbot/api-contract";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
@@ -34,6 +35,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { ConfirmDialog, useFeedback } from "./feedback.js";
 import { MonitorClient, MonitorRequestError } from "./monitor-client.js";
+import { NotificationClient } from "./notification-client.js";
 import { parsePoolActionIntent } from "./pool-actions.js";
 
 type MonitorLoadState = "error" | "loading" | "ready" | "stale";
@@ -48,6 +50,7 @@ interface ConditionDraft {
 
 interface MonitorDraft {
   conditions: ConditionDraft[];
+  destinationIds: string[];
   excludeHanToken: boolean;
   excludeHook: boolean;
   name: string;
@@ -84,6 +87,7 @@ function blankCondition(): ConditionDraft {
 function blankDraft(poolKey = ""): MonitorDraft {
   return {
     conditions: [blankCondition()],
+    destinationIds: [],
     excludeHanToken: true,
     excludeHook: true,
     name: "",
@@ -104,6 +108,7 @@ function draftFromMonitor(monitor: Monitor): MonitorDraft {
         key: conditionKey(),
       };
     }),
+    destinationIds: [...monitor.destinationIds],
     excludeHanToken: monitor.excludeHanToken,
     excludeHook: monitor.excludeHook,
     name: monitor.name,
@@ -169,6 +174,7 @@ function requestFromDraft(draft: MonitorDraft): CreateMonitorRequest {
   );
   return {
     conditions,
+    destinationIds: draft.destinationIds,
     excludeHanToken: draft.excludeHanToken,
     excludeHook: draft.excludeHook,
     name: draft.name.trim(),
@@ -192,6 +198,8 @@ function replaceMonitor(page: MonitorPage, monitor: Monitor): MonitorPage {
 function MonitorEditor({
   busy,
   close,
+  destinationLoadState,
+  destinations,
   editor,
   onChange,
   onSubmit,
@@ -199,6 +207,8 @@ function MonitorEditor({
 }: {
   busy: boolean;
   close(): void;
+  destinationLoadState: "error" | "loading" | "ready";
+  destinations: readonly NotificationDestination[];
   editor: EditorState;
   onChange(next: EditorState): void;
   onSubmit(): void;
@@ -483,6 +493,54 @@ function MonitorEditor({
               </div>
             </fieldset>
 
+            <fieldset
+              aria-busy={destinationLoadState === "loading"}
+              className="monitor-destination-editor"
+            >
+              <legend>通知目的地</legend>
+              {destinationLoadState === "loading" ? (
+                <p role="status">正在加载通知目的地</p>
+              ) : destinationLoadState === "error" ? (
+                <p role="alert">通知目的地加载失败，仍可保存监控</p>
+              ) : destinations.length === 0 ? (
+                <p>还没有可绑定的通知目的地</p>
+              ) : (
+                <div className="monitor-destination-options">
+                  {destinations.map((destination) => {
+                    const selected = editor.draft.destinationIds.includes(
+                      destination.destinationId,
+                    );
+                    return (
+                      <label key={destination.destinationId}>
+                        <input
+                          aria-label={destination.name}
+                          checked={selected}
+                          disabled={busy || (!destination.enabled && !selected)}
+                          onChange={(event) =>
+                            updateDraft((draft) => ({
+                              ...draft,
+                              destinationIds: event.target.checked
+                                ? [...draft.destinationIds, destination.destinationId]
+                                : draft.destinationIds.filter(
+                                    (destinationId) =>
+                                      destinationId !== destination.destinationId,
+                                  ),
+                            }))
+                          }
+                          type="checkbox"
+                        />
+                        <span>{destination.name}</span>
+                        <small>
+                          {destination.type === "telegram" ? "Telegram" : "Webhook"}
+                          {destination.enabled ? "" : " · 已停用"}
+                        </small>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </fieldset>
+
             <div className="monitor-exclusions">
               <label>
                 <input
@@ -548,11 +606,16 @@ function ConditionSummary({ conditions }: { conditions: readonly Condition[] }) 
 
 export function MonitorsPage() {
   const client = useMemo(() => new MonitorClient(), []);
+  const notificationClient = useMemo(() => new NotificationClient(), []);
   const feedback = useFeedback();
   const location = useLocation();
   const navigate = useNavigate();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editor, setEditor] = useState<EditorState | null>(null);
+  const [destinationLoadState, setDestinationLoadState] = useState<
+    "error" | "loading" | "ready"
+  >("loading");
+  const [destinations, setDestinations] = useState<NotificationDestination[]>([]);
   const [loadState, setLoadState] = useState<MonitorLoadState>("loading");
   const [page, setPage] = useState<MonitorPage | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Monitor | null>(null);
@@ -588,6 +651,20 @@ export function MonitorsPage() {
     void load(controller.signal);
     return () => controller.abort();
   }, [load]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void notificationClient
+      .listDestinations(controller.signal)
+      .then((next) => {
+        setDestinations(next);
+        setDestinationLoadState("ready");
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setDestinationLoadState("error");
+      });
+    return () => controller.abort();
+  }, [notificationClient]);
 
   useEffect(() => {
     if (intentConsumed.current) return;
@@ -637,6 +714,7 @@ export function MonitorsPage() {
         saved = await client.patch(editor.original.monitorId, {
           changes: {
             conditions: request.conditions,
+            destinationIds: request.destinationIds,
             excludeHanToken: request.excludeHanToken,
             excludeHook: request.excludeHook,
             name: request.name,
@@ -867,6 +945,10 @@ export function MonitorsPage() {
                         .join("、") || "无"}
                     </dd>
                   </div>
+                  <div>
+                    <dt>通知</dt>
+                    <dd>{monitor.destinationIds.length} 个目的地</dd>
+                  </div>
                 </dl>
                 <div className="monitor-row-actions">
                   <button
@@ -926,6 +1008,8 @@ export function MonitorsPage() {
         <MonitorEditor
           busy={busyId === "editor"}
           close={closeEditor}
+          destinationLoadState={destinationLoadState}
+          destinations={destinations}
           editor={editor}
           onChange={setEditor}
           onSubmit={() => void saveEditor()}
