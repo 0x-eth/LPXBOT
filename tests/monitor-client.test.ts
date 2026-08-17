@@ -24,6 +24,7 @@ const createRequest: CreateMonitorRequest = {
 const monitor: Monitor = {
   ...createRequest,
   createdAt: "2026-08-17T10:00:00.000Z",
+  destinationIds: [],
   disabledAt: "2026-08-17T10:00:00.000Z",
   enabled: false,
   enabledAt: null,

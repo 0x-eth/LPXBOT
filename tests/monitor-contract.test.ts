@@ -64,6 +64,7 @@ describe("P03-02 monitor API contract", () => {
     const monitor = {
       ...create,
       createdAt: "2026-08-17T09:00:00.000Z",
+      destinationIds: [],
       disabledAt: "2026-08-17T09:00:00.000Z",
       enabled: false,
       enabledAt: null,

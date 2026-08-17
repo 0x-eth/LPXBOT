@@ -7,7 +7,6 @@ CREATE TABLE notification_preferences (
   updated_at timestamptz NOT NULL,
   CONSTRAINT notification_preferences_categories_valid CHECK (
     jsonb_typeof(categories) = 'object'
-    AND jsonb_object_length(categories) = 6
     AND categories ?& ARRAY[
       'monitor-match',
       'task-created',
@@ -16,6 +15,14 @@ CREATE TABLE notification_preferences (
       'position-closed',
       'feedback-replied'
     ]
+    AND categories - ARRAY[
+      'monitor-match',
+      'task-created',
+      'position-moved',
+      'operation-failed',
+      'position-closed',
+      'feedback-replied'
+    ] = '{}'::jsonb
     AND jsonb_typeof(categories -> 'monitor-match') = 'boolean'
     AND jsonb_typeof(categories -> 'task-created') = 'boolean'
     AND jsonb_typeof(categories -> 'position-moved') = 'boolean'
