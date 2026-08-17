@@ -129,6 +129,112 @@ export interface PoolActionIntent {
   token1Address: EvmAddress | null;
 }
 
+export const monitorSupportedChainIds = [56] as const;
+export const monitorSupportedMetrics = [
+  "volumeUsd",
+  "feesUsd",
+  "feeTvlRatio",
+  "tvlUsd",
+  "transactionCount",
+  "metricVersion",
+] as const;
+export const monitorUnresolvedMetrics = ["activeTvlUsd", "feeAtvlRatio"] as const;
+export const monitorWindowMinutes = [1, 5, 15, 30, 60] as const;
+export const monitorConditionLimit = 16 as const;
+export const monitorInitialEnabled = false as const;
+
+export type MonitorSupportedMetric = (typeof monitorSupportedMetrics)[number];
+export type MonitorUnresolvedMetric = (typeof monitorUnresolvedMetrics)[number];
+export type MonitorMetric = MonitorSupportedMetric | MonitorUnresolvedMetric;
+export type MonitorWindowMinutes = (typeof monitorWindowMinutes)[number];
+
+export type Condition =
+  | {
+      enabled: boolean;
+      id: Exclude<MonitorSupportedMetric, "metricVersion"> | MonitorUnresolvedMetric;
+      operator: "gte" | "lte";
+      value: string;
+    }
+  | {
+      enabled: boolean;
+      id: "metricVersion";
+      operator: "eq";
+      value: string;
+    };
+
+export interface CreateMonitorRequest {
+  conditions: Condition[];
+  excludeHanToken: boolean;
+  excludeHook: boolean;
+  name: string;
+  poolKey: BscPoolKey;
+  windowMinutes: MonitorWindowMinutes;
+}
+
+export interface PatchMonitorChanges {
+  conditions?: Condition[];
+  excludeHanToken?: boolean;
+  excludeHook?: boolean;
+  name?: string;
+  windowMinutes?: MonitorWindowMinutes;
+}
+
+export interface PatchMonitorRequest {
+  changes: PatchMonitorChanges;
+  expectedRevision: number;
+}
+
+export interface LifecycleMonitorRequest {
+  expectedRevision: number;
+}
+
+export interface Monitor extends CreateMonitorRequest {
+  createdAt: string;
+  disabledAt: string | null;
+  enabled: boolean;
+  enabledAt: string | null;
+  monitorId: string;
+  revision: number;
+  updatedAt: string;
+  userId: string;
+}
+
+export interface MonitorPage {
+  enabledCount: number;
+  items: Monitor[];
+  nextCursor: string | null;
+  totalCount: number;
+}
+
+export type MonitorCreate = CreateMonitorRequest;
+export type MonitorPatch = PatchMonitorRequest;
+export type MonitorLifecycle = LifecycleMonitorRequest;
+
+export const monitorErrorCodes = [
+  "INVALID_QUERY",
+  "INVALID_MONITOR",
+  "UNSUPPORTED_METRIC",
+  "POOL_NOT_ELIGIBLE",
+  "LIMIT_EXCEEDED",
+  "IDEMPOTENCY_CONFLICT",
+  "MONITOR_NOT_FOUND",
+  "MONITOR_NOT_READY",
+  "REVISION_CONFLICT",
+  "UNAUTHENTICATED",
+  "SERVICE_UNAVAILABLE",
+] as const;
+export type MonitorErrorCode = (typeof monitorErrorCodes)[number];
+
+export const monitorContracts = {
+  create: { method: "POST", path: "/api/monitors" },
+  delete: { method: "DELETE", path: "/api/monitors/{monitorId}" },
+  disable: { method: "POST", path: "/api/monitors/{monitorId}/disable" },
+  enable: { method: "POST", path: "/api/monitors/{monitorId}/enable" },
+  get: { method: "GET", path: "/api/monitors/{monitorId}" },
+  list: { method: "GET", path: "/api/monitors" },
+  patch: { method: "PATCH", path: "/api/monitors/{monitorId}" },
+} as const;
+
 export interface AddressRemark {
   address: EvmAddress;
   label: string;
