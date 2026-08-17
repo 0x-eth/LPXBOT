@@ -73,6 +73,16 @@ import {
   type MarketPoolsProvider,
 } from "./market-pools.js";
 import {
+  MonitorValidationError,
+  parseIdempotencyKey,
+  parseMonitorCreate,
+  parseMonitorLifecycle,
+  parseMonitorListQuery,
+  parseMonitorPatch,
+  type MonitorMutationResult,
+  type MonitorStore,
+} from "./monitors.js";
+import {
   parsePoolBlocklistPatch,
   PoolBlocklistValidationError,
   type PoolBlocklistStore,
@@ -128,6 +138,7 @@ export interface ApiAppOptions {
   marketChartsRateLimit?: PublicReadRateLimit;
   marketPoolsProvider?: MarketPoolsProvider;
   marketPoolsRateLimit?: PublicReadRateLimit;
+  monitorStore?: MonitorStore;
   managementOrigin?: string;
   now?: () => Date;
   poolBlocklistRateLimit?: ChainManagementRateLimit;

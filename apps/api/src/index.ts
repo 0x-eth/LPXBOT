@@ -22,6 +22,27 @@ export { PostgresUserPreferencesStore } from "./postgres-user-preferences-store.
 export { PostgresAddressRemarkStore } from "./postgres-address-remark-store.js";
 export { PostgresPoolBlocklistStore } from "./postgres-pool-blocklist-store.js";
 export type { PostgresPoolBlocklistStoreOptions } from "./postgres-pool-blocklist-store.js";
+export {
+  MemoryMonitorStore,
+  MonitorValidationError,
+  parseIdempotencyKey,
+  parseMonitorCreate,
+  parseMonitorLifecycle,
+  parseMonitorListQuery,
+  parseMonitorPatch,
+} from "./monitors.js";
+export type {
+  MonitorCreateInput,
+  MonitorCreateResult,
+  MonitorDeleteInput,
+  MonitorDeleteResult,
+  MonitorLifecycleInput,
+  MonitorListQuery,
+  MonitorMutationResult,
+  MonitorPatchInput,
+  MonitorStore,
+  MonitorValidationCode,
+} from "./monitors.js";
 export { PostgresPoolCreationProvenanceStore } from "./postgres-pool-creation-provenance-store.js";
 export {
   canonicalPoolCreationAddress,
