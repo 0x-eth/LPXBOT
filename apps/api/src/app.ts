@@ -77,6 +77,16 @@ import {
   type PoolBlocklistStore,
 } from "./pool-blocklist.js";
 import {
+  parsePoolCreationHistoryQuery,
+  parsePoolCreatorBatchRequest,
+  parsePoolCreatorQuery,
+  poolCreationIdentityDigest,
+  PoolCreationProvenanceValidationError,
+  publicPoolCreationAttribution,
+  type PoolCreationAdminAuditAction,
+  type PoolCreationProvenanceReadStore,
+} from "./pool-creation-provenance.js";
+import {
   createRecommendedPoolsEventStream,
   parseRecommendedPoolsCursor,
   type RecommendedPoolsScheduler,
@@ -121,6 +131,8 @@ export interface ApiAppOptions {
   now?: () => Date;
   poolBlocklistRateLimit?: ChainManagementRateLimit;
   poolBlocklistStore?: PoolBlocklistStore;
+  poolCreationProvenanceRateLimit?: PublicReadRateLimit;
+  poolCreationProvenanceStore?: PoolCreationProvenanceReadStore;
   preferencesStore?: UserPreferencesStore;
   recommendedPoolsPollMilliseconds?: number;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
@@ -689,6 +701,20 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     throw new RangeError("Pool blocklist rate limits must be positive integers");
   }
   const poolBlocklistLimiter = new FixedWindowRateLimiter();
+  const poolCreationProvenanceRateLimit: PublicReadRateLimit = {
+    max: 60,
+    timeWindowMs: 60_000,
+    ...options.poolCreationProvenanceRateLimit,
+  };
+  if (
+    !Number.isSafeInteger(poolCreationProvenanceRateLimit.max) ||
+    poolCreationProvenanceRateLimit.max <= 0 ||
+    !Number.isSafeInteger(poolCreationProvenanceRateLimit.timeWindowMs) ||
+    poolCreationProvenanceRateLimit.timeWindowMs <= 0
+  ) {
+    throw new RangeError("Pool creation provenance rate limits must be positive integers");
+  }
+  const poolCreationProvenanceLimiter = new FixedWindowRateLimiter();
   const chainManagementRateLimit: ChainManagementRateLimit = {
     max: 10,
     timeWindowMs: 60_000,
@@ -1014,6 +1040,35 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     });
   };
 
+  const poolProvenanceRateAllowed = (session: StoredSession): boolean =>
+    poolCreationProvenanceLimiter.consume(
+      session.id,
+      poolCreationProvenanceRateLimit.max,
+      poolCreationProvenanceRateLimit.timeWindowMs,
+      now().getTime(),
+    );
+
+  const recordPoolCreatorAudit = async (
+    action: PoolCreationAdminAuditAction,
+    request: FastifyRequest,
+    session: StoredSession,
+    poolKeys: readonly string[],
+    outcome: "allowed" | "denied",
+    resultCode: string,
+  ): Promise<void> => {
+    await options.poolCreationProvenanceStore?.recordAdminQueryAudit({
+      action,
+      actorUserId: session.userId,
+      createdAt: now(),
+      identityCount: poolKeys.length,
+      identityDigest: poolCreationIdentityDigest(poolKeys),
+      outcome,
+      requestId: request.id,
+      resultCode,
+      sessionId: session.id,
+    });
+  };
+
   const managedChainViews = async (
     policies: readonly ChainAccessPolicyView[],
   ): Promise<ManagedChainView[]> => {
@@ -1035,6 +1090,252 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   };
 
   app.after(() => {
+    app.get("/api/pools/create-history", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.poolCreationProvenanceStore) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "POOL_PROVENANCE_UNAVAILABLE",
+            message: "Pool creation provenance is not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      let query;
+      try {
+        query = parsePoolCreationHistoryQuery(request.query);
+      } catch (error) {
+        if (!(error instanceof PoolCreationProvenanceValidationError)) throw error;
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "POOL_PROVENANCE_INVALID",
+            message: "Pool creation history query is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!poolProvenanceRateAllowed(session)) {
+        return reply.code(429).send(
+          createErrorEnvelope({
+            code: "RATE_LIMITED",
+            message: "Too many pool provenance requests",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      const page = await options.poolCreationProvenanceStore.listByUser({
+        ...query,
+        userId: session.userId,
+      });
+      return createSuccessEnvelope(
+        {
+          items: page.items.map(publicPoolCreationAttribution),
+          nextCursor: page.nextCursor,
+        },
+        request.id,
+      );
+    });
+
+    app.get("/api/admin/pool-creators", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.poolCreationProvenanceStore) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "POOL_PROVENANCE_UNAVAILABLE",
+            message: "Pool creation provenance is not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      let query;
+      try {
+        query = parsePoolCreatorQuery(request.query);
+      } catch (error) {
+        if (!(error instanceof PoolCreationProvenanceValidationError)) throw error;
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "POOL_PROVENANCE_INVALID",
+            message: "Pool creator identity is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (
+        trustedRoleForTier(session.account.role, session.account.tier) !== "admin" ||
+        !roleCanAccess(session.account.role, "admin")
+      ) {
+        await recordPoolCreatorAudit(
+          "pool-creator.single",
+          request,
+          session,
+          [query.poolKey],
+          "denied",
+          "ADMIN_REQUIRED",
+        );
+        return reply.code(403).send(
+          createErrorEnvelope({
+            code: "ADMIN_REQUIRED",
+            message: "Administrator access is required",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!poolProvenanceRateAllowed(session)) {
+        await recordPoolCreatorAudit(
+          "pool-creator.single",
+          request,
+          session,
+          [query.poolKey],
+          "denied",
+          "RATE_LIMITED",
+        );
+        return reply.code(429).send(
+          createErrorEnvelope({
+            code: "RATE_LIMITED",
+            message: "Too many pool provenance requests",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      try {
+        const creator = await options.poolCreationProvenanceStore.findAttribution(query.poolKey);
+        await recordPoolCreatorAudit(
+          "pool-creator.single",
+          request,
+          session,
+          [query.poolKey],
+          "allowed",
+          "OK",
+        );
+        return createSuccessEnvelope(
+          {
+            creator: creator ? publicPoolCreationAttribution(creator) : null,
+            identity: query.identity,
+          },
+          request.id,
+        );
+      } catch (error) {
+        await recordPoolCreatorAudit(
+          "pool-creator.single",
+          request,
+          session,
+          [query.poolKey],
+          "denied",
+          "STORE_ERROR",
+        );
+        throw error;
+      }
+    });
+
+    app.post("/api/admin/pool-creators", { bodyLimit: 32_768 }, async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.poolCreationProvenanceStore) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "POOL_PROVENANCE_UNAVAILABLE",
+            message: "Pool creation provenance is not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      let batch;
+      try {
+        batch = parsePoolCreatorBatchRequest(request.body);
+      } catch (error) {
+        if (!(error instanceof PoolCreationProvenanceValidationError)) throw error;
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "POOL_PROVENANCE_INVALID",
+            message: "Pool creator batch is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (
+        trustedRoleForTier(session.account.role, session.account.tier) !== "admin" ||
+        !roleCanAccess(session.account.role, "admin")
+      ) {
+        await recordPoolCreatorAudit(
+          "pool-creator.batch",
+          request,
+          session,
+          batch.poolKeys,
+          "denied",
+          "ADMIN_REQUIRED",
+        );
+        return reply.code(403).send(
+          createErrorEnvelope({
+            code: "ADMIN_REQUIRED",
+            message: "Administrator access is required",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!poolProvenanceRateAllowed(session)) {
+        await recordPoolCreatorAudit(
+          "pool-creator.batch",
+          request,
+          session,
+          batch.poolKeys,
+          "denied",
+          "RATE_LIMITED",
+        );
+        return reply.code(429).send(
+          createErrorEnvelope({
+            code: "RATE_LIMITED",
+            message: "Too many pool provenance requests",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      try {
+        const creators = await options.poolCreationProvenanceStore.findAttributions(batch.poolKeys);
+        const results = batch.identities.map((identity, index) => {
+          const creator = creators.get(batch.poolKeys[index]!) ?? null;
+          return {
+            creator: creator ? publicPoolCreationAttribution(creator) : null,
+            identity,
+          };
+        });
+        await recordPoolCreatorAudit(
+          "pool-creator.batch",
+          request,
+          session,
+          batch.poolKeys,
+          "allowed",
+          "OK",
+        );
+        return createSuccessEnvelope({ results }, request.id);
+      } catch (error) {
+        await recordPoolCreatorAudit(
+          "pool-creator.batch",
+          request,
+          session,
+          batch.poolKeys,
+          "denied",
+          "STORE_ERROR",
+        );
+        throw error;
+      }
+    });
+
     app.get("/api/system-config/chains", async (request, reply) => {
       reply.header("Cache-Control", "no-store");
       const session = await authenticateSessionRequest(request, reply);
