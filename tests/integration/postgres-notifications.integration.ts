@@ -96,10 +96,13 @@ beforeAll(async () => {
        id, role, tier, status, display_name, avatar_url, created_at, updated_at
      ) VALUES
        ($1, 'user', 'normal', 'active', 'Notify A', NULL, $3, $3),
-       ($2, 'user', 'normal', 'active', 'Notify B', NULL, $3, $3);
-     INSERT INTO telegram_identities (telegram_user_id, user_id, created_at)
-     VALUES ($4, $1, $3), ($5, $2, $3)`,
-    [userA, userB, now, telegramA, telegramB],
+       ($2, 'user', 'normal', 'active', 'Notify B', NULL, $3, $3)`,
+    [userA, userB, now],
+  );
+  await pool.query(
+    `INSERT INTO telegram_identities (telegram_user_id, user_id, created_at)
+     VALUES ($3, $1, $5), ($4, $2, $5)`,
+    [userA, userB, telegramA, telegramB, now],
   );
 }, 30_000);
 
@@ -125,6 +128,7 @@ function candidate(
   monitor: MonitorEvaluationDefinition,
   windowEnd = "2026-08-18T00:55:00.000Z",
 ): MonitorCandidate {
+  const generatedAt = new Date(new Date(windowEnd).getTime() + 30_000).toISOString();
   return {
     blocklistHash: `sha256:${"1".repeat(64)}`,
     candidateKey: monitorCandidateKey({
@@ -136,7 +140,7 @@ function candidate(
     }),
     canonicalBlockHash: `0x${"2".repeat(64)}`,
     createdAt: "2026-08-18T01:00:00.000Z",
-    generatedAt: "2026-08-18T00:55:30.000Z",
+    generatedAt,
     matchedConditions: structuredClone(monitor.conditions),
     metricVersion: "market-metrics/v1",
     monitorId: monitor.monitorId,

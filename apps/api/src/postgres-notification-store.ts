@@ -403,6 +403,9 @@ export class PostgresNotificationConfigurationStore implements NotificationConfi
     let newSecretRef: string | null = null;
     try {
       await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+        `notification-destination:${input.destinationId}`,
+      ]);
       const current = await this.#getCurrent(client, input.userId, input.destinationId, true);
       if (!current) return await this.#finish(client, { status: "not-found" });
       if (current.revision !== patch.expectedRevision) {
@@ -543,6 +546,9 @@ export class PostgresNotificationConfigurationStore implements NotificationConfi
     const client = await this.#pool.connect();
     try {
       await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+        `notification-destination:${input.destinationId}`,
+      ]);
       const current = await this.#getCurrent(client, input.userId, input.destinationId, true);
       if (!current) return await this.#finish(client, { status: "not-found" });
       if (current.revision !== input.expectedRevision) {
