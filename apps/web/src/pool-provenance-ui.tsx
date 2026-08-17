@@ -64,15 +64,23 @@ function OutcomeWarning({ record }: { record: PoolCreationProvenanceRecord }) {
   );
 }
 
-function ProvenanceRecordDetails({ record }: { record: PoolCreationProvenanceRecord }) {
+function ProvenanceRecordDetails({
+  record,
+  showPlatform = true,
+}: {
+  record: PoolCreationProvenanceRecord;
+  showPlatform?: boolean;
+}) {
   const identity = identityFromPoolKey(record.poolKey);
   return (
     <>
       <dl className="pool-provenance-facts">
-        <div>
-          <dt>平台</dt>
-          <dd>{protocolLabel(record.protocol)}</dd>
-        </div>
+        {showPlatform ? (
+          <div>
+            <dt>平台</dt>
+            <dd>{protocolLabel(record.protocol)}</dd>
+          </div>
+        ) : null}
         <div>
           <dt>结果</dt>
           <dd>{record.outcome === "created" ? "创建成功" : "创建时已存在"}</dd>
@@ -127,7 +135,7 @@ function HistoryRecord({ attribution }: { attribution: PoolCreationAttribution }
           {record.outcome === "created" ? "已创建" : "已存在"}
         </span>
       </div>
-      <ProvenanceRecordDetails record={record} />
+      <ProvenanceRecordDetails record={record} showPlatform={false} />
     </li>
   );
 }

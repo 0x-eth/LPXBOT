@@ -431,7 +431,7 @@ test("POOL-15 renders null, partial, deleted-user, malformed and batch-error adm
   await dialog.getByRole("button", { name: "关闭池子创建者" }).click();
 
   await page.getByRole("button", { name: "展开高级筛选" }).click();
-  await page.getByRole("checkbox", { name: "V4" }).uncheck();
+  await page.getByRole("checkbox", { exact: true, name: "V4" }).uncheck();
   await page.getByRole("button", { name: "应用筛选" }).click();
   await expect.poll(() => calls).toBe(3);
   await page.getByRole("button", { name: `查看池子创建者 0x${"1".repeat(40)}` }).click();
@@ -473,10 +473,10 @@ test("POOL-15 cancels filtered admin batches and ignores their late response", a
   await page.goto("/pools?fixture=pools-ready");
   await expect.poll(() => calls).toBe(1);
   await page.getByRole("button", { name: "展开高级筛选" }).click();
-  await page.getByRole("checkbox", { name: "V4" }).uncheck();
+  await page.getByRole("checkbox", { exact: true, name: "V4" }).uncheck();
   await page.getByRole("button", { name: "应用筛选" }).click();
   await expect.poll(() => calls).toBe(2);
-  await expect(page.getByRole("button", { name: /查看池子创建者/u })).toHaveCount(2);
+  await expect(page.getByRole("button", { name: /查看池子创建者/u })).toHaveCount(1);
   await firstRoute
     ?.fulfill({
       contentType: "application/json",

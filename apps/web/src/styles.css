@@ -2722,7 +2722,7 @@ html[data-theme="dark"] .flow-stat-strip[data-completeness="partial"] [data-metr
 .pool-provenance-facts {
   display: grid;
   min-width: 0;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   gap: 10px;
   margin: 0;
 }
