@@ -212,7 +212,10 @@ export class NodeHttpsWebhookTransport implements WebhookTransport {
       input.signal.addEventListener("abort", abort, { once: true });
       request.once("socket", (socket) => {
         connectTimer = setTimeout(
-          () => finish(new WebhookTransportError("CONNECT_TIMEOUT")),
+          () => {
+            request.destroy();
+            finish(new WebhookTransportError("CONNECT_TIMEOUT"));
+          },
           input.timeouts.connectMilliseconds,
         );
         connectTimer.unref?.();
@@ -221,23 +224,35 @@ export class NodeHttpsWebhookTransport implements WebhookTransport {
         });
         const tlsSocket = socket as TLSSocket;
         tlsTimer = setTimeout(
-          () => finish(new WebhookTransportError("TLS_TIMEOUT")),
+          () => {
+            request.destroy();
+            finish(new WebhookTransportError("TLS_TIMEOUT"));
+          },
           input.timeouts.tlsMilliseconds,
         );
         tlsTimer.unref?.();
         tlsSocket.once("secureConnect", () => {
           if (tlsTimer) clearTimeout(tlsTimer);
-          if (!tlsSocket.authorized) finish(new WebhookTransportError("TLS_CERTIFICATE_INVALID"));
+          if (!tlsSocket.authorized) {
+            request.destroy();
+            finish(new WebhookTransportError("TLS_CERTIFICATE_INVALID"));
+          }
         });
       });
       request.once("error", (error) => finish(webhookNetworkError(error)));
       firstByteTimer = setTimeout(
-        () => finish(new WebhookTransportError("FIRST_BYTE_TIMEOUT")),
+        () => {
+          request.destroy();
+          finish(new WebhookTransportError("FIRST_BYTE_TIMEOUT"));
+        },
         input.timeouts.firstByteMilliseconds,
       );
       firstByteTimer.unref?.();
       totalTimer = setTimeout(
-        () => finish(new WebhookTransportError("TOTAL_TIMEOUT")),
+        () => {
+          request.destroy();
+          finish(new WebhookTransportError("TOTAL_TIMEOUT"));
+        },
         input.timeouts.totalMilliseconds,
       );
       totalTimer.unref?.();
@@ -366,17 +381,25 @@ async function timeout<T>(
   operation: (signal: AbortSignal) => Promise<T>,
 ): Promise<T> {
   const controller = new AbortController();
-  const abort = () => controller.abort(signal.reason);
-  signal.addEventListener("abort", abort, { once: true });
-  const timer = setTimeout(() => controller.abort(new WebhookEgressError("DNS_TIMEOUT")), milliseconds);
+  let rejectAbort!: (reason: unknown) => void;
+  const aborted = new Promise<never>((_resolve, reject) => {
+    rejectAbort = reject;
+  });
+  const abort = () => {
+    const reason = signal.reason ?? new WebhookTransportError("TOTAL_TIMEOUT");
+    controller.abort(reason);
+    rejectAbort(reason);
+  };
+  if (signal.aborted) abort();
+  else signal.addEventListener("abort", abort, { once: true });
+  const timer = setTimeout(() => {
+    const error = new WebhookEgressError("DNS_TIMEOUT");
+    controller.abort(error);
+    rejectAbort(error);
+  }, milliseconds);
   timer.unref?.();
   try {
-    return await operation(controller.signal);
-  } catch (error) {
-    if (controller.signal.aborted && controller.signal.reason instanceof WebhookEgressError) {
-      throw controller.signal.reason;
-    }
-    throw error;
+    return await Promise.race([operation(controller.signal), aborted]);
   } finally {
     clearTimeout(timer);
     signal.removeEventListener("abort", abort);
@@ -392,7 +415,11 @@ export class WebhookEgressPolicy {
 
   async resolveTarget(url: URL, signal: AbortSignal = new AbortController().signal) {
     validateUrl(url);
-    const hostname = url.hostname.toLowerCase();
+    const urlHostname = url.hostname.toLowerCase();
+    const hostname =
+      urlHostname.startsWith("[") && urlHostname.endsWith("]")
+        ? urlHostname.slice(1, -1)
+        : urlHostname;
     const literal = isIP(hostname) > 0 ? { addresses: [hostname] } : null;
     let resolved: Awaited<ReturnType<WebhookResolver["resolve"]>>;
     try {
