@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -86,7 +86,7 @@ function parseChecksums(source, label) {
 function git(args, options = {}) {
   const result = spawnSync("git", args, {
     cwd: ROOT,
-    encoding: options.encoding ?? "utf8",
+    encoding: Object.hasOwn(options, "encoding") ? options.encoding : "utf8",
     maxBuffer: 64 * 1024 * 1024,
   });
   assert.equal(
@@ -254,14 +254,17 @@ test("domain contract freezes monitor ownership, AND evaluation, freshness, and 
   assert.equal(contract.conditions.zeroEnabledConditions, "invalid-monitor-no-match");
 
   const metricConditions = by(contract.conditions.metricConditions, "id");
-  assert.deepEqual(sorted(metricConditions.keys()), [
-    "feeTvlRatio",
-    "feesUsd",
-    "metricVersion",
-    "transactionCount",
-    "tvlUsd",
-    "volumeUsd",
-  ]);
+  assert.deepEqual(
+    sorted(metricConditions.keys()),
+    sorted([
+      "feeTvlRatio",
+      "feesUsd",
+      "metricVersion",
+      "transactionCount",
+      "tvlUsd",
+      "volumeUsd",
+    ]),
+  );
   assert.deepEqual(
     sorted(contract.conditions.unresolved.map(({ id }) => id)),
     ["activeTvlUsd", "feeAtvlRatio"],
@@ -338,6 +341,21 @@ test("evaluation fixtures cover boundaries, invalid inputs, duplicates, ordering
     assert.equal(cases.get(id).expected.matched, true, id);
     assert.match(cases.get(id).expected.candidateKey, /^[0-9a-f]{64}$/, id);
   }
+  const monitor = evaluation.input.monitor;
+  const snapshot = evaluation.input.snapshotDefaults;
+  const candidateInput = [
+    "monitor-candidate/v1",
+    monitor.monitorId,
+    String(monitor.revision),
+    monitor.poolKey,
+    snapshot.windowEnd,
+    snapshot.metricVersion,
+  ].join("\n");
+  assert.equal(
+    digest(Buffer.from(candidateInput, "utf8")),
+    cases.get("all-and-match").expected.candidateKey,
+    "candidate key known-answer vector",
+  );
   for (const id of requiredCases.filter(
     (id) => !["all-and-match", "exact-lower-boundary", "exact-freshness-boundary"].includes(id),
   )) {
@@ -486,6 +504,18 @@ test("security contract freezes templates, SSRF controls, signatures, and local-
   assert.equal(templateCases.get("oversize-expanded-body").expected.error, "BODY_TOO_LARGE");
   assert.equal(fixture.expected.signature.bodySha256.length, 64);
   assert.equal(fixture.expected.signature.value.startsWith("v1="), true);
+  assert.equal(
+    digest(Buffer.from(fixture.input.signature.body, "utf8")),
+    fixture.expected.signature.bodySha256,
+    "body digest known-answer vector",
+  );
+  assert.equal(
+    `v1=${createHmac("sha256", fixture.input.signature.fixtureKey)
+      .update(fixture.expected.signature.canonicalInput, "utf8")
+      .digest("hex")}`,
+    fixture.expected.signature.value,
+    "HMAC-SHA256 known-answer vector",
+  );
 
   const ssrf = await readJson("fixtures/ssrf-policy.json");
   const ssrfCases = by(ssrf.input.cases, "id");
@@ -567,7 +597,7 @@ test("fixture index hashes every offline fixture and all unresolved subjects hav
   );
   for (const fixture of index.fixtures) {
     assert.match(fixture.path, /^fixtures\/[a-z0-9-]+\.json$/u);
-    assert.match(fixture.schemaId, /^p03-fixture:\/[a-z0-9-]+\/v1$/u);
+    assert.match(fixture.schemaId, /^p03-fixture:\/\/[a-z0-9-]+\/v1$/u);
     const bytes = await readFile(path.join(ACCEPTANCE, fixture.path));
     assert.equal(fixture.bytes, bytes.length, `${fixture.id} bytes`);
     assert.equal(fixture.sha256, digest(bytes), `${fixture.id} sha256`);
