@@ -46,6 +46,7 @@ export interface ShellStatsDisplay {
 
 export interface ApiShellStatsProviderOptions {
   fetcher?: typeof fetch;
+  heartbeatTimeoutMs?: number;
   initialRetryMs?: number;
   maxRetryMs?: number;
   now?: () => Date;
@@ -444,6 +445,21 @@ function valueOrUnavailable(value: number | null, suffix = ""): string {
   return value === null ? "--" : `${value}${suffix}`;
 }
 
+function countOrUnavailable(value: number | null): string {
+  if (value === null) return "--";
+  if (value < 10_000) return String(value);
+  const units = ["k", "m", "b", "t", "q"] as const;
+  let scaled = value;
+  let unit = units[0];
+  for (const candidate of units) {
+    scaled /= 1_000;
+    unit = candidate;
+    if (scaled < 1_000) break;
+  }
+  const precision = scaled < 100 ? 1 : 0;
+  return `${scaled.toFixed(precision).replace(/\.0$/u, "")}${unit}`;
+}
+
 function abbreviatedAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
@@ -485,12 +501,12 @@ export function shellStatsDisplay(
     ethereumGas: valueOrUnavailable(stats?.gas.ethereumGwei ?? null),
     fps: valueOrUnavailable(stats?.fps ?? null),
     online: stats?.online === true ? "在线" : stats?.online === false ? "离线" : "不可用",
-    paused: valueOrUnavailable(stats?.taskCounts.paused ?? null),
+    paused: countOrUnavailable(stats?.taskCounts.paused ?? null),
     ping: valueOrUnavailable(stats?.pingMs ?? null, "ms"),
     recommendationStatus,
     recommendedPools,
-    running: valueOrUnavailable(stats?.taskCounts.running ?? null),
-    stopped: valueOrUnavailable(stats?.taskCounts.stopped ?? null),
+    running: countOrUnavailable(stats?.taskCounts.running ?? null),
+    stopped: countOrUnavailable(stats?.taskCounts.stopped ?? null),
   };
 }
 
@@ -510,6 +526,7 @@ async function defaultSleep(delayMs: number, signal: AbortSignal): Promise<void>
 
 export class ApiShellStatsProvider {
   readonly #fetcher: typeof fetch;
+  readonly #heartbeatTimeoutMs: number;
   readonly #initialRetryMs: number;
   readonly #listeners = new Set<ShellStatsListener>();
   readonly #maxRetryMs: number;
@@ -520,9 +537,11 @@ export class ApiShellStatsProvider {
   #controller: AbortController | null = null;
   #running = false;
   #state = createShellStatsState();
+  #watchdog: ReturnType<typeof setTimeout> | null = null;
 
   constructor(options: ApiShellStatsProviderOptions = {}) {
     this.#fetcher = options.fetcher ?? globalThis.fetch.bind(globalThis);
+    this.#heartbeatTimeoutMs = options.heartbeatTimeoutMs ?? 55_000;
     this.#initialRetryMs = options.initialRetryMs ?? 1_000;
     this.#maxRetryMs = options.maxRetryMs ?? 30_000;
     this.#now = options.now ?? (() => new Date());
@@ -533,8 +552,10 @@ export class ApiShellStatsProvider {
     if (
       !Number.isSafeInteger(this.#initialRetryMs) ||
       !Number.isSafeInteger(this.#maxRetryMs) ||
+      !Number.isSafeInteger(this.#heartbeatTimeoutMs) ||
       this.#initialRetryMs <= 0 ||
       this.#maxRetryMs < this.#initialRetryMs ||
+      this.#heartbeatTimeoutMs <= 0 ||
       !Number.isSafeInteger(this.#recommendationLimit) ||
       this.#recommendationLimit < 1 ||
       this.#recommendationLimit > 20
@@ -555,6 +576,7 @@ export class ApiShellStatsProvider {
       if (this.#listeners.size === 0) {
         this.#running = false;
         this.#controller?.abort();
+        this.#clearWatchdog();
       }
     };
   }
@@ -562,6 +584,7 @@ export class ApiShellStatsProvider {
   async #connectLoop(): Promise<void> {
     let attempt = 0;
     while (this.#running) {
+      this.#clearWatchdog();
       const controller = new AbortController();
       this.#controller = controller;
       try {
@@ -595,6 +618,7 @@ export class ApiShellStatsProvider {
         if (!(error instanceof Error)) break;
       }
       if (!this.#running) break;
+      this.#clearWatchdog();
       if (this.#state.connected) {
         this.#state = markShellStatsDisconnected(this.#state, this.#now());
         this.#emit();
@@ -603,6 +627,7 @@ export class ApiShellStatsProvider {
       attempt += 1;
       await this.#sleep(delay, controller.signal);
     }
+    this.#clearWatchdog();
     this.#controller = null;
   }
 
@@ -659,6 +684,7 @@ export class ApiShellStatsProvider {
     ) {
       return;
     }
+    this.#refreshWatchdog();
     const next = reduceShellStatsEvent(this.#state, event);
     if (next === this.#state) return;
     this.#state = next;
@@ -667,5 +693,24 @@ export class ApiShellStatsProvider {
 
   #emit(): void {
     for (const listener of this.#listeners) listener(this.#state);
+  }
+
+  #clearWatchdog(): void {
+    if (this.#watchdog === null) return;
+    clearTimeout(this.#watchdog);
+    this.#watchdog = null;
+  }
+
+  #refreshWatchdog(): void {
+    this.#clearWatchdog();
+    this.#watchdog = setTimeout(() => {
+      this.#watchdog = null;
+      if (!this.#running) return;
+      if (this.#state.connected) {
+        this.#state = markShellStatsDisconnected(this.#state, this.#now());
+        this.#emit();
+      }
+      this.#controller?.abort();
+    }, this.#heartbeatTimeoutMs);
   }
 }

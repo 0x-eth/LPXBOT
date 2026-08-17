@@ -398,7 +398,7 @@ input:focus-visible,
   display: grid;
   min-width: 0;
   height: 34px;
-  grid-template-columns: 20px minmax(0, auto) 14px;
+  grid-template-columns: 20px minmax(0, auto) 30px;
   align-items: center;
   justify-content: center;
   gap: 4px;
@@ -428,12 +428,13 @@ input:focus-visible,
 
 .nav-badge-slot {
   display: grid;
-  width: 14px;
+  width: 30px;
   height: 14px;
   align-items: center;
   justify-content: center;
   color: var(--accent-foreground);
-  border-radius: 50%;
+  overflow: hidden;
+  border-radius: 7px;
   background: var(--accent);
   font-size: 0.58rem;
   font-variant-numeric: tabular-nums;
@@ -3377,6 +3378,20 @@ html[data-theme="dark"] .pool-provenance-warning {
 .status-primary strong {
   color: var(--text);
   font-weight: 700;
+}
+
+.status-task-count {
+  display: inline-grid;
+  width: 58px;
+  grid-template-columns: auto minmax(24px, 1fr);
+  align-items: center;
+  gap: 4px;
+}
+
+.status-task-count strong {
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
 }
 
 .online-state {

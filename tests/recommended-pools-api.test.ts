@@ -6,12 +6,19 @@ import type {
 } from "../packages/api-contract/src/index.js";
 import { buildApiApp } from "../apps/api/src/index.js";
 import type { MarketPoolsContext, MarketPoolsProvider } from "../apps/api/src/market-pools.js";
-import type { ShellStatsProvider } from "../apps/api/src/shell-stats.js";
+import type {
+  ShellStatsAdminQueryAudit,
+  ShellStatsContext,
+  ShellStatsProvider,
+  ShellStatsScope,
+} from "../apps/api/src/shell-stats.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { issueFixtureSession, SessionFixtureStore } from "./helpers/session-fixture.js";
 
 const userId = "27000000-0000-4000-8000-000000000009";
+const targetUserId = "27000000-0000-4000-8000-000000000019";
+const targetTelegramId = "8801319";
 const apps: Array<{ close(): Promise<void> }> = [];
 
 function emptySnapshot(version = "7"): MarketPoolSnapshot {
@@ -114,10 +121,11 @@ class BlockingMarketProvider extends EmptyMarketProvider {
 }
 
 class FiniteStatsProvider implements ShellStatsProvider {
-  contexts: string[] = [];
+  audits: ShellStatsAdminQueryAudit[] = [];
+  contexts: ShellStatsScope[] = [];
 
-  async getSnapshot(context: { userId: string }): Promise<ShellStatsSnapshot> {
-    this.contexts.push(context.userId);
+  async getSnapshot(context: ShellStatsContext): Promise<ShellStatsSnapshot> {
+    this.contexts.push(context.scope);
     return {
       observedAt: "2026-08-17T02:00:00.000Z",
       sequence: 1,
@@ -129,6 +137,14 @@ class FiniteStatsProvider implements ShellStatsProvider {
         taskCounts: { paused: null, running: null, stopped: null },
       },
     };
+  }
+
+  async recordAdminQueryAudit(audit: ShellStatsAdminQueryAudit): Promise<void> {
+    this.audits.push(audit);
+  }
+
+  async resolveTelegramUserId(telegramUserId: string): Promise<string | null> {
+    return telegramUserId === targetTelegramId ? targetUserId : null;
   }
 
   async *subscribe(): AsyncIterable<ShellStatsEvent> {}
@@ -317,7 +333,7 @@ describe("P02-09 recommendation stream HTTP boundary", () => {
     const forbidden = await app.inject({
       headers,
       method: "GET",
-      url: "/api/stats/stream?user_id=someone-else",
+      url: `/api/stats/stream?user_id=${targetTelegramId}`,
     });
     expect(forbidden.statusCode).toBe(403);
     expect(forbidden.json().error.code).toBe("FORBIDDEN");
@@ -415,10 +431,10 @@ describe("P02-09 recommendation stream HTTP boundary", () => {
     const filtered = await app.inject({
       headers: { cookie: `lpbot_session=${token}` },
       method: "GET",
-      url: "/api/stats/stream?user_id=target-user&limit=3",
+      url: `/api/stats/stream?user_id=${targetTelegramId}&limit=3`,
     });
     expect(filtered.statusCode).toBe(200);
-    expect(statsProvider.contexts).toEqual(["target-user"]);
+    expect(statsProvider.contexts).toEqual([{ type: "user", userId: targetUserId }]);
 
     await app.inject({
       headers: { cookie: `lpbot_session=${token}` },

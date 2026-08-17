@@ -81,13 +81,13 @@ export function ShellStatusBar() {
           <span aria-hidden="true" className="online-dot" />
           {display.online}
         </span>
-        <span>
+        <span className="status-task-count">
           运行 <strong data-visual-mask="stats">{display.running}</strong>
         </span>
-        <span>
+        <span className="status-task-count">
           暂停 <strong data-visual-mask="stats">{display.paused}</strong>
         </span>
-        <span>
+        <span className="status-task-count">
           停止 <strong data-visual-mask="stats">{display.stopped}</strong>
         </span>
       </div>

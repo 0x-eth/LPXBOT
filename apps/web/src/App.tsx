@@ -531,9 +531,9 @@ function PrimaryNavigation({ onOpenChat }: { onOpenChat(trigger: HTMLButtonEleme
     <span
       aria-hidden="true"
       className="nav-badge-slot"
-      data-visual-mask={key === "tasks" && stats.sequence >= 0 ? "stats" : undefined}
+      data-visual-mask={key === "tasks" ? "stats" : undefined}
     >
-      {key === "tasks" && stats.sequence >= 0 ? display.running : null}
+      {key === "tasks" ? display.running : null}
     </span>
   );
 
