@@ -9,16 +9,23 @@ import {
   type MonitorPage,
   type MonitorSupportedMetric,
   type NotificationDestination,
+  type NotificationDeliveryStatus,
+  type NotificationHistoryItem,
 } from "@lpbot/api-contract";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   BellPlus,
+  CheckCircle2,
+  ChevronRight,
   CircleAlert,
+  Clock3,
+  History as HistoryIcon,
   Inbox,
   Pencil,
   Plus,
   Power,
   RefreshCw,
+  Send,
   Trash2,
   X,
 } from "lucide-react";
@@ -603,6 +610,405 @@ function ConditionSummary({ conditions }: { conditions: readonly Condition[] }) 
   );
 }
 
+const historyStatusLabels: Readonly<Record<NotificationDeliveryStatus, string>> = {
+  delivered: "已送达",
+  failed: "失败",
+  pending: "待发送",
+  retrying: "重试中",
+  sending: "发送中",
+};
+
+function historyTimestamp(value: string | null): string {
+  if (value === null) return "—";
+  return new Intl.DateTimeFormat("zh-CN", {
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+    minute: "2-digit",
+    month: "2-digit",
+  }).format(new Date(value));
+}
+
+function useMobileHistoryLayout(): boolean {
+  const [mobile, setMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches,
+  );
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 640px)");
+    const update = () => setMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  return mobile;
+}
+
+function historyQueryTime(value: string): string | undefined {
+  if (value === "") return undefined;
+  const parsed = new Date(value);
+  return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : undefined;
+}
+
+function HistoryStatus({ status }: { status: NotificationDeliveryStatus }) {
+  const Icon =
+    status === "delivered"
+      ? CheckCircle2
+      : status === "sending"
+        ? Send
+        : status === "failed"
+          ? CircleAlert
+          : Clock3;
+  return (
+    <span className="notification-history-status" data-status={status}>
+      <Icon aria-hidden="true" size={14} />
+      {historyStatusLabels[status]}
+    </span>
+  );
+}
+
+function NotificationHistoryDetails({
+  close,
+  item,
+  returnFocus,
+}: {
+  close(): void;
+  item: NotificationHistoryItem;
+  returnFocus(): void;
+}) {
+  return (
+    <Dialog.Root
+      onOpenChange={(open) => {
+        if (!open) close();
+      }}
+      open
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="dialog-overlay" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          className="notification-history-drawer"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            returnFocus();
+          }}
+        >
+          <div className="notification-history-drawer-heading">
+            <div>
+              <p className="eyebrow">{item.destination.type}</p>
+              <Dialog.Title>投递详情</Dialog.Title>
+            </div>
+            <Dialog.Close asChild>
+              <button
+                aria-label="关闭投递详情"
+                className="icon-button tooltip-control"
+                data-tooltip="关闭"
+                type="button"
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
+            </Dialog.Close>
+          </div>
+          <div className="notification-history-drawer-status">
+            <HistoryStatus status={item.status} />
+            <code>{item.deliveryId}</code>
+          </div>
+          <dl className="notification-history-details">
+            <div>
+              <dt>监控</dt>
+              <dd>{item.monitorName}</dd>
+            </div>
+            <div>
+              <dt>目的地</dt>
+              <dd>{item.destination.name}</dd>
+            </div>
+            <div>
+              <dt>Pool</dt>
+              <dd title={item.poolKey}>{item.poolKey}</dd>
+            </div>
+            <div>
+              <dt>窗口</dt>
+              <dd>{item.windowMinutes} 分钟</dd>
+            </div>
+            <div>
+              <dt>条件</dt>
+              <dd>{item.conditionSummary || "—"}</dd>
+            </div>
+            <div>
+              <dt>尝试次数</dt>
+              <dd>{item.attemptCount}</dd>
+            </div>
+            <div>
+              <dt>创建时间</dt>
+              <dd>{historyTimestamp(item.createdAt)}</dd>
+            </div>
+            <div>
+              <dt>窗口结束</dt>
+              <dd>{historyTimestamp(item.windowEnd)}</dd>
+            </div>
+            <div>
+              <dt>下次重试</dt>
+              <dd>{historyTimestamp(item.nextRetryAt)}</dd>
+            </div>
+            <div>
+              <dt>投递时间</dt>
+              <dd>{historyTimestamp(item.deliveredAt)}</dd>
+            </div>
+            <div>
+              <dt>错误码</dt>
+              <dd>{item.errorCode ?? "—"}</dd>
+            </div>
+          </dl>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function NotificationHistoryView({
+  client,
+  monitors,
+}: {
+  client: NotificationClient;
+  monitors: readonly Monitor[];
+}) {
+  const mobile = useMobileHistoryLayout();
+  const [deliveryStatus, setDeliveryStatus] = useState<NotificationDeliveryStatus | "">("");
+  const [from, setFrom] = useState("");
+  const [items, setItems] = useState<NotificationHistoryItem[]>([]);
+  const [loadState, setLoadState] = useState<"error" | "loading" | "ready">("loading");
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [monitorId, setMonitorId] = useState("");
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [selected, setSelected] = useState<NotificationHistoryItem | null>(null);
+  const [to, setTo] = useState("");
+  const detailsTrigger = useRef<HTMLButtonElement | null>(null);
+
+  const query = useMemo(
+    () => ({
+      ...(deliveryStatus === "" ? {} : { deliveryStatus }),
+      ...(historyQueryTime(from) ? { from: historyQueryTime(from) } : {}),
+      limit: 25,
+      ...(monitorId === "" ? {} : { monitorId }),
+      ...(historyQueryTime(to) ? { to: historyQueryTime(to) } : {}),
+    }),
+    [deliveryStatus, from, monitorId, to],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoadState("loading");
+    setItems([]);
+    setNextCursor(null);
+    void client
+      .listHistory(query, controller.signal)
+      .then((page) => {
+        setItems(page.items);
+        setNextCursor(page.nextCursor);
+        setLoadState("ready");
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setLoadState("error");
+      });
+    return () => controller.abort();
+  }, [client, query, reloadKey]);
+
+  const loadMore = async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await client.listHistory({ ...query, cursor: nextCursor });
+      setItems((current) => {
+        const seen = new Set(current.map(({ deliveryId }) => deliveryId));
+        return [...current, ...page.items.filter(({ deliveryId }) => !seen.has(deliveryId))];
+      });
+      setNextCursor(page.nextCursor);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const openDetails = (item: NotificationHistoryItem, trigger: HTMLButtonElement) => {
+    detailsTrigger.current = trigger;
+    setSelected(item);
+  };
+
+  const detailButton = (item: NotificationHistoryItem) => (
+    <button
+      aria-label={`查看投递 ${item.deliveryId}`}
+      className="icon-button tooltip-control"
+      data-tooltip="详情"
+      onClick={(event) => openDetails(item, event.currentTarget)}
+      type="button"
+    >
+      <ChevronRight aria-hidden="true" size={17} />
+    </button>
+  );
+
+  return (
+    <section aria-label="通知历史" className="notification-history" role="region">
+      <div className="notification-history-toolbar">
+        <div className="notification-history-filters">
+          <label>
+            <span>投递状态</span>
+            <select
+              onChange={(event) =>
+                setDeliveryStatus(event.target.value as NotificationDeliveryStatus | "")
+              }
+              value={deliveryStatus}
+            >
+              <option value="">全部状态</option>
+              {Object.entries(historyStatusLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>监控筛选</span>
+            <select onChange={(event) => setMonitorId(event.target.value)} value={monitorId}>
+              <option value="">全部监控</option>
+              {monitors.map((monitor) => (
+                <option key={monitor.monitorId} value={monitor.monitorId}>
+                  {monitor.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>开始时间</span>
+            <input onChange={(event) => setFrom(event.target.value)} type="datetime-local" value={from} />
+          </label>
+          <label>
+            <span>结束时间</span>
+            <input onChange={(event) => setTo(event.target.value)} type="datetime-local" value={to} />
+          </label>
+        </div>
+        <button
+          aria-label="刷新通知历史"
+          className="icon-button tooltip-control"
+          data-tooltip="刷新"
+          disabled={loadState === "loading"}
+          onClick={() => setReloadKey((value) => value + 1)}
+          type="button"
+        >
+          <RefreshCw
+            aria-hidden="true"
+            className={loadState === "loading" ? "spin-icon" : undefined}
+            size={17}
+          />
+        </button>
+      </div>
+
+      {loadState === "loading" ? (
+        <div aria-label="正在加载通知历史" className="monitor-page-state" role="status">
+          <span aria-hidden="true" className="spinner spinner-small" />
+          <p>正在加载通知历史</p>
+        </div>
+      ) : null}
+      {loadState === "error" ? (
+        <div className="monitor-page-state monitor-page-error" role="alert">
+          <CircleAlert aria-hidden="true" size={20} />
+          <p>加载通知历史失败</p>
+          <button
+            aria-label="重试加载通知历史"
+            className="secondary-button"
+            onClick={() => setReloadKey((value) => value + 1)}
+            type="button"
+          >
+            <RefreshCw aria-hidden="true" size={16} />
+            重试
+          </button>
+        </div>
+      ) : null}
+      {loadState === "ready" && items.length === 0 ? (
+        <div aria-label="通知历史为空" className="monitor-page-state" role="status">
+          <Inbox aria-hidden="true" size={22} />
+          <p>没有符合条件的通知</p>
+        </div>
+      ) : null}
+
+      {loadState === "ready" && items.length > 0 && !mobile ? (
+        <div className="notification-history-table-wrap">
+          <table aria-label="通知历史表格" className="notification-history-table">
+            <thead>
+              <tr>
+                <th>状态</th>
+                <th>监控</th>
+                <th>目的地</th>
+                <th>尝试</th>
+                <th>下次重试</th>
+                <th>错误码</th>
+                <th>投递时间</th>
+                <th aria-label="操作" />
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.deliveryId}>
+                  <td><HistoryStatus status={item.status} /></td>
+                  <td><strong>{item.monitorName}</strong><small>{item.windowMinutes} 分钟</small></td>
+                  <td><span>{item.destination.name}</span><small>{item.destination.type}</small></td>
+                  <td>{item.attemptCount}</td>
+                  <td>{historyTimestamp(item.nextRetryAt)}</td>
+                  <td><code>{item.errorCode ?? "—"}</code></td>
+                  <td>{historyTimestamp(item.deliveredAt)}</td>
+                  <td>{detailButton(item)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+
+      {loadState === "ready" && items.length > 0 && mobile ? (
+        <ul aria-label="通知历史列表" className="notification-history-mobile-list">
+          {items.map((item) => (
+            <li key={item.deliveryId}>
+              <div className="notification-history-mobile-heading">
+                <HistoryStatus status={item.status} />
+                {detailButton(item)}
+              </div>
+              <strong>{item.monitorName}</strong>
+              <span>{item.destination.name}</span>
+              <dl>
+                <div><dt>尝试</dt><dd>{item.attemptCount}</dd></div>
+                <div><dt>下次重试</dt><dd>{historyTimestamp(item.nextRetryAt)}</dd></div>
+                <div><dt>错误码</dt><dd>{item.errorCode ?? "—"}</dd></div>
+                <div><dt>投递时间</dt><dd>{historyTimestamp(item.deliveredAt)}</dd></div>
+              </dl>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {loadState === "ready" && nextCursor ? (
+        <div className="notification-history-more">
+          <button
+            aria-label="加载更多通知历史"
+            className="secondary-button"
+            disabled={loadingMore}
+            onClick={() => void loadMore()}
+            type="button"
+          >
+            {loadingMore ? <RefreshCw aria-hidden="true" className="spin-icon" size={16} /> : null}
+            加载更多
+          </button>
+        </div>
+      ) : null}
+
+      {selected ? (
+        <NotificationHistoryDetails
+          close={() => setSelected(null)}
+          item={selected}
+          returnFocus={() => detailsTrigger.current?.focus()}
+        />
+      ) : null}
+    </section>
+  );
+}
+
 export function MonitorsPage() {
   const client = useMemo(() => new MonitorClient(), []);
   const notificationClient = useMemo(() => new NotificationClient(), []);
@@ -618,6 +1024,7 @@ export function MonitorsPage() {
   const [loadState, setLoadState] = useState<MonitorLoadState>("loading");
   const [page, setPage] = useState<MonitorPage | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Monitor | null>(null);
+  const [view, setView] = useState<"history" | "monitors">("monitors");
   const createAttempt = useRef<{ key: string; payload: string } | null>(null);
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
   const deleteTrigger = useRef<HTMLButtonElement | null>(null);
@@ -836,7 +1243,7 @@ export function MonitorsPage() {
             <span className="sr-only">Monitors</span>
           </h1>
         </div>
-        <div className="monitor-heading-actions">
+        {view === "monitors" ? <div className="monitor-heading-actions">
           <span
             aria-label={`${page?.enabledCount ?? 0} 个已启用，共 ${page?.totalCount ?? 0} 个监控`}
             className="monitor-count"
@@ -867,8 +1274,40 @@ export function MonitorsPage() {
             <BellPlus aria-hidden="true" size={17} />
             新建监控
           </button>
-        </div>
+        </div> : null}
       </div>
+
+      <div aria-label="监控视图" className="monitor-view-tabs" role="tablist">
+        <button
+          aria-controls="monitor-rules-panel"
+          aria-selected={view === "monitors"}
+          onClick={() => setView("monitors")}
+          role="tab"
+          tabIndex={view === "monitors" ? 0 : -1}
+          type="button"
+        >
+          <BellPlus aria-hidden="true" size={16} />
+          监控规则
+        </button>
+        <button
+          aria-controls="notification-history-panel"
+          aria-selected={view === "history"}
+          onClick={() => setView("history")}
+          role="tab"
+          tabIndex={view === "history" ? 0 : -1}
+          type="button"
+        >
+          <HistoryIcon aria-hidden="true" size={16} />
+          通知历史
+        </button>
+      </div>
+
+      {view === "history" ? (
+        <div aria-labelledby="notification-history-tab" id="notification-history-panel" role="tabpanel">
+          <NotificationHistoryView client={notificationClient} monitors={page?.items ?? []} />
+        </div>
+      ) : (
+        <div aria-labelledby="monitor-rules-tab" id="monitor-rules-panel" role="tabpanel">
 
       {loadState === "loading" && !page ? (
         <div aria-label="正在加载监控" className="monitor-page-state" role="status">
@@ -1029,6 +1468,8 @@ export function MonitorsPage() {
         open={pendingDelete !== null}
         title="删除监控"
       />
+        </div>
+      )}
     </main>
   );
 }
