@@ -1,6 +1,22 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
 export { TelegramInitDataError, TelegramInitDataVerifier } from "./telegram-init-data.js";
+export {
+  buildWebhookSignature,
+  compileNotificationTemplate,
+  notificationTemplateVariables,
+  NotificationTemplateError,
+  renderGetWebhook,
+  renderPostWebhook,
+  renderTelegramMessage,
+} from "./notification-delivery.js";
+export type {
+  CompiledNotificationTemplate,
+  NotificationTemplateErrorCode,
+  NotificationTemplateMethod,
+  NotificationTemplateValues,
+  NotificationTemplateVariable,
+} from "./notification-delivery.js";
 export type {
   TelegramInitDataErrorCode,
   TelegramInitDataVerifierOptions,
