@@ -136,6 +136,8 @@ flowchart LR
 
 **功能：** `POOL-01..16`, `FLOW-01..05`, `STATS-01..02`。
 
+**当前状态：** 阶段功能实现收官，23 项均为 `implemented-assumed`、0 项为 `planned`；P02 保持 `accepted-with-gaps`。既有公式、目标/live parity、finality 等证据缺口继续 unresolved；任务业务域尚未接入 STATS-01，权威投影未 ready 时返回 503，不伪造零任务。
+
 **工作：**
 
 - 为 BSC 先建 reorg-aware indexer、池注册表、V3/V4 decoder 和回填游标。

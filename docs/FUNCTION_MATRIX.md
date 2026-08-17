@@ -261,7 +261,7 @@
 |---|---|---|---|---|---|
 | LOG-01 | 全局活动日志 | UI+API | USER/ADMIN | R0 | 类型、用户、任务、链、时间、状态、hash |
 | LOG-02 | 日志类型过滤 | UI+BUNDLE | USER | R0 | 创建/移仓/复投/补仓/关闭/换池/收 Fee |
-| STATS-01 | 系统统计 SSE | API+BUNDLE | USER/ADMIN | R0 | snapshot/update、25s 心跳、user filter |
+| STATS-01 | 系统统计 SSE | API+BUNDLE | USER/ADMIN | R0 | snapshot/update、25s 心跳、Telegram user filter；`implemented-assumed`（P02-13，authoritative local projection） |
 | STATS-02 | 推荐池 SSE | API+BUNDLE | USER | R0 | 约 5s、浅 hash 不变不推、链和 limit；`implemented-assumed`（P02-09，locally-defined） |
 | NOTIFY-01 | 分类 Telegram 通知偏好 | UI+BUNDLE | USER | R1 | 创建、移仓、失败、关仓等分类 |
 | NOTIFY-02 | 外部 Webhook 偏好 | UI+BUNDLE | USER | R1/R2 | GET/POST、body 模板、测试、密钥化签名 |

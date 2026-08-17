@@ -3,7 +3,7 @@
 > 基线日期：2026-08-13  
 > 范围源：[功能矩阵](./FUNCTION_MATRIX.md)  
 > 阶段源：[开发路线图](./DEVELOPMENT_ROADMAP.md)  
-> 当前状态：P01 的 18 项功能及 P02 的 22 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 156 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
+> 当前状态：P01 的 18 项功能及 P02 的 23 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 155 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
 
 ## 1. 使用规则
 
@@ -289,7 +289,7 @@
 
 #### P02 当前实现与证据状态
 
-P02-02、P02-04、P02-05、P02-06、P02-07、P02-08、P02-09、P02-10、P02-11 与 P02-12 只验证 BSC chainId 56 的本地 fixture 纵向路径。以下 22 项只有 `local-fixture-verified` 证据，因此均为 `implemented-assumed`；没有项目达到 `parity-verified` 或 `released`。STATS-01 明确保留 `planned`，P02-01 继续是无实现所有权的冻结参考契约，aTVL、Fee/aTVL、`GAP-LABEL-ALGORITHM`、`GAP-FLOW-USD-VALUATION`、`GAP-API-CANDLE-QUOTE`、`GAP-UI-TICK-LIQUIDITY-MAPPING`、既有 USD/公式缺口与 `GAP-FINALITY-DEPTH` 继续 unresolved。
+P02-02、P02-04、P02-05、P02-06、P02-07、P02-08、P02-09、P02-10、P02-11、P02-12 与 P02-13 只验证本地 fixture 纵向路径。P02 的 23 项均为 `implemented-assumed`，0 项为 `planned`，阶段功能实现至此收官；没有项目达到 `parity-verified` 或 `released`，P02 继续 `accepted-with-gaps`。P02-01 继续是无实现所有权的冻结参考契约，aTVL、Fee/aTVL、`GAP-LABEL-ALGORITHM`、`GAP-FLOW-USD-VALUATION`、`GAP-API-CANDLE-QUOTE`、`GAP-UI-TICK-LIQUIDITY-MAPPING`、既有 USD/公式缺口与 `GAP-FINALITY-DEPTH` 继续 unresolved。STATS-01 的任务业务域尚未接线；投影未 ready 时 GET/SSE 必须返回 503，不以零任务冒充权威来源。
 
 <!-- P02_STATUS_TABLE_START -->
 | ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
@@ -315,7 +315,7 @@ P02-02、P02-04、P02-05、P02-06、P02-07、P02-08、P02-09、P02-10、P02-11 �
 | FLOW-03 | `implemented-assumed` | [Decimal projection](../apps/web/src/liquidity-flow-state.ts), [Statistics strip](../apps/web/src/pools-page.tsx) | [T-UNIT/T-SSE](../tests/liquidity-flow-client.test.ts), [T-UI](../tests/e2e/p02-05-liquidity-insights.spec.ts) | [P02-05](../artifacts/acceptance/P02-05/manifest.json); local-fixture-verified; unknown USD remains partial |
 | FLOW-04 | `implemented-assumed` | [Address projection](../apps/web/src/liquidity-flow-state.ts), [Address table](../apps/web/src/pools-page.tsx), [Remark state](../apps/web/src/address-remarks-state.ts) | [T-UNIT/T-SSE](../tests/liquidity-flow-client.test.ts), [T-UI/T-VIS](../tests/e2e/p02-05-liquidity-insights.spec.ts) | [P02-05](../artifacts/acceptance/P02-05/manifest.json); local-fixture-verified; partial values stay segregated |
 | FLOW-05 | `implemented-assumed` | [Contract](../packages/api-contract/src/index.ts), [API](../apps/api/src/app.ts), [PostgreSQL store](../apps/api/src/postgres-address-remark-store.ts), [Migration](../infra/migrations/20260816000300_create_address_remarks.sql), [Web client/state](../apps/web/src/address-remarks-client.ts) | [T-API/T-SEC](../tests/address-remarks-api.test.ts), [T-REC](../tests/integration/postgres-address-remarks.integration.ts), [T-UI](../tests/address-remarks-client.test.ts), [T-UI/T-VIS](../tests/e2e/p02-05-liquidity-insights.spec.ts) | [P02-05](../artifacts/acceptance/P02-05/manifest.json); local-fixture-verified; session-owned personal rows and anonymous shared votes |
-| STATS-01 | `planned` | P02 实现所有权未认领 | 未实现 | P02-01 reference-only; no implementation evidence |
+| STATS-01 | `implemented-assumed` | [Wire contract](../packages/api-contract/src/index.ts), [Authoritative publisher and PostgreSQL provider](../apps/api/src/shell-stats.ts), [Transactional migration](../infra/migrations/20260817000400_create_task_status_stats_projection.sql), [GET/SSE and RBAC](../apps/api/src/app.ts), [Strict client](../apps/web/src/shell-stats.ts), [Status bar](../apps/web/src/shell-stats-react.tsx) | [T-UNIT](../tests/task-status-stats.test.ts), [T-API/T-SSE/T-SEC](../tests/stats-sse-api.test.ts), [T-REC/T-MIG](../tests/integration/postgres-shell-stats.integration.ts), [T-UI](../tests/shell-stats-client.test.ts), [T-UI/T-VIS](../tests/e2e/p02-13-shell-stats.spec.ts) | [P02-13](../artifacts/acceptance/P02-13/manifest.json); local-fixture-verified; authoritative absolute counts; task business source not connected; unready returns 503 |
 | STATS-02 | `implemented-assumed` | [API contract](../packages/api-contract/src/index.ts), [Recommendation selector and poller](../apps/api/src/recommended-pools.ts), [HTTP stream](../apps/api/src/app.ts), [Canonical provider](../apps/api/src/market-pools.ts), [Strict client](../apps/web/src/shell-stats.ts), [Status bar](../apps/web/src/shell-stats-react.tsx) | [T-UNIT](../tests/recommended-pools.test.ts), [T-API/T-SSE](../tests/recommended-pools-api.test.ts), [T-SSE](../tests/recommended-pools-stream.test.ts), [T-REC](../tests/integration/postgres-market-indexer.integration.ts), [T-UI](../tests/recommended-pools-client.test.ts), [T-UI/T-VIS](../tests/e2e/p02-09-recommended-pools.spec.ts) | [P02-09](../artifacts/acceptance/P02-09/manifest.json); local-fixture-verified; locally-defined selection; BSC canonical 5-minute source only |
 <!-- P02_STATUS_TABLE_END -->
 
@@ -346,10 +346,10 @@ P02-02、P02-04、P02-05、P02-06、P02-07、P02-08、P02-09、P02-10、P02-11 �
 |---|---:|---|
 | 功能矩阵稳定 ID | 196 | 已全部映射 |
 | 追踪表稳定 ID | 196 | 必须由自动检查保持相等 |
-| 当前产品实现 | 40 | P01 的 18 项和 P02 的 22 项完成阶段实现 |
-| `implemented-assumed` | 40 | 目标对照或 live 证据仍不完整 |
+| 当前产品实现 | 41 | P01 的 18 项和 P02 的 23 项完成阶段实现；P02 为 23 implemented-assumed / 0 planned |
+| `implemented-assumed` | 41 | 目标对照或 live 证据仍不完整 |
 | `parity-verified` | 0 | 不由 accepted work item 自动提升 |
 | `released` | 0 | 尚无 staging、监控和回滚完整证明 |
-| 其余 `planned` | 156 | P02 仍有 1 项 planned；P03-P13 状态未改变 |
+| 其余 `planned` | 155 | P02 已无 planned；P03-P13 状态未改变 |
 
 建议 CI 检查逻辑：从 `FUNCTION_MATRIX.md` 与本文件抽取 `^[A-Z]+-[0-9]{2}$`，比较去重集合；再检查每行非空的阶段、测试和证据列。任何新增功能 ID 必须先进入范围源和本表。
