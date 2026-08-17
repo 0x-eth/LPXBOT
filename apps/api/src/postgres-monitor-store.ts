@@ -126,6 +126,14 @@ export class PostgresMonitorStore implements MonitorStore {
         await client.query("COMMIT");
         return { status: "replayed", value: monitor };
       }
+      if (input.poolEligible === null) {
+        await client.query("COMMIT");
+        return { status: "service-unavailable" };
+      }
+      if (input.poolEligible === false) {
+        await client.query("COMMIT");
+        return { status: "pool-ineligible" };
+      }
       const count = await client.query<{ count: string }>(
         "SELECT count(*)::text AS count FROM monitors WHERE user_id = $1",
         [input.userId],

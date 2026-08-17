@@ -2433,20 +2433,10 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         );
       }
       const eligible = await monitorPoolEligibility(session.userId, parsed.poolKey);
-      if (eligible === null) return sendMonitorUnavailable(request, reply);
-      if (!eligible) {
-        return reply.code(422).send(
-          createErrorEnvelope({
-            code: "POOL_NOT_ELIGIBLE",
-            message: "The pool is not eligible for monitoring",
-            requestId: request.id,
-            retryable: false,
-          }),
-        );
-      }
       const result = await options.monitorStore.create({
         createdAt: now(),
         idempotencyKey,
+        poolEligible: eligible,
         request: parsed,
         userId: session.userId,
       });
@@ -2469,6 +2459,19 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             retryable: false,
           }),
         );
+      }
+      if (result.status === "pool-ineligible") {
+        return reply.code(422).send(
+          createErrorEnvelope({
+            code: "POOL_NOT_ELIGIBLE",
+            message: "The pool is not eligible for monitoring",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (result.status === "service-unavailable") {
+        return sendMonitorUnavailable(request, reply);
       }
       if ("value" in result) {
         return reply.code(201).send(createSuccessEnvelope(result.value, request.id));

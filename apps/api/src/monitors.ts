@@ -35,6 +35,7 @@ export interface MonitorListQuery {
 export interface MonitorCreateInput {
   createdAt: Date;
   idempotencyKey: string;
+  poolEligible?: boolean | null;
   request: CreateMonitorRequest;
   userId: string;
 }
@@ -63,7 +64,13 @@ export interface MonitorDeleteInput {
 
 export type MonitorCreateResult =
   | { status: "created" | "replayed"; value: Monitor }
-  | { status: "capacity" | "idempotency-conflict" };
+  | {
+      status:
+        | "capacity"
+        | "idempotency-conflict"
+        | "pool-ineligible"
+        | "service-unavailable";
+    };
 
 export type MonitorMutationResult =
   | { status: "updated" | "unchanged"; value: Monitor }
@@ -321,6 +328,8 @@ export class MemoryMonitorStore implements MonitorStore {
       if (!monitor) throw new Error("Monitor idempotency record is inconsistent");
       return { status: "replayed", value: cloneMonitor(monitor) };
     }
+    if (input.poolEligible === null) return { status: "service-unavailable" };
+    if (input.poolEligible === false) return { status: "pool-ineligible" };
     if (
       [...this.#monitors.values()].filter(({ userId }) => userId === input.userId).length >=
       this.#capacity

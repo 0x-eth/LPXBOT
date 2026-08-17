@@ -131,6 +131,23 @@ describe("P03-02 monitor API", () => {
     expect(otherUser.json().data.monitorId).not.toBe(first.json().data.monitorId);
   });
 
+  it("replays the original create before rechecking mutable pool eligibility", async () => {
+    const blocklist = structuredClone(emptyBlocklist);
+    const { app, tokenA } = await fixture(blocklist);
+    const first = await create(app, tokenA);
+    blocklist.entries.push({ chainId: 56, identity: poolKey, scope: "pool" });
+    blocklist.revision = 1;
+    blocklist.updatedAt = now.toISOString();
+
+    const replay = await create(app, tokenA);
+    expect(replay.statusCode).toBe(201);
+    expect(replay.json().data).toEqual(first.json().data);
+
+    const newCreate = await create(app, tokenA, createRequest, "monitor-create-blocked");
+    expect(newCreate.statusCode).toBe(422);
+    expect(newCreate.json().error.code).toBe("POOL_NOT_ELIGIBLE");
+  });
+
   it("increments only effective mutations and returns authoritative revision conflicts", async () => {
     const { app, tokenA } = await fixture();
     const monitor = (await create(app, tokenA)).json().data;
