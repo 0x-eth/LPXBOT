@@ -57,3 +57,14 @@ condition = "AND"
 paths = ['''^artifacts/acceptance/P03-01/fixtures/(?:evaluation-cases|reorg-replacement)\.json$''']
 regexTarget = "secret"
 regexes = ['''^[0-9a-f]{64}$''']
+
+[[rules.allowlists]]
+description = "P03-03 notification tests use these exact non-secret fixture values to verify write-only signing-key handling."
+condition = "AND"
+paths = ['''^tests/(?:notification-settings-api|notification-client)\.test\.ts$''']
+regexTarget = "secret"
+regexes = [
+  '''^fixture-signing-key-material-000001$''',
+  '''^replacement-signing-key-material-0002$''',
+  '''^fixture-signing-secret-material-0001$''',
+]
