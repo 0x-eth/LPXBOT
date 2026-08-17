@@ -286,6 +286,40 @@ describe("P02-13 PostgreSQL task status projection", () => {
     const before = await provider.getSnapshot({ scope: globalScope });
     expect(await provider.resolveTelegramUserId(telegramIds[1])).toBe(users[1]);
     expect(await provider.resolveTelegramUserId("999999999999")).toBeNull();
+    await provider.recordAdminQueryAudit({
+      actorUserId: users[2],
+      createdAt: observedAt,
+      outcome: "allowed",
+      requestId: "req-p02-13-filter",
+      targetTelegramUserId: telegramIds[1],
+      targetUserId: users[1],
+      transport: "sse",
+    });
+    const audit = await pool.query<{
+      actor_user_id: string;
+      outcome: string;
+      request_id: string;
+      target_telegram_user_id: string;
+      target_user_id: string;
+      transport: string;
+    }>(
+      `SELECT actor_user_id::text, target_user_id::text,
+              target_telegram_user_id::text, transport, outcome, request_id
+         FROM task_status_stats_query_audit_events`,
+    );
+    expect(audit.rows).toEqual([
+      {
+        actor_user_id: users[2],
+        outcome: "allowed",
+        request_id: "req-p02-13-filter",
+        target_telegram_user_id: telegramIds[1],
+        target_user_id: users[1],
+        transport: "sse",
+      },
+    ]);
+    expect(Object.keys(audit.rows[0]!)).not.toEqual(
+      expect.arrayContaining(["authorization", "cookie", "session_id"]),
+    );
     await pool.query("DELETE FROM users WHERE id = $1", [users[1]]);
     const after = await provider.getSnapshot({ scope: globalScope });
     expect(after.sequence).toBeGreaterThan(before.sequence);

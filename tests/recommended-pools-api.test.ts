@@ -4,8 +4,9 @@ import type {
   ShellStatsEvent,
   ShellStatsSnapshot,
 } from "../packages/api-contract/src/index.js";
-import { buildApiApp } from "../apps/api/src/index.js";
+import { buildApiApp, defaultPoolBlocklistSnapshot } from "../apps/api/src/index.js";
 import type { MarketPoolsContext, MarketPoolsProvider } from "../apps/api/src/market-pools.js";
+import type { PoolBlocklistStore } from "../apps/api/src/pool-blocklist.js";
 import type {
   ShellStatsAdminQueryAudit,
   ShellStatsContext,
@@ -150,12 +151,26 @@ class FiniteStatsProvider implements ShellStatsProvider {
   async *subscribe(): AsyncIterable<ShellStatsEvent> {}
 }
 
+class SessionBlocklistStore implements PoolBlocklistStore {
+  readonly getCalls: string[] = [];
+
+  async get(requestedUserId: string) {
+    this.getCalls.push(requestedUserId);
+    return defaultPoolBlocklistSnapshot();
+  }
+
+  async mutate(): Promise<never> {
+    throw new Error("Not used by this read-only fixture");
+  }
+}
+
 async function fixture(
   options: {
     admin?: boolean;
     heartbeatMilliseconds?: number;
     marketPoolsProvider?: MarketPoolsProvider;
     pollMilliseconds?: number;
+    poolBlocklistStore?: PoolBlocklistStore;
     rateLimitMax?: number;
     statsProvider?: ShellStatsProvider;
   } = {},
@@ -181,6 +196,7 @@ async function fixture(
     ...(options.pollMilliseconds === undefined
       ? {}
       : { recommendedPoolsPollMilliseconds: options.pollMilliseconds }),
+    ...(options.poolBlocklistStore ? { poolBlocklistStore: options.poolBlocklistStore } : {}),
     ...(options.rateLimitMax === undefined
       ? {}
       : { statsRateLimit: { max: options.rateLimitMax, timeWindowMs: 60_000 } }),
@@ -448,6 +464,35 @@ describe("P02-09 recommendation stream HTTP boundary", () => {
     });
     expect(limited.statusCode).toBe(429);
     expect(limited.json().error.code).toBe("RATE_LIMITED");
+  });
+
+  it("sends stats snapshot first and keeps recommendations on the signed-in blocklist", async () => {
+    const marketPoolsProvider = new EmptyMarketProvider();
+    const poolBlocklistStore = new SessionBlocklistStore();
+    const statsProvider = new FiniteStatsProvider();
+    const { app, token } = await fixture({
+      admin: true,
+      heartbeatMilliseconds: 100,
+      marketPoolsProvider,
+      pollMilliseconds: 100,
+      poolBlocklistStore,
+      statsProvider,
+    });
+    const controller = new AbortController();
+    const response = await openSse(
+      app,
+      token,
+      `/api/stats/stream?chain=bsc&user_id=${targetTelegramId}&limit=3`,
+      controller,
+    );
+    const frames = await readSseFrames(response, 2, controller);
+
+    expect(frames.map(({ event }) => event)).toEqual(["snapshot", "rec_pools_snapshot"]);
+    expect(statsProvider.contexts).toEqual([{ type: "user", userId: targetUserId }]);
+    expect(poolBlocklistStore.getCalls).toEqual([userId]);
+    expect(marketPoolsProvider.contexts[0]?.eligibility?.blocklistHash).toBe(
+      defaultPoolBlocklistSnapshot().blocklistHash,
+    );
   });
 
   it("emits a reorg replacement when the ordered wire payload changes", async () => {
