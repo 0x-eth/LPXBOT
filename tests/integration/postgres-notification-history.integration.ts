@@ -26,6 +26,7 @@ const userB = "39000000-0000-4000-8000-000000000002";
 const monitorA = "39000000-0000-4000-8000-000000000011";
 const monitorB = "39000000-0000-4000-8000-000000000012";
 const destinationA = "39000000-0000-4000-8000-000000000021";
+const destinationB = "39000000-0000-4000-8000-000000000022";
 const createdAt = "2026-08-18T01:00:00.000Z";
 const poolKey = `56:0x${"a".repeat(40)}` as const;
 
@@ -101,16 +102,20 @@ beforeAll(async () => {
   await pool.query(
     `INSERT INTO notification_destinations (
        destination_id, user_id, current_revision, created_at, updated_at
-     ) VALUES ($1, $2, 1, $3, $3);
+     ) VALUES ($1, $3, 1, $5, $5), ($2, $4, 1, $5, $5);
      INSERT INTO notification_destination_versions (
        destination_id, user_id, revision, type, name, enabled, categories,
        config, secret_ref, tombstone, created_at
      ) VALUES (
-       $1, $2, 1, 'webhook', 'Operations webhook', true, ARRAY['monitor-match'],
+       $1, $3, 1, 'webhook', 'Operations webhook', true, ARRAY['monitor-match'],
        '{"method":"POST","template":{"text":"{{monitor.name}}"},"url":"https://hooks.fixture.example/event"}'::jsonb,
-       'secret-ref://fixture/webhook/history', false, $3
+       'secret-ref://fixture/webhook/history-a', false, $5
+     ), (
+       $2, $4, 1, 'webhook', 'Other webhook', true, ARRAY['monitor-match'],
+       '{"method":"POST","template":{"text":"{{monitor.name}}"},"url":"https://hooks.fixture.example/other"}'::jsonb,
+       'secret-ref://fixture/webhook/history-b', false, $5
      )`,
-    [destinationA, userA, createdAt],
+    [destinationA, destinationB, userA, userB, createdAt],
   );
 }, 30_000);
 
@@ -299,9 +304,9 @@ describe("P03-04 PostgreSQL notification delivery history", () => {
       }),
       destinations: [
         {
-          channel: "local-sink",
-          destinationId: "local-history-fixture",
-          destinationRevision: 0,
+          channel: "webhook",
+          destinationId: destinationB,
+          destinationRevision: 1,
           payload: { poolKey },
         },
       ],
@@ -309,7 +314,7 @@ describe("P03-04 PostgreSQL notification delivery history", () => {
     const deliveryId = committed.deliveries[0]!.deliveryId;
     await pool.query(
       "UPDATE notification_destinations SET deleted_at = $2, updated_at = $2 WHERE destination_id = $1",
-      [destinationA, createdAt],
+      [destinationB, createdAt],
     );
     await pool.query("DELETE FROM monitors WHERE monitor_id = $1", [monitorB]);
     expect(
@@ -328,7 +333,7 @@ describe("P03-04 PostgreSQL notification delivery history", () => {
       items: [
         {
           deliveryId,
-          destination: { destinationId: "local-history-fixture", name: "local-history-fixture" },
+          destination: { destinationId: destinationB, name: "Other webhook" },
           monitorName: "Other user watch",
         },
       ],
