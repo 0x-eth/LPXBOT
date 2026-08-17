@@ -73,9 +73,7 @@ test("P03-04 manifest closes MON-05 and MON-06 with local fixture evidence", asy
 test("P00 through P03-03 remain byte-identical to the frozen 448-file inventory", async () => {
   const inventory = parseChecksums(await readFile(PRIOR_CHECKSUMS, "utf8"), "prior checksums");
   const current = (await filesBelow(path.join(ROOT, "artifacts/acceptance")))
-    .filter(
-      (file) => file === "README.md" || /^(?:P0[0-2]-[^/]+|P03-0[1-3])\//u.test(file),
-    )
+    .filter((file) => file === "README.md" || /^(?:P0[0-2]-[^/]+|P03-0[1-3])\//u.test(file))
     .map((file) => `artifacts/acceptance/${file}`);
   assert.equal(inventory.length, 448);
   assert.deepEqual(
