@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P03-03",
+  "phase": "P03",
+  "risk": "R1",
+  "status": "accepted-with-gaps",
+  "featureIds": ["MON-04", "NOTIFY-01", "NOTIFY-02"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm exec vitest run notification template, signature, migration, client, and worker focused tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-03/E-SEC.md"
+    },
+    {
+      "id": "T-API",
+      "command": "pnpm exec vitest run tests/notification-settings-api.test.ts tests/notification-client.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-03/E-API.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "pnpm test:postgres with notification selector and P03-02 Outbox recovery",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-03/E-REC.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "complete PostgreSQL migration up/down/up cycle",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-03/E-DATA.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm exec playwright test tests/e2e/p03-03-notifications.spec.ts --workers=1",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-03/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile screenshots, keyboard, focus, overflow, and axe assertions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-03/E-VIS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "Gitleaks full-history scan and pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-03/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P03-03/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P03-03/E-DATA.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P03-03/E-REC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P03-03/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P03-03/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P03-03/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P03-03/E-SEC.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only; MON-04, NOTIFY-01, and NOTIFY-02 remain implemented-assumed.",
+    "Notification tests use only local-sink://p03-01 and perform no DNS, Telegram, Webhook, redirect, or other external network I/O.",
+    "Only monitor-match has a business event producer; the other notification categories store preferences without inventing events.",
+    "MON-05 and MON-06 remain planned; notification history, live Telegram/Webhook delivery, complete SSRF egress enforcement, and delivery SLO evidence remain unresolved.",
+    "P00 through P03-02 acceptance artifacts remain byte-identical to baseline cf936a400a2ca05599e05bc7c181f14f9bd2cb88."
+  ],
+  "completedAt": "2026-08-17T16:59:51.000Z",
+  "commit": "dd82da399d61d5fcf6bb03e67341033d398ba39c"
+}
