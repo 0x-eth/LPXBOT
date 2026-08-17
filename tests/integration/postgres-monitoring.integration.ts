@@ -127,6 +127,24 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
         userId: userA,
       }),
     ).toEqual({ status: "idempotency-conflict" });
+    expect(
+      await store.create({
+        createdAt: now,
+        idempotencyKey: "same-key",
+        poolEligible: false,
+        request,
+        userId: userA,
+      }),
+    ).toMatchObject({ status: "replayed", value: { monitorId } });
+    expect(
+      await store.create({
+        createdAt: now,
+        idempotencyKey: "blocked-new-key",
+        poolEligible: false,
+        request,
+        userId: userA,
+      }),
+    ).toEqual({ status: "pool-ineligible" });
     expect(await store.get(userB, monitorId)).toBeNull();
     expect(await store.list(userA, { cursor: null, enabled: null, limit: 50 })).toMatchObject({
       enabledCount: 0,
@@ -208,6 +226,17 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
       userId: userA,
     });
     expect(enabled).toMatchObject({ status: "updated", value: { enabled: true, revision: 3 } });
+    expect(
+      await store.patch({
+        changes: {
+          conditions: request.conditions.map((condition) => ({ ...condition, enabled: false })),
+        },
+        expectedRevision: 3,
+        monitorId,
+        updatedAt: new Date("2026-08-17T10:02:01Z"),
+        userId: userA,
+      }),
+    ).toMatchObject({ status: "invalid", current: { enabled: true, revision: 3 } });
     const source = new PostgresMonitorEvaluationSource(pool);
     expect(await source.listEnabledForPool(poolKey)).toEqual([
       expect.objectContaining({ enabled: true, monitorId, poolKey, revision: 3, userId: userA }),
