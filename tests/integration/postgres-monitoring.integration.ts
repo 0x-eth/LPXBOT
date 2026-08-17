@@ -294,6 +294,85 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
         leaseToken: secondClaim[0]!.leaseToken!,
       }),
     ).toBe(true);
+
+    const retryClaim = await repository.claimDue({ leaseOwner: "worker-retry-1", limit: 1 });
+    expect(retryClaim[0]).toMatchObject({ attemptCount: 1, state: "leased" });
+    expect(
+      await repository.markRetry({
+        deliveryId: retryClaim[0]!.deliveryId,
+        errorCode: "HTTP_503",
+        leaseToken: retryClaim[0]!.leaseToken!,
+      }),
+    ).toBe(true);
+    const retryWait = await pool.query<{
+      attempt_count: number;
+      next_attempt_at: Date | null;
+      state: string;
+    }>(
+      "SELECT state, attempt_count, next_attempt_at FROM notification_outbox WHERE delivery_id = $1",
+      [retryClaim[0]!.deliveryId],
+    );
+    expect(retryWait.rows[0]).toMatchObject({ attempt_count: 1, state: "retry-wait" });
+    expect(retryWait.rows[0]!.next_attempt_at).toBeInstanceOf(Date);
+    await pool.query(
+      "UPDATE notification_outbox SET next_attempt_at = clock_timestamp() - interval '1 second' WHERE delivery_id = $1",
+      [retryClaim[0]!.deliveryId],
+    );
+    const retryClaimTwo = await repository.claimDue({ leaseOwner: "worker-retry-2", limit: 1 });
+    expect(retryClaimTwo[0]).toMatchObject({
+      attemptCount: 2,
+      deliveryId: retryClaim[0]!.deliveryId,
+      state: "leased",
+    });
+    expect(
+      await repository.markDelivered({
+        deliveryId: retryClaimTwo[0]!.deliveryId,
+        leaseToken: retryClaimTwo[0]!.leaseToken!,
+      }),
+    ).toBe(true);
+
+    const deadCandidate = candidate({
+      generatedAt: "2026-08-17T09:05:40Z",
+      sourceGenerationId: "generation-new",
+    });
+    deadCandidate.monitorId = monitorId;
+    deadCandidate.monitorRevision = 3;
+    deadCandidate.candidateKey = monitorCandidateKey({
+      metricVersion: deadCandidate.metricVersion,
+      monitorId,
+      poolKey,
+      revision: 3,
+      windowEnd: deadCandidate.windowEnd,
+    });
+    await repository.commitCandidate({
+      candidate: deadCandidate,
+      destinations: [
+        {
+          channel: "local-sink",
+          destinationId: "local-sink-dead-fixture",
+          destinationRevision: 1,
+          payload: { poolKey },
+        },
+      ],
+    });
+    const deadClaim = await repository.claimDue({ leaseOwner: "worker-dead", limit: 1 });
+    expect(deadClaim).toHaveLength(1);
+    expect(
+      await repository.markDead({
+        deliveryId: deadClaim[0]!.deliveryId,
+        errorCode: "UNSAFE_WEBHOOK_TARGET",
+        leaseToken: deadClaim[0]!.leaseToken!,
+      }),
+    ).toBe(true);
+    const dead = await pool.query<{
+      attempt_count: number;
+      next_attempt_at: Date | null;
+      state: string;
+    }>(
+      "SELECT state, attempt_count, next_attempt_at FROM notification_outbox WHERE delivery_id = $1",
+      [deadClaim[0]!.deliveryId],
+    );
+    expect(dead.rows).toEqual([{ attempt_count: 1, next_attempt_at: null, state: "dead" }]);
   });
 
   it("rolls back candidate and watermark on outbox failure and rejects notification keys", async () => {
