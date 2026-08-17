@@ -33,6 +33,10 @@ const P02_11_ROOT = path.join(ROOT, "artifacts/acceptance/P02-11");
 const P02_11_MANIFEST_PATH = path.join(P02_11_ROOT, "manifest.json");
 const P02_11_CONTRACT_PATH = path.join(P02_11_ROOT, "blocklist-action-contract.json");
 const P02_11_PRIOR_CHECKSUMS_PATH = path.join(P02_11_ROOT, "prior-acceptance-sha256s.txt");
+const P02_12_ROOT = path.join(ROOT, "artifacts/acceptance/P02-12");
+const P02_12_MANIFEST_PATH = path.join(P02_12_ROOT, "manifest.json");
+const P02_12_CONTRACT_PATH = path.join(P02_12_ROOT, "provenance-contract.json");
+const P02_12_PRIOR_CHECKSUMS_PATH = path.join(P02_12_ROOT, "prior-acceptance-sha256s.txt");
 const RUNTIME_LABEL_CONTRACT_PATH = path.join(
   ROOT,
   "packages/market-metrics/src/label-rule-contract.json",
@@ -53,6 +57,7 @@ const P02_08_FEATURE_IDS = ["POOL-07"];
 const P02_09_FEATURE_IDS = ["STATS-02"];
 const P02_10_FEATURE_IDS = ["POOL-12"];
 const P02_11_FEATURE_IDS = ["POOL-13", "POOL-14"];
+const P02_12_FEATURE_IDS = ["POOL-15"];
 const IMPLEMENTED_FEATURE_IDS = [
   ...P02_02_FEATURE_IDS,
   ...P02_04_FEATURE_IDS,
@@ -63,6 +68,7 @@ const IMPLEMENTED_FEATURE_IDS = [
   ...P02_09_FEATURE_IDS,
   ...P02_10_FEATURE_IDS,
   ...P02_11_FEATURE_IDS,
+  ...P02_12_FEATURE_IDS,
 ];
 const REQUIRED_EVIDENCE_IDS = [
   "E-DATA",
@@ -145,7 +151,7 @@ async function acceptanceFiles(directory, prefix = "") {
   return files.sort();
 }
 
-test("P02 status table keeps exactly twenty-one fixture-verified features implemented", async () => {
+test("P02 status table keeps exactly twenty-two fixture-verified features implemented", async () => {
   const markdown = await readFile(TRACEABILITY_PATH, "utf8");
   const rows = p02StatusRows(markdown);
   assert.deepEqual(sorted(rows.keys()), sorted(EXPECTED_FEATURE_IDS));
@@ -170,10 +176,180 @@ test("P02 status table keeps exactly twenty-one fixture-verified features implem
   }
 
   assert.deepEqual(sorted(implemented), sorted(IMPLEMENTED_FEATURE_IDS));
-  assert.equal(planned.length, 2);
-  assert.match(markdown, /当前产品实现\s*\|\s*39\s*\|/);
-  assert.match(markdown, /`implemented-assumed`\s*\|\s*39\s*\|/);
-  assert.match(markdown, /(?:其余|remaining)\s*`planned`\s*\|\s*157\s*\|/i);
+  assert.deepEqual(planned, ["STATS-01"]);
+  assert.match(markdown, /当前产品实现\s*\|\s*40\s*\|/);
+  assert.match(markdown, /`implemented-assumed`\s*\|\s*40\s*\|/);
+  assert.match(markdown, /(?:其余|remaining)\s*`planned`\s*\|\s*156\s*\|/i);
+});
+
+test("P02-12 owns only POOL-15 and freezes platform-recorded provenance semantics", async () => {
+  const [manifest, functionMatrix, traceabilityMarkdown, contract] = await Promise.all([
+    readFile(P02_12_MANIFEST_PATH, "utf8").then(JSON.parse),
+    readFile(FUNCTION_MATRIX_PATH, "utf8"),
+    readFile(TRACEABILITY_PATH, "utf8"),
+    readFile(P02_12_CONTRACT_PATH, "utf8").then(JSON.parse),
+  ]);
+
+  assert.equal(manifest.workItemId, "P02-12");
+  assert.equal(manifest.phase, "P02");
+  assert.equal(manifest.risk, "R1");
+  assert.equal(manifest.status, "accepted-with-gaps");
+  assert.deepEqual(manifest.featureIds, P02_12_FEATURE_IDS);
+  assert.match(manifest.completedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u);
+  assert.match(manifest.commit, /^[0-9a-f]{40}$/u);
+
+  const markedFunctionIds = functionMatrix
+    .split("\n")
+    .filter((line) => line.includes("`implemented-assumed`（P02-12"))
+    .map((line) => line.split("|")[1]?.trim())
+    .filter((id) => EXPECTED_FEATURE_IDS.includes(id));
+  assert.deepEqual(markedFunctionIds, P02_12_FEATURE_IDS);
+
+  const traceability = traceabilityRows(traceabilityMarkdown);
+  const minimums = traceability.get("POOL-15");
+  const manifestTests = new Set(manifest.tests.map(({ id }) => id));
+  const manifestEvidence = new Set(manifest.evidence.map(({ id }) => id));
+  assert.ok(minimums);
+  for (const testId of minimums.tests) assert.ok(manifestTests.has(testId), `missing ${testId}`);
+  for (const evidenceId of minimums.evidence)
+    assert.ok(manifestEvidence.has(evidenceId), `missing ${evidenceId}`);
+  assert.deepEqual(
+    sorted(manifest.evidence.map(({ id }) => id)),
+    sorted(["E-API", "E-DATA", "E-REC", "E-UI", "E-VIS", "E-RBAC", "E-SEC"]),
+  );
+  for (const evidence of manifest.evidence) {
+    await access(assertRepositoryPath(evidence.path, evidence.id));
+  }
+
+  assert.equal(contract.contractVersion, "pool-creation-provenance/local-v1");
+  assert.equal(contract.evidenceLevel, "locally-defined");
+  assert.equal(contract.parityStatus, "not-parity-verified");
+  assert.equal(contract.chainId, 56);
+  assert.equal(contract.creatorMeaning, "user-who-completed-a-platform-recorded-create-operation");
+  assert.deepEqual(contract.creatorNeverInferredFrom, [
+    "transaction.from",
+    "PoolCreated",
+    "Initialize",
+    "first-Mint",
+    "market-pool-catalog",
+    "token-owner",
+  ]);
+  assert.deepEqual(contract.record.requiredFields, [
+    "operationId",
+    "userId",
+    "chainId",
+    "poolKey",
+    "protocol",
+    "creatorAddress",
+    "feePips",
+    "txHash",
+    "outcome",
+    "completedAt",
+    "schemaVersion",
+  ]);
+  assert.deepEqual(contract.record.outcomes, ["created", "already_exists"]);
+  assert.equal(contract.record.alreadyExistsProvesPlatformFirst, false);
+  assert.equal(contract.record.schemaVersion, 1);
+  assert.equal(contract.noRecord.meaning, "not-platform-created-or-predates-feature");
+  assert.deepEqual(contract.noRecord.successValues, [null, []]);
+  assert.equal(contract.recorder.visibility, "internal-port-only");
+  assert.equal(contract.recorder.httpWriteEndpoint, false);
+  assert.equal(contract.attribution.firstChoice, "earliest-created");
+  assert.equal(contract.attribution.fallback, "earliest-already_exists-with-warning");
+  assert.equal(contract.catalog.attributionSource, false);
+  assert.equal(contract.api.history.path, "/api/pools/create-history");
+  assert.equal(contract.api.single.path, "/api/admin/pool-creators");
+  assert.equal(contract.api.batch.path, "/api/admin/pool-creators");
+  assert.equal(contract.api.batch.maximumIdentities, 100);
+  assert.equal(contract.boundaries.externalRpc, false);
+  assert.equal(contract.boundaries.transactionSenderLookup, false);
+  assert.equal(contract.boundaries.metadataFetch, false);
+  assert.equal(contract.boundaries.signingBroadcastOrFunds, false);
+
+  const assumptions = manifest.assumptions.join("\n");
+  assert.match(assumptions, /local-fixture-verified only/);
+  assert.match(assumptions, /STATS-01 remains planned/);
+  assert.match(assumptions, /internal recorder/);
+  assert.match(assumptions, /no public pool creation command or funds operation/i);
+  assert.match(assumptions, /All P02-01 unresolved gaps remain unresolved/);
+  assert.match(assumptions, /P02-01 through P02-11 acceptance directories remain byte-identical/);
+  assert.doesNotMatch(assumptions, /parity-verified|released/);
+});
+
+test("P02-12 attribution Golden covers created, fallback, absent and deleted-user cases", async () => {
+  const golden = await readFile(path.join(P02_12_ROOT, "golden/attribution.json"), "utf8").then(
+    JSON.parse,
+  );
+  assert.equal(golden.schemaVersion, 1);
+  assert.deepEqual(
+    golden.cases.map(({ id }) => id),
+    ["earliest-created", "already-exists-fallback", "no-record", "deleted-user"],
+  );
+  const created = golden.cases.find(({ id }) => id === "earliest-created");
+  assert.equal(created.expected.record.operationId, created.attempts[1].operationId);
+  assert.equal(created.expected.warning, null);
+  const fallback = golden.cases.find(({ id }) => id === "already-exists-fallback");
+  assert.equal(fallback.expected.record.operationId, fallback.attempts[0].operationId);
+  assert.equal(fallback.expected.warning, "ALREADY_EXISTS_NOT_PLATFORM_FIRST");
+  assert.equal(golden.cases.find(({ id }) => id === "no-record").expected, null);
+  assert.equal(golden.cases.find(({ id }) => id === "deleted-user").expected.creatorProfile, null);
+});
+
+test("P02-01 through P02-11 remain byte-identical to the pre-P02-12 inventory", async () => {
+  const inventory = new Map(
+    (await readFile(P02_12_PRIOR_CHECKSUMS_PATH, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => {
+        const match = line.match(/^([0-9a-f]{64}) {2}(.+)$/u);
+        assert.ok(match, `invalid prior acceptance checksum row: ${line}`);
+        return [match[2], match[1]];
+      }),
+  );
+  const priorFiles = (
+    await Promise.all(
+      Array.from({ length: 11 }, async (_, index) => {
+        const directory = `artifacts/acceptance/P02-${String(index + 1).padStart(2, "0")}`;
+        return (await acceptanceFiles(path.join(ROOT, directory))).map((file) =>
+          path.posix.join(directory, file),
+        );
+      }),
+    )
+  ).flat();
+  assert.equal(priorFiles.length, 215);
+  assert.deepEqual(sorted(inventory.keys()), sorted(priorFiles));
+  for (const file of priorFiles) {
+    const bytes = await readFile(path.join(ROOT, file));
+    assert.equal(
+      inventory.get(file),
+      createHash("sha256").update(bytes).digest("hex"),
+      `${file} changed after P02-11 baseline`,
+    );
+  }
+});
+
+test("P02-12 sha256 inventory covers every acceptance file except itself", async () => {
+  const checksumText = await readFile(path.join(P02_12_ROOT, "sha256sums.txt"), "utf8");
+  const checksums = new Map(
+    checksumText
+      .trim()
+      .split("\n")
+      .map((line) => {
+        const match = line.match(/^([0-9a-f]{64}) {2}(.+)$/u);
+        assert.ok(match, `invalid P02-12 checksum row: ${line}`);
+        return [match[2], match[1]];
+      }),
+  );
+  const files = (await acceptanceFiles(P02_12_ROOT)).filter((file) => file !== "sha256sums.txt");
+  assert.deepEqual([...checksums.keys()].sort(), files);
+  for (const file of files) {
+    const bytes = await readFile(path.join(P02_12_ROOT, file));
+    assert.equal(
+      checksums.get(file),
+      createHash("sha256").update(bytes).digest("hex"),
+      `${file} checksum`,
+    );
+  }
 });
 
 test("P02-11 owns only POOL-13/14 and freezes blocklist plus action intent semantics", async () => {
