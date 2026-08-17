@@ -1318,9 +1318,6 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         reply.raw.once("error", () => controller.abort());
         await writeSseChunk(reply, controller, "retry: 3000\n\n");
 
-        const statsUserId = query.userId ?? session.userId;
-        const recommendationEligibility =
-          query.chain === "bsc" ? await poolEligibility(statsUserId) : undefined;
         const lastEventHeader = request.headers["last-event-id"];
         const lastEventId =
           typeof lastEventHeader === "string" && lastEventHeader.length <= 256
@@ -1698,6 +1695,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             }),
           );
         }
+        const statsUserId = query.userId ?? session.userId;
+        const recommendationEligibility =
+          query.chain === "bsc" ? await poolEligibility(statsUserId) : undefined;
         const lastEventHeader = request.headers["last-event-id"];
         if (
           query.chain === "bsc" &&
