@@ -10,5 +10,6 @@ Red tests observed during the slice included:
 - Cross-window metric input matched a monitor with another configured window.
 - Paged mutations replaced the global 5/7 aggregate with current-page counts.
 - A sixth retryable Outbox failure entered retry-wait instead of becoming dead.
+- The infrastructure table inventory omitted the six monitoring persistence tables.
 
 Each item was reproduced at a public API, pure-function, PostgreSQL repository, or browser boundary before the corresponding green change.

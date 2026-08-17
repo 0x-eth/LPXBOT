@@ -11,6 +11,7 @@ Environment: local macOS fixture, PostgreSQL `127.0.0.1:15432`, pnpm 11.17.0. Th
 | P03-02 desktop/mobile Playwright | 5 passed / 3 intentional mobile skips |
 | P02-11 and shell Playwright regression | 17 passed / 3 intentional device skips |
 | `pnpm db:migrate` twice | first application passed; immediate repeat was a no-op |
+| `pnpm test:infra` | 8/8 passed, including the complete monitoring table inventory |
 | `pnpm test:postgres` | 16 files / 72 tests passed |
 | P02/P03-01 integrity governance | 46 tests passed after restoring old screenshots |
 
