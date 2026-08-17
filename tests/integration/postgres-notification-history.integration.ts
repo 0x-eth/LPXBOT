@@ -27,7 +27,7 @@ const monitorA = "39000000-0000-4000-8000-000000000011";
 const monitorB = "39000000-0000-4000-8000-000000000012";
 const destinationA = "39000000-0000-4000-8000-000000000021";
 const destinationB = "39000000-0000-4000-8000-000000000022";
-const createdAt = "2026-08-18T01:00:00.000Z";
+const createdAt = "2026-08-17T17:00:00.000Z";
 const poolKey = `56:0x${"a".repeat(40)}` as const;
 
 function migrationUp(source: string): string {
@@ -40,7 +40,7 @@ function candidate(input: {
   userId: string;
   windowEnd?: string;
 }): MonitorCandidate {
-  const windowEnd = input.windowEnd ?? "2026-08-18T00:55:00.000Z";
+  const windowEnd = input.windowEnd ?? "2026-08-17T16:55:00.000Z";
   const monitorRevision = input.monitorRevision ?? 1;
   return {
     blocklistHash: `sha256:${"1".repeat(64)}`,
@@ -153,7 +153,7 @@ describe("P03-04 PostgreSQL notification delivery history", () => {
             monitorName: "Volume watch",
             monitorRevision: 1,
             poolKey,
-            windowEnd: "2026-08-18T00:55:00.000Z",
+            windowEnd: "2026-08-17T16:55:00.000Z",
           },
         },
       ],
@@ -276,7 +276,7 @@ describe("P03-04 PostgreSQL notification delivery history", () => {
       candidate: candidate({
         monitorId: monitorA,
         userId: userA,
-        windowEnd: "2026-08-18T00:56:00.000Z",
+        windowEnd: "2026-08-17T16:56:00.000Z",
       }),
       destinations: [
         {
@@ -310,7 +310,7 @@ describe("P03-04 PostgreSQL notification delivery history", () => {
       candidate: candidate({
         monitorId: monitorB,
         userId: userB,
-        windowEnd: "2026-08-18T00:57:00.000Z",
+        windowEnd: "2026-08-17T16:57:00.000Z",
       }),
       destinations: [
         {

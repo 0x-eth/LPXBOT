@@ -1,5 +1,18 @@
 -- migrate:up
 
+CREATE OR REPLACE FUNCTION reject_notification_destination_version_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN
+    RETURN OLD;
+  END IF;
+  RAISE EXCEPTION 'notification destination versions are immutable'
+    USING ERRCODE = '55000';
+END;
+$$;
+
 CREATE TABLE notification_delivery_history (
   delivery_id uuid PRIMARY KEY,
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -98,3 +111,13 @@ COMMENT ON TABLE notification_delivery_history IS
 -- migrate:down
 
 DROP TABLE notification_delivery_history;
+
+CREATE OR REPLACE FUNCTION reject_notification_destination_version_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RAISE EXCEPTION 'notification destination versions are immutable'
+    USING ERRCODE = '55000';
+END;
+$$;
