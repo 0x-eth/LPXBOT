@@ -449,7 +449,7 @@
         { "name": "decimals", "type": "integer-0-255", "direction": "read-only" },
         { "name": "usdValueDecimal", "type": "nullable-canonical-decimal-string", "direction": "read-only" },
         { "name": "priceStatus", "type": "available-missing-stale", "direction": "read-only" },
-        { "name": "blockNumber", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true }
+        { "name": "blockNumber", "type": "unsigned-decimal-integer-string", "direction": "read-only" }
       ]
     },
     {

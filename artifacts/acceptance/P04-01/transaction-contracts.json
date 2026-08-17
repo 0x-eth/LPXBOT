@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "wallet-transaction/local-v1",
+  "workItemId": "P04-01",
+  "implementationStatus": "planned",
+  "evidenceLevel": "locally-defined",
+  "amounts": {
+    "canonical": "unsigned-base-10-base-unit-string",
+    "pattern": "^(0|[1-9][0-9]*)$",
+    "floatingPoint": false,
+    "scientificNotation": false,
+    "leadingPlus": false,
+    "leadingZero": false,
+    "negative": false,
+    "parsing": "arbitrary-precision-integer-only"
+  },
+  "idempotency": {
+    "requiredHeader": "Idempotency-Key",
+    "format": "16..128 visible ASCII characters after trim; no whitespace-only value",
+    "scope": "userId+commandType+walletId+idempotencyKey",
+    "retentionHours": 168,
+    "requestHash": {
+      "algorithm": "SHA-256",
+      "canonicalInput": "transfer-request/v1\\n{userId}\\n{walletId}\\n{chainId}\\n{assetKind}\\n{tokenAddress-or-native}\\n{toLowercaseAddress}\\n{amountBaseUnits}\\n{previewDigest}",
+      "normalization": "fixed-field-order-UTF-8-LF-no-trailing-LF",
+      "secretFieldsIncluded": false,
+      "excludedFields": ["securityPassword", "keystorePassword", "requestId", "clientTimestamp"],
+      "computedBy": "API-after-schema-and-owner-validation"
+    },
+    "sameKeySameHash": "return-original-operation-and-status",
+    "sameKeyDifferentHash": {
+      "status": 409,
+      "code": "IDEMPOTENCY_CONFLICT",
+      "createSecondOperation": false
+    },
+    "reservation": "insert-idempotency-record-and-operation-in-one-database-transaction",
+    "inProgressRetry": "return-original-202-with-current-state",
+    "terminalRetry": "return-original-operation-with-terminal-state",
+    "expiredRecord": "retain-operation-linkage-and-reject-ambiguous-reuse"
+  },
+  "nonceLedger": {
+    "serialKey": "chainId+walletId",
+    "walletAddressAsKey": false,
+    "sourceOfTruth": "transactional-database-ledger",
+    "queueIsSourceOfTruth": false,
+    "redisLockIsSourceOfTruth": false,
+    "concurrentAllocation": "serializable-single-writer-with-fencing-token",
+    "uniqueConstraint": "chainId+walletId+nonce+lineageGeneration",
+    "activeHeadConstraint": "at-most-one-non-replaced-active-head-per-chainId-walletId-nonce",
+    "reservationStates": ["reserved", "signed", "broadcast", "pending", "confirmed", "reconciling", "released"],
+    "allocation": [
+      "lock chainId+walletId ledger row",
+      "read last confirmed and unresolved local reservations",
+      "compare approved provider pending and latest nonces",
+      "enter reconciliation if provider views disagree or a gap exists",
+      "reserve the smallest safe nonce and increment ledger generation",
+      "commit reservation before asking signer"
+    ],
+    "releaseBeforeSigning": "only when no signature exists and reservation generation still matches",
+    "releaseAfterSigning": false,
+    "restart": "rebuild unresolved set from database then reconcile chain evidence before new allocation",
+    "gapPolicy": "stop allocation for that ledger and reconcile; never fill by guessing",
+    "multipleProviderDisagreement": "quarantine-ledger-until-quorum-or-operator-policy-resolves"
+  },
+  "states": ["signed", "broadcast", "pending", "confirmed", "failed", "dropped", "replaced"],
+  "stateDefinitions": {
+    "signed": "Signer produced a transaction hash and encrypted raw transaction reference; no provider accepted it yet.",
+    "broadcast": "An approved provider accepted the raw transaction submission or returned the same known transaction hash.",
+    "pending": "The transaction is visible in an approved pending view and has no canonical receipt.",
+    "confirmed": "A canonical success receipt exists and every required nonce, balance, and applicable Token Transfer reconciliation passed.",
+    "failed": "A canonical failure receipt exists or an irreversible pre-broadcast validation/signing failure occurred.",
+    "dropped": "No canonical receipt or approved pending view contains the transaction after the configured evidence window; reconciliation remains required.",
+    "replaced": "A later lineage transaction with the same chainId, walletId, nonce, and immutable plan became the active head."
+  },
+  "transitions": [
+    { "from": "signed", "to": "broadcast", "condition": "provider acceptance with expected tx hash" },
+    { "from": "signed", "to": "failed", "condition": "terminal policy failure before any provider acceptance" },
+    { "from": "signed", "to": "replaced", "condition": "approved replacement becomes active before original broadcast" },
+    { "from": "broadcast", "to": "pending", "condition": "approved pending observation" },
+    { "from": "broadcast", "to": "confirmed", "condition": "canonical receipt and full reconciliation" },
+    { "from": "broadcast", "to": "failed", "condition": "canonical failed receipt" },
+    { "from": "broadcast", "to": "dropped", "condition": "evidence window exhausted with no receipt or pending observation" },
+    { "from": "broadcast", "to": "replaced", "condition": "approved replacement becomes active" },
+    { "from": "pending", "to": "confirmed", "condition": "canonical receipt and full reconciliation" },
+    { "from": "pending", "to": "failed", "condition": "canonical failed receipt" },
+    { "from": "pending", "to": "dropped", "condition": "evidence window exhausted" },
+    { "from": "pending", "to": "replaced", "condition": "approved replacement becomes active" },
+    { "from": "confirmed", "to": "pending", "condition": "receipt block becomes non-canonical during reorg; operation re-enters reconciliation" },
+    { "from": "failed", "to": "pending", "condition": "failed receipt block becomes non-canonical during reorg" },
+    { "from": "dropped", "to": "pending", "condition": "same transaction is observed again before nonce is consumed" },
+    { "from": "replaced", "to": "confirmed", "condition": "historical transaction, not claimed active head, obtains canonical receipt and lineage is reconciled" }
+  ],
+  "replacement": {
+    "sameNonceRequired": true,
+    "sameChainWalletRequired": true,
+    "sameOperationRequired": true,
+    "samePlanHashRequired": true,
+    "planMutationAllowed": false,
+    "recipientMutationAllowed": false,
+    "valueMutationAllowed": false,
+    "calldataMutationAllowed": false,
+    "lineageRequired": true,
+    "fields": ["txId", "replacesTxId", "replacedByTxId", "lineageRootTxId", "generation", "replacementReason"],
+    "bidirectionalLinks": true,
+    "gasPolicy": "fee-bump-only-with-configured-cap",
+    "minimumBump": "max(provider-minimum-bump,local-policy-bump)",
+    "feeCaps": ["user preview cap", "operation policy cap", "chain emergency cap"],
+    "cancelTransaction": "not-supported-by-this-contract-because-it-mutates-the-plan",
+    "activeHead": "highest approved non-terminal generation, never inferred from fee alone"
+  },
+  "broadcast": {
+    "method": "eth_sendRawTransaction",
+    "allowedInP0401": false,
+    "callerInFuture": "dedicated-broadcast-adapter-not-signer",
+    "signerNetworkEgress": false,
+    "apiNetworkEgress": false,
+    "workerDirectRpc": false,
+    "rawTransactionQueuePayload": false,
+    "rawTransactionLogOrAudit": false,
+    "alreadyKnown": "accept only when returned or derived hash equals stored signed hash",
+    "ambiguousTimeout": "query by transaction hash and reconcile before any resubmission"
+  },
+  "confirmation": {
+    "requiredReconciliation": [
+      "receipt-status-success-and-canonical",
+      "nonce-consumed-by-lineage-transaction",
+      "native-balance-deltas",
+      "erc20-balance-deltas-when-applicable",
+      "token-transfer-logs-when-applicable"
+    ],
+    "successBeforeAllReconciled": false,
+    "receiptConfirmations": "chain-registry-finality-policy",
+    "receiptTransactionHash": "must match a lineage transaction",
+    "receiptFrom": "must equal wallet address",
+    "receiptNonce": "must equal reserved nonce",
+    "receiptTo": "must match immutable plan target",
+    "nativeTransfer": {
+      "senderDelta": "value plus actual gas cost within explicitly accounted external inflows",
+      "recipientDelta": "value within explicitly accounted external flows",
+      "tokenTransferLogs": "not-applicable"
+    },
+    "erc20Transfer": {
+      "senderTokenDelta": "amount adjusted only for documented fee-on-transfer policy; unsupported tokens fail preview",
+      "recipientTokenDelta": "amount for standard ERC-20",
+      "nativeSenderDelta": "actual gas cost",
+      "tokenTransferLogs": "at least one canonical matching Transfer event with exact contract, sender, recipient, and amount"
+    },
+    "missingOrAmbiguousEvidence": "remain-reconciling-never-succeeded",
+    "reorg": "remove success projection and replay reconciliation from canonical evidence"
+  },
+  "validation": {
+    "beforePreview": [
+      "owner and wallet status",
+      "chain allowlist and registry version",
+      "recipient syntax and self-transfer policy",
+      "asset metadata and token code",
+      "base-unit amount positive and within balance",
+      "gas reserve",
+      "security password branch for new external address"
+    ],
+    "beforeSigning": [
+      "preview unexpired and digest unchanged",
+      "reauthentication and wallet unlock",
+      "idempotency record ownership",
+      "nonce reservation fencing token",
+      "immutable plan and allowed target",
+      "fee caps and current balance sufficiency"
+    ],
+    "selfTransfer": "reject-for-native-and-erc20",
+    "zeroAmount": "reject",
+    "maxAmount": "resolved-by-server-preview-not-client-floating-point"
+  },
+  "audit": {
+    "events": ["previewed", "nonce-reserved", "signed", "broadcast", "pending", "confirmed", "failed", "dropped", "replaced", "reconciled"],
+    "allowedFields": ["operationId", "walletId", "chainId", "nonce", "txHash", "planHash", "state", "lineage ids", "policy versions", "requestId", "timestamps"],
+    "forbiddenFields": ["raw transaction", "private key", "password", "DEK", "KEK", "provider URL credentials"],
+    "appendOnly": true
+  },
+  "executionCounts": {
+    "privateKeyDecryptions": 0,
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "externalRpcCalls": 0
+  }
+}

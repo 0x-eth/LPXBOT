@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "wallet-settings/local-v1",
+  "workItemId": "P04-01",
+  "implementationStatus": "planned",
+  "evidenceLevel": "locally-defined",
+  "customRpc": {
+    "featureId": "SET-06",
+    "classification": "LOCAL-DECISION",
+    "executionLocation": "browser-only",
+    "readOnly": true,
+    "purpose": "interactive user-visible chain reads for the current browser tab",
+    "serverTasksMayUse": false,
+    "serverReceivesUrl": false,
+    "serverApiReceivesUrl": false,
+    "workerReceivesUrl": false,
+    "queueReceivesUrl": false,
+    "ordinaryDatabaseReceivesUrl": false,
+    "telemetryReceivesUrl": false,
+    "errorReportingReceivesUrl": false,
+    "serviceWorkerCachesResponses": false,
+    "backgroundSync": false,
+    "storage": {
+      "default": "memory-for-current-tab",
+      "persistedSelection": "browser-origin-local IndexedDB only after explicit save",
+      "cloudSync": false,
+      "serverSync": false,
+      "crossDeviceSync": false,
+      "clearOnLogout": true,
+      "warning": "browser-local storage is not a secret vault; users should prefer endpoints without embedded credentials"
+    },
+    "methodAllowlist": [
+      "eth_chainId",
+      "eth_blockNumber",
+      "eth_getBalance",
+      "eth_getBlockByNumber",
+      "eth_getCode",
+      "eth_getLogs",
+      "eth_getTransactionByHash",
+      "eth_getTransactionCount",
+      "eth_getTransactionReceipt",
+      "eth_call",
+      "eth_estimateGas",
+      "eth_feeHistory",
+      "eth_gasPrice"
+    ],
+    "methodDenylist": [
+      "eth_accounts",
+      "eth_requestAccounts",
+      "eth_sendRawTransaction",
+      "eth_sendTransaction",
+      "eth_sign",
+      "eth_signTransaction",
+      "personal_sign",
+      "personal_unlockAccount",
+      "wallet_addEthereumChain",
+      "wallet_switchEthereumChain",
+      "wallet_watchAsset",
+      "debug_traceCall",
+      "debug_traceTransaction",
+      "trace_call",
+      "trace_transaction",
+      "txpool_content"
+    ],
+    "methodPolicy": {
+      "default": "deny",
+      "batchRequests": false,
+      "subscriptions": false,
+      "unknownMethod": "CLIENT_RPC_METHOD_DENIED",
+      "ethCall": "target and response size limits apply",
+      "ethEstimateGas": "simulation only and never forwarded into a server execution plan"
+    },
+    "url": {
+      "allowedSchemes": ["https"],
+      "developmentException": "http allowed only for loopback host in an explicit local-development build",
+      "userinfo": "accepted-for-request-only-but-never-rendered-persisted-or-logged",
+      "fragment": "reject",
+      "maxBytes": 2048,
+      "redaction": "scheme+host+explicit-port+redacted-path-no-query-no-userinfo",
+      "redactedExample": "https://rpc.example.invalid:443/<redacted>",
+      "screenCapture": "render-redacted-only-after-entry-loses-focus",
+      "clipboard": "full URL only through explicit edit action"
+    },
+    "timeoutMs": 8000,
+    "limits": {
+      "responseBodyBytes": 1048576,
+      "requestsPerSecond": 5,
+      "concurrentRequests": 2,
+      "getLogsBlockSpan": 5000,
+      "redirects": 0
+    },
+    "test": {
+      "methods": ["eth_chainId", "eth_blockNumber"],
+      "expectedChainId": "selected chain",
+      "successRequires": ["both responses valid", "chainId exact match", "block number valid hex quantity"],
+      "saveAfterFailedTest": false,
+      "externalRpcCallsInP0401": 0
+    },
+    "states": [
+      "unconfigured",
+      "ready",
+      "testing",
+      "timeout",
+      "network-error",
+      "chain-mismatch",
+      "invalid-response",
+      "rate-limited"
+    ],
+    "errors": {
+      "timeout": { "code": "CLIENT_RPC_TIMEOUT", "retryable": true },
+      "network-error": { "code": "CLIENT_RPC_NETWORK_ERROR", "retryable": true },
+      "chain-mismatch": { "code": "CLIENT_RPC_CHAIN_MISMATCH", "retryable": false },
+      "invalid-response": { "code": "CLIENT_RPC_INVALID_RESPONSE", "retryable": false },
+      "rate-limited": { "code": "CLIENT_RPC_RATE_LIMITED", "retryable": true },
+      "details": "never include full URL, headers, query, userinfo, provider body, or stack trace"
+    }
+  },
+  "okxKey": {
+    "featureId": "SET-07",
+    "classification": "LOCAL-DECISION",
+    "operations": ["save", "replace", "delete", "test", "status"],
+    "endpoints": [
+      { "method": "GET", "path": "/api/settings/okx-key", "operation": "status", "productionRoute": false },
+      { "method": "POST", "path": "/api/settings/okx-key", "operation": "save", "productionRoute": false },
+      { "method": "PUT", "path": "/api/settings/okx-key", "operation": "replace", "productionRoute": false },
+      { "method": "DELETE", "path": "/api/settings/okx-key", "operation": "delete", "productionRoute": false },
+      { "method": "POST", "path": "/api/settings/okx-key/test", "operation": "test", "productionRoute": false }
+    ],
+    "writeOnlyFields": ["apiKey", "secretKey", "passphrase"],
+    "statusResponseFields": ["configured", "version", "status"],
+    "secretEcho": false,
+    "maskedSecretEcho": false,
+    "fingerprintEcho": false,
+    "statusValues": ["unconfigured", "staged", "testing", "usable", "invalid", "revoked", "insufficient-permission", "unknown", "deleting"],
+    "minimumPermissions": {
+      "read": true,
+      "trade": false,
+      "withdraw": false
+    },
+    "permissionValidation": {
+      "tradePermission": "reject",
+      "withdrawPermission": "reject",
+      "unknownPermission": "status-unknown-and-unusable",
+      "IPAllowlist": "recommended-and-reported-as-policy-status-without-returning-values"
+    },
+    "storage": {
+      "envelopeVersion": 1,
+      "aead": "AES-256-GCM",
+      "dek": "random-per-user-OKX-key-version",
+      "kek": "non-exportable KMS key scoped to dedicated OKX connector",
+      "aadFields": ["domain", "userId", "credentialId", "version", "environment"],
+      "apiDecryptGrant": false,
+      "webDecryptGrant": false,
+      "workerDecryptGrant": false,
+      "ordinaryDatabaseDecryptGrant": false,
+      "connectorOnlyDecryptGrant": true
+    },
+    "egress": {
+      "defaultDeny": true,
+      "allowedSchemes": ["https"],
+      "allowedHosts": ["www.okx.com"],
+      "allowedPorts": [443],
+      "dnsPinning": true,
+      "redirects": 0,
+      "proxy": "dedicated-egress-identity",
+      "requestTimeoutMs": 8000,
+      "responseBodyBytes": 262144,
+      "providerBodyInLogs": false,
+      "credentialHeadersInLogs": false,
+      "externalCallsInP0401": 0
+    },
+    "save": {
+      "requirements": ["fresh reauthentication", "expected configured=false", "all three write-only fields", "minimum permission validation"],
+      "success": "version=1 and status=usable",
+      "testFailure": "do-not-activate"
+    },
+    "replace": {
+      "requirements": ["fresh reauthentication", "expectedVersion", "complete new credential tuple", "minimum permission validation"],
+      "partialFieldReplacement": false,
+      "onValidationFailure": "retain-old-version-without-exposing-it-and-discard-staged-version",
+      "onSuccess": "atomically-activate-new-version-then-revoke-old-use-capability"
+    },
+    "delete": {
+      "requirements": ["fresh reauthentication", "expectedVersion"],
+      "onStart": "disable-new-uses",
+      "onCommit": "cryptographically-erase-wrapped-DEK-and-retain-non-secret-tombstone",
+      "idempotentWhenUnconfigured": true
+    },
+    "test": {
+      "requirements": ["fresh short-lived connector capability", "current version", "allowlisted read-only endpoint"],
+      "persistProviderResponse": false,
+      "returnProviderBody": false,
+      "successResponse": "configured-version-status-only",
+      "failureResponse": "stable local error code without provider body"
+    },
+    "rotation": {
+      "atomicVersionSwap": true,
+      "periodicMaximumAgeDays": 90,
+      "compromise": "disable-current-version-immediately-and-require-replacement",
+      "oldVersionUseAfterSwap": false,
+      "concurrentRequest": "capability version mismatch fails closed"
+    },
+    "audit": {
+      "events": ["save", "replace", "delete", "test", "status-change", "egress-denied"],
+      "secretValues": "forbidden",
+      "changedFlagsOnly": true,
+      "allowedFields": ["userId", "credentialId", "oldVersion", "newVersion", "status", "changed", "requestId", "actor", "timestamp"],
+      "providerRequestHeaders": false,
+      "providerResponseBody": false
+    },
+    "failurePolicy": "closed-no-shared-key-fallback-no-stale-version-use"
+  },
+  "executionCounts": {
+    "privateKeyDecryptions": 0,
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "externalRpcCalls": 0
+  }
+}
