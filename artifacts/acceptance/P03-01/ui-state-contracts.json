@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "monitor-ui/local-v1",
+  "workItemId": "P03-01",
+  "route": "/monitors",
+  "implementationStatus": "planned",
+  "implementedComponents": 0,
+  "evidenceLevel": "locally-defined",
+  "views": [
+    {
+      "id": "monitor-list",
+      "title": "Monitors",
+      "requiredData": ["monitorId", "name", "poolKey", "enabled", "revision", "updatedAt"],
+      "primaryActions": ["create", "enable", "disable", "edit", "delete"],
+      "summary": ["enabledCount", "totalCount"],
+      "ownership": "current user only"
+    },
+    {
+      "id": "monitor-editor",
+      "title": "Monitor",
+      "requiredData": ["name", "poolKey", "windowMinutes", "conditions", "destinations"],
+      "primaryActions": ["save", "cancel"],
+      "concurrency": "expected revision conflict is shown without discarding local edits",
+      "ownership": "current user only"
+    },
+    {
+      "id": "notification-history",
+      "title": "Notification history",
+      "requiredData": [
+        "deliveryId",
+        "monitorId",
+        "poolKey",
+        "conditionSummary",
+        "windowEnd",
+        "createdAt",
+        "deliveryStatus"
+      ],
+      "primaryActions": ["filter", "inspect"],
+      "secretDisplay": "never",
+      "ownership": "current user only"
+    },
+    {
+      "id": "notification-preferences",
+      "title": "Notification preferences",
+      "requiredData": ["revision", "categoryToggles"],
+      "primaryActions": ["save"],
+      "binaryControls": "toggle or checkbox",
+      "ownership": "current user only"
+    },
+    {
+      "id": "destination-settings",
+      "title": "Destinations",
+      "requiredData": ["destinationId", "revision", "type", "name", "enabled", "redactedConfig"],
+      "primaryActions": ["add", "edit", "enable", "disable", "delete", "test"],
+      "secretDisplay": "write-only and never echoed",
+      "ownership": "current user only"
+    }
+  ],
+  "operationalStates": [
+    {
+      "id": "loading",
+      "trigger": "initial or explicit refresh",
+      "presentation": "stable skeleton geometry and busy status"
+    },
+    {
+      "id": "empty",
+      "trigger": "authoritative empty monitor or history page",
+      "presentation": "unframed empty state with one relevant action"
+    },
+    {
+      "id": "ready",
+      "trigger": "fresh authoritative data",
+      "presentation": "normal controls and timestamps"
+    },
+    {
+      "id": "stale",
+      "trigger": "last market generation exceeds the 120-second freshness budget",
+      "presentation": "stale status; never show a condition as matched"
+    },
+    {
+      "id": "not-ready",
+      "trigger": "required metric, blocklist snapshot, or market projection is not ready",
+      "presentation": "not-ready reason and disabled enable/test action"
+    },
+    {
+      "id": "disabled",
+      "trigger": "monitor or destination is disabled",
+      "presentation": "inactive status with explicit enable action"
+    },
+    {
+      "id": "retrying",
+      "trigger": "delivery state is retry-wait",
+      "presentation": "attempt count and next attempt time without response body"
+    },
+    {
+      "id": "conflict",
+      "trigger": "expected revision differs",
+      "presentation": "authoritative revision plus reload/reapply actions; preserve unsaved edits"
+    },
+    {
+      "id": "error",
+      "trigger": "bounded API or local test failure",
+      "presentation": "stable error code, retry when safe, no secrets or rendered payload"
+    }
+  ],
+  "conditionEditor": {
+    "combinationLabel": "All conditions (AND)",
+    "enabledConditionControl": "checkbox",
+    "metricControl": "select",
+    "operatorControl": "select",
+    "numericValueControl": "decimal input",
+    "windowControl": "segmented control",
+    "availableMetrics": [
+      "volumeUsd",
+      "feesUsd",
+      "feeTvlRatio",
+      "tvlUsd",
+      "transactionCount",
+      "metricVersion"
+    ],
+    "unavailableMetrics": ["activeTvlUsd", "feeAtvlRatio"],
+    "unavailablePresentation": "visible disabled option with unresolved status, never coerced to zero",
+    "invalidInput": "inline field error and save disabled",
+    "missingOrNullMetric": "not matched",
+    "nonFiniteMetric": "not matched",
+    "partialRequiredMetric": "not matched"
+  },
+  "poolEligibility": {
+    "blocklist": "server-authoritative P02-11 decision",
+    "blockedPool": "creation and enable actions disabled with generic eligibility reason",
+    "HanTokenFilter": "enabled filter displays exclusion state",
+    "HookFilter": "enabled filter displays exclusion state",
+    "unknownMetadata": "not-ready rather than eligible"
+  },
+  "deliveryStatusPresentation": {
+    "pending": "pending",
+    "leased": "sending",
+    "retry-wait": "retrying",
+    "delivered": "delivered",
+    "dead": "failed"
+  },
+  "destinationEditor": {
+    "types": ["telegram", "webhook"],
+    "webhookMethods": ["GET", "POST"],
+    "secretInput": "write-only password control",
+    "secretReadback": "never",
+    "unknownVariable": "blocking validation error",
+    "oversizeTemplate": "blocking validation error",
+    "unsafeTarget": "generic blocking validation error without resolved IP disclosure"
+  },
+  "testNotification": {
+    "action": "explicit test button",
+    "sink": "local-sink://p03-01",
+    "persistDraft": false,
+    "persistHistory": false,
+    "success": "show local rendering result only",
+    "failure": "show bounded local validation error",
+    "realTelegram": false,
+    "realWebhook": false
+  },
+  "accessibility": {
+    "statusAnnouncements": "polite live region",
+    "errors": "programmatically associated with fields",
+    "keyboard": "all commands reachable in predictable focus order",
+    "colorOnlyState": false,
+    "destructiveConfirmation": "monitor and destination delete require named confirmation"
+  },
+  "responsive": {
+    "desktop": "table with stable columns and detail drawer",
+    "mobile": "single-column rows with the same fields and commands",
+    "overflow": "identifiers wrap or ellipsize with accessible full value",
+    "overlap": "forbidden"
+  },
+  "boundaries": {
+    "componentImplementation": false,
+    "routeRegistration": false,
+    "visualParity": false,
+    "liveNotification": false
+  }
+}
