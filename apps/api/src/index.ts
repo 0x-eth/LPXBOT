@@ -21,6 +21,20 @@ export { PostgresChainAccessPolicyStore } from "./postgres-chain-access-policy-s
 export { PostgresUserPreferencesStore } from "./postgres-user-preferences-store.js";
 export { PostgresAddressRemarkStore } from "./postgres-address-remark-store.js";
 export {
+  canonicalPoolBlocklistEntry,
+  createPoolBlocklistSnapshot,
+  defaultPoolBlocklistSnapshot,
+  parsePoolBlocklistPatch,
+  poolBlocklistHash,
+  PoolBlocklistValidationError,
+  sortPoolBlocklistEntries,
+} from "./pool-blocklist.js";
+export type {
+  PoolBlocklistMutationInput,
+  PoolBlocklistMutationResult,
+  PoolBlocklistStore,
+} from "./pool-blocklist.js";
+export {
   addressRemarkChainId,
   AddressRemarkValidationError,
   canonicalAddressRemarkAddress,

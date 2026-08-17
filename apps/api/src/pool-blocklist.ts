@@ -20,6 +20,22 @@ export class PoolBlocklistValidationError extends Error {
   }
 }
 
+export interface PoolBlocklistMutationInput {
+  expectedRevision: number;
+  operation: PoolBlocklistOperation;
+  updatedAt: Date;
+  userId: string;
+}
+
+export type PoolBlocklistMutationResult =
+  | { status: "updated" | "unchanged"; value: PoolBlocklistSnapshot }
+  | { current: PoolBlocklistSnapshot; status: "capacity" | "conflict" };
+
+export interface PoolBlocklistStore {
+  get(userId: string): Promise<PoolBlocklistSnapshot>;
+  mutate(input: PoolBlocklistMutationInput): Promise<PoolBlocklistMutationResult>;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -65,6 +65,11 @@ import {
 } from "./market-charts.js";
 import type { MarketPoolsByTokenContext, MarketPoolsProvider } from "./market-pools.js";
 import {
+  parsePoolBlocklistPatch,
+  PoolBlocklistValidationError,
+  type PoolBlocklistStore,
+} from "./pool-blocklist.js";
+import {
   createRecommendedPoolsEventStream,
   parseRecommendedPoolsCursor,
   type RecommendedPoolsScheduler,
@@ -107,6 +112,8 @@ export interface ApiAppOptions {
   marketPoolsRateLimit?: PublicReadRateLimit;
   managementOrigin?: string;
   now?: () => Date;
+  poolBlocklistRateLimit?: ChainManagementRateLimit;
+  poolBlocklistStore?: PoolBlocklistStore;
   preferencesStore?: UserPreferencesStore;
   recommendedPoolsPollMilliseconds?: number;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
@@ -661,6 +668,20 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     throw new RangeError("Address remark rate limits must be positive integers");
   }
   const addressRemarkLimiter = new FixedWindowRateLimiter();
+  const poolBlocklistRateLimit: ChainManagementRateLimit = {
+    max: 30,
+    timeWindowMs: 60_000,
+    ...options.poolBlocklistRateLimit,
+  };
+  if (
+    !Number.isSafeInteger(poolBlocklistRateLimit.max) ||
+    poolBlocklistRateLimit.max <= 0 ||
+    !Number.isSafeInteger(poolBlocklistRateLimit.timeWindowMs) ||
+    poolBlocklistRateLimit.timeWindowMs <= 0
+  ) {
+    throw new RangeError("Pool blocklist rate limits must be positive integers");
+  }
+  const poolBlocklistLimiter = new FixedWindowRateLimiter();
   const chainManagementRateLimit: ChainManagementRateLimit = {
     max: 10,
     timeWindowMs: 60_000,
@@ -781,6 +802,21 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
 
   app.setErrorHandler(async (error, request, reply) => {
     const errorCode = (error as { code?: unknown }).code;
+    if (
+      errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
+      request.method === "PATCH" &&
+      request.url.split("?", 1)[0] === "/api/user/pool-blocklist"
+    ) {
+      reply.header("Cache-Control", "no-store");
+      return reply.code(413).send(
+        createErrorEnvelope({
+          code: "REQUEST_TOO_LARGE",
+          message: "The request body is too large",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+    }
     if (
       errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
       request.method === "PUT" &&
@@ -1764,6 +1800,100 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         return reply;
       },
     );
+
+    app.get("/api/user/pool-blocklist", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.poolBlocklistStore) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "POOL_BLOCKLIST_UNAVAILABLE",
+            message: "Pool blocklist storage is not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      return createSuccessEnvelope(await options.poolBlocklistStore.get(session.userId), request.id);
+    });
+
+    app.patch("/api/user/pool-blocklist", { bodyLimit: 2_048 }, async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.poolBlocklistStore) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "POOL_BLOCKLIST_UNAVAILABLE",
+            message: "Pool blocklist storage is not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      let parsed;
+      try {
+        parsed = parsePoolBlocklistPatch(request.body);
+      } catch (error) {
+        if (!(error instanceof PoolBlocklistValidationError)) throw error;
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "POOL_BLOCKLIST_INVALID",
+            message: "Pool blocklist mutation is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (
+        !poolBlocklistLimiter.consume(
+          session.id,
+          poolBlocklistRateLimit.max,
+          poolBlocklistRateLimit.timeWindowMs,
+          now().getTime(),
+        )
+      ) {
+        return reply.code(429).send(
+          createErrorEnvelope({
+            code: "RATE_LIMITED",
+            message: "Too many pool blocklist mutations",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      const result = await options.poolBlocklistStore.mutate({
+        ...parsed,
+        updatedAt: now(),
+        userId: session.userId,
+      });
+      if (result.status === "conflict") {
+        return reply.code(409).send({
+          current: result.current,
+          error: {
+            code: "REVISION_CONFLICT",
+            message: "Pool blocklist changed in another session",
+            requestId: request.id,
+            retryable: true,
+          },
+          success: false,
+        });
+      }
+      if (result.status === "capacity") {
+        return reply.code(422).send({
+          current: result.current,
+          error: {
+            code: "BLOCKLIST_CAPACITY_EXCEEDED",
+            message: "Pool blocklist entry capacity has been reached",
+            requestId: request.id,
+            retryable: false,
+          },
+          success: false,
+        });
+      }
+      return createSuccessEnvelope(result.value, request.id);
+    });
 
     app.get("/api/user/preferences", async (request, reply) => {
       reply.header("Cache-Control", "no-store");
