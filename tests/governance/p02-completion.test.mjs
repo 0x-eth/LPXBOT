@@ -280,9 +280,7 @@ test("P02-11 eligibility Golden freezes blocked identities, limitations and back
       .map(({ poolKey }) => poolKey),
   );
   assert.deepEqual(
-    golden.expected.decisions
-      .filter(({ eligible }) => !eligible)
-      .map(({ id }) => id),
+    golden.expected.decisions.filter(({ eligible }) => !eligible).map(({ id }) => id),
     ["blocked-pool", "blocked-token0", "blocked-token1"],
   );
   assert.deepEqual(
@@ -291,7 +289,10 @@ test("P02-11 eligibility Golden freezes blocked identities, limitations and back
       .sort(),
     ["TOKEN_ADDRESS_MISSING", "TOKEN_ADDRESS_NON_CANONICAL"],
   );
-  assert.deepEqual(golden.expected.limitedResultPoolKeys, golden.expected.eligiblePoolKeys.slice(0, 2));
+  assert.deepEqual(
+    golden.expected.limitedResultPoolKeys,
+    golden.expected.eligiblePoolKeys.slice(0, 2),
+  );
 });
 
 test("P02-01 through P02-10 remain byte-identical to the pre-P02-11 inventory", async () => {

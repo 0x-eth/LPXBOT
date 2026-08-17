@@ -35,7 +35,9 @@ export interface PoolEligibilityDecision {
 export interface PoolEligibilityPolicy {
   readonly blocklistHash: string;
   evaluate(candidate: PoolEligibilityCandidate): PoolEligibilityDecision;
-  filter<T extends PoolEligibilityCandidate>(candidates: readonly T[]): {
+  filter<T extends PoolEligibilityCandidate>(
+    candidates: readonly T[],
+  ): {
     candidates: T[];
     limitations: Array<PoolEligibilityLimitation & { poolKey: string }>;
   };
@@ -110,7 +112,10 @@ export function createPoolEligibilityPolicy(
       for (const candidate of candidates) {
         const decision = evaluate(candidate);
         limitations.push(
-          ...decision.limitations.map((limitation) => ({ ...limitation, poolKey: candidate.poolKey })),
+          ...decision.limitations.map((limitation) => ({
+            ...limitation,
+            poolKey: candidate.poolKey,
+          })),
         );
         if (decision.eligible) eligible.push(candidate);
       }

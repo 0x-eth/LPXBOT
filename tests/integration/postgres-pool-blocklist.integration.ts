@@ -108,7 +108,11 @@ describe("P02-11 PostgreSQL pool blocklist", () => {
 
   it("allows one concurrent revision winner and keeps entry plus revision in one transaction", async () => {
     const store = new PostgresPoolBlocklistStore(pool);
-    expect(await store.get(userIds[0])).toMatchObject({ entries: [], revision: 0, updatedAt: null });
+    expect(await store.get(userIds[0])).toMatchObject({
+      entries: [],
+      revision: 0,
+      updatedAt: null,
+    });
     const operations = [
       {
         entry: { chainId: 56 as const, identity: tokenAddress, scope: "token" as const },
@@ -198,7 +202,10 @@ describe("P02-11 PostgreSQL pool blocklist", () => {
           type: "block",
         }),
       ),
-    ).toMatchObject({ current: { entries: [{ identity: tokenAddress }], revision: 1 }, status: "capacity" });
+    ).toMatchObject({
+      current: { entries: [{ identity: tokenAddress }], revision: 1 },
+      status: "capacity",
+    });
 
     await pool.query("DELETE FROM users WHERE id = $1", [userIds[2]]);
     const residual = await pool.query<{ entries: string; states: string }>(

@@ -11,7 +11,6 @@ import {
 
 const canonicalAddressPattern = /^0x[0-9a-f]{40}$/u;
 const canonicalPoolKeyPattern = /^56:0x(?:[0-9a-f]{40}|[0-9a-f]{64})$/u;
-const controlCharacterPattern = /[\u0000-\u001f\u007f-\u009f]/u;
 
 export class PoolBlocklistValidationError extends Error {
   constructor() {
@@ -52,7 +51,10 @@ function validLabel(value: unknown): value is string {
     value.length > 0 &&
     value === value.trim() &&
     [...value].length <= poolBlocklistMaxLabelLength &&
-    !controlCharacterPattern.test(value)
+    ![...value].some((character) => {
+      const codePoint = character.codePointAt(0)!;
+      return codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f);
+    })
   );
 }
 
@@ -98,14 +100,14 @@ export function sortPoolBlocklistEntries(
     .sort((left, right) => entryKey(left).localeCompare(entryKey(right), "en"));
 }
 
-export function poolBlocklistHash(
-  entries: readonly PoolBlocklistEntry[],
-): `sha256:${string}` {
-  const eligibilityEntries = sortPoolBlocklistEntries(entries).map(({ chainId, identity, scope }) => ({
-    chainId,
-    scope,
-    identity,
-  }));
+export function poolBlocklistHash(entries: readonly PoolBlocklistEntry[]): `sha256:${string}` {
+  const eligibilityEntries = sortPoolBlocklistEntries(entries).map(
+    ({ chainId, identity, scope }) => ({
+      chainId,
+      scope,
+      identity,
+    }),
+  );
   const serialized = JSON.stringify({
     schemaVersion: poolBlocklistSchemaVersion,
     entries: eligibilityEntries,
@@ -167,6 +169,9 @@ export function parsePoolBlocklistPatch(value: unknown): PatchPoolBlocklistReque
   const operation: PoolBlocklistOperation =
     value.operation.type === "block"
       ? { entry, type: "block" }
-      : { entry: { chainId: entry.chainId, identity: entry.identity, scope: entry.scope }, type: "restore" };
+      : {
+          entry: { chainId: entry.chainId, identity: entry.identity, scope: entry.scope },
+          type: "restore",
+        };
   return { expectedRevision: value.expectedRevision as number, operation };
 }

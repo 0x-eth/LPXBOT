@@ -49,7 +49,8 @@ describe("P02-11 shared PoolEligibilityPolicy", () => {
       eligible: false,
     });
     expect(
-      policy.evaluate(candidate({ poolKey: blockedPoolKey, token0Address: blockedToken })).blockedBy,
+      policy.evaluate(candidate({ poolKey: blockedPoolKey, token0Address: blockedToken }))
+        .blockedBy,
     ).toEqual([
       { identity: blockedPoolKey, scope: "pool" },
       { identity: blockedToken, scope: "token" },

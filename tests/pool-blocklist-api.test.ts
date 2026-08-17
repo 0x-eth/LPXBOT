@@ -44,17 +44,21 @@ class MemoryPoolBlocklistStore implements PoolBlocklistStore {
     if (current.revision !== input.expectedRevision) return { current, status: "conflict" };
     const entryKey = key(input.userId, input.operation.entry);
     const exists = this.entries.has(entryKey);
-    if ((input.operation.type === "block" && exists) || (input.operation.type === "restore" && !exists)) {
+    if (
+      (input.operation.type === "block" && exists) ||
+      (input.operation.type === "restore" && !exists)
+    ) {
       return { status: "unchanged", value: current };
     }
     if (
       input.operation.type === "block" &&
-      [...this.entries.keys()].filter((candidate) => candidate.startsWith(`${input.userId}:`)).length >=
-        this.capacity
+      [...this.entries.keys()].filter((candidate) => candidate.startsWith(`${input.userId}:`))
+        .length >= this.capacity
     ) {
       return { current, status: "capacity" };
     }
-    if (input.operation.type === "block") this.entries.set(entryKey, structuredClone(input.operation.entry));
+    if (input.operation.type === "block")
+      this.entries.set(entryKey, structuredClone(input.operation.entry));
     else this.entries.delete(entryKey);
     this.revisions.set(input.userId, {
       revision: current.revision + 1,
