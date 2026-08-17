@@ -22,6 +22,8 @@ export { PostgresUserPreferencesStore } from "./postgres-user-preferences-store.
 export { PostgresAddressRemarkStore } from "./postgres-address-remark-store.js";
 export { PostgresPoolBlocklistStore } from "./postgres-pool-blocklist-store.js";
 export type { PostgresPoolBlocklistStoreOptions } from "./postgres-pool-blocklist-store.js";
+export { PostgresMonitorStore } from "./postgres-monitor-store.js";
+export type { PostgresMonitorStoreOptions } from "./postgres-monitor-store.js";
 export {
   MemoryMonitorStore,
   MonitorValidationError,
