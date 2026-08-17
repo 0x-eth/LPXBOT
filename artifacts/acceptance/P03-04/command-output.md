@@ -16,8 +16,22 @@ Environment: local macOS fixture, PostgreSQL `127.0.0.1:15432`, pnpm 11.17.0. Th
 | Gitleaks full-history scan | 923 commits, approximately 22.37 MB, no leaks |
 | `pnpm audit:dependencies` | no known vulnerabilities |
 
+## Complete Local Gates
+
+| Command | Result |
+|---|---|
+| `pnpm test` | 15 workspace builds; 91 Vitest files / 595 tests; 87/87 Node governance tests passed |
+| `pnpm build` | 15/15 workspace package builds passed |
+| `pnpm check:all` | frozen baseline, 196 feature IDs, P00 definition, 452 documentation links, 26 manifests, and P02/P03 references passed |
+| `pnpm test:e2e` | 175 passed / 23 intentional project skips across 198 desktop/mobile Playwright cases |
+| `pnpm test:infra` | 8/8 local PostgreSQL, Redis, MinIO, Anvil, migration, seed, and log checks passed |
+| `pnpm test:contracts` | 3/3 Foundry tests passed |
+| P03-04 acceptance governance | 3/3 checks passed; 448 frozen prior files and 14 P03-04 evidence files verified |
+
 ## Fixture Boundary
 
 Webhook resolution, HTTP/TLS requests, and Telegram transport were injected fixtures. Browser requests were locally intercepted. Real DNS, HTTP, TLS, or Telegram notification calls: 0.
 
-The complete repository, build, browser, infrastructure, governance, and hosted CI results are appended after this evidence snapshot is validated.
+## Hosted CI
+
+The final evidence commit is verified by the six bounded GitHub Actions jobs after push. Hosted results remain distinct from the local results above.
