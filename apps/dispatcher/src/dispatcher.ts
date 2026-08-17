@@ -364,6 +364,7 @@ export class NotificationDispatcher {
     const controller = new AbortController();
     const leaseExpiry = delivery.leaseExpiresAt ? Date.parse(delivery.leaseExpiresAt) : Number.NaN;
     const budget = Number.isFinite(leaseExpiry) ? Math.max(0, leaseExpiry - this.#now().getTime()) : 0;
+    if (budget <= 0) return { kind: "late" };
     const timer = setTimeout(() => controller.abort(), budget);
     timer.unref?.();
     const expired = new Promise<DispatchAdapterResult>((resolve) => {
