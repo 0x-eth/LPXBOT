@@ -16,6 +16,7 @@ import {
   type MarketProtocol,
   type MarketWindowMinutes,
   type SessionView,
+  type ShellStatsSnapshot,
 } from "@lpbot/api-contract";
 import {
   authorizeAccount,
@@ -2053,18 +2054,34 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       reply.header("Cache-Control", "no-store");
       const session = await authenticateSessionRequest(request, reply);
       if (!session) return reply;
-      if (!options.statsProvider) {
-        return reply.code(503).send(
+      const query = parseStatsSnapshotQuery(request);
+      if (!query) {
+        return reply.code(400).send(
           createErrorEnvelope({
-            code: "STATS_UNAVAILABLE",
-            message: "Shell statistics are not configured",
+            code: "STATS_QUERY_INVALID",
+            message: "Stats user_id or query keys are invalid",
             requestId: request.id,
-            retryable: true,
+            retryable: false,
           }),
         );
       }
-      const snapshot = await options.statsProvider.getSnapshot({ userId: session.userId });
-      return createSuccessEnvelope(snapshot, request.id);
+      if (!options.statsProvider) {
+        return sendStatsUnavailable(request, reply);
+      }
+      const scope = await resolveStatsScope(
+        request,
+        reply,
+        session,
+        query.telegramUserId,
+        "http",
+      );
+      if (!scope) return reply;
+      try {
+        const snapshot = await options.statsProvider.getSnapshot({ scope });
+        return createSuccessEnvelope(snapshot, request.id);
+      } catch {
+        return sendStatsUnavailable(request, reply);
+      }
     });
 
     app.get(
@@ -2092,7 +2109,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             }),
           );
         }
-        if (query.userId !== null && session.account.role !== "admin") {
+        if (query.telegramUserId !== null && session.account.role !== "admin") {
           return reply.code(403).send(
             createErrorEnvelope({
               code: "FORBIDDEN",
@@ -2102,15 +2119,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             }),
           );
         }
-        if (query.chain === null && !options.statsProvider) {
-          return reply.code(503).send(
-            createErrorEnvelope({
-              code: "STATS_UNAVAILABLE",
-              message: "Shell statistics are not configured",
-              requestId: request.id,
-              retryable: true,
-            }),
-          );
+        if ((query.chain === null || query.telegramUserId !== null) && !options.statsProvider) {
+          return sendStatsUnavailable(request, reply);
         }
         if (query.chain === "bsc" && !options.marketPoolsProvider) {
           return reply.code(503).send(
@@ -2122,9 +2132,18 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             }),
           );
         }
-        const statsUserId = query.userId ?? session.userId;
+        const statsScope = options.statsProvider
+          ? await resolveStatsScope(
+              request,
+              reply,
+              session,
+              query.telegramUserId,
+              "sse",
+            )
+          : null;
+        if (options.statsProvider && !statsScope) return reply;
         const recommendationEligibility =
-          query.chain === "bsc" ? await poolEligibility(statsUserId) : undefined;
+          query.chain === "bsc" ? await poolEligibility(session.userId) : undefined;
         const lastEventHeader = request.headers["last-event-id"];
         if (
           query.chain === "bsc" &&
@@ -2146,6 +2165,15 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
               retryable: false,
             }),
           );
+        }
+
+        let initialStatsSnapshot: ShellStatsSnapshot | null = null;
+        if (options.statsProvider && statsScope) {
+          try {
+            initialStatsSnapshot = await options.statsProvider.getSnapshot({ scope: statsScope });
+          } catch {
+            return sendStatsUnavailable(request, reply);
+          }
         }
 
         const controller = new AbortController();
@@ -2218,14 +2246,12 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         };
 
         const streamStats = async () => {
-          if (!options.statsProvider) return;
-          const snapshot = await options.statsProvider.getSnapshot({ userId: statsUserId });
-          if (!(await writeEvent({ ...snapshot, type: "snapshot" }))) return;
-          let sequence = snapshot.sequence;
+          if (!options.statsProvider || !statsScope || !initialStatsSnapshot) return;
+          let sequence = initialStatsSnapshot.sequence;
           for await (const event of options.statsProvider.subscribe({
             afterSequence: sequence,
+            scope: statsScope,
             signal: controller.signal,
-            userId: statsUserId,
           })) {
             if (controller.signal.aborted) break;
             if (event.type === "rec_pools_snapshot") continue;
@@ -2252,6 +2278,12 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         };
 
         try {
+          if (
+            initialStatsSnapshot &&
+            !(await writeEvent({ ...initialStatsSnapshot, type: "snapshot" }))
+          ) {
+            controller.abort();
+          }
           await Promise.all([streamRecommendations(), streamStats()]);
         } catch {
           controller.abort();
