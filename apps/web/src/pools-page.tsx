@@ -2346,6 +2346,41 @@ export function PoolsPage({ session }: { session: SessionView }) {
     () => flattenPoolGroups(poolGroups, expandedPoolGroups),
     [expandedPoolGroups, poolGroups],
   );
+  const visiblePoolKeys = useMemo(
+    () => [...new Set(visiblePoolRows.map(({ row }) => row.poolKey))],
+    [visiblePoolRows],
+  );
+  const creatorLookup = usePoolCreatorLookup({
+    enabled: session.role === "admin",
+    poolKeys: visiblePoolKeys,
+    sessionKey: `${session.userId}:${session.role}`,
+  });
+  const closeCreator = useCallback(() => {
+    setCreatorSelection((current) => {
+      const trigger = current?.trigger;
+      if (trigger) {
+        requestAnimationFrame(() => {
+          if (trigger.isConnected) trigger.focus();
+        });
+      }
+      return null;
+    });
+  }, []);
+  const openCreator = useCallback((row: MarketPoolRow, trigger: HTMLButtonElement) => {
+    setCreatorSelection({
+      identity: row.poolAddress ?? row.poolId!,
+      poolKey: row.poolKey,
+      trigger,
+    });
+  }, []);
+  useEffect(() => {
+    if (
+      creatorSelection &&
+      !visiblePoolKeys.some((poolKey) => poolKey === creatorSelection.poolKey)
+    ) {
+      closeCreator();
+    }
+  }, [closeCreator, creatorSelection, visiblePoolKeys]);
   if (
     expandedMarketPoolKey &&
     !visiblePoolRows.some(({ row }) => row.poolKey === expandedMarketPoolKey)
@@ -2748,6 +2783,17 @@ export function PoolsPage({ session }: { session: SessionView }) {
       ) : null}
       <div className="pool-table-toolbar">
         <span>{poolGroups.length} 组</span>
+        {session.role === "admin" && creatorLookup.state.status === "partial" ? (
+          <span className="pool-provenance-toolbar-state" role="status">
+            部分创建记录不可用
+          </span>
+        ) : null}
+        {session.role === "admin" && creatorLookup.state.status === "error" ? (
+          <span className="pool-provenance-toolbar-state" role="alert">
+            创建归属加载失败
+          </span>
+        ) : null}
+        <PoolCreationHistoryDialog />
         <PoolBlocklistManager />
         <PoolColumnDialog columns={poolColumns} save={savePoolColumns} />
       </div>
@@ -2756,6 +2802,9 @@ export function PoolsPage({ session }: { session: SessionView }) {
           columns={poolColumns}
           comparisonCandidateKeys={comparisonCandidateKeys}
           comparisonSelectedKeys={comparisonSelectedKeys}
+          {...(session.role === "admin"
+            ? { creatorLookup: creatorLookup.state, openCreator }
+            : {})}
           expandedMarketPoolKey={expandedMarketPoolKey}
           marketFixtureState={marketFixtureState}
           marketRefreshMs={marketRefreshMs}
@@ -2930,6 +2979,12 @@ export function PoolsPage({ session }: { session: SessionView }) {
         remarks={remarkState}
         remove={removeRemark}
         save={saveRemark}
+      />
+      <PoolCreatorDetailsDialog
+        close={closeCreator}
+        lookup={creatorLookup.state}
+        retry={creatorLookup.retry}
+        selection={session.role === "admin" ? creatorSelection : null}
       />
     </main>
   );

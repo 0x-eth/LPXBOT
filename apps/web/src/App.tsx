@@ -921,7 +921,7 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
                 path="/settings"
                 element={<SettingsPage client={client} session={state.session} />}
               />
-              <Route path="/pools" element={<PoolsPage />} />
+              <Route path="/pools" element={<PoolsPage session={state.session} />} />
               {routeFixtures.map((fixture) => (
                 <Route
                   element={
