@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { PostgresNotificationHistoryStore } from "../../apps/api/src/postgres-notification-history-store.js";
+import { PostgresDispatchDestinationStore } from "../../apps/dispatcher/src/postgres-dispatch-destination-store.js";
 import { PostgresMonitorCandidateOutboxRepository } from "../../apps/worker/src/postgres-monitor-outbox.js";
 import { monitorCandidateKey, type MonitorCandidate } from "../../packages/domain/src/monitor-evaluator.js";
 import pg from "pg";
@@ -301,6 +302,75 @@ describe("P03-04 PostgreSQL notification delivery history", () => {
       [deliveryId],
     );
     expect(state.rows).toEqual([{ attempt_count: 0, state: "pending" }]);
+  });
+
+  it("checks the current destination state before loading the exact bound revision", async () => {
+    const destinations = new PostgresDispatchDestinationStore(pool);
+    const dispatchDelivery = {
+      attemptCount: 1,
+      channel: "webhook" as const,
+      deliveryId: "39000000-0000-4000-8000-000000000099",
+      destinationId: destinationA,
+      destinationRevision: 1,
+      leaseExpiresAt: "2026-08-17T18:00:00.000Z",
+      leaseToken: "39000000-0000-4000-8000-000000000098",
+      payload: {},
+      userId: userA,
+    };
+    const appendRevision = async (revision: number, enabled: boolean, url: string) => {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(
+          `INSERT INTO notification_destination_versions (
+             destination_id, user_id, revision, type, name, enabled, categories,
+             config, secret_ref, tombstone, created_at
+           ) VALUES (
+             $1, $2, $3, 'webhook', 'Current webhook', $4, ARRAY['monitor-match'],
+             jsonb_build_object('method', 'POST', 'template', '{}'::jsonb, 'url', $5::text),
+             $6, false, $7
+           )`,
+          [destinationA, userA, revision, enabled, url, `secret-ref://fixture/current/${revision}`, createdAt],
+        );
+        await client.query(
+          `UPDATE notification_destinations
+              SET current_revision = $3, updated_at = $4
+            WHERE destination_id = $1 AND user_id = $2`,
+          [destinationA, userA, revision, createdAt],
+        );
+        await client.query("COMMIT");
+      } finally {
+        client.release();
+      }
+    };
+
+    await appendRevision(2, false, "https://hooks.fixture.example/disabled");
+    await expect(destinations.resolve(dispatchDelivery)).resolves.toEqual({ status: "disabled" });
+
+    await appendRevision(3, true, "https://hooks.fixture.example/current");
+    await expect(destinations.resolve(dispatchDelivery)).resolves.toMatchObject({
+      destination: {
+        config: {
+          secretRef: "secret-ref://fixture/webhook/history-a",
+          url: "https://hooks.fixture.example/event",
+        },
+        name: "Operations webhook",
+        revision: 1,
+      },
+      status: "ready",
+    });
+    await expect(
+      destinations.resolve({ ...dispatchDelivery, destinationRevision: 99 }),
+    ).resolves.toEqual({ status: "revision-not-found" });
+    await expect(
+      destinations.resolve({ ...dispatchDelivery, userId: userB }),
+    ).resolves.toEqual({ status: "not-found" });
+
+    await pool.query(
+      "UPDATE notification_destinations SET deleted_at = $2, updated_at = $2 WHERE destination_id = $1",
+      [destinationA, createdAt],
+    );
+    await expect(destinations.resolve(dispatchDelivery)).resolves.toEqual({ status: "not-found" });
   });
 
   it("retains snapshots after monitor and destination deletion and clears them with the user", async () => {

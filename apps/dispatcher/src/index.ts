@@ -38,5 +38,6 @@ export type {
   NotificationDispatchBatchResult,
   NotificationDispatchOutbox,
 } from "./dispatcher.js";
+export { PostgresDispatchDestinationStore } from "./postgres-dispatch-destination-store.js";
 
 export const dispatcherApp = { name: "@lpbot/dispatcher" } as const;
