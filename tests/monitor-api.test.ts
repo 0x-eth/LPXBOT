@@ -190,6 +190,26 @@ describe("P03-02 monitor API", () => {
     expect(invalidEnabledPatch.statusCode).toBe(400);
     expect(invalidEnabledPatch.json().error.code).toBe("INVALID_MONITOR");
 
+    const invalidNotReadyPatch = await app.inject({
+      headers: auth(tokenA),
+      method: "PATCH",
+      payload: {
+        changes: {
+          conditions: createRequest.conditions.map((condition) => ({
+            ...condition,
+            enabled: false,
+          })),
+        },
+        expectedRevision: 3,
+      },
+      url,
+    });
+    expect(invalidNotReadyPatch.statusCode).toBe(400);
+    expect(invalidNotReadyPatch.json().error.code).toBe("INVALID_MONITOR");
+    expect((await app.inject({ headers: auth(tokenA), method: "GET", url })).json().data).toMatchObject(
+      { enabled: true, revision: 3 },
+    );
+
     const disabled = await app.inject({
       headers: auth(tokenA),
       method: "POST",
