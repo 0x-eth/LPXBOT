@@ -3,6 +3,7 @@ import {
   NodeHttpsWebhookTransport,
   NodeTelegramTransport,
   NodeWebhookResolver,
+  type ProductionNotificationDispatcherOptions,
 } from "../apps/dispatcher/src/production.js";
 import { describe, expect, it, vi } from "vitest";
 
@@ -10,16 +11,18 @@ describe("P03-04 production Dispatcher configuration", () => {
   it.each(["pool", "secrets", "webhookTransport", "telegramTransport"] as const)(
     "refuses startup when %s is missing",
     (missing) => {
-      const options = {
+      const options: Partial<ProductionNotificationDispatcherOptions> = {
         leaseOwner: "dispatcher-production-fixture",
-        pool: { query: vi.fn() },
+        pool: { connect: vi.fn(), query: vi.fn() },
         secrets: { read: vi.fn() },
         telegramTransport: { send: vi.fn() },
         webhookResolver: { resolve: vi.fn() },
         webhookTransport: { send: vi.fn() },
-      } as Record<string, unknown>;
+      };
       delete options[missing];
-      expect(() => createProductionNotificationDispatcher(options)).toThrow(
+      expect(() =>
+        createProductionNotificationDispatcher(options as ProductionNotificationDispatcherOptions),
+      ).toThrow(
         "DISPATCHER_PRODUCTION_CONFIG_INCOMPLETE",
       );
     },

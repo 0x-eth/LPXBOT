@@ -1,5 +1,8 @@
 import { buildApiApp } from "../apps/api/src/app.js";
-import { MemoryNotificationHistoryStore } from "../apps/api/src/notification-history.js";
+import {
+  MemoryNotificationHistoryStore,
+  type StoredNotificationHistoryItem,
+} from "../apps/api/src/notification-history.js";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { issueFixtureSession, SessionFixtureStore } from "./helpers/session-fixture.js";
@@ -14,8 +17,8 @@ function record(
   deliveryId: string,
   createdAt: string,
   status: "pending" | "sending" | "retrying" | "delivered" | "failed",
-  overrides: Record<string, unknown> = {},
-) {
+  overrides: Partial<StoredNotificationHistoryItem> = {},
+): StoredNotificationHistoryItem {
   return {
     attemptCount: status === "pending" ? 0 : 1,
     conditionSummary: "volumeUsd gte 1000",
@@ -31,7 +34,7 @@ function record(
     monitorId: monitorA,
     monitorName: "Volume watch",
     nextRetryAt: status === "retrying" ? "2026-08-18T00:10:00.000Z" : null,
-    poolKey: `56:0x${"a".repeat(40)}`,
+    poolKey: `56:0x${"a".repeat(40)}` as `56:0x${string}`,
     status,
     updatedAt: createdAt,
     userId: userA,

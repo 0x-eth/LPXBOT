@@ -32,23 +32,32 @@ function delivery(overrides: Partial<DispatchOutboxDelivery> = {}): DispatchOutb
 
 function readyDestination(
   item: DispatchOutboxDelivery,
-  overrides: Partial<Extract<DispatchDestinationResult, { status: "ready" }>["destination"]> = {},
+  overrides: Partial<
+    Extract<
+      Extract<DispatchDestinationResult, { status: "ready" }>["destination"],
+      { type: "webhook" }
+    >
+  > = {},
 ): DispatchDestinationResult {
-  return {
-    destination: {
-      config: {
-        method: "POST",
-        secretRef: "secret-ref://fixture/webhook/destination-1",
-        template: { text: "{{monitor.name}}" },
-        url: "https://hooks.fixture.example/event",
-      },
-      destinationId: item.destinationId,
-      name: "Operations",
-      revision: item.destinationRevision,
-      type: "webhook",
-      userId: item.userId,
-      ...overrides,
+  const destination: Extract<
+    Extract<DispatchDestinationResult, { status: "ready" }>["destination"],
+    { type: "webhook" }
+  > = {
+    config: {
+      method: "POST",
+      secretRef: "secret-ref://fixture/webhook/destination-1",
+      template: { text: "{{monitor.name}}" },
+      url: "https://hooks.fixture.example/event",
     },
+    destinationId: item.destinationId,
+    name: "Operations",
+    revision: item.destinationRevision,
+    type: "webhook",
+    userId: item.userId,
+    ...overrides,
+  };
+  return {
+    destination,
     status: "ready",
   };
 }

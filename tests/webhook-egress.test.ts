@@ -239,7 +239,7 @@ describe("P03-04 Webhook egress", () => {
       }),
     ).resolves.toEqual({ acknowledgement: "HTTP_204", status: "delivered" });
 
-    expect(requests).toHaveLength(scenario.expected.validatedHopCount);
+    expect(requests).toHaveLength(scenario.expected.validatedHopCount!);
     expect(requests.map(({ method }) => method)).toEqual(["POST", "POST", "POST"]);
     expect(requests.map(({ servername }) => servername)).toEqual([
       "hooks.fixture.example",
@@ -331,7 +331,7 @@ describe("P03-04 Webhook egress", () => {
   it("permits at most three redirects and re-resolves every connection", async () => {
     for (const redirectCount of [3, 4]) {
       const requests: WebhookHttpRequest[] = [];
-      const responses = Array.from({ length: redirectCount }, (_, index) => ({
+      const responses: WebhookHttpResponse[] = Array.from({ length: redirectCount }, (_, index) => ({
         bodyBytes: 0,
         headers: { location: `/hop-${index + 1}` },
         status: 307,

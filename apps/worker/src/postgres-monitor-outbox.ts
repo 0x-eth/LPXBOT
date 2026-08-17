@@ -158,7 +158,11 @@ function canonicalErrorCode(value: string): string {
 
 function canonicalAcknowledgement(value: string | undefined): string | null {
   if (value === undefined) return null;
-  if ([...value].length < 1 || [...value].length > 120 || /[\u0000-\u001f\u007f]/u.test(value)) {
+  const hasControlCharacter = [...value].some((character) => {
+    const codePoint = character.codePointAt(0)!;
+    return codePoint <= 0x1f || codePoint === 0x7f;
+  });
+  if ([...value].length < 1 || [...value].length > 120 || hasControlCharacter) {
     throw new RangeError("OUTBOX_ACKNOWLEDGEMENT_INVALID");
   }
   return value;
