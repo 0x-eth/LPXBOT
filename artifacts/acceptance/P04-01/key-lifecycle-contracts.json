@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "wallet-key-lifecycle/local-v1",
+  "workItemId": "P04-01",
+  "implementationStatus": "planned",
+  "evidenceLevel": "locally-defined",
+  "privateKey": {
+    "curve": "secp256k1",
+    "import": {
+      "acceptedEncoding": "optional-0x-plus-exactly-64-hex",
+      "scalarRange": "1 <= key < secp256k1.n",
+      "mixedCaseAccepted": true,
+      "whitespaceAccepted": false,
+      "mnemonicAccepted": false,
+      "normalization": "strip-optional-0x-and-decode-exactly-32-bytes-inside-signer",
+      "responseEcho": false,
+      "retryEcho": false
+    },
+    "generation": {
+      "source": "operating-system-CSPRNG-through-signer",
+      "bytesPerCandidate": 32,
+      "rejectionSampling": "reject-zero-or-scalar-greater-than-or-equal-to-curve-order",
+      "moduloReduction": false,
+      "browserGeneration": false,
+      "apiGeneration": false
+    }
+  },
+  "addressDerivation": {
+    "publicKey": "uncompressed-secp256k1-without-0x04-prefix",
+    "hash": "Keccak-256",
+    "selection": "rightmost-20-bytes",
+    "identity": "lowercase-20-byte-address",
+    "display": "EIP-55-checksum",
+    "persistedPrivateMaterialRequired": false,
+    "compareBeforeCommit": true
+  },
+  "duplicateAddress": {
+    "withinUser": {
+      "constraint": "unique-userId-lowercaseAddress-active-or-recoverable",
+      "status": 409,
+      "code": "WALLET_ADDRESS_EXISTS",
+      "returnExistingWallet": false,
+      "generatedCollision": "discard-candidate-zeroize-and-resample"
+    },
+    "crossUser": {
+      "policy": "independent-tenant-envelope-permitted",
+      "discloseExistingOwner": false,
+      "crossTenantLookup": false,
+      "errorShapeMayRevealPresence": false
+    }
+  },
+  "envelope": {
+    "currentVersion": 1,
+    "record": {
+      "requiredFields": [
+        "envelopeVersion",
+        "algorithm",
+        "ciphertext",
+        "nonce",
+        "tag",
+        "aadVersion",
+        "wrappedDek",
+        "kekId",
+        "kekVersion",
+        "createdAt"
+      ],
+      "plaintextPrivateKey": "forbidden",
+      "rawDek": "forbidden",
+      "rawKek": "forbidden"
+    },
+    "aead": {
+      "algorithm": "AES-256-GCM",
+      "keyBytes": 32,
+      "nonceBytes": 12,
+      "tagBytes": 16,
+      "nonceReuse": "forbidden-per-DEK",
+      "provider": "reviewed-platform-crypto-provider-inside-signer"
+    },
+    "dek": {
+      "bytes": 32,
+      "source": "operating-system-CSPRNG-through-signer",
+      "scope": "one-random-DEK-per-wallet-version",
+      "databaseStorage": false,
+      "queueStorage": false,
+      "memoryLifetime": "single-envelope-operation"
+    },
+    "kek": {
+      "storage": "KMS-or-Vault-only-never-database",
+      "exportable": false,
+      "grant": "signer-service-identity-only",
+      "ordinaryDatabaseCredentialGrant": false,
+      "apiGrant": false,
+      "workerGrant": false
+    },
+    "aad": {
+      "version": 1,
+      "encoding": "UTF-8-exact-order-newline-delimited-v1",
+      "fields": [
+        "domain",
+        "tenantId",
+        "userId",
+        "walletId",
+        "address",
+        "mode",
+        "envelopeVersion",
+        "kekVersion"
+      ],
+      "domain": "lpbot-wallet-envelope/v1",
+      "normalization": {
+        "identifiers": "canonical opaque identifier bytes represented as lowercase ASCII",
+        "address": "lowercase 0x-prefixed 40-hex",
+        "integers": "unsigned canonical base-10 without leading zero",
+        "separator": "LF",
+        "trailingSeparator": false
+      }
+    },
+    "tamperPolicy": "authentication-failure-lock-and-quarantine-no-fallback",
+    "rotation": {
+      "kek": "rewrap-DEK-in-signer-without-private-key-plaintext",
+      "dek": "new-DEK-and-envelope-version-atomic-signer-only",
+      "readOldVersions": "bounded-migration-window-with-explicit-version",
+      "writeOldVersions": false,
+      "rollback": "retain-previous-authenticated-envelope-until-new-version-commit-and-backup",
+      "audit": "walletId-oldVersion-newVersion-result-without-key-material"
+    }
+  },
+  "serverMode": {
+    "name": "server-kek",
+    "restart": "recover-wrapped-DEK-through-signer-KMS-grant",
+    "userPasswordRequired": false,
+    "automaticSignerAvailability": "only-after-KMS-identity-and-envelope-policy-validation",
+    "kekUnavailable": "locked-fail-closed"
+  },
+  "passwordMode": {
+    "name": "user-password",
+    "kdf": {
+      "algorithm": "Argon2id",
+      "parameterVersion": 1,
+      "version1": {
+        "argonVersion": 19,
+        "memoryKiB": 65536,
+        "iterations": 3,
+        "parallelism": 1,
+        "saltBytes": 16,
+        "outputBytes": 32
+      },
+      "salt": "random-per-user-password-version",
+      "parameterDowngrade": "forbidden",
+      "rehash": "on-successful-unlock-when-approved-version-increases"
+    },
+    "unlock": {
+      "location": "signer-memory-only",
+      "derivedKekPersistence": false,
+      "passwordPersistence": false,
+      "sessionBinding": ["userId", "reauthenticatedSessionId", "signerInstance", "unlockVersion"],
+      "defaultAutoLockMinutes": 15,
+      "allowedAutoLockMinutes": [1, 5, 15, 30, 60],
+      "activityThatExtendsLock": "successful-authorized-signing-operation-only",
+      "browserActivityExtendsLock": false
+    },
+    "restart": "locked",
+    "forgottenPassword": "no-recovery-from-password-envelope-delete-after-reset-preview-and-confirmation"
+  },
+  "wrongPassword": {
+    "externalError": "INVALID_CREDENTIALS",
+    "distinguishesMissingWallet": false,
+    "timing": "uniform-envelope-open-path",
+    "attemptLimit": {
+      "windowSeconds": 900,
+      "maxAttempts": 5,
+      "backoff": "exponential-with-jitter",
+      "lockoutScope": "user-and-source-session"
+    },
+    "audit": "failure-count-and-requestId-without-password-or-derived-bytes"
+  },
+  "memory": {
+    "lockedMemoryRequired": true,
+    "buffers": "mutable-byte-buffers-never-immutable-strings-after-ingress",
+    "zeroizeOn": {
+      "everyExitPath": true,
+      "success": true,
+      "validationFailure": true,
+      "authenticationFailure": true,
+      "timeout": true,
+      "autoLock": true,
+      "modeSwitch": true,
+      "processShutdown": true
+    },
+    "copies": "minimize-and-track",
+    "coreDump": "disabled-for-signer",
+    "swap": "mlock-or-equivalent-required",
+    "gcRuntimeLimitation": "documented-and-contained-by-short-lived-isolated-process-boundary",
+    "crashPolicy": "process-exit-discards-unlock-state"
+  },
+  "lifecycle": {
+    "states": ["creating", "locked", "unlocked", "rotating", "deleting", "deleted", "quarantined"],
+    "operations": [
+      {
+        "id": "create",
+        "from": "absent",
+        "to": "locked",
+        "requirements": ["fresh reauthentication", "signer CSPRNG", "address collision check", "authenticated envelope commit"],
+        "privateKeyResponse": false
+      },
+      {
+        "id": "import",
+        "from": "absent",
+        "to": "locked",
+        "requirements": ["fresh reauthentication", "write-only secret ingress", "scalar validation", "address collision check", "authenticated envelope commit"],
+        "privateKeyResponse": false
+      },
+      {
+        "id": "unlock",
+        "from": "locked",
+        "to": "unlocked",
+        "requirements": ["fresh user password in password mode", "rate limit", "AAD validation", "short-lived signer session"]
+      },
+      {
+        "id": "auto-lock",
+        "from": "unlocked",
+        "to": "locked",
+        "requirements": ["deadline from signer monotonic clock", "zeroize unlock material", "invalidate signer capability"]
+      },
+      {
+        "id": "restart",
+        "from": "unlocked-or-locked",
+        "to": "mode-dependent",
+        "requirements": ["discard all memory state", "password mode returns locked", "server mode revalidates KMS identity"]
+      },
+      {
+        "id": "change-password",
+        "from": "unlocked",
+        "to": "locked",
+        "atomic": true,
+        "requirements": ["verify old password", "fresh salt and approved Argon2id parameters", "new envelope version", "commit-or-retain-old-envelope", "zeroize both credentials"]
+      },
+      {
+        "id": "switch-mode",
+        "from": "unlocked-or-server-authorized",
+        "to": "locked",
+        "atomic": true,
+        "requirements": ["reset preview", "fresh reauthentication", "new envelope version", "task policy revalidation", "commit-or-retain-old-mode"]
+      },
+      {
+        "id": "delete",
+        "from": "locked-or-unlocked-or-quarantined",
+        "to": "deleted",
+        "previewRequired": true,
+        "requirements": ["dependency counts", "asset and position warning", "confirmation phrase for force", "disable tasks before cryptographic erasure", "tombstone metadata"]
+      },
+      {
+        "id": "recover",
+        "from": "disaster-backup",
+        "to": "locked",
+        "plaintextBackupAllowed": false,
+        "requirements": ["ciphertext inventory", "wrapped DEK inventory", "AAD metadata", "KMS version availability", "isolated restore", "address and envelope audit before activation"]
+      }
+    ]
+  },
+  "deletion": {
+    "normal": "reject-while-active-tasks-positions-or-nonzero-assets-exist",
+    "force": "preview-counts-confirmation-phrase-and-reauthentication-required",
+    "cryptographicErasure": "destroy-or-revoke-wrapped-DEK-after-retention-and-recovery-policy",
+    "metadataTombstone": "retain-non-secret-walletId-address-version-and-audit-link",
+    "undo": false
+  },
+  "disasterRecovery": {
+    "backupIncludes": ["ciphertext", "nonce", "tag", "AAD metadata", "wrapped DEK", "KEK id and version", "wallet address", "integrity manifest"],
+    "backupExcludes": ["plaintext private key", "raw DEK", "raw KEK", "password", "derived password KEK"],
+    "separateRestoreAuthorities": true,
+    "restoreEnvironment": "isolated-no-broadcast-egress",
+    "missingKekVersion": "fail-closed-unrecoverable-until-approved-KMS-restore",
+    "activationGate": "two-person-review-and-envelope-address-inventory-match",
+    "exerciseCadenceDays": 90
+  },
+  "executionCounts": {
+    "privateKeyDecryptions": 0,
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "externalRpcCalls": 0
+  }
+}

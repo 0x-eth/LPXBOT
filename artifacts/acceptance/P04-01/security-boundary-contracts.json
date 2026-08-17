@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "wallet-security-boundary/local-v1",
+  "workItemId": "P04-01",
+  "implementationStatus": "planned",
+  "evidenceLevel": "locally-defined",
+  "flow": {
+    "order": ["browser", "api", "worker", "signer", "kms", "ciphertext-store"],
+    "lanes": [
+      {
+        "id": "custody-command",
+        "path": ["browser", "api", "queue", "worker", "signer"],
+        "payload": "authenticated intent, opaque identifiers, policy version, plan hash, expiry, and capability token",
+        "secretFields": false
+      },
+      {
+        "id": "secret-ingress",
+        "path": ["browser", "api-opaque-stream", "signer"],
+        "payload": "write-only import key or password over a dedicated no-capture endpoint",
+        "queueAllowed": false,
+        "workerAllowed": false,
+        "ordinaryBodyMiddlewareAllowed": false
+      },
+      {
+        "id": "envelope-storage",
+        "path": ["signer", "kms", "signer", "ciphertext-store"],
+        "payload": "wrapped DEK and authenticated ciphertext envelope only",
+        "plaintextPrivateKeyEgress": false,
+        "rawKekEgress": false
+      },
+      {
+        "id": "transaction-plan",
+        "path": ["api", "queue", "worker", "signer"],
+        "payload": "immutable execution plan reference, transaction digest, chainId, walletId, reserved nonce, deadline, and policy digest",
+        "rawTransactionInQueue": false,
+        "secretFields": false
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "browser",
+      "privateKeyDecrypt": false,
+      "kekUse": false,
+      "secretPersistence": false,
+      "responsibilities": ["collect explicit user intent", "clear secret inputs after submission"]
+    },
+    {
+      "id": "web",
+      "privateKeyDecrypt": false,
+      "kekUse": false,
+      "secretPersistence": false,
+      "responsibilities": ["render status DTOs", "never cache secret writes"]
+    },
+    {
+      "id": "api",
+      "privateKeyDecrypt": false,
+      "kekUse": false,
+      "secretPersistence": false,
+      "responsibilities": ["authenticate", "authorize", "schema-check non-secret envelope", "stream secret body without capture"]
+    },
+    {
+      "id": "queue",
+      "privateKeyDecrypt": false,
+      "kekUse": false,
+      "secretPersistence": false,
+      "responsibilities": ["carry secret-free command references"]
+    },
+    {
+      "id": "worker",
+      "privateKeyDecrypt": false,
+      "kekUse": false,
+      "secretPersistence": false,
+      "responsibilities": ["orchestrate secret-free plans", "reserve nonce through ledger"]
+    },
+    {
+      "id": "ordinary-database-connection",
+      "privateKeyDecrypt": false,
+      "kekUse": false,
+      "secretPersistence": false,
+      "responsibilities": ["read and write non-secret wallet metadata"]
+    },
+    {
+      "id": "signer",
+      "privateKeyDecrypt": true,
+      "kekUse": true,
+      "plaintextPrivateKeyEgress": false,
+      "responsibilities": ["generate or import keys", "open envelopes in locked memory", "derive addresses", "sign approved digests", "zeroize buffers"]
+    },
+    {
+      "id": "kms",
+      "privateKeyDecrypt": false,
+      "kekUse": true,
+      "rawKekExport": false,
+      "responsibilities": ["wrap and unwrap DEKs under a versioned non-exportable KEK"]
+    },
+    {
+      "id": "ciphertext-store",
+      "privateKeyDecrypt": false,
+      "kekUse": false,
+      "secretPersistence": "ciphertext-and-wrapped-DEK-only",
+      "responsibilities": ["store versioned envelopes separately from ordinary query credentials"]
+    }
+  ],
+  "secretIngress": {
+    "apiMode": "opaque-no-log-no-queue-stream-to-signer",
+    "workerReceivesSecret": false,
+    "signerOnlyMemoryUnlock": true,
+    "bodyReplay": false,
+    "requestCapture": false,
+    "retryRequiresFreshUserSubmission": true,
+    "limits": {
+      "bodyBytes": 16384,
+      "timeoutMs": 10000,
+      "concurrentPerUser": 1
+    }
+  },
+  "authLoginWallets": {
+    "table": "auth_login_wallets",
+    "authority": "authentication-only",
+    "automaticCustodyWallet": false,
+    "automaticSignerAuthority": false,
+    "addressEqualityGrantsAuthority": false,
+    "requiredCustodyCeremony": "explicit-import-or-generate-with-fresh-reauthentication"
+  },
+  "forbiddenDestinations": [
+    "api-response",
+    "audit-payload",
+    "error-report",
+    "log",
+    "queue",
+    "telemetry"
+  ],
+  "forbiddenFieldNames": [
+    "secret",
+    "secretKey",
+    "privateKey",
+    "mnemonic",
+    "password",
+    "securityPassword",
+    "dek",
+    "kek"
+  ],
+  "redaction": {
+    "strategy": "allowlist-structured-fields-before-serialization",
+    "keyNameHeuristicAloneSufficient": false,
+    "auditSecretRepresentation": "changed-boolean-and-version-only",
+    "urlCredentials": "remove-userinfo-query-fragment-and-sensitive-path-segments",
+    "serializationFailure": "drop-event-and-increment-redacted-counter"
+  },
+  "capabilities": {
+    "format": "short-lived-single-operation-signed-capability",
+    "bindings": ["userId", "walletId", "chainId", "operationId", "planHash", "purpose", "expiresAt"],
+    "replay": "single-use",
+    "signerRejectsUnknownPlanVersion": true,
+    "signerResolvesAllowedTargetsFromRegistry": true
+  },
+  "executionCounts": {
+    "privateKeyDecryptions": 0,
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "externalRpcCalls": 0
+  }
+}

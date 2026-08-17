@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "wallet-facts/local-v1",
+  "workItemId": "P04-01",
+  "implementationStatus": "planned",
+  "classifications": {
+    "PUBLIC": "Directly observable public UI, HTTP documentation, or checked-in public product evidence. This class says only what was observed.",
+    "BUNDLE-CANDIDATE": "A route, field, label, or behavior recovered from the captured client bundle without an authenticated end-to-end response. It is a compatibility candidate, not verified server behavior.",
+    "INFERRED": "A system boundary or behavior inferred from multiple observations. It is not target parity evidence.",
+    "LOCAL-DECISION": "A versioned LPBot security or behavior decision frozen for a future implementation. It does not claim target behavior."
+  },
+  "promotionPolicy": {
+    "bundleCandidateMayClaimParity": false,
+    "inferenceMayClaimTargetBehavior": false,
+    "localDecisionMayClaimPublicFact": false,
+    "requiredPromotionEvidence": [
+      "authenticated request and response fixture with secrets removed",
+      "matching UI state fixture",
+      "repeatable observation at a recorded target version"
+    ]
+  },
+  "facts": [
+    {
+      "id": "PUBLIC-WALLET-SURFACE",
+      "classification": "PUBLIC",
+      "subject": "wallet product surface",
+      "claim": {
+        "features": [
+          "wallet import and generation",
+          "wallet naming and deletion",
+          "balances and token import",
+          "address book and receive QR",
+          "native and ERC-20 transfer"
+        ],
+        "internalCryptoClaimed": false
+      },
+      "sources": [
+        {
+          "path": "docs/FUNCTION_MATRIX.md",
+          "locator": "WALLET-01..10",
+          "observation": "The evidence matrix records the public and bundle-derived wallet surface while retaining its evidence labels."
+        }
+      ],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "BUNDLE-WALLET-ENDPOINTS",
+      "classification": "BUNDLE-CANDIDATE",
+      "subject": "wallet and keystore client calls",
+      "claim": {
+        "candidatePaths": [
+          "/api/auth/keystore-status",
+          "/api/auth/set-password",
+          "/api/auth/change-password",
+          "/api/auth/unlock",
+          "/api/auth/lock",
+          "/api/auth/auto-lock-minutes",
+          "/api/auth/reset-preview",
+          "/api/auth/reset-password",
+          "/api/preset-keys/:walletId/encryption-mode",
+          "/api/wallets/:walletId/balances",
+          "/api/wallets/transfer"
+        ],
+        "serverResponsesObserved": false,
+        "cryptoInternalsObserved": false
+      },
+      "sources": [
+        {
+          "path": "artifacts/lpbot/2026-08-13/api-calls.json",
+          "locator": "assets/index-D0FmPqGc.js offsets 247353..325477",
+          "observation": "Static client-call extraction identifies candidate methods, paths, and selected request fields only."
+        }
+      ],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "BUNDLE-TRANSFER-IDEMPOTENCY",
+      "classification": "BUNDLE-CANDIDATE",
+      "subject": "transfer idempotency",
+      "claim": {
+        "candidateRequestFields": [
+          "fromKeyId",
+          "toAddress",
+          "tokenAddress",
+          "amount",
+          "chainId",
+          "securityPassword",
+          "idempotencyKey"
+        ],
+        "conflictSemanticsObserved": false
+      },
+      "sources": [
+        {
+          "path": "artifacts/lpbot/2026-08-13/api-calls.json",
+          "locator": "POST /api/wallets/transfer at bundle offset 325477",
+          "observation": "The captured client constructs an idempotency key and transfer body; response and concurrency behavior were not observed."
+        }
+      ],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "INFERRED-ISOLATED-SIGNER",
+      "classification": "INFERRED",
+      "subject": "signer isolation",
+      "claim": {
+        "browserSubmitsIntent": true,
+        "apiAuthorizes": true,
+        "workerOrchestrates": true,
+        "signerHoldsDecryptCapability": true,
+        "ordinaryServicesHoldDecryptCapability": false
+      },
+      "sources": [
+        {
+          "path": "docs/ARCHITECTURE_AND_WORKFLOWS.md",
+          "locator": "sections 2.2 and 4.5",
+          "observation": "The target architecture infers an isolated signer and secret-free API/worker boundary from the product risk."
+        }
+      ],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "AUTH-LOGIN-WALLET-BOUNDARY",
+      "classification": "LOCAL-DECISION",
+      "subject": "auth_login_wallets authority",
+      "claim": {
+        "usage": "login-only",
+        "custodyAuthority": false,
+        "signingAuthority": false,
+        "autoPromotion": false,
+        "sameAddressMayImplySharedAuthority": false,
+        "custodyOnboardingRequires": "separate explicit import-or-generate ceremony and a new custody wallet record"
+      },
+      "sources": [
+        {
+          "path": "infra/migrations/20260814000300_create_login_wallet_auth.sql",
+          "locator": "auth_login_wallets table comments",
+          "observation": "The local implemented authentication table explicitly confers no transaction or signer authority."
+        },
+        {
+          "path": "artifacts/acceptance/P01-04/E-RBAC.md",
+          "locator": "Authority boundary",
+          "observation": "P01 acceptance verifies that login wallet modules do not import signer code or create transaction wallets."
+        }
+      ],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "LOCAL-ENVELOPE-CRYPTO",
+      "classification": "LOCAL-DECISION",
+      "subject": "custody encryption",
+      "claim": {
+        "envelopeVersion": 1,
+        "aead": "AES-256-GCM",
+        "perWalletDek": true,
+        "kekLocation": "KMS-or-Vault",
+        "passwordKdf": "Argon2id"
+      },
+      "sources": [
+        {
+          "path": "docs/ARCHITECTURE_AND_WORKFLOWS.md",
+          "locator": "section 4.5",
+          "observation": "The local architecture proposes envelope encryption and Argon2id but does not claim target cryptographic internals."
+        },
+        {
+          "path": "docs/DEVELOPMENT_ROADMAP.md",
+          "locator": "P04 work and completion definition",
+          "observation": "The roadmap requires the crypto, restart, nonce, and recovery behavior to be frozen and independently reviewed."
+        }
+      ],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "BUNDLE-CLIENT-RPC",
+      "classification": "BUNDLE-CANDIDATE",
+      "subject": "custom client RPC",
+      "claim": {
+        "candidateUi": "preset-or-custom URL with connection test",
+        "candidateUse": "chain data query",
+        "serverTaskUseObserved": false,
+        "urlTelemetryObserved": false
+      },
+      "sources": [
+        {
+          "path": "docs/FUNCTION_MATRIX.md",
+          "locator": "SET-06",
+          "observation": "SET-06 records UI and bundle evidence for a local read-only RPC choice."
+        }
+      ],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "BUNDLE-OKX-KEY",
+      "classification": "BUNDLE-CANDIDATE",
+      "subject": "user OKX key",
+      "claim": {
+        "candidateOperations": ["save", "replace", "delete", "status"],
+        "candidateWriteFields": ["apiKey", "secretKey", "passphrase"],
+        "secretResponseObserved": false,
+        "storageEncryptionObserved": false
+      },
+      "sources": [
+        {
+          "path": "artifacts/lpbot/2026-08-13/api-calls.json",
+          "locator": "GET /api/okx/keys/status, POST and DELETE /api/okx/keys",
+          "observation": "Static bundle extraction identifies candidate operations and write fields without server response evidence."
+        }
+      ],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "LOCAL-NONCE-RECONCILIATION",
+      "classification": "LOCAL-DECISION",
+      "subject": "transaction and nonce safety",
+      "claim": {
+        "serialKey": "chainId+walletId",
+        "replacementLineage": true,
+        "receiptOnlySuccess": false,
+        "balanceAndEventReconciliation": true
+      },
+      "sources": [
+        {
+          "path": "docs/ARCHITECTURE_AND_WORKFLOWS.md",
+          "locator": "sections 7.2 and 7.3",
+          "observation": "The local architecture defines idempotent operations, a database nonce ledger, and reconciliation before success."
+        }
+      ],
+      "implementationStatus": "planned"
+    }
+  ]
+}

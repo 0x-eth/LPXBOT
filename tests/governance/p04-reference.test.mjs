@@ -263,7 +263,7 @@ test("trust boundary freezes Browser -> API -> worker -> signer -> KMS/ciphertex
     "queue",
     "telemetry",
   ]);
-  for (const field of ["secret", "privateKey", "password", "dek", "kek", "licenseBlob"]) {
+  for (const field of ["secret", "secretKey", "privateKey", "password", "dek", "kek"]) {
     assert.ok(contract.forbiddenFieldNames.includes(field), `${field} forbidden field`);
   }
   assert.deepEqual(contract.executionCounts, ZERO_DANGEROUS_OPERATIONS);
