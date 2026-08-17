@@ -168,8 +168,9 @@ describe("P03-04 Webhook egress", () => {
       },
     });
     const result = policy.resolveTarget(new URL("https://hooks.fixture.example/event"));
+    const rejection = expect(result).rejects.toMatchObject({ code: "DNS_TIMEOUT" });
     await vi.advanceTimersByTimeAsync(2_000);
-    await expect(result).rejects.toMatchObject({ code: "DNS_TIMEOUT" });
+    await rejection;
   });
 
   it("replays every frozen IPv4, IPv6, mixed-answer, and rebinding decision", async () => {
