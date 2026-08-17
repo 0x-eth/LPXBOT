@@ -1031,6 +1031,8 @@ export function MonitorsPage() {
   const intentConsumed = useRef(false);
   const newTrigger = useRef<HTMLButtonElement | null>(null);
   const pageRef = useRef<MonitorPage | null>(null);
+  const historyTab = useRef<HTMLButtonElement | null>(null);
+  const monitorTab = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     pageRef.current = page;
@@ -1281,7 +1283,15 @@ export function MonitorsPage() {
         <button
           aria-controls="monitor-rules-panel"
           aria-selected={view === "monitors"}
+          id="monitor-rules-tab"
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+            event.preventDefault();
+            setView("history");
+            historyTab.current?.focus();
+          }}
           onClick={() => setView("monitors")}
+          ref={monitorTab}
           role="tab"
           tabIndex={view === "monitors" ? 0 : -1}
           type="button"
@@ -1292,7 +1302,15 @@ export function MonitorsPage() {
         <button
           aria-controls="notification-history-panel"
           aria-selected={view === "history"}
+          id="notification-history-tab"
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+            event.preventDefault();
+            setView("monitors");
+            monitorTab.current?.focus();
+          }}
           onClick={() => setView("history")}
+          ref={historyTab}
           role="tab"
           tabIndex={view === "history" ? 0 : -1}
           type="button"
