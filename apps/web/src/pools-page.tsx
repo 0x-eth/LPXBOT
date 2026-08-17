@@ -117,10 +117,12 @@ import {
   PoolCreationHistoryDialog,
   PoolCreatorButton,
   PoolCreatorDetailsDialog,
+} from "./pool-provenance-ui.js";
+import {
   usePoolCreatorLookup,
   type PoolCreatorLookupState,
   type PoolCreatorSelection,
-} from "./pool-provenance-ui.js";
+} from "./pool-provenance-state.js";
 import {
   initialPoolStreamState,
   reducePoolStream,
@@ -796,11 +798,11 @@ function PoolTable({
                       column={key}
                       comparisonEnabled={comparisonCandidateKeys.has(visibleRow.row.poolKey)}
                       comparisonSelected={comparisonSelectedKeys.has(visibleRow.row.poolKey)}
-                      creatorLookup={creatorLookup}
+                      {...(creatorLookup ? { creatorLookup } : {})}
                       key={key}
                       marketExpanded={marketExpanded}
                       openActions={openActions}
-                      openCreator={openCreator}
+                      {...(openCreator ? { openCreator } : {})}
                       showLabels={showLabels}
                       toggleComparison={toggleComparison}
                       toggleGroup={toggleGroup}
@@ -2350,6 +2352,12 @@ export function PoolsPage({ session }: { session: SessionView }) {
     () => [...new Set(visiblePoolRows.map(({ row }) => row.poolKey))],
     [visiblePoolRows],
   );
+  if (
+    creatorSelection &&
+    !visiblePoolKeys.some((poolKey) => poolKey === creatorSelection.poolKey)
+  ) {
+    setCreatorSelection(null);
+  }
   const creatorLookup = usePoolCreatorLookup({
     enabled: session.role === "admin",
     poolKeys: visiblePoolKeys,
@@ -2373,14 +2381,6 @@ export function PoolsPage({ session }: { session: SessionView }) {
       trigger,
     });
   }, []);
-  useEffect(() => {
-    if (
-      creatorSelection &&
-      !visiblePoolKeys.some((poolKey) => poolKey === creatorSelection.poolKey)
-    ) {
-      closeCreator();
-    }
-  }, [closeCreator, creatorSelection, visiblePoolKeys]);
   if (
     expandedMarketPoolKey &&
     !visiblePoolRows.some(({ row }) => row.poolKey === expandedMarketPoolKey)
