@@ -385,6 +385,17 @@ describe("P03-03 notification destination API", () => {
         { ...webhookDraft, config: { ...webhookDraft.config, signingSecret: "short" } },
         "INVALID_DESTINATION",
       ],
+      [
+        "control-character-secret",
+        {
+          ...webhookDraft,
+          config: {
+            ...webhookDraft.config,
+            signingSecret: "fixture-signing-key-material-000001\n",
+          },
+        },
+        "INVALID_DESTINATION",
+      ],
     ] as const) {
       const response = await createDestination(app, tokenA, draft, key);
       expect(response.statusCode).toBe(400);

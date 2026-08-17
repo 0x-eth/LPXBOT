@@ -103,10 +103,18 @@ function hasExactKeys(value: Record<string, unknown>, required: string[], option
   );
 }
 
+function hasAsciiAtOrBelow(value: string, upperBound: number): boolean {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0)!;
+    if (codePoint <= upperBound || codePoint === 0x7f) return true;
+  }
+  return false;
+}
+
 function canonicalName(value: unknown): string {
   if (typeof value !== "string") throw new NotificationValidationError("INVALID_DESTINATION");
   const name = value.normalize("NFC").trim();
-  if (name.length < 1 || [...name].length > 120 || /[\u0000-\u001f\u007f]/u.test(name)) {
+  if (name.length < 1 || [...name].length > 120 || hasAsciiAtOrBelow(name, 0x1f)) {
     throw new NotificationValidationError("INVALID_DESTINATION");
   }
   return name;
@@ -139,7 +147,7 @@ function canonicalSecret(
   if (typeof value !== "string") throw new NotificationValidationError("INVALID_DESTINATION");
   const bytes = Buffer.byteLength(value, "utf8");
   const minimum = kind === "webhook" ? 32 : 20;
-  if (bytes < minimum || bytes > 4_096 || /[\u0000-\u0020\u007f]/u.test(value)) {
+  if (bytes < minimum || bytes > 4_096 || hasAsciiAtOrBelow(value, 0x20)) {
     throw new NotificationValidationError("INVALID_DESTINATION");
   }
   return value;

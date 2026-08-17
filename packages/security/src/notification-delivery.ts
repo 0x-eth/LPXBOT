@@ -58,7 +58,14 @@ export type CompiledNotificationTemplate =
 
 const allowedVariables = new Set<string>(notificationTemplateVariables);
 const placeholderPattern = /\{\{([^{}]+)\}\}/gu;
-const controlCharacterPattern = /[\u0000-\u001f\u007f]/u;
+
+function hasAsciiControlCharacter(value: string): boolean {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0)!;
+    if (codePoint <= 0x1f || codePoint === 0x7f) return true;
+  }
+  return false;
+}
 
 function utf8Bytes(value: string): number {
   return Buffer.byteLength(value, "utf8");
@@ -130,7 +137,7 @@ export function compileNotificationTemplate(
   assertTemplateSize(source);
 
   if (method === "GET") {
-    if (source === "" || controlCharacterPattern.test(source)) {
+    if (source === "" || hasAsciiControlCharacter(source)) {
       throw new NotificationTemplateError("INVALID_TEMPLATE");
     }
     const parts = source.split("&").map((part) => {
@@ -148,7 +155,7 @@ export function compileNotificationTemplate(
   }
 
   if (method === "TELEGRAM") {
-    if (controlCharacterPattern.test(source)) {
+    if (hasAsciiControlCharacter(source)) {
       throw new NotificationTemplateError("INVALID_TEMPLATE");
     }
     variablesIn(source);

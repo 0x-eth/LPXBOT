@@ -119,6 +119,10 @@ describe("P03-03 frozen notification rendering and signing", () => {
       () => compileNotificationTemplate("GET", "value={{monitor.name"),
       "INVALID_TEMPLATE",
     );
+    expectTemplateError(
+      () => compileNotificationTemplate("GET", "value=ready\nnext"),
+      "INVALID_TEMPLATE",
+    );
     const compiled = compileNotificationTemplate("TELEGRAM", "{{monitor.name}}");
     expectTemplateError(() => renderTelegramMessage(compiled, {}), "MISSING_TEMPLATE_VARIABLE");
   });
