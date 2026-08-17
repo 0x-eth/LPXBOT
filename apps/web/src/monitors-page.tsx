@@ -21,7 +21,15 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { ConfirmDialog, useFeedback } from "./feedback.js";
@@ -192,6 +200,37 @@ function MonitorEditor({
     event.preventDefault();
     if (!busy && draftValid(editor.draft)) onSubmit();
   };
+  const windowLocked = busy || (editor.mode === "edit" && editor.original.enabled);
+  const selectWindow = (
+    minutes: MonitorDraft["windowMinutes"],
+    button?: HTMLButtonElement,
+  ) => {
+    button?.focus();
+    updateDraft((draft) => ({ ...draft, windowMinutes: minutes }));
+  };
+  const onWindowKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    if (windowLocked) return;
+    let nextIndex: number | undefined;
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + monitorWindowMinutes.length) % monitorWindowMinutes.length;
+    } else if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % monitorWindowMinutes.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = monitorWindowMinutes.length - 1;
+    }
+    if (nextIndex === undefined) return;
+    event.preventDefault();
+    const next = monitorWindowMinutes[nextIndex];
+    const buttons = event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+      '[role="radio"]',
+    );
+    if (next !== undefined) selectWindow(next, buttons?.[nextIndex]);
+  };
 
   return (
     <Dialog.Root
@@ -289,25 +328,31 @@ function MonitorEditor({
                   value={editor.draft.poolKey}
                 />
               </label>
-              <label className="monitor-field monitor-window-field">
+              <div className="monitor-field monitor-window-field">
                 <span>评估窗口</span>
-                <select
-                  disabled={busy || (editor.mode === "edit" && editor.original.enabled)}
-                  onChange={(event) =>
-                    updateDraft((draft) => ({
-                      ...draft,
-                      windowMinutes: Number(event.target.value) as MonitorDraft["windowMinutes"],
-                    }))
-                  }
-                  value={editor.draft.windowMinutes}
+                <div
+                  aria-label="评估窗口"
+                  className="monitor-window-control"
+                  role="radiogroup"
                 >
-                  {monitorWindowMinutes.map((minutes) => (
-                    <option key={minutes} value={minutes}>
-                      {minutes} 分钟
-                    </option>
+                  {monitorWindowMinutes.map((minutes, index) => (
+                    <button
+                      aria-checked={editor.draft.windowMinutes === minutes}
+                      aria-label={`${minutes} 分钟`}
+                      className="monitor-window-option"
+                      disabled={windowLocked}
+                      key={minutes}
+                      onClick={(event) => selectWindow(minutes, event.currentTarget)}
+                      onKeyDown={(event) => onWindowKeyDown(event, index)}
+                      role="radio"
+                      tabIndex={editor.draft.windowMinutes === minutes ? 0 : -1}
+                      type="button"
+                    >
+                      {minutes}m
+                    </button>
                   ))}
-                </select>
-              </label>
+                </div>
+              </div>
             </div>
 
             <fieldset className="monitor-condition-editor">

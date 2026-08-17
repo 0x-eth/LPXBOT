@@ -70,11 +70,13 @@ test("SHELL-01 preserves observed compatibility redirects", async ({ page }) => 
     ["/all", "/tasks/running"],
     ["/all/paused", "/tasks/paused"],
     ["/all/stopped", "/tasks/stopped"],
-    ["/monitors", "/pools"],
   ] as const) {
     await page.goto(source);
     await expect(page).toHaveURL(new RegExp(`${destination.replaceAll("/", "\\/")}$`, "u"));
   }
+
+  await page.goto("/monitors");
+  await expect(page).toHaveURL(/\/monitors$/u);
 });
 
 test("SHELL-01 keeps localized route outlets and current navigation stable", async ({
