@@ -208,13 +208,23 @@ async function notificationRoute(route: Route, state: NotificationRouteState): P
   if (path === "/api/notification-destinations" && request.method() === "POST") {
     const body = request.postDataJSON() as {
       categories: NotificationCategory[];
-      config:
-        | { botToken: string; telegramIdentityId: string; template: string }
-        | { method: "GET" | "POST"; signingSecret?: string; template: unknown; url: string };
       enabled: boolean;
       name: string;
-      type: "telegram" | "webhook";
-    };
+    } & (
+      | {
+          config: { botToken: string; telegramIdentityId: string; template: string };
+          type: "telegram";
+        }
+      | {
+          config: {
+            method: "GET" | "POST";
+            signingSecret?: string;
+            template: unknown;
+            url: string;
+          };
+          type: "webhook";
+        }
+    );
     const created: DestinationFixture = {
       categories: body.categories,
       config:

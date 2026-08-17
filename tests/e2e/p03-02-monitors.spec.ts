@@ -1,6 +1,8 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
+const captureP0302Evidence = process.env.LPBOT_CAPTURE_P03_02 === "1";
+
 interface ConditionFixture {
   enabled: boolean;
   id: "volumeUsd" | "feesUsd" | "feeTvlRatio" | "tvlUsd" | "transactionCount" | "metricVersion";
@@ -374,7 +376,9 @@ test("MON-01 creates a disabled BSC monitor from loading and empty states", asyn
     animations: "disabled",
     caret: "hide",
     fullPage: true,
-    path: `artifacts/acceptance/P03-02/ui/monitors-ready-${testInfo.project.name}.png`,
+    ...(captureP0302Evidence
+      ? { path: `artifacts/acceptance/P03-02/ui/monitors-ready-${testInfo.project.name}.png` }
+      : {}),
   });
   expect(screenshot.byteLength).toBeGreaterThan(10_000);
 });
