@@ -521,13 +521,13 @@ describe("P03-03 PostgreSQL notification configuration", () => {
     }>(
       `SELECT
          (SELECT count(*)::text FROM monitor_notification_destination_bindings
-           WHERE destination_id = $1) AS binding_count,
+           WHERE destination_id = $1::uuid) AS binding_count,
          (SELECT count(*)::text FROM notification_outbox
-           WHERE destination_id = $1) AS outbox_count,
+           WHERE destination_id = $1::text) AS outbox_count,
          revision::text,
          tombstone
        FROM notification_destination_versions
-       WHERE destination_id = $1
+       WHERE destination_id = $1::uuid
        ORDER BY revision DESC
        LIMIT 1`,
       [destinationId],
