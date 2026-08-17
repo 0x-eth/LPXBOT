@@ -56,11 +56,13 @@ export class NodeTelegramTransport implements TelegramTransport {
       let settled = false;
       const chunks: Buffer[] = [];
       let bytes = 0;
+      let firstByteTimer: NodeJS.Timeout | undefined;
+      let totalTimer: NodeJS.Timeout | undefined;
       const finish = (error?: TelegramTransportError, response?: TelegramTransportResponse) => {
         if (settled) return;
         settled = true;
-        clearTimeout(totalTimer);
-        clearTimeout(firstByteTimer);
+        if (totalTimer) clearTimeout(totalTimer);
+        if (firstByteTimer) clearTimeout(firstByteTimer);
         input.signal.removeEventListener("abort", abort);
         if (error) reject(error);
         else resolve(response!);
@@ -109,17 +111,27 @@ export class NodeTelegramTransport implements TelegramTransport {
         request.destroy();
         finish(new TelegramTransportError("TELEGRAM_TOTAL_TIMEOUT"));
       };
-      input.signal.addEventListener("abort", abort, { once: true });
       request.once("error", () =>
         finish(new TelegramTransportError("TELEGRAM_CONNECTION_RESET")),
       );
-      const firstByteTimer = setTimeout(
-        () => finish(new TelegramTransportError("TELEGRAM_FIRST_BYTE_TIMEOUT")),
+      if (input.signal.aborted) {
+        abort();
+        return;
+      }
+      input.signal.addEventListener("abort", abort, { once: true });
+      firstByteTimer = setTimeout(
+        () => {
+          request.destroy();
+          finish(new TelegramTransportError("TELEGRAM_FIRST_BYTE_TIMEOUT"));
+        },
         5_000,
       );
       firstByteTimer.unref?.();
-      const totalTimer = setTimeout(
-        () => finish(new TelegramTransportError("TELEGRAM_TOTAL_TIMEOUT")),
+      totalTimer = setTimeout(
+        () => {
+          request.destroy();
+          finish(new TelegramTransportError("TELEGRAM_TOTAL_TIMEOUT"));
+        },
         10_000,
       );
       totalTimer.unref?.();

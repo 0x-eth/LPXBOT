@@ -304,12 +304,14 @@ export class NotificationDispatcher {
         const result = await this.dispatchBatch();
         if (result.claimed === 0) {
           await new Promise<void>((resolve) => {
-            const timer = setTimeout(resolve, pollMilliseconds);
-            const abort = () => {
+            const finish = () => {
               clearTimeout(timer);
+              input.signal.removeEventListener("abort", finish);
               resolve();
             };
-            input.signal.addEventListener("abort", abort, { once: true });
+            const timer = setTimeout(finish, pollMilliseconds);
+            if (input.signal.aborted) finish();
+            else input.signal.addEventListener("abort", finish, { once: true });
           });
         }
       }

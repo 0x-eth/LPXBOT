@@ -206,10 +206,9 @@ export class NodeHttpsWebhookTransport implements WebhookTransport {
         finish(
           input.signal.reason instanceof WebhookTransportError
             ? input.signal.reason
-            : new WebhookTransportError("TOTAL_TIMEOUT"),
+          : new WebhookTransportError("TOTAL_TIMEOUT"),
         );
       };
-      input.signal.addEventListener("abort", abort, { once: true });
       request.once("socket", (socket) => {
         connectTimer = setTimeout(
           () => {
@@ -240,6 +239,11 @@ export class NodeHttpsWebhookTransport implements WebhookTransport {
         });
       });
       request.once("error", (error) => finish(webhookNetworkError(error)));
+      if (input.signal.aborted) {
+        abort();
+        return;
+      }
+      input.signal.addEventListener("abort", abort, { once: true });
       firstByteTimer = setTimeout(
         () => {
           request.destroy();
@@ -515,7 +519,8 @@ export class WebhookDeliveryAdapter {
   async deliver(input: WebhookDeliveryInput): Promise<WebhookDeliveryResult> {
     const controller = new AbortController();
     const forwardAbort = () => controller.abort(input.signal?.reason);
-    input.signal?.addEventListener("abort", forwardAbort, { once: true });
+    if (input.signal?.aborted) forwardAbort();
+    else input.signal?.addEventListener("abort", forwardAbort, { once: true });
     const totalTimer = setTimeout(
       () => controller.abort(new WebhookTransportError("TOTAL_TIMEOUT")),
       webhookTimeouts.totalMilliseconds,
