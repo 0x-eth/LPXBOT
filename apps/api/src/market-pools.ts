@@ -13,10 +13,7 @@ import {
   type MarketWindowMinutes,
   type PoolBlocklistSnapshot,
 } from "@lpbot/api-contract";
-import {
-  createPoolEligibilityPolicy,
-  type PoolEligibilityPolicy,
-} from "@lpbot/domain";
+import { createPoolEligibilityPolicy, type PoolEligibilityPolicy } from "@lpbot/domain";
 import { MARKET_METRIC_VERSION, POOL_LABEL_RULE_CONTRACT } from "@lpbot/market-metrics";
 import type { Pool, PoolClient } from "pg";
 

@@ -59,10 +59,7 @@ describe("P02-11 pool action intent and shared command registry", () => {
       createPoolActionIntent(row(3, { poolKey: `56:0x${"3".repeat(40)}` }), "share-chat"),
     ).toBeNull();
     expect(
-      createPoolActionIntent(
-        row(3, { token0Address: "WBNB" as `0x${string}` }),
-        "create-task",
-      ),
+      createPoolActionIntent(row(3, { token0Address: "WBNB" as `0x${string}` }), "create-task"),
     ).toBeNull();
     expect(
       resolvePoolAction(row(3, { token0Address: null, token0Symbol: "WBNB" }), "block-token0"),

@@ -82,7 +82,7 @@ export function parsePoolBlocklistSnapshot(value: unknown): PoolBlocklistSnapsho
       value.updatedAt === null ||
       (typeof value.updatedAt === "string" && Number.isFinite(Date.parse(value.updatedAt)))
     ) ||
-    (((value.revision as number) === 0) !== (value.updatedAt === null))
+    ((value.revision as number) === 0) !== (value.updatedAt === null)
   ) {
     throw new PoolBlocklistRequestError("POOL_BLOCKLIST_RESPONSE_INVALID", 0);
   }

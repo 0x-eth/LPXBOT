@@ -90,10 +90,11 @@ export function PoolActionMenu({
       close(true);
       return;
     }
-    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
-    const enabled = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')]
-      .filter((button) => button.getAttribute("aria-disabled") !== "true");
+    const enabled = [
+      ...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
+    ].filter((button) => button.getAttribute("aria-disabled") !== "true");
     if (enabled.length === 0) return;
     const current = enabled.indexOf(document.activeElement as HTMLButtonElement);
     const next =

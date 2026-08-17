@@ -59,7 +59,9 @@ function applyOperation(
   if (operation.type === "block") {
     return exists ? sortEntries(entries) : sortEntries([...entries, operation.entry]);
   }
-  return exists ? sortEntries(entries.filter((entry) => entryKey(entry) !== key)) : sortEntries(entries);
+  return exists
+    ? sortEntries(entries.filter((entry) => entryKey(entry) !== key))
+    : sortEntries(entries);
 }
 
 function project(
@@ -123,7 +125,10 @@ export function reducePoolBlocklist(
     };
   }
   if (action.type === "mutation-optimistic") {
-    if (!state.authoritative || state.pending.some(({ mutationId }) => mutationId === action.mutationId)) {
+    if (
+      !state.authoritative ||
+      state.pending.some(({ mutationId }) => mutationId === action.mutationId)
+    ) {
       return state;
     }
     const pending = [

@@ -748,12 +748,7 @@ function PoolTable({
                   onContextMenu={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    openActions(
-                      visibleRow.row,
-                      event.currentTarget,
-                      event.clientX,
-                      event.clientY,
-                    );
+                    openActions(visibleRow.row, event.currentTarget, event.clientX, event.clientY);
                   }}
                   onKeyDown={(event) => {
                     if (!(event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey))) {
@@ -2271,8 +2266,7 @@ export function PoolsPage() {
   ]);
 
   const activePoolRows = useMemo(
-    () =>
-      eligibility.filter(poolSearchParameters ? poolSearchState.rows : poolRows).candidates,
+    () => eligibility.filter(poolSearchParameters ? poolSearchState.rows : poolRows).candidates,
     [eligibility, poolRows, poolSearchParameters, poolSearchState.rows],
   );
   const appliedAdvancedFilters = parsedAdvancedFilters.valid

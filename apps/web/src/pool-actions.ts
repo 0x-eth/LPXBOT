@@ -86,8 +86,7 @@ export type PoolActionResult =
   | { intent: PoolActionIntent; kind: "chat-intent" };
 
 export type ResolvedPoolAction =
-  | { enabled: true; result: PoolActionResult }
-  | { enabled: false; reason: string };
+  { enabled: true; result: PoolActionResult } | { enabled: false; reason: string };
 
 function canonicalAddress(value: string | null): EvmAddress | null | undefined {
   if (value === null) return null;
@@ -102,7 +101,8 @@ function canonicalPool(row: MarketPoolRow): {
   if (row.chainId !== 56 || !poolKeyPattern.test(row.poolKey)) return null;
   const isV3 = row.protocol === "pcsv3" || row.protocol === "univ3";
   if (isV3) {
-    if (!row.poolAddress || !addressPattern.test(row.poolAddress) || row.poolId !== null) return null;
+    if (!row.poolAddress || !addressPattern.test(row.poolAddress) || row.poolId !== null)
+      return null;
     if (row.poolKey !== `56:${row.poolAddress}`) return null;
     return {
       poolAddress: row.poolAddress,

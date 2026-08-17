@@ -67,10 +67,7 @@ export function PoolBlocklistProvider({
       dispatch({ requestId, type: "load-start", userId: targetUserId });
       void client.get(controller.signal).then(
         (snapshot) => {
-          if (
-            generation.current !== currentGeneration ||
-            activeUser.current !== targetUserId
-          ) {
+          if (generation.current !== currentGeneration || activeUser.current !== targetUserId) {
             return;
           }
           authority.current = snapshot;

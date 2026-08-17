@@ -1,9 +1,4 @@
-import type {
-  AuthState,
-  NavigationKey,
-  PoolActionIntent,
-  SessionView,
-} from "@lpbot/api-contract";
+import type { AuthState, NavigationKey, PoolActionIntent, SessionView } from "@lpbot/api-contract";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   Activity,

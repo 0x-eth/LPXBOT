@@ -180,7 +180,8 @@ export class PostgresPoolBlocklistStore implements PoolBlocklistStore {
     );
     const row = result.rows[0];
     if (!row) return defaultPoolBlocklistSnapshot();
-    if (!Array.isArray(row.entries)) throw new RangeError("Stored pool blocklist entries are invalid");
+    if (!Array.isArray(row.entries))
+      throw new RangeError("Stored pool blocklist entries are invalid");
     return createPoolBlocklistSnapshot({
       entries: row.entries as PoolBlocklistEntry[],
       revision: this.#revision(row.revision),

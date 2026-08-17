@@ -26,7 +26,11 @@ import { describe, expect, it } from "vitest";
 const blockedPoolKey = `56:0x${"1".repeat(40)}` as const;
 const blockedToken = `0x${"b".repeat(40)}` as const;
 
-function row(identity: string, feesUsd: string, overrides: Partial<MarketPoolRow> = {}): MarketPoolRow {
+function row(
+  identity: string,
+  feesUsd: string,
+  overrides: Partial<MarketPoolRow> = {},
+): MarketPoolRow {
   const address = `0x${identity.repeat(40)}` as const;
   return {
     activeTvlUsd: null,
@@ -123,14 +127,18 @@ describe("P02-11 unified pool eligibility consumers", () => {
       blocklistHash: blocklist.blocklistHash,
       protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
     });
-    expect(parseMarketEligibilityCursor(market, {
-      blocklistHash: blocklist.blocklistHash,
-      protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
-    })).toBe("market:v1:top-fees:56:5:1:2:source");
-    expect(parseMarketEligibilityCursor(market, {
-      blocklistHash: `sha256:${"d".repeat(64)}`,
-      protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
-    })).toBeNull();
+    expect(
+      parseMarketEligibilityCursor(market, {
+        blocklistHash: blocklist.blocklistHash,
+        protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
+      }),
+    ).toBe("market:v1:top-fees:56:5:1:2:source");
+    expect(
+      parseMarketEligibilityCursor(market, {
+        blocklistHash: `sha256:${"d".repeat(64)}`,
+        protocols: ["pcsv3", "univ3", "pcsv4", "univ4"],
+      }),
+    ).toBeNull();
 
     const recommendation = recommendedPoolsCursor({
       blocklistHash: blocklist.blocklistHash,
@@ -140,16 +148,20 @@ describe("P02-11 unified pool eligibility consumers", () => {
       sourceVersion: "11",
       sourceWindowEnd: "2026-08-17T02:00:00.000Z",
     });
-    expect(parseRecommendedPoolsCursor(recommendation, {
-      blocklistHash: blocklist.blocklistHash,
-      chain: "bsc",
-      limit: 3,
-    })).toMatchObject({ blocklistHash: blocklist.blocklistHash });
-    expect(parseRecommendedPoolsCursor(recommendation, {
-      blocklistHash: `sha256:${"d".repeat(64)}`,
-      chain: "bsc",
-      limit: 3,
-    })).toBeNull();
+    expect(
+      parseRecommendedPoolsCursor(recommendation, {
+        blocklistHash: blocklist.blocklistHash,
+        chain: "bsc",
+        limit: 3,
+      }),
+    ).toMatchObject({ blocklistHash: blocklist.blocklistHash });
+    expect(
+      parseRecommendedPoolsCursor(recommendation, {
+        blocklistHash: `sha256:${"d".repeat(64)}`,
+        chain: "bsc",
+        limit: 3,
+      }),
+    ).toBeNull();
   });
 
   it("removes blocked rows before grouping and reconciles them out of comparison", () => {
@@ -165,8 +177,9 @@ describe("P02-11 unified pool eligibility consumers", () => {
     );
     const eligibleSnapshot = { ...source, rows: eligibleRows };
 
-    expect(groupPoolRows(eligibleRows, { type: "default" }).flatMap(({ members }) => members))
-      .toEqual(eligibleRows);
+    expect(
+      groupPoolRows(eligibleRows, { type: "default" }).flatMap(({ members }) => members),
+    ).toEqual(eligibleRows);
     expect(reconcilePoolComparison(state, eligibleSnapshot).selectedPoolKeys).toEqual([
       `56:0x${"3".repeat(40)}`,
     ]);

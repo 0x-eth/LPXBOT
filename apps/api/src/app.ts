@@ -1726,9 +1726,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           query.chain === "bsc" && options.marketPoolsProvider
             ? createRecommendedPoolsEventStream({
                 chain: query.chain,
-                ...(recommendationEligibility
-                  ? { eligibility: recommendationEligibility }
-                  : {}),
+                ...(recommendationEligibility ? { eligibility: recommendationEligibility } : {}),
                 limit: query.limit,
                 provider: options.marketPoolsProvider,
                 signal: controller.signal,
@@ -1853,7 +1851,10 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           }),
         );
       }
-      return createSuccessEnvelope(await options.poolBlocklistStore.get(session.userId), request.id);
+      return createSuccessEnvelope(
+        await options.poolBlocklistStore.get(session.userId),
+        request.id,
+      );
     });
 
     app.patch("/api/user/pool-blocklist", { bodyLimit: 2_048 }, async (request, reply) => {

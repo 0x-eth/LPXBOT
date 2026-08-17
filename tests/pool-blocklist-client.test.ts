@@ -177,10 +177,14 @@ describe("P02-11 pool blocklist client state", () => {
     );
 
     const malformed = new PoolBlocklistClient(
-      vi.fn<typeof fetch>().mockResolvedValue(
-        Response.json({ success: true, data: { ...current, entries: [pool, pool] } }),
-      ),
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(
+          Response.json({ success: true, data: { ...current, entries: [pool, pool] } }),
+        ),
     );
-    await expect(malformed.get()).rejects.toMatchObject({ code: "POOL_BLOCKLIST_RESPONSE_INVALID" });
+    await expect(malformed.get()).rejects.toMatchObject({
+      code: "POOL_BLOCKLIST_RESPONSE_INVALID",
+    });
   });
 });

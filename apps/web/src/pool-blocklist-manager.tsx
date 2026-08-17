@@ -76,7 +76,10 @@ export function PoolBlocklistManager() {
           <ShieldOff aria-hidden="true" size={15} />
           <span>屏蔽管理</span>
           {blocklist.entries.length > 0 ? (
-            <span aria-label={`${blocklist.entries.length} 个屏蔽项`} className="pool-blocklist-count">
+            <span
+              aria-label={`${blocklist.entries.length} 个屏蔽项`}
+              className="pool-blocklist-count"
+            >
               {blocklist.entries.length}
             </span>
           ) : null}

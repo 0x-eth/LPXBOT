@@ -199,8 +199,17 @@ export function parseRecommendedPoolsCursor(
   sourceWindowEnd: string;
 } | null {
   if (filter.blocklistHash !== undefined) {
-    const [prefix, version, chain, limit, hash, encodedVersion, encodedWindowEnd, selection, ...extra] =
-      cursor.split(":");
+    const [
+      prefix,
+      version,
+      chain,
+      limit,
+      hash,
+      encodedVersion,
+      encodedWindowEnd,
+      selection,
+      ...extra
+    ] = cursor.split(":");
     const blocklistHash = `sha256:${hash}`;
     const sourceVersion = encodedVersion ? decodeCursorPart(encodedVersion) : null;
     const sourceWindowEnd = encodedWindowEnd ? decodeCursorPart(encodedWindowEnd) : null;

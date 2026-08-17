@@ -20,7 +20,11 @@ import { issueFixtureSession, SessionFixtureStore } from "./helpers/session-fixt
 const blockedPoolKey = `56:0x${"1".repeat(40)}`;
 const blockedToken = `0x${"b".repeat(40)}` as const;
 
-function row(digit: string, feesUsd: string, overrides: Partial<MarketPoolRow> = {}): MarketPoolRow {
+function row(
+  digit: string,
+  feesUsd: string,
+  overrides: Partial<MarketPoolRow> = {},
+): MarketPoolRow {
   const poolAddress = `0x${digit.repeat(40)}` as const;
   return {
     activeTvlUsd: null,
