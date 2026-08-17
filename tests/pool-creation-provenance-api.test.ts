@@ -264,6 +264,33 @@ describe("P02-12 pool creation provenance read APIs", () => {
     expect(provenance.historyQueries).toEqual([]);
   });
 
+  it("returns a no-store 413 and safe audit summary for an oversized admin batch", async () => {
+    const { app, provenance, token } = await fixture("admin");
+    const response = await app.inject({
+      headers: { ...auth(token), "content-type": "application/json" },
+      method: "POST",
+      payload: JSON.stringify({ poolKeys: [`56:0x${"a".repeat(33_000)}`] }),
+      url: "/api/admin/pool-creators",
+    });
+    expect(response.statusCode).toBe(413);
+    expect(response.headers["cache-control"]).toBe("no-store");
+    expect(response.json().error).toMatchObject({
+      code: "REQUEST_TOO_LARGE",
+      retryable: false,
+    });
+    expect(provenance.attributionQueries).toEqual([]);
+    expect(provenance.adminAudits).toEqual([
+      expect.objectContaining({
+        action: "pool-creator.batch",
+        actorUserId: adminId,
+        identityCount: 0,
+        outcome: "denied",
+        resultCode: "REQUEST_TOO_LARGE",
+      }),
+    ]);
+    expect(JSON.stringify(provenance.adminAudits)).not.toContain("a".repeat(100));
+  });
+
   it("rate limits every provenance read without leaking or performing a second lookup", async () => {
     const { app, provenance, token } = await fixture("admin", { rateMax: 1 });
     const first = await app.inject({
