@@ -59,7 +59,7 @@ function expectTemplateError(action: () => unknown, code: string): void {
 
 describe("P03-03 frozen notification rendering and signing", () => {
   it("replays every P03-01 webhook-security rendering fixture without network I/O", () => {
-    let networkCalls = 0;
+    const networkCalls = 0;
     const resultById = new Map<string, Record<string, unknown>>();
 
     for (const fixtureCase of fixture.input.templateCases) {
