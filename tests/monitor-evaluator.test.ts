@@ -69,9 +69,7 @@ describe("P03-02 pure monitor evaluator", () => {
       expect(result.matched).toBe(testCase.expected.matched);
       if (result.matched) {
         expect(result.candidate.candidateKey).toBe(testCase.expected.candidateKey);
-        expect(result.candidate.blocklistHash).toBe(
-          fixture.input.snapshotDefaults.blocklistHash,
-        );
+        expect(result.candidate.blocklistHash).toBe(fixture.input.snapshotDefaults.blocklistHash);
       } else {
         expect(result.reason).toBe(testCase.expected.reason);
       }
@@ -97,6 +95,21 @@ describe("P03-02 pure monitor evaluator", () => {
     expect(evaluateMonitorSnapshot(input)).toMatchObject({
       matched: false,
       reason: "CONDITION_FALSE",
+    });
+  });
+
+  it("uses exact RFC3339 precision at freshness and future boundaries", () => {
+    const stale = goldenInput(fixture.input.cases[0]!);
+    stale.evaluatedAt = "2026-08-17T09:07:30.000000001Z";
+    stale.snapshot.generatedAt = "2026-08-17T09:05:30Z";
+    expect(evaluateMonitorSnapshot(stale)).toMatchObject({ matched: false, reason: "STALE" });
+
+    const future = goldenInput(fixture.input.cases[0]!);
+    future.evaluatedAt = "2026-08-17T09:05:30Z";
+    future.snapshot.generatedAt = "2026-08-17T09:05:30.000000001Z";
+    expect(evaluateMonitorSnapshot(future)).toMatchObject({
+      matched: false,
+      reason: "FUTURE_GENERATED_AT",
     });
   });
 

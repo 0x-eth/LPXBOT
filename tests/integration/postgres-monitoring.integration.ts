@@ -149,6 +149,23 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
     }
   });
 
+  it("serializes different idempotency keys against the per-user capacity", async () => {
+    const store = new PostgresMonitorStore(pool, { capacity: 1 });
+    const contenders = await Promise.all([
+      store.create({ createdAt: now, idempotencyKey: "capacity-a", request, userId: userB }),
+      store.create({
+        createdAt: now,
+        idempotencyKey: "capacity-b",
+        request: { ...request, name: "Capacity B" },
+        userId: userB,
+      }),
+    ]);
+    expect(contenders.map(({ status }) => status).sort()).toEqual(["capacity", "created"]);
+    expect(await store.list(userB, { cursor: null, enabled: null, limit: 50 })).toMatchObject({
+      totalCount: 1,
+    });
+  });
+
   it("keeps no-op revision stable and permits one concurrent mutation winner", async () => {
     const store = new PostgresMonitorStore(pool);
     expect(

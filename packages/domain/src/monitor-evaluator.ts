@@ -115,23 +115,29 @@ export interface MonitorCandidate {
 }
 
 export type MonitorEvaluationResult =
-  | { matched: false; reason: MonitorNoMatchReason }
-  | { candidate: MonitorCandidate; matched: true };
+  { matched: false; reason: MonitorNoMatchReason } | { candidate: MonitorCandidate; matched: true };
 
 interface DecimalParts {
   coefficient: bigint;
   scale: number;
 }
 
-const timestampPattern =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/u;
+const timestampPattern = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?Z$/u;
 const blocklistHashPattern = /^sha256:[0-9a-f]{64}$/u;
 const unsupportedMetrics = new Set<MonitorConditionMetric>(["activeTvlUsd", "feeAtvlRatio"]);
 
-function timestampMilliseconds(value: string): number | null {
-  if (!timestampPattern.test(value)) return null;
-  const milliseconds = new Date(value).getTime();
-  return Number.isFinite(milliseconds) ? milliseconds : null;
+function timestampNanoseconds(value: string): bigint | null {
+  const match = timestampPattern.exec(value);
+  if (!match) return null;
+  const milliseconds = Date.parse(`${match[1]}Z`);
+  if (
+    !Number.isFinite(milliseconds) ||
+    new Date(milliseconds).toISOString().slice(0, 19) !== match[1]
+  ) {
+    return null;
+  }
+  const fraction = (match[2] ?? "").padEnd(9, "0");
+  return BigInt(milliseconds) * 1_000_000n + BigInt(fraction === "" ? "0" : fraction);
 }
 
 function decimalParts(value: string | number): DecimalParts | null {
@@ -199,15 +205,15 @@ export function evaluateMonitorSnapshot(input: MonitorEvaluationInput): MonitorE
   }
   if (monitor.poolKey !== snapshot.poolKey) return noMatch("INPUT_IDENTITY_MISMATCH");
 
-  const evaluatedAtMs = timestampMilliseconds(evaluatedAt);
-  const generatedAtMs = timestampMilliseconds(snapshot.generatedAt);
-  const windowEndMs = timestampMilliseconds(snapshot.windowEnd);
-  if (evaluatedAtMs === null || generatedAtMs === null || windowEndMs === null) {
+  const evaluatedAtNs = timestampNanoseconds(evaluatedAt);
+  const generatedAtNs = timestampNanoseconds(snapshot.generatedAt);
+  const windowEndNs = timestampNanoseconds(snapshot.windowEnd);
+  if (evaluatedAtNs === null || generatedAtNs === null || windowEndNs === null) {
     return noMatch("INVALID_TIMESTAMP");
   }
-  if (generatedAtMs > evaluatedAtMs) return noMatch("FUTURE_GENERATED_AT");
-  if (windowEndMs > generatedAtMs) return noMatch("WINDOW_AFTER_GENERATED_AT");
-  if (evaluatedAtMs - generatedAtMs > 120_000) return noMatch("STALE");
+  if (generatedAtNs > evaluatedAtNs) return noMatch("FUTURE_GENERATED_AT");
+  if (windowEndNs > generatedAtNs) return noMatch("WINDOW_AFTER_GENERATED_AT");
+  if (evaluatedAtNs - generatedAtNs > 120_000_000_000n) return noMatch("STALE");
   if (!snapshot.ready) return noMatch("SNAPSHOT_NOT_READY");
 
   if (snapshot.partial) {
@@ -245,10 +251,7 @@ export function evaluateMonitorSnapshot(input: MonitorEvaluationInput): MonitorE
     const failure = metricFailure(metric);
     if (failure) return noMatch(failure);
     const comparison = compareDecimal(metric!.value as string | number, condition.value);
-    if (
-      comparison === null ||
-      (condition.operator === "gte" ? comparison < 0 : comparison > 0)
-    ) {
+    if (comparison === null || (condition.operator === "gte" ? comparison < 0 : comparison > 0)) {
       return noMatch(comparison === null ? "METRIC_NON_FINITE" : "CONDITION_FALSE");
     }
   }
