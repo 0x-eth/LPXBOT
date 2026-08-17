@@ -179,8 +179,15 @@ function requestFromDraft(draft: MonitorDraft): CreateMonitorRequest {
 }
 
 function replaceMonitor(page: MonitorPage, monitor: Monitor): MonitorPage {
+  const previous = page.items.find(({ monitorId }) => monitorId === monitor.monitorId);
+  if (!previous) return page;
   const items = page.items.map((item) => (item.monitorId === monitor.monitorId ? monitor : item));
-  return { ...page, enabledCount: items.filter(({ enabled }) => enabled).length, items };
+  const enabledDelta = Number(monitor.enabled) - Number(previous.enabled);
+  return {
+    ...page,
+    enabledCount: Math.max(0, Math.min(page.totalCount, page.enabledCount + enabledDelta)),
+    items,
+  };
 }
 
 function MonitorEditor({
@@ -720,7 +727,7 @@ export function MonitorsPage() {
         const items = current.items.filter(({ monitorId }) => monitorId !== deleting.monitorId);
         return {
           ...current,
-          enabledCount: items.filter(({ enabled }) => enabled).length,
+          enabledCount: Math.max(0, current.enabledCount - Number(deleting.enabled)),
           items,
           totalCount: Math.max(0, current.totalCount - 1),
         };
