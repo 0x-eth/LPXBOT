@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "notification-security/local-v1",
+  "workItemId": "P03-01",
+  "implementationStatus": "planned",
+  "evidenceLevel": "locally-defined",
+  "webhook": {
+    "methods": ["GET", "POST"],
+    "url": {
+      "allowedSchemes": "https-only-production",
+      "httpException": "explicit local-sink test mode only",
+      "userinfo": "forbidden",
+      "fragment": "forbidden",
+      "explicitPort": "allowed after egress policy",
+      "internationalHost": "IDNA2008-to-ASCII-before-validation",
+      "templateLocations": {
+        "scheme": false,
+        "userinfo": false,
+        "host": false,
+        "port": false,
+        "path": false,
+        "queryNames": false,
+        "queryValues": true,
+        "fragment": false
+      }
+    },
+    "get": {
+      "body": "empty",
+      "template": "ordered query value pairs",
+      "duplicateQueryNames": "preserve configured order",
+      "contentType": null
+    },
+    "post": {
+      "body": "UTF-8 JSON",
+      "template": "JSON parsed and structurally validated before storage",
+      "contentType": "application/json; charset=utf-8"
+    },
+    "timeoutsMilliseconds": {
+      "dns": 2000,
+      "connect": 3000,
+      "tls": 3000,
+      "firstByte": 5000,
+      "total": 10000
+    },
+    "tls": {
+      "minimum": "TLSv1.2",
+      "certificateValidation": "system trust and hostname required",
+      "sni": "original validated hostname",
+      "invalidCertificate": "permanent-failure"
+    }
+  },
+  "templates": {
+    "syntax": "double-curly exact variable names",
+    "allowedVariables": [
+      "delivery.id",
+      "delivery.timestamp",
+      "monitor.id",
+      "monitor.name",
+      "monitor.revision",
+      "pool.key",
+      "pool.token0",
+      "pool.token1",
+      "window.end",
+      "metric.version",
+      "condition.summary",
+      "metrics.volumeUsd",
+      "metrics.feesUsd",
+      "metrics.feeTvlRatio",
+      "metrics.tvlUsd",
+      "metrics.transactionCount"
+    ],
+    "unknownVariable": "validation-error",
+    "missingValue": "render-error-no-network",
+    "recursiveExpansion": false,
+    "controlCharacters": "reject except JSON escapes in POST values",
+    "getEncoding": "RFC3986-percent-encode-each-value",
+    "postEncoding": "JSON-string-escape-before-substitution",
+    "telegramEncoding": "Telegram-HTML-escape-&-less-than-greater-than",
+    "limits": {
+      "templateBytes": 16384,
+      "expandedUrlBytes": 4096,
+      "requestBodyBytes": 65536,
+      "responseBodyBytes": 65536,
+      "telegramMessageCodePoints": 4096
+    },
+    "sizeMeasurement": "UTF-8 bytes except Telegram Unicode code points",
+    "oversize": "permanent validation error before network I/O"
+  },
+  "ssrf": {
+    "policy": "globally-routable-unicast-only",
+    "resolveBeforeConnect": true,
+    "allResolvedAddressesMustPass": true,
+    "pinValidatedAddressForConnection": true,
+    "preserveOriginalHostAndSni": true,
+    "reResolveOnEveryConnection": true,
+    "dnsRebindingPolicy": "reject-address-set-change-to-blocked",
+    "redirects": [301, 302, 303, 307, 308],
+    "maxRedirects": 3,
+    "revalidateOnEveryRedirect": true,
+    "redirectMethodPolicy": {
+      "GET": "follow 301,302,303,307,308 as GET after full revalidation",
+      "POST": "follow only 307,308 with unchanged body after full revalidation"
+    },
+    "crossOriginRedirect": "allowed only after complete URL, DNS, IP, TLS, and signing reconstruction",
+    "redirectCredentials": "never forward authorization, cookies, or destination secret",
+    "blockedIpv4": [
+      "0.0.0.0/8",
+      "10.0.0.0/8",
+      "100.64.0.0/10",
+      "127.0.0.0/8",
+      "169.254.0.0/16",
+      "172.16.0.0/12",
+      "192.0.0.0/24",
+      "192.0.2.0/24",
+      "192.168.0.0/16",
+      "198.18.0.0/15",
+      "198.51.100.0/24",
+      "203.0.113.0/24",
+      "224.0.0.0/4",
+      "240.0.0.0/4"
+    ],
+    "blockedIpv6": [
+      "::/128",
+      "::1/128",
+      "100::/64",
+      "2001:db8::/32",
+      "fc00::/7",
+      "fe80::/10",
+      "ff00::/8"
+    ],
+    "ipv4MappedIpv6": "normalize-to-IPv4-before-policy",
+    "zoneIdentifiers": "forbidden",
+    "numericAndAlternativeIpNotation": "canonicalize-or-reject-before-policy",
+    "dnsCname": "resolve complete chain and apply policy to every address",
+    "emptyDnsAnswer": "retryable-resolution-failure",
+    "proxyEnvironment": "ignored",
+    "egressProxy": "only an explicitly configured policy-enforcing proxy"
+  },
+  "signature": {
+    "algorithm": "HMAC-SHA256",
+    "secret": {
+      "storage": "secretRef",
+      "minimumBytes": 32,
+      "apiReadback": "never",
+      "logs": "never"
+    },
+    "timestamp": {
+      "header": "X-LPX-Timestamp",
+      "unit": "unix-seconds",
+      "authority": "dispatch-server",
+      "maxSkewSeconds": 300
+    },
+    "deliveryId": {
+      "header": "X-LPX-Delivery-Id",
+      "format": "opaque stable identifier",
+      "stableAcrossRetries": true
+    },
+    "bodyDigest": {
+      "header": "X-LPX-Content-SHA256",
+      "algorithm": "SHA-256",
+      "encoding": "lowercase hexadecimal",
+      "input": "exact transmitted body bytes; empty bytes for GET"
+    },
+    "signature": {
+      "header": "X-LPX-Signature",
+      "format": "v1=<lowercase-hex>"
+    },
+    "canonicalInput": "v1\\n{timestamp}\\n{deliveryId}\\n{method}\\n{pathAndQuery}\\n{bodySha256}",
+    "methodNormalization": "uppercase ASCII",
+    "pathAndQuery": "exact origin-form bytes transmitted after safe template expansion",
+    "verification": "constant-time",
+    "replayDefense": "consumer rejects stale timestamp and repeated deliveryId plus body digest",
+    "redirect": "recompute pathAndQuery and signature for every approved hop; retain deliveryId and body digest"
+  },
+  "telegram": {
+    "botToken": "secretRef only",
+    "chatTarget": "owned identity reference only",
+    "parseMode": "HTML",
+    "untrustedValueEscaping": ["& to &amp;", "< to &lt;", "> to &gt;"],
+    "links": "construct only from allowlisted application origins and encoded identifiers",
+    "unknownTemplateVariable": "validation-error",
+    "testMode": "render into explicit local sink only"
+  },
+  "logging": {
+    "allowed": [
+      "deliveryId",
+      "destinationId",
+      "destinationType",
+      "attemptCount",
+      "stableErrorCode",
+      "HTTP status class",
+      "duration bucket"
+    ],
+    "forbidden": [
+      "destination secret",
+      "Telegram bot token",
+      "authorization header",
+      "cookie",
+      "rendered request body",
+      "query values",
+      "response body",
+      "DNS resolver internals containing credentials"
+    ],
+    "url": "scheme plus redacted host hash only"
+  },
+  "testPolicy": {
+    "onlySink": "local-sink://p03-01",
+    "explicitSelectionRequired": true,
+    "networkIo": false,
+    "dnsLookup": false,
+    "redirectFollow": false,
+    "realTelegram": false,
+    "realWebhook": false,
+    "draftPersistence": false,
+    "secretPersistence": false
+  },
+  "unresolvedRefs": [
+    "GAP-P03-TELEGRAM-LIVE",
+    "GAP-P03-WEBHOOK-LIVE",
+    "GAP-P03-DELIVERY-SLO"
+  ],
+  "boundaries": {
+    "securityPolicyImplementation": false,
+    "networkRequest": false,
+    "productionSecret": false,
+    "externalTarget": false
+  }
+}
