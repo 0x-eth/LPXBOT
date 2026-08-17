@@ -3,10 +3,7 @@ import type {
   Monitor,
   PatchMonitorRequest,
 } from "../packages/api-contract/src/index.js";
-import {
-  MonitorClient,
-  MonitorRequestError,
-} from "../apps/web/src/monitor-client.js";
+import { MonitorClient, MonitorRequestError } from "../apps/web/src/monitor-client.js";
 import { describe, expect, it, vi } from "vitest";
 
 const poolKey = `56:0x${"a".repeat(40)}` as const;
@@ -46,9 +43,11 @@ function success(data: unknown, status = 200): Response {
 describe("P03-02 monitor browser client", () => {
   it("strictly parses a BSC monitor page and rejects malformed authoritative data", async () => {
     const client = new MonitorClient(
-      vi.fn<typeof fetch>().mockResolvedValue(
-        success({ enabledCount: 0, items: [monitor], nextCursor: null, totalCount: 1 }),
-      ),
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(
+          success({ enabledCount: 0, items: [monitor], nextCursor: null, totalCount: 1 }),
+        ),
     );
 
     await expect(client.list()).resolves.toEqual({
@@ -78,9 +77,12 @@ describe("P03-02 monitor browser client", () => {
   it("sends idempotency and revision-bearing CRUD requests with credentials", async () => {
     const fetcher = vi.fn<typeof fetch>().mockImplementation(async (_input, init) => {
       if (init?.method === "DELETE") return new Response(null, { status: 204 });
-      return success(init?.method === "POST" && String(_input).endsWith("/enable")
-        ? { ...monitor, enabled: true, revision: 3 }
-        : { ...monitor, revision: init?.method === "PATCH" ? 2 : 1 }, init?.method === "POST" && String(_input) === "/api/monitors" ? 201 : 200);
+      return success(
+        init?.method === "POST" && String(_input).endsWith("/enable")
+          ? { ...monitor, enabled: true, revision: 3 }
+          : { ...monitor, revision: init?.method === "PATCH" ? 2 : 1 },
+        init?.method === "POST" && String(_input) === "/api/monitors" ? 201 : 200,
+      );
     });
     const client = new MonitorClient(fetcher);
     const patch: PatchMonitorRequest = {
