@@ -327,18 +327,28 @@ export type RedactedConfig =
       url: string;
     };
 
-export interface NotificationDestination {
+export interface NotificationDestinationBase {
   categories: NotificationCategory[];
-  config: RedactedConfig;
   createdAt: string;
   destinationId: string;
   enabled: boolean;
   name: string;
   revision: number;
-  type: NotificationDestinationType;
   updatedAt: string;
   userId: string;
 }
+
+export type NotificationDestination = NotificationDestinationBase &
+  (
+    | {
+        config: Extract<RedactedConfig, { telegramIdentityId: string }>;
+        type: "telegram";
+      }
+    | {
+        config: Extract<RedactedConfig, { method: "GET" | "POST" }>;
+        type: "webhook";
+      }
+  );
 
 export interface LocalSinkTestResult {
   destinationType: NotificationDestinationType;

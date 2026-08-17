@@ -253,10 +253,12 @@ export class PostgresMonitorCandidateOutboxRepository {
       }
 
       const deliveries: NotificationOutboxDelivery[] = [];
-      if (evidenceAction !== "suppressed" && evidenceAction !== "deferred") {
+      if (evidenceAction === "inserted") {
         for (const destination of input.destinations) {
           deliveries.push(await this.#upsertDelivery(client, input.candidate, destination));
         }
+      } else if (evidenceAction !== "suppressed" && evidenceAction !== "deferred") {
+        deliveries.push(...(await this.#deliveriesForCandidate(client, input.candidate.candidateKey)));
       }
       await this.#advanceWatermark(client, input.candidate);
       await client.query("COMMIT");
@@ -463,6 +465,20 @@ export class PostgresMonitorCandidateOutboxRepository {
         candidate.createdAt,
       ],
     );
+  }
+
+  async #deliveriesForCandidate(
+    client: PoolClient,
+    candidateKey: string,
+  ): Promise<NotificationOutboxDelivery[]> {
+    const rows = await client.query<DeliveryRow>(
+      `SELECT ${deliveryColumns}
+         FROM notification_outbox
+        WHERE candidate_key = $1
+        ORDER BY created_at, delivery_id`,
+      [candidateKey],
+    );
+    return rows.rows.map(deliveryFromRow);
   }
 
   async #replaceEvidence(

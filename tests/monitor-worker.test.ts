@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 
-import { monitorCandidateKey } from "../packages/domain/src/monitor-evaluator.js";
+import {
+  monitorCandidateKey,
+  type MonitorCandidate,
+  type MonitorEvaluationDefinition,
+} from "../packages/domain/src/monitor-evaluator.js";
 import {
   EmptyMonitorDestinationSelector,
   MonitorEvaluationWorker,
@@ -103,7 +107,11 @@ describe("P03-02 canonical monitor worker rules", () => {
     expect(notificationDedupeKey(input)).toBe(first);
     expect(notificationDedupeKey({ ...input, destinationRevision: 3 })).not.toBe(first);
     expect(
-      await new EmptyMonitorDestinationSelector().select({ userId: "user-fixture-001" }),
+      await new EmptyMonitorDestinationSelector().select({
+        candidate: {} as MonitorCandidate,
+        category: "monitor-match",
+        monitor: {} as MonitorEvaluationDefinition,
+      }),
     ).toEqual([]);
   });
 

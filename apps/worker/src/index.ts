@@ -24,6 +24,7 @@ export type {
   NotificationOutboxState,
 } from "./monitoring.js";
 export { PostgresMonitorCandidateOutboxRepository } from "./postgres-monitor-outbox.js";
+export { PostgresMonitorDestinationSelector } from "./postgres-monitor-destination-selector.js";
 export { PostgresMonitorEvaluationSource } from "./postgres-monitor-source.js";
 export type {
   CandidateEvidenceAction,

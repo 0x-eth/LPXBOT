@@ -6,6 +6,7 @@ import {
   type MonitorEvaluationDefinition,
   type MonitorMetricSnapshot,
 } from "@lpbot/domain/monitor-evaluator";
+import type { NotificationCategory } from "@lpbot/api-contract";
 
 export interface CanonicalMarketInputIdentity {
   generatedAt: string;
@@ -24,7 +25,11 @@ export interface MonitorDestinationSelection {
 }
 
 export interface MonitorDestinationSelector {
-  select(input: { userId: string }): Promise<MonitorDestinationSelection[]>;
+  select(input: {
+    candidate: MonitorCandidate;
+    category: NotificationCategory;
+    monitor: MonitorEvaluationDefinition;
+  }): Promise<MonitorDestinationSelection[]>;
 }
 
 export interface CanonicalMonitorMetricInput
@@ -153,7 +158,11 @@ export function notificationDedupeKey(input: {
 }
 
 export class EmptyMonitorDestinationSelector implements MonitorDestinationSelector {
-  async select(input: { userId: string }): Promise<MonitorDestinationSelection[]> {
+  async select(input: {
+    candidate: MonitorCandidate;
+    category: NotificationCategory;
+    monitor: MonitorEvaluationDefinition;
+  }): Promise<MonitorDestinationSelection[]> {
     void input;
     return [];
   }
@@ -199,7 +208,11 @@ export class MonitorEvaluationWorker {
           noMatches += 1;
           continue;
         }
-        const destinations = await this.#destinations.select({ userId: monitor.userId });
+        const destinations = await this.#destinations.select({
+          candidate: result.candidate,
+          category: "monitor-match",
+          monitor,
+        });
         await this.#repository.commitCandidate({ candidate: result.candidate, destinations });
         candidates += 1;
       }
