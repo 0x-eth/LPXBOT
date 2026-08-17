@@ -28,9 +28,9 @@ Environment: local macOS fixture, PostgreSQL `127.0.0.1:15432`, pnpm 11.17.0. Th
 | `pnpm format:check` | passed |
 | `pnpm lint` | 14 workspace packages plus repository ESLint passed |
 | `pnpm typecheck` | 14 workspace packages plus root TypeScript passed |
-| `pnpm test` | pending final governance/status artifacts |
-| `pnpm build` | pending standalone final run |
-| `pnpm check:all` | pending final acceptance manifest |
+| `pnpm test` | 14 package builds; 80 Vitest files / 512 tests; 80 Node governance tests passed |
+| `pnpm build` | 14/14 workspace package builds passed |
+| `pnpm check:all` | baseline, 196-feature traceability, P00, docs, 24 manifests, and P01/P02/P03 reference checks passed |
 | Gitleaks full history | passed |
 | `pnpm audit:dependencies` | passed |
 | GitHub Actions six jobs | pending |
