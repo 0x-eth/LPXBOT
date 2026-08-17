@@ -2726,7 +2726,10 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       if (result.status === "service-unavailable") {
         return sendNotificationUnavailable(request, reply);
       }
-      return reply.send(createSuccessEnvelope(result.value, request.id));
+      if ("value" in result) {
+        return reply.send(createSuccessEnvelope(result.value, request.id));
+      }
+      throw new Error("Unknown notification destination mutation result");
     };
 
     app.get("/api/notification-preferences", async (request, reply) => {
@@ -2841,7 +2844,10 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         if (result.status === "service-unavailable") {
           return sendNotificationUnavailable(request, reply);
         }
-        return reply.code(201).send(createSuccessEnvelope(result.value, request.id));
+        if ("value" in result) {
+          return reply.code(201).send(createSuccessEnvelope(result.value, request.id));
+        }
+        throw new Error("Unknown notification destination create result");
       },
     );
 

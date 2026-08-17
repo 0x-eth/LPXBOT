@@ -198,23 +198,24 @@ export function parseDestinationDraft(
   ) {
     throw new NotificationValidationError("INVALID_DESTINATION");
   }
+  const config = value.config;
   const categories = canonicalCategories(value.categories);
   const name = canonicalName(value.name);
   if (value.type === "telegram") {
     if (
-      !hasExactKeys(value.config, ["telegramIdentityId", "template"], ["botToken"]) ||
-      typeof value.config.telegramIdentityId !== "string" ||
-      !/^[1-9][0-9]{0,18}$/u.test(value.config.telegramIdentityId) ||
-      BigInt(value.config.telegramIdentityId) > 9_223_372_036_854_775_807n ||
-      typeof value.config.template !== "string"
+      !hasExactKeys(config, ["telegramIdentityId", "template"], ["botToken"]) ||
+      typeof config.telegramIdentityId !== "string" ||
+      !/^[1-9][0-9]{0,18}$/u.test(config.telegramIdentityId) ||
+      BigInt(config.telegramIdentityId) > 9_223_372_036_854_775_807n ||
+      typeof config.template !== "string"
     ) {
       throw new NotificationValidationError("INVALID_DESTINATION");
     }
     const template = wrapTemplateError(
-      () => compileNotificationTemplate("TELEGRAM", value.config.template).source,
+      () => compileNotificationTemplate("TELEGRAM", config.template).source,
     );
     const botToken = canonicalSecret(
-      value.config.botToken,
+      config.botToken,
       "telegram",
       options.telegramSecretRequired ?? true,
     );
@@ -222,7 +223,7 @@ export function parseDestinationDraft(
       categories,
       config: {
         ...(botToken === undefined ? {} : { botToken }),
-        telegramIdentityId: value.config.telegramIdentityId,
+        telegramIdentityId: config.telegramIdentityId,
         template,
       },
       enabled: value.enabled,
@@ -234,14 +235,14 @@ export function parseDestinationDraft(
     throw new NotificationValidationError("INVALID_DESTINATION");
   }
   if (
-    !hasExactKeys(value.config, ["method", "template", "url"], ["signingSecret"]) ||
-    (value.config.method !== "GET" && value.config.method !== "POST")
+    !hasExactKeys(config, ["method", "template", "url"], ["signingSecret"]) ||
+    (config.method !== "GET" && config.method !== "POST")
   ) {
     throw new NotificationValidationError("INVALID_DESTINATION");
   }
-  const url = assertWebhookUrl(value.config.url);
+  const url = assertWebhookUrl(config.url);
   const compiled = wrapTemplateError(() =>
-    compileNotificationTemplate(value.config.method as "GET" | "POST", value.config.template),
+    compileNotificationTemplate(config.method as "GET" | "POST", config.template),
   );
   if (
     compiled.method === "POST" &&
@@ -249,11 +250,11 @@ export function parseDestinationDraft(
   ) {
     throw new NotificationValidationError("INVALID_DESTINATION");
   }
-  const signingSecret = canonicalSecret(value.config.signingSecret, "webhook", false);
+  const signingSecret = canonicalSecret(config.signingSecret, "webhook", false);
   return {
     categories,
     config: {
-      method: value.config.method as "GET" | "POST",
+      method: config.method as "GET" | "POST",
       ...(signingSecret === undefined ? {} : { signingSecret }),
       template: compiled.method === "GET" ? compiled.source : structuredClone(compiled.value),
       url,
@@ -370,20 +371,28 @@ export function notificationDestinationPayloadHash(draft: DestinationDraft): str
   return createHash("sha256").update(stableJson(draft), "utf8").digest("hex");
 }
 
-type StoredDestination = Omit<NotificationDestination, "config"> & {
-  config:
+type StoredDestinationBase = Omit<NotificationDestination, "config" | "type">;
+
+type StoredDestination = StoredDestinationBase &
+  (
     | {
+        config: {
         secretRef: string | null;
         telegramIdentityId: string;
         template: string;
+        };
+        type: "telegram";
       }
     | {
+        config: {
         method: "GET" | "POST";
         secretRef: string | null;
         template: unknown;
         url: string;
-      };
-};
+        };
+        type: "webhook";
+      }
+  );
 
 function publicDestination(value: StoredDestination): NotificationDestination {
   return {
@@ -528,17 +537,16 @@ export class MemoryNotificationConfigurationStore implements NotificationConfigu
     }
     const timestamp = input.createdAt.toISOString();
     const destinationId = randomUUID();
-    const base = {
+    const base: StoredDestinationBase = {
       categories: [...input.draft.categories],
       createdAt: timestamp,
       destinationId,
       enabled: input.draft.enabled,
       name: input.draft.name,
       revision: 1,
-      type: input.draft.type,
       updatedAt: timestamp,
       userId: input.userId,
-    } as const;
+    };
     const destination: StoredDestination =
       input.draft.type === "telegram"
         ? {
