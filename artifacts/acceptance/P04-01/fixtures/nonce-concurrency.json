@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "schemaId": "p04-fixture://nonce-concurrency/v1",
+  "scenario": "nonce-concurrency",
+  "fixtureOnly": true,
+  "syntheticSecrets": true,
+  "syntheticSecretNotice": "Wallet IDs, requests, and nonces are invented and have no chain identity.",
+  "networkAccess": false,
+  "executionCounts": {
+    "privateKeyDecryptions": 0,
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "externalRpcCalls": 0
+  },
+  "input": {
+    "serialKey": "chainId+walletId",
+    "startingNonceByLedger": {
+      "1:wallet-fixture-a": 41,
+      "1:wallet-fixture-b": 7,
+      "8453:wallet-fixture-a": 100
+    },
+    "requests": [
+      { "requestId": "request-a-03", "chainId": 1, "walletId": "wallet-fixture-a", "arrivalOrdinal": 3 },
+      { "requestId": "request-b-02", "chainId": 1, "walletId": "wallet-fixture-b", "arrivalOrdinal": 2 },
+      { "requestId": "request-c-01", "chainId": 8453, "walletId": "wallet-fixture-a", "arrivalOrdinal": 1 },
+      { "requestId": "request-a-01", "chainId": 1, "walletId": "wallet-fixture-a", "arrivalOrdinal": 1 },
+      { "requestId": "request-c-02", "chainId": 8453, "walletId": "wallet-fixture-a", "arrivalOrdinal": 2 },
+      { "requestId": "request-b-01", "chainId": 1, "walletId": "wallet-fixture-b", "arrivalOrdinal": 1 },
+      { "requestId": "request-a-02", "chainId": 1, "walletId": "wallet-fixture-a", "arrivalOrdinal": 2 }
+    ]
+  },
+  "expected": {
+    "allocations": [
+      { "requestId": "request-a-01", "ledgerKey": "1:wallet-fixture-a", "nonce": 41 },
+      { "requestId": "request-a-02", "ledgerKey": "1:wallet-fixture-a", "nonce": 42 },
+      { "requestId": "request-a-03", "ledgerKey": "1:wallet-fixture-a", "nonce": 43 },
+      { "requestId": "request-b-01", "ledgerKey": "1:wallet-fixture-b", "nonce": 7 },
+      { "requestId": "request-b-02", "ledgerKey": "1:wallet-fixture-b", "nonce": 8 },
+      { "requestId": "request-c-01", "ledgerKey": "8453:wallet-fixture-a", "nonce": 100 },
+      { "requestId": "request-c-02", "ledgerKey": "8453:wallet-fixture-a", "nonce": 101 }
+    ],
+    "duplicateNonceCount": 0,
+    "gapCount": 0,
+    "crossWalletBlocking": false,
+    "crossChainBlocking": false,
+    "databaseReservations": 7,
+    "signingRequests": 0,
+    "broadcastRequests": 0
+  }
+}

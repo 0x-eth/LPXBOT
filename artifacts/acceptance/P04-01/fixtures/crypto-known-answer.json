@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "schemaId": "p04-fixture://crypto-known-answer/v1",
+  "scenario": "crypto-known-answer",
+  "fixtureOnly": true,
+  "syntheticSecrets": true,
+  "syntheticSecretNotice": "Every key byte in this file is deterministic test material. It has never controlled funds and must never be accepted outside tests.",
+  "networkAccess": false,
+  "executionCounts": {
+    "privateKeyDecryptions": 0,
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "externalRpcCalls": 0
+  },
+  "input": {
+    "syntheticPrivateKeyHex": "0000000000000000000000000000000000000000000000000000000000000001",
+    "aes256Gcm": {
+      "keyHex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "nonceHex": "101112131415161718191a1b",
+      "plaintextHex": "0000000000000000000000000000000000000000000000000000000000000001",
+      "aadUtf8": "lpbot-wallet-envelope/v1\ntenant-fixture-01\nuser-fixture-01\nwallet-fixture-01\n0x7e5f4552091a69125d5dfcb7b8c2659029395bdf\nserver\n1\nkek-fixture-v1"
+    }
+  },
+  "expected": {
+    "checksumAddress": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+    "lowercaseAddress": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",
+    "aes256Gcm": {
+      "ciphertextHex": "7dfe981649c93ab3ca75081d0f796953d7504e0e1bc257b1e7f9e2675e5454da",
+      "tagHex": "3cb4ac5b4acda3649e103bd7d67b5bd7"
+    }
+  }
+}

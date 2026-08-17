@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "schemaId": "p04-fixture://aad-tamper/v1",
+  "scenario": "aad-tamper",
+  "fixtureOnly": true,
+  "syntheticSecrets": true,
+  "syntheticSecretNotice": "All AES key, nonce, and plaintext bytes are public deterministic fixture material.",
+  "networkAccess": false,
+  "executionCounts": {
+    "privateKeyDecryptions": 0,
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "externalRpcCalls": 0
+  },
+  "input": {
+    "original": {
+      "keyHex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "nonceHex": "202122232425262728292a2b",
+      "plaintextHex": "0000000000000000000000000000000000000000000000000000000000000002",
+      "aadUtf8": "lpbot-wallet-envelope/v1\ntenant-fixture-01\nuser-fixture-01\nwallet-fixture-01\n0x7e5f4552091a69125d5dfcb7b8c2659029395bdf\nserver\n1\nkek-fixture-v1"
+    },
+    "tamperedAadUtf8": "lpbot-wallet-envelope/v1\ntenant-fixture-01\nuser-fixture-01\nwallet-fixture-02\n0x7e5f4552091a69125d5dfcb7b8c2659029395bdf\nserver\n1\nkek-fixture-v1",
+    "ciphertextMutation": {
+      "byteOffset": 7,
+      "xorByte": 1
+    }
+  },
+  "expected": {
+    "original": {
+      "ciphertextHex": "d23aa6706c981a0e1a7c42cec118f4f9d049ec9c878063ee6cf66c12498a5e0b",
+      "tagHex": "c59a9862b18c5c9b35e19cccc097aded"
+    },
+    "tamperedAadTagHex": "8ac28cbafbccf6a0ed1783f01d569f31",
+    "tamperedCiphertextHex": "d23aa6706c981a0f1a7c42cec118f4f9d049ec9c878063ee6cf66c12498a5e0b",
+    "openResults": {
+      "original": "not-executed",
+      "changedAad": "AUTHENTICATION_FAILED",
+      "changedCiphertext": "AUTHENTICATION_FAILED"
+    },
+    "runtimeDecryptionRequiredForThisFixture": false,
+    "policyOnEitherMutation": "lock-and-quarantine-no-fallback"
+  }
+}

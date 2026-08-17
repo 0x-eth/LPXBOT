@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "schemaId": "p04-fixture://replacement-lineage/v1",
+  "scenario": "replacement-lineage",
+  "fixtureOnly": true,
+  "syntheticSecrets": true,
+  "syntheticSecretNotice": "Transaction IDs, plan hash, wallet ID, fees, and nonce are synthetic ledger values; no raw transaction or signature exists.",
+  "networkAccess": false,
+  "executionCounts": {
+    "privateKeyDecryptions": 0,
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "externalRpcCalls": 0
+  },
+  "input": {
+    "chainId": 1,
+    "walletId": "wallet-fixture-replacement",
+    "nonce": 17,
+    "planHash": "fda896570617117df12dd7cdda4d23d09010c57f79f1f00fcf59af291992133a",
+    "transactions": [
+      {
+        "txId": "tx-fixture-01",
+        "chainId": 1,
+        "walletId": "wallet-fixture-replacement",
+        "nonce": 17,
+        "planHash": "fda896570617117df12dd7cdda4d23d09010c57f79f1f00fcf59af291992133a",
+        "maxFeePerGasBaseUnits": "20000000000",
+        "maxPriorityFeePerGasBaseUnits": "1000000000",
+        "state": "replaced",
+        "generation": 1,
+        "replacesTxId": null,
+        "replacedByTxId": "tx-fixture-02"
+      },
+      {
+        "txId": "tx-fixture-02",
+        "chainId": 1,
+        "walletId": "wallet-fixture-replacement",
+        "nonce": 17,
+        "planHash": "fda896570617117df12dd7cdda4d23d09010c57f79f1f00fcf59af291992133a",
+        "maxFeePerGasBaseUnits": "22500000000",
+        "maxPriorityFeePerGasBaseUnits": "1250000000",
+        "state": "replaced",
+        "generation": 2,
+        "replacesTxId": "tx-fixture-01",
+        "replacedByTxId": "tx-fixture-03"
+      },
+      {
+        "txId": "tx-fixture-03",
+        "chainId": 1,
+        "walletId": "wallet-fixture-replacement",
+        "nonce": 17,
+        "planHash": "fda896570617117df12dd7cdda4d23d09010c57f79f1f00fcf59af291992133a",
+        "maxFeePerGasBaseUnits": "25312500000",
+        "maxPriorityFeePerGasBaseUnits": "1500000000",
+        "state": "pending",
+        "generation": 3,
+        "replacesTxId": "tx-fixture-02",
+        "replacedByTxId": null
+      }
+    ]
+  },
+  "expected": {
+    "lineage": ["tx-fixture-01", "tx-fixture-02", "tx-fixture-03"],
+    "activeHeadTxId": "tx-fixture-03",
+    "uniqueNonceCount": 1,
+    "planMutationCount": 0,
+    "recipientMutationCount": 0,
+    "valueMutationCount": 0,
+    "bidirectionalLinksValid": true,
+    "signatures": 0,
+    "broadcasts": 0
+  }
+}

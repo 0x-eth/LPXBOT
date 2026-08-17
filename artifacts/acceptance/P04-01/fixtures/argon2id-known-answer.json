@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "schemaId": "p04-fixture://argon2id-known-answer/v1",
+  "scenario": "argon2id-known-answer",
+  "fixtureOnly": true,
+  "syntheticSecrets": true,
+  "syntheticSecretNotice": "The password and salt are public deterministic test strings and are not credentials.",
+  "networkAccess": false,
+  "executionCounts": {
+    "privateKeyDecryptions": 0,
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "externalRpcCalls": 0
+  },
+  "input": {
+    "passwordUtf8": "p04-synthetic-password",
+    "saltHex": "000102030405060708090a0b0c0d0e0f",
+    "parameters": {
+      "algorithm": "Argon2id",
+      "argonVersion": 19,
+      "memoryKiB": 32,
+      "iterations": 2,
+      "parallelism": 1,
+      "outputBytes": 32,
+      "fixtureCostOnly": true,
+      "productionAcceptable": false
+    }
+  },
+  "expected": {
+    "derivedKeyHex": "5cad21e09aba3e764ef251be3552d88836d9dc519e8bbdec93021d3bf4c707bd",
+    "productionParameterVersion": 1,
+    "productionParametersAreDefinedIn": "key-lifecycle-contracts.json"
+  }
+}

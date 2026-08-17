@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "schemaId": "p04-fixture://lifecycle-recovery/v1",
+  "scenario": "lifecycle-recovery",
+  "fixtureOnly": true,
+  "syntheticSecrets": true,
+  "syntheticSecretNotice": "All wallet IDs, envelope versions, KMS versions, and outcomes are state-machine fixtures with no ciphertext or real key material.",
+  "networkAccess": false,
+  "executionCounts": {
+    "privateKeyDecryptions": 0,
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "externalRpcCalls": 0
+  },
+  "input": {
+    "scenarios": [
+      {
+        "id": "server-mode-restart",
+        "given": { "mode": "server-kek", "stateBefore": "unlocked", "wrappedDekPresent": true, "kekVersionAvailable": true },
+        "event": "signer-process-restart",
+        "expected": { "memoryUnlockSurvives": false, "state": "locked-until-KMS-policy-revalidated", "automaticRecoveryEligible": true }
+      },
+      {
+        "id": "password-mode-restart",
+        "given": { "mode": "user-password", "stateBefore": "unlocked" },
+        "event": "signer-process-restart",
+        "expected": { "state": "locked", "passwordRequired": true, "derivedKekPersisted": false }
+      },
+      {
+        "id": "wrong-password",
+        "given": { "mode": "user-password", "stateBefore": "locked" },
+        "event": "unlock-with-wrong-synthetic-password",
+        "expected": { "state": "locked", "error": "INVALID_CREDENTIALS", "distinguishes-corrupt-envelope": false, "memoryZeroized": true }
+      },
+      {
+        "id": "ciphertext-tamper",
+        "given": { "mode": "server-kek", "stateBefore": "locked", "authenticationTagMatches": false },
+        "event": "envelope-validation",
+        "expected": { "state": "quarantined", "error": "KEYSTORE_CORRUPTED", "fallbackVersionOpened": false, "operatorAlert": true }
+      },
+      {
+        "id": "kek-rewrap",
+        "given": { "oldKekVersion": 4, "newKekVersion": 5, "envelopeVersion": 3 },
+        "event": "rotate-kek",
+        "expected": { "privateKeyPlaintextRequired": false, "dekRewrapped": true, "envelopeCiphertextChanged": false, "newKekVersion": 5 }
+      },
+      {
+        "id": "password-change-crash-before-commit",
+        "given": { "oldEnvelopeVersion": 2, "candidateEnvelopeVersion": 3 },
+        "event": "process-crash-before-atomic-pointer-swap",
+        "expected": { "oldEnvelopeUsable": true, "candidateVisible": false, "state": "locked", "retryRequiresFreshPasswords": true }
+      },
+      {
+        "id": "mode-switch-crash-before-commit",
+        "given": { "oldMode": "user-password", "candidateMode": "server-kek" },
+        "event": "process-crash-before-atomic-pointer-swap",
+        "expected": { "activeMode": "user-password", "partialModeVisible": false, "state": "locked", "retryRequiresFreshReauthentication": true }
+      },
+      {
+        "id": "delete-with-dependencies",
+        "given": { "activeTaskCount": 2, "strategyCount": 1, "walletsWithAssets": 1 },
+        "event": "normal-delete",
+        "expected": { "deleted": false, "previewRequired": true, "error": "WALLET_HAS_DEPENDENCIES", "countsReturned": true }
+      },
+      {
+        "id": "disaster-restore-missing-kek",
+        "given": { "ciphertextBackup": true, "wrappedDekBackup": true, "kekVersionAvailable": false },
+        "event": "isolated-restore",
+        "expected": { "activated": false, "failClosed": true, "state": "locked", "plaintextRequested": false }
+      },
+      {
+        "id": "disaster-restore-complete",
+        "given": { "ciphertextBackup": true, "wrappedDekBackup": true, "aadMetadataBackup": true, "kekVersionAvailable": true },
+        "event": "isolated-restore-inventory-check",
+        "expected": { "state": "locked", "plaintextBackupUsed": false, "broadcastEgress": false, "activationRequiresTwoPersonReview": true }
+      }
+    ]
+  },
+  "expected": {
+    "scenarioCount": 10,
+    "failOpenCount": 0,
+    "plaintextBackupCount": 0,
+    "secretQueuePayloadCount": 0,
+    "externalCallCount": 0
+  }
+}
