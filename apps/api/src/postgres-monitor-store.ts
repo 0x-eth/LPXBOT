@@ -69,11 +69,12 @@ function safeInteger(value: string, field: string): number {
   return parsed;
 }
 
-function monitorFromRow(row: MonitorRow): Monitor {
+function monitorFromRow(row: MonitorRow, destinationIds: string[] = []): Monitor {
   if (!Array.isArray(row.conditions)) throw new RangeError("Stored monitor conditions are invalid");
   return {
     conditions: structuredClone(row.conditions) as Condition[],
     createdAt: row.created_at.toISOString(),
+    destinationIds,
     disabledAt: row.disabled_at?.toISOString() ?? null,
     enabled: row.status === "enabled",
     enabledAt: row.enabled_at?.toISOString() ?? null,
@@ -138,6 +139,11 @@ export class PostgresMonitorStore implements MonitorStore {
         await client.query("COMMIT");
         return { status: "pool-ineligible" };
       }
+      const destinationIds = input.request.destinationIds ?? [];
+      if (!(await this.#ownsDestinations(client, input.userId, destinationIds))) {
+        await client.query("COMMIT");
+        return { status: "destination-not-found" };
+      }
       const count = await client.query<{ count: string }>(
         "SELECT count(*)::text AS count FROM monitors WHERE user_id = $1",
         [input.userId],
@@ -181,8 +187,19 @@ export class PostgresMonitorStore implements MonitorStore {
          ) VALUES ($1, $2, $3, $4, $5)`,
         [input.userId, input.idempotencyKey, hash, monitorId, input.createdAt],
       );
+      await this.#replaceBindings(
+        client,
+        input.userId,
+        monitorId,
+        1,
+        destinationIds,
+        input.createdAt,
+      );
       await client.query("COMMIT");
-      return { status: "created", value: monitorFromRow(inserted.rows[0]!) };
+      return {
+        status: "created",
+        value: monitorFromRow(inserted.rows[0]!, [...destinationIds]),
+      };
     } catch (error) {
       await this.#rollback(client);
       throw error;
@@ -224,7 +241,13 @@ export class PostgresMonitorStore implements MonitorStore {
       );
       await client.query("COMMIT");
       const count = counts.rows[0] ?? { enabled_count: "0", total_count: "0" };
-      const items = rows.rows.slice(0, query.limit).map(monitorFromRow);
+      const items = await Promise.all(
+        rows.rows
+          .slice(0, query.limit)
+          .map(async (row) =>
+            monitorFromRow(row, await this.#destinationIds(client, userId, row.monitor_id)),
+          ),
+      );
       return {
         enabledCount: safeInteger(count.enabled_count, "enabled monitor count"),
         items,
@@ -257,6 +280,16 @@ export class PostgresMonitorStore implements MonitorStore {
       ) {
         return await this.#finish(client, { current, status: "invalid" });
       }
+      const destinationIds = input.changes.destinationIds ?? current.destinationIds;
+      if (
+        input.changes.destinationIds !== undefined &&
+        !(await this.#ownsDestinations(client, input.userId, destinationIds))
+      ) {
+        return await this.#finish(client, {
+          current,
+          status: "destination-not-found",
+        });
+      }
       if (!this.#changesValue(current, input.changes)) {
         return await this.#finish(client, { status: "unchanged", value: current });
       }
@@ -287,9 +320,17 @@ export class PostgresMonitorStore implements MonitorStore {
           input.updatedAt,
         ],
       );
+      await this.#replaceBindings(
+        client,
+        input.userId,
+        input.monitorId,
+        current.revision + 1,
+        destinationIds,
+        input.updatedAt,
+      );
       return await this.#finish(client, {
         status: "updated",
-        value: monitorFromRow(result.rows[0]!),
+        value: monitorFromRow(result.rows[0]!, [...destinationIds]),
       });
     } catch (error) {
       await this.#rollback(client);
@@ -325,9 +366,15 @@ export class PostgresMonitorStore implements MonitorStore {
           RETURNING ${monitorColumns}`,
         [input.monitorId, input.userId, input.enabled, input.updatedAt],
       );
+      await client.query(
+        `UPDATE monitor_notification_destination_bindings
+            SET monitor_revision = $3, bound_at = $4
+          WHERE monitor_id = $1 AND user_id = $2`,
+        [input.monitorId, input.userId, current.revision + 1, input.updatedAt],
+      );
       return await this.#finish(client, {
         status: "updated",
-        value: monitorFromRow(result.rows[0]!),
+        value: monitorFromRow(result.rows[0]!, [...current.destinationIds]),
       });
     } catch (error) {
       await this.#rollback(client);
@@ -375,7 +422,12 @@ export class PostgresMonitorStore implements MonitorStore {
       `SELECT ${monitorColumns} FROM monitors WHERE user_id = $1 AND monitor_id = $2`,
       [userId, monitorId],
     );
-    return result.rows[0] ? monitorFromRow(result.rows[0]) : null;
+    return result.rows[0]
+      ? monitorFromRow(
+          result.rows[0],
+          await this.#destinationIds(queryable, userId, result.rows[0].monitor_id),
+        )
+      : null;
   }
 
   async #locked(client: PoolClient, userId: string, monitorId: string): Promise<Monitor | null> {
@@ -386,7 +438,73 @@ export class PostgresMonitorStore implements MonitorStore {
         FOR UPDATE`,
       [userId, monitorId],
     );
-    return result.rows[0] ? monitorFromRow(result.rows[0]) : null;
+    return result.rows[0]
+      ? monitorFromRow(
+          result.rows[0],
+          await this.#destinationIds(client, userId, result.rows[0].monitor_id),
+        )
+      : null;
+  }
+
+  async #destinationIds(
+    queryable: Queryable,
+    userId: string,
+    monitorId: string,
+  ): Promise<string[]> {
+    const result = await queryable.query<{ destination_id: string }>(
+      `SELECT destination_id::text
+         FROM monitor_notification_destination_bindings
+        WHERE user_id = $1 AND monitor_id = $2
+        ORDER BY destination_id`,
+      [userId, monitorId],
+    );
+    return result.rows.map(({ destination_id }) => destination_id);
+  }
+
+  async #ownsDestinations(
+    queryable: Queryable,
+    userId: string,
+    destinationIds: readonly string[],
+  ): Promise<boolean> {
+    if (destinationIds.length === 0) return true;
+    const result = await queryable.query<{ count: string }>(
+      `SELECT count(*)::text AS count
+         FROM notification_destinations AS destination
+         JOIN notification_destination_versions AS version
+           ON version.destination_id = destination.destination_id
+          AND version.user_id = destination.user_id
+          AND version.revision = destination.current_revision
+        WHERE destination.user_id = $1
+          AND destination.destination_id = ANY($2::uuid[])
+          AND destination.deleted_at IS NULL
+          AND NOT version.tombstone`,
+      [userId, destinationIds],
+    );
+    return safeInteger(result.rows[0]?.count ?? "0", "owned destination count") === destinationIds.length;
+  }
+
+  async #replaceBindings(
+    client: PoolClient,
+    userId: string,
+    monitorId: string,
+    monitorRevision: number,
+    destinationIds: readonly string[],
+    boundAt: Date,
+  ): Promise<void> {
+    await client.query(
+      `DELETE FROM monitor_notification_destination_bindings
+        WHERE monitor_id = $1 AND user_id = $2`,
+      [monitorId, userId],
+    );
+    if (destinationIds.length === 0) return;
+    await client.query(
+      `INSERT INTO monitor_notification_destination_bindings (
+         monitor_id, user_id, destination_id, monitor_revision, bound_at
+       )
+       SELECT $1, $2, destination_id, $3, $5
+         FROM unnest($4::uuid[]) AS destination_id`,
+      [monitorId, userId, monitorRevision, destinationIds, boundAt],
+    );
   }
 
   async #rollback(client: PoolClient): Promise<void> {

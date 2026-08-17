@@ -2358,6 +2358,16 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           success: false,
         });
       }
+      if (result.status === "destination-not-found") {
+        return reply.code(404).send(
+          createErrorEnvelope({
+            code: "DESTINATION_NOT_FOUND",
+            message: "A bound notification destination was not found",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
       if (result.status === "invalid") {
         return reply.code(400).send(
           createErrorEnvelope({
@@ -2468,6 +2478,16 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           createErrorEnvelope({
             code: "LIMIT_EXCEEDED",
             message: "The monitor limit was reached",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (result.status === "destination-not-found") {
+        return reply.code(404).send(
+          createErrorEnvelope({
+            code: "DESTINATION_NOT_FOUND",
+            message: "A bound notification destination was not found",
             requestId: request.id,
             retryable: false,
           }),
