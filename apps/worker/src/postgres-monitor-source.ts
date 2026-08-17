@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
 
-import type { MonitorEvaluationCondition, MonitorEvaluationDefinition } from "@lpbot/domain";
+import type {
+  MonitorEvaluationCondition,
+  MonitorEvaluationDefinition,
+} from "@lpbot/domain/monitor-evaluator";
 import type { Pool, QueryResultRow } from "pg";
 
 import type {

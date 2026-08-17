@@ -5,7 +5,7 @@ import {
   type MonitorCandidate,
   type MonitorEvaluationDefinition,
   type MonitorMetricSnapshot,
-} from "@lpbot/domain";
+} from "@lpbot/domain/monitor-evaluator";
 
 export interface CanonicalMarketInputIdentity {
   generatedAt: string;

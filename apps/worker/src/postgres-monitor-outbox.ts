@@ -1,4 +1,4 @@
-import type { MonitorCandidate } from "@lpbot/domain";
+import type { MonitorCandidate } from "@lpbot/domain/monitor-evaluator";
 import type { Pool, PoolClient, QueryResultRow } from "pg";
 
 import {

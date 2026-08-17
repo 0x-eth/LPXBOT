@@ -9,6 +9,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./monitor-evaluator": {
+      "types": "./dist/monitor-evaluator.d.ts",
+      "import": "./dist/monitor-evaluator.js",
+      "default": "./dist/monitor-evaluator.js"
     }
   },
   "scripts": {
