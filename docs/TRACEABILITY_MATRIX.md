@@ -3,7 +3,7 @@
 > 基线日期：2026-08-13  
 > 范围源：[功能矩阵](./FUNCTION_MATRIX.md)  
 > 阶段源：[开发路线图](./DEVELOPMENT_ROADMAP.md)  
-> 当前状态：P01 的 18 项功能及 P02 的 19 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 159 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
+> 当前状态：P01 的 18 项功能及 P02 的 21 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 157 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
 
 ## 1. 使用规则
 
@@ -289,7 +289,7 @@
 
 #### P02 当前实现与证据状态
 
-P02-02、P02-04、P02-05、P02-06、P02-07、P02-08、P02-09 与 P02-10 只验证 BSC chainId 56 的本地 fixture 纵向路径。以下 19 项只有 `local-fixture-verified` 证据，因此均为 `implemented-assumed`；没有项目达到 `parity-verified` 或 `released`。其余 4 个 P02 ID 明确保留 `planned`，P02-01 继续是无实现所有权的冻结参考契约，aTVL、Fee/aTVL、`GAP-LABEL-ALGORITHM`、`GAP-FLOW-USD-VALUATION`、`GAP-API-CANDLE-QUOTE`、`GAP-UI-TICK-LIQUIDITY-MAPPING`、既有 USD/公式缺口与 `GAP-FINALITY-DEPTH` 继续 unresolved。
+P02-02、P02-04、P02-05、P02-06、P02-07、P02-08、P02-09、P02-10 与 P02-11 只验证 BSC chainId 56 的本地 fixture 纵向路径。以下 21 项只有 `local-fixture-verified` 证据，因此均为 `implemented-assumed`；没有项目达到 `parity-verified` 或 `released`。其余 POOL-15 与 STATS-01 明确保留 `planned`，P02-01 继续是无实现所有权的冻结参考契约，aTVL、Fee/aTVL、`GAP-LABEL-ALGORITHM`、`GAP-FLOW-USD-VALUATION`、`GAP-API-CANDLE-QUOTE`、`GAP-UI-TICK-LIQUIDITY-MAPPING`、既有 USD/公式缺口与 `GAP-FINALITY-DEPTH` 继续 unresolved。
 
 <!-- P02_STATUS_TABLE_START -->
 | ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
@@ -306,8 +306,8 @@ P02-02、P02-04、P02-05、P02-06、P02-07、P02-08、P02-09 与 P02-10 只验�
 | POOL-10 | `implemented-assumed` | [Preferences contract](../packages/api-contract/src/index.ts), [Preferences validation](../apps/api/src/user-preferences.ts), [PostgreSQL store](../apps/api/src/postgres-user-preferences-store.ts), [Column state](../apps/web/src/pool-table-state.ts), [Web](../apps/web/src/pools-page.tsx) | [T-UNIT](../tests/pool-columns.test.ts), [T-API](../tests/user-preferences-api.test.ts), [T-REC](../tests/integration/postgres-user-preferences.integration.ts), [T-UI/T-VIS](../tests/e2e/p02-06-pool-discovery.spec.ts) | [P02-06](../artifacts/acceptance/P02-06/manifest.json); local-fixture-verified; schema v3 revision conflicts and cross-device restore |
 | POOL-11 | `implemented-assumed` | [Comparison state](../apps/web/src/pool-comparison-state.ts), [Snapshot/SSE reducer](../apps/web/src/pools-stream-state.ts), [Web panel](../apps/web/src/pools-page.tsx) | [T-UNIT/T-SSE](../tests/pool-comparison.test.ts), [T-UI/T-VIS](../tests/e2e/p02-07-pool-analysis.spec.ts) | [P02-07](../artifacts/acceptance/P02-07/manifest.json); local-fixture-verified; session-only selection of 2 to 3 stable pool keys bound to one snapshot |
 | POOL-12 | `implemented-assumed` | [Candle/Tick metrics](../packages/market-metrics/src/candle-tick.ts), [Transactional read model](../apps/indexer/src/candle-tick-read-model.ts), [PostgreSQL store](../apps/indexer/src/postgres-canonical-event-store.ts), [Migration](../infra/migrations/20260817000100_create_candle_tick_read_models.sql), [Read-only API](../apps/api/src/market-charts.ts), [Strict client](../apps/web/src/market-chart-client.ts), [Pool detail UI](../apps/web/src/pool-market-detail.tsx) | [T-UNIT](../tests/candle-tick-projection.test.ts), [T-API](../tests/candle-tick-api.test.ts), [T-SSE/T-UI](../tests/market-chart-client.test.ts), [T-REC/T-MIG](../tests/integration/postgres-candle-tick-read-model.integration.ts), [T-UI/T-VIS](../tests/e2e/p02-10-candle-tick.spec.ts) | [P02-10](../artifacts/acceptance/P02-10/manifest.json); local-fixture-verified; BSC only; locally-defined raw-unit price/volume semantics; `GAP-API-CANDLE-QUOTE` and `GAP-UI-TICK-LIQUIDITY-MAPPING` unresolved |
-| POOL-13 | `planned` | 未实现 | 未实现 | P02-01 reference-only; no implementation evidence |
-| POOL-14 | `planned` | 未实现 | 未实现 | P02-01 reference-only; no implementation evidence |
+| POOL-13 | `implemented-assumed` | [Intent contract](../packages/api-contract/src/index.ts), [Shared command registry](../apps/web/src/pool-actions.ts), [Accessible menu](../apps/web/src/pool-action-menu.tsx), [Pool UI](../apps/web/src/pools-page.tsx) | [T-UNIT/T-SEC](../tests/pool-action-registry.test.ts), [T-UI/T-VIS](../tests/e2e/p02-11-pool-actions-blocklist.spec.ts) | [P02-11](../artifacts/acceptance/P02-11/manifest.json); local-fixture-verified; task/monitor/chat actions are canonical prefill intents only and perform no business write |
+| POOL-14 | `implemented-assumed` | [Blocklist contract](../packages/api-contract/src/index.ts), [PostgreSQL store](../apps/api/src/postgres-pool-blocklist-store.ts), [API](../apps/api/src/app.ts), [Migration](../infra/migrations/20260817000200_create_user_pool_blocklist.sql), [Eligibility policy](../packages/domain/src/index.ts), [Market consumers](../apps/api/src/market-pools.ts), [Recommendation consumer](../apps/api/src/recommended-pools.ts), [Client state](../apps/web/src/pool-blocklist-state.ts), [Management UI](../apps/web/src/pool-blocklist-manager.tsx) | [T-UNIT](../tests/pool-blocklist-contract.test.ts), [T-API/T-SSE](../tests/pool-blocklist-api.test.ts), [T-REC/T-MIG](../tests/integration/postgres-pool-blocklist.integration.ts), [T-UI/T-VIS](../tests/e2e/p02-11-pool-actions-blocklist.spec.ts) | [P02-11](../artifacts/acceptance/P02-11/manifest.json); local-fixture-verified; BSC only; monitoring and strategy expose consumer contracts only |
 | POOL-15 | `planned` | 未实现 | 未实现 | P02-01 reference-only; no implementation evidence |
 | POOL-16 | `implemented-assumed` | [SSE contract](../packages/api-contract/src/index.ts), [Replay provider](../apps/api/src/market-pools.ts), [HTTP stream](../apps/api/src/app.ts), [Durable outbox](../infra/migrations/20260816000100_create_market_indexer.sql) | [T-API/T-SSE](../tests/market-pools-api.test.ts), [T-REC/T-PERF](../tests/integration/postgres-market-indexer.integration.ts), [T-UI](../tests/pools-stream-client.test.ts) | [P02-02](../artifacts/acceptance/P02-02/manifest.json); local-fixture-verified |
 | FLOW-01 | `implemented-assumed` | [Versioned contract](../packages/api-contract/src/index.ts), [Golden projection](../apps/indexer/src/liquidity-flow.ts), [Transactional store](../apps/indexer/src/postgres-canonical-event-store.ts), [Read-only SSE](../apps/api/src/liquidity-flow.ts), [Web panel](../apps/web/src/pools-page.tsx) | [T-UNIT](../tests/liquidity-flow-projection.test.ts), [T-SSE](../tests/liquidity-flow-api.test.ts), [T-REC](../tests/integration/postgres-liquidity-flow.integration.ts), [T-UI](../tests/liquidity-flow-client.test.ts), [T-UI/T-VIS](../tests/e2e/liquidity-flow.spec.ts) | [P02-04](../artifacts/acceptance/P02-04/manifest.json); local-fixture-verified; observed/reverted only; nullable values are not inferred |
@@ -346,10 +346,10 @@ P02-02、P02-04、P02-05、P02-06、P02-07、P02-08、P02-09 与 P02-10 只验�
 |---|---:|---|
 | 功能矩阵稳定 ID | 196 | 已全部映射 |
 | 追踪表稳定 ID | 196 | 必须由自动检查保持相等 |
-| 当前产品实现 | 36 | P01 的 18 项和 P02 的 18 项完成阶段实现 |
-| `implemented-assumed` | 37 | 目标对照或 live 证据仍不完整 |
+| 当前产品实现 | 39 | P01 的 18 项和 P02 的 21 项完成阶段实现 |
+| `implemented-assumed` | 39 | 目标对照或 live 证据仍不完整 |
 | `parity-verified` | 0 | 不由 accepted work item 自动提升 |
 | `released` | 0 | 尚无 staging、监控和回滚完整证明 |
-| 其余 `planned` | 159 | P02 仍有 4 项 planned；P03-P13 状态未改变 |
+| 其余 `planned` | 157 | P02 仍有 2 项 planned；P03-P13 状态未改变 |
 
 建议 CI 检查逻辑：从 `FUNCTION_MATRIX.md` 与本文件抽取 `^[A-Z]+-[0-9]{2}$`，比较去重集合；再检查每行非空的阶段、测试和证据列。任何新增功能 ID 必须先进入范围源和本表。
