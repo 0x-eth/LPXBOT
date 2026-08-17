@@ -2352,7 +2352,10 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           }),
         );
       }
-      return reply.send(createSuccessEnvelope(result.value, request.id));
+      if ("value" in result) {
+        return reply.send(createSuccessEnvelope(result.value, request.id));
+      }
+      throw new Error("Unknown monitor mutation result");
     };
 
     const monitorPoolEligibility = async (userId: string, poolKey: string) => {
@@ -2451,7 +2454,10 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           }),
         );
       }
-      return reply.code(201).send(createSuccessEnvelope(result.value, request.id));
+      if ("value" in result) {
+        return reply.code(201).send(createSuccessEnvelope(result.value, request.id));
+      }
+      throw new Error("Unknown monitor create result");
     });
 
     app.get<{ Params: { monitorId: string } }>(
