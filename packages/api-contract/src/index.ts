@@ -220,6 +220,7 @@ export const monitorErrorCodes = [
   "MONITOR_NOT_FOUND",
   "MONITOR_NOT_READY",
   "REVISION_CONFLICT",
+  "REQUEST_TOO_LARGE",
   "UNAUTHENTICATED",
   "SERVICE_UNAVAILABLE",
 ] as const;

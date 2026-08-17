@@ -865,10 +865,26 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
 
   app.setErrorHandler(async (error, request, reply) => {
     const errorCode = (error as { code?: unknown }).code;
+    const requestPath = request.url.split("?", 1)[0]!;
+    if (
+      errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
+      (request.method === "POST" || request.method === "PATCH" || request.method === "DELETE") &&
+      /^\/api\/monitors(?:\/[^/]+(?:\/(?:enable|disable))?)?$/u.test(requestPath)
+    ) {
+      reply.header("Cache-Control", "no-store");
+      return reply.code(413).send(
+        createErrorEnvelope({
+          code: "REQUEST_TOO_LARGE",
+          message: "The request body is too large",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+    }
     if (
       errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
       request.method === "POST" &&
-      request.url.split("?", 1)[0] === "/api/admin/pool-creators"
+      requestPath === "/api/admin/pool-creators"
     ) {
       reply.header("Cache-Control", "no-store");
       const token = sessionToken(request);
@@ -898,7 +914,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     if (
       errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
       request.method === "PATCH" &&
-      request.url.split("?", 1)[0] === "/api/user/pool-blocklist"
+      requestPath === "/api/user/pool-blocklist"
     ) {
       reply.header("Cache-Control", "no-store");
       return reply.code(413).send(
@@ -913,7 +929,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     if (
       errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
       request.method === "PUT" &&
-      request.url.split("?", 1)[0] === "/api/address-remarks"
+      requestPath === "/api/address-remarks"
     ) {
       reply.header("Cache-Control", "no-store");
       const token = sessionToken(request);
@@ -940,10 +956,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         }),
       );
     }
-    if (
-      errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
-      request.url.split("?", 1)[0] === "/api/system-config/chains"
-    ) {
+    if (errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" && requestPath === "/api/system-config/chains") {
       reply.header("Cache-Control", "no-store");
       const token = sessionToken(request);
       const resolved = token ? await findValidSession(token, options.sessionStore, now()) : null;
@@ -2389,7 +2402,10 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           }),
         );
       }
-      return createSuccessEnvelope(await options.monitorStore.list(session.userId, query), request.id);
+      return createSuccessEnvelope(
+        await options.monitorStore.list(session.userId, query),
+        request.id,
+      );
     });
 
     app.post("/api/monitors", { bodyLimit: 65_536 }, async (request, reply) => {
@@ -2538,7 +2554,10 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             );
           }
           if (enabled) {
-            const current = await options.monitorStore.get(session.userId, request.params.monitorId);
+            const current = await options.monitorStore.get(
+              session.userId,
+              request.params.monitorId,
+            );
             if (!current) {
               return reply.code(404).send(
                 createErrorEnvelope({

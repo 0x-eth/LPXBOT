@@ -376,7 +376,8 @@ test("MON-02 recovers revision conflicts, not-ready, stale, error, delete focus 
   await editor.getByLabel("监控名称").fill("Lost update");
   await editor.getByRole("button", { name: "保存监控" }).click();
   await expect(editor.getByRole("alert")).toContainText("其他会话已更新");
-  await expect(editor.getByLabel("监控名称")).toHaveValue("权威更新");
+  await expect(editor.getByLabel("监控名称")).toHaveValue("Lost update");
+  await expect(editor.getByRole("button", { name: "采用最新版本" })).toBeVisible();
   await editor.getByLabel("监控名称").fill("Recovered");
   await editor.getByRole("button", { name: "保存监控" }).click();
   await expect(editor).toBeHidden();

@@ -239,7 +239,24 @@ function MonitorEditor({
             {editor.conflict ? (
               <div className="monitor-editor-conflict" role="alert">
                 <CircleAlert aria-hidden="true" size={17} />
-                其他会话已更新，已加载最新版本
+                <span>其他会话已更新，当前修改已保留</span>
+                {editor.mode === "edit" ? (
+                  <button
+                    className="secondary-button"
+                    disabled={busy}
+                    onClick={() =>
+                      onChange({
+                        conflict: false,
+                        draft: draftFromMonitor(editor.original),
+                        mode: "edit",
+                        original: editor.original,
+                      })
+                    }
+                    type="button"
+                  >
+                    采用最新版本
+                  </button>
+                ) : null}
               </div>
             ) : null}
 
@@ -593,7 +610,7 @@ export function MonitorsPage() {
         setPage((current) => (current ? replaceMonitor(current, error.current!) : current));
         setEditor({
           conflict: true,
-          draft: draftFromMonitor(error.current),
+          draft: editor.draft,
           mode: "edit",
           original: error.current,
         });

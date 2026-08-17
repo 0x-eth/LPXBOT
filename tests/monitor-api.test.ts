@@ -1,4 +1,7 @@
-import type { CreateMonitorRequest, PoolBlocklistSnapshot } from "../packages/api-contract/src/index.js";
+import type {
+  CreateMonitorRequest,
+  PoolBlocklistSnapshot,
+} from "../packages/api-contract/src/index.js";
 import { buildApiApp } from "../apps/api/src/index.js";
 import { MemoryMonitorStore } from "../apps/api/src/monitors.js";
 import { afterEach, describe, expect, it } from "vitest";
@@ -83,9 +86,10 @@ describe("P03-02 monitor API", () => {
   it("requires a session, creates disabled monitors, isolates users, and reports enabled/total", async () => {
     const { app, tokenA, tokenB } = await fixture();
     expect((await app.inject({ method: "GET", url: "/api/monitors" })).statusCode).toBe(401);
-    expect((await app.inject({ method: "POST", payload: createRequest, url: "/api/monitors" })).statusCode).toBe(
-      401,
-    );
+    expect(
+      (await app.inject({ method: "POST", payload: createRequest, url: "/api/monitors" }))
+        .statusCode,
+    ).toBe(401);
 
     const created = await create(app, tokenA);
     expect(created.statusCode).toBe(201);
@@ -278,5 +282,70 @@ describe("P03-02 monitor API", () => {
     });
     expect(enable.statusCode).toBe(422);
     expect(enable.json().error.code).toBe("MONITOR_NOT_READY");
+  });
+
+  it("rejects malformed list cursors before storage and preserves aggregate pagination", async () => {
+    const { app, tokenA } = await fixture();
+    const first = await create(app, tokenA, createRequest, "cursor-monitor-1");
+    const second = await create(
+      app,
+      tokenA,
+      { ...createRequest, name: "Second", poolKey: secondPoolKey },
+      "cursor-monitor-2",
+    );
+    expect(first.statusCode).toBe(201);
+    expect(second.statusCode).toBe(201);
+
+    const malformed = await app.inject({
+      headers: auth(tokenA),
+      method: "GET",
+      url: "/api/monitors?cursor=not-a-monitor-cursor",
+    });
+    expect(malformed.statusCode).toBe(400);
+    expect(malformed.json().error.code).toBe("INVALID_QUERY");
+
+    const pageOne = await app.inject({
+      headers: auth(tokenA),
+      method: "GET",
+      url: "/api/monitors?limit=1&enabled=false",
+    });
+    expect(pageOne.json().data).toMatchObject({ enabledCount: 0, totalCount: 2 });
+    expect(pageOne.json().data.items).toHaveLength(1);
+    expect(pageOne.json().data.nextCursor).toBe(pageOne.json().data.items[0].monitorId);
+    const pageTwo = await app.inject({
+      headers: auth(tokenA),
+      method: "GET",
+      url: `/api/monitors?limit=1&enabled=false&cursor=${pageOne.json().data.nextCursor}`,
+    });
+    expect(pageTwo.json().data).toMatchObject({ enabledCount: 0, nextCursor: null, totalCount: 2 });
+    expect(pageTwo.json().data.items).toHaveLength(1);
+    expect(pageTwo.json().data.items[0].monitorId).not.toBe(pageOne.json().data.items[0].monitorId);
+  });
+
+  it("returns a stable 413 envelope for oversized monitor mutations", async () => {
+    const { app, tokenA } = await fixture();
+    const oversizedCreate = await app.inject({
+      headers: {
+        ...auth(tokenA),
+        "content-type": "application/json",
+        "idempotency-key": "oversized",
+      },
+      method: "POST",
+      payload: JSON.stringify({ ...createRequest, name: "x".repeat(70_000) }),
+      url: "/api/monitors",
+    });
+    expect(oversizedCreate.statusCode).toBe(413);
+    expect(oversizedCreate.headers["cache-control"]).toBe("no-store");
+    expect(oversizedCreate.json().error.code).toBe("REQUEST_TOO_LARGE");
+
+    const created = await create(app, tokenA, createRequest, "body-limit-monitor");
+    const oversizedLifecycle = await app.inject({
+      headers: { ...auth(tokenA), "content-type": "application/json" },
+      method: "POST",
+      payload: JSON.stringify({ expectedRevision: 1, padding: "x".repeat(2_000) }),
+      url: `/api/monitors/${created.json().data.monitorId}/enable`,
+    });
+    expect(oversizedLifecycle.statusCode).toBe(413);
+    expect(oversizedLifecycle.json().error.code).toBe("REQUEST_TOO_LARGE");
   });
 });

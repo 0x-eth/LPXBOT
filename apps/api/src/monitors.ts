@@ -71,8 +71,7 @@ export type MonitorMutationResult =
   | { status: "not-found" };
 
 export type MonitorDeleteResult =
-  | { current: Monitor; status: "conflict" }
-  | { status: "deleted" | "not-found" };
+  { current: Monitor; status: "conflict" } | { status: "deleted" | "not-found" };
 
 export interface MonitorStore {
   create(input: MonitorCreateInput): Promise<MonitorCreateResult>;
@@ -115,6 +114,8 @@ function canonicalName(value: unknown): string {
 
 const canonicalPoolKeyPattern = /^56:0x(?:[0-9a-f]{40}|[0-9a-f]{64})$/u;
 const canonicalDecimalPattern = /^(?:0|[1-9]\d*)(?:\.\d*[1-9])?$/u;
+const monitorCursorPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
 function canonicalPoolKey(value: unknown): CreateMonitorRequest["poolKey"] {
   if (typeof value !== "string" || !canonicalPoolKeyPattern.test(value)) {
@@ -215,7 +216,13 @@ export function parseMonitorPatch(value: unknown): PatchMonitorRequest {
   ) {
     throw new MonitorValidationError();
   }
-  const allowed = new Set(["conditions", "excludeHanToken", "excludeHook", "name", "windowMinutes"]);
+  const allowed = new Set([
+    "conditions",
+    "excludeHanToken",
+    "excludeHook",
+    "name",
+    "windowMinutes",
+  ]);
   const keys = Object.keys(value.changes);
   if (keys.length === 0 || keys.some((key) => !allowed.has(key))) {
     throw new MonitorValidationError();
@@ -240,7 +247,11 @@ export function parseMonitorPatch(value: unknown): PatchMonitorRequest {
 }
 
 export function parseMonitorLifecycle(value: unknown): LifecycleMonitorRequest {
-  if (!isRecord(value) || !exactKeys(value, ["expectedRevision"]) || !validRevision(value.expectedRevision)) {
+  if (
+    !isRecord(value) ||
+    !exactKeys(value, ["expectedRevision"]) ||
+    !validRevision(value.expectedRevision)
+  ) {
     throw new MonitorValidationError();
   }
   return { expectedRevision: value.expectedRevision };
@@ -267,7 +278,7 @@ export function parseMonitorListQuery(value: unknown): MonitorListQuery {
   if (enabled === undefined) throw new MonitorValidationError();
   if (
     value.cursor !== undefined &&
-    (typeof value.cursor !== "string" || !/^[A-Za-z0-9_-]{1,256}$/u.test(value.cursor))
+    (typeof value.cursor !== "string" || !monitorCursorPattern.test(value.cursor))
   ) {
     throw new MonitorValidationError();
   }
@@ -310,7 +321,10 @@ export class MemoryMonitorStore implements MonitorStore {
       if (!monitor) throw new Error("Monitor idempotency record is inconsistent");
       return { status: "replayed", value: cloneMonitor(monitor) };
     }
-    if ([...this.#monitors.values()].filter(({ userId }) => userId === input.userId).length >= this.#capacity) {
+    if (
+      [...this.#monitors.values()].filter(({ userId }) => userId === input.userId).length >=
+      this.#capacity
+    ) {
       return { status: "capacity" };
     }
     const timestamp = input.createdAt.toISOString();
@@ -343,8 +357,12 @@ export class MemoryMonitorStore implements MonitorStore {
           ? right.monitorId.localeCompare(left.monitorId, "en")
           : right.createdAt.localeCompare(left.createdAt, "en"),
       );
-    const filtered = query.enabled === null ? all : all.filter(({ enabled }) => enabled === query.enabled);
-    const cursorIndex = query.cursor === null ? -1 : filtered.findIndex(({ monitorId }) => monitorId === query.cursor);
+    const filtered =
+      query.enabled === null ? all : all.filter(({ enabled }) => enabled === query.enabled);
+    const cursorIndex =
+      query.cursor === null
+        ? -1
+        : filtered.findIndex(({ monitorId }) => monitorId === query.cursor);
     const start = cursorIndex < 0 ? 0 : cursorIndex + 1;
     const page = filtered.slice(start, start + query.limit + 1);
     return {

@@ -4756,6 +4756,13 @@ html[data-theme="dark"] .chain-operation-success {
   border-bottom: 1px solid color-mix(in srgb, var(--danger) 22%, var(--border));
 }
 
+.monitor-editor-conflict .secondary-button {
+  min-height: 30px;
+  margin-left: auto;
+  color: var(--text);
+  background: var(--surface);
+}
+
 .monitor-editor-fields {
   display: grid;
   grid-template-columns: minmax(180px, 0.75fr) minmax(320px, 1.4fr) minmax(130px, 0.5fr);

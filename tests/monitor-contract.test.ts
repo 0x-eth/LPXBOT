@@ -41,6 +41,7 @@ describe("P03-02 monitor API contract", () => {
     expect(monitorErrorCodes).toContain("REVISION_CONFLICT");
     expect(monitorErrorCodes).toContain("IDEMPOTENCY_CONFLICT");
     expect(monitorErrorCodes).toContain("UNSUPPORTED_METRIC");
+    expect(monitorErrorCodes).toContain("REQUEST_TOO_LARGE");
   });
 
   it("expresses create, patch, lifecycle, aggregate, and page DTOs without writable pool identity", () => {
