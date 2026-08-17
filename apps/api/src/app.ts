@@ -881,7 +881,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     if (
       errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
       (request.method === "POST" || request.method === "PATCH" || request.method === "DELETE") &&
-      /^\/api\/monitors(?:\/[^/]+(?:\/(?:enable|disable))?)?$/u.test(requestPath)
+      (/^\/api\/monitors(?:\/[^/]+(?:\/(?:enable|disable))?)?$/u.test(requestPath) ||
+        /^\/api\/notification-(?:preferences|destinations)(?:\/[^/]+)?$/u.test(requestPath))
     ) {
       reply.header("Cache-Control", "no-store");
       return reply.code(413).send(
@@ -2651,6 +2652,291 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             error: {
               code: "REVISION_CONFLICT",
               message: "The monitor changed in another session",
+              requestId: request.id,
+              retryable: true,
+            },
+            success: false,
+          });
+        }
+        return reply.code(204).send();
+      },
+    );
+
+    const sendNotificationUnavailable = (request: FastifyRequest, reply: FastifyReply) =>
+      reply.code(503).send(
+        createErrorEnvelope({
+          code: "SERVICE_UNAVAILABLE",
+          message: "Notification configuration or secret storage is unavailable",
+          requestId: request.id,
+          retryable: true,
+        }),
+      );
+
+    const sendNotificationValidation = (
+      error: NotificationValidationError,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ) =>
+      reply.code(error.code === "UNSAFE_WEBHOOK_TARGET" ? 400 : 400).send(
+        createErrorEnvelope({
+          code: error.code,
+          message: "The notification configuration is invalid",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+
+    const sendDestinationMutation = (
+      request: FastifyRequest,
+      reply: FastifyReply,
+      result: NotificationDestinationMutationResult,
+    ) => {
+      if (result.status === "not-found") {
+        return reply.code(404).send(
+          createErrorEnvelope({
+            code: "DESTINATION_NOT_FOUND",
+            message: "The notification destination was not found",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (result.status === "conflict") {
+        return reply.code(409).send({
+          current: result.current,
+          error: {
+            code: "REVISION_CONFLICT",
+            message: "The notification destination changed in another session",
+            requestId: request.id,
+            retryable: true,
+          },
+          success: false,
+        });
+      }
+      if (result.status === "invalid") {
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "INVALID_DESTINATION",
+            message: "The notification destination is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (result.status === "service-unavailable") {
+        return sendNotificationUnavailable(request, reply);
+      }
+      return reply.send(createSuccessEnvelope(result.value, request.id));
+    };
+
+    app.get("/api/notification-preferences", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.notificationStore) return sendNotificationUnavailable(request, reply);
+      return createSuccessEnvelope(
+        await options.notificationStore.getPreferences(session.userId),
+        request.id,
+      );
+    });
+
+    app.patch("/api/notification-preferences", { bodyLimit: 65_536 }, async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.notificationStore) return sendNotificationUnavailable(request, reply);
+      let patch;
+      try {
+        patch = parseNotificationPreferencesPatch(request.body);
+      } catch (error) {
+        if (!(error instanceof NotificationValidationError)) throw error;
+        return sendNotificationValidation(error, request, reply);
+      }
+      const result = await options.notificationStore.updatePreferences({
+        patch,
+        updatedAt: now(),
+        userId: session.userId,
+      });
+      if (result.status === "conflict") {
+        return reply.code(409).send({
+          current: result.current,
+          error: {
+            code: "REVISION_CONFLICT",
+            message: "Notification preferences changed in another session",
+            requestId: request.id,
+            retryable: true,
+          },
+          success: false,
+        });
+      }
+      return createSuccessEnvelope(result.value, request.id);
+    });
+
+    app.get("/api/notification-destinations", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.notificationStore) return sendNotificationUnavailable(request, reply);
+      return createSuccessEnvelope(
+        await options.notificationStore.listDestinations(session.userId),
+        request.id,
+      );
+    });
+
+    app.post(
+      "/api/notification-destinations",
+      { bodyLimit: 65_536 },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.notificationStore) return sendNotificationUnavailable(request, reply);
+        let draft;
+        let idempotencyKey;
+        try {
+          draft = parseDestinationDraft(request.body);
+          idempotencyKey = parseNotificationIdempotencyKey(
+            request.headers["idempotency-key"],
+          );
+        } catch (error) {
+          if (!(error instanceof NotificationValidationError)) throw error;
+          return sendNotificationValidation(error, request, reply);
+        }
+        const result = await options.notificationStore.createDestination({
+          createdAt: now(),
+          draft,
+          idempotencyKey,
+          userId: session.userId,
+        });
+        if (result.status === "idempotency-conflict") {
+          return reply.code(409).send(
+            createErrorEnvelope({
+              code: "IDEMPOTENCY_CONFLICT",
+              message: "The idempotency key was already used with another destination",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (result.status === "capacity") {
+          return reply.code(422).send(
+            createErrorEnvelope({
+              code: "LIMIT_EXCEEDED",
+              message: "The notification destination limit was reached",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (result.status === "invalid") {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "INVALID_DESTINATION",
+              message: "The notification destination is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (result.status === "service-unavailable") {
+          return sendNotificationUnavailable(request, reply);
+        }
+        return reply.code(201).send(createSuccessEnvelope(result.value, request.id));
+      },
+    );
+
+    app.post(
+      "/api/notification-destinations/test",
+      { bodyLimit: 65_536 },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.notificationStore) return sendNotificationUnavailable(request, reply);
+        try {
+          const draft = parseDestinationDraft(request.body);
+          if (
+            draft.type === "telegram" &&
+            !(await options.notificationStore.ownsTelegramIdentity(
+              session.userId,
+              draft.config.telegramIdentityId,
+            ))
+          ) {
+            throw new NotificationValidationError("INVALID_DESTINATION");
+          }
+          return createSuccessEnvelope(renderLocalSinkTest(draft), request.id);
+        } catch (error) {
+          if (!(error instanceof NotificationValidationError)) throw error;
+          return sendNotificationValidation(error, request, reply);
+        }
+      },
+    );
+
+    app.patch<{ Params: { destinationId: string } }>(
+      "/api/notification-destinations/:destinationId",
+      { bodyLimit: 65_536 },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.notificationStore) return sendNotificationUnavailable(request, reply);
+        let patch;
+        try {
+          patch = parseNotificationDestinationPatch(request.body);
+        } catch (error) {
+          if (!(error instanceof NotificationValidationError)) throw error;
+          return sendNotificationValidation(error, request, reply);
+        }
+        return sendDestinationMutation(
+          request,
+          reply,
+          await options.notificationStore.patchDestination({
+            destinationId: request.params.destinationId,
+            patch,
+            updatedAt: now(),
+            userId: session.userId,
+          }),
+        );
+      },
+    );
+
+    app.delete<{ Params: { destinationId: string } }>(
+      "/api/notification-destinations/:destinationId",
+      { bodyLimit: 1_024 },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.notificationStore) return sendNotificationUnavailable(request, reply);
+        let expectedRevision;
+        try {
+          expectedRevision = parseNotificationExpectedRevision(request.body);
+        } catch (error) {
+          if (!(error instanceof NotificationValidationError)) throw error;
+          return sendNotificationValidation(error, request, reply);
+        }
+        const result = await options.notificationStore.deleteDestination({
+          destinationId: request.params.destinationId,
+          expectedRevision,
+          updatedAt: now(),
+          userId: session.userId,
+        });
+        if (result.status === "not-found") {
+          return reply.code(404).send(
+            createErrorEnvelope({
+              code: "DESTINATION_NOT_FOUND",
+              message: "The notification destination was not found",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (result.status === "conflict") {
+          return reply.code(409).send({
+            current: result.current,
+            error: {
+              code: "REVISION_CONFLICT",
+              message: "The notification destination changed in another session",
               requestId: request.id,
               retryable: true,
             },
