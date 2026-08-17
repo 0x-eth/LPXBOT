@@ -1,0 +1,10 @@
+P04-01 prior acceptance integrity
+
+Baseline: 37cb850c149168bbfff5a98768067a1a63bff2f9
+Result: pending final verification
+Expected frozen files: 462
+Algorithm: SHA-256
+Inventory: prior-acceptance-sha256s.txt
+
+The governance check will compare the exhaustive baseline P00-P03-04 path set,
+each baseline blob, and each current file byte-for-byte.

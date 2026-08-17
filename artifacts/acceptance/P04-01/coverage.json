@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P04-01",
+  "phase": "P04",
+  "mode": "reference-only",
+  "risk": "R0",
+  "workItemFeatureIds": [],
+  "implementationOwnership": "none",
+  "counts": {
+    "implemented-assumed": 0,
+    "planned": 12
+  },
+  "features": [
+    {
+      "id": "WALLET-01",
+      "phase": "P04",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["api-contracts.json", "key-lifecycle-contracts.json", "security-boundary-contracts.json"],
+      "fixtureScenarios": ["crypto-known-answer", "aad-tamper"]
+    },
+    {
+      "id": "WALLET-02",
+      "phase": "P04",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["api-contracts.json", "key-lifecycle-contracts.json"],
+      "fixtureScenarios": ["crypto-known-answer", "lifecycle-recovery"]
+    },
+    {
+      "id": "WALLET-03",
+      "phase": "P04",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["api-contracts.json", "key-lifecycle-contracts.json", "ui-state-contracts.json"],
+      "fixtureScenarios": ["lifecycle-recovery"]
+    },
+    {
+      "id": "WALLET-04",
+      "phase": "P04",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["key-lifecycle-contracts.json", "security-boundary-contracts.json"],
+      "fixtureScenarios": ["crypto-known-answer", "aad-tamper", "lifecycle-recovery"]
+    },
+    {
+      "id": "WALLET-05",
+      "phase": "P04",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["api-contracts.json", "key-lifecycle-contracts.json", "security-boundary-contracts.json", "ui-state-contracts.json"],
+      "fixtureScenarios": ["argon2id-known-answer", "lifecycle-recovery"]
+    },
+    {
+      "id": "WALLET-06",
+      "phase": "P04",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["api-contracts.json", "key-lifecycle-contracts.json", "ui-state-contracts.json"],
+      "fixtureScenarios": ["argon2id-known-answer", "lifecycle-recovery"]
+    },
+    {
+      "id": "WALLET-07",
+      "phase": "P04",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["api-contracts.json", "security-boundary-contracts.json", "ui-state-contracts.json"],
+      "fixtureScenarios": ["lifecycle-recovery"]
+    },
+    {
+      "id": "WALLET-08",
+      "phase": "P04",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["api-contracts.json", "ui-state-contracts.json"],
+      "fixtureScenarios": []
+    },
+    {
+      "id": "WALLET-09",
+      "phase": "P04",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["api-contracts.json", "ui-state-contracts.json"],
+      "fixtureScenarios": []
+    },
+    {
+      "id": "WALLET-10",
+      "phase": "P04",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["api-contracts.json", "transaction-contracts.json", "ui-state-contracts.json"],
+      "fixtureScenarios": ["nonce-concurrency", "replacement-lineage"]
+    },
+    {
+      "id": "SET-06",
+      "phase": "P04",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["settings-contracts.json", "ui-state-contracts.json"],
+      "fixtureScenarios": []
+    },
+    {
+      "id": "SET-07",
+      "phase": "P04",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["settings-contracts.json", "security-boundary-contracts.json", "ui-state-contracts.json"],
+      "fixtureScenarios": ["lifecycle-recovery"]
+    }
+  ],
+  "nonClaims": [
+    "No wallet, keystore, signer, nonce ledger, transfer route, custom RPC feature, or OKX connector is implemented by P04-01.",
+    "Executable offline fixture checks validate frozen data and algorithms; they are not implementation acceptance for a feature ID.",
+    "No target parity, release, custody readiness, or production security claim is made."
+  ]
+}

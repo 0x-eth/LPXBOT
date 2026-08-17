@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P04-01",
+  "networkPolicy": "offline-synthetic-only",
+  "syntheticSecretMarkerRequired": true,
+  "executionCounts": {
+    "privateKeyDecryptions": 0,
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "externalRpcCalls": 0
+  },
+  "fixtures": [
+    {
+      "id": "P04-FIXTURE-AAD-TAMPER-V1",
+      "scenario": "aad-tamper",
+      "schemaId": "p04-fixture://aad-tamper/v1",
+      "path": "fixtures/aad-tamper.json",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "id": "P04-FIXTURE-ARGON2ID-KAT-V1",
+      "scenario": "argon2id-known-answer",
+      "schemaId": "p04-fixture://argon2id-known-answer/v1",
+      "path": "fixtures/argon2id-known-answer.json",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "id": "P04-FIXTURE-CRYPTO-KAT-V1",
+      "scenario": "crypto-known-answer",
+      "schemaId": "p04-fixture://crypto-known-answer/v1",
+      "path": "fixtures/crypto-known-answer.json",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "id": "P04-FIXTURE-LIFECYCLE-RECOVERY-V1",
+      "scenario": "lifecycle-recovery",
+      "schemaId": "p04-fixture://lifecycle-recovery/v1",
+      "path": "fixtures/lifecycle-recovery.json",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "id": "P04-FIXTURE-NONCE-CONCURRENCY-V1",
+      "scenario": "nonce-concurrency",
+      "schemaId": "p04-fixture://nonce-concurrency/v1",
+      "path": "fixtures/nonce-concurrency.json",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "id": "P04-FIXTURE-REPLACEMENT-LINEAGE-V1",
+      "scenario": "replacement-lineage",
+      "schemaId": "p04-fixture://replacement-lineage/v1",
+      "path": "fixtures/replacement-lineage.json",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

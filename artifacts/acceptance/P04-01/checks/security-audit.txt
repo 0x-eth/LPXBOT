@@ -1,0 +1,10 @@
+P04-01 security gates
+
+Result: pending final verification
+
+- Gitleaks full-history scan
+- pnpm audit:dependencies
+
+All fixture key material is deterministic, explicitly marked synthetic, and
+restricted to offline known-answer checks. No decryption, signature, broadcast,
+KMS access, OKX request, or external JSON-RPC request is permitted.

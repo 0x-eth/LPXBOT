@@ -1,0 +1,18 @@
+P04-01 governance red phase
+
+Command: node --test tests/governance/p04-reference.test.mjs
+Result: expected failure (exit 1)
+Tests: 18
+Passed: 0
+Failed: 18
+
+All failures were ENOENT for a required P04-01 contract, fixture, manifest,
+checksum inventory, or check artifact. Existing product and governance tests were
+not changed by the red run. This establishes the missing-reference-artifact red
+phase before any wallet, signer, transaction, RPC, or OKX contract was created.
+
+Execution counts during the red run:
+- private-key decryptions: 0
+- transaction signatures: 0
+- transaction broadcasts: 0
+- external RPC calls: 0

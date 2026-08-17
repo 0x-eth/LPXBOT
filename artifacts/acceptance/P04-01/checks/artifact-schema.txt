@@ -1,0 +1,8 @@
+P04-01 artifact schema checks
+
+Result: pending final verification
+
+The final check will validate artifact-manifest.json against
+schemas/p04-reference-artifacts.schema.json and validate each indexed fixture's
+version, synthetic marker, network policy, execution counters, byte length, and
+SHA-256 digest.

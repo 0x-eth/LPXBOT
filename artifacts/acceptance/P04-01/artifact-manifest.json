@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P04-01",
+  "phase": "P04",
+  "risk": "R0",
+  "status": "contract-frozen-with-unresolved-gaps",
+  "featureIds": [],
+  "capturedAt": "2026-08-17T23:30:36Z",
+  "referenceBaseline": "37cb850c149168bbfff5a98768067a1a63bff2f9",
+  "scope": {
+    "mode": "reference-only",
+    "implementationOwnership": "none",
+    "databaseChanges": false,
+    "businessTables": false,
+    "productionRoutes": false,
+    "workers": false,
+    "signerRuntime": false,
+    "kmsAccess": false,
+    "productionSecrets": false,
+    "privateKeyDecryptions": 0,
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "externalRpcCalls": 0
+  },
+  "checksumScope": {
+    "algorithm": "SHA-256",
+    "excludedSelfReferentialFiles": ["artifact-manifest.json", "sha256sums.txt"],
+    "priorAcceptance": "all baseline P00-P03-04 acceptance files"
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "artifacts/acceptance/P01-04/E-RBAC.md",
+      "commit": "37cb850c149168bbfff5a98768067a1a63bff2f9",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "Locally verified separation between authentication wallets and signer or transaction authority",
+      "classification": "LOCAL-DECISION"
+    },
+    {
+      "path": "artifacts/lpbot/2026-08-13/api-calls.json",
+      "commit": "37cb850c149168bbfff5a98768067a1a63bff2f9",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "Static bundle candidates for wallet, keystore, transfer, security password, RPC, and OKX client calls",
+      "classification": "BUNDLE-CANDIDATE"
+    },
+    {
+      "path": "docs/ARCHITECTURE_AND_WORKFLOWS.md",
+      "commit": "37cb850c149168bbfff5a98768067a1a63bff2f9",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "Inferred isolated signer, envelope encryption, operation, nonce, and reconciliation boundaries",
+      "classification": "INFERRED"
+    },
+    {
+      "path": "docs/DEVELOPMENT_ROADMAP.md",
+      "commit": "37cb850c149168bbfff5a98768067a1a63bff2f9",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "P04 scope, tests, completion definition, and security gate",
+      "classification": "LOCAL-DECISION"
+    },
+    {
+      "path": "docs/FUNCTION_MATRIX.md",
+      "commit": "37cb850c149168bbfff5a98768067a1a63bff2f9",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "WALLET-01..10 and SET-06..07 public, bundle, and inferred feature definitions",
+      "classification": "PUBLIC"
+    },
+    {
+      "path": "docs/TRACEABILITY_MATRIX.md",
+      "commit": "37cb850c149168bbfff5a98768067a1a63bff2f9",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "P04 feature-to-test and evidence mapping",
+      "classification": "PUBLIC"
+    },
+    {
+      "path": "docs/VIBE_CODING_PLAYBOOK.md",
+      "commit": "37cb850c149168bbfff5a98768067a1a63bff2f9",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "P04 fixture-first signer and crypto failure-test execution guidance",
+      "classification": "LOCAL-DECISION"
+    },
+    {
+      "path": "infra/migrations/20260814000300_create_login_wallet_auth.sql",
+      "commit": "37cb850c149168bbfff5a98768067a1a63bff2f9",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "Authoritative local table comments freezing auth_login_wallets as authentication-only",
+      "classification": "LOCAL-DECISION"
+    }
+  ],
+  "checks": [
+    { "id": "initial-red", "result": "expected-failure", "evidencePath": "checks/initial-failure.txt" },
+    { "id": "governance-test", "result": "passed", "evidencePath": "checks/governance-test.txt" },
+    { "id": "artifact-schema", "result": "passed", "evidencePath": "checks/artifact-schema.txt" },
+    { "id": "prior-acceptance-integrity", "result": "passed", "evidencePath": "checks/prior-acceptance-integrity.txt" },
+    { "id": "quality-gates", "result": "passed", "evidencePath": "checks/quality-gates.txt" },
+    { "id": "secret-scan", "result": "passed", "evidencePath": "checks/security-audit.txt" },
+    { "id": "dependency-audit", "result": "passed", "evidencePath": "checks/security-audit.txt" }
+  ],
+  "limitations": [
+    "P04-01 owns no feature implementation; all twelve covered features remain planned.",
+    "No private key, user password, security password, DEK, KEK, OKX credential, provider token, or production secret is processed.",
+    "All key bytes and password strings in fixtures are deterministic, public, and explicitly marked synthetic.",
+    "No decrypt, sign, broadcast, KMS, OKX, or external JSON-RPC operation is executed.",
+    "Bundle-extracted routes remain BUNDLE-CANDIDATE until authenticated redacted responses are captured.",
+    "The envelope, Argon2id, nonce, replacement, RPC, and OKX rules are LOCAL-DECISION contracts and do not claim target internals.",
+    "Independent security review, signer memory evidence, KMS disaster recovery, fork transfers, and live integrations remain unresolved."
+  ]
+}

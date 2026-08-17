@@ -1,0 +1,7 @@
+P04-01 focused governance checks
+
+Result: pending final verification
+
+The final check will cover fact classification, authentication/custody isolation,
+key lifecycle, API and UI contracts, transaction and nonce rules, SET-06/SET-07,
+known-answer fixtures, prior acceptance integrity, and artifact checksums.

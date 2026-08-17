@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P04-01",
+  "status": "contract-frozen-with-unresolved-gaps",
+  "items": [
+    {
+      "id": "GAP-P04-TARGET-WALLET-RESPONSES",
+      "subject": "authenticated target wallet and keystore responses",
+      "category": "target-evidence",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "The baseline has bundle-extracted candidate paths but no authenticated, redacted wallet CRUD, keystore, reset, or transfer response fixtures.",
+      "requiredFollowUp": "Capture approved authenticated request/response fixtures with secrets removed, compare them to the local adapter contract, and retain evidence classification until matched."
+    },
+    {
+      "id": "GAP-P04-TARGET-CRYPTO-INTERNALS",
+      "subject": "target custody cryptographic internals",
+      "category": "target-evidence",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "The target bundle does not establish its cipher, KDF, AAD, DEK, KEK, rotation, memory, or disaster recovery design.",
+      "requiredFollowUp": "Keep the frozen design labeled LOCAL-DECISION unless authoritative target documentation or audited server evidence becomes available."
+    },
+    {
+      "id": "GAP-P04-TARGET-UI-STATES",
+      "subject": "complete target /wallets and /settings state coverage",
+      "category": "target-evidence",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "No authenticated desktop/mobile golden set covers locked, conflict, reset, transfer lineage, custom RPC error, and OKX failure states.",
+      "requiredFollowUp": "Capture and redact approved target states before any visual parity claim."
+    },
+    {
+      "id": "GAP-P04-INDEPENDENT-CRYPTO-REVIEW",
+      "subject": "independent custody and signer security review",
+      "category": "security-review",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "P04-01 freezes contracts only and is not an independent review of a signer implementation.",
+      "requiredFollowUp": "Complete design and implementation reviews, close findings, and approve testnet use before enabling any decryption or signing path."
+    },
+    {
+      "id": "GAP-P04-SIGNER-MEMORY",
+      "subject": "locked memory and zeroization implementation evidence",
+      "category": "security-runtime",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "No signer runtime exists, so mlock, core-dump controls, short-lived process isolation, buffer-copy accounting, and crash cleanup are unverified.",
+      "requiredFollowUp": "Implement the isolated signer boundary and exercise success, failure, timeout, crash, and auto-lock memory cleanup under an approved review plan."
+    },
+    {
+      "id": "GAP-P04-KMS-DR-DRILL",
+      "subject": "KMS backup, rotation, and disaster recovery drill",
+      "category": "recovery",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "The lifecycle fixture is a state-machine fixture and does not contact KMS, restore ciphertext, or open an envelope.",
+      "requiredFollowUp": "Run an isolated two-person restore drill with synthetic wallets, versioned KMS backups, no broadcast egress, and an auditable rollback."
+    },
+    {
+      "id": "GAP-P04-ARGON-BENCHMARK",
+      "subject": "production Argon2id parameter calibration",
+      "category": "performance-security",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "Version 1 parameters are frozen as a minimum design input but have not been benchmarked on the future signer hardware or under concurrency limits.",
+      "requiredFollowUp": "Benchmark the production parameter set on signer hardware, record latency and memory ceilings, and publish a reviewed parameter version without weakening the frozen minimum."
+    },
+    {
+      "id": "GAP-P04-FORK-TRANSFER",
+      "subject": "native and ERC-20 transfer reconciliation",
+      "category": "chain-evidence",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "P04-01 does not sign, broadcast, access RPC, obtain a receipt, or reconcile a real balance or Token Transfer event.",
+      "requiredFollowUp": "After security approval, run synthetic Anvil/fork transactions covering success, revert, dropped, replacement, reorg, gas, balance, nonce, and event reconciliation."
+    },
+    {
+      "id": "GAP-P04-CUSTOM-RPC-LIVE",
+      "subject": "browser-only custom RPC behavior",
+      "category": "external-integration",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "No browser RPC request is made and provider timeout, CORS, redirect, chain mismatch, response size, and rate-limit behavior remain unverified.",
+      "requiredFollowUp": "Implement the allowlist in the browser and verify it against local synthetic JSON-RPC fixtures before any approved external provider test."
+    },
+    {
+      "id": "GAP-P04-OKX-LIVE",
+      "subject": "OKX key validation and egress",
+      "category": "external-integration",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "No OKX credential is stored or opened and no OKX request is made; permissions, rotation, revocation, and provider failures are contract-only.",
+      "requiredFollowUp": "Implement a dedicated connector with synthetic local provider fixtures, then use an approved read-only sandbox credential for a separately reviewed staging test."
+    }
+  ]
+}
