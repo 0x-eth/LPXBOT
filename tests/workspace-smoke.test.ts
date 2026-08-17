@@ -11,6 +11,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedWorkspaces = new Map([
   ["apps/web", "@lpbot/web"],
   ["apps/api", "@lpbot/api"],
+  ["apps/dispatcher", "@lpbot/dispatcher"],
   ["apps/worker", "@lpbot/worker"],
   ["apps/indexer", "@lpbot/indexer"],
   ["apps/signer", "@lpbot/signer"],
