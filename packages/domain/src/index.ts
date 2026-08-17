@@ -2,6 +2,19 @@ export const domainPackage = {
   name: "@lpbot/domain",
 } as const;
 
+export { evaluateMonitorSnapshot, monitorCandidateKey } from "./monitor-evaluator.js";
+export type {
+  MonitorCandidate,
+  MonitorConditionMetric,
+  MonitorEvaluationCondition,
+  MonitorEvaluationDefinition,
+  MonitorEvaluationInput,
+  MonitorEvaluationResult,
+  MonitorMetricSnapshot,
+  MonitorMetricValue,
+  MonitorNoMatchReason,
+} from "./monitor-evaluator.js";
+
 export type Role = "user" | "pro" | "admin";
 export type Tier = "normal" | "pro";
 export type AccountStatus = "active" | "pending" | "rejected" | "banned";
