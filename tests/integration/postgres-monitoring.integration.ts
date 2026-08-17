@@ -408,9 +408,9 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
     ).toBe(true);
 
     const deadCandidate = candidate({
-      generatedAt: "2026-08-17T09:15:40Z",
+      generatedAt: "2026-08-17T09:12:40Z",
       sourceGenerationId: "generation-new",
-      windowEnd: "2026-08-17T09:15:00Z",
+      windowEnd: "2026-08-17T09:12:00Z",
     });
     deadCandidate.monitorId = monitorId;
     deadCandidate.monitorRevision = 3;
