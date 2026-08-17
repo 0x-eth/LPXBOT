@@ -89,8 +89,7 @@ const addressPattern = /^0x[0-9a-fA-F]{40}$/u;
 const poolIdPattern = /^0x[0-9a-fA-F]{64}$/u;
 const canonicalPoolKeyPattern = /^56:(0x(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64}))$/u;
 const transactionHashPattern = /^0x[0-9a-fA-F]{64}$/u;
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const unsignedIntegerPattern = /^(?:0|[1-9][0-9]{0,77})$/u;
 const protocols = new Set<MarketProtocol>(["pcsv3", "univ3", "pcsv4", "univ4"]);
 
@@ -265,7 +264,10 @@ export function parsePoolCreationHistoryQuery(value: unknown): {
   const cursor = input.cursor ?? null;
   if (
     cursor !== null &&
-    (typeof cursor !== "string" || cursor.length < 1 || cursor.length > 512 || !/^[A-Za-z0-9_-]+$/u.test(cursor))
+    (typeof cursor !== "string" ||
+      cursor.length < 1 ||
+      cursor.length > 512 ||
+      !/^[A-Za-z0-9_-]+$/u.test(cursor))
   ) {
     throw new PoolCreationProvenanceValidationError();
   }

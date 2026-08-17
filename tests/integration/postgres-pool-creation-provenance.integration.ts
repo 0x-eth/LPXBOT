@@ -88,10 +88,9 @@ describe("P02-12 PostgreSQL pool creation provenance ledger", () => {
     const saved = await adapter.record(record(1));
     expect(saved.status).toBe("inserted");
     await expect(
-      pool.query(
-        "UPDATE pool_creation_provenance SET fee_pips = 500 WHERE operation_id = $1",
-        [record(1).operationId],
-      ),
+      pool.query("UPDATE pool_creation_provenance SET fee_pips = 500 WHERE operation_id = $1", [
+        record(1).operationId,
+      ]),
     ).rejects.toMatchObject({ message: expect.stringContaining("append-only") });
     await expect(
       pool.query("DELETE FROM pool_creation_provenance WHERE operation_id = $1", [
@@ -170,7 +169,9 @@ describe("P02-12 PostgreSQL pool creation provenance ledger", () => {
 
     const restarted = new PostgresPoolCreationProvenanceStore(pool, adapterOptions);
     const page = await restarted.listByUser({ cursor: null, limit: 100, userId: users[0] });
-    expect(page.items.some(({ record: item }) => item.operationId === input.operationId)).toBe(true);
+    expect(page.items.some(({ record: item }) => item.operationId === input.operationId)).toBe(
+      true,
+    );
   });
 
   it("paginates completedAt and identity id in a stable descending order", async () => {
@@ -228,7 +229,9 @@ describe("P02-12 PostgreSQL pool creation provenance ledger", () => {
         userId: users[2],
       }),
     );
-    expect(await adapter.findAttribution(v4PoolKey.toUpperCase().replace("0X", "0x"))).toMatchObject({
+    expect(
+      await adapter.findAttribution(v4PoolKey.toUpperCase().replace("0X", "0x")),
+    ).toMatchObject({
       creatorProfile: { displayName: "Creator Two", telegramId: "8800202" },
       record: { operationId: record(11).operationId, outcome: "created", userId: users[1] },
       warning: null,
@@ -267,9 +270,13 @@ describe("P02-12 PostgreSQL pool creation provenance ledger", () => {
     const deletedKey = identity("deleted", 40);
     const deletedRecord = record(20, { poolKey: deletedKey, userId: users[2] });
     await adapter.record(deletedRecord);
-    expect((await adapter.listByUser({ cursor: null, limit: 100, userId: users[1] })).items).toEqual(
+    expect(
+      (await adapter.listByUser({ cursor: null, limit: 100, userId: users[1] })).items,
+    ).toEqual(
       expect.not.arrayContaining([
-        expect.objectContaining({ record: expect.objectContaining({ operationId: deletedRecord.operationId }) }),
+        expect.objectContaining({
+          record: expect.objectContaining({ operationId: deletedRecord.operationId }),
+        }),
       ]),
     );
     await pool.query("DELETE FROM users WHERE id = $1", [users[2]]);

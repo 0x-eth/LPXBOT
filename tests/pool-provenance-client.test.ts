@@ -68,9 +68,7 @@ describe("P02-12 strict pool provenance client", () => {
     expect(result.status).toBe("partial");
     expect(result.records.get(poolKey)).toEqual(attribution);
     expect(result.records.has(v4PoolKey)).toBe(false);
-    expect(result.malformed).toEqual(
-      new Set([v4PoolKey, `56:0x${"e".repeat(64)}`]),
-    );
+    expect(result.malformed).toEqual(new Set([v4PoolKey, `56:0x${"e".repeat(64)}`]));
   });
 
   it("aborts superseded work and ignores late responses from an old user/filter session", async () => {

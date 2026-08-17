@@ -31,8 +31,7 @@ type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Respons
 const poolKeyPattern = /^56:0x(?:[0-9a-f]{40}|[0-9a-f]{64})$/u;
 const addressPattern = /^0x[0-9a-f]{40}$/u;
 const transactionPattern = /^0x[0-9a-f]{64}$/u;
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const unsignedIntegerPattern = /^(?:0|[1-9][0-9]{0,77})$/u;
 const protocolSet = new Set<MarketProtocol>(["pcsv3", "univ3", "pcsv4", "univ4"]);
 
@@ -135,7 +134,8 @@ function attribution(value: unknown): PoolCreationAttribution | null {
 
 async function responseJson(response: Response): Promise<Record<string, unknown>> {
   const value = (await response.json().catch(() => null)) as unknown;
-  if (!isRecord(value)) throw new PoolProvenanceRequestError(response.status, "MALFORMED_RESPONSE", true);
+  if (!isRecord(value))
+    throw new PoolProvenanceRequestError(response.status, "MALFORMED_RESPONSE", true);
   if (!response.ok || value.success !== true) {
     const error = isRecord(value.error) ? value.error : {};
     throw new PoolProvenanceRequestError(
@@ -198,7 +198,11 @@ export class PoolProvenanceClient {
       ...(signal ? { signal } : {}),
     });
     const envelope = await responseJson(response);
-    if (!isRecord(envelope.data) || !exactKeys(envelope.data, ["results"]) || !Array.isArray(envelope.data.results)) {
+    if (
+      !isRecord(envelope.data) ||
+      !exactKeys(envelope.data, ["results"]) ||
+      !Array.isArray(envelope.data.results)
+    ) {
       throw new PoolProvenanceRequestError(response.status, "MALFORMED_RESPONSE", true);
     }
     const requested = new Set(poolKeys);
@@ -206,7 +210,11 @@ export class PoolProvenanceClient {
     const malformed = new Set<string>();
     for (const value of envelope.data.results) {
       if (!isRecord(value) || !exactKeys(value, ["creator", "identity"])) continue;
-      if (typeof value.identity !== "string" || !requested.has(value.identity) || records.has(value.identity)) {
+      if (
+        typeof value.identity !== "string" ||
+        !requested.has(value.identity) ||
+        records.has(value.identity)
+      ) {
         continue;
       }
       if (value.creator === null) {

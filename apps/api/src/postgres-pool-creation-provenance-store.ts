@@ -238,7 +238,9 @@ export class PostgresPoolCreationProvenanceStore implements PoolCreationProvenan
   }
 
   async findAttribution(poolKey: string): Promise<PoolCreationAttribution | null> {
-    return (await this.findAttributions([poolKey])).get(canonicalPoolCreationPoolKey(poolKey)) ?? null;
+    return (
+      (await this.findAttributions([poolKey])).get(canonicalPoolCreationPoolKey(poolKey)) ?? null
+    );
   }
 
   async findAttributions(
