@@ -17,9 +17,24 @@ test("LPBot renders without browser runtime failures", async ({ page }) => {
     const nativeFetch = globalThis.fetch.bind(globalThis);
     globalThis.fetch = (input, init) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-      if (new URL(url, window.location.href).pathname !== "/api/stats/stream") {
-        return nativeFetch(input, init);
+      const path = new URL(url, window.location.href).pathname;
+      if (path === "/api/user/pool-blocklist") {
+        return Promise.resolve(
+          Response.json({
+            data: {
+              blocklistHash:
+                "sha256:e13d010a6007fa2889ca3ee584f5259a09ff8f9bf5f3ab62ff2f264eef882047",
+              entries: [],
+              revision: 0,
+              schemaVersion: 1,
+              updatedAt: null,
+            },
+            requestId: "req-smoke-blocklist",
+            success: true,
+          }),
+        );
       }
+      if (path !== "/api/stats/stream") return nativeFetch(input, init);
       return Promise.resolve(
         new Response(new ReadableStream<Uint8Array>(), {
           headers: { "Content-Type": "text/event-stream" },
