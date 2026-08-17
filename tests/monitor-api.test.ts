@@ -68,7 +68,7 @@ function auth(token: string) {
 async function create(
   app: Awaited<ReturnType<typeof fixture>>["app"],
   token: string,
-  payload: Record<string, unknown> = createRequest,
+  payload: object = createRequest,
   idempotencyKey = "monitor-create-001",
 ) {
   return app.inject({
