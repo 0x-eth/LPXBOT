@@ -17,7 +17,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { issueFixtureSession, SessionFixtureStore } from "./helpers/session-fixture.js";
 
-const blockedPoolKey = `56:0x${"1".repeat(40)}`;
+const blockedPoolKey: `56:0x${string}` = `56:0x${"1".repeat(40)}`;
 const blockedToken = `0x${"b".repeat(40)}` as const;
 
 function row(

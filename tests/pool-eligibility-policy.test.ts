@@ -6,9 +6,9 @@ import {
 } from "../packages/domain/src/index.js";
 import { describe, expect, it } from "vitest";
 
-const blockedPoolKey = `56:0x${"1".repeat(40)}`;
+const blockedPoolKey: `56:0x${string}` = `56:0x${"1".repeat(40)}`;
 const allowedPoolKey = `56:0x${"2".repeat(64)}`;
-const blockedToken = `0x${"a".repeat(40)}`;
+const blockedToken: `0x${string}` = `0x${"a".repeat(40)}`;
 const otherToken = `0x${"b".repeat(40)}`;
 
 const snapshot: PoolBlocklistSnapshot = {
