@@ -3,7 +3,7 @@
 > 基线日期：2026-08-13  
 > 范围源：[功能矩阵](./FUNCTION_MATRIX.md)  
 > 阶段源：[开发路线图](./DEVELOPMENT_ROADMAP.md)  
-> 当前状态：P01 的 18 项、P02 的 23 项及 P03 的 3 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 152 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
+> 当前状态：P01 的 18 项、P02 的 23 项及 P03 的 6 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 149 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
 
 ## 1. 使用规则
 
@@ -321,7 +321,7 @@ P02-02、P02-04、P02-05、P02-06、P02-07、P02-08、P02-09、P02-10、P02-11�
 
 #### P03 当前实现与证据状态
 
-P03-02 仅验证 BSC 本地 fixture 纵向路径。P03 当前为 3 项 `implemented-assumed`、5 项 `planned`；active TVL、Fee/aTVL、`GAP-P03-TARGET-MONITOR-PARITY` 和 live delivery 保持 unresolved。生产目的地选择器返回空集合，不存在 Telegram/Webhook dispatcher、通知历史或目的地 UI。
+P03-02 与 P03-03 仅验证 BSC 和 local-sink fixture 纵向路径。P03 当前为 6 项 `implemented-assumed`、2 项 `planned`；active TVL、Fee/aTVL、`GAP-P03-TARGET-MONITOR-PARITY`、live Telegram/Webhook delivery、完整 SSRF egress 与 delivery SLO 保持 unresolved。MON-05/MON-06 保持 `planned`，不存在外部 dispatcher 或通知历史页面；非 monitor 分类当前只保存偏好，不生成尚不存在的业务事件。
 
 <!-- P03_STATUS_TABLE_START -->
 | ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
@@ -329,11 +329,11 @@ P03-02 仅验证 BSC 本地 fixture 纵向路径。P03 当前为 3 项 `implemen
 | MON-01 | `implemented-assumed` | [API contract](../packages/api-contract/src/index.ts), [HTTP API](../apps/api/src/app.ts), [PostgreSQL store](../apps/api/src/postgres-monitor-store.ts), [Web client](../apps/web/src/monitor-client.ts), [Monitors UI](../apps/web/src/monitors-page.tsx) | [T-API](../tests/monitor-api.test.ts), [T-REC](../tests/integration/postgres-monitoring.integration.ts), [T-UI/T-VIS](../tests/e2e/p03-02-monitors.spec.ts) | [P03-02](../artifacts/acceptance/P03-02/manifest.json); local-fixture-verified; BSC only |
 | MON-02 | `implemented-assumed` | [Pure evaluator](../packages/domain/src/monitor-evaluator.ts), [Canonical worker](../apps/worker/src/monitoring.ts), [Candidate/Outbox repository](../apps/worker/src/postgres-monitor-outbox.ts), [Migration](../infra/migrations/20260817000500_create_monitoring_outbox.sql) | [T-UNIT](../tests/monitor-evaluator.test.ts), [T-API](../tests/monitor-api.test.ts), [T-REC/T-MIG](../tests/integration/postgres-monitoring.integration.ts) | [P03-02](../artifacts/acceptance/P03-02/manifest.json); local-fixture-verified; active TVL and Fee/aTVL unresolved |
 | MON-03 | `implemented-assumed` | [Pure evaluator](../packages/domain/src/monitor-evaluator.ts), [P02-11 blocklist source](../apps/worker/src/postgres-monitor-source.ts), [Monitors UI](../apps/web/src/monitors-page.tsx) | [T-UNIT](../tests/monitor-evaluator.test.ts), [T-REC](../tests/integration/postgres-monitoring.integration.ts), [T-UI](../tests/e2e/p03-02-monitors.spec.ts) | [P03-02](../artifacts/acceptance/P03-02/manifest.json); local-fixture-verified; unknown metadata fails closed |
-| MON-04 | `planned` | — | — | [P03-01](../artifacts/acceptance/P03-01/artifact-manifest.json); frozen reference only |
+| MON-04 | `implemented-assumed` | [API contract](../packages/api-contract/src/index.ts), [HTTP API](../apps/api/src/app.ts), [PostgreSQL configuration store](../apps/api/src/postgres-notification-store.ts), [Migration](../infra/migrations/20260818000100_create_notification_configuration.sql), [Destination selector](../apps/worker/src/postgres-monitor-destination-selector.ts), [Notification UI](../apps/web/src/notification-settings.tsx), [Monitor binding UI](../apps/web/src/monitors-page.tsx) | [T-API/T-SEC](../tests/notification-settings-api.test.ts), [T-UNIT/T-SEC](../tests/notification-delivery-security.test.ts), [T-REC/T-MIG](../tests/integration/postgres-notifications.integration.ts), [T-UI/T-VIS](../tests/e2e/p03-03-notifications.spec.ts) | [P03-03](../artifacts/acceptance/P03-03/manifest.json); local-fixture-verified; local-sink only; no external dispatcher |
 | MON-05 | `planned` | — | — | [P03-01](../artifacts/acceptance/P03-01/artifact-manifest.json); frozen reference only |
 | MON-06 | `planned` | — | — | [P03-01](../artifacts/acceptance/P03-01/artifact-manifest.json); frozen reference only |
-| NOTIFY-01 | `planned` | — | — | [P03-01](../artifacts/acceptance/P03-01/artifact-manifest.json); no live delivery |
-| NOTIFY-02 | `planned` | — | — | [P03-01](../artifacts/acceptance/P03-01/artifact-manifest.json); no live delivery |
+| NOTIFY-01 | `implemented-assumed` | [Preference contract](../packages/api-contract/src/index.ts), [HTTP API](../apps/api/src/app.ts), [PostgreSQL configuration store](../apps/api/src/postgres-notification-store.ts), [Destination selector](../apps/worker/src/postgres-monitor-destination-selector.ts), [Settings UI](../apps/web/src/notification-settings.tsx) | [T-API](../tests/notification-settings-api.test.ts), [T-REC](../tests/integration/postgres-notifications.integration.ts), [T-UI/T-VIS](../tests/e2e/p03-03-notifications.spec.ts) | [P03-03](../artifacts/acceptance/P03-03/manifest.json); local-fixture-verified; categories default off; only monitor-match has a business producer |
+| NOTIFY-02 | `implemented-assumed` | [Destination contract](../packages/api-contract/src/index.ts), [Template and HMAC functions](../packages/security/src/notification-delivery.ts), [PostgreSQL configuration store](../apps/api/src/postgres-notification-store.ts), [Strict web client](../apps/web/src/notification-client.ts), [Settings UI](../apps/web/src/notification-settings.tsx) | [T-UNIT/T-SEC](../tests/notification-delivery-security.test.ts), [T-API/T-SEC](../tests/notification-settings-api.test.ts), [T-REC/T-MIG](../tests/integration/postgres-notifications.integration.ts), [T-UI/T-VIS](../tests/e2e/p03-03-notifications.spec.ts) | [P03-03](../artifacts/acceptance/P03-03/manifest.json); local-fixture-verified; no live delivery; full SSRF egress unresolved |
 <!-- P03_STATUS_TABLE_END -->
 
 ### 管理后台
@@ -363,10 +363,10 @@ P03-02 仅验证 BSC 本地 fixture 纵向路径。P03 当前为 3 项 `implemen
 |---|---:|---|
 | 功能矩阵稳定 ID | 196 | 已全部映射 |
 | 追踪表稳定 ID | 196 | 必须由自动检查保持相等 |
-| 当前产品实现 | 44 | P01 的 18 项、P02 的 23 项和 P03 的 3 项完成阶段实现；P03 为 3 implemented-assumed / 5 planned |
-| `implemented-assumed` | 44 | 目标对照或 live 证据仍不完整 |
+| 当前产品实现 | 47 | P01 的 18 项、P02 的 23 项和 P03 的 6 项完成阶段实现；P03 为 6 implemented-assumed / 2 planned |
+| `implemented-assumed` | 47 | 目标对照或 live 证据仍不完整 |
 | `parity-verified` | 0 | 不由 accepted work item 自动提升 |
 | `released` | 0 | 尚无 staging、监控和回滚完整证明 |
-| 其余 `planned` | 152 | P02 已无 planned；P03 尚有 5 项，P04-P13 状态未改变 |
+| 其余 `planned` | 149 | P02 已无 planned；P03 尚有 2 项，P04-P13 状态未改变 |
 
 建议 CI 检查逻辑：从 `FUNCTION_MATRIX.md` 与本文件抽取 `^[A-Z]+-[0-9]{2}$`，比较去重集合；再检查每行非空的阶段、测试和证据列。任何新增功能 ID 必须先进入范围源和本表。

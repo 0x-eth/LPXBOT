@@ -171,7 +171,7 @@
 | MON-01 | 监控 CRUD 与启停 | UI+API | USER | R1 | 列表、启用数/总数、revision 更新和删除；`implemented-assumed`（P03-02，BSC only） |
 | MON-02 | 多条件 AND | UI+API+BUNDLE | USER | R1 | Volume、Fee、Fee/TVL、TVL、交易数、版本；active TVL 与 Fee/aTVL unresolved；`implemented-assumed`（P03-02） |
 | MON-03 | 排除中文 token / Hook | UI+BUNDLE | USER | R1 | canonical 三态元数据 fail closed；`implemented-assumed`（P03-02） |
-| MON-04 | Telegram 与外部 Webhook | UI+API+BUNDLE | USER | R1 | GET/POST、模板占位符、测试、不保存测试配置 |
+| MON-04 | Telegram 与外部 Webhook | UI+API+BUNDLE | USER | R1 | GET/POST、模板占位符、测试、不保存测试配置；`implemented-assumed`（P03-03，local-sink only；live delivery unresolved） |
 | MON-05 | 通知历史 | UI+API | USER | R0 | 池、条件、时间、投递状态 |
 | MON-06 | 投递安全 | INFERRED | USER | R2 | SSRF 防护、私网阻断、签名、超时、重试、速率限制 |
 
@@ -263,8 +263,8 @@
 | LOG-02 | 日志类型过滤 | UI+BUNDLE | USER | R0 | 创建/移仓/复投/补仓/关闭/换池/收 Fee |
 | STATS-01 | 系统统计 SSE | API+BUNDLE | USER/ADMIN | R0 | snapshot/update、25s 心跳、Telegram user filter；`implemented-assumed`（P02-13，authoritative local projection） |
 | STATS-02 | 推荐池 SSE | API+BUNDLE | USER | R0 | 约 5s、浅 hash 不变不推、链和 limit；`implemented-assumed`（P02-09，locally-defined） |
-| NOTIFY-01 | 分类 Telegram 通知偏好 | UI+BUNDLE | USER | R1 | 创建、移仓、失败、关仓等分类 |
-| NOTIFY-02 | 外部 Webhook 偏好 | UI+BUNDLE | USER | R1/R2 | GET/POST、body 模板、测试、密钥化签名 |
+| NOTIFY-01 | 分类 Telegram 通知偏好 | UI+BUNDLE | USER | R1 | 创建、移仓、失败、关仓等分类；`implemented-assumed`（P03-03，非 monitor 分类仅保存偏好） |
+| NOTIFY-02 | 外部 Webhook 偏好 | UI+BUNDLE | USER | R1/R2 | GET/POST、body 模板、测试、密钥化签名；`implemented-assumed`（P03-03，local-sink only；完整 SSRF egress unresolved） |
 | FEED-01 | 提交 bug/feature/other | UI+API | USER | R1 | 2000 字、60s/3 条限速 |
 | FEED-02 | 我的反馈与管理员回复 | UI+API+BUNDLE | USER | R0/R1 | open/replied/closed，Telegram 回复通知 |
 | FEED-03 | 管理反馈队列 | UI+BUNDLE | ADMIN | R1 | 筛选、回复、关闭、重开 |
