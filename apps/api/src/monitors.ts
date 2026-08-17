@@ -65,12 +65,20 @@ export interface MonitorDeleteInput {
 export type MonitorCreateResult =
   | { status: "created" | "replayed"; value: Monitor }
   | {
-      status: "capacity" | "idempotency-conflict" | "pool-ineligible" | "service-unavailable";
+      status:
+        | "capacity"
+        | "destination-not-found"
+        | "idempotency-conflict"
+        | "pool-ineligible"
+        | "service-unavailable";
     };
 
 export type MonitorMutationResult =
   | { status: "updated" | "unchanged"; value: Monitor }
-  | { current: Monitor; status: "conflict" | "invalid" | "not-ready" }
+  | {
+      current: Monitor;
+      status: "conflict" | "destination-not-found" | "invalid" | "not-ready";
+    }
   | { status: "not-found" };
 
 export type MonitorDeleteResult =
@@ -184,17 +192,43 @@ function canonicalConditions(value: unknown): Condition[] {
   return value.map(canonicalCondition);
 }
 
+const destinationIdPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+
+function canonicalDestinationIds(value: unknown): string[] {
+  if (!Array.isArray(value) || value.length > 20) throw new MonitorValidationError();
+  const ids = value.map((destinationId) => {
+    if (typeof destinationId !== "string" || !destinationIdPattern.test(destinationId)) {
+      throw new MonitorValidationError();
+    }
+    return destinationId.toLowerCase();
+  });
+  if (new Set(ids).size !== ids.length) throw new MonitorValidationError();
+  return ids.sort((left, right) => left.localeCompare(right, "en"));
+}
+
 export function parseMonitorCreate(value: unknown): CreateMonitorRequest {
   if (
     !isRecord(value) ||
-    !exactKeys(value, [
-      "conditions",
-      "excludeHanToken",
-      "excludeHook",
-      "name",
-      "poolKey",
-      "windowMinutes",
-    ]) ||
+    !(
+      exactKeys(value, [
+        "conditions",
+        "excludeHanToken",
+        "excludeHook",
+        "name",
+        "poolKey",
+        "windowMinutes",
+      ]) ||
+      exactKeys(value, [
+        "conditions",
+        "destinationIds",
+        "excludeHanToken",
+        "excludeHook",
+        "name",
+        "poolKey",
+        "windowMinutes",
+      ])
+    ) ||
     typeof value.excludeHanToken !== "boolean" ||
     typeof value.excludeHook !== "boolean"
   ) {
@@ -202,6 +236,7 @@ export function parseMonitorCreate(value: unknown): CreateMonitorRequest {
   }
   return {
     conditions: canonicalConditions(value.conditions),
+    destinationIds: canonicalDestinationIds(value.destinationIds ?? []),
     excludeHanToken: value.excludeHanToken,
     excludeHook: value.excludeHook,
     name: canonicalName(value.name),
@@ -221,6 +256,7 @@ export function parseMonitorPatch(value: unknown): PatchMonitorRequest {
   }
   const allowed = new Set([
     "conditions",
+    "destinationIds",
     "excludeHanToken",
     "excludeHook",
     "name",
@@ -233,6 +269,9 @@ export function parseMonitorPatch(value: unknown): PatchMonitorRequest {
   const changes: PatchMonitorChanges = {};
   if (Object.hasOwn(value.changes, "conditions")) {
     changes.conditions = canonicalConditions(value.changes.conditions);
+  }
+  if (Object.hasOwn(value.changes, "destinationIds")) {
+    changes.destinationIds = canonicalDestinationIds(value.changes.destinationIds);
   }
   if (Object.hasOwn(value.changes, "excludeHanToken")) {
     if (typeof value.changes.excludeHanToken !== "boolean") throw new MonitorValidationError();
@@ -308,10 +347,18 @@ export class MemoryMonitorStore implements MonitorStore {
   readonly #idFactory: () => string;
   readonly #idempotency = new Map<string, { hash: string; monitorId: string }>();
   readonly #monitors = new Map<string, Monitor>();
+  readonly #destinationOwner: ((userId: string, destinationId: string) => Promise<boolean>) | null;
 
-  constructor(options: { capacity?: number; idFactory?: () => string } = {}) {
+  constructor(
+    options: {
+      capacity?: number;
+      destinationOwner?: (userId: string, destinationId: string) => Promise<boolean>;
+      idFactory?: () => string;
+    } = {},
+  ) {
     this.#capacity = options.capacity ?? 100;
     this.#idFactory = options.idFactory ?? randomUUID;
+    this.#destinationOwner = options.destinationOwner ?? null;
   }
 
   async create(input: MonitorCreateInput): Promise<MonitorCreateResult> {
@@ -326,6 +373,10 @@ export class MemoryMonitorStore implements MonitorStore {
     }
     if (input.poolEligible === null) return { status: "service-unavailable" };
     if (input.poolEligible === false) return { status: "pool-ineligible" };
+    const destinationIds = input.request.destinationIds ?? [];
+    if (!(await this.#ownsDestinations(input.userId, destinationIds))) {
+      return { status: "destination-not-found" };
+    }
     if (
       [...this.#monitors.values()].filter(({ userId }) => userId === input.userId).length >=
       this.#capacity
@@ -336,6 +387,7 @@ export class MemoryMonitorStore implements MonitorStore {
     const monitor: Monitor = {
       ...structuredClone(input.request),
       createdAt: timestamp,
+      destinationIds: [...destinationIds],
       disabledAt: timestamp,
       enabled: false,
       enabledAt: null,
@@ -393,6 +445,12 @@ export class MemoryMonitorStore implements MonitorStore {
     ) {
       return { current: cloneMonitor(current), status: "invalid" };
     }
+    if (
+      input.changes.destinationIds !== undefined &&
+      !(await this.#ownsDestinations(input.userId, input.changes.destinationIds))
+    ) {
+      return { current: cloneMonitor(current), status: "destination-not-found" };
+    }
     const changed = Object.entries(input.changes).some(
       ([key, value]) => JSON.stringify(current[key as keyof Monitor]) !== JSON.stringify(value),
     );
@@ -445,5 +503,14 @@ export class MemoryMonitorStore implements MonitorStore {
   #owned(userId: string, monitorId: string): Monitor | null {
     const monitor = this.#monitors.get(monitorId);
     return monitor?.userId === userId ? monitor : null;
+  }
+
+  async #ownsDestinations(userId: string, destinationIds: readonly string[]): Promise<boolean> {
+    if (destinationIds.length === 0) return true;
+    if (!this.#destinationOwner) return false;
+    const owned = await Promise.all(
+      destinationIds.map((destinationId) => this.#destinationOwner!(userId, destinationId)),
+    );
+    return owned.every(Boolean);
   }
 }

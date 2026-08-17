@@ -164,6 +164,7 @@ export type Condition =
 
 export interface CreateMonitorRequest {
   conditions: Condition[];
+  destinationIds?: string[];
   excludeHanToken: boolean;
   excludeHook: boolean;
   name: string;
@@ -173,6 +174,7 @@ export interface CreateMonitorRequest {
 
 export interface PatchMonitorChanges {
   conditions?: Condition[];
+  destinationIds?: string[];
   excludeHanToken?: boolean;
   excludeHook?: boolean;
   name?: string;
@@ -190,6 +192,7 @@ export interface LifecycleMonitorRequest {
 
 export interface Monitor extends CreateMonitorRequest {
   createdAt: string;
+  destinationIds: string[];
   disabledAt: string | null;
   enabled: boolean;
   enabledAt: string | null;
