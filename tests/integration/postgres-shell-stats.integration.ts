@@ -224,7 +224,11 @@ describe("P02-13 PostgreSQL task status projection", () => {
     const snapshot = await provider.getSnapshot({ scope: userScope(users[0]) });
     const controller = new AbortController();
     const iterator = provider
-      .subscribe({ afterSequence: snapshot.sequence, scope: userScope(users[0]), signal: controller.signal })
+      .subscribe({
+        afterSequence: snapshot.sequence,
+        scope: userScope(users[0]),
+        signal: controller.signal,
+      })
       [Symbol.asyncIterator]();
 
     await publisher.publish({

@@ -264,9 +264,11 @@ describe("P01-06 API shell stats provider", () => {
           }, 80);
         },
       });
-      const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
-        new Response(stream, { headers: { "Content-Type": "text/event-stream" }, status: 200 }),
-      );
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(
+          new Response(stream, { headers: { "Content-Type": "text/event-stream" }, status: 200 }),
+        );
       const provider = new ApiShellStatsProvider({
         fetcher,
         heartbeatTimeoutMs: 100,

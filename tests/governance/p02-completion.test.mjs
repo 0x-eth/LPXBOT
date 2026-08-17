@@ -305,7 +305,10 @@ test("P02-13 scope and sequence Golden covers readiness, isolation and revision 
   assert.equal(golden.cases[0].expected.code, "STATS_UNAVAILABLE");
   assert.deepEqual(golden.cases[1].expected.taskCounts, { paused: 0, running: 0, stopped: 0 });
   assert.equal(golden.cases.find(({ id }) => id === "conflicting-revision").expected.conflicts, 1);
-  assert.equal(golden.cases.find(({ id }) => id === "skipped-updates").expected.patch.complete, true);
+  assert.equal(
+    golden.cases.find(({ id }) => id === "skipped-updates").expected.patch.complete,
+    true,
+  );
   assert.equal(golden.cases.find(({ id }) => id === "restart-reconnect").expected.regresses, false);
 });
 

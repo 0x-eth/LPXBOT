@@ -173,7 +173,9 @@ async function installStatsFixture(page: Page): Promise<void> {
   });
 }
 
-test("STATS-01 keeps authoritative zero, updates and unknown state stable", async ({ page }, testInfo) => {
+test("STATS-01 keeps authoritative zero, updates and unknown state stable", async ({
+  page,
+}, testInfo) => {
   await installStatsFixture(page);
   await installApplicationFixture(page);
   await page.goto("/tasks/running");
@@ -210,7 +212,9 @@ test("STATS-01 keeps authoritative zero, updates and unknown state stable", asyn
   expect(screenshot.byteLength).toBeGreaterThan(10_000);
 
   await page.goto("/tasks/running?stats_state=unknown");
-  await expect(page.locator(".primary-navigation:visible .nav-badge-slot").first()).toHaveText("--");
+  await expect(page.locator(".primary-navigation:visible .nav-badge-slot").first()).toHaveText(
+    "--",
+  );
   if (testInfo.project.name === "chromium-desktop") {
     await expect(bar.locator(".status-primary")).toContainText("运行 --");
   }

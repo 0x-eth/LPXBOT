@@ -2068,13 +2068,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       if (!options.statsProvider) {
         return sendStatsUnavailable(request, reply);
       }
-      const scope = await resolveStatsScope(
-        request,
-        reply,
-        session,
-        query.telegramUserId,
-        "http",
-      );
+      const scope = await resolveStatsScope(request, reply, session, query.telegramUserId, "http");
       if (!scope) return reply;
       try {
         const snapshot = await options.statsProvider.getSnapshot({ scope });
@@ -2133,13 +2127,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           );
         }
         const statsScope = options.statsProvider
-          ? await resolveStatsScope(
-              request,
-              reply,
-              session,
-              query.telegramUserId,
-              "sse",
-            )
+          ? await resolveStatsScope(request, reply, session, query.telegramUserId, "sse")
           : null;
         if (options.statsProvider && !statsScope) return reply;
         const recommendationEligibility =

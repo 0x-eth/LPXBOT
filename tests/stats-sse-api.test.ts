@@ -37,14 +37,20 @@ class FiniteStatsProvider implements ShellStatsProvider {
       return {
         ...structuredClone(snapshot),
         sequence: 50,
-        stats: { ...structuredClone(snapshot.stats), taskCounts: { paused: 4, running: 9, stopped: 2 } },
+        stats: {
+          ...structuredClone(snapshot.stats),
+          taskCounts: { paused: 4, running: 9, stopped: 2 },
+        },
       };
     }
     if (context.scope.userId === targetUserId) {
       return {
         ...structuredClone(snapshot),
         sequence: 45,
-        stats: { ...structuredClone(snapshot.stats), taskCounts: { paused: 2, running: 8, stopped: 1 } },
+        stats: {
+          ...structuredClone(snapshot.stats),
+          taskCounts: { paused: 2, running: 8, stopped: 1 },
+        },
       };
     }
     return structuredClone(snapshot);
@@ -112,7 +118,9 @@ async function fixture(options: { admin?: boolean; provider?: FiniteStatsProvide
   return { app, logLines, statsProvider, token };
 }
 
-function parseSse(body: string): Array<{ event: string; id: number | null; payload: ShellStatsEvent }> {
+function parseSse(
+  body: string,
+): Array<{ event: string; id: number | null; payload: ShellStatsEvent }> {
   return body
     .trim()
     .split("\n\n")

@@ -364,7 +364,8 @@ export class PostgresTaskStatusStatsPublisher implements TaskStatusStatsPublishe
       const publicContentChanged =
         current === undefined
           ? contentHash !== taskCountsHash(0, 0, 0)
-          : contentHash !== taskCountsHash(
+          : contentHash !==
+            taskCountsHash(
               storedSafeInteger(current.running, "running count"),
               storedSafeInteger(current.paused, "paused count"),
               storedSafeInteger(current.stopped, "stopped count"),
@@ -428,7 +429,9 @@ export class PostgresTaskStatusStatsPublisher implements TaskStatusStatsPublishe
       const globalPaused = storedSafeInteger(aggregateRow?.paused, "global paused count");
       const globalStopped = storedSafeInteger(aggregateRow?.stopped, "global stopped count");
       if (!Number.isSafeInteger(globalRunning + globalPaused + globalStopped)) {
-        throw new TaskStatusStatsValidationError("Global task status total exceeds safe integer range");
+        throw new TaskStatusStatsValidationError(
+          "Global task status total exceeds safe integer range",
+        );
       }
       const globalHash = taskCountsHash(globalRunning, globalPaused, globalStopped);
       await client.query(
@@ -621,7 +624,10 @@ export class PostgresShellStatsProvider implements ShellStatsProvider {
       try {
         head = await abortable(this.#readHead(scope), context.signal);
       } catch (error) {
-        if (context.signal.aborted || (error instanceof DOMException && error.name === "AbortError")) {
+        if (
+          context.signal.aborted ||
+          (error instanceof DOMException && error.name === "AbortError")
+        ) {
           return;
         }
         if (error instanceof ShellStatsUnavailableError) throw error;

@@ -22,8 +22,9 @@ describe("P02-13 authoritative task status statistics contract", () => {
       ...validInput,
       total: 10,
     });
-    expect(canonicalTaskStatusStatsInput({ ...validInput, paused: 0, running: 0, stopped: 0 }))
-      .toMatchObject({ paused: 0, running: 0, stopped: 0, total: 0 });
+    expect(
+      canonicalTaskStatusStatsInput({ ...validInput, paused: 0, running: 0, stopped: 0 }),
+    ).toMatchObject({ paused: 0, running: 0, stopped: 0, total: 0 });
   });
 
   it.each([
@@ -31,10 +32,7 @@ describe("P02-13 authoritative task status statistics contract", () => {
     ["fractional paused", { paused: 1.5 }],
     ["infinite stopped", { stopped: Number.POSITIVE_INFINITY }],
     ["overflow running", { running: Number.MAX_SAFE_INTEGER + 1 }],
-    [
-      "overflow total",
-      { paused: Number.MAX_SAFE_INTEGER, running: 1, stopped: 0 },
-    ],
+    ["overflow total", { paused: Number.MAX_SAFE_INTEGER, running: 1, stopped: 0 }],
     ["negative source revision", { sourceRevision: -1 }],
     ["fractional source revision", { sourceRevision: 1.5 }],
     ["overflow source revision", { sourceRevision: Number.MAX_SAFE_INTEGER + 1 }],
