@@ -27,6 +27,18 @@ export type { PostgresMonitorStoreOptions } from "./postgres-monitor-store.js";
 export { PostgresNotificationConfigurationStore } from "./postgres-notification-store.js";
 export type { PostgresNotificationConfigurationStoreOptions } from "./postgres-notification-store.js";
 export {
+  decodeNotificationHistoryCursor,
+  encodeNotificationHistoryCursor,
+  MemoryNotificationHistoryStore,
+  NotificationHistoryQueryError,
+  parseNotificationHistoryQuery,
+} from "./notification-history.js";
+export type {
+  NotificationHistoryQuery,
+  NotificationHistoryStore,
+  StoredNotificationHistoryItem,
+} from "./notification-history.js";
+export {
   MemoryMonitorStore,
   MonitorValidationError,
   parseIdempotencyKey,

@@ -59,6 +59,11 @@ import {
 } from "./chain-access-policies.js";
 import type { LiquidityFlowProvider } from "./liquidity-flow.js";
 import {
+  NotificationHistoryQueryError,
+  parseNotificationHistoryQuery,
+  type NotificationHistoryStore,
+} from "./notification-history.js";
+import {
   MarketChartProviderError,
   type MarketCandleQuery,
   type MarketChartsProvider,
@@ -151,6 +156,7 @@ export interface ApiAppOptions {
   marketPoolsRateLimit?: PublicReadRateLimit;
   monitorStore?: MonitorStore;
   notificationStore?: NotificationConfigurationStore;
+  notificationHistoryStore?: NotificationHistoryStore;
   managementOrigin?: string;
   now?: () => Date;
   poolBlocklistRateLimit?: ChainManagementRateLimit;
@@ -2802,6 +2808,40 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       if (!options.notificationStore) return sendNotificationUnavailable(request, reply);
       return createSuccessEnvelope(
         await options.notificationStore.listDestinations(session.userId),
+        request.id,
+      );
+    });
+
+    app.get("/api/notifications/history", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.notificationHistoryStore) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "NOTIFICATION_HISTORY_UNAVAILABLE",
+            message: "Notification history is not configured",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      let query;
+      try {
+        query = parseNotificationHistoryQuery(request.query);
+      } catch (error) {
+        if (!(error instanceof NotificationHistoryQueryError)) throw error;
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "INVALID_NOTIFICATION_HISTORY_QUERY",
+            message: "Notification history query is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      return createSuccessEnvelope(
+        await options.notificationHistoryStore.list(session.userId, query),
         request.id,
       );
     });

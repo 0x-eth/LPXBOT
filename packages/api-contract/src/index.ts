@@ -379,6 +379,49 @@ export const notificationDestinationContracts = {
   test: { method: "POST", path: "/api/notification-destinations/test" },
 } as const;
 
+export const notificationDeliveryStatuses = [
+  "pending",
+  "sending",
+  "retrying",
+  "delivered",
+  "failed",
+] as const;
+
+export type NotificationDeliveryStatus = (typeof notificationDeliveryStatuses)[number];
+
+export interface NotificationHistoryDestinationSnapshot {
+  destinationId: string;
+  name: string;
+  type: NotificationDestinationType;
+}
+
+export interface NotificationHistoryItem {
+  attemptCount: number;
+  conditionSummary: string;
+  createdAt: string;
+  deliveredAt: string | null;
+  deliveryId: string;
+  destination: NotificationHistoryDestinationSnapshot;
+  errorCode: string | null;
+  monitorId: string;
+  monitorName: string;
+  nextRetryAt: string | null;
+  poolKey: BscPoolKey;
+  status: NotificationDeliveryStatus;
+  updatedAt: string;
+  windowEnd: string;
+  windowMinutes: MonitorWindowMinutes;
+}
+
+export interface NotificationHistoryPage {
+  items: NotificationHistoryItem[];
+  nextCursor: string | null;
+}
+
+export const notificationHistoryContract = {
+  list: { method: "GET", path: "/api/notifications/history" },
+} as const;
+
 export interface AddressRemark {
   address: EvmAddress;
   label: string;
