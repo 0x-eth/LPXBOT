@@ -2295,6 +2295,332 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       },
     );
 
+    const sendMonitorUnavailable = (request: FastifyRequest, reply: FastifyReply) =>
+      reply.code(503).send(
+        createErrorEnvelope({
+          code: "SERVICE_UNAVAILABLE",
+          message: "Monitor storage or eligibility authority is unavailable",
+          requestId: request.id,
+          retryable: true,
+        }),
+      );
+
+    const sendMonitorMutation = (
+      request: FastifyRequest,
+      reply: FastifyReply,
+      result: MonitorMutationResult,
+    ) => {
+      if (result.status === "not-found") {
+        return reply.code(404).send(
+          createErrorEnvelope({
+            code: "MONITOR_NOT_FOUND",
+            message: "The monitor was not found",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (result.status === "conflict") {
+        return reply.code(409).send({
+          current: result.current,
+          error: {
+            code: "REVISION_CONFLICT",
+            message: "The monitor changed in another session",
+            requestId: request.id,
+            retryable: true,
+          },
+          success: false,
+        });
+      }
+      if (result.status === "invalid") {
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "INVALID_MONITOR",
+            message: "The monitor mutation is invalid in its current state",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (result.status === "not-ready") {
+        return reply.code(422).send(
+          createErrorEnvelope({
+            code: "MONITOR_NOT_READY",
+            message: "The monitor has no enabled supported condition",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      return reply.send(createSuccessEnvelope(result.value, request.id));
+    };
+
+    const monitorPoolEligibility = async (userId: string, poolKey: string) => {
+      if (!options.poolBlocklistStore) return null;
+      try {
+        const snapshot = await options.poolBlocklistStore.get(userId);
+        return !snapshot.entries.some(
+          (entry) => entry.scope === "pool" && entry.identity === poolKey,
+        );
+      } catch {
+        return null;
+      }
+    };
+
+    app.get("/api/monitors", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.monitorStore) return sendMonitorUnavailable(request, reply);
+      let query;
+      try {
+        query = parseMonitorListQuery(request.query);
+      } catch (error) {
+        if (!(error instanceof MonitorValidationError)) throw error;
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "INVALID_QUERY",
+            message: "The monitor list query is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      return createSuccessEnvelope(await options.monitorStore.list(session.userId, query), request.id);
+    });
+
+    app.post("/api/monitors", { bodyLimit: 65_536 }, async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.monitorStore) return sendMonitorUnavailable(request, reply);
+      let parsed;
+      let idempotencyKey;
+      try {
+        parsed = parseMonitorCreate(request.body);
+        idempotencyKey = parseIdempotencyKey(request.headers["idempotency-key"]);
+      } catch (error) {
+        if (!(error instanceof MonitorValidationError)) throw error;
+        return reply.code(error.code === "UNSUPPORTED_METRIC" ? 422 : 400).send(
+          createErrorEnvelope({
+            code: error.code,
+            message:
+              error.code === "UNSUPPORTED_METRIC"
+                ? "The requested monitor metric is not available"
+                : "The monitor request is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      const eligible = await monitorPoolEligibility(session.userId, parsed.poolKey);
+      if (eligible === null) return sendMonitorUnavailable(request, reply);
+      if (!eligible) {
+        return reply.code(422).send(
+          createErrorEnvelope({
+            code: "POOL_NOT_ELIGIBLE",
+            message: "The pool is not eligible for monitoring",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      const result = await options.monitorStore.create({
+        createdAt: now(),
+        idempotencyKey,
+        request: parsed,
+        userId: session.userId,
+      });
+      if (result.status === "idempotency-conflict") {
+        return reply.code(409).send(
+          createErrorEnvelope({
+            code: "IDEMPOTENCY_CONFLICT",
+            message: "The idempotency key was already used with another payload",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (result.status === "capacity") {
+        return reply.code(422).send(
+          createErrorEnvelope({
+            code: "LIMIT_EXCEEDED",
+            message: "The monitor limit was reached",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      return reply.code(201).send(createSuccessEnvelope(result.value, request.id));
+    });
+
+    app.get<{ Params: { monitorId: string } }>(
+      "/api/monitors/:monitorId",
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.monitorStore) return sendMonitorUnavailable(request, reply);
+        const monitor = await options.monitorStore.get(session.userId, request.params.monitorId);
+        if (!monitor) {
+          return reply.code(404).send(
+            createErrorEnvelope({
+              code: "MONITOR_NOT_FOUND",
+              message: "The monitor was not found",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        return createSuccessEnvelope(monitor, request.id);
+      },
+    );
+
+    app.patch<{ Params: { monitorId: string } }>(
+      "/api/monitors/:monitorId",
+      { bodyLimit: 65_536 },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.monitorStore) return sendMonitorUnavailable(request, reply);
+        let parsed;
+        try {
+          parsed = parseMonitorPatch(request.body);
+        } catch (error) {
+          if (!(error instanceof MonitorValidationError)) throw error;
+          return reply.code(error.code === "UNSUPPORTED_METRIC" ? 422 : 400).send(
+            createErrorEnvelope({
+              code: error.code,
+              message: "The monitor patch is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        const result = await options.monitorStore.patch({
+          ...parsed,
+          monitorId: request.params.monitorId,
+          updatedAt: now(),
+          userId: session.userId,
+        });
+        return sendMonitorMutation(request, reply, result);
+      },
+    );
+
+    for (const enabled of [true, false]) {
+      app.post<{ Params: { monitorId: string } }>(
+        `/api/monitors/:monitorId/${enabled ? "enable" : "disable"}`,
+        { bodyLimit: 1_024 },
+        async (request, reply) => {
+          reply.header("Cache-Control", "no-store");
+          const session = await authenticateSessionRequest(request, reply);
+          if (!session) return reply;
+          if (!options.monitorStore) return sendMonitorUnavailable(request, reply);
+          let parsed;
+          try {
+            parsed = parseMonitorLifecycle(request.body);
+          } catch (error) {
+            if (!(error instanceof MonitorValidationError)) throw error;
+            return reply.code(400).send(
+              createErrorEnvelope({
+                code: "INVALID_MONITOR",
+                message: "The monitor lifecycle request is invalid",
+                requestId: request.id,
+                retryable: false,
+              }),
+            );
+          }
+          if (enabled) {
+            const current = await options.monitorStore.get(session.userId, request.params.monitorId);
+            if (!current) {
+              return reply.code(404).send(
+                createErrorEnvelope({
+                  code: "MONITOR_NOT_FOUND",
+                  message: "The monitor was not found",
+                  requestId: request.id,
+                  retryable: false,
+                }),
+              );
+            }
+            const eligible = await monitorPoolEligibility(session.userId, current.poolKey);
+            if (eligible === null) return sendMonitorUnavailable(request, reply);
+            if (!eligible) {
+              return reply.code(422).send(
+                createErrorEnvelope({
+                  code: "POOL_NOT_ELIGIBLE",
+                  message: "The pool is not eligible for monitoring",
+                  requestId: request.id,
+                  retryable: false,
+                }),
+              );
+            }
+          }
+          const result = await options.monitorStore.setEnabled({
+            enabled,
+            expectedRevision: parsed.expectedRevision,
+            monitorId: request.params.monitorId,
+            updatedAt: now(),
+            userId: session.userId,
+          });
+          return sendMonitorMutation(request, reply, result);
+        },
+      );
+    }
+
+    app.delete<{ Params: { monitorId: string } }>(
+      "/api/monitors/:monitorId",
+      { bodyLimit: 1_024 },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.monitorStore) return sendMonitorUnavailable(request, reply);
+        let parsed;
+        try {
+          parsed = parseMonitorLifecycle(request.body);
+        } catch (error) {
+          if (!(error instanceof MonitorValidationError)) throw error;
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "INVALID_MONITOR",
+              message: "The monitor delete request is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        const result = await options.monitorStore.delete({
+          expectedRevision: parsed.expectedRevision,
+          monitorId: request.params.monitorId,
+          userId: session.userId,
+        });
+        if (result.status === "not-found") {
+          return reply.code(404).send(
+            createErrorEnvelope({
+              code: "MONITOR_NOT_FOUND",
+              message: "The monitor was not found",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (result.status === "conflict") {
+          return reply.code(409).send({
+            current: result.current,
+            error: {
+              code: "REVISION_CONFLICT",
+              message: "The monitor changed in another session",
+              requestId: request.id,
+              retryable: true,
+            },
+            success: false,
+          });
+        }
+        return reply.code(204).send();
+      },
+    );
+
     app.get("/api/user/pool-blocklist", async (request, reply) => {
       reply.header("Cache-Control", "no-store");
       const session = await authenticateSessionRequest(request, reply);
