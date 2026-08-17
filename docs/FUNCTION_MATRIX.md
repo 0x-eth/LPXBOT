@@ -156,7 +156,7 @@
 | POOL-12 | K 线和 Tick 流动性 | UI+API | USER | R0 | V4 PoolKey/tickSpacing，历史加载、自动刷新；`implemented-assumed`（P02-10，locally-defined；`GAP-API-CANDLE-QUOTE` 与 `GAP-UI-TICK-LIQUIDITY-MAPPING` unresolved） |
 | POOL-13 | 右键/更多操作 | UI+BUNDLE | USER | R1 | 复制、创建任务、屏蔽、聊天室、动向、监控等；`implemented-assumed`（P02-11，任务/监控/聊天仅安全预填 intent） |
 | POOL-14 | Token/池屏蔽 | UI+BUNDLE | USER | R1 | 排行、Token 搜索、推荐、分组、对比与展开池统一过滤；管理/恢复；`implemented-assumed`（P02-11，监控/策略仅消费者契约） |
-| POOL-15 | 创建历史和创建者归属 | UI+BUNDLE | USER/ADMIN | R0/R1 | 旧数据无记录、池已存在等状态 |
+| POOL-15 | 创建历史和创建者归属 | UI+BUNDLE | USER/ADMIN | R0/R1 | 旧数据无记录、池已存在等状态；`implemented-assumed`（P02-12，平台操作溯源，不推断链上创建者） |
 | POOL-16 | SSE 数据面 `m.lpbot.cc` | BUNDLE | PUB/USER | R0 | schema、event id、snapshot/diff、心跳和重连契约 |
 
 ## 5. 流动性动向与池监控
