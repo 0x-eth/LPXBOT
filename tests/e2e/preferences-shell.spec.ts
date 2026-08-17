@@ -173,6 +173,46 @@ async function installFixture(context: BrowserContext, state: FixtureState): Pro
       status: 200,
     }),
   );
+  await context.route("**/api/notification-preferences", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      json: {
+        data: {
+          categories: {
+            "feedback-replied": false,
+            "monitor-match": false,
+            "operation-failed": false,
+            "position-closed": false,
+            "position-moved": false,
+            "task-created": false,
+          },
+          revision: 0,
+          updatedAt: null,
+        },
+        requestId: "req-notification-preferences-empty",
+        success: true,
+      },
+      status: 200,
+    }),
+  );
+  await context.route("**/api/notification-destinations", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      json: { data: [], requestId: "req-notification-destinations-empty", success: true },
+      status: 200,
+    }),
+  );
+  await context.route("**/api/notification-destinations/options", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      json: {
+        data: { telegramIdentityId: null },
+        requestId: "req-notification-options-empty",
+        success: true,
+      },
+      status: 200,
+    }),
+  );
   await context.route("**/api/stats", (route) =>
     route.fulfill({
       contentType: "application/json",
