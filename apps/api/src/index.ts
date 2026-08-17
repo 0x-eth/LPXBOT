@@ -33,6 +33,7 @@ export {
   NotificationHistoryQueryError,
   parseNotificationHistoryQuery,
 } from "./notification-history.js";
+export { PostgresNotificationHistoryStore } from "./postgres-notification-history-store.js";
 export type {
   NotificationHistoryQuery,
   NotificationHistoryStore,

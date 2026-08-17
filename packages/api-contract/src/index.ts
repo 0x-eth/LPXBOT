@@ -392,7 +392,7 @@ export type NotificationDeliveryStatus = (typeof notificationDeliveryStatuses)[n
 export interface NotificationHistoryDestinationSnapshot {
   destinationId: string;
   name: string;
-  type: NotificationDestinationType;
+  type: NotificationDestinationType | "local-sink";
 }
 
 export interface NotificationHistoryItem {
