@@ -1318,6 +1318,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         reply.raw.once("error", () => controller.abort());
         await writeSseChunk(reply, controller, "retry: 3000\n\n");
 
+        const statsUserId = query.userId ?? session.userId;
+        const recommendationEligibility =
+          query.chain === "bsc" ? await poolEligibility(statsUserId) : undefined;
         const lastEventHeader = request.headers["last-event-id"];
         const lastEventId =
           typeof lastEventHeader === "string" && lastEventHeader.length <= 256
@@ -1506,8 +1509,15 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             }),
           );
         }
-        const rows = await options.marketPoolsProvider.getByToken(context);
-        return createSuccessEnvelope(rows, request.id);
+        const eligibility = await poolEligibility(session.userId);
+        const rows = await options.marketPoolsProvider.getByToken({
+          ...context,
+          ...(eligibility ? { eligibility } : {}),
+        });
+        return createSuccessEnvelope(
+          filterEligibleMarketPoolRows(rows, eligibility).slice(0, context.limit),
+          request.id,
+        );
       },
     );
 
@@ -1536,8 +1546,12 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           }),
         );
       }
-      const snapshot = await options.marketPoolsProvider.getTopFees(context);
-      return createSuccessEnvelope(snapshot, request.id);
+      const eligibility = await poolEligibility(session.userId);
+      const snapshot = await options.marketPoolsProvider.getTopFees({
+        ...context,
+        ...(eligibility ? { eligibility } : {}),
+      });
+      return createSuccessEnvelope(filterMarketPoolSnapshot(snapshot, eligibility), request.id);
     });
 
     app.get("/api/pools/top-fees/:minutes/stream", async (request, reply) => {
@@ -1566,6 +1580,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       }
 
       const controller = new AbortController();
+      const eligibility = await poolEligibility(session.userId);
       reply.hijack();
       reply.raw.writeHead(200, {
         "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -1583,19 +1598,25 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       try {
         for await (const event of options.marketPoolsProvider.subscribe({
           ...context,
+          ...(eligibility ? { eligibility } : {}),
           lastEventId: typeof lastEventHeader === "string" ? lastEventHeader : null,
           signal: controller.signal,
         })) {
           if (controller.signal.aborted) break;
-          if (event.streamKey !== marketStreamKey(context)) continue;
-          const nextSequence = BigInt(event.sequence);
-          if (epoch === event.epoch && nextSequence <= sequence) continue;
-          if (epoch !== null && epoch !== event.epoch && event.eventType !== "pools.snapshot")
+          const filteredEvent = filterMarketStreamEnvelope(event, eligibility);
+          if (filteredEvent.streamKey !== marketStreamKey(context)) continue;
+          const nextSequence = BigInt(filteredEvent.sequence);
+          if (epoch === filteredEvent.epoch && nextSequence <= sequence) continue;
+          if (
+            epoch !== null &&
+            epoch !== filteredEvent.epoch &&
+            filteredEvent.eventType !== "pools.snapshot"
+          )
             break;
-          reply.raw.write(`id: ${event.cursor}\n`);
-          reply.raw.write(`event: ${event.eventType}\n`);
-          reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
-          epoch = event.epoch;
+          reply.raw.write(`id: ${filteredEvent.cursor}\n`);
+          reply.raw.write(`event: ${filteredEvent.eventType}\n`);
+          reply.raw.write(`data: ${JSON.stringify(filteredEvent)}\n\n`);
+          epoch = filteredEvent.epoch;
           sequence = nextSequence;
         }
       } finally {
@@ -1683,6 +1704,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           lastEventHeader !== undefined &&
           (typeof lastEventHeader !== "string" ||
             parseRecommendedPoolsCursor(lastEventHeader, {
+              ...(recommendationEligibility
+                ? { blocklistHash: recommendationEligibility.blocklistHash }
+                : {}),
               chain: query.chain,
               limit: query.limit,
             }) === null)
@@ -1702,6 +1726,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           query.chain === "bsc" && options.marketPoolsProvider
             ? createRecommendedPoolsEventStream({
                 chain: query.chain,
+                ...(recommendationEligibility
+                  ? { eligibility: recommendationEligibility }
+                  : {}),
                 limit: query.limit,
                 provider: options.marketPoolsProvider,
                 signal: controller.signal,
@@ -1735,7 +1762,6 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           }
         }
 
-        const statsUserId = query.userId ?? session.userId;
         const close = () => controller.abort();
         reply.hijack();
         reply.raw.writeHead(200, {

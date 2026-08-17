@@ -51,8 +51,18 @@ export type {
   AddressRemarkPutInput,
   AddressRemarkStore,
 } from "./address-remarks.js";
-export { PostgresMarketPoolsProvider } from "./market-pools.js";
+export {
+  createMarketPoolEligibility,
+  filterEligibleMarketPoolRows,
+  filterMarketPoolSnapshot,
+  filterMarketStreamEnvelope,
+  parseMarketEligibilityCursor,
+  PostgresMarketPoolsProvider,
+  wrapMarketEligibilityCursor,
+} from "./market-pools.js";
 export type {
+  MarketEligibilityCursorFilter,
+  MarketPoolEligibility,
   MarketPoolsByTokenContext,
   MarketPoolsContext,
   MarketPoolsProvider,
