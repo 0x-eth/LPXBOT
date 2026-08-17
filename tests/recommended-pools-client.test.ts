@@ -107,6 +107,26 @@ describe("P02-09 recommended pool client state", () => {
     expect(parseShellStatsEvent({ ...event, pools: [{ ...row, unexpected: true }] })).toBeNull();
   });
 
+  it("accepts only structurally valid v2 cursors bound to a blocklist hash", () => {
+    const event = recommendation("7", "a");
+    const blocklistHash = `sha256:${"d".repeat(64)}`;
+    const v2 = {
+      ...event,
+      cursor: `rec-pools:v2:bsc:3:${blocklistHash.slice("sha256:".length)}:${Buffer.from(
+        event.sourceVersion,
+      ).toString("base64url")}:${Buffer.from(event.sourceWindowEnd).toString("base64url")}:${event.selectionHash.slice("sha256:".length)}`,
+    };
+
+    expect(parseShellStatsEvent(v2)).toEqual(v2);
+    expect(
+      parseShellStatsEvent({
+        ...v2,
+        cursor: v2.cursor.replace(blocklistHash.slice("sha256:".length), "z".repeat(64)),
+      }),
+    ).toBeNull();
+    expect(parseShellStatsEvent({ ...v2, cursor: `${v2.cursor}:extra` })).toBeNull();
+  });
+
   it("distinguishes reconnecting and stale without discarding the last safe rows", () => {
     const current = reduceShellStatsEvent(createShellStatsState(), recommendation("7", "a"));
     expect(markShellStatsDisconnected(current, new Date("2026-08-17T02:00:20.000Z"))).toMatchObject(
