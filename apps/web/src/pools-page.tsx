@@ -9,6 +9,7 @@ import {
   type MarketWindowMinutes,
   type PoolColumnKey,
   type PoolColumnPreference,
+  type SessionView,
 } from "@lpbot/api-contract";
 import { createPoolEligibilityPolicy } from "@lpbot/domain";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -112,6 +113,14 @@ import {
 import { PoolMarketDetail, type MarketDetailFixtureState } from "./pool-market-detail";
 import { usePoolBlocklist } from "./pool-blocklist.js";
 import { PoolBlocklistManager } from "./pool-blocklist-manager.js";
+import {
+  PoolCreationHistoryDialog,
+  PoolCreatorButton,
+  PoolCreatorDetailsDialog,
+  usePoolCreatorLookup,
+  type PoolCreatorLookupState,
+  type PoolCreatorSelection,
+} from "./pool-provenance-ui.js";
 import {
   initialPoolStreamState,
   reducePoolStream,
@@ -566,8 +575,10 @@ function PoolTableCell({
   column,
   comparisonEnabled,
   comparisonSelected,
+  creatorLookup,
   marketExpanded,
   openActions,
+  openCreator,
   toggleComparison,
   toggleGroup,
   toggleMarket,
@@ -577,8 +588,10 @@ function PoolTableCell({
   column: PoolColumnKey;
   comparisonEnabled: boolean;
   comparisonSelected: boolean;
+  creatorLookup?: PoolCreatorLookupState;
   marketExpanded: boolean;
   openActions(row: MarketPoolRow, trigger: HTMLElement, x: number, y: number): void;
+  openCreator?(row: MarketPoolRow, trigger: HTMLButtonElement): void;
   toggleComparison(poolKey: string): void;
   toggleGroup(groupKey: string): void;
   toggleMarket(poolKey: string): void;
@@ -638,6 +651,14 @@ function PoolTableCell({
   if (column === "fdv") return <NumericValue label="FDV" prefix="$ " value={row.fdvUsd} />;
   return (
     <td className="pool-row-actions" data-label="操作">
+      {creatorLookup && openCreator ? (
+        <PoolCreatorButton
+          identity={identity}
+          lookup={creatorLookup}
+          open={(trigger) => openCreator(row, trigger)}
+          poolKey={row.poolKey}
+        />
+      ) : null}
       <button
         aria-expanded={marketExpanded}
         aria-label={`展开池图表 ${identity}`}
@@ -682,12 +703,14 @@ function PoolTable({
   columns,
   comparisonCandidateKeys,
   comparisonSelectedKeys,
+  creatorLookup,
   expandedMarketPoolKey,
   marketFixtureState,
   marketRefreshMs,
   marketRefreshSignal,
   marketStale,
   onPoolAction,
+  openCreator,
   rows,
   showLabels,
   toggleComparison,
@@ -697,12 +720,14 @@ function PoolTable({
   columns: readonly PoolColumnPreference[];
   comparisonCandidateKeys: ReadonlySet<string>;
   comparisonSelectedKeys: ReadonlySet<string>;
+  creatorLookup?: PoolCreatorLookupState;
   expandedMarketPoolKey: string | null;
   marketFixtureState: MarketDetailFixtureState | null;
   marketRefreshMs: number;
   marketRefreshSignal: number;
   marketStale: boolean;
   onPoolAction(result: PoolActionResult, row: MarketPoolRow): void;
+  openCreator?(row: MarketPoolRow, trigger: HTMLButtonElement): void;
   rows: readonly VisiblePoolRow[];
   showLabels: boolean;
   toggleComparison(poolKey: string): void;
@@ -771,9 +796,11 @@ function PoolTable({
                       column={key}
                       comparisonEnabled={comparisonCandidateKeys.has(visibleRow.row.poolKey)}
                       comparisonSelected={comparisonSelectedKeys.has(visibleRow.row.poolKey)}
+                      creatorLookup={creatorLookup}
                       key={key}
                       marketExpanded={marketExpanded}
                       openActions={openActions}
+                      openCreator={openCreator}
                       showLabels={showLabels}
                       toggleComparison={toggleComparison}
                       toggleGroup={toggleGroup}
@@ -1891,7 +1918,7 @@ function serverFilters(filters: LiquidityFlowUiFilters): LiquidityFlowServerFilt
   };
 }
 
-export function PoolsPage() {
+export function PoolsPage({ session }: { session: SessionView }) {
   const location = useLocation();
   const navigate = useNavigate();
   const parsedAdvancedFilters = useMemo(
@@ -1961,6 +1988,7 @@ export function PoolsPage() {
     initialAddressRemarksState,
   );
   const [editingAddress, setEditingAddress] = useState<EvmAddress | null>(null);
+  const [creatorSelection, setCreatorSelection] = useState<PoolCreatorSelection | null>(null);
   const remarkOperation = useRef(0);
 
   if (advancedFilterLocation !== location.search) {
