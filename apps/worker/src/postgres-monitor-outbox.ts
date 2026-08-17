@@ -38,6 +38,7 @@ export interface NotificationOutboxDelivery {
   payload: Record<string, unknown>;
   state: NotificationOutboxState;
   updatedAt: string;
+  userId: string;
 }
 
 export interface CommitMonitorCandidateResult {
@@ -76,20 +77,22 @@ interface DeliveryRow extends QueryResultRow {
   payload: unknown;
   state: NotificationOutboxState;
   updated_at: Date;
+  user_id: string;
 }
 
 const deliveryColumns = `
   delivery_id::text, dedupe_key, candidate_key, destination_id,
   destination_revision::text, channel, payload, state, attempt_count,
   next_attempt_at, lease_owner, lease_token::text, lease_expires_at,
-  created_at, updated_at, last_error_code`;
+  created_at, updated_at, last_error_code, user_id::text`;
 
 const claimedDeliveryColumns = `
   outbox.delivery_id::text, outbox.dedupe_key, outbox.candidate_key,
   outbox.destination_id, outbox.destination_revision::text, outbox.channel,
   outbox.payload, outbox.state, outbox.attempt_count, outbox.next_attempt_at,
   outbox.lease_owner, outbox.lease_token::text, outbox.lease_expires_at,
-  outbox.created_at, outbox.updated_at, outbox.last_error_code`;
+  outbox.created_at, outbox.updated_at, outbox.last_error_code,
+  outbox.user_id::text`;
 
 const forbiddenPayloadFields = new Set([
   "apikey",
@@ -143,6 +146,14 @@ function canonicalErrorCode(value: string): string {
   return value;
 }
 
+function canonicalAcknowledgement(value: string | undefined): string | null {
+  if (value === undefined) return null;
+  if ([...value].length < 1 || [...value].length > 120 || /[\u0000-\u001f\u007f]/u.test(value)) {
+    throw new RangeError("OUTBOX_ACKNOWLEDGEMENT_INVALID");
+  }
+  return value;
+}
+
 function deliveryFromRow(row: DeliveryRow): NotificationOutboxDelivery {
   if (typeof row.payload !== "object" || row.payload === null || Array.isArray(row.payload)) {
     throw new RangeError("Stored outbox payload is invalid");
@@ -164,6 +175,7 @@ function deliveryFromRow(row: DeliveryRow): NotificationOutboxDelivery {
     payload: structuredClone(row.payload) as Record<string, unknown>,
     state: row.state,
     updatedAt: row.updated_at.toISOString(),
+    userId: row.user_id,
   };
 }
 
@@ -273,7 +285,39 @@ export class PostgresMonitorCandidateOutboxRepository {
     }
   }
 
+  async peekDue(input: { limit: number }): Promise<NotificationOutboxDelivery[]> {
+    if (!Number.isSafeInteger(input.limit) || input.limit < 1 || input.limit > 100) {
+      throw new RangeError("OUTBOX_PEEK_INVALID");
+    }
+    const client = await this.#pool.connect();
+    try {
+      await client.query("BEGIN");
+      await this.#markExhausted(client);
+      const due = await client.query<DeliveryRow>(
+        `SELECT ${deliveryColumns}
+           FROM notification_outbox
+          WHERE attempt_count < 6
+            AND (
+              state = 'pending'
+              OR (state = 'retry-wait' AND next_attempt_at <= clock_timestamp())
+              OR (state = 'leased' AND lease_expires_at <= clock_timestamp())
+            )
+          ORDER BY created_at, delivery_id
+          LIMIT $1`,
+        [input.limit],
+      );
+      await client.query("COMMIT");
+      return due.rows.map(deliveryFromRow);
+    } catch (error) {
+      await this.#rollback(client);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async claimDue(input: {
+    deliveryIds?: string[];
     leaseOwner: string;
     limit: number;
   }): Promise<NotificationOutboxDelivery[]> {
@@ -286,25 +330,24 @@ export class PostgresMonitorCandidateOutboxRepository {
     ) {
       throw new RangeError("OUTBOX_CLAIM_INVALID");
     }
+    const deliveryIds = input.deliveryIds ? [...new Set(input.deliveryIds)] : null;
+    if (
+      deliveryIds !== null &&
+      (deliveryIds.length < 1 ||
+        deliveryIds.length > 100 ||
+        deliveryIds.some(
+          (deliveryId) =>
+            !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+              deliveryId,
+            ),
+        ))
+    ) {
+      throw new RangeError("OUTBOX_CLAIM_INVALID");
+    }
     const client = await this.#pool.connect();
     try {
       await client.query("BEGIN");
-      await client.query(
-        `UPDATE notification_outbox
-            SET state = 'dead',
-                next_attempt_at = NULL,
-                lease_owner = NULL,
-                lease_token = NULL,
-                lease_expires_at = NULL,
-                updated_at = clock_timestamp(),
-                last_error_code = 'MAX_ATTEMPTS'
-          WHERE attempt_count >= 6
-            AND (
-              state = 'pending'
-              OR (state = 'retry-wait' AND next_attempt_at <= clock_timestamp())
-              OR (state = 'leased' AND lease_expires_at <= clock_timestamp())
-            )`,
-      );
+      await this.#markExhausted(client);
       const claimed = await client.query<DeliveryRow>(
         `WITH due AS (
            SELECT delivery_id
@@ -315,6 +358,7 @@ export class PostgresMonitorCandidateOutboxRepository {
                 OR (state = 'retry-wait' AND next_attempt_at <= clock_timestamp())
                 OR (state = 'leased' AND lease_expires_at <= clock_timestamp())
               )
+              AND ($3::uuid[] IS NULL OR delivery_id = ANY($3::uuid[]))
             ORDER BY created_at, delivery_id
             FOR UPDATE SKIP LOCKED
             LIMIT $2
@@ -332,8 +376,27 @@ export class PostgresMonitorCandidateOutboxRepository {
            FROM due
           WHERE outbox.delivery_id = due.delivery_id
           RETURNING ${claimedDeliveryColumns}`,
-        [input.leaseOwner, input.limit],
+        [input.leaseOwner, input.limit, deliveryIds],
       );
+      if (claimed.rows.length > 0) {
+        const history = await client.query(
+          `UPDATE notification_delivery_history AS history
+              SET status = 'sending',
+                  attempt_count = outbox.attempt_count,
+                  next_retry_at = NULL,
+                  delivered_at = NULL,
+                  error_code = NULL,
+                  provider_acknowledgement = NULL,
+                  updated_at = outbox.updated_at
+             FROM notification_outbox AS outbox
+            WHERE history.delivery_id = outbox.delivery_id
+              AND outbox.delivery_id = ANY($1::uuid[])`,
+          [claimed.rows.map(({ delivery_id }) => delivery_id)],
+        );
+        if (history.rowCount !== claimed.rows.length) {
+          throw new Error("OUTBOX_HISTORY_SYNC_FAILED");
+        }
+      }
       await client.query("COMMIT");
       return claimed.rows.map(deliveryFromRow);
     } catch (error) {
@@ -344,24 +407,61 @@ export class PostgresMonitorCandidateOutboxRepository {
     }
   }
 
-  async markDelivered(input: { deliveryId: string; leaseToken: string }): Promise<boolean> {
-    const result = await this.#pool.query(
-      `UPDATE notification_outbox
-          SET state = 'delivered',
-              lease_owner = NULL,
-              lease_token = NULL,
-              lease_expires_at = NULL,
-              delivered_at = clock_timestamp(),
-              updated_at = clock_timestamp(),
-              last_error_code = NULL,
-              last_error_summary = NULL
-        WHERE delivery_id = $1
-          AND state = 'leased'
-          AND lease_token = $2
-          AND lease_expires_at > clock_timestamp()`,
-      [input.deliveryId, input.leaseToken],
-    );
-    return result.rowCount === 1;
+  async markDelivered(input: {
+    acknowledgement?: string;
+    deliveryId: string;
+    leaseToken: string;
+  }): Promise<boolean> {
+    const acknowledgement = canonicalAcknowledgement(input.acknowledgement);
+    const client = await this.#pool.connect();
+    try {
+      await client.query("BEGIN");
+      const result = await client.query<{ delivered_at: Date; updated_at: Date }>(
+        `UPDATE notification_outbox
+            SET state = 'delivered',
+                lease_owner = NULL,
+                lease_token = NULL,
+                lease_expires_at = NULL,
+                delivered_at = clock_timestamp(),
+                updated_at = clock_timestamp(),
+                last_error_code = NULL,
+                last_error_summary = NULL
+          WHERE delivery_id = $1
+            AND state = 'leased'
+            AND lease_token = $2
+            AND lease_expires_at > clock_timestamp()
+          RETURNING delivered_at, updated_at`,
+        [input.deliveryId, input.leaseToken],
+      );
+      if (!result.rows[0]) {
+        await client.query("COMMIT");
+        return false;
+      }
+      const history = await client.query(
+        `UPDATE notification_delivery_history
+            SET status = 'delivered',
+                next_retry_at = NULL,
+                delivered_at = $2,
+                error_code = NULL,
+                provider_acknowledgement = $3,
+                updated_at = $4
+          WHERE delivery_id = $1`,
+        [
+          input.deliveryId,
+          result.rows[0].delivered_at,
+          acknowledgement,
+          result.rows[0].updated_at,
+        ],
+      );
+      if (history.rowCount !== 1) throw new Error("OUTBOX_HISTORY_SYNC_FAILED");
+      await client.query("COMMIT");
+      return true;
+    } catch (error) {
+      await this.#rollback(client);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async markRetry(input: {
@@ -372,50 +472,97 @@ export class PostgresMonitorCandidateOutboxRepository {
     retryAfterSeconds?: number | null;
   }): Promise<boolean> {
     const errorCode = canonicalErrorCode(input.errorCode);
-    const current = await this.#pool.query<{ attempt_count: number }>(
-      `SELECT attempt_count FROM notification_outbox
-        WHERE delivery_id = $1 AND state = 'leased' AND lease_token = $2
-          AND lease_expires_at > clock_timestamp()`,
-      [input.deliveryId, input.leaseToken],
-    );
-    const row = current.rows[0];
-    if (!row) return false;
-    if (row.attempt_count >= 6) {
-      const result = await this.#pool.query(
+    const client = await this.#pool.connect();
+    try {
+      await client.query("BEGIN");
+      const current = await client.query<{ attempt_count: number }>(
+        `SELECT attempt_count FROM notification_outbox
+          WHERE delivery_id = $1 AND state = 'leased' AND lease_token = $2
+            AND lease_expires_at > clock_timestamp()
+          FOR UPDATE`,
+        [input.deliveryId, input.leaseToken],
+      );
+      const row = current.rows[0];
+      if (!row) {
+        await client.query("COMMIT");
+        return false;
+      }
+      if (row.attempt_count >= 6) {
+        const result = await client.query<{ updated_at: Date }>(
+          `UPDATE notification_outbox
+              SET state = 'dead',
+                  next_attempt_at = NULL,
+                  lease_owner = NULL,
+                  lease_token = NULL,
+                  lease_expires_at = NULL,
+                  updated_at = clock_timestamp(),
+                  last_error_code = 'MAX_ATTEMPTS',
+                  last_error_summary = NULL
+            WHERE delivery_id = $1 AND state = 'leased' AND lease_token = $2
+              AND lease_expires_at > clock_timestamp()
+            RETURNING updated_at`,
+          [input.deliveryId, input.leaseToken],
+        );
+        if (!result.rows[0]) {
+          await client.query("COMMIT");
+          return false;
+        }
+        await this.#updateHistoryTerminal(client, {
+          deliveryId: input.deliveryId,
+          errorCode: "MAX_ATTEMPTS",
+          updatedAt: result.rows[0].updated_at,
+        });
+        await client.query("COMMIT");
+        return true;
+      }
+      const delay = Math.max(
+        outboxRetryDelaySeconds(input.deliveryId, row.attempt_count),
+        Math.min(3_600, Math.max(0, input.retryAfterSeconds ?? 0)),
+      );
+      const result = await client.query<{ next_attempt_at: Date; updated_at: Date }>(
         `UPDATE notification_outbox
-            SET state = 'dead',
-                next_attempt_at = NULL,
+            SET state = 'retry-wait',
+                next_attempt_at = clock_timestamp() + make_interval(secs => $3),
                 lease_owner = NULL,
                 lease_token = NULL,
                 lease_expires_at = NULL,
                 updated_at = clock_timestamp(),
-                last_error_code = 'MAX_ATTEMPTS',
+                last_error_code = $4,
                 last_error_summary = NULL
           WHERE delivery_id = $1 AND state = 'leased' AND lease_token = $2
-            AND lease_expires_at > clock_timestamp()`,
-        [input.deliveryId, input.leaseToken],
+            AND lease_expires_at > clock_timestamp()
+          RETURNING next_attempt_at, updated_at`,
+        [input.deliveryId, input.leaseToken, delay, errorCode],
       );
-      return result.rowCount === 1;
+      if (!result.rows[0]) {
+        await client.query("COMMIT");
+        return false;
+      }
+      const history = await client.query(
+        `UPDATE notification_delivery_history
+            SET status = 'retrying',
+                next_retry_at = $2,
+                delivered_at = NULL,
+                error_code = $3,
+                provider_acknowledgement = NULL,
+                updated_at = $4
+          WHERE delivery_id = $1`,
+        [
+          input.deliveryId,
+          result.rows[0].next_attempt_at,
+          errorCode,
+          result.rows[0].updated_at,
+        ],
+      );
+      if (history.rowCount !== 1) throw new Error("OUTBOX_HISTORY_SYNC_FAILED");
+      await client.query("COMMIT");
+      return true;
+    } catch (error) {
+      await this.#rollback(client);
+      throw error;
+    } finally {
+      client.release();
     }
-    const delay = Math.max(
-      outboxRetryDelaySeconds(input.deliveryId, row.attempt_count),
-      Math.min(3_600, Math.max(0, input.retryAfterSeconds ?? 0)),
-    );
-    const result = await this.#pool.query(
-      `UPDATE notification_outbox
-          SET state = 'retry-wait',
-              next_attempt_at = clock_timestamp() + make_interval(secs => $3),
-              lease_owner = NULL,
-              lease_token = NULL,
-              lease_expires_at = NULL,
-              updated_at = clock_timestamp(),
-              last_error_code = $4,
-              last_error_summary = NULL
-        WHERE delivery_id = $1 AND state = 'leased' AND lease_token = $2
-          AND lease_expires_at > clock_timestamp()`,
-      [input.deliveryId, input.leaseToken, delay, errorCode],
-    );
-    return result.rowCount === 1;
   }
 
   async markDead(input: {
@@ -425,21 +572,41 @@ export class PostgresMonitorCandidateOutboxRepository {
     leaseToken: string;
   }): Promise<boolean> {
     const errorCode = canonicalErrorCode(input.errorCode);
-    const result = await this.#pool.query(
-      `UPDATE notification_outbox
-          SET state = 'dead',
-              next_attempt_at = NULL,
-              lease_owner = NULL,
-              lease_token = NULL,
-              lease_expires_at = NULL,
-              updated_at = clock_timestamp(),
-              last_error_code = $3,
-              last_error_summary = NULL
-        WHERE delivery_id = $1 AND state = 'leased' AND lease_token = $2
-          AND lease_expires_at > clock_timestamp()`,
-      [input.deliveryId, input.leaseToken, errorCode],
-    );
-    return result.rowCount === 1;
+    const client = await this.#pool.connect();
+    try {
+      await client.query("BEGIN");
+      const result = await client.query<{ updated_at: Date }>(
+        `UPDATE notification_outbox
+            SET state = 'dead',
+                next_attempt_at = NULL,
+                lease_owner = NULL,
+                lease_token = NULL,
+                lease_expires_at = NULL,
+                updated_at = clock_timestamp(),
+                last_error_code = $3,
+                last_error_summary = NULL
+          WHERE delivery_id = $1 AND state = 'leased' AND lease_token = $2
+            AND lease_expires_at > clock_timestamp()
+          RETURNING updated_at`,
+        [input.deliveryId, input.leaseToken, errorCode],
+      );
+      if (!result.rows[0]) {
+        await client.query("COMMIT");
+        return false;
+      }
+      await this.#updateHistoryTerminal(client, {
+        deliveryId: input.deliveryId,
+        errorCode,
+        updatedAt: result.rows[0].updated_at,
+      });
+      await client.query("COMMIT");
+      return true;
+    } catch (error) {
+      await this.#rollback(client);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async #insertCandidate(client: PoolClient, candidate: MonitorCandidate): Promise<void> {
