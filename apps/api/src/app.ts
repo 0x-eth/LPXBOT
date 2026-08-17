@@ -92,7 +92,7 @@ import {
   type RecommendedPoolsScheduler,
   type RecommendedPoolsStreamEvent,
 } from "./recommended-pools.js";
-import type { ShellStatsProvider } from "./shell-stats.js";
+import type { ShellStatsProvider, ShellStatsScope } from "./shell-stats.js";
 import {
   defaultVersionedUserPreferences,
   parseUserPreferencesPatch,
@@ -176,7 +176,26 @@ export interface AuthRateLimits {
 interface StatsStreamQuery {
   chain: "bsc" | null;
   limit: number;
-  userId: string | null;
+  telegramUserId: string | null;
+}
+
+interface StatsSnapshotQuery {
+  telegramUserId: string | null;
+}
+
+function parseStatsTelegramUserId(value: unknown): string | null {
+  if (typeof value !== "string" || !/^[1-9][0-9]{0,18}$/u.test(value)) return null;
+  const parsed = BigInt(value);
+  if (parsed > 9_223_372_036_854_775_807n) return null;
+  return parsed.toString();
+}
+
+function parseStatsSnapshotQuery(request: FastifyRequest): StatsSnapshotQuery | null {
+  const query = request.query as Record<string, unknown>;
+  if (Object.keys(query).some((key) => key !== "user_id")) return null;
+  if (query.user_id === undefined) return { telegramUserId: null };
+  const telegramUserId = parseStatsTelegramUserId(query.user_id);
+  return telegramUserId === null ? null : { telegramUserId };
 }
 
 function parseStatsStreamQuery(request: FastifyRequest): StatsStreamQuery | null {
@@ -188,11 +207,10 @@ function parseStatsStreamQuery(request: FastifyRequest): StatsStreamQuery | null
   if (chain !== null && chain !== "bsc") return null;
   const rawLimit = query.limit === undefined ? "3" : query.limit;
   if (typeof rawLimit !== "string" || !/^(?:[1-9]|1[0-9]|20)$/u.test(rawLimit)) return null;
-  const userId = query.user_id === undefined ? null : query.user_id;
-  if (userId !== null && (typeof userId !== "string" || userId.length < 1 || userId.length > 128)) {
-    return null;
-  }
-  return { chain, limit: Number(rawLimit), userId };
+  const telegramUserId =
+    query.user_id === undefined ? null : parseStatsTelegramUserId(query.user_id);
+  if (query.user_id !== undefined && telegramUserId === null) return null;
+  return { chain, limit: Number(rawLimit), telegramUserId };
 }
 
 function parseMarketPoolsContext(request: FastifyRequest): {
@@ -1026,6 +1044,84 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     options.poolBlocklistStore
       ? createMarketPoolEligibility(await options.poolBlocklistStore.get(userId))
       : undefined;
+
+  const sendStatsUnavailable = (request: FastifyRequest, reply: FastifyReply) =>
+    reply.code(503).send(
+      createErrorEnvelope({
+        code: "STATS_UNAVAILABLE",
+        message: "Shell statistics are temporarily unavailable",
+        requestId: request.id,
+        retryable: true,
+      }),
+    );
+
+  const resolveStatsScope = async (
+    request: FastifyRequest,
+    reply: FastifyReply,
+    session: StoredSession,
+    telegramUserId: string | null,
+    transport: "http" | "sse",
+  ): Promise<ShellStatsScope | null> => {
+    if (telegramUserId === null) {
+      return session.account.role === "admin"
+        ? { type: "global" }
+        : { type: "user", userId: session.userId };
+    }
+    if (session.account.role !== "admin") {
+      reply.code(403).send(
+        createErrorEnvelope({
+          code: "FORBIDDEN",
+          message: "Filtering stats by user is restricted to administrators",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+      return null;
+    }
+    if (!options.statsProvider) {
+      sendStatsUnavailable(request, reply);
+      return null;
+    }
+    try {
+      const targetUserId = await options.statsProvider.resolveTelegramUserId(telegramUserId);
+      const outcome = targetUserId === null ? "not_found" : "allowed";
+      await options.statsProvider.recordAdminQueryAudit({
+        actorUserId: session.userId,
+        createdAt: now().toISOString(),
+        outcome,
+        requestId: request.id,
+        targetTelegramUserId: telegramUserId,
+        targetUserId,
+        transport,
+      });
+      options.logger?.write(
+        JSON.stringify({
+          actorUserId: session.userId,
+          event: "stats.admin_user_filter",
+          outcome,
+          requestId: request.id,
+          targetTelegramUserId: telegramUserId,
+          targetUserId,
+          transport,
+        }),
+      );
+      if (targetUserId === null) {
+        reply.code(404).send(
+          createErrorEnvelope({
+            code: "STATS_USER_NOT_FOUND",
+            message: "The Telegram user is not linked to an account",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+        return null;
+      }
+      return { type: "user", userId: targetUserId };
+    } catch {
+      sendStatsUnavailable(request, reply);
+      return null;
+    }
+  };
 
   const recordDeniedChainManagement = async (
     request: FastifyRequest,

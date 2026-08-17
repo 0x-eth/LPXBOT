@@ -121,11 +121,24 @@ export type {
   ChainManagementAuditInput,
   ChainPolicyStoreErrorCode,
 } from "./chain-access-policies.js";
-export { UnavailableShellStatsProvider } from "./shell-stats.js";
+export {
+  canonicalTaskStatusStatsInput,
+  PostgresShellStatsProvider,
+  PostgresTaskStatusStatsPublisher,
+  ShellStatsUnavailableError,
+  TaskStatusStatsValidationError,
+} from "./shell-stats.js";
 export type {
+  AuthoritativeTaskStatusStatsInput,
+  CanonicalTaskStatusStatsInput,
+  PostgresShellStatsProviderOptions,
+  ShellStatsAdminQueryAudit,
   ShellStatsContext,
   ShellStatsProvider,
+  ShellStatsScope,
   ShellStatsSubscriptionContext,
+  TaskStatusStatsPublisher,
+  TaskStatusStatsPublishResult,
 } from "./shell-stats.js";
 export {
   createRecommendedPoolsEventStream,
