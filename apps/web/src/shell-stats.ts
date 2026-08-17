@@ -450,7 +450,7 @@ function countOrUnavailable(value: number | null): string {
   if (value < 10_000) return String(value);
   const units = ["k", "m", "b", "t", "q"] as const;
   let scaled = value;
-  let unit = units[0];
+  let unit: (typeof units)[number] = units[0];
   for (const candidate of units) {
     scaled /= 1_000;
     unit = candidate;
