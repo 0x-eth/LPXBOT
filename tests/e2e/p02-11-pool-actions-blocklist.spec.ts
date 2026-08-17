@@ -283,8 +283,8 @@ test("POOL-14 precisely rolls back failures and manages restore and conflicts", 
   await expect(dialog.getByRole("region", { name: "池屏蔽项" })).toContainText(address);
   await dialog.getByRole("button", { name: `恢复池 ${poolKey}` }).click();
   await expect(dialog.getByText("暂无屏蔽项")).toBeVisible();
-  await expect(row()).toHaveCount(1);
   await dialog.getByRole("button", { name: "关闭屏蔽管理" }).click();
+  await expect(row()).toHaveCount(1);
 
   state.conflictNext = true;
   await row()

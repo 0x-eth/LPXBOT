@@ -75,11 +75,9 @@ export function PoolActionMenu({
     const dismiss = () => close(false);
     window.addEventListener("pointerdown", outside, true);
     window.addEventListener("resize", dismiss);
-    window.addEventListener("scroll", dismiss, true);
     return () => {
       window.removeEventListener("pointerdown", outside, true);
       window.removeEventListener("resize", dismiss);
-      window.removeEventListener("scroll", dismiss, true);
     };
   }, [close]);
 
@@ -120,6 +118,7 @@ export function PoolActionMenu({
       ref={menuRef}
       role="menu"
       style={{ left, top }}
+      tabIndex={0}
     >
       {items.map(({ definition, resolved }, index) => {
         const previousSection = items[index - 1]?.definition.section;
