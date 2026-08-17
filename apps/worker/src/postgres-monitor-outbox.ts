@@ -103,6 +103,16 @@ const forbiddenPayloadFields = new Set([
   "webhooksecret",
 ]);
 
+function forbiddenPayloadField(key: string): boolean {
+  const normalized = key.toLowerCase().replace(/[^a-z0-9]/gu, "");
+  return (
+    forbiddenPayloadFields.has(normalized) ||
+    ["apikey", "authorization", "credential", "notificationkey", "secret", "token"].some((suffix) =>
+      normalized.endsWith(suffix),
+    )
+  );
+}
+
 function assertCredentialFree(value: unknown, seen = new WeakSet<object>()): void {
   if (typeof value !== "object" || value === null) return;
   if (seen.has(value)) throw new RangeError("OUTBOX_PAYLOAD_INVALID");
@@ -112,7 +122,7 @@ function assertCredentialFree(value: unknown, seen = new WeakSet<object>()): voi
     return;
   }
   for (const [key, child] of Object.entries(value)) {
-    if (forbiddenPayloadFields.has(key.toLowerCase())) {
+    if (forbiddenPayloadField(key)) {
       throw new RangeError("OUTBOX_SECRET_FIELD_FORBIDDEN");
     }
     assertCredentialFree(child, seen);
@@ -124,6 +134,13 @@ function safeInteger(value: string, field: string): number {
   if (!Number.isSafeInteger(parsed) || parsed < 0)
     throw new RangeError(`Stored ${field} is invalid`);
   return parsed;
+}
+
+function canonicalErrorCode(value: string): string {
+  if (!/^[A-Z][A-Z0-9_:-]{0,79}$/u.test(value)) {
+    throw new RangeError("OUTBOX_ERROR_CODE_INVALID");
+  }
+  return value;
 }
 
 function deliveryFromRow(row: DeliveryRow): NotificationOutboxDelivery {
@@ -350,6 +367,7 @@ export class PostgresMonitorCandidateOutboxRepository {
     leaseToken: string;
     retryAfterSeconds?: number | null;
   }): Promise<boolean> {
+    const errorCode = canonicalErrorCode(input.errorCode);
     const current = await this.#pool.query<{ attempt_count: number }>(
       `SELECT attempt_count FROM notification_outbox
         WHERE delivery_id = $1 AND state = 'leased' AND lease_token = $2
@@ -371,16 +389,10 @@ export class PostgresMonitorCandidateOutboxRepository {
               lease_expires_at = NULL,
               updated_at = clock_timestamp(),
               last_error_code = $4,
-              last_error_summary = $5
+              last_error_summary = NULL
         WHERE delivery_id = $1 AND state = 'leased' AND lease_token = $2
           AND lease_expires_at > clock_timestamp()`,
-      [
-        input.deliveryId,
-        input.leaseToken,
-        delay,
-        input.errorCode.slice(0, 80),
-        input.errorSummary?.slice(0, 240) ?? null,
-      ],
+      [input.deliveryId, input.leaseToken, delay, errorCode],
     );
     return result.rowCount === 1;
   }
@@ -391,6 +403,7 @@ export class PostgresMonitorCandidateOutboxRepository {
     errorSummary?: string | null;
     leaseToken: string;
   }): Promise<boolean> {
+    const errorCode = canonicalErrorCode(input.errorCode);
     const result = await this.#pool.query(
       `UPDATE notification_outbox
           SET state = 'dead',
@@ -400,15 +413,10 @@ export class PostgresMonitorCandidateOutboxRepository {
               lease_expires_at = NULL,
               updated_at = clock_timestamp(),
               last_error_code = $3,
-              last_error_summary = $4
+              last_error_summary = NULL
         WHERE delivery_id = $1 AND state = 'leased' AND lease_token = $2
           AND lease_expires_at > clock_timestamp()`,
-      [
-        input.deliveryId,
-        input.leaseToken,
-        input.errorCode.slice(0, 80),
-        input.errorSummary?.slice(0, 240) ?? null,
-      ],
+      [input.deliveryId, input.leaseToken, errorCode],
     );
     return result.rowCount === 1;
   }

@@ -71,11 +71,13 @@ afterAll(async () => {
   await adminPool.end();
 });
 
-function candidate(input: {
-  generatedAt?: string;
-  sourceGenerationId?: string;
-  windowEnd?: string;
-} = {}): MonitorCandidate {
+function candidate(
+  input: {
+    generatedAt?: string;
+    sourceGenerationId?: string;
+    windowEnd?: string;
+  } = {},
+): MonitorCandidate {
   const windowEnd = input.windowEnd ?? "2026-08-17T09:05:00Z";
   const generatedAt = input.generatedAt ?? "2026-08-17T09:05:30Z";
   const sourceGenerationId = input.sourceGenerationId ?? "generation-fixture-001";
@@ -234,8 +236,14 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
       destinationRevision: 1,
       payload: { poolKey, sourceGenerationId: base.sourceGenerationId },
     };
-    const first = await repository.commitCandidate({ candidate: base, destinations: [destination] });
-    const duplicate = await repository.commitCandidate({ candidate: base, destinations: [destination] });
+    const first = await repository.commitCandidate({
+      candidate: base,
+      destinations: [destination],
+    });
+    const duplicate = await repository.commitCandidate({
+      candidate: base,
+      destinations: [destination],
+    });
     expect(first.evidenceAction).toBe("inserted");
     expect(duplicate.evidenceAction).toBe("unchanged");
     expect(duplicate.deliveries[0]?.deliveryId).toBe(first.deliveries[0]?.deliveryId);
@@ -278,11 +286,18 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
     });
     expect(counts.rows[0]!.window_end.toISOString()).toBe("2026-08-17T09:05:00.000Z");
 
-    const replacement = { ...base, generatedAt: "2026-08-17T09:05:40Z", sourceGenerationId: "generation-new" };
+    const replacement = {
+      ...base,
+      generatedAt: "2026-08-17T09:05:40Z",
+      sourceGenerationId: "generation-new",
+    };
     const replaced = await repository.commitCandidate({
       candidate: replacement,
       destinations: [
-        { ...destination, payload: { poolKey, sourceGenerationId: replacement.sourceGenerationId } },
+        {
+          ...destination,
+          payload: { poolKey, sourceGenerationId: replacement.sourceGenerationId },
+        },
       ],
     });
     expect(replaced.evidenceAction).toBe("replaced");
@@ -309,7 +324,10 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
       [firstClaim[0]!.deliveryId],
     );
     const secondClaim = await repository.claimDue({ leaseOwner: "worker-b", limit: 1 });
-    expect(secondClaim[0]).toMatchObject({ attemptCount: 2, deliveryId: firstClaim[0]!.deliveryId });
+    expect(secondClaim[0]).toMatchObject({
+      attemptCount: 2,
+      deliveryId: firstClaim[0]!.deliveryId,
+    });
     expect(secondClaim[0]!.leaseToken).not.toBe(firstClaim[0]!.leaseToken);
     expect(
       await repository.markDelivered({
@@ -390,18 +408,23 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
       await repository.markDead({
         deliveryId: deadClaim[0]!.deliveryId,
         errorCode: "UNSAFE_WEBHOOK_TARGET",
+        errorSummary: "notification_key=must-not-persist",
         leaseToken: deadClaim[0]!.leaseToken!,
       }),
     ).toBe(true);
     const dead = await pool.query<{
       attempt_count: number;
+      last_error_summary: string | null;
       next_attempt_at: Date | null;
       state: string;
     }>(
-      "SELECT state, attempt_count, next_attempt_at FROM notification_outbox WHERE delivery_id = $1",
+      `SELECT state, attempt_count, next_attempt_at, last_error_summary
+         FROM notification_outbox WHERE delivery_id = $1`,
       [deadClaim[0]!.deliveryId],
     );
-    expect(dead.rows).toEqual([{ attempt_count: 1, next_attempt_at: null, state: "dead" }]);
+    expect(dead.rows).toEqual([
+      { attempt_count: 1, last_error_summary: null, next_attempt_at: null, state: "dead" },
+    ]);
   });
 
   it("rolls back candidate and watermark on outbox failure and rejects notification keys", async () => {
