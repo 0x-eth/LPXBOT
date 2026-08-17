@@ -345,6 +345,56 @@ export type LiquidityFlowProtocol = MarketProtocol;
 export type LiquidityFlowEventType = (typeof liquidityFlowEventTypes)[number];
 export type LiquidityProtocolFilter = readonly LiquidityFlowProtocol[];
 
+export const poolCreationProvenanceSchemaVersion = 1 as const;
+export type PoolCreationOutcome = "created" | "already_exists";
+export type PoolCreationAttributionWarning = "ALREADY_EXISTS_NOT_PLATFORM_FIRST";
+
+export interface PoolCreationProvenanceRecord {
+  chainId: 56;
+  completedAt: string;
+  creatorAddress: EvmAddress | null;
+  feePips: string;
+  operationId: string;
+  outcome: PoolCreationOutcome;
+  poolKey: BscPoolKey;
+  protocol: MarketProtocol;
+  schemaVersion: typeof poolCreationProvenanceSchemaVersion;
+  txHash: `0x${string}` | null;
+  userId: string;
+}
+
+export interface PoolCreationCreatorProfile {
+  avatarUrl: string | null;
+  displayName: string | null;
+  telegramId: string | null;
+}
+
+export interface PoolCreationAttribution {
+  creatorProfile: PoolCreationCreatorProfile | null;
+  record: PoolCreationProvenanceRecord;
+  warning: PoolCreationAttributionWarning | null;
+}
+
+export interface PoolCreationHistoryPage {
+  items: PoolCreationAttribution[];
+  nextCursor: string | null;
+}
+
+export interface PoolCreatorResult {
+  creator: PoolCreationAttribution | null;
+  identity: string;
+}
+
+export interface PoolCreatorBatchResponse {
+  results: PoolCreatorResult[];
+}
+
+export const poolCreationProvenanceContracts = {
+  batch: { method: "POST", path: "/api/admin/pool-creators" },
+  history: { method: "GET", path: "/api/pools/create-history" },
+  single: { method: "GET", path: "/api/admin/pool-creators" },
+} as const;
+
 export interface LiquidityFlowFilter {
   nftId: string | null;
   pool: EvmAddress | `0x${string}` | null;

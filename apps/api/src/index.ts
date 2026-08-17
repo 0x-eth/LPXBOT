@@ -23,6 +23,34 @@ export { PostgresAddressRemarkStore } from "./postgres-address-remark-store.js";
 export { PostgresPoolBlocklistStore } from "./postgres-pool-blocklist-store.js";
 export type { PostgresPoolBlocklistStoreOptions } from "./postgres-pool-blocklist-store.js";
 export {
+  canonicalPoolCreationAddress,
+  canonicalPoolCreationPoolKey,
+  canonicalPoolCreationRecord,
+  parsePoolCreationHistoryQuery,
+  parsePoolCreatorBatchRequest,
+  parsePoolCreatorQuery,
+  poolCreationIdentityDigest,
+  poolCreationProvenanceBatchLimit,
+  poolCreationProvenanceHistoryLimit,
+  PoolCreationProvenanceConflictError,
+  PoolCreationProvenanceValidationError,
+  publicPoolCreationAttribution,
+} from "./pool-creation-provenance.js";
+export type {
+  ParsedPoolCreatorBatch,
+  PoolCreationAdminAuditAction,
+  PoolCreationAdminAuditInput,
+  PoolCreationAdminAuditOutcome,
+  PoolCreationAttribution,
+  PoolCreationCreatorProfile,
+  PoolCreationHistoryPage,
+  PoolCreationProvenanceReadStore,
+  PoolCreationProvenanceRecord,
+  PoolCreationProvenanceRecorder,
+  PoolCreationProvenanceRecordResult,
+  PoolCreationProvenanceStore,
+} from "./pool-creation-provenance.js";
+export {
   canonicalPoolBlocklistEntry,
   createPoolBlocklistSnapshot,
   defaultPoolBlocklistSnapshot,
