@@ -99,11 +99,17 @@ beforeAll(async () => {
       createdAt,
     ],
   );
-  await pool.query(
-    `INSERT INTO notification_destinations (
+  const destinationClient = await pool.connect();
+  try {
+    await destinationClient.query("BEGIN");
+    await destinationClient.query(
+      `INSERT INTO notification_destinations (
        destination_id, user_id, current_revision, created_at, updated_at
-     ) VALUES ($1, $3, 1, $5, $5), ($2, $4, 1, $5, $5);
-     INSERT INTO notification_destination_versions (
+     ) VALUES ($1, $3, 1, $5, $5), ($2, $4, 1, $5, $5)`,
+      [destinationA, destinationB, userA, userB, createdAt],
+    );
+    await destinationClient.query(
+      `INSERT INTO notification_destination_versions (
        destination_id, user_id, revision, type, name, enabled, categories,
        config, secret_ref, tombstone, created_at
      ) VALUES (
@@ -115,8 +121,12 @@ beforeAll(async () => {
        '{"method":"POST","template":{"text":"{{monitor.name}}"},"url":"https://hooks.fixture.example/other"}'::jsonb,
        'secret-ref://fixture/webhook/history-b', false, $5
      )`,
-    [destinationA, destinationB, userA, userB, createdAt],
-  );
+      [destinationA, destinationB, userA, userB, createdAt],
+    );
+    await destinationClient.query("COMMIT");
+  } finally {
+    destinationClient.release();
+  }
 }, 30_000);
 
 afterAll(async () => {
