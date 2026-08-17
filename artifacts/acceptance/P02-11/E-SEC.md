@@ -6,4 +6,4 @@
 - UI action results are a closed union. Copy, filter, navigation, block mutation, and chat-draft outcomes are dispatched explicitly; display symbols and labels are never promoted to canonical intent fields.
 - No untrusted HTML is rendered. Disabled commands remain non-invocable by pointer or keyboard and expose their reason through accessible menu text.
 - The implementation performs no creator attribution, system-statistics work, task write, monitor write, chat send, external RPC, metadata or production-sample fetch, signing, transaction broadcast, or funds operation.
-- Full-history Gitleaks and the locked dependency audit are part of the final local and GitHub Actions security gates; exact results are recorded in `command-output.md`.
+- Gitleaks 8.30.1 scanned 715 commits and approximately 21.02 MB of full history with no leaks. `pnpm audit:dependencies` reported no known vulnerabilities; exact local gate results are recorded in `command-output.md`.
