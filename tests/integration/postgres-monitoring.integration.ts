@@ -6,7 +6,10 @@ import { PostgresMonitorStore } from "../../apps/api/src/postgres-monitor-store.
 import { PostgresMonitorCandidateOutboxRepository } from "../../apps/worker/src/postgres-monitor-outbox.js";
 import { PostgresMonitorEvaluationSource } from "../../apps/worker/src/postgres-monitor-source.js";
 import type { CreateMonitorRequest } from "../../packages/api-contract/src/index.js";
-import { monitorCandidateKey, type MonitorCandidate } from "../../packages/domain/src/index.js";
+import {
+  monitorCandidateKey,
+  type MonitorCandidate,
+} from "../../packages/domain/src/monitor-evaluator.js";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 

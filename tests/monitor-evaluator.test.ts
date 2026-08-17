@@ -132,6 +132,16 @@ describe("P03-02 pure monitor evaluator", () => {
     });
   });
 
+  it("fails closed for every partial canonical generation", () => {
+    const input = goldenInput(fixture.input.cases[0]!);
+    input.snapshot.partial = true;
+    input.snapshot.partialFields = ["tvlUsd"];
+    expect(evaluateMonitorSnapshot(input)).toMatchObject({
+      matched: false,
+      reason: "REQUIRED_METRIC_PARTIAL",
+    });
+  });
+
   it("rejects more than sixteen enabled conditions and has no implicit clock or network I/O", () => {
     const input = goldenInput(fixture.input.cases[0]!);
     input.monitor.conditions = Array.from({ length: 17 }, () => ({

@@ -210,12 +210,7 @@ export function evaluateMonitorSnapshot(input: MonitorEvaluationInput): MonitorE
   if (evaluatedAtMs - generatedAtMs > 120_000) return noMatch("STALE");
   if (!snapshot.ready) return noMatch("SNAPSHOT_NOT_READY");
 
-  const requiredMetrics = new Set(conditions.map(({ id }) => id));
-  if (
-    snapshot.partial &&
-    (snapshot.partialFields === undefined ||
-      snapshot.partialFields.some((field) => requiredMetrics.has(field as MonitorConditionMetric)))
-  ) {
+  if (snapshot.partial) {
     return noMatch("REQUIRED_METRIC_PARTIAL");
   }
 
