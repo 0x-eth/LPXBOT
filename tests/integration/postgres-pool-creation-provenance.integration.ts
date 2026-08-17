@@ -15,7 +15,7 @@ const pool = new Pool({ connectionString: databaseUrl, max: 12 });
 const runId = randomUUID();
 const operationPrefix = `${randomUUID().slice(0, 24)}`;
 const users = [randomUUID(), randomUUID(), randomUUID()] as const;
-const identity = (label: string, length: 40 | 64) =>
+const identity = (label: string, length: 40 | 64): PoolCreationProvenanceRecord["poolKey"] =>
   `56:0x${createHash("sha256").update(`${runId}:${label}`).digest("hex").slice(0, length)}`;
 const v3PoolKey = identity("v3", 40);
 const otherV3PoolKey = identity("other-v3", 40);
@@ -99,7 +99,11 @@ describe("P02-12 PostgreSQL pool creation provenance ledger", () => {
     ).rejects.toMatchObject({ message: expect.stringContaining("append-only") });
 
     expect(
-      await adapter.record(record(90, { poolKey: v3PoolKey.toUpperCase().replace("0X", "0x") })),
+      await adapter.record(
+        record(90, {
+          poolKey: v3PoolKey.toUpperCase().replace("0X", "0x") as `56:0x${string}`,
+        }),
+      ),
     ).toMatchObject({ record: { poolKey: v3PoolKey }, status: "inserted" });
     await expect(
       pool.query(

@@ -477,7 +477,7 @@ test("POOL-15 cancels filtered admin batches and ignores their late response", a
   await page.getByRole("button", { name: "应用筛选" }).click();
   await expect.poll(() => calls).toBe(2);
   await expect(page.getByRole("button", { name: /查看池子创建者/u })).toHaveCount(1);
-  await firstRoute
+  await (firstRoute as Route | null)
     ?.fulfill({
       contentType: "application/json",
       json: {

@@ -210,7 +210,7 @@ export function parsePoolCreatorQuery(value: unknown): { identity: string; poolK
 
 export function parsePoolCreatorBatchRequest(
   value: unknown,
-  maximum = poolCreationProvenanceBatchLimit,
+  maximum: number = poolCreationProvenanceBatchLimit,
 ): ParsedPoolCreatorBatch {
   if (!Number.isSafeInteger(maximum) || maximum < 1) {
     throw new RangeError("Pool creator batch maximum must be a positive integer");

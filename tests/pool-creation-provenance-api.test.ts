@@ -17,9 +17,9 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const userId = "12000000-0000-4000-8000-000000000101";
 const adminId = "12000000-0000-4000-8000-000000000102";
-const poolAddress = `0x${"a".repeat(40)}`;
-const poolKey = `56:${poolAddress}`;
-const txHash = `0x${"b".repeat(64)}`;
+const poolAddress: `0x${string}` = `0x${"a".repeat(40)}`;
+const poolKey: `56:0x${string}` = `56:${poolAddress}`;
+const txHash: `0x${string}` = `0x${"b".repeat(64)}`;
 const now = new Date("2026-08-17T10:30:00.000Z");
 
 class MemorySessions implements SessionStore {
@@ -320,8 +320,8 @@ describe("P02-12 pool creation provenance read APIs", () => {
             telegramInitData: "secret-init-data",
             tier: "pro",
           } as never,
-          internalId: "secret-row" as never,
-        },
+          internalId: "secret-row",
+        } as unknown as PoolCreationAttribution,
       ],
       nextCursor: null,
     };
