@@ -76,6 +76,7 @@ export interface NotificationConfigurationStore {
     userId: string;
   }): Promise<NotificationDestinationDeleteResult>;
   getPreferences(userId: string): Promise<NotificationPreferences>;
+  getTelegramIdentity(userId: string): Promise<string | null>;
   listDestinations(userId: string): Promise<NotificationDestination[]>;
   ownsTelegramIdentity(userId: string, telegramIdentityId: string): Promise<boolean>;
   patchDestination(input: {
@@ -451,6 +452,10 @@ export class MemoryNotificationConfigurationStore implements NotificationConfigu
 
   mutationCount(): number {
     return this.#mutations;
+  }
+
+  async getTelegramIdentity(userId: string): Promise<string | null> {
+    return this.#identities.get(userId) ?? null;
   }
 
   async ownsTelegramIdentity(userId: string, telegramIdentityId: string): Promise<boolean> {

@@ -269,6 +269,16 @@ export class PostgresNotificationConfigurationStore implements NotificationConfi
     return result.rowCount === 1;
   }
 
+  async getTelegramIdentity(userId: string): Promise<string | null> {
+    const result = await this.#pool.query<{ telegram_identity_id: string }>(
+      `SELECT telegram_user_id::text AS telegram_identity_id
+         FROM telegram_identities
+        WHERE user_id = $1`,
+      [userId],
+    );
+    return result.rows[0]?.telegram_identity_id ?? null;
+  }
+
   async listDestinations(userId: string): Promise<NotificationDestination[]> {
     const result = await this.#pool.query<DestinationRow>(
       `SELECT ${destinationColumns}

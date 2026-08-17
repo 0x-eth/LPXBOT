@@ -2806,6 +2806,17 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       );
     });
 
+    app.get("/api/notification-destinations/options", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.notificationStore) return sendNotificationUnavailable(request, reply);
+      return createSuccessEnvelope(
+        { telegramIdentityId: await options.notificationStore.getTelegramIdentity(session.userId) },
+        request.id,
+      );
+    });
+
     app.post(
       "/api/notification-destinations",
       { bodyLimit: 65_536 },

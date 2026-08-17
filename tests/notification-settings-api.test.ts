@@ -129,6 +129,7 @@ describe("P03-03 notification preferences API", () => {
         }),
       ),
     );
+    if (!optionA || !optionB) throw new Error("Notification option fixture is incomplete");
     expect(optionA.json().data).toEqual({ telegramIdentityId: telegramA });
     expect(optionB.json().data).toEqual({ telegramIdentityId: telegramB });
     expectNoCredential(optionA.json());

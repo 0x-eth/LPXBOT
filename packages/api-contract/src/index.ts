@@ -361,6 +361,10 @@ export interface LocalSinkTestResult {
   sink: "local-sink://p03-01";
 }
 
+export interface NotificationDestinationOptions {
+  telegramIdentityId: string | null;
+}
+
 export const notificationPreferenceContracts = {
   get: { method: "GET", path: "/api/notification-preferences" },
   patch: { method: "PATCH", path: "/api/notification-preferences" },
@@ -370,6 +374,7 @@ export const notificationDestinationContracts = {
   create: { method: "POST", path: "/api/notification-destinations" },
   delete: { method: "DELETE", path: "/api/notification-destinations/{destinationId}" },
   list: { method: "GET", path: "/api/notification-destinations" },
+  options: { method: "GET", path: "/api/notification-destinations/options" },
   patch: { method: "PATCH", path: "/api/notification-destinations/{destinationId}" },
   test: { method: "POST", path: "/api/notification-destinations/test" },
 } as const;
