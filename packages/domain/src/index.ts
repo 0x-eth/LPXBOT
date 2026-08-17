@@ -9,6 +9,116 @@ export type AccessLevel = "authenticated" | "pro" | "admin";
 export type ChainAccessMode = "off" | "pro" | "all";
 export type ChainOperationCategory = "read" | "monitor" | "unwind" | "new-exposure";
 
+export interface PoolEligibilityCandidate {
+  chainId: number;
+  poolKey: string;
+  token0Address: string | null;
+  token1Address: string | null;
+}
+
+export interface PoolEligibilityBlockedBy {
+  identity: string;
+  scope: "pool" | "token";
+}
+
+export interface PoolEligibilityLimitation {
+  code: "POOL_KEY_NON_CANONICAL" | "TOKEN_ADDRESS_MISSING" | "TOKEN_ADDRESS_NON_CANONICAL";
+  field: "poolKey" | "token0Address" | "token1Address";
+}
+
+export interface PoolEligibilityDecision {
+  blockedBy: PoolEligibilityBlockedBy[];
+  eligible: boolean;
+  limitations: PoolEligibilityLimitation[];
+}
+
+export interface PoolEligibilityPolicy {
+  readonly blocklistHash: string;
+  evaluate(candidate: PoolEligibilityCandidate): PoolEligibilityDecision;
+  filter<T extends PoolEligibilityCandidate>(candidates: readonly T[]): {
+    candidates: T[];
+    limitations: Array<PoolEligibilityLimitation & { poolKey: string }>;
+  };
+}
+
+export interface PoolEligibilityPolicySnapshot {
+  blocklistHash: string;
+  entries: ReadonlyArray<{
+    chainId: number;
+    identity: string;
+    scope: "pool" | "token";
+  }>;
+}
+
+const canonicalPoolKeyPattern = /^56:0x(?:[0-9a-f]{40}|[0-9a-f]{64})$/u;
+const canonicalTokenAddressPattern = /^0x[0-9a-f]{40}$/u;
+const blocklistHashPattern = /^sha256:[0-9a-f]{64}$/u;
+
+export function createPoolEligibilityPolicy(
+  snapshot: PoolEligibilityPolicySnapshot,
+): PoolEligibilityPolicy {
+  if (!blocklistHashPattern.test(snapshot.blocklistHash) || !Array.isArray(snapshot.entries)) {
+    throw new RangeError("POOL_ELIGIBILITY_POLICY_INVALID");
+  }
+  const blockedPools = new Set<string>();
+  const blockedTokens = new Set<string>();
+  const seen = new Set<string>();
+  for (const entry of snapshot.entries) {
+    const validIdentity =
+      entry.scope === "pool"
+        ? canonicalPoolKeyPattern.test(entry.identity)
+        : entry.scope === "token" && canonicalTokenAddressPattern.test(entry.identity);
+    const key = `${entry.chainId}\u0000${entry.scope}\u0000${entry.identity}`;
+    if (entry.chainId !== 56 || !validIdentity || seen.has(key)) {
+      throw new RangeError("POOL_ELIGIBILITY_POLICY_INVALID");
+    }
+    seen.add(key);
+    (entry.scope === "pool" ? blockedPools : blockedTokens).add(entry.identity);
+  }
+
+  const evaluate = (candidate: PoolEligibilityCandidate): PoolEligibilityDecision => {
+    const blockedBy: PoolEligibilityBlockedBy[] = [];
+    const limitations: PoolEligibilityLimitation[] = [];
+    if (candidate.chainId !== 56 || !canonicalPoolKeyPattern.test(candidate.poolKey)) {
+      limitations.push({ code: "POOL_KEY_NON_CANONICAL", field: "poolKey" });
+    } else if (blockedPools.has(candidate.poolKey)) {
+      blockedBy.push({ identity: candidate.poolKey, scope: "pool" });
+    }
+
+    for (const field of ["token0Address", "token1Address"] as const) {
+      const identity = candidate[field];
+      if (identity === null) {
+        limitations.push({ code: "TOKEN_ADDRESS_MISSING", field });
+      } else if (!canonicalTokenAddressPattern.test(identity)) {
+        limitations.push({ code: "TOKEN_ADDRESS_NON_CANONICAL", field });
+      } else if (
+        blockedTokens.has(identity) &&
+        !blockedBy.some((entry) => entry.scope === "token" && entry.identity === identity)
+      ) {
+        blockedBy.push({ identity, scope: "token" });
+      }
+    }
+    return { blockedBy, eligible: blockedBy.length === 0, limitations };
+  };
+
+  return {
+    blocklistHash: snapshot.blocklistHash,
+    evaluate,
+    filter<T extends PoolEligibilityCandidate>(candidates: readonly T[]) {
+      const eligible: T[] = [];
+      const limitations: Array<PoolEligibilityLimitation & { poolKey: string }> = [];
+      for (const candidate of candidates) {
+        const decision = evaluate(candidate);
+        limitations.push(
+          ...decision.limitations.map((limitation) => ({ ...limitation, poolKey: candidate.poolKey })),
+        );
+        if (decision.eligible) eligible.push(candidate);
+      }
+      return { candidates: eligible, limitations };
+    },
+  };
+}
+
 export type ChainAccessDecision =
   | { allowed: true }
   | {

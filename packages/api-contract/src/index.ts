@@ -73,6 +73,48 @@ export interface SessionView {
 
 export type EvmAddress = `0x${string}`;
 
+export const poolBlocklistSchemaVersion = 1 as const;
+export const poolBlocklistMaxEntries = 500 as const;
+export const poolBlocklistMaxLabelLength = 64 as const;
+
+export type PoolBlocklistScope = "pool" | "token";
+export type BscPoolKey = `56:0x${string}`;
+
+export interface PoolBlocklistEntry {
+  chainId: 56;
+  identity: BscPoolKey | EvmAddress;
+  label?: string;
+  scope: PoolBlocklistScope;
+}
+
+export interface PoolBlocklistSnapshot {
+  blocklistHash: `sha256:${string}`;
+  entries: PoolBlocklistEntry[];
+  revision: number;
+  schemaVersion: typeof poolBlocklistSchemaVersion;
+  updatedAt: string | null;
+}
+
+export type PoolBlocklistOperation =
+  | { entry: PoolBlocklistEntry; type: "block" }
+  | { entry: Omit<PoolBlocklistEntry, "label">; type: "restore" };
+
+export interface PatchPoolBlocklistRequest {
+  expectedRevision: number;
+  operation: PoolBlocklistOperation;
+}
+
+export interface PoolBlocklistRevisionConflict {
+  current: PoolBlocklistSnapshot;
+  error: ApiError;
+  success: false;
+}
+
+export const poolBlocklistContracts = {
+  get: { method: "GET", path: "/api/user/pool-blocklist" },
+  patch: { method: "PATCH", path: "/api/user/pool-blocklist" },
+} as const;
+
 export interface AddressRemark {
   address: EvmAddress;
   label: string;
