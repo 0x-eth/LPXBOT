@@ -146,9 +146,7 @@ describe("P02-12 pool creation provenance read APIs", () => {
     });
     expect(response.statusCode).toBe(200);
     expect(response.headers["cache-control"]).toBe("no-store");
-    expect(provenance.historyQueries).toEqual([
-      { cursor: "opaque-cursor", limit: 7, userId },
-    ]);
+    expect(provenance.historyQueries).toEqual([{ cursor: "opaque-cursor", limit: 7, userId }]);
     expect(response.json().data).toEqual({
       items: [attribution],
       nextCursor: "next-cursor",
@@ -228,10 +226,9 @@ describe("P02-12 pool creation provenance read APIs", () => {
       url: "/api/admin/pool-creators",
     });
     expect(legacy.statusCode).toBe(200);
-    expect(legacy.json().data.results.map(({ identity }: { identity: string }) => identity)).toEqual([
-      poolAddress,
-      `0x${"f".repeat(40)}`,
-    ]);
+    expect(
+      legacy.json().data.results.map(({ identity }: { identity: string }) => identity),
+    ).toEqual([poolAddress, `0x${"f".repeat(40)}`]);
   });
 
   it("rejects invalid history, mixed identities, and batches above 100 before lookup", async () => {

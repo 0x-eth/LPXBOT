@@ -837,6 +837,36 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     const errorCode = (error as { code?: unknown }).code;
     if (
       errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
+      request.method === "POST" &&
+      request.url.split("?", 1)[0] === "/api/admin/pool-creators"
+    ) {
+      reply.header("Cache-Control", "no-store");
+      const token = sessionToken(request);
+      const resolved = token ? await findValidSession(token, options.sessionStore, now()) : null;
+      if (resolved) {
+        await options.poolCreationProvenanceStore?.recordAdminQueryAudit({
+          action: "pool-creator.batch",
+          actorUserId: resolved.session.userId,
+          createdAt: now(),
+          identityCount: 0,
+          identityDigest: poolCreationIdentityDigest([]),
+          outcome: "denied",
+          requestId: request.id,
+          resultCode: "REQUEST_TOO_LARGE",
+          sessionId: resolved.session.id,
+        });
+      }
+      return reply.code(413).send(
+        createErrorEnvelope({
+          code: "REQUEST_TOO_LARGE",
+          message: "The request body is too large",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+    }
+    if (
+      errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
       request.method === "PATCH" &&
       request.url.split("?", 1)[0] === "/api/user/pool-blocklist"
     ) {
