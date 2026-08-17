@@ -255,7 +255,11 @@ importers:
         specifier: 2.55.16
         version: 2.55.16(typescript@6.0.3)(zod@4.4.3)
 
-  packages/domain: {}
+  packages/domain:
+    devDependencies:
+      '@types/node':
+        specifier: 22.20.1
+        version: 22.20.1
 
   packages/market-metrics:
     dependencies:
