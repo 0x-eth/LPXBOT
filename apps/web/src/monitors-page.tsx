@@ -784,16 +784,17 @@ function NotificationHistoryView({
   const [to, setTo] = useState("");
   const detailsTrigger = useRef<HTMLButtonElement | null>(null);
 
-  const query = useMemo(
-    () => ({
+  const query = useMemo(() => {
+    const fromTimestamp = historyQueryTime(from);
+    const toTimestamp = historyQueryTime(to);
+    return {
       ...(deliveryStatus === "" ? {} : { deliveryStatus }),
-      ...(historyQueryTime(from) ? { from: historyQueryTime(from) } : {}),
+      ...(fromTimestamp === undefined ? {} : { from: fromTimestamp }),
       limit: 25,
       ...(monitorId === "" ? {} : { monitorId }),
-      ...(historyQueryTime(to) ? { to: historyQueryTime(to) } : {}),
-    }),
-    [deliveryStatus, from, monitorId, to],
-  );
+      ...(toTimestamp === undefined ? {} : { to: toTimestamp }),
+    };
+  }, [deliveryStatus, from, monitorId, to]);
 
   useEffect(() => {
     const controller = new AbortController();

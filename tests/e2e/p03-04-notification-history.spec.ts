@@ -212,10 +212,11 @@ test("MON-05 notification history supports responsive scanning, filters, paginat
   await page.goto("/monitors");
   await page.getByRole("tab", { name: "通知历史" }).click();
   await expect(page.getByRole("status", { name: "正在加载通知历史" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "通知历史" })).toBeVisible();
-  await expect(page.getByText("待发送", { exact: true })).toBeVisible();
-  await expect(page.getByText("发送中", { exact: true })).toBeVisible();
-  await expect(page.getByText("重试中", { exact: true })).toBeVisible();
+  const history = page.getByRole("region", { name: "通知历史" });
+  await expect(history).toBeVisible();
+  await expect(history.locator(".notification-history-status", { hasText: "待发送" })).toBeVisible();
+  await expect(history.locator(".notification-history-status", { hasText: "发送中" })).toBeVisible();
+  await expect(history.locator(".notification-history-status", { hasText: "重试中" })).toBeVisible();
 
   if (testInfo.project.name.includes("mobile")) {
     await expect(page.getByRole("list", { name: "通知历史列表" })).toBeVisible();
@@ -226,18 +227,18 @@ test("MON-05 notification history supports responsive scanning, filters, paginat
   }
 
   await page.getByRole("button", { name: "加载更多通知历史" }).click();
-  await expect(page.getByText("已送达", { exact: true })).toBeVisible();
-  await expect(page.getByText("失败", { exact: true })).toBeVisible();
+  await expect(history.locator(".notification-history-status", { hasText: "已送达" })).toBeVisible();
+  await expect(history.locator(".notification-history-status", { hasText: "失败" })).toBeVisible();
 
   await page.getByLabel("投递状态").selectOption("retrying");
   await expect(page.getByText("HTTP_503", { exact: true })).toBeVisible();
-  await expect(page.getByText("失败", { exact: true })).toHaveCount(0);
+  await expect(history.locator(".notification-history-status", { hasText: "失败" })).toHaveCount(0);
   await page.getByLabel("投递状态").selectOption("");
   await page.getByLabel("监控筛选").selectOption(monitorB);
   await expect(page.getByText("Fee watch", { exact: true })).toBeVisible();
 
   await page.getByLabel("监控筛选").selectOption("");
-  const detailsButton = page.getByRole("button", { name: /查看投递.*103/u }).first();
+  const detailsButton = page.getByRole("button", { name: /查看投递.*102/u }).first();
   await detailsButton.click();
   const drawer = page.getByRole("dialog", { name: "投递详情" });
   await expect(drawer.getByRole("button", { name: "关闭投递详情" })).toBeFocused();
