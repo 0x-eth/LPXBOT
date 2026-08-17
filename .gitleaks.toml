@@ -50,3 +50,10 @@ condition = "AND"
 paths = ['''^artifacts/acceptance/P02-03/golden/(?:raw|normalized)/(?:univ3|pcsv3|univ4|pcsv4)/[A-Za-z]+\.json$''']
 regexTarget = "match"
 regexes = ['''token[01]":\s*"0x[0-9a-f]{40}"''']
+
+[[rules.allowlists]]
+description = "P03-01 evaluator fixtures record deterministic SHA-256 candidate keys, not authentication credentials."
+condition = "AND"
+paths = ['''^artifacts/acceptance/P03-01/fixtures/(?:evaluation-cases|reorg-replacement)\.json$''']
+regexTarget = "match"
+regexes = ['''"candidateKey":\s*"[0-9a-f]{64}"''']
