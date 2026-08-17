@@ -172,7 +172,8 @@ function providerAcknowledgement(body: unknown): string {
     (typeof body.result.message_id === "string" || typeof body.result.message_id === "number")
       ? String(body.result.message_id)
       : "accepted";
-  return `telegram:${[...raw].slice(0, 110).join("")}`;
+  const acknowledgement = /^[A-Za-z0-9._:-]{1,110}$/u.test(raw) ? raw : "accepted";
+  return `telegram:${acknowledgement}`;
 }
 
 function classify(response: TelegramTransportResponse): TelegramDeliveryResult {

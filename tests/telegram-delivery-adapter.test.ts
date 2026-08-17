@@ -136,4 +136,19 @@ describe("P03-04 Telegram delivery adapter", () => {
     });
     expect(deliveryIds).toEqual(["delivery-telegram-stable", "delivery-telegram-stable"]);
   });
+
+  it.each([[
+    "provider\nresponse-must-not-persist",
+  ], ["9".repeat(111)]])("bounds and sanitizes provider acknowledgements", async (messageId) => {
+    const adapter = new TelegramDeliveryAdapter({
+      identities: { owns: async () => true },
+      transport: {
+        send: async () => ({ body: { ok: true, result: { message_id: messageId } }, status: 200 }),
+      },
+    });
+    await expect(adapter.deliver(baseInput)).resolves.toEqual({
+      acknowledgement: "telegram:accepted",
+      status: "delivered",
+    });
+  });
 });
