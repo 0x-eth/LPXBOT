@@ -100,8 +100,12 @@ describe("P02-11 pool action intent and shared command registry", () => {
       reason: "V4 池没有可复制的池地址",
     });
     expect(resolvePoolAction(row(3), "create-monitor")).toMatchObject({
-      enabled: false,
-      reason: "监控模块暂不可用",
+      enabled: true,
+      result: {
+        intent: { action: "create-monitor", poolKey: row(3).poolKey },
+        kind: "navigate",
+        to: "/monitors",
+      },
     });
     expect(
       resolvePoolAction(row(3), "create-task", { monitorPrefill: false, taskPrefill: true }),
