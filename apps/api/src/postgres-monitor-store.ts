@@ -107,7 +107,7 @@ export class PostgresMonitorStore implements MonitorStore {
     try {
       await client.query("BEGIN");
       await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
-        JSON.stringify([input.userId, input.idempotencyKey]),
+        input.userId,
       ]);
       const hash = payloadHash(input.request);
       const existing = await client.query<IdempotencyRow>(

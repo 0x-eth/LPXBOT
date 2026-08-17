@@ -452,6 +452,25 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
         ],
       }),
     ).rejects.toThrow("OUTBOX_SECRET_FIELD_FORBIDDEN");
+    for (const payload of [
+      { bot_token: "must-not-persist" },
+      { nested: { "notification-key": "must-not-persist" } },
+      { Webhook_Secret: "must-not-persist" },
+    ]) {
+      await expect(
+        repository.commitCandidate({
+          candidate: rollbackCandidate,
+          destinations: [
+            {
+              channel: "local-sink",
+              destinationId: "secret-variant-fixture",
+              destinationRevision: 1,
+              payload,
+            },
+          ],
+        }),
+      ).rejects.toThrow("OUTBOX_SECRET_FIELD_FORBIDDEN");
+    }
     const columns = await pool.query<{ column_name: string }>(
       `SELECT column_name FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'notification_outbox'`,
