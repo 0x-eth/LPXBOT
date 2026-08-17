@@ -2572,6 +2572,307 @@ html[data-theme="dark"] .flow-stat-strip[data-completeness="partial"] [data-metr
   inset: 0;
 }
 
+.pool-provenance-dialog {
+  position: fixed;
+  z-index: 45;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: min(calc(100vw - 28px), 680px);
+  max-height: calc(100dvh - 28px);
+  gap: 14px;
+  padding: 20px;
+  overflow-y: auto;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgb(20 24 26 / 22%);
+  transform: translate(-50%, -50%);
+}
+
+.pool-creator-dialog {
+  width: min(calc(100vw - 28px), 560px);
+}
+
+.pool-provenance-dialog-heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pool-provenance-dialog-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.pool-provenance-dialog-heading button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  padding: 0;
+  color: var(--muted-foreground);
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  place-items: center;
+}
+
+.pool-provenance-dialog-heading button:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.pool-provenance-state {
+  display: flex;
+  min-height: 96px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+  text-align: center;
+}
+
+.pool-provenance-state-error {
+  min-height: 64px;
+  justify-content: flex-start;
+  padding: 10px 12px;
+  color: var(--danger);
+  background: var(--danger-surface);
+  text-align: left;
+}
+
+.pool-provenance-state-error p {
+  margin: 0;
+}
+
+.pool-provenance-state-error button,
+.pool-history-more {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 9px;
+  color: inherit;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.72rem;
+}
+
+.pool-provenance-state-error button {
+  margin-left: auto;
+}
+
+.pool-history-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  border-top: 1px solid var(--border);
+}
+
+.pool-history-record {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.pool-history-record-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pool-history-record-heading strong {
+  min-width: 0;
+  font-size: 0.84rem;
+}
+
+.pool-history-record-heading span {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  color: #087f5b;
+  border: 1px solid #8acbb7;
+  border-radius: 4px;
+  background: #eefaf6;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.pool-history-record-heading span[data-outcome="already_exists"] {
+  color: #8b5a00;
+  border-color: #ddc285;
+  background: #fff8e7;
+}
+
+.pool-provenance-facts {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.pool-provenance-facts div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.pool-provenance-facts dt,
+.pool-provenance-identity > span {
+  color: var(--muted-foreground);
+  font-size: 0.64rem;
+  font-weight: 650;
+}
+
+.pool-provenance-facts dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.pool-provenance-identity {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pool-provenance-identity code,
+.pool-creator-pool-identity {
+  min-width: 0;
+  padding: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  background: transparent;
+  font-size: 0.68rem;
+}
+
+.pool-creator-pool-identity {
+  color: var(--muted-foreground);
+}
+
+.pool-provenance-transaction {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 28px;
+  align-items: center;
+  gap: 6px;
+  color: var(--focus-ring);
+  font-size: 0.7rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.pool-provenance-transaction:hover {
+  text-decoration: underline;
+}
+
+.pool-provenance-no-transaction {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.pool-provenance-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 8px 10px;
+  margin: 0;
+  color: #805500;
+  background: #fff8e7;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.pool-provenance-warning svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.pool-history-more {
+  justify-self: center;
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.pool-history-more:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.pool-creator-details {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+}
+
+.pool-creator-profile {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pool-creator-profile > svg {
+  flex: 0 0 auto;
+  color: #087f5b;
+}
+
+.pool-creator-profile[data-deleted="true"] > svg {
+  color: var(--muted-foreground);
+}
+
+.pool-creator-profile div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.pool-creator-profile strong {
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+}
+
+.pool-creator-profile span {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+html[data-theme="dark"] .pool-history-record-heading span {
+  color: #8de1c5;
+  border-color: #356a5a;
+  background: #17312a;
+}
+
+html[data-theme="dark"] .pool-history-record-heading span[data-outcome="already_exists"],
+html[data-theme="dark"] .pool-provenance-warning {
+  color: #f0cf83;
+  border-color: #6e5a2f;
+  background: #302817;
+}
+
 .remark-dialog {
   position: fixed;
   z-index: 41;
@@ -4419,6 +4720,38 @@ html[data-theme="dark"] .chain-operation-success {
   .pool-controls {
     gap: 14px;
     margin-top: 20px;
+  }
+
+  .pool-table-toolbar {
+    justify-content: flex-start;
+  }
+
+  .pool-table-toolbar > :first-child {
+    margin-right: auto;
+  }
+
+  .pool-provenance-dialog {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+    padding: 16px;
+  }
+
+  .pool-provenance-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pool-provenance-identity {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .pool-provenance-state-error {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pool-provenance-state-error button {
+    margin-left: 0;
   }
 
   .pool-search-form {

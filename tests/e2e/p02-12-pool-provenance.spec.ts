@@ -378,7 +378,11 @@ test("POOL-15 renders null, partial, deleted-user, malformed and batch-error adm
             }
             if (identity === thirdPoolKey) {
               return {
-                creator: attribution({ outcome: "invented", poolKey: thirdPoolKey, protocol: "pcsv4" }),
+                creator: attribution({
+                  outcome: "invented",
+                  poolKey: thirdPoolKey,
+                  protocol: "pcsv4",
+                }),
                 identity,
               };
             }
@@ -473,15 +477,17 @@ test("POOL-15 cancels filtered admin batches and ignores their late response", a
   await page.getByRole("button", { name: "应用筛选" }).click();
   await expect.poll(() => calls).toBe(2);
   await expect(page.getByRole("button", { name: /查看池子创建者/u })).toHaveCount(2);
-  await firstRoute?.fulfill({
-    contentType: "application/json",
-    json: {
-      data: {
-        results: [{ creator: attribution({ userId: "late-user" }), identity: poolKey }],
+  await firstRoute
+    ?.fulfill({
+      contentType: "application/json",
+      json: {
+        data: {
+          results: [{ creator: attribution({ userId: "late-user" }), identity: poolKey }],
+        },
+        requestId: "late",
+        success: true,
       },
-      requestId: "late",
-      success: true,
-    },
-  }).catch(() => undefined);
+    })
+    .catch(() => undefined);
   await expect(page.getByText("late-user")).toHaveCount(0);
 });

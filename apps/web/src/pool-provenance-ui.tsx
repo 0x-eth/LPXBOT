@@ -5,20 +5,10 @@ import type {
 } from "@lpbot/api-contract";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Decimal } from "decimal.js";
-import {
-  AlertTriangle,
-  CircleUserRound,
-  ExternalLink,
-  History,
-  RefreshCw,
-  X,
-} from "lucide-react";
+import { AlertTriangle, CircleUserRound, ExternalLink, History, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  PoolProvenanceClient,
-  PoolProvenanceRequestManager,
-} from "./pool-provenance-client.js";
+import { PoolProvenanceClient, PoolProvenanceRequestManager } from "./pool-provenance-client.js";
 
 const historyPageSize = 20;
 const maximumCreatorBatchSize = 100;
@@ -344,7 +334,11 @@ export function PoolCreationHistoryDialog() {
           {state.status === "error" ? (
             <div className="pool-provenance-state pool-provenance-state-error">
               <p role="alert">创建历史加载失败</p>
-              <button aria-label="重试创建历史" onClick={() => void load(null, false)} type="button">
+              <button
+                aria-label="重试创建历史"
+                onClick={() => void load(null, false)}
+                type="button"
+              >
                 <RefreshCw aria-hidden="true" size={14} />
                 重试
               </button>
@@ -437,7 +431,10 @@ function CreatorAttributionDetails({ attribution }: { attribution: PoolCreationA
   const { creatorProfile, record } = attribution;
   return (
     <div className="pool-creator-details">
-      <div className="pool-creator-profile" data-deleted={creatorProfile === null ? "true" : undefined}>
+      <div
+        className="pool-creator-profile"
+        data-deleted={creatorProfile === null ? "true" : undefined}
+      >
         <CircleUserRound aria-hidden="true" size={21} />
         <div>
           <strong>

@@ -2802,9 +2802,7 @@ export function PoolsPage({ session }: { session: SessionView }) {
           columns={poolColumns}
           comparisonCandidateKeys={comparisonCandidateKeys}
           comparisonSelectedKeys={comparisonSelectedKeys}
-          {...(session.role === "admin"
-            ? { creatorLookup: creatorLookup.state, openCreator }
-            : {})}
+          {...(session.role === "admin" ? { creatorLookup: creatorLookup.state, openCreator } : {})}
           expandedMarketPoolKey={expandedMarketPoolKey}
           marketFixtureState={marketFixtureState}
           marketRefreshMs={marketRefreshMs}
