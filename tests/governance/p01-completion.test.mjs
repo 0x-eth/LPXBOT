@@ -199,7 +199,7 @@ test("P01 feature coverage records inspectable implementation, tests, evidence, 
   const traceability = traceabilityRows(traceabilityMarkdown);
   const documentedStatuses = statusRows(traceabilityMarkdown);
   assert.deepEqual(sorted(documentedStatuses.keys()), sorted(EXPECTED_FEATURE_IDS));
-  assert.match(traceabilityMarkdown, /(?:其余|remaining)\s*152[^\n]*`planned`/i);
+  assert.match(traceabilityMarkdown, /(?:其余|remaining)\s*149[^\n]*`planned`/i);
 
   for (const feature of coverage.features) {
     const minimums = traceability.get(feature.id);

@@ -184,9 +184,9 @@ test("P02 status table closes with exactly twenty-three fixture-verified feature
   assert.deepEqual(sorted(implemented), sorted(IMPLEMENTED_FEATURE_IDS));
   assert.deepEqual(planned, []);
   assert.match(markdown, /P02[^\n]*23[^\n]*implemented-assumed[^\n]*0[^\n]*planned/i);
-  assert.match(markdown, /当前产品实现\s*\|\s*44\s*\|/);
-  assert.match(markdown, /`implemented-assumed`\s*\|\s*44\s*\|/);
-  assert.match(markdown, /(?:其余|remaining)\s*`planned`\s*\|\s*152\s*\|/i);
+  assert.match(markdown, /当前产品实现\s*\|\s*47\s*\|/);
+  assert.match(markdown, /`implemented-assumed`\s*\|\s*47\s*\|/);
+  assert.match(markdown, /(?:其余|remaining)\s*`planned`\s*\|\s*149\s*\|/i);
 });
 
 test("P02-13 owns only STATS-01 and freezes authoritative projection semantics", async () => {
