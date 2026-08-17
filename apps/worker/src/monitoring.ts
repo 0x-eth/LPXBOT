@@ -56,8 +56,13 @@ export function candidateEvidenceDecision(input: {
   incoming: { generatedAt: string; id?: string; sourceGenerationId?: string };
   outboxStates: readonly NotificationOutboxState[];
 }): "replace" | "defer" | "suppress" | "ignore" {
+  const currentGeneratedAt = new Date(input.current.generatedAt).getTime();
+  const incomingGeneratedAt = new Date(input.incoming.generatedAt).getTime();
+  if (!Number.isFinite(currentGeneratedAt) || !Number.isFinite(incomingGeneratedAt)) {
+    throw new RangeError("CANDIDATE_GENERATED_AT_INVALID");
+  }
   const generationOrder =
-    byteCompare(input.incoming.generatedAt, input.current.generatedAt) ||
+    (incomingGeneratedAt < currentGeneratedAt ? -1 : incomingGeneratedAt > currentGeneratedAt ? 1 : 0) ||
     byteCompare(evidenceGenerationId(input.incoming), evidenceGenerationId(input.current));
   if (generationOrder <= 0) return "ignore";
   if (input.outboxStates.some((state) => state === "delivered" || state === "dead")) {

@@ -88,6 +88,13 @@ const deliveryColumns = `
   next_attempt_at, lease_owner, lease_token::text, lease_expires_at,
   created_at, updated_at, last_error_code`;
 
+const claimedDeliveryColumns = `
+  outbox.delivery_id::text, outbox.dedupe_key, outbox.candidate_key,
+  outbox.destination_id, outbox.destination_revision::text, outbox.channel,
+  outbox.payload, outbox.state, outbox.attempt_count, outbox.next_attempt_at,
+  outbox.lease_owner, outbox.lease_token::text, outbox.lease_expires_at,
+  outbox.created_at, outbox.updated_at, outbox.last_error_code`;
+
 const forbiddenPayloadFields = new Set([
   "apikey",
   "authorization",
@@ -306,7 +313,7 @@ export class PostgresMonitorCandidateOutboxRepository {
                 last_error_summary = NULL
            FROM due
           WHERE outbox.delivery_id = due.delivery_id
-          RETURNING ${deliveryColumns}`,
+          RETURNING ${claimedDeliveryColumns}`,
         [input.leaseOwner, input.limit],
       );
       await client.query("COMMIT");
