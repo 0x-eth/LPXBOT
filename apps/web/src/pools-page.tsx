@@ -10,6 +10,7 @@ import {
   type PoolColumnKey,
   type PoolColumnPreference,
 } from "@lpbot/api-contract";
+import { createPoolEligibilityPolicy } from "@lpbot/domain";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Decimal } from "decimal.js";
 import {
@@ -53,6 +54,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { AddressRemarksClient, AddressRemarksRequestError } from "./address-remarks-client.js";
+import { useFeedback } from "./feedback.js";
 import { PoolActionMenu, type PoolActionMenuState } from "./pool-action-menu.js";
 import type { PoolActionResult } from "./pool-actions.js";
 import {
@@ -108,6 +110,7 @@ import {
   type PoolSearchState,
 } from "./pool-search-state";
 import { PoolMarketDetail, type MarketDetailFixtureState } from "./pool-market-detail";
+import { usePoolBlocklist } from "./pool-blocklist.js";
 import {
   initialPoolStreamState,
   reducePoolStream,
@@ -1900,6 +1903,8 @@ export function PoolsPage() {
     [location.search],
   );
   const { preferences, update: updatePreferences } = useUserPreferences();
+  const blocklist = usePoolBlocklist();
+  const feedback = useFeedback();
   const fixture = fixtureState(location.search);
   const marketFixtureState = fixtureMarketDetailState(location.search);
   const marketRefreshMs = marketDetailRefreshMs(location.search);
@@ -2057,6 +2062,10 @@ export function PoolsPage() {
 
   useEffect(() => {
     if (fixture) return;
+    if (!blocklist.loaded && blocklist.status !== "error") {
+      dispatch({ type: "loading" });
+      return;
+    }
     const controller = new AbortController();
     latestEventAt.current = Date.now();
     dispatch({ type: "loading" });
@@ -2113,7 +2122,16 @@ export function PoolsPage() {
       subscription?.close();
       window.clearInterval(staleTimer);
     };
-  }, [fixture, minutes, poolClient, protocols, retry]);
+  }, [
+    blocklist.loaded,
+    blocklist.snapshot?.blocklistHash,
+    blocklist.status,
+    fixture,
+    minutes,
+    poolClient,
+    protocols,
+    retry,
+  ]);
 
   const remoteFilters = useMemo(() => serverFilters(flowFilters), [flowFilters]);
   useEffect(() => {
@@ -2162,15 +2180,25 @@ export function PoolsPage() {
 
   const connection = fixture ?? state.connection;
   const selectedProtocols = useMemo(() => new Set(protocols), [protocols]);
+  const eligibility = useMemo(
+    () =>
+      createPoolEligibilityPolicy({
+        blocklistHash: blocklist.snapshot?.blocklistHash ?? `sha256:${"0".repeat(64)}`,
+        entries: blocklist.entries,
+      }),
+    [blocklist.entries, blocklist.snapshot?.blocklistHash],
+  );
   const poolRows = useMemo(
     () =>
-      (fixture
-        ? fixture === "ready" || fixture === "stale" || fixture === "reconnecting"
-          ? fixturePoolRows
-          : []
-        : state.rows
-      ).filter(({ protocol }) => selectedProtocols.has(protocol)),
-    [fixture, selectedProtocols, state.rows],
+      eligibility.filter(
+        (fixture
+          ? fixture === "ready" || fixture === "stale" || fixture === "reconnecting"
+            ? fixturePoolRows
+            : []
+          : state.rows
+        ).filter(({ protocol }) => selectedProtocols.has(protocol)),
+      ).candidates,
+    [eligibility, fixture, selectedProtocols, state.rows],
   );
   const poolSearchParameters = useMemo(
     () => parsePoolSearchParameters(location.search),
@@ -2241,7 +2269,11 @@ export function PoolsPage() {
     protocols,
   ]);
 
-  const activePoolRows = poolSearchParameters ? poolSearchState.rows : poolRows;
+  const activePoolRows = useMemo(
+    () =>
+      eligibility.filter(poolSearchParameters ? poolSearchState.rows : poolRows).candidates,
+    [eligibility, poolRows, poolSearchParameters, poolSearchState.rows],
+  );
   const appliedAdvancedFilters = parsedAdvancedFilters.valid
     ? parsedAdvancedFilters.filters
     : defaultPoolAdvancedFilters();
@@ -2522,6 +2554,80 @@ export function PoolsPage() {
     });
   }, []);
 
+  const executePoolAction = useCallback(
+    (result: PoolActionResult, row: MarketPoolRow) => {
+      if (result.kind === "toggle-detail") {
+        toggleMarketPool(row.poolKey);
+        return;
+      }
+      if (result.kind === "copy") {
+        void navigator.clipboard.writeText(result.value).then(
+          () => {
+            feedback.show({
+              dedupeKey: `pool-copy:${result.value}`,
+              kind: "success",
+              title: "地址已复制",
+            });
+          },
+          () => {
+            feedback.show({
+              dedupeKey: "pool-copy-failed",
+              kind: "error",
+              title: "复制失败，请重试",
+            });
+          },
+        );
+        return;
+      }
+      if (result.kind === "search-token") {
+        const search = writePoolSearchParameters(location.search, {
+          mode: "token",
+          query: result.address,
+        });
+        void navigate({ pathname: location.pathname, search });
+        return;
+      }
+      if (result.kind === "filter-flow") {
+        const next = { ...flowFilters, [result.field]: result.identity };
+        setFlowFilters(next);
+        updateSearch(protocols, next);
+        requestAnimationFrame(() => {
+          const panel = document.querySelector<HTMLElement>("#liquidity-flow");
+          panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+          panel?.focus({ preventScroll: true });
+        });
+        return;
+      }
+      if (result.kind === "block") {
+        void blocklist.block(result.entry).then((saved) => {
+          feedback.show({
+            dedupeKey: saved ? `pool-blocked:${result.entry.identity}` : "pool-block-failed",
+            kind: saved ? "success" : "error",
+            title: saved ? "已更新屏蔽列表" : "屏蔽失败，已恢复原列表",
+          });
+        });
+        return;
+      }
+      if (result.kind === "navigate") {
+        void navigate(result.to, { state: { poolActionIntent: result.intent } });
+        return;
+      }
+      window.dispatchEvent(
+        new CustomEvent("lpbot:pool-chat-intent", { detail: structuredClone(result.intent) }),
+      );
+    },
+    [
+      blocklist,
+      feedback,
+      flowFilters,
+      location.pathname,
+      location.search,
+      navigate,
+      protocols,
+      toggleMarketPool,
+    ],
+  );
+
   return (
     <main
       aria-busy={connection === "loading" ? "true" : undefined}
@@ -2630,6 +2736,7 @@ export function PoolsPage() {
           marketRefreshMs={marketRefreshMs}
           marketRefreshSignal={marketRefreshSignal}
           marketStale={connection === "stale" || connection === "reconnecting"}
+          onPoolAction={executePoolAction}
           rows={visiblePoolRows}
           showLabels={preferences.showPoolLabels}
           toggleComparison={toggleComparison}
@@ -2649,6 +2756,8 @@ export function PoolsPage() {
         aria-label="流动性事件"
         className="liquidity-flow-panel"
         data-flow-state={flowConnection}
+        id="liquidity-flow"
+        tabIndex={-1}
       >
         <div className="flow-heading">
           <div>
