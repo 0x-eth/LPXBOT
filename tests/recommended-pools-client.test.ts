@@ -9,7 +9,9 @@ import {
   markShellStatsDisconnected,
   parseShellStatsEvent,
   reduceShellStatsEvent,
+  shellStatsDisplay,
 } from "../apps/web/src/shell-stats.js";
+import { createPoolEligibilityPolicy } from "../packages/domain/src/index.js";
 import { describe, expect, it } from "vitest";
 
 const row: RecommendedPoolRow = {
@@ -154,5 +156,18 @@ describe("P02-09 recommended pool client state", () => {
       "/pools?pool_search_mode=pool&pool_search=0x1111111111111111111111111111111111111111",
     );
     expect(recommendedPoolDisplay({ ...row, feesUsd: "1234567.899" }).fees).toBe("$1,234,567.90");
+  });
+
+  it("keeps blocked pools out of the display projection after late recommendation events", () => {
+    const state = reduceShellStatsEvent(createShellStatsState(), recommendation("7", "a"));
+    const eligibility = createPoolEligibilityPolicy({
+      blocklistHash: `sha256:${"d".repeat(64)}`,
+      entries: [{ chainId: 56, identity: row.token0Address, scope: "token" }],
+    });
+
+    expect(shellStatsDisplay(state, eligibility)).toMatchObject({
+      recommendationStatus: "empty",
+      recommendedPools: [],
+    });
   });
 });
