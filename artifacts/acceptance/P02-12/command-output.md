@@ -27,9 +27,9 @@ Environment: macOS, Node.js 22.23.1 from `/opt/homebrew/opt/node@22/bin`, pnpm 1
 | `pnpm format:check` | passed after mechanically formatting five new provenance files |
 | `pnpm lint` | 14 package tasks plus root ESLint passed |
 | `pnpm typecheck` | 21 package tasks plus root TypeScript passed |
-| `pnpm test` | passed, including Vitest and governance suites |
+| `pnpm test` | 74 Vitest files / 452 tests and 63 governance tests passed |
 | `pnpm build` | 14 package build tasks passed |
-| `pnpm check:all` | baseline, traceability, P00, docs, acceptance manifests, and P02 reference checks passed |
+| `pnpm check:all` | frozen baseline, 196/196 traceability, P00, 358 doc links, 22 manifests, and P02 reference checks passed |
 
 The first repository typecheck exposed template-literal fixture types, a literal `100` parser parameter, an intentional sensitive-field fixture boundary, and a Playwright closure narrowing issue. Each was corrected without weakening runtime validation; the final typecheck passed.
 
