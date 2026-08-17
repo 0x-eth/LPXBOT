@@ -425,6 +425,56 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
     expect(dead.rows).toEqual([
       { attempt_count: 1, last_error_summary: null, next_attempt_at: null, state: "dead" },
     ]);
+
+    const exhaustedCandidate = candidate({
+      generatedAt: "2026-08-17T09:20:30Z",
+      sourceGenerationId: "generation-exhausted",
+      windowEnd: "2026-08-17T09:20:00Z",
+    });
+    exhaustedCandidate.monitorId = monitorId;
+    exhaustedCandidate.monitorRevision = 3;
+    exhaustedCandidate.candidateKey = monitorCandidateKey({
+      metricVersion: exhaustedCandidate.metricVersion,
+      monitorId,
+      poolKey,
+      revision: 3,
+      windowEnd: exhaustedCandidate.windowEnd,
+    });
+    const exhausted = await repository.commitCandidate({
+      candidate: exhaustedCandidate,
+      destinations: [
+        {
+          channel: "local-sink",
+          destinationId: "local-sink-exhausted-fixture",
+          destinationRevision: 1,
+          payload: { poolKey },
+        },
+      ],
+    });
+    await pool.query(
+      "UPDATE notification_outbox SET attempt_count = 5 WHERE delivery_id = $1",
+      [exhausted.deliveries[0]!.deliveryId],
+    );
+    const exhaustedClaim = await repository.claimDue({ leaseOwner: "worker-exhausted", limit: 1 });
+    expect(exhaustedClaim[0]).toMatchObject({ attemptCount: 6, state: "leased" });
+    expect(
+      await repository.markRetry({
+        deliveryId: exhaustedClaim[0]!.deliveryId,
+        errorCode: "HTTP_503",
+        leaseToken: exhaustedClaim[0]!.leaseToken!,
+      }),
+    ).toBe(true);
+    const exhaustedState = await pool.query<{
+      last_error_code: string | null;
+      next_attempt_at: Date | null;
+      state: string;
+    }>(
+      "SELECT state, next_attempt_at, last_error_code FROM notification_outbox WHERE delivery_id = $1",
+      [exhaustedClaim[0]!.deliveryId],
+    );
+    expect(exhaustedState.rows).toEqual([
+      { last_error_code: "MAX_ATTEMPTS", next_attempt_at: null, state: "dead" },
+    ]);
   });
 
   it("rolls back candidate and watermark on outbox failure and rejects notification keys", async () => {

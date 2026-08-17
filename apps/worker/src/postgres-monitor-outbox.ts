@@ -376,6 +376,23 @@ export class PostgresMonitorCandidateOutboxRepository {
     );
     const row = current.rows[0];
     if (!row) return false;
+    if (row.attempt_count >= 6) {
+      const result = await this.#pool.query(
+        `UPDATE notification_outbox
+            SET state = 'dead',
+                next_attempt_at = NULL,
+                lease_owner = NULL,
+                lease_token = NULL,
+                lease_expires_at = NULL,
+                updated_at = clock_timestamp(),
+                last_error_code = 'MAX_ATTEMPTS',
+                last_error_summary = NULL
+          WHERE delivery_id = $1 AND state = 'leased' AND lease_token = $2
+            AND lease_expires_at > clock_timestamp()`,
+        [input.deliveryId, input.leaseToken],
+      );
+      return result.rowCount === 1;
+    }
     const delay = Math.max(
       outboxRetryDelaySeconds(input.deliveryId, row.attempt_count),
       Math.min(3_600, Math.max(0, input.retryAfterSeconds ?? 0)),
