@@ -221,6 +221,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@lpbot/api-contract':
+        specifier: workspace:*
+        version: link:../../packages/api-contract
       '@lpbot/chain-registry':
         specifier: workspace:*
         version: link:../../packages/chain-registry

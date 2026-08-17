@@ -30,6 +30,7 @@ export interface MonitorEvaluationDefinition {
   excludeHanToken?: boolean;
   excludeHook?: boolean;
   monitorId: string;
+  name?: string;
   poolKey: string;
   revision: number;
   userId: string;

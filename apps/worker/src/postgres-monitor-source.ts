@@ -16,6 +16,7 @@ interface MonitorSourceRow extends QueryResultRow {
   exclude_han_token: boolean;
   exclude_hook: boolean;
   monitor_id: string;
+  name: string;
   pool_key: string;
   revision: string;
   user_id: string;
@@ -47,7 +48,7 @@ export class PostgresMonitorEvaluationSource
 
   async listEnabledForPool(poolKey: string): Promise<MonitorEvaluationDefinition[]> {
     const result = await this.#pool.query<MonitorSourceRow>(
-      `SELECT monitor_id::text, user_id::text, revision::text, pool_key,
+      `SELECT monitor_id::text, user_id::text, revision::text, name, pool_key,
               window_minutes, conditions, exclude_han_token, exclude_hook
          FROM monitors
         WHERE status = 'enabled' AND pool_key = $1
@@ -63,6 +64,7 @@ export class PostgresMonitorEvaluationSource
         excludeHanToken: row.exclude_han_token,
         excludeHook: row.exclude_hook,
         monitorId: row.monitor_id,
+        name: row.name,
         poolKey: row.pool_key,
         revision: revision(row.revision),
         userId: row.user_id,

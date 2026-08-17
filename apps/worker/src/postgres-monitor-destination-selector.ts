@@ -81,7 +81,7 @@ export class PostgresMonitorDestinationSelector implements MonitorDestinationSel
         conditionSummary: conditionSummary(input.candidate),
         metricVersion: input.candidate.metricVersion,
         monitorId: input.monitor.monitorId,
-        monitorName: input.monitor.name,
+        monitorName: input.monitor.name ?? input.monitor.monitorId,
         monitorRevision: input.monitor.revision,
         poolKey: input.candidate.poolKey,
         windowEnd: input.candidate.windowEnd,
