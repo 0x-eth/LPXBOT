@@ -1,10 +1,13 @@
 P04-01 prior acceptance integrity
 
 Baseline: 37cb850c149168bbfff5a98768067a1a63bff2f9
-Result: pending final verification
-Expected frozen files: 462
+Result: passed
+Frozen files: 462
 Algorithm: SHA-256
 Inventory: prior-acceptance-sha256s.txt
 
-The governance check will compare the exhaustive baseline P00-P03-04 path set,
-each baseline blob, and each current file byte-for-byte.
+The governance test derives the exhaustive P00-P03-04 acceptance path set from
+the baseline Git tree, compares it with the frozen inventory, and independently
+hashes every current file and corresponding baseline blob. All path sets and
+digests match byte-for-byte. No P00, P01, P02, P03, or P03-04 acceptance artifact
+changed.

@@ -127,7 +127,9 @@ test("P03-03 manifest owns three features and only local-fixture evidence", asyn
 test("P00 through P03-02 remain byte-identical to the frozen 434-file inventory", async () => {
   const inventory = parseChecksums(await readFile(PRIOR_CHECKSUMS, "utf8"), "prior checksums");
   const current = (await filesBelow(path.join(ROOT, "artifacts/acceptance")))
-    .filter((file) => !file.startsWith("P03-03/") && !file.startsWith("P03-04/"))
+    .filter(
+      (file) => file === "README.md" || /^(?:P0[0-2]-[^/]+|P03-0[12])\//u.test(file),
+    )
     .map((file) => `artifacts/acceptance/${file}`);
   assert.equal(inventory.length, 434);
   assert.deepEqual(

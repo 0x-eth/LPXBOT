@@ -1,12 +1,17 @@
 P04-01 local quality gates
 
-Result: pending final verification
+Runtime: Node.js v26.5.0 locally; CI target Node.js 22.23.1
+Result: passed
 
-- pnpm format:check
-- pnpm lint
-- pnpm typecheck
-- pnpm test
-- pnpm build
-- pnpm check:all
+- pnpm format:check: passed
+- pnpm lint: passed, 15/15 package tasks
+- pnpm typecheck: passed, 23/23 package tasks
+- pnpm test: passed, 91 Vitest files / 595 tests and 105/105 governance tests
+- pnpm build: passed, 15/15 package tasks
+- pnpm check:all: passed
 
-No completion claim is made until every command passes against the final tree.
+check:all confirmed the frozen P00 baseline, 196/196 traceability IDs, P00
+completion, 452 documentation links, 26 implementation acceptance manifests,
+P02-01 reference artifacts, P03-01 reference artifacts, and P04-01 reference
+artifacts. The existing Vite chunk-size and inlineDynamicImports warnings remain
+non-failing and unchanged.

@@ -1,8 +1,14 @@
 P04-01 artifact schema checks
 
-Result: pending final verification
+Result: passed
 
-The final check will validate artifact-manifest.json against
-schemas/p04-reference-artifacts.schema.json and validate each indexed fixture's
-version, synthetic marker, network policy, execution counters, byte length, and
-SHA-256 digest.
+- artifact-manifest.json validates against
+  schemas/p04-reference-artifacts.schema.json.
+- The schema fixes workItemId P04-01, phase P04, risk R0, the requested baseline,
+  reference-only scope, an empty implementation featureIds list, and zero decrypt,
+  sign, broadcast, KMS, secret, and external-RPC execution authority.
+- The manifest inventories 23 non-self-referential artifacts and 8 immutable
+  baseline references with byte lengths and SHA-256 digests.
+- All 6 fixture records use versioned p04-fixture://.../v1 schema IDs and validate
+  their synthetic marker, offline policy, zero execution counters, byte lengths,
+  and SHA-256 digests.
