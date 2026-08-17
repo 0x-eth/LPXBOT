@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P02-12",
+  "phase": "P02",
+  "risk": "R1",
+  "status": "accepted-with-gaps",
+  "featureIds": ["POOL-15"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm exec vitest run focused P02-12 contract, API and strict-client tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-12/E-DATA.md"
+    },
+    {
+      "id": "T-API",
+      "command": "pnpm exec vitest run tests/pool-creation-provenance-api.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-12/E-API.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "pnpm test:postgres including provenance replay, conflict, concurrency, persistence and attribution",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-12/E-REC.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm db:migrate twice plus complete PostgreSQL migration down/up restore coverage",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-12/E-DATA.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm exec playwright test tests/e2e/p02-12-pool-provenance.spec.ts --workers=1",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-12/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile screenshots, focus restoration, overflow and axe assertions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-12/E-VIS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "Gitleaks full-history scan and pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P02-12/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P02-12/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P02-12/E-DATA.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P02-12/E-REC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P02-12/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P02-12/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P02-12/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P02-12/E-SEC.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only; POOL-15 remains implemented-assumed.",
+    "Creator means the user attached to an LPXBOT-recorded create operation and never transaction.from or another inferred chain actor.",
+    "An already_exists outcome does not prove LPXBOT created the pool first.",
+    "STATS-01 remains planned.",
+    "The internal recorder is the only write interface; there is no public pool creation command or funds operation.",
+    "All P02-01 unresolved gaps remain unresolved.",
+    "P02-01 through P02-11 acceptance directories remain byte-identical to the pre-P02-12 hash inventory.",
+    "No external RPC, transaction-sender lookup, metadata fetch, signing, broadcast, or funds operation was used."
+  ],
+  "completedAt": "2026-08-17T06:25:00.000Z",
+  "commit": "954d98adb08f8fa7034878366256d59ee306f1df"
+}
