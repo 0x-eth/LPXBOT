@@ -46,6 +46,19 @@ describe("P03-02 canonical monitor worker rules", () => {
     ).toEqual(dedupeFixture.expected.candidateKeys);
   });
 
+  it("orders RFC3339 generation instants exactly before source generation bytes", () => {
+    const identity = {
+      source: "canonical-market-projection" as const,
+      windowEnd: "2026-08-17T09:05:00Z",
+    };
+    const ordered = orderCanonicalMarketInputs([
+      { ...identity, generatedAt: "2026-08-17T09:05:30.000000002Z", sourceGenerationId: "a" },
+      { ...identity, generatedAt: "2026-08-17T09:05:30Z", sourceGenerationId: "z" },
+      { ...identity, generatedAt: "2026-08-17T09:05:30.000000001Z", sourceGenerationId: "b" },
+    ]);
+    expect(ordered.map(({ sourceGenerationId }) => sourceGenerationId)).toEqual(["z", "b", "a"]);
+  });
+
   it("keeps candidate identity stable across canonical reorg evidence and suppresses terminal replacement", () => {
     const [oldGeneration, newGeneration] = reorgFixture.input.generations;
     const candidateKey = monitorCandidateKey({
@@ -89,9 +102,9 @@ describe("P03-02 canonical monitor worker rules", () => {
     expect(first).toMatch(/^[0-9a-f]{64}$/u);
     expect(notificationDedupeKey(input)).toBe(first);
     expect(notificationDedupeKey({ ...input, destinationRevision: 3 })).not.toBe(first);
-    expect(await new EmptyMonitorDestinationSelector().select({ userId: "user-fixture-001" })).toEqual(
-      [],
-    );
+    expect(
+      await new EmptyMonitorDestinationSelector().select({ userId: "user-fixture-001" }),
+    ).toEqual([]);
   });
 
   it("applies the frozen lease recovery and bounded deterministic retry rules", () => {

@@ -65,6 +65,28 @@ function byteCompare(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+const timestampPattern = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?Z$/u;
+
+function timestampNanoseconds(value: string): bigint {
+  const match = timestampPattern.exec(value);
+  if (!match) throw new RangeError("CANONICAL_MARKET_TIMESTAMP_INVALID");
+  const milliseconds = Date.parse(`${match[1]}Z`);
+  if (
+    !Number.isFinite(milliseconds) ||
+    new Date(milliseconds).toISOString().slice(0, 19) !== match[1]
+  ) {
+    throw new RangeError("CANONICAL_MARKET_TIMESTAMP_INVALID");
+  }
+  const fraction = (match[2] ?? "").padEnd(9, "0");
+  return BigInt(milliseconds) * 1_000_000n + BigInt(fraction === "" ? "0" : fraction);
+}
+
+function timestampCompare(left: string, right: string): number {
+  const leftValue = timestampNanoseconds(left);
+  const rightValue = timestampNanoseconds(right);
+  return leftValue < rightValue ? -1 : leftValue > rightValue ? 1 : 0;
+}
+
 export function orderCanonicalMarketInputs<T extends CanonicalMarketInputIdentity>(
   inputs: readonly T[],
 ): T[] {
@@ -78,8 +100,8 @@ export function orderCanonicalMarketInputs<T extends CanonicalMarketInputIdentit
   }
   return [...unique.values()].sort(
     (left, right) =>
-      byteCompare(left.windowEnd, right.windowEnd) ||
-      byteCompare(left.generatedAt, right.generatedAt) ||
+      timestampCompare(left.windowEnd, right.windowEnd) ||
+      timestampCompare(left.generatedAt, right.generatedAt) ||
       byteCompare(left.sourceGenerationId, right.sourceGenerationId),
   );
 }
@@ -93,9 +115,12 @@ export function candidateEvidenceDecision(input: {
   incoming: { generatedAt: string; id?: string; sourceGenerationId?: string };
   outboxStates: readonly NotificationOutboxState[];
 }): "replace" | "defer" | "suppress" | "ignore" {
-  const currentGeneratedAt = new Date(input.current.generatedAt).getTime();
-  const incomingGeneratedAt = new Date(input.incoming.generatedAt).getTime();
-  if (!Number.isFinite(currentGeneratedAt) || !Number.isFinite(incomingGeneratedAt)) {
+  let currentGeneratedAt: bigint;
+  let incomingGeneratedAt: bigint;
+  try {
+    currentGeneratedAt = timestampNanoseconds(input.current.generatedAt);
+    incomingGeneratedAt = timestampNanoseconds(input.incoming.generatedAt);
+  } catch {
     throw new RangeError("CANDIDATE_GENERATED_AT_INVALID");
   }
   const generationOrder =
