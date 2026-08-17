@@ -236,6 +236,131 @@ export const monitorContracts = {
   patch: { method: "PATCH", path: "/api/monitors/{monitorId}" },
 } as const;
 
+export const notificationCategories = [
+  "monitor-match",
+  "task-created",
+  "position-moved",
+  "operation-failed",
+  "position-closed",
+  "feedback-replied",
+] as const;
+
+export type NotificationCategory = (typeof notificationCategories)[number];
+export type NotificationDestinationType = "telegram" | "webhook";
+
+export interface NotificationPreferences {
+  categories: Record<NotificationCategory, boolean>;
+  revision: number;
+  updatedAt: string | null;
+}
+
+export interface NotificationPreferencesPatch {
+  categories: Partial<Record<NotificationCategory, boolean>>;
+  expectedRevision: number;
+}
+
+export interface TelegramDestinationDraftConfig {
+  botToken?: string;
+  telegramIdentityId: string;
+  template: string;
+}
+
+export interface WebhookDestinationDraftConfig {
+  method: "GET" | "POST";
+  signingSecret?: string;
+  template: unknown;
+  url: string;
+}
+
+export type DestinationDraft =
+  | {
+      categories: NotificationCategory[];
+      config: TelegramDestinationDraftConfig;
+      enabled: boolean;
+      name: string;
+      type: "telegram";
+    }
+  | {
+      categories: NotificationCategory[];
+      config: WebhookDestinationDraftConfig;
+      enabled: boolean;
+      name: string;
+      type: "webhook";
+    };
+
+export type NotificationDestinationDraft = DestinationDraft;
+
+export interface DestinationConfigChanges {
+  botToken?: string;
+  method?: "GET" | "POST";
+  signingSecret?: string;
+  telegramIdentityId?: string;
+  template?: unknown;
+  url?: string;
+}
+
+export interface NotificationDestinationPatch {
+  changes: {
+    categories?: NotificationCategory[];
+    config?: DestinationConfigChanges;
+    enabled?: boolean;
+    name?: string;
+  };
+  expectedRevision: number;
+}
+
+export type RedactedConfig =
+  | {
+      secretConfigured: boolean;
+      secretRef: string | null;
+      telegramIdentityId: string;
+      template: string;
+    }
+  | {
+      method: "GET" | "POST";
+      secretConfigured: boolean;
+      secretRef: string | null;
+      template: unknown;
+      url: string;
+    };
+
+export interface NotificationDestination {
+  categories: NotificationCategory[];
+  config: RedactedConfig;
+  createdAt: string;
+  destinationId: string;
+  enabled: boolean;
+  name: string;
+  revision: number;
+  type: NotificationDestinationType;
+  updatedAt: string;
+  userId: string;
+}
+
+export interface LocalSinkTestResult {
+  destinationType: NotificationDestinationType;
+  networkCalls: 0;
+  rendered:
+    | { body: string; method: "POST" }
+    | { body: ""; method: "GET"; query: string }
+    | { message: string; parseMode: "HTML" };
+  signed: boolean;
+  sink: "local-sink://p03-01";
+}
+
+export const notificationPreferenceContracts = {
+  get: { method: "GET", path: "/api/notification-preferences" },
+  patch: { method: "PATCH", path: "/api/notification-preferences" },
+} as const;
+
+export const notificationDestinationContracts = {
+  create: { method: "POST", path: "/api/notification-destinations" },
+  delete: { method: "DELETE", path: "/api/notification-destinations/{destinationId}" },
+  list: { method: "GET", path: "/api/notification-destinations" },
+  patch: { method: "PATCH", path: "/api/notification-destinations/{destinationId}" },
+  test: { method: "POST", path: "/api/notification-destinations/test" },
+} as const;
+
 export interface AddressRemark {
   address: EvmAddress;
   label: string;
