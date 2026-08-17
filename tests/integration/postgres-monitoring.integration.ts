@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { PostgresMonitorStore } from "../../apps/api/src/postgres-monitor-store.js";
 import { PostgresMonitorCandidateOutboxRepository } from "../../apps/worker/src/postgres-monitor-outbox.js";
+import { PostgresMonitorEvaluationSource } from "../../apps/worker/src/postgres-monitor-source.js";
 import type { CreateMonitorRequest } from "../../packages/api-contract/src/index.js";
 import { monitorCandidateKey, type MonitorCandidate } from "../../packages/domain/src/index.js";
 import pg from "pg";
@@ -185,6 +186,14 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
       userId: userA,
     });
     expect(enabled).toMatchObject({ status: "updated", value: { enabled: true, revision: 3 } });
+    const source = new PostgresMonitorEvaluationSource(pool);
+    expect(await source.listEnabledForPool(poolKey)).toEqual([
+      expect.objectContaining({ enabled: true, monitorId, poolKey, revision: 3, userId: userA }),
+    ]);
+    expect(await source.get(userA)).toMatchObject({
+      blocklistHash: expect.stringMatching(/^sha256:[0-9a-f]{64}$/u),
+      entries: [],
+    });
   });
 
   it("commits candidate, local-sink outbox rows, and monotonic watermark atomically", async () => {
