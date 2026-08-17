@@ -61,7 +61,7 @@ CREATE TABLE task_status_stats_stream_heads (
 INSERT INTO task_status_stats_stream_heads (
   scope_key, scope, user_id, sequence, running, paused, stopped, content_hash, observed_at
 ) VALUES (
-  'global', 'global', NULL, 0, 0, 0, task_status_stats_counts_hash(0, 0, 0),
+  'global', 'global', NULL, 0, 0, 0, 0, task_status_stats_counts_hash(0, 0, 0),
   '1970-01-01T00:00:00.000Z'
 );
 
