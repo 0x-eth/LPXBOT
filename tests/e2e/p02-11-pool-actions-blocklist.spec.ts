@@ -296,3 +296,69 @@ test("POOL-14 precisely rolls back failures and manages restore and conflicts", 
   await expect(dialog.getByRole("alert")).toContainText("其他设备更新");
   await expect(dialog.getByRole("region", { name: "Token屏蔽项" })).toContainText(externalToken);
 });
+
+test("POOL-14 closes an expanded blocked pool and aborts its chart request", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "Request cancellation runs once.");
+  const state = newBlocklistFixture();
+  await page.addInitScript(() => {
+    const browserWindow = window as typeof window & { p02ChartAbortCount: number };
+    const nativeFetch = window.fetch.bind(window);
+    browserWindow.p02ChartAbortCount = 0;
+    window.fetch = (input, init) => {
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      if (url.includes("/api/market/candles") && init?.signal) {
+        init.signal.addEventListener(
+          "abort",
+          () => {
+            browserWindow.p02ChartAbortCount += 1;
+          },
+          { once: true },
+        );
+      }
+      return nativeFetch(input, init);
+    };
+  });
+  await installFixture(page, state);
+  let markChartStarted: () => void = () => undefined;
+  const chartStarted = new Promise<void>((resolve) => {
+    markChartStarted = resolve;
+  });
+  let releaseChart: () => void = () => undefined;
+  const chartGate = new Promise<void>((resolve) => {
+    releaseChart = resolve;
+  });
+  await page.route("**/api/market/candles?**", async (route) => {
+    markChartStarted();
+    await chartGate;
+    await route
+      .fulfill({ contentType: "application/json", json: {}, status: 200 })
+      .catch(() => undefined);
+  });
+
+  await page.goto("/pools?fixture=pools-ready");
+  const table = page.getByRole("table", { name: "BSC 热门池" });
+  const address = "0x1111111111111111111111111111111111111111";
+  const row = table.locator("tbody > tr").filter({ hasText: address });
+  await row.getByRole("button", { name: `展开池图表 ${address}` }).click();
+  await chartStarted;
+  await expect(page.locator(".pool-market-detail")).toHaveCount(1);
+  const abortCountBeforeBlock = await page.evaluate(
+    () => (window as typeof window & { p02ChartAbortCount: number }).p02ChartAbortCount,
+  );
+
+  await row.getByRole("button", { name: /更多池操作/u }).click();
+  await page.getByRole("menuitem", { name: "屏蔽池", exact: true }).click();
+  await expect(row).toHaveCount(0);
+  await expect(page.locator(".pool-market-detail")).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as typeof window & { p02ChartAbortCount: number }).p02ChartAbortCount,
+      ),
+    )
+    .toBe(abortCountBeforeBlock + 1);
+  releaseChart();
+});
