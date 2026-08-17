@@ -110,8 +110,6 @@ export function PoolActionMenu({
   const width = 286;
   const left = Math.max(8, Math.min(menu.x, window.innerWidth - width - 8));
   const top = Math.max(8, Math.min(menu.y, window.innerHeight - 480));
-  let previousSection: PoolActionCommandSection | null = null;
-
   return createPortal(
     <div
       aria-label={`池操作 ${menu.row.poolKey}`}
@@ -122,9 +120,9 @@ export function PoolActionMenu({
       role="menu"
       style={{ left, top }}
     >
-      {items.map(({ definition, resolved }) => {
-        const separated = previousSection !== null && previousSection !== definition.section;
-        previousSection = definition.section;
+      {items.map(({ definition, resolved }, index) => {
+        const previousSection = items[index - 1]?.definition.section;
+        const separated = previousSection !== undefined && previousSection !== definition.section;
         const Icon = commandIcon(definition.id, definition.section);
         const reason = resolved.enabled ? null : resolved.reason;
         return (

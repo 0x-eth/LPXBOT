@@ -2023,32 +2023,32 @@ export function PoolsPage() {
     expandedMarketPoolKeyRef.current = expandedMarketPoolKey;
   }, [expandedMarketPoolKey]);
 
-  const updateSearch = (
-    nextProtocols: readonly LiquidityFlowProtocol[],
-    next: LiquidityFlowUiFilters,
-  ) => {
-    const parameters = new URLSearchParams(location.search);
-    for (const key of [
-      "dex",
-      "flow_event",
-      "flow_version",
-      "min_usd",
-      "pool",
-      "token",
-      "user",
-      "nft_id",
-    ]) {
-      parameters.delete(key);
-    }
-    if (nextProtocols.length !== liquidityFlowProtocols.length) {
-      parameters.set("dex", nextProtocols.join(","));
-    }
-    for (const [key, value] of serializeLiquidityFlowUiFilters(next)) parameters.set(key, value);
-    void navigate(
-      { pathname: location.pathname, search: `?${parameters.toString()}` },
-      { replace: true },
-    );
-  };
+  const updateSearch = useCallback(
+    (nextProtocols: readonly LiquidityFlowProtocol[], next: LiquidityFlowUiFilters) => {
+      const parameters = new URLSearchParams(location.search);
+      for (const key of [
+        "dex",
+        "flow_event",
+        "flow_version",
+        "min_usd",
+        "pool",
+        "token",
+        "user",
+        "nft_id",
+      ]) {
+        parameters.delete(key);
+      }
+      if (nextProtocols.length !== liquidityFlowProtocols.length) {
+        parameters.set("dex", nextProtocols.join(","));
+      }
+      for (const [key, value] of serializeLiquidityFlowUiFilters(next)) parameters.set(key, value);
+      void navigate(
+        { pathname: location.pathname, search: `?${parameters.toString()}` },
+        { replace: true },
+      );
+    },
+    [location.pathname, location.search, navigate],
+  );
 
   const updateProtocols = (next: LiquidityFlowProtocol[]) => {
     setProtocols(next);
@@ -2625,6 +2625,7 @@ export function PoolsPage() {
       navigate,
       protocols,
       toggleMarketPool,
+      updateSearch,
     ],
   );
 
