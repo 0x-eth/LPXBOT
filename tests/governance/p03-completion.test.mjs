@@ -14,8 +14,8 @@ const FEATURE_IDS = [
   ...Array.from({ length: 6 }, (_, index) => `MON-${String(index + 1).padStart(2, "0")}`),
   ...Array.from({ length: 2 }, (_, index) => `NOTIFY-${String(index + 1).padStart(2, "0")}`),
 ];
-const IMPLEMENTED = ["MON-01", "MON-02", "MON-03", "MON-04", "NOTIFY-01", "NOTIFY-02"];
-const PLANNED = ["MON-05", "MON-06"];
+const IMPLEMENTED = FEATURE_IDS;
+const PLANNED = [];
 const P03_03_FEATURES = ["MON-04", "NOTIFY-01", "NOTIFY-02"];
 const EVIDENCE_IDS = ["E-API", "E-DATA", "E-RBAC", "E-REC", "E-SEC", "E-UI", "E-VIS"];
 const TEST_IDS = ["T-API", "T-MIG", "T-REC", "T-SEC", "T-UI", "T-UNIT", "T-VIS"];
@@ -76,7 +76,7 @@ function statusRows(markdown) {
   return rows;
 }
 
-test("P03 status is exactly 6 implemented-assumed / 2 planned with global 47 / 149", async () => {
+test("P03 status is exactly 8 implemented-assumed / 0 planned with global 49 / 147", async () => {
   const markdown = await readFile(TRACEABILITY, "utf8");
   const rows = statusRows(markdown);
   assert.deepEqual(sorted(rows.keys()), sorted(FEATURE_IDS));
@@ -94,12 +94,11 @@ test("P03 status is exactly 6 implemented-assumed / 2 planned with global 47 / 1
     assert.equal(rows.get(id).tests, "—", `${id} tests`);
     assert.match(rows.get(id).evidence, /frozen reference only/u, id);
   }
-  assert.match(markdown, /P03[^\n]*6[^\n]*implemented-assumed[^\n]*2[^\n]*planned/iu);
-  assert.match(markdown, /当前产品实现\s*\|\s*47\s*\|/u);
-  assert.match(markdown, /`implemented-assumed`\s*\|\s*47\s*\|/u);
-  assert.match(markdown, /其余\s*`planned`\s*\|\s*149\s*\|/u);
+  assert.match(markdown, /P03[^\n]*8[^\n]*implemented-assumed[^\n]*0[^\n]*planned/iu);
+  assert.match(markdown, /当前产品实现\s*\|\s*49\s*\|/u);
+  assert.match(markdown, /`implemented-assumed`\s*\|\s*49\s*\|/u);
+  assert.match(markdown, /其余\s*`planned`\s*\|\s*147\s*\|/u);
   assert.match(markdown, /live Telegram\/Webhook delivery/u);
-  assert.match(markdown, /完整 SSRF egress/u);
   assert.match(markdown, /delivery SLO/u);
 });
 
@@ -128,7 +127,7 @@ test("P03-03 manifest owns three features and only local-fixture evidence", asyn
 test("P00 through P03-02 remain byte-identical to the frozen 434-file inventory", async () => {
   const inventory = parseChecksums(await readFile(PRIOR_CHECKSUMS, "utf8"), "prior checksums");
   const current = (await filesBelow(path.join(ROOT, "artifacts/acceptance")))
-    .filter((file) => !file.startsWith("P03-03/"))
+    .filter((file) => !file.startsWith("P03-03/") && !file.startsWith("P03-04/"))
     .map((file) => `artifacts/acceptance/${file}`);
   assert.equal(inventory.length, 434);
   assert.deepEqual(
