@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "blocklist": {
+    "schemaVersion": 1,
+    "revision": 2,
+    "updatedAt": "2026-08-17T02:00:00.000Z",
+    "blocklistHash": "sha256:47a9ed2554d15e827cee5d2dcebfcbfc425d1c91d067c438b1ec36f22d133689",
+    "entries": [
+      {
+        "chainId": 56,
+        "scope": "pool",
+        "identity": "56:0x1111111111111111111111111111111111111111"
+      },
+      {
+        "chainId": 56,
+        "scope": "token",
+        "identity": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ]
+  },
+  "candidates": [
+    {
+      "id": "blocked-pool",
+      "chainId": 56,
+      "poolKey": "56:0x1111111111111111111111111111111111111111",
+      "token0Address": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "token1Address": "0xcccccccccccccccccccccccccccccccccccccccc"
+    },
+    {
+      "id": "blocked-token0",
+      "chainId": 56,
+      "poolKey": "56:0x2222222222222222222222222222222222222222",
+      "token0Address": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "token1Address": "0xdddddddddddddddddddddddddddddddddddddddd"
+    },
+    {
+      "id": "blocked-token1",
+      "chainId": 56,
+      "poolKey": "56:0x3333333333333333333333333333333333333333333333333333333333333333",
+      "token0Address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "token1Address": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    {
+      "id": "eligible-v4",
+      "chainId": 56,
+      "poolKey": "56:0x4444444444444444444444444444444444444444444444444444444444444444",
+      "token0Address": "0xffffffffffffffffffffffffffffffffffffffff",
+      "token1Address": "0x9999999999999999999999999999999999999999"
+    },
+    {
+      "id": "missing-address",
+      "chainId": 56,
+      "poolKey": "56:0x5555555555555555555555555555555555555555",
+      "token0Address": null,
+      "token1Address": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "id": "non-canonical-address",
+      "chainId": 56,
+      "poolKey": "56:0x6666666666666666666666666666666666666666",
+      "token0Address": "WBNB",
+      "token1Address": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "expected": {
+    "eligiblePoolKeys": [
+      "56:0x4444444444444444444444444444444444444444444444444444444444444444",
+      "56:0x5555555555555555555555555555555555555555",
+      "56:0x6666666666666666666666666666666666666666"
+    ],
+    "limitedResultPoolKeys": [
+      "56:0x4444444444444444444444444444444444444444444444444444444444444444",
+      "56:0x5555555555555555555555555555555555555555"
+    ],
+    "decisions": [
+      {
+        "id": "blocked-pool",
+        "eligible": false,
+        "blockedBy": [
+          {
+            "scope": "pool",
+            "identity": "56:0x1111111111111111111111111111111111111111"
+          }
+        ],
+        "limitations": []
+      },
+      {
+        "id": "blocked-token0",
+        "eligible": false,
+        "blockedBy": [
+          {
+            "scope": "token",
+            "identity": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "limitations": []
+      },
+      {
+        "id": "blocked-token1",
+        "eligible": false,
+        "blockedBy": [
+          {
+            "scope": "token",
+            "identity": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "limitations": []
+      },
+      {
+        "id": "eligible-v4",
+        "eligible": true,
+        "blockedBy": [],
+        "limitations": []
+      },
+      {
+        "id": "missing-address",
+        "eligible": true,
+        "blockedBy": [],
+        "limitations": [
+          {
+            "code": "TOKEN_ADDRESS_MISSING",
+            "field": "token0Address"
+          }
+        ]
+      },
+      {
+        "id": "non-canonical-address",
+        "eligible": true,
+        "blockedBy": [],
+        "limitations": [
+          {
+            "code": "TOKEN_ADDRESS_NON_CANONICAL",
+            "field": "token0Address"
+          }
+        ]
+      }
+    ]
+  }
+}

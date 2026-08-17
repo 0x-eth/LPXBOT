@@ -1,0 +1,144 @@
+{
+  "contractVersion": "pool-blocklist-actions/local-v1",
+  "evidenceLevel": "locally-defined",
+  "parityStatus": "not-parity-verified",
+  "chainId": 56,
+  "blocklist": {
+    "schemaVersion": 1,
+    "maximumEntries": 500,
+    "entry": {
+      "requiredFields": ["chainId", "scope", "identity"],
+      "optionalFields": ["label"],
+      "unknownFields": "reject",
+      "scopes": ["pool", "token"],
+      "label": {
+        "authority": "non-authoritative",
+        "maximumCodePoints": 64
+      }
+    },
+    "identity": {
+      "pool": {
+        "source": "stable-poolKey",
+        "v3Bytes": 20,
+        "v4Bytes": 32,
+        "format": "56:0x followed by 40 or 64 lowercase hexadecimal characters"
+      },
+      "token": {
+        "bytes": 20,
+        "format": "0x followed by 40 lowercase hexadecimal characters",
+        "symbolAccepted": false
+      }
+    },
+    "sorting": ["chainId:numeric-asc", "scope:byte-asc", "identity:byte-asc"],
+    "hash": {
+      "algorithm": "sha256",
+      "prefix": "sha256:",
+      "input": "JSON({schemaVersion,entries:[{chainId,scope,identity}]})",
+      "labelIncluded": false
+    },
+    "snapshotFields": ["schemaVersion", "revision", "updatedAt", "blocklistHash", "entries"]
+  },
+  "api": {
+    "get": {
+      "method": "GET",
+      "path": "/api/user/pool-blocklist",
+      "authentication": "session-required",
+      "cacheControl": "no-store"
+    },
+    "patch": {
+      "method": "PATCH",
+      "path": "/api/user/pool-blocklist",
+      "authentication": "session-required",
+      "cacheControl": "no-store",
+      "requiredBody": ["expectedRevision", "operation"],
+      "operations": ["block", "restore"],
+      "operationsPerRequest": 1,
+      "bodyLimitBytes": 2048,
+      "defaultMutationRate": "30/session/minute",
+      "conflict": {
+        "status": 409,
+        "code": "REVISION_CONFLICT",
+        "includesCurrentAuthoritativeSnapshot": true
+      },
+      "idempotentNoOpIncrementsRevision": false
+    }
+  },
+  "storage": {
+    "ownership": "user",
+    "uniqueKey": ["userId", "scope", "chainId", "identity"],
+    "cascadeOnUserDelete": true,
+    "mutationEntryAndRevisionTransaction": "single",
+    "concurrentExpectedRevisionWinners": 1
+  },
+  "eligibility": {
+    "blockedWhen": ["poolKey is blocked", "token0Address is blocked", "token1Address is blocked"],
+    "symbolMatching": false,
+    "missingAddressPolicy": "record-limitation-without-inference",
+    "filterBeforeSortAndLimit": true,
+    "consumers": [
+      "top-fees",
+      "by-token",
+      "recommended-pools",
+      "groups",
+      "comparison",
+      "expanded-pool"
+    ],
+    "consumerContractsOnly": ["monitoring", "strategy"]
+  },
+  "streams": {
+    "market": "market-filter:v2",
+    "recommended": "rec-pools:v2",
+    "cursorBoundToBlocklistHash": true,
+    "hashChangeRequiresSnapshot": true,
+    "oldConnectionEventsAccepted": false,
+    "lateBlockedUpsertsAccepted": false
+  },
+  "actionIntent": {
+    "schemaVersion": 1,
+    "actions": ["create-task", "create-monitor", "share-chat"],
+    "fields": [
+      "schemaVersion",
+      "action",
+      "chainId",
+      "poolKey",
+      "poolAddress",
+      "poolId",
+      "token0Address",
+      "token1Address"
+    ],
+    "canonicalOnly": true,
+    "businessWrites": false
+  },
+  "commandRegistry": {
+    "surfaces": ["row-context-menu", "row-more-button"],
+    "commands": [
+      "expand-market",
+      "copy-pool-address",
+      "copy-token0-address",
+      "copy-token1-address",
+      "search-token0-pools",
+      "search-token1-pools",
+      "view-pool-flow",
+      "view-token0-flow",
+      "view-token1-flow",
+      "block-pool",
+      "block-token0",
+      "block-token1",
+      "create-task",
+      "create-monitor",
+      "share-chat"
+    ],
+    "disabledCommandReasonRequired": true
+  },
+  "boundaries": {
+    "creatorAttribution": false,
+    "systemStats": false,
+    "taskWrites": false,
+    "monitorWrites": false,
+    "chatSends": false,
+    "externalRpc": false,
+    "metadataFetch": false,
+    "productionSampleFetch": false,
+    "signingBroadcastOrFunds": false
+  }
+}
