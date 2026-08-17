@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "notification-delivery/local-v1",
+  "workItemId": "P03-01",
+  "implementationStatus": "planned",
+  "evidenceLevel": "locally-defined",
+  "candidateHandoff": {
+    "producer": "pure-monitor-evaluator",
+    "consumer": "transactional-candidate-and-outbox-writer",
+    "atomicity": "candidate, one row per selected destination, and evaluation watermark commit together",
+    "candidateConflict": "reuse existing candidateKey",
+    "destinationSnapshot": "bind destinationId and destinationRevision at enqueue time",
+    "networkIo": false
+  },
+  "dedupeKey": {
+    "algorithm": "SHA-256",
+    "encoding": "lowercase hexadecimal",
+    "canonicalInput": "notification/v1\\n{candidateKey}\\n{destinationId}\\n{destinationRevision}",
+    "normalization": {
+      "candidateKey": "64 lowercase hexadecimal characters",
+      "destinationId": "opaque server identifier",
+      "destinationRevision": "canonical unsigned decimal"
+    },
+    "scope": "one logical notification per candidate and destination revision",
+    "repeatedConsumption": "returns the existing deliveryId and never inserts another row"
+  },
+  "outbox": {
+    "states": ["pending", "leased", "retry-wait", "delivered", "dead"],
+    "terminalStates": ["delivered", "dead"],
+    "initialState": "pending",
+    "uniqueConstraint": "dedupeKey",
+    "duplicateInsert": "return-existing-without-second-row",
+    "requiredFields": [
+      "deliveryId",
+      "dedupeKey",
+      "candidateKey",
+      "userId",
+      "destinationId",
+      "destinationRevision",
+      "channel",
+      "category",
+      "state",
+      "attemptCount",
+      "nextAttemptAt",
+      "leaseOwner",
+      "leaseToken",
+      "leaseExpiresAt",
+      "createdAt",
+      "updatedAt",
+      "deliveredAt",
+      "lastErrorCode"
+    ],
+    "stateTransitions": [
+      {
+        "from": "pending",
+        "event": "claim-due-row",
+        "to": "leased"
+      },
+      {
+        "from": "retry-wait",
+        "event": "claim-after-nextAttemptAt",
+        "to": "leased"
+      },
+      {
+        "from": "leased",
+        "event": "provider-acknowledged",
+        "to": "delivered"
+      },
+      {
+        "from": "leased",
+        "event": "retryable-failure-before-max-attempts",
+        "to": "retry-wait"
+      },
+      {
+        "from": "leased",
+        "event": "permanent-failure-or-max-attempts",
+        "to": "dead"
+      },
+      {
+        "from": "leased",
+        "event": "lease-expired",
+        "to": "pending"
+      }
+    ],
+    "lease": {
+      "clock": "database-UTC",
+      "durationSeconds": 60,
+      "claim": "atomic-skip-locked-compare-and-set",
+      "eligibility": "pending or due retry-wait or expired leased",
+      "leaseOwner": "worker-instance-id",
+      "leaseToken": "unguessable per-claim token",
+      "tokenRequiredForCompletion": true,
+      "heartbeat": "optional compare-and-set extension before expiry",
+      "batchLimit": 100
+    },
+    "attempt": {
+      "initial": 0,
+      "incrementAt": "lease-before-network-attempt",
+      "maxAttempts": 6,
+      "leaseExpiryConsumesAttempt": true,
+      "testDeliveryPersistsAttempt": false
+    },
+    "retry": {
+      "backoffSeconds": [30, 120, 600, 1800, 3600],
+      "schedule": "delay indexed by the failed attempt, capped at the final value",
+      "jitter": "deterministic 0..20 percent from deliveryId",
+      "retryAfter": "honor valid positive value up to 3600 seconds by taking the larger delay",
+      "retryable": [
+        "connect-timeout",
+        "read-timeout",
+        "connection-reset",
+        "HTTP-408",
+        "HTTP-425",
+        "HTTP-429",
+        "HTTP-500..599",
+        "Telegram-retryable-provider-error"
+      ],
+      "permanent": [
+        "invalid-or-revoked-destination",
+        "template-validation-error",
+        "unsafe-webhook-target",
+        "HTTP-400..407-except-408",
+        "HTTP-409..424",
+        "HTTP-426..428",
+        "HTTP-430..499",
+        "Telegram-permanent-provider-error"
+      ]
+    },
+    "completion": {
+      "guard": "deliveryId + state=leased + leaseToken + unexpired lease",
+      "deliveredAt": "provider acknowledgement server time",
+      "responseBodyPersistence": "forbidden",
+      "errorPersistence": "bounded stable code and redacted summary only"
+    },
+    "crashRecovery": {
+      "expiredLease": "reclaim-with-attempt-preserved",
+      "nextClaimAttempt": "increment-from-preserved-count",
+      "lateLeaseResult": "ignore-token-mismatch",
+      "candidateReplay": "unique dedupeKey returns existing row",
+      "processRestart": "database state is authoritative",
+      "shutdown": "stop claiming, finish within lease budget, otherwise allow expiry"
+    },
+    "retention": {
+      "delivered": "unresolved production policy",
+      "dead": "unresolved production policy",
+      "historyProjection": "must preserve user, monitor, pool, condition summary, timestamps, and delivery state"
+    }
+  },
+  "workerIsolation": {
+    "evaluatorNetworkIo": false,
+    "marketWorkerWaitsForDelivery": false,
+    "deliveryFailureAffectsMarketCommit": false,
+    "dispatcherProcessBoundary": "separate from market worker",
+    "outboxBackpressure": "observable but never converted into market input failure",
+    "databaseFailureBeforeCandidateCommit": "market input may retry as one atomic unit",
+    "providerFailureAfterCandidateCommit": "outbox state only"
+  },
+  "destinations": {
+    "types": ["telegram", "webhook"],
+    "requiredFields": [
+      "destinationId",
+      "userId",
+      "revision",
+      "type",
+      "name",
+      "enabled",
+      "categories",
+      "createdAt",
+      "updatedAt"
+    ],
+    "secretHandling": "secretRef only; secret values never appear in API, outbox, history, logs, or fixtures",
+    "revisionBinding": "outbox row uses the revision selected at enqueue time",
+    "disabledAtDispatch": "dead with DESTINATION_DISABLED unless already delivered",
+    "deletedAtDispatch": "dead with DESTINATION_NOT_FOUND unless already delivered"
+  },
+  "notificationPreferences": {
+    "categories": [
+      "monitor-match",
+      "task-created",
+      "position-moved",
+      "operation-failed",
+      "position-closed",
+      "feedback-replied"
+    ],
+    "default": "disabled-until-user-opt-in",
+    "combination": "category preference AND enabled destination",
+    "revision": "optimistic compare-and-set"
+  },
+  "telegram": {
+    "credential": "secretRef",
+    "recipient": "owned Telegram identity reference",
+    "parseMode": "HTML",
+    "escaping": "escape ampersand, less-than, and greater-than in every value",
+    "messageLimitCodePoints": 4096,
+    "oversize": "render-validation-error-no-network",
+    "providerMessageId": "store bounded opaque acknowledgement only",
+    "idempotency": "deliveryId retained across retries; provider duplicate acknowledgement resolves delivered"
+  },
+  "webhook": {
+    "methods": ["GET", "POST"],
+    "contentType": "application/json for POST",
+    "deliveryIdHeader": "X-LPX-Delivery-Id",
+    "signature": "security-contracts.json",
+    "targetPolicy": "security-contracts.json",
+    "responseSuccess": "HTTP 200..299",
+    "responseBody": "drain up to limit then discard"
+  },
+  "testDelivery": {
+    "sink": "local-sink://p03-01",
+    "mode": "explicit-test-fixture",
+    "persistDraft": false,
+    "persistOutbox": false,
+    "consumeProviderQuota": false,
+    "realTelegram": false,
+    "realWebhook": false,
+    "networkIo": false
+  },
+  "boundaries": {
+    "databaseMigration": false,
+    "businessTable": false,
+    "dispatcherImplementation": false,
+    "telegramAdapterImplementation": false,
+    "webhookAdapterImplementation": false
+  }
+}
