@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P03-02",
+  "phase": "P03",
+  "risk": "R1",
+  "status": "in-progress",
+  "featureIds": ["MON-01", "MON-02", "MON-03"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm exec vitest run monitor contract, evaluator, and worker focused tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-02/E-DATA.md"
+    },
+    {
+      "id": "T-API",
+      "command": "pnpm exec vitest run tests/monitor-api.test.ts tests/monitor-client.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-02/E-API.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "focused PostgreSQL monitoring persistence and Outbox recovery",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-02/E-REC.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "dbmate repeat plus complete PostgreSQL migration up/down/up cycle",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-02/E-DATA.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm exec playwright test tests/e2e/p03-02-monitors.spec.ts --workers=1",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-02/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile screenshots, focus, overflow, keyboard, and axe assertions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-02/E-VIS.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P03-02/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P03-02/E-DATA.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P03-02/E-REC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P03-02/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P03-02/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P03-02/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P03-02/E-SEC.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only; MON-01, MON-02, and MON-03 remain implemented-assumed.",
+    "BSC chainId 56 is the only supported monitor chain.",
+    "Active TVL, Fee/aTVL, target monitor UI parity, notification history/destination UI, and live delivery remain unresolved.",
+    "Production destination selection is empty and no Telegram/Webhook dispatcher or external request exists.",
+    "P00 through P03-01 acceptance artifacts remain byte-identical to the requested baseline."
+  ],
+  "completedAt": null,
+  "commit": null
+}

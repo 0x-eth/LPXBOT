@@ -158,6 +158,8 @@ flowchart LR
 
 **功能：** `MON-01..06`, `NOTIFY-01..02`。
 
+**当前状态：** P03 为 3 项 `implemented-assumed`、5 项 `planned`。P03-02 仅完成 BSC 监控 CRUD/启停、AND 评估、中文 Token/Hook 排除和无网络 Outbox 基础；active TVL、Fee/aTVL、目标 UI parity、通知历史/目的地以及 live Telegram/Webhook delivery 继续 unresolved，P03 尚未收官。
+
 **工作：** 监控 CRUD/启停、多条件 AND、中文/Hook 排除、通知历史、分类 Telegram 通知和 GET/POST Webhook 模板。
 
 **测试：** 条件真值表、窗口 freshness、重复候选去重、outbox 恢复、签名 webhook、DNS rebinding/重定向/私网 SSRF、超时/重试/限流。

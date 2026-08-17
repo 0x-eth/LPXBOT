@@ -168,9 +168,9 @@
 | FLOW-03 | 流入/流出/净额统计 | UI+BUNDLE | USER | R0 | 当前过滤范围一致；`implemented-assumed`（P02-05） |
 | FLOW-04 | 按地址聚合 | UI+BUNDLE | USER | R0 | 净额/笔数/最近排序、池数、地址操作；`implemented-assumed`（P02-05） |
 | FLOW-05 | 地址备注/地址簿 | UI+BUNDLE | USER | R1 | 流动性流、钱包和扫描页复用统一备注；`implemented-assumed`（P02-05） |
-| MON-01 | 监控 CRUD 与启停 | UI+API | USER | R1 | 列表、5/7 启用数、更新和删除 |
-| MON-02 | 多条件 AND | UI+API+BUNDLE | USER | R1 | 交易量、Fee、Fee/TVL、Fee/aTVL、TVL、交易数、版本 |
-| MON-03 | 排除中文 token / Hook | UI+BUNDLE | USER | R1 | 与策略候选池一致 |
+| MON-01 | 监控 CRUD 与启停 | UI+API | USER | R1 | 列表、启用数/总数、revision 更新和删除；`implemented-assumed`（P03-02，BSC only） |
+| MON-02 | 多条件 AND | UI+API+BUNDLE | USER | R1 | Volume、Fee、Fee/TVL、TVL、交易数、版本；active TVL 与 Fee/aTVL unresolved；`implemented-assumed`（P03-02） |
+| MON-03 | 排除中文 token / Hook | UI+BUNDLE | USER | R1 | canonical 三态元数据 fail closed；`implemented-assumed`（P03-02） |
 | MON-04 | Telegram 与外部 Webhook | UI+API+BUNDLE | USER | R1 | GET/POST、模板占位符、测试、不保存测试配置 |
 | MON-05 | 通知历史 | UI+API | USER | R0 | 池、条件、时间、投递状态 |
 | MON-06 | 投递安全 | INFERRED | USER | R2 | SSRF 防护、私网阻断、签名、超时、重试、速率限制 |
