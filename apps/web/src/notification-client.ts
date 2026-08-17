@@ -28,6 +28,14 @@ function isTimestamp(value: unknown): value is string {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
 }
 
+function validPreferenceCategories(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    exactKeys(value, notificationCategories) &&
+    notificationCategories.every((category) => typeof value[category] === "boolean")
+  );
+}
+
 function parseCategories(value: unknown): NotificationDestination["categories"] | null {
   if (!Array.isArray(value) || value.length < 1 || value.length > notificationCategories.length) {
     return null;
@@ -65,16 +73,14 @@ export function parseNotificationPreferences(
   if (
     !isRecord(value) ||
     !exactKeys(value, ["categories", "revision", "updatedAt"]) ||
-    !isRecord(value.categories) ||
-    !exactKeys(value.categories, notificationCategories) ||
-    !notificationCategories.every((category) => typeof value.categories[category] === "boolean") ||
+    !validPreferenceCategories(value.categories) ||
     !Number.isSafeInteger(value.revision) ||
     (value.revision as number) < 0 ||
     !(value.updatedAt === null || isTimestamp(value.updatedAt))
   ) {
     throw new NotificationRequestError("NOTIFICATION_RESPONSE_INVALID", true, status);
   }
-  return structuredClone(value) as NotificationPreferences;
+  return structuredClone(value) as unknown as NotificationPreferences;
 }
 
 export function parseNotificationDestinationOptions(
@@ -162,7 +168,7 @@ export function parseNotificationDestination(
   } else {
     throw new NotificationRequestError("NOTIFICATION_RESPONSE_INVALID", true, status);
   }
-  return structuredClone(value) as NotificationDestination;
+  return structuredClone(value) as unknown as NotificationDestination;
 }
 
 function parseNotificationDestinations(value: unknown, status: number): NotificationDestination[] {

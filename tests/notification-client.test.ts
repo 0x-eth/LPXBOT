@@ -1,5 +1,7 @@
 import type {
+  DestinationDraft,
   NotificationDestination,
+  NotificationDestinationPatch,
   NotificationPreferences,
 } from "../packages/api-contract/src/index.js";
 import {
@@ -101,5 +103,113 @@ describe("P03-03 notification browser client", () => {
         status: 200,
       }),
     );
+  });
+
+  it("sends CAS, idempotent CRUD, and explicit local-sink test requests", async () => {
+    const draft: DestinationDraft = {
+      categories: ["monitor-match"],
+      config: {
+        method: "POST",
+        signingSecret: "fixture-signing-secret-material-0001",
+        template: { message: "{{monitor.name}}" },
+        url: "https://hooks.example.test/lpx",
+      },
+      enabled: true,
+      name: "Operations webhook",
+      type: "webhook",
+    };
+    const patch: NotificationDestinationPatch = {
+      changes: { enabled: false, name: "Paused webhook" },
+      expectedRevision: 2,
+    };
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async (input, init) => {
+      const path = String(input);
+      if (init?.method === "DELETE") return new Response(null, { status: 204 });
+      if (path === "/api/notification-preferences") {
+        return success({
+          ...preferences,
+          categories: { ...preferences.categories, "operation-failed": true },
+          revision: 2,
+        });
+      }
+      if (path === "/api/notification-destinations/test") {
+        return success({
+          destinationType: "webhook",
+          networkCalls: 0,
+          rendered: { body: '{"message":"Local fixture monitor"}', method: "POST" },
+          signed: true,
+          sink: "local-sink://p03-01",
+        });
+      }
+      return new Response(
+        JSON.stringify({
+          data: {
+            ...destination,
+            ...(init?.method === "PATCH" ? { enabled: false, name: "Paused webhook", revision: 3 } : {}),
+          },
+          requestId: "p03-03-client-write",
+          success: true,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: init?.method === "POST" ? 201 : 200,
+        },
+      );
+    });
+    const client = new NotificationClient(fetcher);
+
+    await client.patchPreferences({
+      categories: { "operation-failed": true },
+      expectedRevision: 1,
+    });
+    await client.createDestination(draft, "notification-create-001");
+    await client.patchDestination(destinationId, patch);
+    await client.deleteDestination(destinationId, 3);
+    await expect(client.testDestination(draft)).resolves.toEqual({
+      destinationType: "webhook",
+      networkCalls: 0,
+      rendered: { body: '{"message":"Local fixture monitor"}', method: "POST" },
+      signed: true,
+      sink: "local-sink://p03-01",
+    });
+
+    expect(fetcher).toHaveBeenNthCalledWith(
+      1,
+      "/api/notification-preferences",
+      expect.objectContaining({
+        body: JSON.stringify({
+          categories: { "operation-failed": true },
+          expectedRevision: 1,
+        }),
+        method: "PATCH",
+      }),
+    );
+    expect(fetcher).toHaveBeenNthCalledWith(
+      2,
+      "/api/notification-destinations",
+      expect.objectContaining({
+        body: JSON.stringify(draft),
+        headers: expect.objectContaining({ "Idempotency-Key": "notification-create-001" }),
+        method: "POST",
+      }),
+    );
+    expect(fetcher).toHaveBeenNthCalledWith(
+      3,
+      `/api/notification-destinations/${destinationId}`,
+      expect.objectContaining({ body: JSON.stringify(patch), method: "PATCH" }),
+    );
+    expect(fetcher).toHaveBeenNthCalledWith(
+      4,
+      `/api/notification-destinations/${destinationId}`,
+      expect.objectContaining({ body: JSON.stringify({ expectedRevision: 3 }), method: "DELETE" }),
+    );
+    expect(fetcher).toHaveBeenNthCalledWith(
+      5,
+      "/api/notification-destinations/test",
+      expect.objectContaining({ body: JSON.stringify(draft), method: "POST" }),
+    );
+    for (const [, init] of fetcher.mock.calls) {
+      expect(init).toEqual(expect.objectContaining({ credentials: "include" }));
+    }
   });
 });
