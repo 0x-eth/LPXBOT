@@ -22,5 +22,21 @@ export type {
   TelegramTransportRequest,
   TelegramTransportResponse,
 } from "./telegram-adapter.js";
+export { FixedWindowDeliveryRateGate, NotificationDispatcher } from "./dispatcher.js";
+export type {
+  DeliveryRateGate,
+  DispatchAdapter,
+  DispatchAdapterInput,
+  DispatchAdapterResult,
+  DispatchChannel,
+  DispatchDestination,
+  DispatchDestinationResult,
+  DispatchDestinationStore,
+  DispatchOutboxDelivery,
+  DispatchSecretStore,
+  FixedWindowDeliveryRateGateOptions,
+  NotificationDispatchBatchResult,
+  NotificationDispatchOutbox,
+} from "./dispatcher.js";
 
 export const dispatcherApp = { name: "@lpbot/dispatcher" } as const;
