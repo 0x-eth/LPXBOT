@@ -16,6 +16,14 @@ export type {
   MonitorDestinationSelector,
   NotificationOutboxState,
 } from "./monitoring.js";
+export { PostgresMonitorCandidateOutboxRepository } from "./postgres-monitor-outbox.js";
+export type {
+  CandidateEvidenceAction,
+  CommitMonitorCandidateInput,
+  CommitMonitorCandidateResult,
+  MonitorOutboxDestination,
+  NotificationOutboxDelivery,
+} from "./postgres-monitor-outbox.js";
 
 export const workerApp = {
   domain: domainPackage.name,
