@@ -5,6 +5,11 @@ import {
   type NotificationDestination,
   type NotificationDestinationOptions,
   type NotificationDestinationPatch,
+  notificationDeliveryStatuses,
+  monitorWindowMinutes,
+  type NotificationDeliveryStatus,
+  type NotificationHistoryItem,
+  type NotificationHistoryPage,
   type NotificationPreferences,
   type NotificationPreferencesPatch,
 } from "@lpbot/api-contract";
@@ -220,6 +225,86 @@ export function parseLocalSinkTestResult(value: unknown, status = 0): LocalSinkT
   return structuredClone(value) as unknown as LocalSinkTestResult;
 }
 
+function parseNotificationHistoryItem(value: unknown, status: number): NotificationHistoryItem {
+  if (
+    !isRecord(value) ||
+    !exactKeys(value, [
+      "attemptCount",
+      "conditionSummary",
+      "createdAt",
+      "deliveredAt",
+      "deliveryId",
+      "destination",
+      "errorCode",
+      "monitorId",
+      "monitorName",
+      "nextRetryAt",
+      "poolKey",
+      "status",
+      "updatedAt",
+      "windowEnd",
+      "windowMinutes",
+    ]) ||
+    !Number.isSafeInteger(value.attemptCount) ||
+    (value.attemptCount as number) < 0 ||
+    (value.attemptCount as number) > 6 ||
+    typeof value.conditionSummary !== "string" ||
+    [...value.conditionSummary].length > 4_096 ||
+    !isTimestamp(value.createdAt) ||
+    !(value.deliveredAt === null || isTimestamp(value.deliveredAt)) ||
+    typeof value.deliveryId !== "string" ||
+    !uuidPattern.test(value.deliveryId) ||
+    !isRecord(value.destination) ||
+    !exactKeys(value.destination, ["destinationId", "name", "type"]) ||
+    typeof value.destination.destinationId !== "string" ||
+    value.destination.destinationId.length < 1 ||
+    value.destination.destinationId.length > 200 ||
+    typeof value.destination.name !== "string" ||
+    value.destination.name.length < 1 ||
+    [...value.destination.name].length > 120 ||
+    (value.destination.type !== "telegram" &&
+      value.destination.type !== "webhook" &&
+      value.destination.type !== "local-sink") ||
+    !(value.errorCode === null ||
+      (typeof value.errorCode === "string" && /^[A-Z][A-Z0-9_:-]{0,79}$/u.test(value.errorCode))) ||
+    typeof value.monitorId !== "string" ||
+    !uuidPattern.test(value.monitorId) ||
+    typeof value.monitorName !== "string" ||
+    value.monitorName.length < 1 ||
+    [...value.monitorName].length > 120 ||
+    !(value.nextRetryAt === null || isTimestamp(value.nextRetryAt)) ||
+    typeof value.poolKey !== "string" ||
+    !/^56:0x(?:[0-9a-f]{40}|[0-9a-f]{64})$/u.test(value.poolKey) ||
+    typeof value.status !== "string" ||
+    !notificationDeliveryStatuses.includes(value.status as NotificationDeliveryStatus) ||
+    !isTimestamp(value.updatedAt) ||
+    !isTimestamp(value.windowEnd) ||
+    !monitorWindowMinutes.includes(value.windowMinutes as (typeof monitorWindowMinutes)[number]) ||
+    (value.status === "retrying") !== (value.nextRetryAt !== null) ||
+    (value.status === "delivered") !== (value.deliveredAt !== null)
+  ) {
+    throw new NotificationRequestError("NOTIFICATION_RESPONSE_INVALID", true, status);
+  }
+  return structuredClone(value) as unknown as NotificationHistoryItem;
+}
+
+export function parseNotificationHistoryPage(value: unknown, status = 0): NotificationHistoryPage {
+  if (
+    !isRecord(value) ||
+    !exactKeys(value, ["items", "nextCursor"]) ||
+    !Array.isArray(value.items) ||
+    !(value.nextCursor === null ||
+      (typeof value.nextCursor === "string" && value.nextCursor.length > 0 && value.nextCursor.length <= 256))
+  ) {
+    throw new NotificationRequestError("NOTIFICATION_RESPONSE_INVALID", true, status);
+  }
+  const items = value.items.map((item) => parseNotificationHistoryItem(item, status));
+  if (new Set(items.map(({ deliveryId }) => deliveryId)).size !== items.length) {
+    throw new NotificationRequestError("NOTIFICATION_RESPONSE_INVALID", true, status);
+  }
+  return { items, nextCursor: value.nextCursor };
+}
+
 export class NotificationRequestError extends Error {
   readonly code: string;
   readonly retryable: boolean;
@@ -263,6 +348,34 @@ export class NotificationClient {
       ...(signal ? { signal } : {}),
     });
     return parseNotificationDestinations(response.data, response.status);
+  }
+
+  async listHistory(
+    options: {
+      cursor?: string;
+      deliveryStatus?: NotificationDeliveryStatus;
+      from?: string;
+      limit?: number;
+      monitorId?: string;
+      to?: string;
+    } = {},
+    signal?: AbortSignal,
+  ): Promise<NotificationHistoryPage> {
+    const parameters = new URLSearchParams();
+    if (options.cursor !== undefined) parameters.set("cursor", options.cursor);
+    if (options.limit !== undefined) parameters.set("limit", String(options.limit));
+    if (options.monitorId !== undefined) parameters.set("monitorId", options.monitorId);
+    if (options.deliveryStatus !== undefined) {
+      parameters.set("deliveryStatus", options.deliveryStatus);
+    }
+    if (options.from !== undefined) parameters.set("from", options.from);
+    if (options.to !== undefined) parameters.set("to", options.to);
+    const query = parameters.size === 0 ? "" : `?${parameters.toString()}`;
+    const response = await this.#request(`/api/notifications/history${query}`, {
+      method: "GET",
+      ...(signal ? { signal } : {}),
+    });
+    return parseNotificationHistoryPage(response.data, response.status);
   }
 
   async patchPreferences(patch: NotificationPreferencesPatch): Promise<NotificationPreferences> {
