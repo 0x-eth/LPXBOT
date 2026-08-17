@@ -59,6 +59,13 @@ regexTarget = "secret"
 regexes = ['''^[0-9a-f]{64}$''']
 
 [[rules.allowlists]]
+description = "P04-01 Argon2id known-answer fixture records a deterministic public derived-key output, not a credential."
+condition = "AND"
+paths = ['''^artifacts/acceptance/P04-01/fixtures/argon2id-known-answer\.json$''']
+regexTarget = "secret"
+regexes = ['''^[0-9a-f]{64}$''']
+
+[[rules.allowlists]]
 description = "P03-03 notification tests use these exact non-secret fixture values to verify write-only signing-key handling."
 condition = "AND"
 paths = ['''^tests/(?:notification-settings-api|notification-client)\.test\.ts$''']
