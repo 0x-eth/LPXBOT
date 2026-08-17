@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "system-stats/local-v1",
+  "evidenceLevel": "locally-defined",
+  "parityStatus": "not-parity-verified",
+  "publisher": {
+    "visibility": "internal-port-only",
+    "inputMode": "authoritative-absolute-snapshot",
+    "acceptedFields": [
+      "userId",
+      "running",
+      "paused",
+      "stopped",
+      "sourceRevision",
+      "observedAt"
+    ],
+    "incrementalWrites": false,
+    "httpWriteEndpoint": false,
+    "fixtureMutationRoute": false,
+    "statusMappingOwner": "future-task-business-domain"
+  },
+  "counts": {
+    "states": ["running", "paused", "stopped"],
+    "constraints": ["non-negative", "safe-integer"],
+    "total": {
+      "stored": false,
+      "sumOf": ["running", "paused", "stopped"],
+      "mustBeSafeInteger": true
+    },
+    "unknownTaskStates": "not-classified-by-this-slice"
+  },
+  "readiness": {
+    "beforeBackfill": { "status": 503, "code": "STATS_UNAVAILABLE", "retryable": true },
+    "readyMissingUserMeansZero": true,
+    "unreadyMayReturnZero": false
+  },
+  "storage": {
+    "readinessTable": "task_status_stats_projection_state",
+    "userSnapshotTable": "task_status_stats_user_snapshots",
+    "streamHeadTable": "task_status_stats_stream_heads",
+    "conflictTable": "task_status_stats_conflicts",
+    "auditTable": "task_status_stats_query_audit_events",
+    "atomicCommit": [
+      "user-snapshot",
+      "global-aggregate",
+      "content-hashes",
+      "user-sequence",
+      "global-sequence"
+    ],
+    "sequencePersistence": "strictly-increasing-per-scope",
+    "userDeletion": "user-zero-tombstone-and-global-reaggregate"
+  },
+  "revisions": {
+    "sameRevisionSamePayload": "idempotent",
+    "sameRevisionDifferentPayload": "record-conflict",
+    "olderRevision": "ignore",
+    "newerSameCounts": "advance-source-revision-without-stream-update"
+  },
+  "scopes": {
+    "user": "signed-in-user-only",
+    "pro": "signed-in-user-only",
+    "adminWithoutFilter": "global",
+    "adminFilter": {
+      "semantic": "decimal-telegram-user-id",
+      "resolveThrough": "telegram_identities",
+      "unknownStatus": 404,
+      "nonAdminStatus": 403,
+      "beforeSseHijack": true,
+      "audit": "credential-free-summary"
+    },
+    "recommendationBlocklistOwner": "signed-in-session-user"
+  },
+  "http": {
+    "snapshot": { "method": "GET", "path": "/api/stats", "cacheControl": "no-store" },
+    "stream": { "method": "GET", "path": "/api/stats/stream" },
+    "successWireShape": "P01-06-ShellStatsEvent-compatible"
+  },
+  "sse": {
+    "firstStatsEvent": "snapshot",
+    "updateSequence": "strictly-increasing",
+    "updatePayload": "latest-complete-taskCounts",
+    "unchangedContentPush": false,
+    "heartbeatMilliseconds": 25000,
+    "heartbeatSequence": null,
+    "snapshotSubscribeRace": "poll-after-snapshot-sequence",
+    "abort": "ends-query-wait-and-timer-observation"
+  },
+  "nullableMeasurements": [
+    "fps",
+    "pingMs",
+    "gas.baseGwei",
+    "gas.ethereumGwei",
+    "online"
+  ],
+  "client": {
+    "explicitZero": "0",
+    "unknown": "--",
+    "lateOrDuplicateUpdate": "ignore",
+    "watchdogClock": "local-receipt-time",
+    "taskBadge": "fixed-size-compact-count"
+  },
+  "boundaries": {
+    "taskBusinessDomainConnected": false,
+    "fakeTaskBusinessTable": false,
+    "externalRpc": false,
+    "signingBroadcastOrFunds": false
+  },
+  "unresolvedGapRefs": [
+    "GAP-FORMULA-ATVL",
+    "GAP-FORMULA-FEE-ATVL",
+    "GAP-LABEL-ALGORITHM",
+    "GAP-API-CANDLE-QUOTE",
+    "GAP-UI-TICK-LIQUIDITY-MAPPING",
+    "GAP-FINALITY-DEPTH"
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "system-stats/local-v1",
+  "cases": [
+    {
+      "id": "unready",
+      "input": { "projectionReady": false, "userRow": false },
+      "expected": { "status": 503, "code": "STATS_UNAVAILABLE", "zeroSnapshot": false }
+    },
+    {
+      "id": "ready-missing-user",
+      "input": { "projectionReady": true, "userRow": false },
+      "expected": {
+        "sequence": 0,
+        "taskCounts": { "paused": 0, "running": 0, "stopped": 0 }
+      }
+    },
+    {
+      "id": "personal-isolation",
+      "input": {
+        "sessionUser": "USER_A",
+        "snapshots": {
+          "USER_A": { "paused": 2, "running": 3, "stopped": 4 },
+          "USER_B": { "paused": 5, "running": 7, "stopped": 13 }
+        }
+      },
+      "expected": { "scope": "USER_A", "taskCounts": { "paused": 2, "running": 3, "stopped": 4 } }
+    },
+    {
+      "id": "admin-global",
+      "input": { "role": "admin", "telegramUserId": null },
+      "expected": { "scope": "global", "taskCounts": { "paused": 7, "running": 10, "stopped": 17 } }
+    },
+    {
+      "id": "admin-telegram-filter",
+      "input": { "role": "admin", "telegramUserId": "8801302" },
+      "expected": { "resolvedInternalUser": "USER_B", "scope": "USER_B" }
+    },
+    {
+      "id": "idempotent-revision",
+      "input": { "sourceRevision": 5, "samePayload": true },
+      "expected": { "status": "idempotent", "sequenceDelta": 0 }
+    },
+    {
+      "id": "stale-revision",
+      "input": { "currentRevision": 5, "sourceRevision": 4 },
+      "expected": { "status": "stale", "sequenceDelta": 0, "overwrites": false }
+    },
+    {
+      "id": "conflicting-revision",
+      "input": { "sourceRevision": 5, "samePayload": false },
+      "expected": { "status": "conflict", "sequenceDelta": 0, "conflicts": 1 }
+    },
+    {
+      "id": "skipped-updates",
+      "input": { "snapshotSequence": 1, "publishedSequences": [2, 3] },
+      "expected": {
+        "emittedSequence": 3,
+        "patch": {
+          "complete": true,
+          "taskCounts": { "paused": 3, "running": 3, "stopped": 3 }
+        }
+      }
+    },
+    {
+      "id": "user-deletion",
+      "input": { "beforeUserSequence": 1, "beforeGlobalSequence": 2 },
+      "expected": {
+        "userSequence": 2,
+        "globalSequence": 3,
+        "taskCounts": { "paused": 0, "running": 0, "stopped": 0 }
+      }
+    },
+    {
+      "id": "restart-reconnect",
+      "input": { "snapshotSequence": 3, "afterProcessRestart": true },
+      "expected": { "resumeAfterSequence": 3, "regresses": false }
+    }
+  ]
+}
