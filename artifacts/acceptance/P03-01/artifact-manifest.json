@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P03-01",
+  "phase": "P03",
+  "risk": "R0",
+  "status": "contract-frozen-with-unresolved-gaps",
+  "featureIds": [],
+  "capturedAt": "2026-08-17T10:32:46Z",
+  "referenceBaseline": "059d1b56e50a877ec0391a9188eae55dff1c6354",
+  "scope": {
+    "mode": "reference-only",
+    "implementationOwnership": "none",
+    "databaseChanges": false,
+    "businessTables": false,
+    "productionRoutes": false,
+    "workers": false,
+    "realNotificationAdapters": false,
+    "externalNetwork": false,
+    "productionSecrets": false
+  },
+  "checksumScope": {
+    "algorithm": "SHA-256",
+    "excludedSelfReferentialFiles": ["artifact-manifest.json", "sha256sums.txt"],
+    "priorAcceptance": "all baseline P00-P02 acceptance files"
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "artifacts/acceptance/P02-01/metric-contracts.json",
+      "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "P02 metric windows, nullability, Fee/TVL, active TVL, and Fee/aTVL evidence boundary",
+      "evidenceLevel": "locally-defined"
+    },
+    {
+      "path": "artifacts/acceptance/P02-11/blocklist-action-contract.json",
+      "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "P02-11 stable pool identity and user blocklist eligibility contract",
+      "evidenceLevel": "locally-defined"
+    },
+    {
+      "path": "artifacts/acceptance/P02-11/manifest.json",
+      "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "P02-11 acceptance boundary and monitoring consumer-only limitation",
+      "evidenceLevel": "documented"
+    },
+    {
+      "path": "docs/ARCHITECTURE_AND_WORKFLOWS.md",
+      "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "outbox, notification, recovery, and SSRF architecture",
+      "evidenceLevel": "documented"
+    },
+    {
+      "path": "docs/DEVELOPMENT_ROADMAP.md",
+      "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "P03 scope, tests, completion definition, and external-target gate",
+      "evidenceLevel": "documented"
+    },
+    {
+      "path": "docs/FUNCTION_MATRIX.md",
+      "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "MON-01..06 and NOTIFY-01..02 feature definitions",
+      "evidenceLevel": "documented"
+    },
+    {
+      "path": "docs/TRACEABILITY_MATRIX.md",
+      "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "P03 test/evidence mappings and planned feature totals",
+      "evidenceLevel": "documented"
+    },
+    {
+      "path": "docs/VIBE_CODING_PLAYBOOK.md",
+      "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "P03 fixture-first, outbox, Webhook, and local-sink execution guidance",
+      "evidenceLevel": "documented"
+    },
+    {
+      "path": "packages/domain/src/index.ts",
+      "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "P02-11 server-side blocklist eligibility policy interface",
+      "evidenceLevel": "locally-defined"
+    }
+  ],
+  "checks": [
+    {
+      "id": "initial-red",
+      "result": "expected-failure",
+      "evidencePath": "checks/initial-failure.txt"
+    },
+    {
+      "id": "governance-test",
+      "result": "passed",
+      "evidencePath": "checks/governance-test.txt"
+    },
+    {
+      "id": "artifact-schema",
+      "result": "passed",
+      "evidencePath": "checks/artifact-schema.txt"
+    },
+    {
+      "id": "prior-acceptance-integrity",
+      "result": "passed",
+      "evidencePath": "checks/prior-acceptance-integrity.txt"
+    },
+    {
+      "id": "quality-gates",
+      "result": "passed",
+      "evidencePath": "checks/quality-gates.txt"
+    },
+    {
+      "id": "secret-scan",
+      "result": "passed",
+      "evidencePath": "checks/security-audit.txt"
+    },
+    {
+      "id": "dependency-audit",
+      "result": "passed",
+      "evidencePath": "checks/security-audit.txt"
+    }
+  ],
+  "limitations": [
+    "P03-01 owns no feature implementation; all eight P03 features remain planned.",
+    "active TVL and Fee/aTVL remain unresolved and cannot be configured or matched.",
+    "No migration, business table, production route, worker, or real Telegram/Webhook adapter is added.",
+    "All notification fixtures render to local-sink://p03-01 with zero network I/O.",
+    "Target UI parity, live provider behavior, production quotas, and delivery SLOs remain unresolved."
+  ]
+}

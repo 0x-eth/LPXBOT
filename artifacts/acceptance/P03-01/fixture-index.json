@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P03-01",
+  "networkPolicy": "offline-local-sink-only",
+  "sink": "local-sink://p03-01",
+  "realTelegram": false,
+  "realWebhook": false,
+  "fixtures": [
+    {
+      "id": "P03-FIXTURE-EVALUATION",
+      "scenario": "evaluation-cases",
+      "kind": "domain",
+      "schemaId": "p03-fixture://evaluation-cases/v1",
+      "path": "fixtures/evaluation-cases.json",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "id": "P03-FIXTURE-DEDUPE",
+      "scenario": "dedupe-ordering",
+      "kind": "domain",
+      "schemaId": "p03-fixture://dedupe-ordering/v1",
+      "path": "fixtures/dedupe-ordering.json",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "id": "P03-FIXTURE-REORG",
+      "scenario": "reorg-replacement",
+      "kind": "domain",
+      "schemaId": "p03-fixture://reorg-replacement/v1",
+      "path": "fixtures/reorg-replacement.json",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "id": "P03-FIXTURE-OUTBOX",
+      "scenario": "outbox-recovery",
+      "kind": "delivery",
+      "schemaId": "p03-fixture://outbox-recovery/v1",
+      "path": "fixtures/outbox-recovery.json",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "id": "P03-FIXTURE-WEBHOOK",
+      "scenario": "webhook-security",
+      "kind": "security",
+      "schemaId": "p03-fixture://webhook-security/v1",
+      "path": "fixtures/webhook-security.json",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "id": "P03-FIXTURE-SSRF",
+      "scenario": "ssrf-policy",
+      "kind": "security",
+      "schemaId": "p03-fixture://ssrf-policy/v1",
+      "path": "fixtures/ssrf-policy.json",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "coverage": [
+    "AND truth table",
+    "inclusive numeric boundary",
+    "inclusive freshness boundary",
+    "null, missing, non-finite, not-ready, and partial metrics",
+    "P02-11 pool and token blocklist eligibility",
+    "duplicate and out-of-order evaluation",
+    "canonical reorg replacement",
+    "outbox duplicate insert, retry, lease expiry, and dead state",
+    "GET and POST escaping, unknown variables, and size limits",
+    "HMAC-SHA256 known-answer vector",
+    "IPv4, IPv6, DNS rebinding, and redirect SSRF policy"
+  ]
+}
