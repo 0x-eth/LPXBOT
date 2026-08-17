@@ -1,4 +1,9 @@
-import type { AuthState, NavigationKey, SessionView } from "@lpbot/api-contract";
+import type {
+  AuthState,
+  NavigationKey,
+  PoolActionIntent,
+  SessionView,
+} from "@lpbot/api-contract";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   Activity,
@@ -59,6 +64,7 @@ import { Eip1193WalletAdapter, browserEip1193Provider } from "./eip1193-wallet";
 import { ConfirmDialog, FeedbackProvider, useFeedback } from "./feedback";
 import { UserPreferencesProvider, useUserPreferences } from "./preferences";
 import { PoolBlocklistProvider, usePoolBlocklist } from "./pool-blocklist";
+import { parsePoolActionIntent } from "./pool-actions";
 import { PwaUpdateBridge } from "./pwa-updates";
 import { PoolsPage } from "./pools-page";
 import { InterfaceSettings } from "./settings-interface";
@@ -766,12 +772,28 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatIntent, setChatIntent] = useState<PoolActionIntent | null>(null);
   const chatTrigger = useRef<HTMLButtonElement | null>(null);
 
   const openChat = (trigger: HTMLButtonElement) => {
     chatTrigger.current = trigger;
+    setChatIntent(null);
     setChatOpen(true);
   };
+
+  useEffect(() => {
+    const receive = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return;
+      const intent = parsePoolActionIntent(event.detail);
+      if (!intent || intent.action !== "share-chat") return;
+      const active = document.activeElement;
+      chatTrigger.current = active instanceof HTMLButtonElement ? active : null;
+      setChatIntent(intent);
+      setChatOpen(true);
+    };
+    window.addEventListener("lpbot:pool-chat-intent", receive);
+    return () => window.removeEventListener("lpbot:pool-chat-intent", receive);
+  }, []);
 
   const refresh = async () => {
     const next = await client.restore();
@@ -943,7 +965,13 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
       <div className="mobile-navigation-shell">
         <PrimaryNavigation onOpenChat={openChat} />
       </div>
-      <Dialog.Root onOpenChange={setChatOpen} open={chatOpen}>
+      <Dialog.Root
+        onOpenChange={(open) => {
+          setChatOpen(open);
+          if (!open) setChatIntent(null);
+        }}
+        open={chatOpen}
+      >
         <Dialog.Portal>
           <Dialog.Overlay className="drawer-overlay" />
           <Dialog.Content
@@ -954,7 +982,7 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
             }}
           >
             <div className="drawer-heading">
-              <Dialog.Title>最近聊天</Dialog.Title>
+              <Dialog.Title>{chatIntent ? "聊天草稿" : "最近聊天"}</Dialog.Title>
               <Dialog.Close asChild>
                 <button
                   aria-label="关闭最近聊天"
@@ -967,10 +995,25 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
                 </button>
               </Dialog.Close>
             </div>
-            <Dialog.Description className="drawer-empty">
-              <MessageSquareText aria-hidden="true" size={22} strokeWidth={1.7} />
-              <span>暂无最近聊天</span>
-            </Dialog.Description>
+            {chatIntent ? (
+              <Dialog.Description asChild>
+                <div className="chat-intent-draft">
+                  <label htmlFor="pool-chat-draft">消息草稿</label>
+                  <textarea
+                    id="pool-chat-draft"
+                    readOnly
+                    rows={4}
+                    value={`BSC 池 ${chatIntent.poolKey}`}
+                  />
+                  <span>草稿</span>
+                </div>
+              </Dialog.Description>
+            ) : (
+              <Dialog.Description className="drawer-empty">
+                <MessageSquareText aria-hidden="true" size={22} strokeWidth={1.7} />
+                <span>暂无最近聊天</span>
+              </Dialog.Description>
+            )}
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>

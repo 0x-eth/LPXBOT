@@ -11,6 +11,10 @@ const addressPattern = /^0x[0-9a-f]{40}$/u;
 const poolIdPattern = /^0x[0-9a-f]{64}$/u;
 const poolKeyPattern = /^56:0x(?:[0-9a-f]{40}|[0-9a-f]{64})$/u;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export const poolActionCommandIds = [
   "expand-market",
   "copy-pool-address",
@@ -129,6 +133,66 @@ export function createPoolActionIntent(
     token0Address,
     token1Address,
   };
+}
+
+export function parsePoolActionIntent(value: unknown): PoolActionIntent | null {
+  if (!isRecord(value)) return null;
+  const expected = [
+    "action",
+    "chainId",
+    "poolAddress",
+    "poolId",
+    "poolKey",
+    "schemaVersion",
+    "token0Address",
+    "token1Address",
+  ];
+  const keys = Object.keys(value).sort();
+  if (
+    keys.length !== expected.length ||
+    !expected.sort().every((key, index) => keys[index] === key) ||
+    value.schemaVersion !== poolActionIntentSchemaVersion ||
+    value.chainId !== 56 ||
+    (value.action !== "create-task" &&
+      value.action !== "create-monitor" &&
+      value.action !== "share-chat") ||
+    typeof value.poolKey !== "string" ||
+    !poolKeyPattern.test(value.poolKey)
+  ) {
+    return null;
+  }
+  const poolAddress = canonicalAddress(
+    typeof value.poolAddress === "string" || value.poolAddress === null
+      ? value.poolAddress
+      : "invalid",
+  );
+  const token0Address = canonicalAddress(
+    typeof value.token0Address === "string" || value.token0Address === null
+      ? value.token0Address
+      : "invalid",
+  );
+  const token1Address = canonicalAddress(
+    typeof value.token1Address === "string" || value.token1Address === null
+      ? value.token1Address
+      : "invalid",
+  );
+  const poolId =
+    value.poolId === null
+      ? null
+      : typeof value.poolId === "string" && poolIdPattern.test(value.poolId)
+        ? value.poolId
+        : undefined;
+  if (
+    poolAddress === undefined ||
+    token0Address === undefined ||
+    token1Address === undefined ||
+    poolId === undefined ||
+    (poolAddress === null) === (poolId === null) ||
+    value.poolKey !== `56:${poolAddress ?? poolId}`
+  ) {
+    return null;
+  }
+  return value as unknown as PoolActionIntent;
 }
 
 function unavailableToken(side: 0 | 1): ResolvedPoolAction {
