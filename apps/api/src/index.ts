@@ -22,6 +22,7 @@ export { PostgresUserPreferencesStore } from "./postgres-user-preferences-store.
 export { PostgresAddressRemarkStore } from "./postgres-address-remark-store.js";
 export { PostgresPoolBlocklistStore } from "./postgres-pool-blocklist-store.js";
 export type { PostgresPoolBlocklistStoreOptions } from "./postgres-pool-blocklist-store.js";
+export { PostgresPoolCreationProvenanceStore } from "./postgres-pool-creation-provenance-store.js";
 export {
   canonicalPoolCreationAddress,
   canonicalPoolCreationPoolKey,
