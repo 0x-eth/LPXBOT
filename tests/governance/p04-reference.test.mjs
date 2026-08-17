@@ -211,7 +211,10 @@ test("fact catalog separates evidence classes and keeps login wallets authentica
   const catalog = await readJson("fact-catalog.json");
   const classes = ["PUBLIC", "BUNDLE-CANDIDATE", "INFERRED", "LOCAL-DECISION"];
   assert.deepEqual(sorted(Object.keys(catalog.classifications)), sorted(classes));
-  assert.deepEqual(sorted(new Set(catalog.facts.map(({ classification }) => classification))), sorted(classes));
+  assert.deepEqual(
+    sorted(new Set(catalog.facts.map(({ classification }) => classification))),
+    sorted(classes),
+  );
   unique(
     catalog.facts.map(({ id }) => id),
     "fact IDs",
@@ -300,8 +303,14 @@ test("key lifecycle freezes secp256k1, envelope, Argon2id, rotation, lock, delet
     "envelopeVersion",
     "kekVersion",
   ]);
-  assert.equal(contract.envelope.tamperPolicy, "authentication-failure-lock-and-quarantine-no-fallback");
-  assert.equal(contract.envelope.rotation.kek, "rewrap-DEK-in-signer-without-private-key-plaintext");
+  assert.equal(
+    contract.envelope.tamperPolicy,
+    "authentication-failure-lock-and-quarantine-no-fallback",
+  );
+  assert.equal(
+    contract.envelope.rotation.kek,
+    "rewrap-DEK-in-signer-without-private-key-plaintext",
+  );
   assert.equal(contract.envelope.rotation.dek, "new-DEK-and-envelope-version-atomic-signer-only");
 
   assert.equal(contract.passwordMode.kdf.algorithm, "Argon2id");
@@ -498,7 +507,10 @@ test("UI contracts freeze every /wallets and /settings loading, locked, conflict
   for (const route of routes.values()) {
     assert.equal(route.implementationStatus, "planned", route.path);
     for (const state of ["loading", "locked", "conflict", "error"]) {
-      assert.ok(route.states.some(({ id }) => id === state), `${route.path} ${state}`);
+      assert.ok(
+        route.states.some(({ id }) => id === state),
+        `${route.path} ${state}`,
+      );
     }
     unique(
       route.states.map(({ id }) => id),
@@ -517,7 +529,10 @@ test("UI contracts freeze every /wallets and /settings loading, locked, conflict
     "transfer-confirmed",
     "transfer-failed",
   ]) {
-    assert.ok(routes.get("/wallets").states.some(({ id }) => id === state), `/wallets ${state}`);
+    assert.ok(
+      routes.get("/wallets").states.some(({ id }) => id === state),
+      `/wallets ${state}`,
+    );
   }
   for (const state of [
     "ready",
@@ -529,7 +544,10 @@ test("UI contracts freeze every /wallets and /settings loading, locked, conflict
     "okx-configured",
     "okx-invalid",
   ]) {
-    assert.ok(routes.get("/settings").states.some(({ id }) => id === state), `/settings ${state}`);
+    assert.ok(
+      routes.get("/settings").states.some(({ id }) => id === state),
+      `/settings ${state}`,
+    );
   }
   assert.equal(contract.secretInputs.repopulateAfterFailure, false);
   assert.equal(contract.secretInputs.revealControl, false);
@@ -553,7 +571,10 @@ test("transaction contract freezes idempotency, request hashes, nonce serializat
   assert.equal(contract.nonceLedger.serialKey, "chainId+walletId");
   assert.equal(contract.nonceLedger.sourceOfTruth, "transactional-database-ledger");
   assert.equal(contract.nonceLedger.queueIsSourceOfTruth, false);
-  assert.equal(contract.nonceLedger.concurrentAllocation, "serializable-single-writer-with-fencing-token");
+  assert.equal(
+    contract.nonceLedger.concurrentAllocation,
+    "serializable-single-writer-with-fencing-token",
+  );
   assert.deepEqual(contract.states, [
     "signed",
     "broadcast",
@@ -637,7 +658,11 @@ test("replacement fixture preserves same-nonce bidirectional lineage and one act
     if (transaction.replacesTxId !== null) {
       const parent = transactions.get(transaction.replacesTxId);
       assert.ok(parent, `${transaction.txId} parent`);
-      assert.equal(parent.replacedByTxId, transaction.txId, `${transaction.txId} reverse parent link`);
+      assert.equal(
+        parent.replacedByTxId,
+        transaction.txId,
+        `${transaction.txId} reverse parent link`,
+      );
       assert.ok(
         BigInt(transaction.maxFeePerGasBaseUnits) > BigInt(parent.maxFeePerGasBaseUnits),
         `${transaction.txId} fee bump`,
@@ -674,9 +699,16 @@ test("SET-06 and SET-07 freeze browser-only RPC and write-only OKX credentials",
     "debug_traceTransaction",
   ]) {
     assert.ok(contract.customRpc.methodDenylist.includes(method), `${method} denied`);
-    assert.equal(contract.customRpc.methodAllowlist.includes(method), false, `${method} not allowed`);
+    assert.equal(
+      contract.customRpc.methodAllowlist.includes(method),
+      false,
+      `${method} not allowed`,
+    );
   }
-  assert.equal(contract.customRpc.url.redaction, "scheme+host+explicit-port+redacted-path-no-query-no-userinfo");
+  assert.equal(
+    contract.customRpc.url.redaction,
+    "scheme+host+explicit-port+redacted-path-no-query-no-userinfo",
+  );
   assert.equal(contract.customRpc.timeoutMs, 8000);
   assert.deepEqual(contract.customRpc.states, [
     "unconfigured",
@@ -732,7 +764,10 @@ test("lifecycle recovery fixture covers restarts, wrong passwords, tamper, rotat
   assert.equal(scenarios.get("wrong-password").expected.error, "INVALID_CREDENTIALS");
   assert.equal(scenarios.get("ciphertext-tamper").expected.state, "quarantined");
   assert.equal(scenarios.get("kek-rewrap").expected.privateKeyPlaintextRequired, false);
-  assert.equal(scenarios.get("password-change-crash-before-commit").expected.oldEnvelopeUsable, true);
+  assert.equal(
+    scenarios.get("password-change-crash-before-commit").expected.oldEnvelopeUsable,
+    true,
+  );
   assert.equal(scenarios.get("mode-switch-crash-before-commit").expected.partialModeVisible, false);
   assert.equal(scenarios.get("delete-with-dependencies").expected.previewRequired, true);
   assert.equal(scenarios.get("disaster-restore-missing-kek").expected.failClosed, true);
@@ -855,6 +890,10 @@ test("manifest inventory and sha256sums cover every non-self-referential P04-01 
     const sha256 = digest(bytes);
     assert.equal(checksumMap.get(relativePath).sha256, sha256, `${relativePath} checksum`);
     assert.equal(manifestMap.get(relativePath).sha256, sha256, `${relativePath} manifest hash`);
-    assert.equal(manifestMap.get(relativePath).bytes, bytes.length, `${relativePath} manifest bytes`);
+    assert.equal(
+      manifestMap.get(relativePath).bytes,
+      bytes.length,
+      `${relativePath} manifest bytes`,
+    );
   }
 });
