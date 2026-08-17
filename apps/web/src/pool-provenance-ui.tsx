@@ -318,7 +318,9 @@ export function PoolCreationHistoryDialog() {
           <div className="pool-provenance-dialog-heading">
             <div>
               <Dialog.Title>创建历史</Dialog.Title>
-              <Dialog.Description>本人通过 LPXBOT 平台记录的池创建操作</Dialog.Description>
+              <Dialog.Description className="sr-only">
+                本人通过 LPXBOT 平台记录的池创建操作
+              </Dialog.Description>
             </div>
             <Dialog.Close asChild>
               <button aria-label="关闭创建历史" type="button">
@@ -477,7 +479,9 @@ export function PoolCreatorDetailsDialog({
           <div className="pool-provenance-dialog-heading">
             <div>
               <Dialog.Title>池子创建者</Dialog.Title>
-              <Dialog.Description>LPXBOT 平台记录的池创建操作用户</Dialog.Description>
+              <Dialog.Description className="sr-only">
+                LPXBOT 平台记录的池创建操作用户
+              </Dialog.Description>
             </div>
             <Dialog.Close asChild>
               <button aria-label="关闭池子创建者" type="button">

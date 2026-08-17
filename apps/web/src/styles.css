@@ -749,6 +749,38 @@ input:focus-visible,
   font-weight: 650;
 }
 
+.pool-history-trigger {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.pool-history-trigger:hover {
+  background: var(--surface-hover);
+}
+
+.pool-provenance-toolbar-state {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  padding: 0 7px;
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 32%, var(--border));
+  border-radius: 4px;
+  background: var(--danger-surface);
+  font-weight: 650;
+}
+
 .pool-blocklist-trigger:hover {
   background: var(--surface-hover);
 }
@@ -1122,6 +1154,7 @@ input:focus-visible,
   min-height: 40px;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 12px;
   color: var(--muted-foreground);
@@ -1182,7 +1215,7 @@ input:focus-visible,
 }
 
 .pools-table th.pool-column-actions {
-  width: 116px;
+  width: 150px;
 }
 
 .pools-table tbody tr + tr {
@@ -1347,6 +1380,69 @@ html[data-theme="dark"] .pool-label-chip[data-label-id="lp-inflow"] {
 .pool-row-actions button:hover {
   color: var(--text);
   background: var(--surface-hover);
+}
+
+.pool-row-actions .pool-creator-row-button {
+  position: relative;
+}
+
+.pool-creator-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--surface);
+  border-radius: 50%;
+  background: var(--muted-foreground);
+}
+
+.pool-creator-row-button[data-provenance-state="created"] {
+  color: #087f5b;
+  border-color: #8acbb7;
+  background: #eefaf6;
+}
+
+.pool-creator-row-button[data-provenance-state="created"] .pool-creator-indicator {
+  background: #087f5b;
+}
+
+.pool-creator-row-button[data-provenance-state="legacy"] {
+  color: #8b5a00;
+  border-color: #ddc285;
+  background: #fff8e7;
+}
+
+.pool-creator-row-button[data-provenance-state="legacy"] .pool-creator-indicator {
+  background: #b77900;
+}
+
+.pool-creator-row-button[data-provenance-state="error"],
+.pool-creator-row-button[data-provenance-state="malformed"] {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+  background: var(--danger-surface);
+}
+
+.pool-creator-row-button[data-provenance-state="error"] .pool-creator-indicator,
+.pool-creator-row-button[data-provenance-state="malformed"] .pool-creator-indicator {
+  background: var(--danger);
+}
+
+.pool-creator-loading {
+  animation: spin 1s linear infinite;
+}
+
+html[data-theme="dark"] .pool-creator-row-button[data-provenance-state="created"] {
+  color: #8de1c5;
+  border-color: #356a5a;
+  background: #17312a;
+}
+
+html[data-theme="dark"] .pool-creator-row-button[data-provenance-state="legacy"] {
+  color: #f0cf83;
+  border-color: #6e5a2f;
+  background: #302817;
 }
 
 .pools-table tbody > tr[tabindex="0"]:focus-visible {
