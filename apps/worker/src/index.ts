@@ -4,6 +4,7 @@ import { observabilityPackage } from "@lpbot/observability";
 
 export {
   EmptyMonitorDestinationSelector,
+  MonitorEvaluationWorker,
   candidateEvidenceDecision,
   isOutboxClaimable,
   notificationDedupeKey,
@@ -12,8 +13,14 @@ export {
 } from "./monitoring.js";
 export type {
   CanonicalMarketInputIdentity,
+  CanonicalMonitorMetricInput,
+  MonitorCandidateCommitPort,
   MonitorDestinationSelection,
   MonitorDestinationSelector,
+  MonitorEvaluationBatchResult,
+  MonitorEvaluationBlocklistSource,
+  MonitorEvaluationMonitorSource,
+  MonitorEvaluationWorkerOptions,
   NotificationOutboxState,
 } from "./monitoring.js";
 export { PostgresMonitorCandidateOutboxRepository } from "./postgres-monitor-outbox.js";

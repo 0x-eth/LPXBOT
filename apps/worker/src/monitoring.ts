@@ -1,5 +1,12 @@
 import { createHash } from "node:crypto";
 
+import {
+  evaluateMonitorSnapshot,
+  type MonitorCandidate,
+  type MonitorEvaluationDefinition,
+  type MonitorMetricSnapshot,
+} from "@lpbot/domain";
+
 export interface CanonicalMarketInputIdentity {
   generatedAt: string;
   source: "canonical-market-projection";
@@ -18,10 +25,45 @@ export interface MonitorDestinationSelection {
   channel: "telegram" | "webhook" | "local-sink";
   destinationId: string;
   destinationRevision: number;
+  payload: Record<string, unknown>;
 }
 
 export interface MonitorDestinationSelector {
   select(input: { userId: string }): Promise<MonitorDestinationSelection[]>;
+}
+
+export interface CanonicalMonitorMetricInput
+  extends MonitorMetricSnapshot, CanonicalMarketInputIdentity {}
+
+export interface MonitorEvaluationBlocklistSource {
+  get(userId: string): Promise<{
+    blocklistHash: string;
+    entries: ReadonlyArray<{ identity: string }>;
+  }>;
+}
+
+export interface MonitorEvaluationMonitorSource {
+  listEnabledForPool(poolKey: string): Promise<MonitorEvaluationDefinition[]>;
+}
+
+export interface MonitorCandidateCommitPort {
+  commitCandidate(input: {
+    candidate: MonitorCandidate;
+    destinations: MonitorDestinationSelection[];
+  }): Promise<unknown>;
+}
+
+export interface MonitorEvaluationWorkerOptions {
+  blocklists: MonitorEvaluationBlocklistSource;
+  destinations?: MonitorDestinationSelector;
+  monitors: MonitorEvaluationMonitorSource;
+  repository: MonitorCandidateCommitPort;
+}
+
+export interface MonitorEvaluationBatchResult {
+  candidates: number;
+  evaluated: number;
+  noMatches: number;
 }
 
 function byteCompare(left: string, right: string): number {
@@ -89,6 +131,54 @@ export function notificationDedupeKey(input: {
 export class EmptyMonitorDestinationSelector implements MonitorDestinationSelector {
   async select(_input: { userId: string }): Promise<MonitorDestinationSelection[]> {
     return [];
+  }
+}
+
+export class MonitorEvaluationWorker {
+  readonly #blocklists: MonitorEvaluationBlocklistSource;
+  readonly #destinations: MonitorDestinationSelector;
+  readonly #monitors: MonitorEvaluationMonitorSource;
+  readonly #repository: MonitorCandidateCommitPort;
+
+  constructor(options: MonitorEvaluationWorkerOptions) {
+    this.#blocklists = options.blocklists;
+    this.#destinations = options.destinations ?? new EmptyMonitorDestinationSelector();
+    this.#monitors = options.monitors;
+    this.#repository = options.repository;
+  }
+
+  async process(input: {
+    evaluatedAt: string;
+    inputs: readonly CanonicalMonitorMetricInput[];
+  }): Promise<MonitorEvaluationBatchResult> {
+    let candidates = 0;
+    let evaluated = 0;
+    let noMatches = 0;
+    for (const projection of orderCanonicalMarketInputs(input.inputs)) {
+      const monitors = await this.#monitors.listEnabledForPool(projection.poolKey);
+      for (const monitor of monitors) {
+        evaluated += 1;
+        const blocklist = await this.#blocklists.get(monitor.userId);
+        const { source: _source, ...snapshot } = projection;
+        const result = evaluateMonitorSnapshot({
+          evaluatedAt: input.evaluatedAt,
+          monitor,
+          snapshot: {
+            ...snapshot,
+            blockedIdentities: blocklist.entries.map(({ identity }) => identity),
+            blocklistHash: blocklist.blocklistHash,
+          },
+        });
+        if (!result.matched) {
+          noMatches += 1;
+          continue;
+        }
+        const destinations = await this.#destinations.select({ userId: monitor.userId });
+        await this.#repository.commitCandidate({ candidate: result.candidate, destinations });
+        candidates += 1;
+      }
+    }
+    return { candidates, evaluated, noMatches };
   }
 }
 

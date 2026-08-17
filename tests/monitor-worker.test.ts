@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { monitorCandidateKey } from "../packages/domain/src/monitor-evaluator.js";
 import {
   EmptyMonitorDestinationSelector,
+  MonitorEvaluationWorker,
   candidateEvidenceDecision,
   isOutboxClaimable,
   notificationDedupeKey,
@@ -123,5 +124,55 @@ describe("P03-02 canonical monitor worker rules", () => {
     expect(outboxRetryDelaySeconds("delivery-fixture-0001", 1)).toBe(delay);
     expect(outboxRetryDelaySeconds("delivery-fixture-0001", 6)).toBeGreaterThanOrEqual(3_600);
     expect(outboxRetryDelaySeconds("delivery-fixture-0001", 6)).toBeLessThanOrEqual(4_320);
+  });
+
+  it("binds the current user blocklist and writes local-sink candidates only when injected", async () => {
+    const evaluation = JSON.parse(
+      readFileSync("artifacts/acceptance/P03-01/fixtures/evaluation-cases.json", "utf8"),
+    ).input;
+    const commits: Array<{ candidate: { blocklistHash: string }; destinations: unknown[] }> = [];
+    const worker = new MonitorEvaluationWorker({
+      blocklists: {
+        get: async () => ({
+          blocklistHash: evaluation.snapshotDefaults.blocklistHash,
+          entries: [],
+        }),
+      },
+      destinations: {
+        select: async () => [
+          {
+            channel: "local-sink" as const,
+            destinationId: "local-sink-fixture-001",
+            destinationRevision: 1,
+            payload: { fixture: true },
+          },
+        ],
+      },
+      monitors: { listEnabledForPool: async () => [evaluation.monitor] },
+      repository: {
+        commitCandidate: async (input) => {
+          commits.push(input);
+          return {
+            candidateKey: input.candidate.candidateKey,
+            deliveries: [],
+            evidenceAction: "inserted" as const,
+          };
+        },
+      },
+    });
+    const projection = {
+      ...evaluation.snapshotDefaults,
+      source: "canonical-market-projection" as const,
+    };
+    const result = await worker.process({
+      evaluatedAt: evaluation.evaluatedAt,
+      inputs: [projection, structuredClone(projection)],
+    });
+    expect(result).toMatchObject({ candidates: 1, evaluated: 1, noMatches: 0 });
+    expect(commits).toHaveLength(1);
+    expect(commits[0]).toMatchObject({
+      candidate: { blocklistHash: evaluation.snapshotDefaults.blocklistHash },
+      destinations: [{ channel: "local-sink", destinationId: "local-sink-fixture-001" }],
+    });
   });
 });
