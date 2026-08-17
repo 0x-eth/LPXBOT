@@ -144,15 +144,17 @@ export class NodeHttpsWebhookTransport implements WebhookTransport {
     const url = new URL(input.url);
     return await new Promise<WebhookHttpResponse>((resolve, reject) => {
       let settled = false;
-      let connectTimer: NodeJS.Timeout | undefined;
-      let firstByteTimer: NodeJS.Timeout | undefined;
-      let tlsTimer: NodeJS.Timeout | undefined;
-      let totalTimer: NodeJS.Timeout | undefined;
+      const timers: {
+        connect?: NodeJS.Timeout;
+        firstByte?: NodeJS.Timeout;
+        tls?: NodeJS.Timeout;
+        total?: NodeJS.Timeout;
+      } = {};
       const clearTimers = () => {
-        if (connectTimer) clearTimeout(connectTimer);
-        if (firstByteTimer) clearTimeout(firstByteTimer);
-        if (tlsTimer) clearTimeout(tlsTimer);
-        if (totalTimer) clearTimeout(totalTimer);
+        if (timers.connect) clearTimeout(timers.connect);
+        if (timers.firstByte) clearTimeout(timers.firstByte);
+        if (timers.tls) clearTimeout(timers.tls);
+        if (timers.total) clearTimeout(timers.total);
       };
       const finish = (error?: WebhookTransportError, response?: WebhookHttpResponse) => {
         if (settled) return;
@@ -178,7 +180,7 @@ export class NodeHttpsWebhookTransport implements WebhookTransport {
           servername: input.servername,
         },
         (response) => {
-          if (firstByteTimer) clearTimeout(firstByteTimer);
+          if (timers.firstByte) clearTimeout(timers.firstByte);
           let bodyBytes = 0;
           response.on("data", (chunk: Buffer) => {
             bodyBytes += chunk.byteLength;
@@ -208,32 +210,32 @@ export class NodeHttpsWebhookTransport implements WebhookTransport {
         );
       };
       request.once("socket", (socket) => {
-        connectTimer = setTimeout(() => {
+        timers.connect = setTimeout(() => {
           request.destroy();
           finish(new WebhookTransportError("CONNECT_TIMEOUT"));
         }, input.timeouts.connectMilliseconds);
-        connectTimer.unref?.();
+        timers.connect.unref?.();
         socket.once("connect", () => {
-          if (connectTimer) clearTimeout(connectTimer);
-          tlsTimer = setTimeout(() => {
+          if (timers.connect) clearTimeout(timers.connect);
+          timers.tls = setTimeout(() => {
             request.destroy();
             finish(new WebhookTransportError("TLS_TIMEOUT"));
           }, input.timeouts.tlsMilliseconds);
-          tlsTimer.unref?.();
+          timers.tls.unref?.();
         });
         const tlsSocket = socket as TLSSocket;
         tlsSocket.once("secureConnect", () => {
-          if (tlsTimer) clearTimeout(tlsTimer);
+          if (timers.tls) clearTimeout(timers.tls);
           if (!tlsSocket.authorized) {
             request.destroy();
             finish(new WebhookTransportError("TLS_CERTIFICATE_INVALID"));
             return;
           }
-          firstByteTimer = setTimeout(() => {
+          timers.firstByte = setTimeout(() => {
             request.destroy();
             finish(new WebhookTransportError("FIRST_BYTE_TIMEOUT"));
           }, input.timeouts.firstByteMilliseconds);
-          firstByteTimer.unref?.();
+          timers.firstByte.unref?.();
         });
       });
       request.once("error", (error) => finish(webhookNetworkError(error)));
@@ -242,11 +244,11 @@ export class NodeHttpsWebhookTransport implements WebhookTransport {
         return;
       }
       input.signal.addEventListener("abort", abort, { once: true });
-      totalTimer = setTimeout(() => {
+      timers.total = setTimeout(() => {
         request.destroy();
         finish(new WebhookTransportError("TOTAL_TIMEOUT"));
       }, input.timeouts.totalMilliseconds);
-      totalTimer.unref?.();
+      timers.total.unref?.();
       request.end(input.body);
     });
   }

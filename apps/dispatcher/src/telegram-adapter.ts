@@ -56,13 +56,15 @@ export class NodeTelegramTransport implements TelegramTransport {
       let settled = false;
       const chunks: Buffer[] = [];
       let bytes = 0;
-      let firstByteTimer: NodeJS.Timeout | undefined;
-      let totalTimer: NodeJS.Timeout | undefined;
+      const timers: {
+        firstByte?: NodeJS.Timeout;
+        total?: NodeJS.Timeout;
+      } = {};
       const finish = (error?: TelegramTransportError, response?: TelegramTransportResponse) => {
         if (settled) return;
         settled = true;
-        if (totalTimer) clearTimeout(totalTimer);
-        if (firstByteTimer) clearTimeout(firstByteTimer);
+        if (timers.total) clearTimeout(timers.total);
+        if (timers.firstByte) clearTimeout(timers.firstByte);
         input.signal.removeEventListener("abort", abort);
         if (error) reject(error);
         else resolve(response!);
@@ -83,7 +85,7 @@ export class NodeTelegramTransport implements TelegramTransport {
           servername: "api.telegram.org",
         },
         (response) => {
-          clearTimeout(firstByteTimer);
+          if (timers.firstByte) clearTimeout(timers.firstByte);
           response.on("data", (chunk: Buffer) => {
             bytes += chunk.byteLength;
             if (bytes > 65_536) {
@@ -117,16 +119,16 @@ export class NodeTelegramTransport implements TelegramTransport {
         return;
       }
       input.signal.addEventListener("abort", abort, { once: true });
-      firstByteTimer = setTimeout(() => {
+      timers.firstByte = setTimeout(() => {
         request.destroy();
         finish(new TelegramTransportError("TELEGRAM_FIRST_BYTE_TIMEOUT"));
       }, 5_000);
-      firstByteTimer.unref?.();
-      totalTimer = setTimeout(() => {
+      timers.firstByte.unref?.();
+      timers.total = setTimeout(() => {
         request.destroy();
         finish(new TelegramTransportError("TELEGRAM_TOTAL_TIMEOUT"));
       }, 10_000);
-      totalTimer.unref?.();
+      timers.total.unref?.();
       request.end(body);
     });
   }
