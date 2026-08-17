@@ -71,7 +71,8 @@ describe("P03-03 frozen notification rendering and signing", () => {
             renderedQuery: renderGetWebhook(compiled, values).query,
           });
         } else if (fixtureCase.method === "POST") {
-          const expandedBodyBytes = fixtureCase.id === "oversize-expanded-body" ? 65_537 : undefined;
+          const expandedBodyBytes =
+            fixtureCase.id === "oversize-expanded-body" ? 65_537 : undefined;
           const renderValues =
             expandedBodyBytes === undefined
               ? values
@@ -133,7 +134,11 @@ describe("P03-03 frozen notification rendering and signing", () => {
     expect(renderGetWebhook(get, { "condition.summary": "x".repeat(4_089) }).urlBytes).toBe(4_095);
     expectTemplateError(
       () =>
-        renderGetWebhook(get, { "condition.summary": "x".repeat(4_090) }, { baseUrl: "https://x/" }),
+        renderGetWebhook(
+          get,
+          { "condition.summary": "x".repeat(4_090) },
+          { baseUrl: "https://x/" },
+        ),
       "URL_TOO_LARGE",
     );
     expect(renderGetWebhook(get, { "condition.summary": "ok" }).body).toBe("");
@@ -149,9 +154,9 @@ describe("P03-03 frozen notification rendering and signing", () => {
     );
 
     const telegram = compileNotificationTemplate("TELEGRAM", "{{condition.summary}}");
-    expect(renderTelegramMessage(telegram, { "condition.summary": "x".repeat(4_096) }).codePoints).toBe(
-      4_096,
-    );
+    expect(
+      renderTelegramMessage(telegram, { "condition.summary": "x".repeat(4_096) }).codePoints,
+    ).toBe(4_096);
     expectTemplateError(
       () => renderTelegramMessage(telegram, { "condition.summary": "x".repeat(4_097) }),
       "TELEGRAM_MESSAGE_TOO_LARGE",

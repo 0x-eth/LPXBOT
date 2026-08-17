@@ -59,8 +59,7 @@ export type NotificationDestinationMutationResult =
   | { status: "unchanged" | "updated"; value: NotificationDestination };
 
 export type NotificationDestinationDeleteResult =
-  | { status: "conflict"; current: NotificationDestination }
-  | { status: "deleted" | "not-found" };
+  { status: "conflict"; current: NotificationDestination } | { status: "deleted" | "not-found" };
 
 export interface NotificationConfigurationStore {
   createDestination(input: {
@@ -378,18 +377,18 @@ type StoredDestination = StoredDestinationBase &
   (
     | {
         config: {
-        secretRef: string | null;
-        telegramIdentityId: string;
-        template: string;
+          secretRef: string | null;
+          telegramIdentityId: string;
+          template: string;
         };
         type: "telegram";
       }
     | {
         config: {
-        method: "GET" | "POST";
-        secretRef: string | null;
-        template: unknown;
-        url: string;
+          method: "GET" | "POST";
+          secretRef: string | null;
+          template: unknown;
+          url: string;
         };
         type: "webhook";
       }
@@ -607,8 +606,7 @@ export class MemoryNotificationConfigurationStore implements NotificationConfigu
         categories: input.patch.changes.categories ?? current.categories,
         config: {
           ...(secretValue === undefined ? {} : { botToken: secretValue }),
-          telegramIdentityId:
-            configChanges.telegramIdentityId ?? current.config.telegramIdentityId,
+          telegramIdentityId: configChanges.telegramIdentityId ?? current.config.telegramIdentityId,
           template: configChanges.template ?? current.config.template,
         },
         enabled: input.patch.changes.enabled ?? current.enabled,
@@ -673,7 +671,10 @@ export class MemoryNotificationConfigurationStore implements NotificationConfigu
         ),
       ),
     };
-    if (secretValue === undefined && stableJson(comparableDraft) === stableJson(comparableCurrent)) {
+    if (
+      secretValue === undefined &&
+      stableJson(comparableDraft) === stableJson(comparableCurrent)
+    ) {
       return { status: "unchanged", value: currentPublic };
     }
     let secretRef = current.config.secretRef;

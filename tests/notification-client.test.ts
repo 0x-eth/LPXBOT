@@ -145,7 +145,9 @@ describe("P03-03 notification browser client", () => {
         JSON.stringify({
           data: {
             ...destination,
-            ...(init?.method === "PATCH" ? { enabled: false, name: "Paused webhook", revision: 3 } : {}),
+            ...(init?.method === "PATCH"
+              ? { enabled: false, name: "Paused webhook", revision: 3 }
+              : {}),
           },
           requestId: "p03-03-client-write",
           success: true,

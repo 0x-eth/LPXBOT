@@ -48,7 +48,8 @@ interface GetTemplatePart {
   value: string;
 }
 
-type JsonTemplate = null | boolean | number | string | JsonTemplate[] | { [key: string]: JsonTemplate };
+type JsonTemplate =
+  null | boolean | number | string | JsonTemplate[] | { [key: string]: JsonTemplate };
 
 export type CompiledNotificationTemplate =
   | { method: "GET"; parts: readonly GetTemplatePart[]; source: string }
@@ -178,8 +179,9 @@ function substitute(
 }
 
 function rfc3986Encode(value: string): string {
-  return encodeURIComponent(value).replace(/[!'()*]/gu, (character) =>
-    `%${character.codePointAt(0)!.toString(16).toUpperCase()}`,
+  return encodeURIComponent(value).replace(
+    /[!'()*]/gu,
+    (character) => `%${character.codePointAt(0)!.toString(16).toUpperCase()}`,
   );
 }
 
@@ -193,8 +195,7 @@ export function renderGetWebhook(
     .map(({ name, value }) => `${name}=${rfc3986Encode(substitute(value, values))}`)
     .join("&");
   const baseUrl = options.baseUrl ?? "";
-  const url =
-    baseUrl === "" ? query : `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}${query}`;
+  const url = baseUrl === "" ? query : `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}${query}`;
   const urlBytes = utf8Bytes(url);
   if (urlBytes > 4_096) throw new NotificationTemplateError("URL_TOO_LARGE");
   return { body: "", query, url, urlBytes };
@@ -256,6 +257,8 @@ export function buildWebhookSignature(input: {
     input.pathAndQuery,
     bodySha256,
   ].join("\n");
-  const digest = createHmac("sha256", input.fixtureKey).update(canonicalInput, "utf8").digest("hex");
+  const digest = createHmac("sha256", input.fixtureKey)
+    .update(canonicalInput, "utf8")
+    .digest("hex");
   return { bodySha256, canonicalInput, value: `v1=${digest}` };
 }

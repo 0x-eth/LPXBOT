@@ -55,7 +55,11 @@ function parseCategories(value: unknown): NotificationDestination["categories"] 
     return null;
   }
   const selected = new Set(value);
-  if (!notificationCategories.filter((category) => selected.has(category)).every((v, i) => v === value[i])) {
+  if (
+    !notificationCategories
+      .filter((category) => selected.has(category))
+      .every((v, i) => v === value[i])
+  ) {
     return null;
   }
   return value as NotificationDestination["categories"];
@@ -70,10 +74,7 @@ function validSecretState(config: Record<string, unknown>): boolean {
   );
 }
 
-export function parseNotificationPreferences(
-  value: unknown,
-  status = 0,
-): NotificationPreferences {
+export function parseNotificationPreferences(value: unknown, status = 0): NotificationPreferences {
   if (
     !isRecord(value) ||
     !exactKeys(value, ["categories", "revision", "updatedAt"]) ||
@@ -106,10 +107,7 @@ export function parseNotificationDestinationOptions(
   return { telegramIdentityId: value.telegramIdentityId } as NotificationDestinationOptions;
 }
 
-export function parseNotificationDestination(
-  value: unknown,
-  status = 0,
-): NotificationDestination {
+export function parseNotificationDestination(value: unknown, status = 0): NotificationDestination {
   if (
     !isRecord(value) ||
     !exactKeys(value, [
@@ -144,12 +142,7 @@ export function parseNotificationDestination(
   const config = value.config;
   if (value.type === "telegram") {
     if (
-      !exactKeys(config, [
-        "secretConfigured",
-        "secretRef",
-        "telegramIdentityId",
-        "template",
-      ]) ||
+      !exactKeys(config, ["secretConfigured", "secretRef", "telegramIdentityId", "template"]) ||
       !validSecretState(config) ||
       typeof config.telegramIdentityId !== "string" ||
       !telegramIdentityPattern.test(config.telegramIdentityId) ||
@@ -179,8 +172,12 @@ function parseNotificationDestinations(value: unknown, status: number): Notifica
   if (!Array.isArray(value)) {
     throw new NotificationRequestError("NOTIFICATION_RESPONSE_INVALID", true, status);
   }
-  const destinations = value.map((destination) => parseNotificationDestination(destination, status));
-  if (new Set(destinations.map(({ destinationId }) => destinationId)).size !== destinations.length) {
+  const destinations = value.map((destination) =>
+    parseNotificationDestination(destination, status),
+  );
+  if (
+    new Set(destinations.map(({ destinationId }) => destinationId)).size !== destinations.length
+  ) {
     throw new NotificationRequestError("NOTIFICATION_RESPONSE_INVALID", true, status);
   }
   return destinations;

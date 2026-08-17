@@ -417,7 +417,8 @@ describe("P03-03 PostgreSQL notification configuration", () => {
 
   it("dedupes concurrent Outbox writes, snapshots revision, and never backfills old candidates", async () => {
     const monitorStore = new PostgresMonitorStore(pool);
-    const monitor = (await monitorStore.list(userA, { cursor: null, enabled: true, limit: 10 })).items[0]!;
+    const monitor = (await monitorStore.list(userA, { cursor: null, enabled: true, limit: 10 }))
+      .items[0]!;
     const definition = monitor as MonitorEvaluationDefinition;
     const firstCandidate = candidate(definition);
     const selector = new PostgresMonitorDestinationSelector(pool);

@@ -239,9 +239,7 @@ async function notificationRoute(route: Route, state: NotificationRouteState): P
               method: body.config.method,
               secretConfigured: body.config.signingSecret !== undefined,
               secretRef:
-                body.config.signingSecret === undefined
-                  ? null
-                  : "secretref://notification/e2e-1",
+                body.config.signingSecret === undefined ? null : "secretref://notification/e2e-1",
               template: body.config.template,
               url: body.config.url,
             },
@@ -469,7 +467,9 @@ test("MON-04 and NOTIFY-01/02 manage preferences and a local-sink Webhook withou
   await expect(row).toContainText("已配置签名");
   await expect(page.getByText("fixture-signing-secret-material-0001")).toHaveCount(0);
   await row.getByRole("switch", { name: "停用目的地 Operations webhook" }).click();
-  await expect(row.getByRole("switch", { name: "启用目的地 Operations webhook" })).not.toBeChecked();
+  await expect(
+    row.getByRole("switch", { name: "启用目的地 Operations webhook" }),
+  ).not.toBeChecked();
   await expectAccessibleAndContained(page);
   if (captureP0303Evidence) {
     const screenshot = await page.screenshot({
@@ -588,7 +588,11 @@ test("MON-04 binds owned destinations per monitor and persists destinationIds on
         updatedAt: timestamp,
         userId,
       };
-      await route.fulfill({ contentType: "application/json", json: envelope(monitor), status: 201 });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope(monitor),
+        status: 201,
+      });
       return;
     }
     if (request.method() === "PATCH" && monitor) {

@@ -2817,70 +2817,64 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       );
     });
 
-    app.post(
-      "/api/notification-destinations",
-      { bodyLimit: 65_536 },
-      async (request, reply) => {
-        reply.header("Cache-Control", "no-store");
-        const session = await authenticateSessionRequest(request, reply);
-        if (!session) return reply;
-        if (!options.notificationStore) return sendNotificationUnavailable(request, reply);
-        let draft;
-        let idempotencyKey;
-        try {
-          draft = parseDestinationDraft(request.body);
-          idempotencyKey = parseNotificationIdempotencyKey(
-            request.headers["idempotency-key"],
-          );
-        } catch (error) {
-          if (!(error instanceof NotificationValidationError)) throw error;
-          return sendNotificationValidation(error, request, reply);
-        }
-        const result = await options.notificationStore.createDestination({
-          createdAt: now(),
-          draft,
-          idempotencyKey,
-          userId: session.userId,
-        });
-        if (result.status === "idempotency-conflict") {
-          return reply.code(409).send(
-            createErrorEnvelope({
-              code: "IDEMPOTENCY_CONFLICT",
-              message: "The idempotency key was already used with another destination",
-              requestId: request.id,
-              retryable: false,
-            }),
-          );
-        }
-        if (result.status === "capacity") {
-          return reply.code(422).send(
-            createErrorEnvelope({
-              code: "LIMIT_EXCEEDED",
-              message: "The notification destination limit was reached",
-              requestId: request.id,
-              retryable: false,
-            }),
-          );
-        }
-        if (result.status === "invalid") {
-          return reply.code(400).send(
-            createErrorEnvelope({
-              code: "INVALID_DESTINATION",
-              message: "The notification destination is invalid",
-              requestId: request.id,
-              retryable: false,
-            }),
-          );
-        }
-        if (result.status === "service-unavailable") {
-          return sendNotificationUnavailable(request, reply);
-        }
-        if ("value" in result) {
-          return reply.code(201).send(createSuccessEnvelope(result.value, request.id));
-        }
-        throw new Error("Unknown notification destination create result");
-      },
-    );
+    app.post("/api/notification-destinations", { bodyLimit: 65_536 }, async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.notificationStore) return sendNotificationUnavailable(request, reply);
+      let draft;
+      let idempotencyKey;
+      try {
+        draft = parseDestinationDraft(request.body);
+        idempotencyKey = parseNotificationIdempotencyKey(request.headers["idempotency-key"]);
+      } catch (error) {
+        if (!(error instanceof NotificationValidationError)) throw error;
+        return sendNotificationValidation(error, request, reply);
+      }
+      const result = await options.notificationStore.createDestination({
+        createdAt: now(),
+        draft,
+        idempotencyKey,
+        userId: session.userId,
+      });
+      if (result.status === "idempotency-conflict") {
+        return reply.code(409).send(
+          createErrorEnvelope({
+            code: "IDEMPOTENCY_CONFLICT",
+            message: "The idempotency key was already used with another destination",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (result.status === "capacity") {
+        return reply.code(422).send(
+          createErrorEnvelope({
+            code: "LIMIT_EXCEEDED",
+            message: "The notification destination limit was reached",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (result.status === "invalid") {
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "INVALID_DESTINATION",
+            message: "The notification destination is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (result.status === "service-unavailable") {
+        return sendNotificationUnavailable(request, reply);
+      }
+      if ("value" in result) {
+        return reply.code(201).send(createSuccessEnvelope(result.value, request.id));
+      }
+      throw new Error("Unknown notification destination create result");
+    });
 
     app.post(
       "/api/notification-destinations/test",

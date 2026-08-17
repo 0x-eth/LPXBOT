@@ -26,7 +26,9 @@ describe("P03-03 notification configuration migration", () => {
     expect(sql).toMatch(/secret_ref text/iu);
     expect(sql).toMatch(/FOREIGN KEY \(destination_id, user_id\)/u);
     expect(sql).toMatch(/FOREIGN KEY \(monitor_id, user_id\)/u);
-    expect(sql).not.toMatch(/(?:bot_token|hmac_secret|signing_secret|telegram_token)\s+(?:text|bytea)/iu);
+    expect(sql).not.toMatch(
+      /(?:bot_token|hmac_secret|signing_secret|telegram_token)\s+(?:text|bytea)/iu,
+    );
     expect(sql).not.toMatch(/ALTER TABLE notification_outbox/iu);
   });
 

@@ -522,8 +522,7 @@ function MonitorEditor({
                               destinationIds: event.target.checked
                                 ? [...draft.destinationIds, destination.destinationId]
                                 : draft.destinationIds.filter(
-                                    (destinationId) =>
-                                      destinationId !== destination.destinationId,
+                                    (destinationId) => destinationId !== destination.destinationId,
                                   ),
                             }))
                           }
@@ -612,9 +611,9 @@ export function MonitorsPage() {
   const navigate = useNavigate();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editor, setEditor] = useState<EditorState | null>(null);
-  const [destinationLoadState, setDestinationLoadState] = useState<
-    "error" | "loading" | "ready"
-  >("loading");
+  const [destinationLoadState, setDestinationLoadState] = useState<"error" | "loading" | "ready">(
+    "loading",
+  );
   const [destinations, setDestinations] = useState<NotificationDestination[]>([]);
   const [loadState, setLoadState] = useState<MonitorLoadState>("loading");
   const [page, setPage] = useState<MonitorPage | null>(null);

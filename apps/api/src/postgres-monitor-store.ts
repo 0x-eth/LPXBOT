@@ -480,7 +480,9 @@ export class PostgresMonitorStore implements MonitorStore {
           AND NOT version.tombstone`,
       [userId, destinationIds],
     );
-    return safeInteger(result.rows[0]?.count ?? "0", "owned destination count") === destinationIds.length;
+    return (
+      safeInteger(result.rows[0]?.count ?? "0", "owned destination count") === destinationIds.length
+    );
   }
 
   async #replaceBindings(

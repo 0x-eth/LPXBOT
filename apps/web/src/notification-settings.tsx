@@ -21,14 +21,7 @@ import {
   Webhook,
   X,
 } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { ConfirmDialog, useFeedback } from "./feedback.js";
 import { NotificationClient, NotificationRequestError } from "./notification-client.js";
@@ -65,7 +58,9 @@ type DestinationEditorState =
       result: LocalSinkTestResult | null;
     };
 
-const categoryLabels: Readonly<Record<NotificationCategory, { description: string; label: string }>> = {
+const categoryLabels: Readonly<
+  Record<NotificationCategory, { description: string; label: string }>
+> = {
   "feedback-replied": { description: "反馈收到回复时通知", label: "反馈回复" },
   "monitor-match": { description: "监控条件全部匹配时通知", label: "监控匹配" },
   "operation-failed": { description: "任务操作失败时通知", label: "操作失败" },
@@ -111,8 +106,7 @@ function jsonTemplateValid(value: unknown): boolean {
   if (Array.isArray(value)) return value.every(jsonTemplateValid);
   if (typeof value !== "object") return false;
   return Object.entries(value).every(
-    ([key, child]) =>
-      !key.includes("{{") && !key.includes("}}") && jsonTemplateValid(child),
+    ([key, child]) => !key.includes("{{") && !key.includes("}}") && jsonTemplateValid(child),
   );
 }
 
@@ -140,7 +134,10 @@ function templateIssue(draft: DestinationEditorDraft): string | null {
   }
   try {
     const value = JSON.parse(draft.template) as unknown;
-    return value !== null && typeof value === "object" && !Array.isArray(value) && jsonTemplateValid(value)
+    return value !== null &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      jsonTemplateValid(value)
       ? null
       : "POST JSON 模板无效";
   } catch {
@@ -343,7 +340,13 @@ function DestinationEditor({
 }) {
   const nameRef = useRef<HTMLInputElement>(null);
   const updateDraft = (changes: Partial<DestinationEditorDraft>) =>
-    onChange({ ...editor, conflict: false, draft: { ...editor.draft, ...changes }, errorCode: null, result: null });
+    onChange({
+      ...editor,
+      conflict: false,
+      draft: { ...editor.draft, ...changes },
+      errorCode: null,
+      result: null,
+    });
   const issue = templateIssue(editor.draft);
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -496,7 +499,9 @@ function DestinationEditor({
                       value={editor.draft.telegramIdentityId}
                     >
                       {options.telegramIdentityId ? (
-                        <option value={options.telegramIdentityId}>{options.telegramIdentityId}</option>
+                        <option value={options.telegramIdentityId}>
+                          {options.telegramIdentityId}
+                        </option>
                       ) : (
                         <option value="">未绑定</option>
                       )}
@@ -508,7 +513,9 @@ function DestinationEditor({
                       autoComplete="new-password"
                       disabled={busy}
                       onChange={(event) => updateDraft({ token: event.target.value })}
-                      placeholder={editor.mode === "edit" ? "留空以保留现有 token" : "输入 Bot token"}
+                      placeholder={
+                        editor.mode === "edit" ? "留空以保留现有 token" : "输入 Bot token"
+                      }
                       type="password"
                       value={editor.draft.token}
                     />
@@ -518,7 +525,11 @@ function DestinationEditor({
                 <>
                   <div className="destination-field">
                     <span>请求方法</span>
-                    <div aria-label="Webhook 方法" className="destination-segmented" role="radiogroup">
+                    <div
+                      aria-label="Webhook 方法"
+                      className="destination-segmented"
+                      role="radiogroup"
+                    >
                       {(["GET", "POST"] as const).map((method) => (
                         <button
                           aria-checked={editor.draft.method === method}
@@ -559,7 +570,9 @@ function DestinationEditor({
                       autoComplete="new-password"
                       disabled={busy}
                       onChange={(event) => updateDraft({ secret: event.target.value })}
-                      placeholder={editor.mode === "edit" ? "留空以保留现有密钥" : "可选，至少 32 字节"}
+                      placeholder={
+                        editor.mode === "edit" ? "留空以保留现有密钥" : "可选，至少 32 字节"
+                      }
                       type="password"
                       value={editor.draft.secret}
                     />
@@ -568,7 +581,11 @@ function DestinationEditor({
               )}
 
               <label className="destination-field destination-template-field">
-                <span>{editor.draft.method === "GET" && editor.draft.type === "webhook" ? "查询模板" : "请求模板"}</span>
+                <span>
+                  {editor.draft.method === "GET" && editor.draft.type === "webhook"
+                    ? "查询模板"
+                    : "请求模板"}
+                </span>
                 <textarea
                   aria-describedby={issue ? "destination-template-error" : undefined}
                   aria-invalid={issue ? "true" : undefined}
@@ -683,7 +700,10 @@ export function NotificationSettings() {
     if (!preferences || busy) return;
     const previous = preferences;
     setBusy(true);
-    setPreferences({ ...preferences, categories: { ...preferences.categories, [category]: enabled } });
+    setPreferences({
+      ...preferences,
+      categories: { ...preferences.categories, [category]: enabled },
+    });
     setStatusMessage("正在保存通知设置");
     try {
       const next = await client.patchPreferences({
@@ -942,7 +962,9 @@ export function NotificationSettings() {
                 </div>
                 <p title={destinationSummary(destination)}>{destinationSummary(destination)}</p>
                 <small>
-                  {destination.categories.map((category) => categoryLabels[category].label).join(" · ")}
+                  {destination.categories
+                    .map((category) => categoryLabels[category].label)
+                    .join(" · ")}
                   {destination.config.secretConfigured
                     ? destination.type === "webhook"
                       ? " · 已配置签名"

@@ -1,11 +1,11 @@
 import type { NotificationCategory } from "@lpbot/api-contract";
-import type { MonitorCandidate, MonitorEvaluationDefinition } from "@lpbot/domain/monitor-evaluator";
+import type {
+  MonitorCandidate,
+  MonitorEvaluationDefinition,
+} from "@lpbot/domain/monitor-evaluator";
 import type { Pool, QueryResultRow } from "pg";
 
-import type {
-  MonitorDestinationSelection,
-  MonitorDestinationSelector,
-} from "./monitoring.js";
+import type { MonitorDestinationSelection, MonitorDestinationSelector } from "./monitoring.js";
 
 interface DestinationSelectionRow extends QueryResultRow {
   destination_id: string;

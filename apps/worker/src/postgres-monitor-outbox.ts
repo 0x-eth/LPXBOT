@@ -258,7 +258,9 @@ export class PostgresMonitorCandidateOutboxRepository {
           deliveries.push(await this.#upsertDelivery(client, input.candidate, destination));
         }
       } else if (evidenceAction !== "suppressed" && evidenceAction !== "deferred") {
-        deliveries.push(...(await this.#deliveriesForCandidate(client, input.candidate.candidateKey)));
+        deliveries.push(
+          ...(await this.#deliveriesForCandidate(client, input.candidate.candidateKey)),
+        );
       }
       await this.#advanceWatermark(client, input.candidate);
       await client.query("COMMIT");

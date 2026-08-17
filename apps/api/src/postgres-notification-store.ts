@@ -530,12 +530,7 @@ export class PostgresNotificationConfigurationStore implements NotificationConfi
         [input.destinationId, input.userId, nextRevision, input.updatedAt],
       );
       await client.query("COMMIT");
-      const updated = await this.#getCurrent(
-        this.#pool,
-        input.userId,
-        input.destinationId,
-        false,
-      );
+      const updated = await this.#getCurrent(this.#pool, input.userId, input.destinationId, false);
       if (!updated) throw new Error("Updated destination was not found");
       return { status: "updated", value: updated };
     } catch {
