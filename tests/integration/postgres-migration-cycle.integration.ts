@@ -101,6 +101,8 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "telegram_bot_login_intents",
       "telegram_identities",
       "telegram_init_data_replays",
+      "user_pool_blocklist_entries",
+      "user_pool_blocklist_state",
       "user_preferences",
       "users",
     ]);
@@ -147,6 +149,8 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "telegram_bot_login_intents",
       "telegram_identities",
       "telegram_init_data_replays",
+      "user_pool_blocklist_entries",
+      "user_pool_blocklist_state",
       "user_preferences",
       "users",
     ]);

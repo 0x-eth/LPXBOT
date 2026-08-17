@@ -20,6 +20,8 @@ export { PostgresSessionStore } from "./postgres-session-store.js";
 export { PostgresChainAccessPolicyStore } from "./postgres-chain-access-policy-store.js";
 export { PostgresUserPreferencesStore } from "./postgres-user-preferences-store.js";
 export { PostgresAddressRemarkStore } from "./postgres-address-remark-store.js";
+export { PostgresPoolBlocklistStore } from "./postgres-pool-blocklist-store.js";
+export type { PostgresPoolBlocklistStoreOptions } from "./postgres-pool-blocklist-store.js";
 export {
   canonicalPoolBlocklistEntry,
   createPoolBlocklistSnapshot,
