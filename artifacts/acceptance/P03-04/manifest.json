@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P03-04",
+  "phase": "P03",
+  "risk": "R2",
+  "status": "accepted-with-gaps",
+  "featureIds": ["MON-05", "MON-06"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "pnpm exec vitest run P03 Dispatcher, Webhook, Telegram, secret, history, client, and notification regression tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-04/E-REC.md"
+    },
+    {
+      "id": "T-API",
+      "command": "pnpm exec vitest run tests/notification-history-api.test.ts tests/notification-history-client.test.ts",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-04/E-API.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "pnpm test:postgres with Outbox recovery, selector, and notification history transitions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-04/E-REC.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm test:postgres complete PostgreSQL migration up/down/up cycle",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-04/E-DATA.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "pnpm exec playwright test tests/e2e/p03-04-notification-history.spec.ts --workers=1",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-04/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile screenshots, responsive layout, keyboard, focus, overflow, and axe assertions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-04/E-VIS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "Gitleaks full-history scan and pnpm audit:dependencies",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P03-04/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P03-04/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P03-04/E-DATA.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P03-04/E-OPS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P03-04/E-RBAC.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P03-04/E-REC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P03-04/E-SEC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P03-04/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P03-04/E-VIS.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only; MON-05 and MON-06 remain implemented-assumed.",
+    "All notification acceptance uses injected DNS, HTTP, TLS, and Telegram fixtures with zero real DNS, HTTP, TLS, or Telegram calls.",
+    "active TVL, Fee/aTVL, target UI parity, live Telegram/Webhook delivery, and delivery SLO remain unresolved.",
+    "Production notification history retention remains an unresolved operations policy; this phase performs no automatic history cleanup."
+  ],
+  "completedAt": "2026-08-17T19:02:20.000Z",
+  "commit": "16d0c0394383e0ed0ba72e740944219949922031"
+}
