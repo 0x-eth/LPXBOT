@@ -29,6 +29,10 @@ const P02_10_ROOT = path.join(ROOT, "artifacts/acceptance/P02-10");
 const P02_10_MANIFEST_PATH = path.join(P02_10_ROOT, "manifest.json");
 const P02_10_CONTRACT_PATH = path.join(P02_10_ROOT, "candle-tick-contract.json");
 const P02_10_PRIOR_CHECKSUMS_PATH = path.join(P02_10_ROOT, "prior-acceptance-sha256s.txt");
+const P02_11_ROOT = path.join(ROOT, "artifacts/acceptance/P02-11");
+const P02_11_MANIFEST_PATH = path.join(P02_11_ROOT, "manifest.json");
+const P02_11_CONTRACT_PATH = path.join(P02_11_ROOT, "blocklist-action-contract.json");
+const P02_11_PRIOR_CHECKSUMS_PATH = path.join(P02_11_ROOT, "prior-acceptance-sha256s.txt");
 const RUNTIME_LABEL_CONTRACT_PATH = path.join(
   ROOT,
   "packages/market-metrics/src/label-rule-contract.json",
@@ -48,6 +52,7 @@ const P02_07_FEATURE_IDS = ["POOL-05", "POOL-06", "POOL-11"];
 const P02_08_FEATURE_IDS = ["POOL-07"];
 const P02_09_FEATURE_IDS = ["STATS-02"];
 const P02_10_FEATURE_IDS = ["POOL-12"];
+const P02_11_FEATURE_IDS = ["POOL-13", "POOL-14"];
 const IMPLEMENTED_FEATURE_IDS = [
   ...P02_02_FEATURE_IDS,
   ...P02_04_FEATURE_IDS,
@@ -57,6 +62,7 @@ const IMPLEMENTED_FEATURE_IDS = [
   ...P02_08_FEATURE_IDS,
   ...P02_09_FEATURE_IDS,
   ...P02_10_FEATURE_IDS,
+  ...P02_11_FEATURE_IDS,
 ];
 const REQUIRED_EVIDENCE_IDS = [
   "E-DATA",
@@ -139,7 +145,7 @@ async function acceptanceFiles(directory, prefix = "") {
   return files.sort();
 }
 
-test("P02 status table keeps exactly nineteen fixture-verified features implemented", async () => {
+test("P02 status table keeps exactly twenty-one fixture-verified features implemented", async () => {
   const markdown = await readFile(TRACEABILITY_PATH, "utf8");
   const rows = p02StatusRows(markdown);
   assert.deepEqual(sorted(rows.keys()), sorted(EXPECTED_FEATURE_IDS));
@@ -164,9 +170,185 @@ test("P02 status table keeps exactly nineteen fixture-verified features implemen
   }
 
   assert.deepEqual(sorted(implemented), sorted(IMPLEMENTED_FEATURE_IDS));
-  assert.equal(planned.length, 4);
-  assert.match(markdown, /`implemented-assumed`\s*\|\s*37\s*\|/);
-  assert.match(markdown, /(?:其余|remaining)\s*`planned`\s*\|\s*159\s*\|/i);
+  assert.equal(planned.length, 2);
+  assert.match(markdown, /当前产品实现\s*\|\s*39\s*\|/);
+  assert.match(markdown, /`implemented-assumed`\s*\|\s*39\s*\|/);
+  assert.match(markdown, /(?:其余|remaining)\s*`planned`\s*\|\s*157\s*\|/i);
+});
+
+test("P02-11 owns only POOL-13/14 and freezes blocklist plus action intent semantics", async () => {
+  const [manifest, functionMatrix, traceabilityMarkdown, contract] = await Promise.all([
+    readFile(P02_11_MANIFEST_PATH, "utf8").then(JSON.parse),
+    readFile(FUNCTION_MATRIX_PATH, "utf8"),
+    readFile(TRACEABILITY_PATH, "utf8"),
+    readFile(P02_11_CONTRACT_PATH, "utf8").then(JSON.parse),
+  ]);
+
+  assert.equal(manifest.workItemId, "P02-11");
+  assert.equal(manifest.phase, "P02");
+  assert.equal(manifest.risk, "R1");
+  assert.equal(manifest.status, "accepted-with-gaps");
+  assert.deepEqual(manifest.featureIds, P02_11_FEATURE_IDS);
+  assert.match(manifest.completedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u);
+  assert.match(manifest.commit, /^[0-9a-f]{40}$/u);
+
+  const markedFunctionIds = functionMatrix
+    .split("\n")
+    .filter((line) => line.includes("`implemented-assumed`（P02-11"))
+    .map((line) => line.split("|")[1]?.trim())
+    .filter((id) => EXPECTED_FEATURE_IDS.includes(id));
+  assert.deepEqual(markedFunctionIds, P02_11_FEATURE_IDS);
+
+  const traceability = traceabilityRows(traceabilityMarkdown);
+  const manifestTests = new Set(manifest.tests.map(({ id }) => id));
+  const manifestEvidence = new Set(manifest.evidence.map(({ id }) => id));
+  for (const featureId of P02_11_FEATURE_IDS) {
+    const minimums = traceability.get(featureId);
+    assert.ok(minimums, `${featureId} is missing from TRACEABILITY_MATRIX`);
+    for (const testId of minimums.tests) assert.ok(manifestTests.has(testId), `missing ${testId}`);
+    for (const evidenceId of minimums.evidence)
+      assert.ok(manifestEvidence.has(evidenceId), `missing ${evidenceId}`);
+  }
+  assert.deepEqual(
+    sorted(manifest.evidence.map(({ id }) => id)),
+    sorted(["E-API", "E-DATA", "E-SSE", "E-REC", "E-UI", "E-VIS", "E-RBAC", "E-SEC"]),
+  );
+  for (const evidence of manifest.evidence) {
+    await access(assertRepositoryPath(evidence.path, evidence.id));
+  }
+
+  assert.equal(contract.contractVersion, "pool-blocklist-actions/local-v1");
+  assert.equal(contract.evidenceLevel, "locally-defined");
+  assert.equal(contract.parityStatus, "not-parity-verified");
+  assert.equal(contract.chainId, 56);
+  assert.equal(contract.blocklist.schemaVersion, 1);
+  assert.deepEqual(contract.blocklist.entry.scopes, ["pool", "token"]);
+  assert.equal(contract.blocklist.entry.label.authority, "non-authoritative");
+  assert.equal(contract.blocklist.identity.pool.source, "stable-poolKey");
+  assert.equal(contract.blocklist.identity.pool.v3Bytes, 20);
+  assert.equal(contract.blocklist.identity.pool.v4Bytes, 32);
+  assert.equal(contract.blocklist.identity.token.bytes, 20);
+  assert.equal(contract.blocklist.identity.token.symbolAccepted, false);
+  assert.deepEqual(contract.blocklist.sorting, [
+    "chainId:numeric-asc",
+    "scope:byte-asc",
+    "identity:byte-asc",
+  ]);
+  assert.equal(contract.blocklist.hash.algorithm, "sha256");
+  assert.equal(contract.blocklist.hash.labelIncluded, false);
+  assert.deepEqual(contract.api.patch.requiredBody, ["expectedRevision", "operation"]);
+  assert.equal(contract.api.patch.operationsPerRequest, 1);
+  assert.equal(contract.api.patch.conflict.status, 409);
+  assert.equal(contract.api.patch.conflict.code, "REVISION_CONFLICT");
+  assert.equal(contract.api.patch.idempotentNoOpIncrementsRevision, false);
+  assert.deepEqual(contract.actionIntent.actions, ["create-task", "create-monitor", "share-chat"]);
+  assert.equal(contract.actionIntent.schemaVersion, 1);
+  assert.equal(contract.actionIntent.businessWrites, false);
+  assert.deepEqual(contract.commandRegistry.surfaces, ["row-context-menu", "row-more-button"]);
+  assert.equal(contract.eligibility.symbolMatching, false);
+  assert.equal(contract.eligibility.filterBeforeSortAndLimit, true);
+  assert.deepEqual(contract.eligibility.consumers, [
+    "top-fees",
+    "by-token",
+    "recommended-pools",
+    "groups",
+    "comparison",
+    "expanded-pool",
+  ]);
+  assert.equal(contract.streams.cursorBoundToBlocklistHash, true);
+  assert.equal(contract.streams.hashChangeRequiresSnapshot, true);
+
+  const assumptions = manifest.assumptions.join("\n");
+  assert.match(assumptions, /local-fixture-verified only/);
+  assert.match(assumptions, /POOL-15 and STATS-01 remain planned/);
+  assert.match(assumptions, /monitoring and strategy expose consumer contracts only/);
+  assert.match(assumptions, /P02-01 through P02-10 acceptance directories remain byte-identical/);
+  assert.doesNotMatch(assumptions, /parity-verified|released/);
+});
+
+test("P02-11 eligibility Golden freezes blocked identities, limitations and backfill order", async () => {
+  const golden = await readFile(path.join(P02_11_ROOT, "golden/eligibility.json"), "utf8").then(
+    JSON.parse,
+  );
+  assert.equal(golden.schemaVersion, 1);
+  assert.equal(golden.blocklist.schemaVersion, 1);
+  assert.match(golden.blocklist.blocklistHash, /^sha256:[0-9a-f]{64}$/u);
+  assert.deepEqual(
+    golden.expected.eligiblePoolKeys,
+    golden.candidates
+      .filter(({ id }) => ["eligible-v4", "missing-address", "non-canonical-address"].includes(id))
+      .map(({ poolKey }) => poolKey),
+  );
+  assert.deepEqual(
+    golden.expected.decisions
+      .filter(({ eligible }) => !eligible)
+      .map(({ id }) => id),
+    ["blocked-pool", "blocked-token0", "blocked-token1"],
+  );
+  assert.deepEqual(
+    golden.expected.decisions
+      .flatMap(({ limitations }) => limitations.map(({ code }) => code))
+      .sort(),
+    ["TOKEN_ADDRESS_MISSING", "TOKEN_ADDRESS_NON_CANONICAL"],
+  );
+  assert.deepEqual(golden.expected.limitedResultPoolKeys, golden.expected.eligiblePoolKeys.slice(0, 2));
+});
+
+test("P02-01 through P02-10 remain byte-identical to the pre-P02-11 inventory", async () => {
+  const inventory = new Map(
+    (await readFile(P02_11_PRIOR_CHECKSUMS_PATH, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => {
+        const match = line.match(/^([0-9a-f]{64}) {2}(.+)$/u);
+        assert.ok(match, `invalid prior acceptance checksum row: ${line}`);
+        return [match[2], match[1]];
+      }),
+  );
+  const priorFiles = (
+    await Promise.all(
+      Array.from({ length: 10 }, async (_, index) => {
+        const directory = `artifacts/acceptance/P02-${String(index + 1).padStart(2, "0")}`;
+        return (await acceptanceFiles(path.join(ROOT, directory))).map((file) =>
+          path.posix.join(directory, file),
+        );
+      }),
+    )
+  ).flat();
+  assert.equal(priorFiles.length, 198);
+  assert.deepEqual(sorted(inventory.keys()), sorted(priorFiles));
+  for (const file of priorFiles) {
+    const bytes = await readFile(path.join(ROOT, file));
+    assert.equal(
+      inventory.get(file),
+      createHash("sha256").update(bytes).digest("hex"),
+      `${file} changed after P02-11 baseline`,
+    );
+  }
+});
+
+test("P02-11 sha256 inventory covers every acceptance file except itself", async () => {
+  const checksumText = await readFile(path.join(P02_11_ROOT, "sha256sums.txt"), "utf8");
+  const checksums = new Map(
+    checksumText
+      .trim()
+      .split("\n")
+      .map((line) => {
+        const match = line.match(/^([0-9a-f]{64}) {2}(.+)$/u);
+        assert.ok(match, `invalid P02-11 checksum row: ${line}`);
+        return [match[2], match[1]];
+      }),
+  );
+  const files = (await acceptanceFiles(P02_11_ROOT)).filter((file) => file !== "sha256sums.txt");
+  assert.deepEqual([...checksums.keys()].sort(), files);
+  for (const file of files) {
+    const bytes = await readFile(path.join(P02_11_ROOT, file));
+    assert.equal(
+      checksums.get(file),
+      createHash("sha256").update(bytes).digest("hex"),
+      `${file} checksum`,
+    );
+  }
 });
 
 test("P02-10 owns only POOL-12 and freezes non-parity Candle/Tick semantics", async () => {
