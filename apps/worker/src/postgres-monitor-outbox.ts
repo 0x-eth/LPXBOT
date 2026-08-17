@@ -80,6 +80,16 @@ interface DeliveryRow extends QueryResultRow {
   user_id: string;
 }
 
+interface HistoryMonitorRow extends QueryResultRow {
+  name: string;
+  window_minutes: number;
+}
+
+interface HistoryDestinationRow extends QueryResultRow {
+  name: string;
+  type: "telegram" | "webhook";
+}
+
 const deliveryColumns = `
   delivery_id::text, dedupe_key, candidate_key, destination_id,
   destination_revision::text, channel, payload, state, attempt_count,
@@ -609,6 +619,52 @@ export class PostgresMonitorCandidateOutboxRepository {
     }
   }
 
+  async #markExhausted(client: PoolClient): Promise<void> {
+    const exhausted = await client.query<{ delivery_id: string; updated_at: Date }>(
+      `UPDATE notification_outbox
+          SET state = 'dead',
+              next_attempt_at = NULL,
+              lease_owner = NULL,
+              lease_token = NULL,
+              lease_expires_at = NULL,
+              updated_at = clock_timestamp(),
+              last_error_code = 'MAX_ATTEMPTS',
+              last_error_summary = NULL
+        WHERE attempt_count >= 6
+          AND (
+            state = 'pending'
+            OR (state = 'retry-wait' AND next_attempt_at <= clock_timestamp())
+            OR (state = 'leased' AND lease_expires_at <= clock_timestamp())
+          )
+        RETURNING delivery_id::text, updated_at`,
+    );
+    for (const row of exhausted.rows) {
+      await this.#updateHistoryTerminal(client, {
+        deliveryId: row.delivery_id,
+        errorCode: "MAX_ATTEMPTS",
+        updatedAt: row.updated_at,
+      });
+    }
+  }
+
+  async #updateHistoryTerminal(
+    client: PoolClient,
+    input: { deliveryId: string; errorCode: string; updatedAt: Date },
+  ): Promise<void> {
+    const history = await client.query(
+      `UPDATE notification_delivery_history
+          SET status = 'failed',
+              next_retry_at = NULL,
+              delivered_at = NULL,
+              error_code = $2,
+              provider_acknowledgement = NULL,
+              updated_at = $3
+        WHERE delivery_id = $1`,
+      [input.deliveryId, input.errorCode, input.updatedAt],
+    );
+    if (history.rowCount !== 1) throw new Error("OUTBOX_HISTORY_SYNC_FAILED");
+  }
+
   async #insertCandidate(client: PoolClient, candidate: MonitorCandidate): Promise<void> {
     await client.query(
       `INSERT INTO monitor_candidates (
@@ -750,7 +806,78 @@ export class PostgresMonitorCandidateOutboxRepository {
       [dedupeKey],
     );
     if (!row.rows[0]) throw new Error("Outbox delivery insert failed");
+    await this.#upsertHistory(client, candidate, destination, row.rows[0].delivery_id);
     return deliveryFromRow(row.rows[0]);
+  }
+
+  async #upsertHistory(
+    client: PoolClient,
+    candidate: MonitorCandidate,
+    destination: MonitorOutboxDestination,
+    deliveryId: string,
+  ): Promise<void> {
+    const monitor = await client.query<HistoryMonitorRow>(
+      `SELECT name, window_minutes
+         FROM monitors
+        WHERE monitor_id = $1 AND user_id = $2`,
+      [candidate.monitorId, candidate.userId],
+    );
+    const monitorSnapshot = monitor.rows[0];
+    if (!monitorSnapshot) throw new Error("OUTBOX_MONITOR_SNAPSHOT_NOT_FOUND");
+    let destinationName = destination.destinationId.slice(0, 120);
+    let destinationType: MonitorDestinationSelection["channel"] = destination.channel;
+    if (destination.channel !== "local-sink") {
+      const version = await client.query<HistoryDestinationRow>(
+        `SELECT name, type
+           FROM notification_destination_versions
+          WHERE destination_id::text = $1
+            AND user_id = $2
+            AND revision = $3`,
+        [destination.destinationId, candidate.userId, destination.destinationRevision],
+      );
+      const snapshot = version.rows[0];
+      if (!snapshot || snapshot.type !== destination.channel) {
+        throw new Error("OUTBOX_DESTINATION_REVISION_NOT_FOUND");
+      }
+      destinationName = snapshot.name;
+      destinationType = snapshot.type;
+    }
+    const conditionSummary = candidate.matchedConditions
+      .map(({ id, operator, value }) => `${id} ${operator} ${value}`)
+      .join(" AND ");
+    const inserted = await client.query(
+      `INSERT INTO notification_delivery_history (
+         delivery_id, user_id, monitor_id, monitor_name, pool_key, condition_summary,
+         window_minutes, window_end, destination_id, destination_name, destination_type,
+         status, attempt_count, next_retry_at, delivered_at, error_code,
+         provider_acknowledgement, created_at, updated_at
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+         'pending', 0, NULL, NULL, NULL, NULL, $12, $12
+       )
+       ON CONFLICT (delivery_id) DO NOTHING`,
+      [
+        deliveryId,
+        candidate.userId,
+        candidate.monitorId,
+        monitorSnapshot.name,
+        candidate.poolKey,
+        conditionSummary,
+        monitorSnapshot.window_minutes,
+        candidate.windowEnd,
+        destination.destinationId,
+        destinationName,
+        destinationType,
+        candidate.createdAt,
+      ],
+    );
+    if (inserted.rowCount !== 1) {
+      const existing = await client.query(
+        "SELECT 1 FROM notification_delivery_history WHERE delivery_id = $1",
+        [deliveryId],
+      );
+      if (existing.rowCount !== 1) throw new Error("OUTBOX_HISTORY_SYNC_FAILED");
+    }
   }
 
   async #advanceWatermark(client: PoolClient, candidate: MonitorCandidate): Promise<void> {

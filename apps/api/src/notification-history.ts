@@ -132,7 +132,7 @@ export class MemoryNotificationHistoryStore implements NotificationHistoryStore 
 
   constructor(items: readonly StoredNotificationHistoryItem[] = []) {
     for (const item of items) assertStoredItem(item);
-    this.#items = structuredClone(items);
+    this.#items = items.map((item) => structuredClone(item));
   }
 
   async list(userId: string, query: NotificationHistoryQuery): Promise<NotificationHistoryPage> {
