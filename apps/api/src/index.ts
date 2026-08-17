@@ -24,6 +24,8 @@ export { PostgresPoolBlocklistStore } from "./postgres-pool-blocklist-store.js";
 export type { PostgresPoolBlocklistStoreOptions } from "./postgres-pool-blocklist-store.js";
 export { PostgresMonitorStore } from "./postgres-monitor-store.js";
 export type { PostgresMonitorStoreOptions } from "./postgres-monitor-store.js";
+export { PostgresNotificationConfigurationStore } from "./postgres-notification-store.js";
+export type { PostgresNotificationConfigurationStoreOptions } from "./postgres-notification-store.js";
 export {
   MemoryMonitorStore,
   MonitorValidationError,
