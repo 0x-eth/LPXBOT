@@ -341,7 +341,7 @@ test("MON-01 creates a disabled BSC monitor from loading and empty states", asyn
   await expect(page.getByLabel("0 个已启用，共 1 个监控")).toHaveText("0/1");
   const lifecycle = page.getByRole("switch", { name: "启用监控 BSC 成交量" });
   await lifecycle.click();
-  await expect(lifecycle).toBeChecked();
+  await expect(page.getByRole("switch", { name: "停用监控 BSC 成交量" })).toBeChecked();
   await expect(page.getByLabel("1 个已启用，共 1 个监控")).toHaveText("1/1");
 
   await expectAccessibleAndContained(page);

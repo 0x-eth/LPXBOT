@@ -209,11 +209,10 @@ test("POOL-13 shares one accessible row action menu across pointer and keyboard"
     await row.click({ button: "right" });
     let menu = page.getByRole("menu");
     await expect(menu.getByRole("menuitem")).toHaveCount(15);
-    await expect(menu.getByRole("menuitem", { name: /创建监控/u })).toHaveAttribute(
+    await expect(menu.getByRole("menuitem", { name: "创建监控" })).not.toHaveAttribute(
       "aria-disabled",
       "true",
     );
-    await expect(menu).toContainText("监控模块暂不可用");
     await page.keyboard.press("ArrowDown");
     await expect(menu.getByRole("menuitem", { name: /复制池地址/u })).toBeFocused();
     await page.keyboard.press("Escape");

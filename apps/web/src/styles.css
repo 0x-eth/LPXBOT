@@ -4618,9 +4618,9 @@ html[data-theme="dark"] .chain-operation-success {
 }
 
 .monitor-name-line > span[data-enabled="true"] {
-  color: #087f5b;
-  border-color: color-mix(in srgb, #087f5b 32%, var(--border));
-  background: color-mix(in srgb, #087f5b 9%, var(--surface));
+  color: #067052;
+  border-color: color-mix(in srgb, #067052 32%, var(--border));
+  background: color-mix(in srgb, #067052 9%, var(--surface));
 }
 
 .monitor-name-line > span[data-ready="false"] {
@@ -4702,9 +4702,9 @@ html[data-theme="dark"] .chain-operation-success {
 }
 
 .monitor-lifecycle-switch[aria-checked="true"] {
-  color: #087f5b;
-  border-color: color-mix(in srgb, #087f5b 34%, var(--border));
-  background: color-mix(in srgb, #087f5b 10%, var(--surface));
+  color: #067052;
+  border-color: color-mix(in srgb, #067052 34%, var(--border));
+  background: color-mix(in srgb, #067052 10%, var(--surface));
 }
 
 .monitor-lifecycle-switch:disabled {
