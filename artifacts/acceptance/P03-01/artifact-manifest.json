@@ -21,80 +21,231 @@
   },
   "checksumScope": {
     "algorithm": "SHA-256",
-    "excludedSelfReferentialFiles": ["artifact-manifest.json", "sha256sums.txt"],
+    "excludedSelfReferentialFiles": [
+      "artifact-manifest.json",
+      "sha256sums.txt"
+    ],
     "priorAcceptance": "all baseline P00-P02 acceptance files"
   },
-  "files": [],
+  "files": [
+    {
+      "path": "api-contracts.json",
+      "bytes": 9462,
+      "sha256": "0735012666545c6791417cde7520538ee0afe97627585f1c226ec94bbe792a7e",
+      "mediaType": "application/json",
+      "category": "contract"
+    },
+    {
+      "path": "checks/artifact-schema.txt",
+      "bytes": 66,
+      "sha256": "4deca3c47573758dd34cadd997a74161d4e4e0140dd7e8d2e3fbcac65dc0b890",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "checks/governance-test.txt",
+      "bytes": 69,
+      "sha256": "3e62098f33bbf839c7937d9c8ad6b19b395bd00663ae94d03e3a36f3286519f0",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "checks/initial-failure.txt",
+      "bytes": 415,
+      "sha256": "cf4e3f03012d7e5a248177df7885d262b65e8880cd5c43b4f9a7ee4d948528c1",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "checks/prior-acceptance-integrity.txt",
+      "bytes": 91,
+      "sha256": "e1a9b648fe5eeee98281e73a27c0aed28bcf3bf3e20a6db58eefee1869f69e75",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "checks/quality-gates.txt",
+      "bytes": 83,
+      "sha256": "83d3d67f5b698c531616bed6e45c9cb8bc49357afe26b6cd85e458d14cc97afc",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "checks/security-audit.txt",
+      "bytes": 65,
+      "sha256": "85ef0d7925a7bb25912e79b7cec885de40ce04b76e83d26b392d3433a1b8076e",
+      "mediaType": "text/plain",
+      "category": "check"
+    },
+    {
+      "path": "coverage.json",
+      "bytes": 1832,
+      "sha256": "c454751811a01f804017cc934f930f0b25ea6352ce42524505865e61508adce0",
+      "mediaType": "application/json",
+      "category": "catalog"
+    },
+    {
+      "path": "delivery-contracts.json",
+      "bytes": 7651,
+      "sha256": "a972e6006ca59d5dcff868375a5a84dd07fc2642530810bb50589d939213e6c8",
+      "mediaType": "application/json",
+      "category": "contract"
+    },
+    {
+      "path": "domain-contracts.json",
+      "bytes": 9512,
+      "sha256": "85811def6bf64e434085a265ebc74fb69a06a019eec44ab34703e59b2d960a5a",
+      "mediaType": "application/json",
+      "category": "contract"
+    },
+    {
+      "path": "fixture-index.json",
+      "bytes": 2625,
+      "sha256": "d5b3e8b554ace08017579c084e103b8b38dc3639b77cdb4c8e8456f11cd55eb9",
+      "mediaType": "application/json",
+      "category": "catalog"
+    },
+    {
+      "path": "fixtures/dedupe-ordering.json",
+      "bytes": 1697,
+      "sha256": "e5265567aea0c870df404228f3d261d6280d7f7ba6086488786b0b667d05a6b4",
+      "mediaType": "application/json",
+      "category": "fixture"
+    },
+    {
+      "path": "fixtures/evaluation-cases.json",
+      "bytes": 5483,
+      "sha256": "07b2f76f6873fe1b54e892b3e250bf40c33ceb59e6a35397afb794efea5e9462",
+      "mediaType": "application/json",
+      "category": "fixture"
+    },
+    {
+      "path": "fixtures/outbox-recovery.json",
+      "bytes": 2123,
+      "sha256": "8ad68e311145ef71306945bebf6cf650b3ce833ba141b49523ee2c28eda6a48b",
+      "mediaType": "application/json",
+      "category": "fixture"
+    },
+    {
+      "path": "fixtures/reorg-replacement.json",
+      "bytes": 1627,
+      "sha256": "ffc36910d31d9fb1b85258d743c46fc8b8f2eb2cee08914a2e355d9ba268a699",
+      "mediaType": "application/json",
+      "category": "fixture"
+    },
+    {
+      "path": "fixtures/ssrf-policy.json",
+      "bytes": 3552,
+      "sha256": "aa6bd2007302fa316b37c723cd64541a3711f1e31d38fdebe350c1897ff45837",
+      "mediaType": "application/json",
+      "category": "fixture"
+    },
+    {
+      "path": "fixtures/webhook-security.json",
+      "bytes": 2635,
+      "sha256": "8ee293e4051fe5b5bd7542e43014a54b9850600bef0c3a26d9ed7a7238ac0aaf",
+      "mediaType": "application/json",
+      "category": "fixture"
+    },
+    {
+      "path": "gaps.json",
+      "bytes": 2800,
+      "sha256": "bdc8fbb678e4b5825b48093c953de4f3bc27ad0dbfce472a0303eda67f72f2e4",
+      "mediaType": "application/json",
+      "category": "catalog"
+    },
+    {
+      "path": "prior-acceptance-sha256s.txt",
+      "bytes": 45735,
+      "sha256": "59eb639f2e268b6c3114feecdea298a56d51984c42cb079bfc60f6b42193c139",
+      "mediaType": "text/plain",
+      "category": "integrity"
+    },
+    {
+      "path": "security-contracts.json",
+      "bytes": 7175,
+      "sha256": "22fd74581cf0d08af8060a786d7e9f7379c1bdb3264c54fe06b7aba9848a5af4",
+      "mediaType": "application/json",
+      "category": "contract"
+    },
+    {
+      "path": "ui-state-contracts.json",
+      "bytes": 6197,
+      "sha256": "13fc6de22e3672d4b87a1db96e294e6ce115204c4c9e4f4c471b307f846b0519",
+      "mediaType": "application/json",
+      "category": "contract"
+    }
+  ],
   "references": [
     {
       "path": "artifacts/acceptance/P02-01/metric-contracts.json",
       "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bytes": 7064,
+      "sha256": "9d1d0a68ead3bc2361410098d652ba4b64f363d0062ab44d3362d511f908d4d1",
       "source": "P02 metric windows, nullability, Fee/TVL, active TVL, and Fee/aTVL evidence boundary",
       "evidenceLevel": "locally-defined"
     },
     {
       "path": "artifacts/acceptance/P02-11/blocklist-action-contract.json",
       "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bytes": 4071,
+      "sha256": "6f19747222d9652583e05f8905b9ab9700ace204cb11f1b7ec8054a30bcac821",
       "source": "P02-11 stable pool identity and user blocklist eligibility contract",
       "evidenceLevel": "locally-defined"
     },
     {
       "path": "artifacts/acceptance/P02-11/manifest.json",
       "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bytes": 3419,
+      "sha256": "b961ae5aac24a514d97d10076f071320fe0d0e759a9641a7e1689375b56941cf",
       "source": "P02-11 acceptance boundary and monitoring consumer-only limitation",
       "evidenceLevel": "documented"
     },
     {
       "path": "docs/ARCHITECTURE_AND_WORKFLOWS.md",
       "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bytes": 26582,
+      "sha256": "6651bd727acf87d7bbfb5f5db7faaefe7914d5e626fb857eb16e076db26b9bc8",
       "source": "outbox, notification, recovery, and SSRF architecture",
       "evidenceLevel": "documented"
     },
     {
       "path": "docs/DEVELOPMENT_ROADMAP.md",
       "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bytes": 22003,
+      "sha256": "7b46c68197e7571d065c1e3312231cdc71f48b55ab25204880f2a05482e552c4",
       "source": "P03 scope, tests, completion definition, and external-target gate",
       "evidenceLevel": "documented"
     },
     {
       "path": "docs/FUNCTION_MATRIX.md",
       "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bytes": 30809,
+      "sha256": "5c7a0bef8ba9ea7fc5cea18605ba93daaf792b7317b6dcead9fded16fa3f9695",
       "source": "MON-01..06 and NOTIFY-01..02 feature definitions",
       "evidenceLevel": "documented"
     },
     {
       "path": "docs/TRACEABILITY_MATRIX.md",
       "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bytes": 40512,
+      "sha256": "e6987db60c44642e4a8ee1655c8b79e7ef1b403e68d759a97a712986a5302df8",
       "source": "P03 test/evidence mappings and planned feature totals",
       "evidenceLevel": "documented"
     },
     {
       "path": "docs/VIBE_CODING_PLAYBOOK.md",
       "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bytes": 25185,
+      "sha256": "4ac17ea1807a87fed73a4dd1e68313dc1f44801f83f603b5d6bce063a8b85b2a",
       "source": "P03 fixture-first, outbox, Webhook, and local-sink execution guidance",
       "evidenceLevel": "documented"
     },
     {
       "path": "packages/domain/src/index.ts",
       "commit": "059d1b56e50a877ec0391a9188eae55dff1c6354",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bytes": 9907,
+      "sha256": "fdf09d7c5f674c28c13f99c8b7e4764dfcc5b1fab4e0aaf5a6127d969b5adc44",
       "source": "P02-11 server-side blocklist eligibility policy interface",
       "evidenceLevel": "locally-defined"
     }

@@ -1,0 +1,50 @@
+import { spawnSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import Ajv from "ajv";
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const ACCEPTANCE = path.join(ROOT, "artifacts/acceptance/P03-01");
+const MANIFEST_PATH = path.join(ACCEPTANCE, "artifact-manifest.json");
+const SCHEMA_PATH = path.join(ROOT, "schemas/p03-reference-artifacts.schema.json");
+const TEST_PATH = path.join(ROOT, "tests/governance/p03-reference.test.mjs");
+
+function formatAjvErrors(errors = []) {
+  return errors.map((error) => `${error.instancePath || "/"} ${error.message}`).join("\n");
+}
+
+async function main() {
+  const [manifest, schema] = await Promise.all([
+    readFile(MANIFEST_PATH, "utf8").then(JSON.parse),
+    readFile(SCHEMA_PATH, "utf8").then(JSON.parse),
+  ]);
+  const validate = new Ajv({ allErrors: true, strict: false }).compile(schema);
+  if (!validate(manifest)) {
+    throw new Error(`artifact schema validation failed:\n${formatAjvErrors(validate.errors)}`);
+  }
+
+  const result = spawnSync(process.execPath, ["--test", TEST_PATH], {
+    cwd: ROOT,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (result.status !== 0) {
+    process.stdout.write(result.stdout);
+    process.stderr.write(result.stderr);
+    throw new Error(`governance test exited ${result.status}`);
+  }
+
+  const [coverage, fixtures] = await Promise.all([
+    readFile(path.join(ACCEPTANCE, "coverage.json"), "utf8").then(JSON.parse),
+    readFile(path.join(ACCEPTANCE, "fixture-index.json"), "utf8").then(JSON.parse),
+  ]);
+  console.log(
+    `P03-01 reference artifacts valid: ${coverage.counts["implemented-assumed"]} implemented-assumed, ${coverage.counts.planned} planned, ${fixtures.fixtures.length} offline fixtures.`,
+  );
+}
+
+main().catch((error) => {
+  console.error(`P03-01 reference artifact check failed: ${error.message}`);
+  process.exitCode = 1;
+});

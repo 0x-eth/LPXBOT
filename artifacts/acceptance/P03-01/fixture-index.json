@@ -12,8 +12,8 @@
       "kind": "domain",
       "schemaId": "p03-fixture://evaluation-cases/v1",
       "path": "fixtures/evaluation-cases.json",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "bytes": 5483,
+      "sha256": "07b2f76f6873fe1b54e892b3e250bf40c33ceb59e6a35397afb794efea5e9462"
     },
     {
       "id": "P03-FIXTURE-DEDUPE",
@@ -21,8 +21,8 @@
       "kind": "domain",
       "schemaId": "p03-fixture://dedupe-ordering/v1",
       "path": "fixtures/dedupe-ordering.json",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "bytes": 1697,
+      "sha256": "e5265567aea0c870df404228f3d261d6280d7f7ba6086488786b0b667d05a6b4"
     },
     {
       "id": "P03-FIXTURE-REORG",
@@ -30,8 +30,8 @@
       "kind": "domain",
       "schemaId": "p03-fixture://reorg-replacement/v1",
       "path": "fixtures/reorg-replacement.json",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "bytes": 1627,
+      "sha256": "ffc36910d31d9fb1b85258d743c46fc8b8f2eb2cee08914a2e355d9ba268a699"
     },
     {
       "id": "P03-FIXTURE-OUTBOX",
@@ -39,8 +39,8 @@
       "kind": "delivery",
       "schemaId": "p03-fixture://outbox-recovery/v1",
       "path": "fixtures/outbox-recovery.json",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "bytes": 2123,
+      "sha256": "8ad68e311145ef71306945bebf6cf650b3ce833ba141b49523ee2c28eda6a48b"
     },
     {
       "id": "P03-FIXTURE-WEBHOOK",
@@ -48,8 +48,8 @@
       "kind": "security",
       "schemaId": "p03-fixture://webhook-security/v1",
       "path": "fixtures/webhook-security.json",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "bytes": 2635,
+      "sha256": "8ee293e4051fe5b5bd7542e43014a54b9850600bef0c3a26d9ed7a7238ac0aaf"
     },
     {
       "id": "P03-FIXTURE-SSRF",
@@ -57,8 +57,8 @@
       "kind": "security",
       "schemaId": "p03-fixture://ssrf-policy/v1",
       "path": "fixtures/ssrf-policy.json",
-      "bytes": 1,
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "bytes": 3552,
+      "sha256": "aa6bd2007302fa316b37c723cd64541a3711f1e31d38fdebe350c1897ff45837"
     }
   ],
   "coverage": [

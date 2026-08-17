@@ -1,0 +1,12 @@
+P03-01 governance red phase
+
+Command: node --test tests/governance/p03-reference.test.mjs
+Result: expected failure (exit 1)
+Tests: 13
+Passed: 0
+Failed: 13
+
+Every failure was ENOENT for a required P03-01 contract, fixture, schema-derived
+manifest, checksum inventory, or check artifact. No existing product or governance
+test failed. This establishes the red phase before any P03-01 acceptance artifact
+was created.
