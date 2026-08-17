@@ -113,6 +113,22 @@ describe("P03-02 pure monitor evaluator", () => {
     });
   });
 
+  it("binds the configured window to the canonical projection interval", () => {
+    const mismatch = goldenInput(fixture.input.cases[0]!);
+    mismatch.monitor.windowMinutes = 15;
+    expect(evaluateMonitorSnapshot(mismatch)).toMatchObject({
+      matched: false,
+      reason: "INPUT_WINDOW_MISMATCH",
+    });
+
+    const invalidStart = goldenInput(fixture.input.cases[0]!);
+    invalidStart.snapshot.windowStart = "not-a-timestamp";
+    expect(evaluateMonitorSnapshot(invalidStart)).toMatchObject({
+      matched: false,
+      reason: "INVALID_TIMESTAMP",
+    });
+  });
+
   it("fails closed for future generations, version mismatches, and unknown filter metadata", () => {
     const input = goldenInput(fixture.input.cases[0]!);
     input.snapshot.generatedAt = "2026-08-17T09:07:31Z";

@@ -79,6 +79,7 @@ export type MonitorNoMatchReason =
   | "MONITOR_DISABLED"
   | "INVALID_MONITOR"
   | "INPUT_IDENTITY_MISMATCH"
+  | "INPUT_WINDOW_MISMATCH"
   | "INVALID_TIMESTAMP"
   | "FUTURE_GENERATED_AT"
   | "WINDOW_AFTER_GENERATED_AT"
@@ -199,7 +200,8 @@ export function evaluateMonitorSnapshot(input: MonitorEvaluationInput): MonitorE
     conditions.length === 0 ||
     conditions.length > 16 ||
     !Number.isSafeInteger(monitor.revision) ||
-    monitor.revision < 1
+    monitor.revision < 1 ||
+    ![1, 5, 15, 30, 60].includes(monitor.windowMinutes)
   ) {
     return noMatch("INVALID_MONITOR");
   }
@@ -207,9 +209,18 @@ export function evaluateMonitorSnapshot(input: MonitorEvaluationInput): MonitorE
 
   const evaluatedAtNs = timestampNanoseconds(evaluatedAt);
   const generatedAtNs = timestampNanoseconds(snapshot.generatedAt);
+  const windowStartNs = timestampNanoseconds(snapshot.windowStart);
   const windowEndNs = timestampNanoseconds(snapshot.windowEnd);
-  if (evaluatedAtNs === null || generatedAtNs === null || windowEndNs === null) {
+  if (
+    evaluatedAtNs === null ||
+    generatedAtNs === null ||
+    windowStartNs === null ||
+    windowEndNs === null
+  ) {
     return noMatch("INVALID_TIMESTAMP");
+  }
+  if (windowEndNs - windowStartNs !== BigInt(monitor.windowMinutes) * 60_000_000_000n) {
+    return noMatch("INPUT_WINDOW_MISMATCH");
   }
   if (generatedAtNs > evaluatedAtNs) return noMatch("FUTURE_GENERATED_AT");
   if (windowEndNs > generatedAtNs) return noMatch("WINDOW_AFTER_GENERATED_AT");

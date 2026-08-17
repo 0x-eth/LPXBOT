@@ -143,6 +143,15 @@ function draftValid(draft: MonitorDraft): boolean {
   );
 }
 
+function editorValid(editor: EditorState): boolean {
+  return (
+    draftValid(editor.draft) &&
+    (editor.mode === "create" ||
+      !editor.original.enabled ||
+      editor.draft.conditions.some(({ enabled }) => enabled))
+  );
+}
+
 function requestFromDraft(draft: MonitorDraft): CreateMonitorRequest {
   const conditions: Condition[] = draft.conditions.map((condition) =>
     condition.id === "metricVersion"
@@ -202,7 +211,7 @@ function MonitorEditor({
   };
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!busy && draftValid(editor.draft)) onSubmit();
+    if (!busy && editorValid(editor)) onSubmit();
   };
   const windowLocked = busy || (editor.mode === "edit" && editor.original.enabled);
   const selectWindow = (
@@ -512,7 +521,7 @@ function MonitorEditor({
               </Dialog.Close>
               <button
                 className="command-button"
-                disabled={busy || !draftValid(editor.draft)}
+                disabled={busy || !editorValid(editor)}
                 type="submit"
               >
                 {busy ? <RefreshCw aria-hidden="true" className="spin-icon" size={16} /> : null}
@@ -609,7 +618,7 @@ export function MonitorsPage() {
   };
 
   const saveEditor = async () => {
-    if (!editor || !draftValid(editor.draft)) return;
+    if (!editor || !editorValid(editor)) return;
     setBusyId("editor");
     const request = requestFromDraft(editor.draft);
     try {

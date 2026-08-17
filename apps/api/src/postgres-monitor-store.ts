@@ -234,10 +234,12 @@ export class PostgresMonitorStore implements MonitorStore {
       if (current.revision !== input.expectedRevision) {
         return await this.#finish(client, { current, status: "conflict" });
       }
+      const nextConditions = input.changes.conditions ?? current.conditions;
       if (
         current.enabled &&
-        input.changes.windowMinutes !== undefined &&
-        input.changes.windowMinutes !== current.windowMinutes
+        ((input.changes.windowMinutes !== undefined &&
+          input.changes.windowMinutes !== current.windowMinutes) ||
+          !nextConditions.some(({ enabled }) => enabled))
       ) {
         return await this.#finish(client, { current, status: "invalid" });
       }
