@@ -79,24 +79,21 @@ function BootingPage() {
 
 function UserScopedStats({ children }: { children: ReactNode }) {
   const blocklist = usePoolBlocklist();
-  const scope = useMemo(
-    () => ({
-      blocklistHash: blocklist.snapshot?.blocklistHash ?? null,
-      ready: blocklist.loaded || blocklist.status === "error",
-    }),
-    [blocklist.loaded, blocklist.snapshot?.blocklistHash, blocklist.status],
-  );
+  const authorityKey =
+    !blocklist.loaded && blocklist.status !== "error"
+      ? "loading"
+      : (blocklist.snapshot?.blocklistHash ?? "unavailable");
   const provider = useMemo(
     () =>
-      scope.ready
-        ? new ApiShellStatsProvider({ recommendationChain: "bsc" })
-        : {
+      authorityKey === "loading"
+        ? {
             subscribe(listener: Parameters<ApiShellStatsProvider["subscribe"]>[0]) {
               listener(createShellStatsState());
               return () => undefined;
             },
-          },
-    [scope],
+          }
+        : new ApiShellStatsProvider({ recommendationChain: "bsc" }),
+    [authorityKey],
   );
   return <ShellStatsContextProvider provider={provider}>{children}</ShellStatsContextProvider>;
 }

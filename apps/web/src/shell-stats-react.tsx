@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createPoolEligibilityPolicy } from "@lpbot/domain";
 import { Link } from "react-router-dom";
 
+import { usePoolBlocklist } from "./pool-blocklist.js";
 import {
   ApiShellStatsProvider,
   createShellStatsState,
@@ -42,7 +44,16 @@ export function useShellStats(): ShellStatsState {
 
 export function ShellStatusBar() {
   const state = useShellStats();
-  const display = shellStatsDisplay(state);
+  const blocklist = usePoolBlocklist();
+  const eligibility = useMemo(
+    () =>
+      createPoolEligibilityPolicy({
+        blocklistHash: blocklist.snapshot?.blocklistHash ?? `sha256:${"0".repeat(64)}`,
+        entries: blocklist.entries,
+      }),
+    [blocklist.entries, blocklist.snapshot?.blocklistHash],
+  );
+  const display = shellStatsDisplay(state, eligibility);
   const stateLabels = {
     empty: "暂无推荐池",
     loading: "推荐池加载中",

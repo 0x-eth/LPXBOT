@@ -7,6 +7,7 @@ import type {
   ShellStatsPatch,
   ShellTaskCounts,
 } from "@lpbot/api-contract";
+import type { PoolEligibilityPolicy } from "@lpbot/domain";
 import { Decimal } from "decimal.js";
 
 export type RecommendedPoolsStatus =
@@ -467,8 +468,18 @@ export function recommendedPoolSearchPath(row: RecommendedPoolRow): string {
   return `/pools?${parameters.toString()}`;
 }
 
-export function shellStatsDisplay(state: ShellStatsState): ShellStatsDisplay {
+export function shellStatsDisplay(
+  state: ShellStatsState,
+  eligibility?: Pick<PoolEligibilityPolicy, "filter">,
+): ShellStatsDisplay {
   const stats = state.connected ? state.stats : null;
+  const recommendedPools = eligibility
+    ? eligibility.filter(state.recommendations.pools).candidates.slice(0, 3)
+    : state.recommendations.pools.slice(0, 3);
+  const recommendationStatus =
+    state.recommendations.status === "ready" && recommendedPools.length === 0
+      ? "empty"
+      : state.recommendations.status;
   return {
     baseGas: valueOrUnavailable(stats?.gas.baseGwei ?? null),
     ethereumGas: valueOrUnavailable(stats?.gas.ethereumGwei ?? null),
@@ -476,8 +487,8 @@ export function shellStatsDisplay(state: ShellStatsState): ShellStatsDisplay {
     online: stats?.online === true ? "在线" : stats?.online === false ? "离线" : "不可用",
     paused: valueOrUnavailable(stats?.taskCounts.paused ?? null),
     ping: valueOrUnavailable(stats?.pingMs ?? null, "ms"),
-    recommendationStatus: state.recommendations.status,
-    recommendedPools: state.recommendations.pools.slice(0, 3),
+    recommendationStatus,
+    recommendedPools,
     running: valueOrUnavailable(stats?.taskCounts.running ?? null),
     stopped: valueOrUnavailable(stats?.taskCounts.stopped ?? null),
   };
