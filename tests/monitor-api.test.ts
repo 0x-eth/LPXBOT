@@ -114,6 +114,34 @@ describe("P03-02 monitor API", () => {
     expect(crossUser.statusCode).toBe(404);
     expect(crossUser.json().error.code).toBe("MONITOR_NOT_FOUND");
     expect(crossUser.body).not.toContain(userA);
+
+    for (const request of [
+      {
+        method: "PATCH" as const,
+        payload: { changes: { name: "Cross-user" }, expectedRevision: 1 },
+        url: `/api/monitors/${monitorId}`,
+      },
+      {
+        method: "POST" as const,
+        payload: { expectedRevision: 1 },
+        url: `/api/monitors/${monitorId}/enable`,
+      },
+      {
+        method: "POST" as const,
+        payload: { expectedRevision: 1 },
+        url: `/api/monitors/${monitorId}/disable`,
+      },
+      {
+        method: "DELETE" as const,
+        payload: { expectedRevision: 1 },
+        url: `/api/monitors/${monitorId}`,
+      },
+    ]) {
+      const response = await app.inject({ ...request, headers: auth(tokenB) });
+      expect(response.statusCode).toBe(404);
+      expect(response.json().error.code).toBe("MONITOR_NOT_FOUND");
+      expect(response.body).not.toContain(userA);
+    }
   });
 
   it("replays equal idempotent creates, rejects changed payloads, and scopes keys by user", async () => {
@@ -223,9 +251,9 @@ describe("P03-02 monitor API", () => {
     });
     expect(invalidNotReadyPatch.statusCode).toBe(400);
     expect(invalidNotReadyPatch.json().error.code).toBe("INVALID_MONITOR");
-    expect((await app.inject({ headers: auth(tokenA), method: "GET", url })).json().data).toMatchObject(
-      { enabled: true, revision: 3 },
-    );
+    expect(
+      (await app.inject({ headers: auth(tokenA), method: "GET", url })).json().data,
+    ).toMatchObject({ enabled: true, revision: 3 });
 
     const disabled = await app.inject({
       headers: auth(tokenA),
@@ -261,6 +289,10 @@ describe("P03-02 monitor API", () => {
       {
         ...createRequest,
         conditions: [{ enabled: true, id: "activeTvlUsd", operator: "gte", value: "1" }],
+      },
+      {
+        ...createRequest,
+        conditions: Array.from({ length: 17 }, () => createRequest.conditions[0]),
       },
     ]) {
       const response = await create(app, tokenA, payload, `invalid-${JSON.stringify(payload)}`);

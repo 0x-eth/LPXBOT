@@ -1,6 +1,11 @@
 import { createHash, randomUUID } from "node:crypto";
 
-import type { Condition, CreateMonitorRequest, Monitor, PatchMonitorChanges } from "@lpbot/api-contract";
+import type {
+  Condition,
+  CreateMonitorRequest,
+  Monitor,
+  PatchMonitorChanges,
+} from "@lpbot/api-contract";
 import type { Pool, PoolClient, QueryResult, QueryResultRow } from "pg";
 
 import type {
@@ -59,7 +64,8 @@ function payloadHash(request: CreateMonitorRequest): string {
 
 function safeInteger(value: string, field: string): number {
   const parsed = Number(value);
-  if (!Number.isSafeInteger(parsed) || parsed < 0) throw new RangeError(`Stored ${field} is invalid`);
+  if (!Number.isSafeInteger(parsed) || parsed < 0)
+    throw new RangeError(`Stored ${field} is invalid`);
   return parsed;
 }
 
@@ -106,9 +112,7 @@ export class PostgresMonitorStore implements MonitorStore {
     const client = await this.#pool.connect();
     try {
       await client.query("BEGIN");
-      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
-        input.userId,
-      ]);
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [input.userId]);
       const hash = payloadHash(input.request);
       const existing = await client.query<IdempotencyRow>(
         `SELECT payload_hash, monitor_id::text
@@ -144,7 +148,9 @@ export class PostgresMonitorStore implements MonitorStore {
       }
       const monitorId = this.#idFactory();
       const conditionCount = input.request.conditions.length;
-      const enabledConditionCount = input.request.conditions.filter(({ enabled }) => enabled).length;
+      const enabledConditionCount = input.request.conditions.filter(
+        ({ enabled }) => enabled,
+      ).length;
       const inserted = await client.query<MonitorRow>(
         `INSERT INTO monitors (
            monitor_id, user_id, revision, name, pool_key, window_minutes, status,
@@ -281,7 +287,10 @@ export class PostgresMonitorStore implements MonitorStore {
           input.updatedAt,
         ],
       );
-      return await this.#finish(client, { status: "updated", value: monitorFromRow(result.rows[0]!) });
+      return await this.#finish(client, {
+        status: "updated",
+        value: monitorFromRow(result.rows[0]!),
+      });
     } catch (error) {
       await this.#rollback(client);
       throw error;
@@ -316,7 +325,10 @@ export class PostgresMonitorStore implements MonitorStore {
           RETURNING ${monitorColumns}`,
         [input.monitorId, input.userId, input.enabled, input.updatedAt],
       );
-      return await this.#finish(client, { status: "updated", value: monitorFromRow(result.rows[0]!) });
+      return await this.#finish(client, {
+        status: "updated",
+        value: monitorFromRow(result.rows[0]!),
+      });
     } catch (error) {
       await this.#rollback(client);
       throw error;

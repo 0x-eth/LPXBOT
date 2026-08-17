@@ -480,10 +480,9 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
         },
       ],
     });
-    await pool.query(
-      "UPDATE notification_outbox SET attempt_count = 5 WHERE delivery_id = $1",
-      [exhausted.deliveries[0]!.deliveryId],
-    );
+    await pool.query("UPDATE notification_outbox SET attempt_count = 5 WHERE delivery_id = $1", [
+      exhausted.deliveries[0]!.deliveryId,
+    ]);
     const exhaustedClaim = await repository.claimDue({ leaseOwner: "worker-exhausted", limit: 1 });
     expect(exhaustedClaim[0]).toMatchObject({ attemptCount: 6, state: "leased" });
     expect(
@@ -528,6 +527,12 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
         destinations: [
           {
             channel: "local-sink",
+            destinationId: "rollback-valid-fixture",
+            destinationRevision: 1,
+            payload: { poolKey },
+          },
+          {
+            channel: "local-sink",
             destinationId: "rollback-fixture",
             destinationRevision: -1,
             payload: { poolKey },
@@ -539,6 +544,17 @@ describe("P03-02 PostgreSQL monitoring persistence", () => {
       await pool.query("SELECT 1 FROM monitor_candidates WHERE candidate_key = $1", [
         rollbackCandidate.candidateKey,
       ]),
+    ).toMatchObject({ rowCount: 0 });
+    expect(
+      await pool.query("SELECT 1 FROM notification_outbox WHERE candidate_key = $1", [
+        rollbackCandidate.candidateKey,
+      ]),
+    ).toMatchObject({ rowCount: 0 });
+    expect(
+      await pool.query(
+        "SELECT 1 FROM monitor_evaluation_watermarks WHERE monitor_id = $1 AND window_end = $2",
+        [monitorId, rollbackCandidate.windowEnd],
+      ),
     ).toMatchObject({ rowCount: 0 });
 
     await expect(

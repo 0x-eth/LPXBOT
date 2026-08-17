@@ -97,8 +97,7 @@ async function monitorRoute(route: Route, state: MonitorRouteState): Promise<voi
     await route.fulfill({
       contentType: "application/json",
       json: envelope({
-        enabledCount:
-          state.enabledCount ?? state.items.filter(({ enabled }) => enabled).length,
+        enabledCount: state.enabledCount ?? state.items.filter(({ enabled }) => enabled).length,
         items: structuredClone(state.items),
         nextCursor: null,
         totalCount: state.totalCount ?? state.items.length,
@@ -450,9 +449,12 @@ test("MON-01 preserves enabled and total aggregates beyond the current page", as
   await expect(page.getByLabel("5 个已启用，共 7 个监控")).toHaveText("5/7");
 
   await page.getByRole("button", { name: "删除监控 Paged" }).click();
-  await page.getByRole("alertdialog", { name: "删除监控" }).getByRole("button", {
-    name: "确认删除",
-  }).click();
+  await page
+    .getByRole("alertdialog", { name: "删除监控" })
+    .getByRole("button", {
+      name: "确认删除",
+    })
+    .click();
   await expect(page.getByLabel("5 个已启用，共 6 个监控")).toHaveText("5/6");
 });
 

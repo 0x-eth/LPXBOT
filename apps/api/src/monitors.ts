@@ -65,11 +65,7 @@ export interface MonitorDeleteInput {
 export type MonitorCreateResult =
   | { status: "created" | "replayed"; value: Monitor }
   | {
-      status:
-        | "capacity"
-        | "idempotency-conflict"
-        | "pool-ineligible"
-        | "service-unavailable";
+      status: "capacity" | "idempotency-conflict" | "pool-ineligible" | "service-unavailable";
     };
 
 export type MonitorMutationResult =

@@ -127,8 +127,7 @@ function draftConditionValid(condition: ConditionDraft): boolean {
   }
   return (
     condition.id !== "transactionCount" ||
-    (/^\d+$/u.test(condition.value) &&
-      BigInt(condition.value) <= BigInt(Number.MAX_SAFE_INTEGER))
+    (/^\d+$/u.test(condition.value) && BigInt(condition.value) <= BigInt(Number.MAX_SAFE_INTEGER))
   );
 }
 
@@ -221,17 +220,11 @@ function MonitorEditor({
     if (!busy && editorValid(editor)) onSubmit();
   };
   const windowLocked = busy || (editor.mode === "edit" && editor.original.enabled);
-  const selectWindow = (
-    minutes: MonitorDraft["windowMinutes"],
-    button?: HTMLButtonElement,
-  ) => {
+  const selectWindow = (minutes: MonitorDraft["windowMinutes"], button?: HTMLButtonElement) => {
     button?.focus();
     updateDraft((draft) => ({ ...draft, windowMinutes: minutes }));
   };
-  const onWindowKeyDown = (
-    event: KeyboardEvent<HTMLButtonElement>,
-    index: number,
-  ) => {
+  const onWindowKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     if (windowLocked) return;
     let nextIndex: number | undefined;
     if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
@@ -246,9 +239,8 @@ function MonitorEditor({
     if (nextIndex === undefined) return;
     event.preventDefault();
     const next = monitorWindowMinutes[nextIndex];
-    const buttons = event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
-      '[role="radio"]',
-    );
+    const buttons =
+      event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
     if (next !== undefined) selectWindow(next, buttons?.[nextIndex]);
   };
 
@@ -350,11 +342,7 @@ function MonitorEditor({
               </label>
               <div className="monitor-field monitor-window-field">
                 <span>评估窗口</span>
-                <div
-                  aria-label="评估窗口"
-                  className="monitor-window-control"
-                  role="radiogroup"
-                >
+                <div aria-label="评估窗口" className="monitor-window-control" role="radiogroup">
                   {monitorWindowMinutes.map((minutes, index) => (
                     <button
                       aria-checked={editor.draft.windowMinutes === minutes}
