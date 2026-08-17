@@ -11,6 +11,7 @@ interface ConditionFixture {
 interface MonitorFixture {
   conditions: ConditionFixture[];
   createdAt: string;
+  destinationIds: string[];
   disabledAt: string | null;
   enabled: boolean;
   enabledAt: string | null;
@@ -51,6 +52,7 @@ function monitor(
   return {
     conditions,
     createdAt: timestamp,
+    destinationIds: [],
     disabledAt: timestamp,
     enabled: false,
     enabledAt: null,
@@ -126,6 +128,7 @@ async function monitorRoute(route: Route, state: MonitorRouteState): Promise<voi
       body.conditions,
     );
     Object.assign(created, {
+      destinationIds: body.destinationIds ?? [],
       excludeHanToken: body.excludeHanToken,
       excludeHook: body.excludeHook,
       windowMinutes: body.windowMinutes,
@@ -292,6 +295,9 @@ async function installApplicationFixture(page: Page, state: MonitorRouteState): 
     route.fulfill({ contentType: "application/json", json: {}, status: 503 }),
   );
   await page.route("**/api/monitors**", (route) => monitorRoute(route, state));
+  await page.route("**/api/notification-destinations", (route) =>
+    route.fulfill({ contentType: "application/json", json: envelope([]) }),
+  );
 }
 
 function routeState(items: MonitorFixture[] = []): MonitorRouteState {

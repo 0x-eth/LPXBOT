@@ -1,6 +1,8 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
+const captureP0303Evidence = process.env.LPBOT_CAPTURE_P03_03 === "1";
+
 type NotificationCategory =
   | "feedback-replied"
   | "monitor-match"
@@ -412,7 +414,7 @@ async function expectAccessibleAndContained(page: Page): Promise<void> {
 
 test("MON-04 and NOTIFY-01/02 manage preferences and a local-sink Webhook without side effects", async ({
   page,
-}) => {
+}, testInfo) => {
   const state = routeState();
   state.delayMs = 600;
   await installApplicationFixture(page, state);
@@ -459,6 +461,15 @@ test("MON-04 and NOTIFY-01/02 manage preferences and a local-sink Webhook withou
   await row.getByRole("switch", { name: "停用目的地 Operations webhook" }).click();
   await expect(row.getByRole("switch", { name: "启用目的地 Operations webhook" })).not.toBeChecked();
   await expectAccessibleAndContained(page);
+  if (captureP0303Evidence) {
+    const screenshot = await page.screenshot({
+      animations: "disabled",
+      caret: "hide",
+      fullPage: true,
+      path: `artifacts/acceptance/P03-03/ui/notifications-ready-${testInfo.project.name}.png`,
+    });
+    expect(screenshot.byteLength).toBeGreaterThan(10_000);
+  }
 });
 
 test("MON-04 recovers errors and destination conflicts while preserving keyboard focus and drafts", async ({
