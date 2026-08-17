@@ -29,8 +29,10 @@ interface MonitorRouteState {
   conflictNext: boolean;
   createCalls: number;
   delayMs: number;
+  enabledCount?: number;
   failList: boolean;
   items: MonitorFixture[];
+  totalCount?: number;
 }
 
 const userId = "30000000-0000-4000-8000-000000000302";
@@ -95,10 +97,11 @@ async function monitorRoute(route: Route, state: MonitorRouteState): Promise<voi
     await route.fulfill({
       contentType: "application/json",
       json: envelope({
-        enabledCount: state.items.filter(({ enabled }) => enabled).length,
+        enabledCount:
+          state.enabledCount ?? state.items.filter(({ enabled }) => enabled).length,
         items: structuredClone(state.items),
         nextCursor: null,
-        totalCount: state.items.length,
+        totalCount: state.totalCount ?? state.items.length,
       }),
     });
     return;
@@ -427,6 +430,30 @@ test("MON-02 recovers revision conflicts, not-ready, stale, error, delete focus 
   await expect(editor.getByLabel("监控名称")).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "新建监控" })).toBeFocused();
+});
+
+test("MON-01 preserves enabled and total aggregates beyond the current page", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "Aggregate mutation runs once.");
+  const row = monitor("30000000-0000-4000-8000-000000000043", "Paged", poolKey);
+  const state = routeState([row]);
+  state.enabledCount = 5;
+  state.totalCount = 7;
+  await installApplicationFixture(page, state);
+  await page.goto("/monitors");
+
+  await expect(page.getByLabel("5 个已启用，共 7 个监控")).toHaveText("5/7");
+  await page.getByRole("switch", { name: "启用监控 Paged" }).click();
+  await expect(page.getByLabel("6 个已启用，共 7 个监控")).toHaveText("6/7");
+  await page.getByRole("switch", { name: "停用监控 Paged" }).click();
+  await expect(page.getByLabel("5 个已启用，共 7 个监控")).toHaveText("5/7");
+
+  await page.getByRole("button", { name: "删除监控 Paged" }).click();
+  await page.getByRole("alertdialog", { name: "删除监控" }).getByRole("button", {
+    name: "确认删除",
+  }).click();
+  await expect(page.getByLabel("5 个已启用，共 6 个监控")).toHaveText("5/6");
 });
 
 test("MON-03 consumes create-monitor intent as poolKey prefill without persistence", async ({
