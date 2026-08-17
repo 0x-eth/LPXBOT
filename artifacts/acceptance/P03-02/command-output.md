@@ -11,7 +11,15 @@ Environment: local macOS fixture, PostgreSQL `127.0.0.1:15432`, pnpm 11.17.0. Th
 | P03-02 desktop/mobile Playwright | 5 passed / 3 intentional mobile skips |
 | P02-11 and shell Playwright regression | 17 passed / 3 intentional device skips |
 | `pnpm db:migrate` twice | first application passed; immediate repeat was a no-op |
+| `pnpm test:postgres` | 16 files / 72 tests passed |
 | P02/P03-01 integrity governance | 46 tests passed after restoring old screenshots |
+
+## Security
+
+| Command | Result |
+|---|---|
+| Gitleaks full-history scan | 829 commits, approximately 21.80 MB, no leaks |
+| `pnpm audit:dependencies` | no known vulnerabilities |
 
 ## Repository Gates
 
@@ -23,8 +31,8 @@ Environment: local macOS fixture, PostgreSQL `127.0.0.1:15432`, pnpm 11.17.0. Th
 | `pnpm test` | pending final governance/status artifacts |
 | `pnpm build` | pending standalone final run |
 | `pnpm check:all` | pending final acceptance manifest |
-| Gitleaks full history | pending |
-| `pnpm audit:dependencies` | pending |
+| Gitleaks full history | passed |
+| `pnpm audit:dependencies` | passed |
 | GitHub Actions six jobs | pending |
 
 No network notification delivery, signing, transaction broadcast, or funds operation ran.
