@@ -734,6 +734,176 @@ input:focus-visible,
   cursor: pointer;
 }
 
+.pool-blocklist-trigger {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.pool-blocklist-trigger:hover {
+  background: var(--surface-hover);
+}
+
+.pool-blocklist-count {
+  min-width: 18px;
+  padding: 1px 5px;
+  color: var(--accent-foreground);
+  border-radius: 9px;
+  background: var(--accent);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.pool-blocklist-dialog {
+  position: fixed;
+  z-index: 71;
+  top: 50%;
+  left: 50%;
+  width: min(620px, calc(100vw - 32px));
+  max-height: min(720px, calc(100dvh - 32px));
+  padding: 20px;
+  overflow-y: auto;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 22%);
+  transform: translate(-50%, -50%);
+}
+
+.pool-blocklist-dialog .dialog-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pool-blocklist-dialog .dialog-heading h2,
+.pool-blocklist-dialog .dialog-heading p {
+  margin: 0;
+}
+
+.pool-blocklist-dialog .dialog-heading h2 {
+  font-size: 1rem;
+}
+
+.pool-blocklist-dialog .dialog-heading p {
+  margin-top: 3px;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+
+.pool-blocklist-state {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+}
+
+.pool-blocklist-state-error {
+  min-height: 48px;
+  justify-content: flex-start;
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  color: var(--danger);
+  background: var(--danger-surface);
+}
+
+.pool-blocklist-state-error button {
+  min-height: 30px;
+  margin-left: auto;
+  padding: 0 9px;
+  color: inherit;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pool-blocklist-group {
+  margin-top: 16px;
+}
+
+.pool-blocklist-group h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 6px;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+
+.pool-blocklist-group ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.pool-blocklist-group li {
+  display: grid;
+  min-height: 54px;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.pool-blocklist-group li > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.pool-blocklist-group strong,
+.pool-blocklist-group code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pool-blocklist-group strong {
+  font-size: 0.76rem;
+}
+
+.pool-blocklist-group code {
+  color: var(--muted-foreground);
+  background: transparent;
+  font-size: 0.68rem;
+}
+
+.pool-blocklist-restore {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  cursor: pointer;
+  place-items: center;
+}
+
+.pool-blocklist-restore:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
 .pool-search-form > button:hover,
 .pool-column-trigger:hover {
   background: var(--surface-hover);

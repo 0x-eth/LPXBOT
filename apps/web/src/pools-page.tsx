@@ -111,6 +111,7 @@ import {
 } from "./pool-search-state";
 import { PoolMarketDetail, type MarketDetailFixtureState } from "./pool-market-detail";
 import { usePoolBlocklist } from "./pool-blocklist.js";
+import { PoolBlocklistManager } from "./pool-blocklist-manager.js";
 import {
   initialPoolStreamState,
   reducePoolStream,
@@ -2725,6 +2726,7 @@ export function PoolsPage() {
       ) : null}
       <div className="pool-table-toolbar">
         <span>{poolGroups.length} 组</span>
+        <PoolBlocklistManager />
         <PoolColumnDialog columns={poolColumns} save={savePoolColumns} />
       </div>
       {visiblePoolRows.length > 0 ? (
