@@ -714,7 +714,7 @@ export function MonitorsPage() {
         saved = await client.patch(editor.original.monitorId, {
           changes: {
             conditions: request.conditions,
-            destinationIds: request.destinationIds,
+            destinationIds: editor.draft.destinationIds,
             excludeHanToken: request.excludeHanToken,
             excludeHook: request.excludeHook,
             name: request.name,
