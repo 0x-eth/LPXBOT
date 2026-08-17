@@ -250,6 +250,8 @@ test("MON-05 notification history supports responsive scanning, filters, paginat
   await expect(detailsButton).toBeFocused();
 
   await expectAccessibleAndContained(page);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
   const screenshot = await page.screenshot({
     animations: "disabled",
     caret: "hide",
