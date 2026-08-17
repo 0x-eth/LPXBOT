@@ -740,6 +740,23 @@ export function NotificationSettings() {
       }
     } catch (error) {
       if (error instanceof NotificationRequestError) {
+        if (error.code === "REVISION_CONFLICT" && editor.mode === "edit") {
+          try {
+            const authoritative = await client.listDestinations();
+            setDestinations(authoritative);
+            const latest = authoritative.find(
+              ({ destinationId }) => destinationId === editor.original.destinationId,
+            );
+            setEditor((current) =>
+              current?.mode === "edit" && latest
+                ? { ...current, conflict: true, errorCode: null, original: latest }
+                : current,
+            );
+            return;
+          } catch {
+            // Keep the draft and surface the conflict even when refresh is unavailable.
+          }
+        }
         setEditor((current) =>
           current
             ? {

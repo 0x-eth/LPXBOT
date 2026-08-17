@@ -61,6 +61,28 @@ const categories: NotificationCategory[] = [
   "feedback-replied",
 ];
 
+function webhookDestination(overrides: Partial<DestinationFixture> = {}): DestinationFixture {
+  return {
+    categories: ["monitor-match"],
+    config: {
+      method: "POST",
+      secretConfigured: true,
+      secretRef: "secretref://notification/e2e-existing",
+      template: { message: "{{monitor.name}}" },
+      url: "https://hooks.example.test/existing",
+    },
+    createdAt: timestamp,
+    destinationId: "35000000-0000-4000-8000-000000000011",
+    enabled: false,
+    name: "Existing webhook",
+    revision: 1,
+    type: "webhook",
+    updatedAt: timestamp,
+    userId,
+    ...overrides,
+  };
+}
+
 function envelope(data: unknown) {
   return { data, requestId: "p03-03-e2e", success: true };
 }
@@ -184,27 +206,39 @@ async function notificationRoute(route: Route, state: NotificationRouteState): P
   if (path === "/api/notification-destinations" && request.method() === "POST") {
     const body = request.postDataJSON() as {
       categories: NotificationCategory[];
-      config: { method: "GET" | "POST"; signingSecret?: string; template: unknown; url: string };
+      config:
+        | { botToken: string; telegramIdentityId: string; template: string }
+        | { method: "GET" | "POST"; signingSecret?: string; template: unknown; url: string };
       enabled: boolean;
       name: string;
-      type: "webhook";
+      type: "telegram" | "webhook";
     };
     const created: DestinationFixture = {
       categories: body.categories,
-      config: {
-        method: body.config.method,
-        secretConfigured: body.config.signingSecret !== undefined,
-        secretRef:
-          body.config.signingSecret === undefined ? null : "secretref://notification/e2e-1",
-        template: body.config.template,
-        url: body.config.url,
-      },
+      config:
+        body.type === "telegram"
+          ? {
+              secretConfigured: true,
+              secretRef: "secretref://notification/e2e-telegram",
+              telegramIdentityId: body.config.telegramIdentityId,
+              template: body.config.template,
+            }
+          : {
+              method: body.config.method,
+              secretConfigured: body.config.signingSecret !== undefined,
+              secretRef:
+                body.config.signingSecret === undefined
+                  ? null
+                  : "secretref://notification/e2e-1",
+              template: body.config.template,
+              url: body.config.url,
+            },
       createdAt: timestamp,
       destinationId: "35000000-0000-4000-8000-000000000010",
       enabled: body.enabled,
       name: body.name,
       revision: 1,
-      type: "webhook",
+      type: body.type,
       updatedAt: timestamp,
       userId,
     };
@@ -401,5 +435,65 @@ test("MON-04 and NOTIFY-01/02 manage preferences and a local-sink Webhook withou
   await expect(page.getByText("fixture-signing-secret-material-0001")).toHaveCount(0);
   await row.getByRole("switch", { name: "停用目的地 Operations webhook" }).click();
   await expect(row.getByRole("switch", { name: "启用目的地 Operations webhook" })).not.toBeChecked();
+  await expectAccessibleAndContained(page);
+});
+
+test("MON-04 recovers errors and destination conflicts while preserving keyboard focus and drafts", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "Conflict and focus run once.");
+  const state = routeState();
+  state.destinations = [webhookDestination()];
+  state.failLoad = true;
+  await installApplicationFixture(page, state);
+  await page.goto("/settings");
+
+  await expect(page.getByRole("alert").filter({ hasText: "通知配置暂时不可用" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "添加目的地" })).toBeDisabled();
+  state.failLoad = false;
+  await page.getByRole("button", { name: "重试" }).click();
+  await expect(page.getByRole("article", { name: "目的地 Existing webhook" })).toBeVisible();
+
+  const add = page.getByRole("button", { name: "添加目的地" });
+  await add.click();
+  let editor = page.getByRole("dialog", { name: "添加通知目的地" });
+  const telegram = editor.getByRole("radio", { name: "Telegram" });
+  await expect(telegram).toBeEnabled();
+  await telegram.click();
+  const identity = editor.getByLabel("Telegram identity");
+  await expect(identity).toBeDisabled();
+  await expect(identity.locator("option")).toHaveCount(1);
+  await expect(identity).toHaveValue(telegramIdentityId);
+  await editor.getByLabel("目的地名称").fill("Telegram alerts");
+  await editor.getByLabel("Bot token（仅写入）").fill("fixture-bot-token-material-000001");
+  await editor.getByLabel("请求模板").fill("{{internal.secret}}");
+  await expect(editor.getByRole("alert").filter({ hasText: "模板变量无效" })).toBeVisible();
+  await expect(editor.getByRole("button", { name: "保存目的地" })).toBeDisabled();
+  await expect(editor.getByRole("button", { name: "本地测试" })).toBeDisabled();
+  await editor.press("Escape");
+  await expect(editor).toBeHidden();
+  await expect(add).toBeFocused();
+
+  const row = page.getByRole("article", { name: "目的地 Existing webhook" });
+  const edit = row.getByRole("button", { name: "编辑目的地 Existing webhook" });
+  await edit.click();
+  editor = page.getByRole("dialog", { name: "编辑通知目的地" });
+  await editor.getByLabel("目的地名称").fill("Local draft name");
+  state.conflictNext = true;
+  await editor.getByRole("button", { name: "保存目的地" }).click();
+  await expect(editor.getByRole("alert").filter({ hasText: "其他会话已更新" })).toBeVisible();
+  await expect(editor.getByLabel("目的地名称")).toHaveValue("Local draft name");
+  await editor.getByRole("button", { name: "保存目的地" }).click();
+  await expect(editor).toBeHidden();
+  await expect(page.getByRole("article", { name: "目的地 Local draft name" })).toBeVisible();
+
+  const updated = page.getByRole("article", { name: "目的地 Local draft name" });
+  const remove = updated.getByRole("button", { name: "删除目的地 Local draft name" });
+  await remove.click();
+  const confirmation = page.getByRole("alertdialog", { name: "删除通知目的地" });
+  await expect(confirmation.getByRole("button", { name: "取消" })).toBeFocused();
+  await confirmation.getByRole("button", { name: "确认删除" }).click();
+  await expect(updated).toBeHidden();
+  await expect(page.getByText("还没有通知目的地")).toBeVisible();
   await expectAccessibleAndContained(page);
 });
