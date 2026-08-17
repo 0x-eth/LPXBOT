@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "wallet-ui-state/local-v1",
+  "workItemId": "P04-01",
+  "implementationStatus": "planned",
+  "implementedComponents": 0,
+  "evidenceLevel": "locally-defined",
+  "routes": [
+    {
+      "path": "/wallets",
+      "implementationStatus": "planned",
+      "views": [
+        "wallet list",
+        "import wallet dialog",
+        "generate wallet dialog",
+        "wallet detail",
+        "balance and token table",
+        "address book",
+        "receive QR",
+        "transfer preview",
+        "transfer progress",
+        "delete preview",
+        "keystore reset preview"
+      ],
+      "states": [
+        { "id": "loading", "entry": "initial query pending", "actions": [] },
+        { "id": "empty", "entry": "wallet query succeeded with zero wallets", "actions": ["import", "generate"] },
+        { "id": "ready", "entry": "wallet metadata and current balance snapshot available", "actions": ["select", "rename", "receive", "transfer", "delete"] },
+        { "id": "locked", "entry": "selected password-mode wallet or keystore is locked", "actions": ["unlock", "cancel"] },
+        { "id": "conflict", "entry": "revision, secret version, preview, idempotency, or nonce conflict", "actions": ["reload", "review-current-state"] },
+        { "id": "error", "entry": "wallet metadata query failed", "actions": ["retry"] },
+        { "id": "balance-stale", "entry": "metadata is ready but chain balance snapshot is stale or unavailable", "actions": ["retry-read"], "fundActionsEnabled": false },
+        { "id": "import-validating", "entry": "write-only import submitted to signer ingress", "actions": ["cancel-if-not-accepted"] },
+        { "id": "generate-pending", "entry": "generation accepted but envelope commit not complete", "actions": [] },
+        { "id": "delete-blocked", "entry": "tasks, strategies, positions, or nonzero assets block normal deletion", "actions": ["review-dependencies", "request-force-preview", "cancel"] },
+        { "id": "destructive-preview", "entry": "server reset or delete preview is current", "actions": ["confirm-phrase-and-reauthenticate", "cancel"] },
+        { "id": "transfer-preview", "entry": "server preview includes resolved amount, gas, balances, and expiry", "actions": ["submit", "edit", "cancel"] },
+        { "id": "transfer-submitting", "entry": "idempotent command is being accepted", "actions": [] },
+        { "id": "transfer-pending", "entry": "operation is signed, broadcast, or pending", "actions": ["view-status"], "successPresentation": false },
+        { "id": "transfer-confirmed", "entry": "receipt, nonce, balance, and applicable Token Transfer reconciliation succeeded", "actions": ["view-transaction"] },
+        { "id": "transfer-failed", "entry": "operation failed, dropped, was replaced, or needs reconciliation", "actions": ["view-lineage", "retry-preview"] }
+      ]
+    },
+    {
+      "path": "/settings",
+      "implementationStatus": "planned",
+      "views": [
+        "keystore security",
+        "auto-lock control",
+        "security password",
+        "client RPC configuration",
+        "OKX key status and mutation"
+      ],
+      "states": [
+        { "id": "loading", "entry": "settings status queries pending", "actions": [] },
+        { "id": "ready", "entry": "non-secret settings metadata available", "actions": ["edit"] },
+        { "id": "locked", "entry": "keystore is locked", "actions": ["unlock"] },
+        { "id": "conflict", "entry": "settings or secret version changed", "actions": ["reload", "re-enter-secret"] },
+        { "id": "error", "entry": "settings query failed", "actions": ["retry"] },
+        { "id": "rpc-unconfigured", "entry": "no custom browser RPC is selected", "actions": ["select-preset", "enter-custom"] },
+        { "id": "rpc-testing", "entry": "browser is executing one allowlisted read-only test", "actions": ["cancel"] },
+        { "id": "rpc-timeout", "entry": "browser timeout elapsed", "actions": ["retry", "edit"] },
+        { "id": "rpc-invalid-response", "entry": "response shape or chainId does not match", "actions": ["edit", "restore-default"] },
+        { "id": "okx-unconfigured", "entry": "status configured=false", "actions": ["save"] },
+        { "id": "okx-testing", "entry": "dedicated connector validation is pending", "actions": ["cancel"] },
+        { "id": "okx-configured", "entry": "status configured=true and status=usable", "actions": ["replace", "test", "delete"] },
+        { "id": "okx-invalid", "entry": "status is invalid, revoked, insufficient-permission, or unknown", "actions": ["replace", "test", "delete"] }
+      ]
+    }
+  ],
+  "loadPolicy": {
+    "walletMetadataAndBalances": "independent so a chain read failure cannot hide wallet metadata",
+    "settingsSections": "independent boundaries with section-level retry",
+    "staleSecrets": "never restore or repopulate",
+    "cache": "no-store for server responses; custom RPC config remains browser-only"
+  },
+  "lockPolicy": {
+    "lockedFundActions": "disabled",
+    "unlockDialog": "dedicated secret input with no browser persistence",
+    "backgroundOrBlur": "does not extend signer unlock deadline",
+    "serverRestart": "password mode presents locked before any action"
+  },
+  "conflictPolicy": {
+    "preserveSecretInput": false,
+    "autoRetryMutation": false,
+    "showCurrentNonSecretState": true,
+    "requireFreshPreviewForFunds": true,
+    "reuseIdempotencyKeyForSameRequest": true,
+    "reuseIdempotencyKeyForChangedRequest": false
+  },
+  "errorPolicy": {
+    "showProviderBody": false,
+    "showRpcUrl": "redacted-only",
+    "showSecretFragment": false,
+    "fundActionOnUnknownState": "disabled",
+    "replacement": "show full lineage and active head without claiming two transfers"
+  },
+  "secretInputs": {
+    "autocomplete": "new-password-or-current-password-as-applicable-never-browser-saved",
+    "repopulateAfterFailure": false,
+    "revealControl": false,
+    "pasteAllowed": true,
+    "copyAllowed": false,
+    "clearOn": ["submit", "cancel", "blur-after-submit", "error", "route-change"]
+  },
+  "amountInputs": {
+    "internalRepresentation": "base-unit-decimal-string",
+    "javascriptNumberAllowed": false,
+    "displayFormatting": "derived from base-unit string and token decimals without changing canonical request",
+    "presets": ["25%", "50%", "75%", "MAX"],
+    "presetResolution": "server-preview",
+    "rounding": "floor-toward-zero-in-base-units"
+  },
+  "qr": {
+    "payload": "EIP-681 URI containing address, chain, optional asset, and optional base-unit amount",
+    "privateMaterial": false,
+    "copyText": "checksum address",
+    "addressVerification": "visible text must exactly match encoded address"
+  },
+  "accessibility": {
+    "focusReturn": true,
+    "destructiveDialogInitialFocus": "cancel",
+    "statusAnnouncements": ["unlock result", "RPC test result", "transfer state change", "conflict"],
+    "colorOnlyState": false
+  }
+}

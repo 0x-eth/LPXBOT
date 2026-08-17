@@ -1,0 +1,635 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "wallet-api/local-v1",
+  "workItemId": "P04-01",
+  "implementationStatus": "planned",
+  "evidenceLevel": "locally-defined",
+  "authentication": "session-required",
+  "ownership": {
+    "authority": "authenticated-user-id",
+    "scope": "all wallet, token, address-book, keystore, password, and transfer reads and writes",
+    "crossUserAccess": "deny-not-found",
+    "adminOverride": false,
+    "reauthenticationRequiredFor": [
+      "wallet import",
+      "wallet generation",
+      "wallet force delete",
+      "mode switch",
+      "password change or reset",
+      "transfer submission",
+      "OKX key mutation"
+    ]
+  },
+  "wireRules": {
+    "mediaType": "application/json",
+    "unknownFields": "reject",
+    "timestamps": "RFC3339 UTC with Z",
+    "amounts": "unsigned-canonical-base-10-base-unit-strings-only",
+    "amountPattern": "^(0|[1-9][0-9]*)$",
+    "floatingPointAmounts": "forbidden",
+    "tokenDecimals": "integer 0..255 from versioned chain metadata",
+    "identifiers": "opaque strings",
+    "addresses": "0x-prefixed 20-byte EVM address; lowercase identity and EIP-55 display",
+    "chainId": "positive safe integer",
+    "cacheControl": "no-store",
+    "requestBodyLimitBytes": 16384,
+    "errorEnvelope": {
+      "requiredFields": ["code", "message", "requestId", "retryable"],
+      "secretFields": "forbidden",
+      "providerErrorBody": "forbidden"
+    }
+  },
+  "secretReadPolicy": {
+    "resources": ["keystore password", "security password", "OKX key"],
+    "returnedFields": "configured-version-status-only",
+    "maskedSecretFragments": false,
+    "hashOrFingerprintReturned": false,
+    "writeResponseMayRepeatSecret": false,
+    "failureResponseMayRepeatInput": false
+  },
+  "concurrency": {
+    "metadataMutations": "expectedRevision-required",
+    "secretMutations": "expectedVersion-required",
+    "transfers": "Idempotency-Key-required",
+    "conflictStatus": 409
+  },
+  "endpoints": [
+    {
+      "id": "wallet-list",
+      "method": "GET",
+      "path": "/api/wallets",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "success": { "status": 200, "body": "WalletPage" },
+      "errors": ["INVALID_QUERY", "UNAUTHENTICATED", "SERVICE_UNAVAILABLE"]
+    },
+    {
+      "id": "wallet-import",
+      "method": "POST",
+      "path": "/api/wallets/import",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "WalletImportWrite",
+      "secretIngress": "dedicated-opaque-stream",
+      "success": { "status": 201, "body": "Wallet" },
+      "errors": ["INVALID_PRIVATE_KEY", "WALLET_ADDRESS_EXISTS", "INVALID_MODE", "REAUTH_REQUIRED", "UNAUTHENTICATED", "SIGNER_UNAVAILABLE"]
+    },
+    {
+      "id": "wallet-generate",
+      "method": "POST",
+      "path": "/api/wallets/generate",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "WalletGenerateWrite",
+      "success": { "status": 201, "body": "Wallet" },
+      "errors": ["INVALID_MODE", "WALLET_LIMIT_EXCEEDED", "REAUTH_REQUIRED", "UNAUTHENTICATED", "SIGNER_UNAVAILABLE"]
+    },
+    {
+      "id": "wallet-get",
+      "method": "GET",
+      "path": "/api/wallets/:walletId",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "success": { "status": 200, "body": "Wallet" },
+      "errors": ["WALLET_NOT_FOUND", "UNAUTHENTICATED"]
+    },
+    {
+      "id": "wallet-update",
+      "method": "PATCH",
+      "path": "/api/wallets/:walletId",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "WalletPatch with expectedRevision",
+      "success": { "status": 200, "body": "Wallet" },
+      "errors": ["INVALID_NAME", "WALLET_NOT_FOUND", "REVISION_CONFLICT", "UNAUTHENTICATED"]
+    },
+    {
+      "id": "wallet-delete",
+      "method": "DELETE",
+      "path": "/api/wallets/:walletId",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "WalletDelete with expectedRevision, previewToken, force, and optional confirmationPhrase",
+      "success": { "status": 204, "body": null },
+      "errors": ["WALLET_NOT_FOUND", "WALLET_HAS_DEPENDENCIES", "WALLET_HAS_ASSETS", "PREVIEW_EXPIRED", "CONFIRMATION_MISMATCH", "REVISION_CONFLICT", "REAUTH_REQUIRED"]
+    },
+    {
+      "id": "wallet-encryption-mode",
+      "method": "POST",
+      "path": "/api/wallets/:walletId/encryption-mode",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "EncryptionModeChange with expectedRevision and expectedSecretVersion",
+      "secretIngress": "dedicated-opaque-stream-when-password-required",
+      "success": { "status": 202, "body": "WalletModeOperation" },
+      "errors": ["WALLET_NOT_FOUND", "WALLET_LOCKED", "INVALID_MODE", "INVALID_CREDENTIALS", "REVISION_CONFLICT", "SECRET_VERSION_CONFLICT", "REAUTH_REQUIRED", "SIGNER_UNAVAILABLE"]
+    },
+    {
+      "id": "wallet-balances",
+      "method": "GET",
+      "path": "/api/wallets/:walletId/balances",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "query": ["chainId", "tokenAddresses", "atBlock"],
+      "success": { "status": 200, "body": "WalletBalancePage" },
+      "errors": ["WALLET_NOT_FOUND", "CHAIN_NOT_ALLOWED", "INVALID_TOKEN", "DATA_STALE", "READ_PROVIDER_UNAVAILABLE"]
+    },
+    {
+      "id": "wallet-token-list",
+      "method": "GET",
+      "path": "/api/wallets/:walletId/tokens",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "query": ["chainId"],
+      "success": { "status": 200, "body": "WalletToken[]" },
+      "errors": ["WALLET_NOT_FOUND", "CHAIN_NOT_ALLOWED", "UNAUTHENTICATED"]
+    },
+    {
+      "id": "wallet-token-import",
+      "method": "POST",
+      "path": "/api/wallets/:walletId/tokens",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "WalletTokenImport",
+      "success": { "status": 201, "body": "WalletToken" },
+      "errors": ["WALLET_NOT_FOUND", "CHAIN_NOT_ALLOWED", "INVALID_TOKEN", "TOKEN_ALREADY_IMPORTED", "TOKEN_METADATA_MISMATCH", "READ_PROVIDER_UNAVAILABLE"]
+    },
+    {
+      "id": "wallet-token-delete",
+      "method": "DELETE",
+      "path": "/api/wallets/:walletId/tokens/:tokenAddress",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "query": ["chainId", "expectedRevision"],
+      "success": { "status": 204, "body": null },
+      "errors": ["WALLET_NOT_FOUND", "TOKEN_NOT_FOUND", "DEFAULT_TOKEN_IMMUTABLE", "REVISION_CONFLICT"]
+    },
+    {
+      "id": "wallet-receive",
+      "method": "GET",
+      "path": "/api/wallets/:walletId/receive",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "query": ["chainId", "assetAddress", "amountBaseUnits"],
+      "success": { "status": 200, "body": "WalletReceiveQr" },
+      "errors": ["WALLET_NOT_FOUND", "CHAIN_NOT_ALLOWED", "INVALID_AMOUNT", "INVALID_TOKEN"]
+    },
+    {
+      "id": "address-book-list",
+      "method": "GET",
+      "path": "/api/address-book",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "success": { "status": 200, "body": "AddressBookEntry[]" },
+      "errors": ["UNAUTHENTICATED", "SERVICE_UNAVAILABLE"]
+    },
+    {
+      "id": "address-book-create",
+      "method": "POST",
+      "path": "/api/address-book",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "AddressBookWrite",
+      "success": { "status": 201, "body": "AddressBookEntry" },
+      "errors": ["INVALID_ADDRESS", "INVALID_LABEL", "ADDRESS_ALREADY_EXISTS", "SECURITY_PASSWORD_REQUIRED", "INVALID_CREDENTIALS"]
+    },
+    {
+      "id": "address-book-update",
+      "method": "PATCH",
+      "path": "/api/address-book/:entryId",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "AddressBookPatch with expectedRevision",
+      "success": { "status": 200, "body": "AddressBookEntry" },
+      "errors": ["ADDRESS_BOOK_ENTRY_NOT_FOUND", "INVALID_LABEL", "REVISION_CONFLICT"]
+    },
+    {
+      "id": "address-book-delete",
+      "method": "DELETE",
+      "path": "/api/address-book/:entryId",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "query": ["expectedRevision"],
+      "success": { "status": 204, "body": null },
+      "errors": ["ADDRESS_BOOK_ENTRY_NOT_FOUND", "REVISION_CONFLICT"]
+    },
+    {
+      "id": "security-password-status",
+      "method": "GET",
+      "path": "/api/security-password/status",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "success": { "status": 200, "body": "KeystoreSecretStatus" },
+      "errors": ["UNAUTHENTICATED", "SIGNER_UNAVAILABLE"]
+    },
+    {
+      "id": "security-password-set-or-change",
+      "method": "PUT",
+      "path": "/api/security-password",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "SecurityPasswordWrite with expectedVersion",
+      "secretIngress": "dedicated-opaque-stream",
+      "success": { "status": 200, "body": "KeystoreSecretStatus" },
+      "errors": ["INVALID_CREDENTIALS", "PASSWORD_POLICY_FAILED", "SECRET_VERSION_CONFLICT", "REAUTH_REQUIRED", "SIGNER_UNAVAILABLE"]
+    },
+    {
+      "id": "keystore-status",
+      "method": "GET",
+      "path": "/api/keystore/status",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "success": { "status": 200, "body": "KeystoreStatus" },
+      "errors": ["UNAUTHENTICATED", "SIGNER_UNAVAILABLE"]
+    },
+    {
+      "id": "keystore-unlock",
+      "method": "POST",
+      "path": "/api/keystore/unlock",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "KeystoreUnlockWrite",
+      "secretIngress": "dedicated-opaque-stream",
+      "success": { "status": 200, "body": "KeystoreStatus" },
+      "errors": ["INVALID_CREDENTIALS", "LOCKED_OUT", "KEYSTORE_CORRUPTED", "REAUTH_REQUIRED", "SIGNER_UNAVAILABLE"]
+    },
+    {
+      "id": "keystore-lock",
+      "method": "POST",
+      "path": "/api/keystore/lock",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "success": { "status": 200, "body": "KeystoreStatus" },
+      "errors": ["UNAUTHENTICATED", "SIGNER_UNAVAILABLE"]
+    },
+    {
+      "id": "keystore-auto-lock",
+      "method": "PATCH",
+      "path": "/api/keystore/auto-lock",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "AutoLockPatch with minutes and expectedVersion",
+      "success": { "status": 200, "body": "KeystoreStatus" },
+      "errors": ["INVALID_AUTO_LOCK", "SECRET_VERSION_CONFLICT", "UNAUTHENTICATED"]
+    },
+    {
+      "id": "keystore-password-create",
+      "method": "POST",
+      "path": "/api/keystore/password",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "KeystorePasswordCreateWrite",
+      "secretIngress": "dedicated-opaque-stream",
+      "success": { "status": 200, "body": "KeystoreSecretStatus" },
+      "errors": ["PASSWORD_ALREADY_CONFIGURED", "PASSWORD_POLICY_FAILED", "REAUTH_REQUIRED", "SIGNER_UNAVAILABLE"]
+    },
+    {
+      "id": "keystore-password-change",
+      "method": "PUT",
+      "path": "/api/keystore/password",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "KeystorePasswordChangeWrite with expectedVersion",
+      "secretIngress": "dedicated-opaque-stream",
+      "success": { "status": 200, "body": "KeystoreSecretStatus" },
+      "errors": ["INVALID_CREDENTIALS", "PASSWORD_POLICY_FAILED", "SECRET_VERSION_CONFLICT", "REAUTH_REQUIRED", "SIGNER_UNAVAILABLE"]
+    },
+    {
+      "id": "keystore-reset-preview",
+      "method": "GET",
+      "path": "/api/keystore/reset-preview",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "success": { "status": 200, "body": "ResetPreview" },
+      "errors": ["UNAUTHENTICATED", "SERVICE_UNAVAILABLE"]
+    },
+    {
+      "id": "keystore-reset",
+      "method": "POST",
+      "path": "/api/keystore/reset",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "KeystoreResetWrite with previewToken, expectedVersion, confirmationPhrase, and optional newPassword",
+      "secretIngress": "dedicated-opaque-stream",
+      "success": { "status": 202, "body": "ResetOperation" },
+      "errors": ["PREVIEW_EXPIRED", "PREVIEW_CHANGED", "CONFIRMATION_MISMATCH", "SECRET_VERSION_CONFLICT", "REAUTH_REQUIRED", "SIGNER_UNAVAILABLE"]
+    },
+    {
+      "id": "transfer-preview",
+      "method": "POST",
+      "path": "/api/wallets/transfers/preview",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "request": "TransferPreviewWrite",
+      "success": { "status": 200, "body": "NativeTransferPreview or Erc20TransferPreview" },
+      "errors": ["WALLET_NOT_FOUND", "WALLET_LOCKED", "INVALID_ADDRESS", "SELF_TRANSFER", "INVALID_AMOUNT", "INSUFFICIENT_BALANCE", "INSUFFICIENT_GAS", "TOKEN_NOT_ALLOWED", "CHAIN_NOT_ALLOWED", "SIMULATION_FAILED", "READ_PROVIDER_UNAVAILABLE"]
+    },
+    {
+      "id": "transfer-create",
+      "method": "POST",
+      "path": "/api/wallets/transfers",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "headers": ["Idempotency-Key"],
+      "request": "TransferCreate",
+      "success": { "status": 202, "body": "TransferOperation" },
+      "errors": ["IDEMPOTENCY_KEY_REQUIRED", "IDEMPOTENCY_CONFLICT", "PREVIEW_EXPIRED", "PREVIEW_CHANGED", "WALLET_LOCKED", "SECURITY_PASSWORD_REQUIRED", "INVALID_CREDENTIALS", "NONCE_CONFLICT", "SIGNER_UNAVAILABLE", "BROADCAST_DISABLED"]
+    },
+    {
+      "id": "transfer-get",
+      "method": "GET",
+      "path": "/api/wallets/transfers/:operationId",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "success": { "status": 200, "body": "TransferOperation" },
+      "errors": ["TRANSFER_NOT_FOUND", "UNAUTHENTICATED", "SERVICE_UNAVAILABLE"]
+    }
+  ],
+  "dtos": [
+    {
+      "id": "Wallet",
+      "direction": "read-only",
+      "fields": [
+        { "name": "walletId", "type": "opaque-id", "direction": "read-only" },
+        { "name": "name", "type": "string-1-80", "direction": "read-only" },
+        { "name": "address", "type": "evm-address", "direction": "read-only" },
+        { "name": "mode", "type": "server-kek-or-user-password", "direction": "read-only" },
+        { "name": "lockStatus", "type": "wallet-lock-status", "direction": "read-only" },
+        { "name": "envelopeVersion", "type": "positive-integer", "direction": "read-only" },
+        { "name": "revision", "type": "positive-integer", "direction": "read-only" },
+        { "name": "createdAt", "type": "timestamp", "direction": "read-only" },
+        { "name": "updatedAt", "type": "timestamp", "direction": "read-only" }
+      ]
+    },
+    {
+      "id": "WalletImportWrite",
+      "direction": "write-only-secret-bearing",
+      "fields": [
+        { "name": "name", "type": "string-1-80", "direction": "write-only" },
+        { "name": "mode", "type": "server-kek-or-user-password", "direction": "write-only" },
+        { "name": "privateKey", "type": "secp256k1-private-key", "direction": "write-only", "secret": true },
+        { "name": "password", "type": "password", "direction": "write-only", "secret": true, "requiredWhen": "mode=user-password" }
+      ]
+    },
+    {
+      "id": "WalletGenerateWrite",
+      "direction": "write-only",
+      "fields": [
+        { "name": "name", "type": "string-1-80", "direction": "write-only" },
+        { "name": "mode", "type": "server-kek-or-user-password", "direction": "write-only" },
+        { "name": "password", "type": "password", "direction": "write-only", "secret": true, "requiredWhen": "mode=user-password" }
+      ]
+    },
+    {
+      "id": "WalletBalance",
+      "direction": "read-only",
+      "fields": [
+        { "name": "chainId", "type": "positive-integer", "direction": "read-only" },
+        { "name": "walletId", "type": "opaque-id", "direction": "read-only" },
+        { "name": "assetAddress", "type": "native-or-evm-address", "direction": "read-only" },
+        { "name": "balanceBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "decimals", "type": "integer-0-255", "direction": "read-only" },
+        { "name": "usdValueDecimal", "type": "nullable-canonical-decimal-string", "direction": "read-only" },
+        { "name": "priceStatus", "type": "available-missing-stale", "direction": "read-only" },
+        { "name": "blockNumber", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true }
+      ]
+    },
+    {
+      "id": "WalletToken",
+      "direction": "read-only",
+      "fields": [
+        { "name": "chainId", "type": "positive-integer", "direction": "read-only" },
+        { "name": "tokenAddress", "type": "evm-address", "direction": "read-only" },
+        { "name": "symbol", "type": "string", "direction": "read-only" },
+        { "name": "name", "type": "string", "direction": "read-only" },
+        { "name": "decimals", "type": "integer-0-255", "direction": "read-only" },
+        { "name": "balanceBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "source", "type": "default-or-user-imported", "direction": "read-only" },
+        { "name": "metadataStatus", "type": "verified-missing-conflict", "direction": "read-only" }
+      ]
+    },
+    {
+      "id": "AddressBookEntry",
+      "direction": "read-only",
+      "fields": [
+        { "name": "entryId", "type": "opaque-id", "direction": "read-only" },
+        { "name": "label", "type": "string-1-80", "direction": "read-only" },
+        { "name": "address", "type": "evm-address", "direction": "read-only" },
+        { "name": "addressKind", "type": "own-wallet-known-external-new-external", "direction": "read-only" },
+        { "name": "revision", "type": "positive-integer", "direction": "read-only" }
+      ]
+    },
+    {
+      "id": "AddressBookWrite",
+      "direction": "write-only",
+      "fields": [
+        { "name": "label", "type": "string-1-80", "direction": "write-only" },
+        { "name": "address", "type": "evm-address", "direction": "write-only" },
+        { "name": "securityPassword", "type": "password", "direction": "write-only", "secret": true, "requiredWhen": "addressKind=new-external" }
+      ]
+    },
+    {
+      "id": "WalletReceiveQr",
+      "direction": "read-only",
+      "fields": [
+        { "name": "walletId", "type": "opaque-id", "direction": "read-only" },
+        { "name": "address", "type": "evm-address", "direction": "read-only" },
+        { "name": "chainId", "type": "positive-integer", "direction": "read-only" },
+        { "name": "assetAddress", "type": "nullable-evm-address", "direction": "read-only" },
+        { "name": "amountBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "payload", "type": "EIP-681-uri", "direction": "read-only" },
+        { "name": "qrEncoding", "type": "UTF-8-QR-M", "direction": "read-only" }
+      ]
+    },
+    {
+      "id": "SecurityPasswordWrite",
+      "direction": "write-only-secret-bearing",
+      "fields": [
+        { "name": "oldPassword", "type": "nullable-password", "direction": "write-only", "secret": true },
+        { "name": "newPassword", "type": "password", "direction": "write-only", "secret": true },
+        { "name": "expectedVersion", "type": "nonnegative-integer", "direction": "write-only" }
+      ]
+    },
+    {
+      "id": "KeystorePasswordCreateWrite",
+      "direction": "write-only-secret-bearing",
+      "fields": [
+        { "name": "newPassword", "type": "password", "direction": "write-only", "secret": true }
+      ]
+    },
+    {
+      "id": "KeystorePasswordChangeWrite",
+      "direction": "write-only-secret-bearing",
+      "fields": [
+        { "name": "oldPassword", "type": "password", "direction": "write-only", "secret": true },
+        { "name": "newPassword", "type": "password", "direction": "write-only", "secret": true },
+        { "name": "expectedVersion", "type": "positive-integer", "direction": "write-only" }
+      ]
+    },
+    {
+      "id": "KeystoreUnlockWrite",
+      "direction": "write-only-secret-bearing",
+      "fields": [
+        { "name": "password", "type": "password", "direction": "write-only", "secret": true }
+      ]
+    },
+    {
+      "id": "KeystoreSecretStatus",
+      "direction": "read-only",
+      "fields": [
+        { "name": "configured", "type": "boolean", "direction": "read-only" },
+        { "name": "version", "type": "positive-integer", "direction": "read-only" },
+        { "name": "status", "type": "secret-status", "direction": "read-only" }
+      ]
+    },
+    {
+      "id": "NativeTransferPreview",
+      "direction": "read-only",
+      "fields": [
+        { "name": "previewToken", "type": "opaque-short-lived-token", "direction": "read-only" },
+        { "name": "amountBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "estimatedGasBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "maxFeeBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "senderBalanceBeforeBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "senderBalanceAfterBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "expiresAt", "type": "timestamp", "direction": "read-only" }
+      ]
+    },
+    {
+      "id": "Erc20TransferPreview",
+      "direction": "read-only",
+      "fields": [
+        { "name": "previewToken", "type": "opaque-short-lived-token", "direction": "read-only" },
+        { "name": "tokenAddress", "type": "evm-address", "direction": "read-only" },
+        { "name": "amountBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "tokenBalanceBeforeBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "tokenBalanceAfterBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "estimatedGasBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "nativeGasBalanceBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "maxFeeBaseUnits", "type": "decimal-base-unit-string", "direction": "read-only", "monetary": true },
+        { "name": "expiresAt", "type": "timestamp", "direction": "read-only" }
+      ]
+    },
+    {
+      "id": "TransferCreate",
+      "direction": "write-only",
+      "fields": [
+        { "name": "walletId", "type": "opaque-id", "direction": "write-only" },
+        { "name": "chainId", "type": "positive-integer", "direction": "write-only" },
+        { "name": "assetKind", "type": "native-or-erc20", "direction": "write-only" },
+        { "name": "tokenAddress", "type": "nullable-evm-address", "direction": "write-only" },
+        { "name": "toAddress", "type": "evm-address", "direction": "write-only" },
+        { "name": "amountBaseUnits", "type": "decimal-base-unit-string", "direction": "write-only", "monetary": true },
+        { "name": "previewToken", "type": "opaque-short-lived-token", "direction": "write-only" },
+        { "name": "securityPassword", "type": "password", "direction": "write-only", "secret": true, "requiredWhen": "new-external-address-policy" }
+      ]
+    },
+    {
+      "id": "ResetPreview",
+      "direction": "read-only",
+      "fields": [
+        { "name": "previewToken", "type": "opaque-short-lived-token", "direction": "read-only" },
+        { "name": "walletCount", "type": "nonnegative-integer", "direction": "read-only" },
+        { "name": "taskCount", "type": "nonnegative-integer", "direction": "read-only" },
+        { "name": "strategyCount", "type": "nonnegative-integer", "direction": "read-only" },
+        { "name": "walletsWithNonzeroAssets", "type": "nonnegative-integer", "direction": "read-only" },
+        { "name": "walletsWithPositions", "type": "nonnegative-integer", "direction": "read-only" },
+        { "name": "confirmationPhrase", "type": "literal", "direction": "read-only" },
+        { "name": "expiresAt", "type": "timestamp", "direction": "read-only" }
+      ]
+    }
+  ],
+  "transferAmountSelection": {
+    "uiPresetsBps": [2500, 5000, 7500, 10000],
+    "labels": ["25%", "50%", "75%", "MAX"],
+    "clientMayComputeFinalBaseUnits": false,
+    "previewResolvesAmount": true,
+    "nativeMax": "balance minus worst-case gas reserve",
+    "erc20Max": "full token balance with separate native gas sufficiency check"
+  },
+  "reset": {
+    "previewTtlSeconds": 300,
+    "confirmationPhrase": "I_LOSE_ALL_PASSWORD_WALLETS",
+    "previewBinds": ["userId", "secretVersion", "walletCount", "taskCount", "strategyCount", "assetRiskDigest", "expiresAt"],
+    "changedPreview": "409 PREVIEW_CHANGED",
+    "partialDestruction": "forbidden"
+  },
+  "observedCompatibilityCandidates": {
+    "classification": "BUNDLE-CANDIDATE",
+    "paths": [
+      "/api/auth/keystore-status",
+      "/api/auth/set-password",
+      "/api/auth/change-password",
+      "/api/auth/unlock",
+      "/api/auth/lock",
+      "/api/auth/auto-lock-minutes",
+      "/api/auth/reset-preview",
+      "/api/auth/reset-password",
+      "/api/preset-keys/:walletId/encryption-mode",
+      "/api/address-book",
+      "/api/security-password/status",
+      "/api/security-password/set",
+      "/api/wallets/:walletId/balances",
+      "/api/wallets/transfer"
+    ],
+    "canonicalLocalPathsMayClaimTargetParity": false
+  }
+}
