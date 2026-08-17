@@ -245,7 +245,6 @@ test("POOL-13 shares one accessible row action menu across pointer and keyboard"
   const screenshot = await page.screenshot({
     animations: "disabled",
     caret: "hide",
-    fullPage: true,
     path: `artifacts/acceptance/P02-11/ui/pool-actions-${testInfo.project.name}.png`,
   });
   expect(screenshot.byteLength).toBeGreaterThan(10_000);
