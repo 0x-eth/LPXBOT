@@ -58,11 +58,12 @@ import { AdminChainManagementSection } from "./chain-management";
 import { Eip1193WalletAdapter, browserEip1193Provider } from "./eip1193-wallet";
 import { ConfirmDialog, FeedbackProvider, useFeedback } from "./feedback";
 import { UserPreferencesProvider, useUserPreferences } from "./preferences";
+import { PoolBlocklistProvider, usePoolBlocklist } from "./pool-blocklist";
 import { PwaUpdateBridge } from "./pwa-updates";
 import { PoolsPage } from "./pools-page";
 import { InterfaceSettings } from "./settings-interface";
 import { ShellStatsContextProvider, ShellStatusBar, useShellStats } from "./shell-stats-react";
-import { shellStatsDisplay } from "./shell-stats";
+import { ApiShellStatsProvider, shellStatsDisplay } from "./shell-stats";
 import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
 
 function BootingPage() {
@@ -73,6 +74,23 @@ function BootingPage() {
       <p role="status">Restoring session</p>
     </main>
   );
+}
+
+function UserScopedStats({ children }: { children: ReactNode }) {
+  const blocklist = usePoolBlocklist();
+  const scope = useMemo(
+    () => ({
+      blocklistHash: blocklist.snapshot?.blocklistHash ?? null,
+      recommendationChain:
+        blocklist.loaded || blocklist.status === "error" ? ("bsc" as const) : null,
+    }),
+    [blocklist.loaded, blocklist.snapshot?.blocklistHash, blocklist.status],
+  );
+  const provider = useMemo(
+    () => new ApiShellStatsProvider({ recommendationChain: scope.recommendationChain }),
+    [scope],
+  );
+  return <ShellStatsContextProvider provider={provider}>{children}</ShellStatsContextProvider>;
 }
 
 function AuthenticatingPage({
@@ -1034,17 +1052,19 @@ function AuthRouter() {
   if (!canEnterRoute(path, state)) return <Navigate to="/tasks/running" replace />;
   return (
     <UserPreferencesProvider>
-      <ShellStatsContextProvider>
-        <Shell
-          client={client}
-          onClientChange={(nextState, nextPage) => {
-            setState(nextState);
-            setPage(nextPage);
-          }}
-          page={page}
-          state={state}
-        />
-      </ShellStatsContextProvider>
+      <PoolBlocklistProvider key={state.session.userId} userId={state.session.userId}>
+        <UserScopedStats>
+          <Shell
+            client={client}
+            onClientChange={(nextState, nextPage) => {
+              setState(nextState);
+              setPage(nextPage);
+            }}
+            page={page}
+            state={state}
+          />
+        </UserScopedStats>
+      </PoolBlocklistProvider>
     </UserPreferencesProvider>
   );
 }

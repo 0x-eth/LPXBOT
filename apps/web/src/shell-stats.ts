@@ -224,20 +224,29 @@ function decodeBase64Url(value: string): string | null {
 }
 
 function validRecommendationCursor(event: RecommendedPoolsSnapshotEvent): boolean {
-  const [prefix, version, chain, limit, sourceVersion, sourceWindowEnd, hash, ...extra] =
-    event.cursor.split(":");
+  const parts = event.cursor.split(":");
+  const [prefix, version, chain, limit] = parts;
+  if (
+    prefix !== "rec-pools" ||
+    (version !== "v1" && version !== "v2") ||
+    chain !== "bsc" ||
+    typeof limit !== "string" ||
+    !/^(?:[1-9]|1[0-9]|20)$/u.test(limit)
+  ) {
+    return false;
+  }
+  const offset = version === "v2" ? 1 : 0;
+  if (version === "v2" && !/^[0-9a-f]{64}$/u.test(parts[4] ?? "")) return false;
+  const sourceVersion = parts[4 + offset];
+  const sourceWindowEnd = parts[5 + offset];
+  const hash = parts[6 + offset];
   return (
-    prefix === "rec-pools" &&
-    version === "v1" &&
-    chain === "bsc" &&
-    typeof limit === "string" &&
-    /^(?:[1-9]|1[0-9]|20)$/u.test(limit) &&
     typeof sourceVersion === "string" &&
     decodeBase64Url(sourceVersion) === event.sourceVersion &&
     typeof sourceWindowEnd === "string" &&
     decodeBase64Url(sourceWindowEnd) === event.sourceWindowEnd &&
     hash === event.selectionHash.slice("sha256:".length) &&
-    extra.length === 0
+    parts.length === 7 + offset
   );
 }
 
