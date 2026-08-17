@@ -64,6 +64,7 @@ import { PwaUpdateBridge } from "./pwa-updates";
 import { PoolsPage } from "./pools-page";
 import { InterfaceSettings } from "./settings-interface";
 import { MonitorsPage } from "./monitors-page";
+import { NotificationSettings } from "./notification-settings";
 import { ShellStatsContextProvider, ShellStatusBar, useShellStats } from "./shell-stats-react";
 import { ApiShellStatsProvider, createShellStatsState, shellStatsDisplay } from "./shell-stats";
 import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
@@ -394,6 +395,7 @@ function SettingsPage({ client, session }: { client: AuthClient; session: Sessio
         <span className="sr-only">Settings</span>
       </h1>
       <InterfaceSettings />
+      <NotificationSettings />
       <LoginWalletSettingsSection client={client} />
       {session.role === "admin" ? <AdminChainManagementSection /> : null}
     </main>
