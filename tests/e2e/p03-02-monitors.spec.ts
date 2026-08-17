@@ -333,6 +333,12 @@ test("MON-01 creates a disabled BSC monitor from loading and empty states", asyn
   );
   await editor.getByLabel("监控名称").fill("BSC 成交量");
   await editor.getByLabel("Pool Key").fill(poolKey);
+  await editor.getByLabel("指标 1").selectOption("transactionCount");
+  await editor.getByLabel("阈值 1").fill("9007199254740992");
+  await expect(editor.getByRole("button", { name: "保存监控" })).toBeDisabled();
+  await editor.getByLabel("阈值 1").fill("9007199254740991");
+  await expect(editor.getByRole("button", { name: "保存监控" })).toBeEnabled();
+  await editor.getByLabel("指标 1").selectOption("volumeUsd");
   await editor.getByLabel("阈值 1").fill("1000.25");
   const windows = editor.getByRole("radiogroup", { name: "评估窗口" });
   await expect(windows.getByRole("radio")).toHaveCount(5);
