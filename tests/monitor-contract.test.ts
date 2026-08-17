@@ -10,7 +10,7 @@ import {
   type Monitor,
   type MonitorPage,
   type PatchMonitorRequest,
-} from "@lpbot/api-contract";
+} from "../packages/api-contract/src/index.js";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
 const poolKey = `56:0x${"a".repeat(40)}` as const;
