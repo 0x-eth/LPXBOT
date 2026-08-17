@@ -8,6 +8,7 @@ const userA = "38000000-0000-4000-8000-000000000001";
 const userB = "38000000-0000-4000-8000-000000000002";
 const monitorA = "38000000-0000-4000-8000-000000000011";
 const monitorB = "38000000-0000-4000-8000-000000000012";
+const now = new Date("2026-08-18T00:05:00.000Z");
 
 function record(
   deliveryId: string,
@@ -45,8 +46,8 @@ const apps: Array<ReturnType<typeof buildApiApp>> = [];
 async function fixture() {
   const sessionStore = new SessionFixtureStore();
   const [tokenA, tokenB] = await Promise.all([
-    issueFixtureSession(sessionStore, userA),
-    issueFixtureSession(sessionStore, userB),
+    issueFixtureSession(sessionStore, userA, now),
+    issueFixtureSession(sessionStore, userB, now),
   ]);
   const history = new MemoryNotificationHistoryStore([
     record("38000000-0000-4000-8000-000000000103", "2026-08-18T00:03:00.000Z", "failed"),
@@ -63,6 +64,7 @@ async function fixture() {
   const app = buildApiApp({
     maintenance: { enabled: false, message: null, until: null },
     notificationHistoryStore: history,
+    now: () => now,
     regionPolicy: () => ({ blocked: false, code: null, message: null }),
     sessionStore,
   });
