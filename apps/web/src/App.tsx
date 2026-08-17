@@ -69,7 +69,7 @@ import { PwaUpdateBridge } from "./pwa-updates";
 import { PoolsPage } from "./pools-page";
 import { InterfaceSettings } from "./settings-interface";
 import { ShellStatsContextProvider, ShellStatusBar, useShellStats } from "./shell-stats-react";
-import { ApiShellStatsProvider, shellStatsDisplay } from "./shell-stats";
+import { ApiShellStatsProvider, createShellStatsState, shellStatsDisplay } from "./shell-stats";
 import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
 
 function BootingPage() {
@@ -87,13 +87,20 @@ function UserScopedStats({ children }: { children: ReactNode }) {
   const scope = useMemo(
     () => ({
       blocklistHash: blocklist.snapshot?.blocklistHash ?? null,
-      recommendationChain:
-        blocklist.loaded || blocklist.status === "error" ? ("bsc" as const) : null,
+      ready: blocklist.loaded || blocklist.status === "error",
     }),
     [blocklist.loaded, blocklist.snapshot?.blocklistHash, blocklist.status],
   );
   const provider = useMemo(
-    () => new ApiShellStatsProvider({ recommendationChain: scope.recommendationChain }),
+    () =>
+      scope.ready
+        ? new ApiShellStatsProvider({ recommendationChain: "bsc" })
+        : {
+            subscribe(listener: Parameters<ApiShellStatsProvider["subscribe"]>[0]) {
+              listener(createShellStatsState());
+              return () => undefined;
+            },
+          },
     [scope],
   );
   return <ShellStatsContextProvider provider={provider}>{children}</ShellStatsContextProvider>;
