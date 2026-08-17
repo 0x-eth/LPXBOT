@@ -12,9 +12,7 @@ const ACCEPTANCE = path.join(ROOT, "artifacts/acceptance/P03-01");
 const BASELINE = "059d1b56e50a877ec0391a9188eae55dff1c6354";
 const FEATURE_IDS = [
   ...Array.from({ length: 6 }, (_, index) => `MON-${String(index + 1).padStart(2, "0")}`),
-  ...Array.from({ length: 2 }, (_, index) =>
-    `NOTIFY-${String(index + 1).padStart(2, "0")}`,
-  ),
+  ...Array.from({ length: 2 }, (_, index) => `NOTIFY-${String(index + 1).padStart(2, "0")}`),
 ];
 const REQUIRED_ARTIFACTS = [
   "api-contracts.json",
@@ -256,19 +254,12 @@ test("domain contract freezes monitor ownership, AND evaluation, freshness, and 
   const metricConditions = by(contract.conditions.metricConditions, "id");
   assert.deepEqual(
     sorted(metricConditions.keys()),
-    sorted([
-      "feeTvlRatio",
-      "feesUsd",
-      "metricVersion",
-      "transactionCount",
-      "tvlUsd",
-      "volumeUsd",
-    ]),
+    sorted(["feeTvlRatio", "feesUsd", "metricVersion", "transactionCount", "tvlUsd", "volumeUsd"]),
   );
-  assert.deepEqual(
-    sorted(contract.conditions.unresolved.map(({ id }) => id)),
-    ["activeTvlUsd", "feeAtvlRatio"],
-  );
+  assert.deepEqual(sorted(contract.conditions.unresolved.map(({ id }) => id)), [
+    "activeTvlUsd",
+    "feeAtvlRatio",
+  ]);
   for (const unresolved of contract.conditions.unresolved) {
     assert.equal(unresolved.status, "unresolved");
     assert.equal(unresolved.configurable, false);
@@ -294,7 +285,10 @@ test("domain contract freezes monitor ownership, AND evaluation, freshness, and 
     "stale",
   ]);
   assert.equal(contract.eligibility.order[0], "authenticate-owner");
-  assert.ok(contract.eligibility.order.indexOf("P02-11-blocklist") < contract.eligibility.order.indexOf("conditions-AND"));
+  assert.ok(
+    contract.eligibility.order.indexOf("P02-11-blocklist") <
+      contract.eligibility.order.indexOf("conditions-AND"),
+  );
   assert.equal(contract.eligibility.blocklist.authority, "server");
   assert.equal(
     contract.eligibility.blocklist.source,
@@ -449,7 +443,10 @@ test("security contract freezes templates, SSRF controls, signatures, and local-
   assert.equal(contract.templates.unknownVariable, "validation-error");
   assert.equal(contract.templates.getEncoding, "RFC3986-percent-encode-each-value");
   assert.equal(contract.templates.postEncoding, "JSON-string-escape-before-substitution");
-  assert.equal(contract.templates.telegramEncoding, "Telegram-HTML-escape-&-less-than-greater-than");
+  assert.equal(
+    contract.templates.telegramEncoding,
+    "Telegram-HTML-escape-&-less-than-greater-than",
+  );
   assert.deepEqual(contract.templates.limits, {
     templateBytes: 16384,
     expandedUrlBytes: 4096,
@@ -631,7 +628,10 @@ test("fixture index hashes every offline fixture and all unresolved subjects hav
 
 test("manifest reference hashes are anchored to the requested baseline", async () => {
   const manifest = await readJson("artifact-manifest.json");
-  assert.deepEqual(sorted(manifest.references.map(({ path: value }) => value)), sorted(REFERENCE_PATHS));
+  assert.deepEqual(
+    sorted(manifest.references.map(({ path: value }) => value)),
+    sorted(REFERENCE_PATHS),
+  );
   unique(
     manifest.references.map(({ path: value }) => value),
     "reference paths",
@@ -696,6 +696,10 @@ test("manifest inventory and sha256sums cover every non-self-referential P03-01 
     const sha256 = digest(bytes);
     assert.equal(checksumMap.get(relativePath).sha256, sha256, `${relativePath} checksum`);
     assert.equal(manifestMap.get(relativePath).sha256, sha256, `${relativePath} manifest hash`);
-    assert.equal(manifestMap.get(relativePath).bytes, bytes.length, `${relativePath} manifest bytes`);
+    assert.equal(
+      manifestMap.get(relativePath).bytes,
+      bytes.length,
+      `${relativePath} manifest bytes`,
+    );
   }
 });
