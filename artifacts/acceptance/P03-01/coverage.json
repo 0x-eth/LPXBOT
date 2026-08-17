@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P03-01",
+  "phase": "P03",
+  "risk": "R0",
+  "status": "contract-frozen-with-unresolved-gaps",
+  "workItemFeatureIds": [],
+  "implementationOwnership": "none",
+  "counts": {
+    "implemented-assumed": 0,
+    "planned": 8
+  },
+  "features": [
+    {
+      "id": "MON-01",
+      "phase": "P03",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractCoverage": ["api", "domain", "ui"]
+    },
+    {
+      "id": "MON-02",
+      "phase": "P03",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractCoverage": ["domain", "fixtures", "ui"]
+    },
+    {
+      "id": "MON-03",
+      "phase": "P03",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractCoverage": ["domain", "fixtures", "ui"]
+    },
+    {
+      "id": "MON-04",
+      "phase": "P03",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractCoverage": ["api", "delivery", "security", "ui"]
+    },
+    {
+      "id": "MON-05",
+      "phase": "P03",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractCoverage": ["api", "delivery", "ui"]
+    },
+    {
+      "id": "MON-06",
+      "phase": "P03",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractCoverage": ["delivery", "security", "fixtures"]
+    },
+    {
+      "id": "NOTIFY-01",
+      "phase": "P03",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractCoverage": ["api", "delivery", "ui"]
+    },
+    {
+      "id": "NOTIFY-02",
+      "phase": "P03",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractCoverage": ["api", "delivery", "security", "ui"]
+    }
+  ],
+  "claims": {
+    "implementedBehavior": false,
+    "parityVerified": false,
+    "released": false,
+    "referenceOnly": true
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P03-01",
+  "status": "contract-frozen-with-unresolved-gaps",
+  "items": [
+    {
+      "id": "GAP-P03-ACTIVE-TVL",
+      "subject": "active TVL",
+      "category": "metric",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "P02 does not define an authoritative active-liquidity denominator, so active TVL cannot be configured or matched.",
+      "requiredFollowUp": "Freeze an authoritative active-liquidity source, unit, window, null policy, and metric version before enabling this condition."
+    },
+    {
+      "id": "GAP-P03-FEE-ATVL",
+      "subject": "Fee/aTVL",
+      "category": "formula",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "Fee/aTVL remains undefined while active TVL is unresolved.",
+      "requiredFollowUp": "Resolve active TVL first, then freeze the Fee/aTVL numerator window, denominator instant, zero policy, precision, and metric version."
+    },
+    {
+      "id": "GAP-P03-TARGET-MONITOR-PARITY",
+      "subject": "target monitor field and UI parity",
+      "category": "parity",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "The local contract is not backed by a complete authenticated target monitor capture across roles, themes, widths, and failure states.",
+      "requiredFollowUp": "Capture authorized target monitor API and UI evidence and reconcile every field and state before a parity claim."
+    },
+    {
+      "id": "GAP-P03-TELEGRAM-LIVE",
+      "subject": "live Telegram delivery",
+      "category": "external-delivery",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "P03-01 uses an explicit offline local sink and does not contact Telegram.",
+      "requiredFollowUp": "Implement a secret-backed adapter and execute an approved staging delivery matrix without changing the local fixture contract."
+    },
+    {
+      "id": "GAP-P03-WEBHOOK-LIVE",
+      "subject": "live external Webhook delivery",
+      "category": "external-delivery",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "P03-01 performs no DNS lookup, redirect, or external Webhook request.",
+      "requiredFollowUp": "Implement the frozen egress policy and verify it against an explicitly registered staging endpoint."
+    },
+    {
+      "id": "GAP-P03-DELIVERY-SLO",
+      "subject": "production delivery SLO and rate limits",
+      "category": "operations",
+      "status": "unresolved",
+      "blocksParity": true,
+      "reason": "Retry timings and local limits are frozen as implementation inputs but have no production load or provider-quota evidence.",
+      "requiredFollowUp": "Validate throughput, provider quotas, alerting, retention, and dead-letter operations in staging before release."
+    }
+  ]
+}

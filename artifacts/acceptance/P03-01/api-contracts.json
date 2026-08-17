@@ -1,0 +1,277 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "monitor-api/local-v1",
+  "workItemId": "P03-01",
+  "implementationStatus": "planned",
+  "evidenceLevel": "locally-defined",
+  "authentication": "session-required",
+  "ownership": {
+    "authority": "authenticated-user-id",
+    "scope": "all monitor, destination, preference, and history reads and writes",
+    "crossUserAccess": "deny-not-found",
+    "adminOverride": false
+  },
+  "wireRules": {
+    "mediaType": "application/json",
+    "unknownFields": "reject",
+    "timestamps": "RFC3339 UTC with Z",
+    "decimalValues": "canonical base-10 strings",
+    "identifiers": "opaque strings",
+    "cacheControl": "no-store",
+    "requestBodyLimitBytes": 65536,
+    "errorEnvelope": {
+      "requiredFields": ["code", "message", "requestId"],
+      "secretFields": "forbidden"
+    }
+  },
+  "endpoints": [
+    {
+      "id": "monitor-list",
+      "method": "GET",
+      "path": "/api/monitors",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "query": ["cursor", "limit", "enabled"],
+      "success": { "status": 200, "body": "MonitorPage" },
+      "errors": ["INVALID_QUERY", "UNAUTHENTICATED", "SERVICE_UNAVAILABLE"]
+    },
+    {
+      "id": "monitor-create",
+      "method": "POST",
+      "path": "/api/monitors",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "headers": ["Idempotency-Key"],
+      "request": "MonitorCreate",
+      "success": { "status": 201, "body": "Monitor" },
+      "errors": [
+        "INVALID_MONITOR",
+        "UNSUPPORTED_METRIC",
+        "POOL_NOT_ELIGIBLE",
+        "LIMIT_EXCEEDED",
+        "IDEMPOTENCY_CONFLICT",
+        "UNAUTHENTICATED"
+      ]
+    },
+    {
+      "id": "monitor-get",
+      "method": "GET",
+      "path": "/api/monitors/:monitorId",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "success": { "status": 200, "body": "Monitor" },
+      "errors": ["MONITOR_NOT_FOUND", "UNAUTHENTICATED"]
+    },
+    {
+      "id": "monitor-update",
+      "method": "PATCH",
+      "path": "/api/monitors/:monitorId",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "concurrency": "expected-revision-required",
+      "request": "MonitorPatch with expectedRevision",
+      "success": { "status": 200, "body": "Monitor" },
+      "errors": [
+        "INVALID_MONITOR",
+        "UNSUPPORTED_METRIC",
+        "MONITOR_NOT_FOUND",
+        "REVISION_CONFLICT",
+        "UNAUTHENTICATED"
+      ]
+    },
+    {
+      "id": "monitor-delete",
+      "method": "DELETE",
+      "path": "/api/monitors/:monitorId",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "concurrency": "expected-revision-required",
+      "request": "expectedRevision",
+      "success": { "status": 204, "body": null },
+      "errors": ["MONITOR_NOT_FOUND", "REVISION_CONFLICT", "UNAUTHENTICATED"]
+    },
+    {
+      "id": "monitor-enable",
+      "method": "POST",
+      "path": "/api/monitors/:monitorId/enable",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "concurrency": "expected-revision-required",
+      "request": "expectedRevision",
+      "success": { "status": 200, "body": "Monitor" },
+      "errors": [
+        "MONITOR_NOT_FOUND",
+        "MONITOR_NOT_READY",
+        "POOL_NOT_ELIGIBLE",
+        "REVISION_CONFLICT",
+        "UNAUTHENTICATED"
+      ]
+    },
+    {
+      "id": "monitor-disable",
+      "method": "POST",
+      "path": "/api/monitors/:monitorId/disable",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "concurrency": "expected-revision-required",
+      "request": "expectedRevision",
+      "success": { "status": 200, "body": "Monitor" },
+      "errors": ["MONITOR_NOT_FOUND", "REVISION_CONFLICT", "UNAUTHENTICATED"]
+    },
+    {
+      "id": "notification-history",
+      "method": "GET",
+      "path": "/api/notifications/history",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "query": ["cursor", "limit", "monitorId", "deliveryStatus", "from", "to"],
+      "success": { "status": 200, "body": "NotificationHistoryPage" },
+      "errors": ["INVALID_QUERY", "UNAUTHENTICATED", "SERVICE_UNAVAILABLE"]
+    },
+    {
+      "id": "notification-preferences-get",
+      "method": "GET",
+      "path": "/api/notification-preferences",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "success": { "status": 200, "body": "NotificationPreferences" },
+      "errors": ["UNAUTHENTICATED", "SERVICE_UNAVAILABLE"]
+    },
+    {
+      "id": "notification-preferences-update",
+      "method": "PATCH",
+      "path": "/api/notification-preferences",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "concurrency": "expected-revision-required",
+      "request": "NotificationPreferencesPatch with expectedRevision",
+      "success": { "status": 200, "body": "NotificationPreferences" },
+      "errors": ["INVALID_PREFERENCES", "REVISION_CONFLICT", "UNAUTHENTICATED"]
+    },
+    {
+      "id": "notification-destination-list",
+      "method": "GET",
+      "path": "/api/notification-destinations",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "success": { "status": 200, "body": "NotificationDestination[]" },
+      "errors": ["UNAUTHENTICATED", "SERVICE_UNAVAILABLE"]
+    },
+    {
+      "id": "notification-destination-create",
+      "method": "POST",
+      "path": "/api/notification-destinations",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "headers": ["Idempotency-Key"],
+      "request": "NotificationDestinationCreate",
+      "success": { "status": 201, "body": "NotificationDestinationRedacted" },
+      "errors": [
+        "INVALID_DESTINATION",
+        "UNKNOWN_TEMPLATE_VARIABLE",
+        "UNSAFE_WEBHOOK_TARGET",
+        "LIMIT_EXCEEDED",
+        "IDEMPOTENCY_CONFLICT",
+        "UNAUTHENTICATED"
+      ]
+    },
+    {
+      "id": "notification-destination-update",
+      "method": "PATCH",
+      "path": "/api/notification-destinations/:destinationId",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "concurrency": "expected-revision-required",
+      "request": "NotificationDestinationPatch with expectedRevision",
+      "success": { "status": 200, "body": "NotificationDestinationRedacted" },
+      "errors": [
+        "DESTINATION_NOT_FOUND",
+        "INVALID_DESTINATION",
+        "UNKNOWN_TEMPLATE_VARIABLE",
+        "UNSAFE_WEBHOOK_TARGET",
+        "REVISION_CONFLICT",
+        "UNAUTHENTICATED"
+      ]
+    },
+    {
+      "id": "notification-destination-delete",
+      "method": "DELETE",
+      "path": "/api/notification-destinations/:destinationId",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "concurrency": "expected-revision-required",
+      "request": "expectedRevision",
+      "success": { "status": 204, "body": null },
+      "errors": ["DESTINATION_NOT_FOUND", "REVISION_CONFLICT", "UNAUTHENTICATED"]
+    },
+    {
+      "id": "notification-destination-test",
+      "method": "POST",
+      "path": "/api/notification-destinations/test",
+      "authentication": "session-required",
+      "ownerScope": "current-user",
+      "cacheControl": "no-store",
+      "implementationStatus": "planned",
+      "productionRoute": false,
+      "persistence": "never-persist-draft-or-test",
+      "request": "NotificationDestinationDraft",
+      "success": { "status": 200, "body": "LocalSinkTestResult" },
+      "errors": [
+        "INVALID_DESTINATION",
+        "UNKNOWN_TEMPLATE_VARIABLE",
+        "TEMPLATE_TOO_LARGE",
+        "LOCAL_SINK_REQUIRED",
+        "UNAUTHENTICATED"
+      ]
+    }
+  ],
+  "boundaries": {
+    "databaseMigration": false,
+    "businessTable": false,
+    "routeRegistration": false,
+    "networkAdapter": false,
+    "worker": false
+  }
+}
