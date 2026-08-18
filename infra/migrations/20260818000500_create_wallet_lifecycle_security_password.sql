@@ -70,8 +70,7 @@ CREATE TABLE custody_wallet_tombstones (
   address text NOT NULL CHECK (address ~ '^0x[0-9a-fA-F]{40}$'),
   final_revision bigint NOT NULL CHECK (final_revision > 1),
   deletion_type text NOT NULL CHECK (deletion_type IN ('normal', 'force')),
-  deletion_audit_id bigint NOT NULL UNIQUE
-    REFERENCES custody_wallet_audit_events(audit_id) ON DELETE RESTRICT,
+  deletion_audit_id bigint NOT NULL UNIQUE CHECK (deletion_audit_id > 0),
   deleted_at timestamptz NOT NULL
 );
 

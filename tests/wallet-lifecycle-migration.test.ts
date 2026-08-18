@@ -21,6 +21,10 @@ describe("P04-04 wallet lifecycle and security password migration", () => {
     expect(up).toContain("position_count integer GENERATED ALWAYS AS");
     expect(up).toContain("asset_count integer GENERATED ALWAYS AS");
     expect(up).toContain("deletion_audit_id");
+    expect(up).toContain("CHECK (deletion_audit_id > 0)");
+    expect(up).not.toMatch(
+      /deletion_audit_id[\s\S]+REFERENCES custody_wallet_audit_events\(audit_id\)/u,
+    );
     expect(up).toContain("wallet.force-delete");
     expect(up).toContain("wallet.delete");
     expect(up).toContain("wallet.rename");
