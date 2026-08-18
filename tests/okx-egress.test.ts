@@ -5,13 +5,15 @@ import {
   parseOkxAccountConfiguration,
   type OkxPinnedRequest,
 } from "../apps/okx-connector/src/index.js";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const credentials = {
   apiKey: Buffer.from("synthetic-api-key"),
   passphrase: Buffer.from("synthetic-passphrase"),
   secretKey: Buffer.from("synthetic-secret-key"),
 };
+
+afterEach(() => vi.useRealTimers());
 
 describe("P04-07 fixed OKX egress", () => {
   it("pins a public DNS answer and emits only the fixed read-only validation request", async () => {
@@ -137,5 +139,33 @@ describe("P04-07 fixed OKX egress", () => {
       expect(JSON.stringify(result)).not.toContain("synthetic upstream");
       expect(body.every((byte) => byte === 0)).toBe(true);
     }
+  });
+
+  it("enforces the eight-second bound across DNS and injected request transports", async () => {
+    vi.useFakeTimers();
+    const dnsPending = new OkxHttpsReadOnlyTransport({
+      request: async () => {
+        throw new Error("request must not run");
+      },
+      resolve: async () => new Promise<string[]>(() => undefined),
+    })
+      .validate(credentials)
+      .catch((error: unknown) => error);
+    const requestPending = new OkxHttpsReadOnlyTransport({
+      request: async () => new Promise(() => undefined),
+      resolve: async () => ["203.0.113.10"],
+    })
+      .validate(credentials)
+      .catch((error: unknown) => error);
+
+    await vi.advanceTimersByTimeAsync(8_001);
+    await expect(dnsPending).resolves.toMatchObject({
+      code: "CONNECTOR_UNAVAILABLE",
+      retryable: true,
+    });
+    await expect(requestPending).resolves.toMatchObject({
+      code: "CONNECTOR_UNAVAILABLE",
+      retryable: true,
+    });
   });
 });

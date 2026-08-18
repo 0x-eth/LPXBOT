@@ -75,6 +75,18 @@ const defaultResolver: OkxDnsResolver = async (host) => {
 
 const defaultRequester: OkxPinnedRequester = (input) =>
   new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let settled = false;
+    const clearChunks = () => {
+      for (const chunk of chunks) chunk.fill(0);
+      chunks.length = 0;
+    };
+    const fail = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      clearChunks();
+      reject(error);
+    };
     const request = httpsRequest(
       {
         headers: input.headers,
@@ -89,31 +101,53 @@ const defaultRequester: OkxPinnedRequester = (input) =>
         servername: input.servername,
       },
       (response) => {
-        const chunks: Buffer[] = [];
         let size = 0;
         response.on("data", (chunk: Buffer | string) => {
           const bytes = Buffer.isBuffer(chunk) ? Buffer.from(chunk) : Buffer.from(chunk, "utf8");
           size += bytes.length;
           if (size > okxProductionEgress.maxResponseBytes) {
             bytes.fill(0);
-            request.destroy(new OkxConnectorError("EGRESS_DENIED"));
+            fail(new OkxConnectorError("EGRESS_DENIED"));
+            response.destroy();
+            request.destroy();
             return;
           }
           chunks.push(bytes);
         });
         response.on("end", () => {
+          if (settled) return;
+          settled = true;
           const body = Buffer.concat(chunks);
-          for (const chunk of chunks) chunk.fill(0);
+          clearChunks();
           resolve({ body, statusCode: response.statusCode ?? 0 });
         });
+        response.once("aborted", () => fail(new OkxConnectorError("CONNECTOR_UNAVAILABLE", true)));
+        response.once("error", () => fail(new OkxConnectorError("CONNECTOR_UNAVAILABLE", true)));
       },
     );
     request.setTimeout(okxProductionEgress.timeoutMilliseconds, () => {
       request.destroy(new OkxConnectorError("CONNECTOR_UNAVAILABLE", true));
     });
-    request.once("error", reject);
+    request.once("error", (error) => fail(error));
     request.end();
   });
+
+async function withEgressTimeout<T>(operation: Promise<T>): Promise<T> {
+  let timeout: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_resolve, reject) => {
+        timeout = setTimeout(
+          () => reject(new OkxConnectorError("CONNECTOR_UNAVAILABLE", true)),
+          okxProductionEgress.timeoutMilliseconds,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
 
 function unknownValidation(): OkxProviderValidation {
   return {
@@ -184,7 +218,7 @@ export class OkxHttpsReadOnlyTransport implements OkxReadOnlyTransport {
   async validate(credentials: OkxCredentialBytes): Promise<OkxProviderValidation> {
     let addresses: string[];
     try {
-      addresses = await this.#resolve(okxProductionEgress.host);
+      addresses = await withEgressTimeout(this.#resolve(okxProductionEgress.host));
     } catch {
       throw new OkxConnectorError("CONNECTOR_UNAVAILABLE", true);
     }
@@ -202,7 +236,7 @@ export class OkxHttpsReadOnlyTransport implements OkxReadOnlyTransport {
         .update(prehash)
         .digest("base64");
       try {
-        response = await this.#request({
+        response = await withEgressTimeout(this.#request({
           address: addresses[0]!,
           headers: {
             Accept: "application/json",
@@ -217,7 +251,7 @@ export class OkxHttpsReadOnlyTransport implements OkxReadOnlyTransport {
           path: okxProductionEgress.path,
           port: okxProductionEgress.port,
           servername: okxProductionEgress.host,
-        });
+        }));
       } catch (error) {
         if (error instanceof OkxConnectorError) throw error;
         throw new OkxConnectorError("CONNECTOR_UNAVAILABLE", true);
