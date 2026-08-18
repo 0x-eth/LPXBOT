@@ -1424,7 +1424,7 @@ export function WalletsPage() {
         onForce={() => {
           setDeleteError(null);
           setDeletePreviewOpen(false);
-          setForceDeleteOpen(true);
+          requestAnimationFrame(() => setForceDeleteOpen(true));
         }}
         onOpenChange={(open) => {
           setDeletePreviewOpen(open);
