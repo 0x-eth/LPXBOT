@@ -402,6 +402,7 @@ async function installApi(page: Page, fixture: TransferFixture): Promise<void> {
       });
       return;
     }
+    console.error(`[P04-06 unhandled API] ${request.method()} ${pathname}`);
     await route.abort("failed");
   });
 }
