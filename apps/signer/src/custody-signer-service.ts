@@ -14,12 +14,14 @@ import type {
   WalletDeletionReceipt,
   WalletEncryptionMode,
 } from "@lpbot/api-contract";
+import type { WalletTransferPlan } from "@lpbot/domain/wallet-transfer";
 
 import type {
   CustodyWalletStore,
   KeystoreStatus,
   KeystoreStore,
   SecurityPasswordStore,
+  RawTransactionDelivery,
   StoredKeystore,
   StoredKeystoreFailure,
   StoredSecurityPassword,
@@ -27,6 +29,8 @@ import type {
   WalletDependencyInventory,
   WalletSignerClient,
   WalletTaskCoordinator,
+  WalletTransferPlanAuthorizer,
+  WalletTransferSigningResult,
 } from "./custody-types.js";
 import { publicWallet } from "./custody-types.js";
 import type { IsolatedWalletSigner, SealedWalletDraft } from "./isolated-wallet-signer.js";
@@ -146,11 +150,13 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
   readonly #monotonicNow: () => number;
   readonly #onZeroize: (label: ZeroizeLabel, bytes: Uint8Array) => void;
   readonly #randomBytes: (length: number) => Uint8Array;
+  readonly #rawTransactionDelivery: RawTransactionDelivery | null;
   readonly #securityPasswordStore: SecurityPasswordStore | null;
   readonly #signer: IsolatedWalletSigner;
   readonly #signerInstance: string;
   readonly #store: CustodyWalletStore;
   readonly #taskCoordinator: WalletTaskCoordinator | null;
+  readonly #transferPlanAuthorizer: WalletTransferPlanAuthorizer | null;
   readonly #unlockSessions = new Map<string, UnlockSession>();
   readonly #revokedWallets = new Set<string>();
   #unlockVersion = 0;
@@ -167,11 +173,13 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     now?: () => Date;
     onZeroize?: (label: ZeroizeLabel, bytes: Uint8Array) => void;
     randomBytes?: (length: number) => Uint8Array;
+    rawTransactionDelivery?: RawTransactionDelivery;
     securityPasswordStore?: SecurityPasswordStore;
     signer: IsolatedWalletSigner;
     signerInstance?: string;
     store: CustodyWalletStore;
     taskCoordinator?: WalletTaskCoordinator;
+    transferPlanAuthorizer?: WalletTransferPlanAuthorizer;
     uuid?: () => string;
     walletDependencyInventory?: WalletDependencyInventory;
   }) {
@@ -188,12 +196,14 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     this.#now = input.now ?? (() => new Date());
     this.#onZeroize = input.onZeroize ?? (() => undefined);
     this.#randomBytes = input.randomBytes ?? systemRandomBytes;
+    this.#rawTransactionDelivery = input.rawTransactionDelivery ?? null;
     this.#securityPasswordStore =
       input.securityPasswordStore ?? (supportsSecurityPassword(input.store) ? input.store : null);
     this.#signer = input.signer;
     this.#signerInstance = input.signerInstance ?? randomUUID();
     this.#store = input.store;
     this.#taskCoordinator = input.taskCoordinator ?? null;
+    this.#transferPlanAuthorizer = input.transferPlanAuthorizer ?? null;
     this.#uuid = input.uuid ?? randomUUID;
     this.#walletDependencyInventory = input.walletDependencyInventory ?? null;
   }
