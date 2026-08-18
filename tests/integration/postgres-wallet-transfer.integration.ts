@@ -344,6 +344,7 @@ describe("P04-06 PostgreSQL nonce and transfer recovery", () => {
           transactionTarget: confirmationClaim.operation.plan.transactionTarget,
         },
         state: "confirmed",
+        transactionId: confirmationClaim.operation.activeTransaction!.transactionId,
       },
       observedAt: new Date(baseTime.getTime() + 2_001),
     });
@@ -382,5 +383,54 @@ describe("P04-06 PostgreSQL nonce and transfer recovery", () => {
         [evidence.rows[0]!.evidence_id],
       ),
     ).rejects.toThrow(/append-only/u);
+
+    const lineageClaims = await repository.claimDue({
+      leaseMilliseconds: 10_000,
+      limit: 10,
+      now: new Date(baseTime.getTime() + 8_000),
+      workerId: "postgres-transfer-worker",
+    });
+    const lineageClaim = lineageClaims.find(
+      ({ operation }) => operation.operationId === operationB.operationId,
+    )!;
+    expect(lineageClaim.operation.transactionLineage).toHaveLength(2);
+    const historicalTransaction = lineageClaim.operation.transactionLineage.find(
+      ({ generation }) => generation === 0,
+    )!;
+    await repository.applyObservation({
+      claim: lineageClaim,
+      decision: {
+        kind: "receipt",
+        reason: null,
+        receipt: {
+          balanceReconciled: true,
+          blockCanonical: true,
+          blockHash: `0x${"5".repeat(64)}`,
+          blockNumber: "11",
+          from: walletAddress,
+          nonce: lineageClaim.operation.plan.nonce,
+          receiptStatus: "success",
+          tokenTransferLogReconciled: true,
+          transactionHash: historicalTransaction.transactionHash,
+          transactionTarget: lineageClaim.operation.plan.transactionTarget,
+        },
+        state: "confirmed",
+        transactionId: historicalTransaction.transactionId,
+      },
+      observedAt: new Date(baseTime.getTime() + 8_001),
+    });
+    const historicalWinner = await store.get({
+      operationId: operationB.operationId,
+      userId,
+    });
+    expect(historicalWinner).toMatchObject({
+      activeTransactionId: historicalTransaction.transactionId,
+      state: "confirmed",
+      transactions: [
+        { active: true, generation: 0, state: "confirmed" },
+        { active: false, generation: 1, state: "dropped" },
+      ],
+    });
+    expect(historicalWinner!.transactions.filter(({ active }) => active)).toHaveLength(1);
   });
 });
