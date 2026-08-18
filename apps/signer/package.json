@@ -21,6 +21,7 @@
     "@lpbot/api-contract": "workspace:*",
     "@lpbot/observability": "workspace:*",
     "@lpbot/security": "workspace:*",
+    "@noble/hashes": "1.8.0",
     "pg": "8.23.0",
     "viem": "2.55.16"
   }
