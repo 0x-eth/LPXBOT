@@ -83,7 +83,11 @@ describe("P04-07 fixed OKX egress", () => {
       },
       resolve: async () => ["203.0.113.10"],
     });
-    await expect(timedOut.validate(credentials)).rejects.toThrow("synthetic timeout detail");
+    await expect(timedOut.validate(credentials)).rejects.toMatchObject({
+      code: "CONNECTOR_UNAVAILABLE",
+      message: "CONNECTOR_UNAVAILABLE",
+      retryable: true,
+    });
   });
 
   it("maps only explicit permissions and never returns the provider IP or body", () => {

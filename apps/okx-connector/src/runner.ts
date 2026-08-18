@@ -6,7 +6,8 @@ import { HttpOkxKmsClient } from "./http-kms-client.js";
 import { PostgresOkxCredentialRepository } from "./postgres-store.js";
 import { loadOkxConnectorProductionConfig } from "./production-config.js";
 import { OkxCredentialService } from "./service.js";
-import { OkxHttpsReadOnlyTransport, type OkxReadOnlyTransport } from "./index.js";
+import { OkxHttpsReadOnlyTransport } from "./transport.js";
+import type { OkxReadOnlyTransport } from "./types.js";
 
 const { Pool } = pg;
 const config = loadOkxConnectorProductionConfig(process.env);

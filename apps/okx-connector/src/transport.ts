@@ -191,7 +191,12 @@ export class OkxHttpsReadOnlyTransport implements OkxReadOnlyTransport {
   }
 
   async validate(credentials: OkxCredentialBytes): Promise<OkxProviderValidation> {
-    const addresses = await this.#resolve(okxProductionEgress.host);
+    let addresses: string[];
+    try {
+      addresses = await this.#resolve(okxProductionEgress.host);
+    } catch {
+      throw new OkxConnectorError("CONNECTOR_UNAVAILABLE", true);
+    }
     if (addresses.length === 0 || addresses.some((address) => !isPublicOkxEgressAddress(address))) {
       throw new OkxConnectorError("EGRESS_DENIED");
     }
@@ -205,22 +210,27 @@ export class OkxHttpsReadOnlyTransport implements OkxReadOnlyTransport {
       const signature = createHmac("sha256", credentials.secretKey)
         .update(prehash)
         .digest("base64");
-      response = await this.#request({
-        address: addresses[0]!,
-        headers: {
-          Accept: "application/json",
-          "OK-ACCESS-KEY": credentials.apiKey.toString("utf8"),
-          "OK-ACCESS-PASSPHRASE": credentials.passphrase.toString("utf8"),
-          "OK-ACCESS-SIGN": signature,
-          "OK-ACCESS-TIMESTAMP": timestamp,
-          "User-Agent": "LPBot-OKX-Connector/1",
-        },
-        host: okxProductionEgress.host,
-        method: okxProductionEgress.method,
-        path: okxProductionEgress.path,
-        port: okxProductionEgress.port,
-        servername: okxProductionEgress.host,
-      });
+      try {
+        response = await this.#request({
+          address: addresses[0]!,
+          headers: {
+            Accept: "application/json",
+            "OK-ACCESS-KEY": credentials.apiKey.toString("utf8"),
+            "OK-ACCESS-PASSPHRASE": credentials.passphrase.toString("utf8"),
+            "OK-ACCESS-SIGN": signature,
+            "OK-ACCESS-TIMESTAMP": timestamp,
+            "User-Agent": "LPBot-OKX-Connector/1",
+          },
+          host: okxProductionEgress.host,
+          method: okxProductionEgress.method,
+          path: okxProductionEgress.path,
+          port: okxProductionEgress.port,
+          servername: okxProductionEgress.host,
+        });
+      } catch (error) {
+        if (error instanceof OkxConnectorError) throw error;
+        throw new OkxConnectorError("CONNECTOR_UNAVAILABLE", true);
+      }
       if (response.body.length > okxProductionEgress.maxResponseBytes) {
         throw new OkxConnectorError("EGRESS_DENIED");
       }
