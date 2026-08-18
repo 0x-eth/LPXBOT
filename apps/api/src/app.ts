@@ -888,16 +888,16 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           ? keystoreSecretMediaType
           : null;
     if (requiredMediaType && mediaType !== requiredMediaType) {
-        reply.header("Cache-Control", "no-store");
-        void reply.code(415).send(
-          createErrorEnvelope({
-            code: "UNSUPPORTED_MEDIA_TYPE",
-            message: "This operation requires the dedicated secret ingress",
-            requestId: request.id,
-            retryable: false,
-          }),
-        );
-        return;
+      reply.header("Cache-Control", "no-store");
+      void reply.code(415).send(
+        createErrorEnvelope({
+          code: "UNSUPPORTED_MEDIA_TYPE",
+          message: "This operation requires the dedicated secret ingress",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+      return;
     }
     done();
   });
@@ -3438,7 +3438,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
               retryable: false,
               status: 400,
             }
-            : code === "INVALID_PRIVATE_KEY"
+          : code === "INVALID_PRIVATE_KEY"
             ? { code, message: "The private key is invalid", retryable: false, status: 400 }
             : code === "INVALID_WALLET"
               ? { code, message: "The wallet request is invalid", retryable: false, status: 400 }
@@ -3476,25 +3476,30 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
                           retryable: false,
                           status: 409,
                         }
-              : code === "WALLET_ADDRESS_EXISTS"
-                ? {
-                    code,
-                    message: "This address is already managed",
-                    retryable: false,
-                    status: 409,
-                  }
-                : code === "WALLET_NOT_FOUND"
-                  ? { code, message: "The wallet was not found", retryable: false, status: 404 }
-                  : code === "SIGNER_UNAVAILABLE" ||
-                      code === "CUSTODY_STORE_UNAVAILABLE" ||
-                      code === "KEK_VERSION_UNAVAILABLE"
-                    ? {
-                        code: "SIGNER_UNAVAILABLE",
-                        message: "The wallet signer is unavailable",
-                        retryable: true,
-                        status: 503,
-                      }
-                    : null;
+                      : code === "WALLET_ADDRESS_EXISTS"
+                        ? {
+                            code,
+                            message: "This address is already managed",
+                            retryable: false,
+                            status: 409,
+                          }
+                        : code === "WALLET_NOT_FOUND"
+                          ? {
+                              code,
+                              message: "The wallet was not found",
+                              retryable: false,
+                              status: 404,
+                            }
+                          : code === "SIGNER_UNAVAILABLE" ||
+                              code === "CUSTODY_STORE_UNAVAILABLE" ||
+                              code === "KEK_VERSION_UNAVAILABLE"
+                            ? {
+                                code: "SIGNER_UNAVAILABLE",
+                                message: "The wallet signer is unavailable",
+                                retryable: true,
+                                status: 503,
+                              }
+                            : null;
       if (!mapped) return null;
       return reply.code(mapped.status).send(
         createErrorEnvelope({
@@ -3569,12 +3574,15 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           const session = await authenticateSessionRequest(request, reply);
           if (!session) return reply;
           if (!(await requireFreshReauthentication(request, reply, session))) return reply;
-          if (!ingress) return reply.code(415).send(createErrorEnvelope({
-            code: "UNSUPPORTED_MEDIA_TYPE",
-            message: "Keystore unlock requires the dedicated secret ingress",
-            requestId: request.id,
-            retryable: false,
-          }));
+          if (!ingress)
+            return reply.code(415).send(
+              createErrorEnvelope({
+                code: "UNSUPPORTED_MEDIA_TYPE",
+                message: "Keystore unlock requires the dedicated secret ingress",
+                requestId: request.id,
+                retryable: false,
+              }),
+            );
           if (!options.keystore) return keystoreUnavailable(request, reply);
           const status = await options.keystore.unlockKeystore({
             ingress,
@@ -3617,12 +3625,14 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         Array.isArray(body) ||
         Object.keys(body).sort().join(",") !== "expectedVersion,minutes"
       ) {
-        return reply.code(400).send(createErrorEnvelope({
-          code: "INVALID_AUTO_LOCK",
-          message: "The auto-lock request is invalid",
-          requestId: request.id,
-          retryable: false,
-        }));
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "INVALID_AUTO_LOCK",
+            message: "The auto-lock request is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
       }
       try {
         const value = body as Record<string, unknown>;
@@ -3648,12 +3658,15 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         const session = await authenticateSessionRequest(request, reply);
         if (!session) return reply;
         if (!(await requireFreshReauthentication(request, reply, session))) return reply;
-        if (!ingress) return reply.code(415).send(createErrorEnvelope({
-          code: "UNSUPPORTED_MEDIA_TYPE",
-          message: "Password mutation requires the dedicated secret ingress",
-          requestId: request.id,
-          retryable: false,
-        }));
+        if (!ingress)
+          return reply.code(415).send(
+            createErrorEnvelope({
+              code: "UNSUPPORTED_MEDIA_TYPE",
+              message: "Password mutation requires the dedicated secret ingress",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
         if (!options.keystore) return keystoreUnavailable(request, reply);
         const status =
           mode === "create"
@@ -3667,15 +3680,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       }
     };
 
-    app.post(
-      "/api/keystore/password",
-      { bodyLimit: keystoreSecretBodyLimit },
-      (request, reply) => mutateKeystorePassword("create", request, reply),
+    app.post("/api/keystore/password", { bodyLimit: keystoreSecretBodyLimit }, (request, reply) =>
+      mutateKeystorePassword("create", request, reply),
     );
-    app.put(
-      "/api/keystore/password",
-      { bodyLimit: keystoreSecretBodyLimit },
-      (request, reply) => mutateKeystorePassword("change", request, reply),
+    app.put("/api/keystore/password", { bodyLimit: keystoreSecretBodyLimit }, (request, reply) =>
+      mutateKeystorePassword("change", request, reply),
     );
 
     app.get("/api/keystore/reset-preview", async (request, reply) => {
@@ -3701,12 +3710,15 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           const session = await authenticateSessionRequest(request, reply);
           if (!session) return reply;
           if (!(await requireFreshReauthentication(request, reply, session))) return reply;
-          if (!ingress) return reply.code(415).send(createErrorEnvelope({
-            code: "UNSUPPORTED_MEDIA_TYPE",
-            message: "Keystore reset requires the dedicated secret ingress",
-            requestId: request.id,
-            retryable: false,
-          }));
+          if (!ingress)
+            return reply.code(415).send(
+              createErrorEnvelope({
+                code: "UNSUPPORTED_MEDIA_TYPE",
+                message: "Keystore reset requires the dedicated secret ingress",
+                requestId: request.id,
+                retryable: false,
+              }),
+            );
           if (!options.keystore) return keystoreUnavailable(request, reply);
           const status = await options.keystore.resetKeystore({ ingress, userId: session.userId });
           return reply
@@ -3730,12 +3742,15 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           const session = await authenticateSessionRequest(request, reply);
           if (!session) return reply;
           if (!(await requireFreshReauthentication(request, reply, session))) return reply;
-          if (!ingress) return reply.code(415).send(createErrorEnvelope({
-            code: "UNSUPPORTED_MEDIA_TYPE",
-            message: "Mode switching requires the dedicated secret ingress",
-            requestId: request.id,
-            retryable: false,
-          }));
+          if (!ingress)
+            return reply.code(415).send(
+              createErrorEnvelope({
+                code: "UNSUPPORTED_MEDIA_TYPE",
+                message: "Mode switching requires the dedicated secret ingress",
+                requestId: request.id,
+                retryable: false,
+              }),
+            );
           if (!options.keystore || !options.tenantId) return keystoreUnavailable(request, reply);
           const wallet = await options.keystore.changeWalletEncryptionMode({
             ingress,

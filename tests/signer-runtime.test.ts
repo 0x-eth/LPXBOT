@@ -151,7 +151,9 @@ describe("P04-02 signer production runtime", () => {
 
     await runtime.close();
     expect(shutdown).toHaveBeenCalledOnce();
-    expect(shutdown.mock.invocationCallOrder[0]).toBeLessThan(store.end.mock.invocationCallOrder[0]!);
+    expect(shutdown.mock.invocationCallOrder[0]).toBeLessThan(
+      store.end.mock.invocationCallOrder[0]!,
+    );
     expect(store.end).toHaveBeenCalledOnce();
     runtimes.pop();
   });

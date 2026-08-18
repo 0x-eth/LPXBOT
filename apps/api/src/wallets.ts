@@ -31,14 +31,20 @@ export interface KeystoreResetPreviewDto {
 }
 
 export interface KeystoreApplication {
-  changeKeystorePassword(input: { ingress: Uint8Array; userId: string }): Promise<KeystoreStatusDto>;
+  changeKeystorePassword(input: {
+    ingress: Uint8Array;
+    userId: string;
+  }): Promise<KeystoreStatusDto>;
   changeWalletEncryptionMode(input: {
     ingress: Uint8Array;
     tenantId: string;
     userId: string;
     walletId: string;
   }): Promise<CustodyWallet>;
-  createKeystorePassword(input: { ingress: Uint8Array; userId: string }): Promise<KeystoreStatusDto>;
+  createKeystorePassword(input: {
+    ingress: Uint8Array;
+    userId: string;
+  }): Promise<KeystoreStatusDto>;
   createKeystoreResetPreview(userId: string): Promise<KeystoreResetPreviewDto>;
   keystoreStatus(userId: string, reauthenticatedSessionId?: string): Promise<KeystoreStatusDto>;
   lockKeystore(userId: string): Promise<KeystoreStatusDto>;
@@ -231,9 +237,14 @@ export function publicKeystoreResetPreview(value: unknown): KeystoreResetPreview
     preview.previewToken.length < 32 ||
     typeof preview.expiresAt !== "string" ||
     new Date(preview.expiresAt).toISOString() !== preview.expiresAt ||
-    !["policyCount", "strategyCount", "taskCount", "walletCount", "walletsWithNonzeroAssets", "walletsWithPositions"].every(
-      (key) => Number.isSafeInteger(preview[key]) && Number(preview[key]) >= 0,
-    ) ||
+    ![
+      "policyCount",
+      "strategyCount",
+      "taskCount",
+      "walletCount",
+      "walletsWithNonzeroAssets",
+      "walletsWithPositions",
+    ].every((key) => Number.isSafeInteger(preview[key]) && Number(preview[key]) >= 0) ||
     !Number.isSafeInteger(preview.secretVersion) ||
     Number(preview.secretVersion) < 1
   ) {

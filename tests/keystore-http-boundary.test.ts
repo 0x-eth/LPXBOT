@@ -33,9 +33,9 @@ function headers(contentType?: string): Record<string, string> {
 afterEach(async () => {
   for (const server of servers) server.closeAllConnections();
   await Promise.all(
-    servers.splice(0).map(
-      (server) => new Promise<void>((resolve) => server.close(() => resolve())),
-    ),
+    servers
+      .splice(0)
+      .map((server) => new Promise<void>((resolve) => server.close(() => resolve()))),
   );
 });
 

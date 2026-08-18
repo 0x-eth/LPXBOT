@@ -21,7 +21,9 @@ function ingress(value: Record<string, unknown>): Buffer {
 function fixture(options: { failLifecycleAt?: "before-commit" } = {}) {
   let id = 10;
   let random = 1;
-  const store = new InMemoryCustodyWalletStore({ failLifecycleAt: options.failLifecycleAt });
+  const store = new InMemoryCustodyWalletStore(
+    options.failLifecycleAt ? { failLifecycleAt: options.failLifecycleAt } : {},
+  );
   const kms = new LocalKmsFixture({
     activeVersion: "kek-fixture-v1",
     keys: { "kek-fixture-v1": Buffer.alloc(32, 0x73) },

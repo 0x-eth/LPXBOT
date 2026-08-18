@@ -30,7 +30,9 @@ function fixture(options: { failLifecycleAt?: "before-commit"; inventory?: boole
     walletsWithNonzeroAssets: 1,
     walletsWithPositions: 1,
   };
-  const store = new InMemoryCustodyWalletStore({ failLifecycleAt: options.failLifecycleAt });
+  const store = new InMemoryCustodyWalletStore(
+    options.failLifecycleAt ? { failLifecycleAt: options.failLifecycleAt } : {},
+  );
   const signer = new IsolatedWalletSigner({
     kms: new LocalKmsFixture({
       activeVersion: "kek-fixture-v1",

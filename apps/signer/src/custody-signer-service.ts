@@ -139,7 +139,8 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
         maximumExclusive <= 1 ? 0 : systemRandomBytes(4).readUInt32BE(0) % maximumExclusive);
     this.#derivePasswordKek = input.derivePasswordKek ?? deriveArgon2idKek;
     this.#dependencyInventory = input.dependencyInventory ?? null;
-    this.#keystoreStore = input.keystoreStore ?? (supportsKeystore(input.store) ? input.store : null);
+    this.#keystoreStore =
+      input.keystoreStore ?? (supportsKeystore(input.store) ? input.store : null);
     this.#monotonicNow = input.monotonicNow ?? (() => performance.now());
     this.#now = input.now ?? (() => new Date());
     this.#onZeroize = input.onZeroize ?? (() => undefined);
@@ -150,10 +151,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     this.#uuid = input.uuid ?? randomUUID;
   }
 
-  async keystoreStatus(
-    userId: string,
-    reauthenticatedSessionId?: string,
-  ): Promise<KeystoreStatus> {
+  async keystoreStatus(userId: string, reauthenticatedSessionId?: string): Promise<KeystoreStatus> {
     const store = this.#requireKeystoreStore();
     await this.#expireUnlockSessions(userId);
     const keystore = await store.getKeystore(userId);
@@ -340,7 +338,10 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
         unlockVersion: ++this.#unlockVersion,
         userId: input.userId,
       };
-      this.#unlockSessions.set(this.#sessionKey(input.userId, input.reauthenticatedSessionId), session);
+      this.#unlockSessions.set(
+        this.#sessionKey(input.userId, input.reauthenticatedSessionId),
+        session,
+      );
       retained = true;
       await store.setUserPasswordWalletLockStatus(input.userId, "ready", now);
       return { configured: true, status: "unlocked", version: keystore!.current.secretVersion };
@@ -423,10 +424,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     };
   }
 
-  async resetKeystore(input: {
-    ingress: Uint8Array;
-    userId: string;
-  }): Promise<KeystoreStatus> {
+  async resetKeystore(input: { ingress: Uint8Array; userId: string }): Promise<KeystoreStatus> {
     const store = this.#requireKeystoreStore();
     let previewTokenBytes: Buffer | null = null;
     let previewTokenDigest: Buffer | null = null;
@@ -674,9 +672,14 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
       password = passwordBytes(body.password);
       body.password = "";
       passwordKek = this.#verifyPassword(keystore, password);
-      const envelope = await this.#store.getCurrentEnvelope(wallet.walletId, wallet.envelopeVersion);
+      const envelope = await this.#store.getCurrentEnvelope(
+        wallet.walletId,
+        wallet.envelopeVersion,
+      );
       if (!envelope) {
-        throw new SignerError(wallet.mode === "user-password" ? "INVALID_CREDENTIALS" : "KEYSTORE_CORRUPTED");
+        throw new SignerError(
+          wallet.mode === "user-password" ? "INVALID_CREDENTIALS" : "KEYSTORE_CORRUPTED",
+        );
       }
       const replacement = await this.#signer.rekeyEnvelope({
         envelope,
@@ -779,7 +782,9 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     }
   }
 
-  async #resetSnapshot(userId: string): Promise<KeystoreDependencySnapshot & { walletCount: number }> {
+  async #resetSnapshot(
+    userId: string,
+  ): Promise<KeystoreDependencySnapshot & { walletCount: number }> {
     if (!this.#dependencyInventory) {
       throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
     }

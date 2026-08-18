@@ -21,7 +21,9 @@ const apps: Array<ReturnType<typeof buildApiApp>> = [];
 async function fixture() {
   const sessionStore = new SessionFixtureStore();
   const token = await issueFixtureSession(sessionStore, userId, now);
-  const session = [...sessionStore.sessions.values()].find((candidate) => candidate.userId === userId)!;
+  const session = [...sessionStore.sessions.values()].find(
+    (candidate) => candidate.userId === userId,
+  )!;
   let random = 1;
   const custody = new CustodySignerService({
     backoffJitter: () => 0,

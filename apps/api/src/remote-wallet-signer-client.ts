@@ -82,12 +82,7 @@ export class RemoteWalletSignerClient implements WalletSignerClient, KeystoreApp
   readonly #tenantId: string;
   readonly #url: string;
 
-  constructor(input: {
-    apiToken: string;
-    fetcher?: typeof fetch;
-    tenantId?: string;
-    url: string;
-  }) {
+  constructor(input: { apiToken: string; fetcher?: typeof fetch; tenantId?: string; url: string }) {
     if (
       input.apiToken.length < 32 ||
       input.apiToken.length > 4096 ||
@@ -105,7 +100,12 @@ export class RemoteWalletSignerClient implements WalletSignerClient, KeystoreApp
 
   async generateWallet(input: Parameters<WalletSignerClient["generateWallet"]>[0]) {
     if (input.ingress) {
-      return this.#secretWalletRequest("/v1/wallets/generate", input, input.ingress, walletSecretMediaType);
+      return this.#secretWalletRequest(
+        "/v1/wallets/generate",
+        input,
+        input.ingress,
+        walletSecretMediaType,
+      );
     }
     return publicWalletDto(
       await this.#requestData(
@@ -118,7 +118,12 @@ export class RemoteWalletSignerClient implements WalletSignerClient, KeystoreApp
   }
 
   async importWallet(input: Parameters<WalletSignerClient["importWallet"]>[0]) {
-    return this.#secretWalletRequest("/v1/wallets/import", input, input.ingress, walletSecretMediaType);
+    return this.#secretWalletRequest(
+      "/v1/wallets/import",
+      input,
+      input.ingress,
+      walletSecretMediaType,
+    );
   }
 
   async keystoreStatus(userId: string, reauthenticatedSessionId?: string) {
@@ -257,8 +262,7 @@ export class RemoteWalletSignerClient implements WalletSignerClient, KeystoreApp
           "X-LPBOT-User-Id": owner.userId.toLowerCase(),
           ...(owner.reauthenticatedSessionId
             ? {
-                "X-LPBOT-Reauthenticated-Session-Id":
-                  owner.reauthenticatedSessionId.toLowerCase(),
+                "X-LPBOT-Reauthenticated-Session-Id": owner.reauthenticatedSessionId.toLowerCase(),
               }
             : {}),
         },

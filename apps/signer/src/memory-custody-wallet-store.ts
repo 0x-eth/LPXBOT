@@ -77,9 +77,7 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
   readonly #wallets = new Map<string, StoredCustodyWallet>();
   readonly openAttempts: number[] = [];
 
-  constructor(
-    options: { failBeforeCommit?: boolean; failLifecycleAt?: "before-commit" } = {},
-  ) {
+  constructor(options: { failBeforeCommit?: boolean; failLifecycleAt?: "before-commit" } = {}) {
     this.#failBeforeCommit = options.failBeforeCommit ?? false;
     this.#failLifecycleAt = options.failLifecycleAt ?? null;
   }
@@ -232,7 +230,8 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
     const key = `${input.userId}:${input.sourceSessionId}`;
     const previous = this.#keystoreFailures.get(key);
     const expired =
-      !previous || input.now.getTime() - previous.windowStartedAt.getTime() >= input.windowMilliseconds;
+      !previous ||
+      input.now.getTime() - previous.windowStartedAt.getTime() >= input.windowMilliseconds;
     const windowStartedAt = expired ? input.now : previous.windowStartedAt;
     const failureCount = expired ? 1 : previous.failureCount + 1;
     const failure: StoredKeystoreFailure = {

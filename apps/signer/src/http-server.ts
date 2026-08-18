@@ -71,24 +71,24 @@ function failure(response: ServerResponse, error: unknown): void {
     signerError.code === "REQUEST_TOO_LARGE"
       ? 413
       : signerError.code === "INVALID_MODE" ||
-    signerError.code === "INVALID_PRIVATE_KEY" ||
-    signerError.code === "INVALID_WALLET"
-      ? 400
-      : signerError.code === "INVALID_CREDENTIALS"
-        ? 401
-        : signerError.code === "LOCKED_OUT"
-          ? 429
-          : signerError.code === "SECRET_VERSION_CONFLICT" ||
-              signerError.code === "REVISION_CONFLICT" ||
-              signerError.code === "PASSWORD_ALREADY_CONFIGURED" ||
-              signerError.code === "PREVIEW_EXPIRED" ||
-              signerError.code === "PREVIEW_CHANGED"
-            ? 409
-      : signerError.code === "WALLET_ADDRESS_EXISTS"
-        ? 409
-        : signerError.code === "WALLET_NOT_FOUND"
-          ? 404
-          : 503;
+          signerError.code === "INVALID_PRIVATE_KEY" ||
+          signerError.code === "INVALID_WALLET"
+        ? 400
+        : signerError.code === "INVALID_CREDENTIALS"
+          ? 401
+          : signerError.code === "LOCKED_OUT"
+            ? 429
+            : signerError.code === "SECRET_VERSION_CONFLICT" ||
+                signerError.code === "REVISION_CONFLICT" ||
+                signerError.code === "PASSWORD_ALREADY_CONFIGURED" ||
+                signerError.code === "PREVIEW_EXPIRED" ||
+                signerError.code === "PREVIEW_CHANGED"
+              ? 409
+              : signerError.code === "WALLET_ADDRESS_EXISTS"
+                ? 409
+                : signerError.code === "WALLET_NOT_FOUND"
+                  ? 404
+                  : 503;
   send(response, status, {
     error: {
       code: signerError.code,
@@ -223,9 +223,7 @@ export function createSignerHttpServer(input: {
         send(response, 202, { data: status, success: true });
         return;
       }
-      const modeSwitch = /^\/v1\/wallets\/([0-9a-f-]+)\/encryption-mode$/iu.exec(
-        request.url ?? "",
-      );
+      const modeSwitch = /^\/v1\/wallets\/([0-9a-f-]+)\/encryption-mode$/iu.exec(request.url ?? "");
       if (request.method === "POST" && modeSwitch?.[1]) {
         body = await readBody(request);
         const wallet = await input.service.changeWalletEncryptionMode({

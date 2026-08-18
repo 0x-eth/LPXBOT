@@ -167,12 +167,16 @@ describe("P04-03 user-password lifecycle", () => {
     await expect(unlock(service, userA, sessionA, "synthetic-password-one")).rejects.toMatchObject({
       code: "LOCKED_OUT",
     });
-    await expect(unlock(service, userA, sessionB, "synthetic-password-one")).resolves.toMatchObject({
-      status: "unlocked",
-    });
-    await expect(unlock(service, userB, sessionA, "synthetic-password-two")).resolves.toMatchObject({
-      status: "unlocked",
-    });
+    await expect(unlock(service, userA, sessionB, "synthetic-password-one")).resolves.toMatchObject(
+      {
+        status: "unlocked",
+      },
+    );
+    await expect(unlock(service, userB, sessionA, "synthetic-password-two")).resolves.toMatchObject(
+      {
+        status: "unlocked",
+      },
+    );
   });
 
   it("binds capabilities to the reauthenticated session and revokes them on manual/auto lock", async () => {

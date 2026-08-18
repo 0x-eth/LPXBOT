@@ -338,7 +338,10 @@ export class PostgresCustodyWalletStore implements CustodyWalletStore, KeystoreS
       await client.query("BEGIN");
       await this.#lockUser(client, input.next.userId);
       const current = await this.#lockedKeystore(client, input.next.userId);
-      if (!current || integer(current.current_secret_version, "secret version") !== input.expectedVersion) {
+      if (
+        !current ||
+        integer(current.current_secret_version, "secret version") !== input.expectedVersion
+      ) {
         throw new SignerError("SECRET_VERSION_CONFLICT");
       }
       await client.query(
@@ -654,7 +657,10 @@ export class PostgresCustodyWalletStore implements CustodyWalletStore, KeystoreS
       await client.query("BEGIN");
       await this.#lockUser(client, input.userId);
       const keystore = await this.#lockedKeystore(client, input.userId);
-      if (!keystore || integer(keystore.current_secret_version, "secret version") !== input.expectedVersion) {
+      if (
+        !keystore ||
+        integer(keystore.current_secret_version, "secret version") !== input.expectedVersion
+      ) {
         throw new SignerError("SECRET_VERSION_CONFLICT");
       }
       const preview = await client.query<ResetPreviewRow>(
