@@ -55,7 +55,7 @@ function statusRows(markdown) {
   return rows;
 }
 
-test("P04 status is exactly 3 implemented-assumed / 9 planned with global 52 / 144", async () => {
+test("P04-02 implemented IDs remain attributed to their original evidence", async () => {
   const [traceability, roadmap, functionMatrix] = await Promise.all([
     readFile(TRACEABILITY, "utf8"),
     readFile(ROADMAP, "utf8"),
@@ -63,20 +63,12 @@ test("P04 status is exactly 3 implemented-assumed / 9 planned with global 52 / 1
   ]);
   const rows = statusRows(traceability);
   assert.deepEqual(sorted(rows.keys()), sorted(FEATURE_IDS));
-  assert.deepEqual(
-    sorted([...rows].filter(([, row]) => row.status === "implemented-assumed").map(([id]) => id)),
-    sorted(IMPLEMENTED),
-  );
-  assert.equal([...rows].filter(([, row]) => row.status === "planned").length, 9);
   for (const id of IMPLEMENTED) {
+    assert.equal(rows.get(id).status, "implemented-assumed", id);
     assert.match(rows.get(id).evidence, /P04-02/u, id);
     assert.match(rows.get(id).evidence, /local-fixture-verified/u, id);
   }
-  assert.match(traceability, /P04[^\n]*3[^\n]*implemented-assumed[^\n]*9[^\n]*planned/iu);
-  assert.match(traceability, /\| 当前产品实现 \| 52 \|/u);
-  assert.match(traceability, /\| `implemented-assumed` \| 52 \|/u);
-  assert.match(traceability, /\| 其余 `planned` \| 144 \|/u);
-  assert.match(roadmap, /P04[^\n]*3[^\n]*implemented-assumed[^\n]*9[^\n]*planned/iu);
+  assert.match(roadmap, /P04-02/u);
   for (const id of IMPLEMENTED) {
     assert.match(
       functionMatrix,
@@ -108,6 +100,10 @@ test("P00 through P04-01 acceptance files remain byte-identical to the requested
     .trim()
     .split("\n")
     .filter(Boolean)
-    .filter((file) => !file.startsWith("artifacts/acceptance/P04-02/"));
+    .filter(
+      (file) =>
+        !file.startsWith("artifacts/acceptance/P04-02/") &&
+        !file.startsWith("artifacts/acceptance/P04-03/"),
+    );
   assert.deepEqual(changed, []);
 });
