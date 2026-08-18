@@ -310,9 +310,8 @@ test("settings creates, unlocks, locks, changes password and clears every passwo
   await page.getByLabel("确认新密码").fill(passwordOne);
   await page.getByRole("button", { name: "确认创建" }).click();
   await expect(page.getByRole("status", { name: "Keystore 状态" })).toContainText("已锁定");
-  await expect(create).toBeFocused();
-
   const unlock = page.getByRole("button", { name: "解锁" });
+  await expect(unlock).toBeFocused();
   await unlock.click();
   await page.getByLabel("密码", { exact: true }).fill(passwordOne);
   await page.getByRole("button", { name: "确认解锁" }).click();
@@ -389,7 +388,7 @@ test("settings handles locked-out, reset preview changes, confirmation and atomi
   await page.getByRole("button", { name: "确认重置" }).click();
   await expect(page.getByRole("status", { name: "Keystore 状态" })).toContainText("未设置");
   expect(state.wallets).toEqual([expect.objectContaining({ mode: "server-kek" })]);
-  await expect(resetTrigger).toBeFocused();
+  await expect(page.getByRole("button", { name: "创建密码" })).toBeFocused();
 });
 
 test("wallets selects password mode, shows lock state, and switches modes with stable focus", async ({

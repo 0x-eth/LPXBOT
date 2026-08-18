@@ -391,6 +391,7 @@ export function KeystoreSettings() {
   });
   const [viewState, setViewState] = useState<ViewState>("loading");
   const lastPasswordTrigger = useRef<HTMLButtonElement>(null);
+  const primaryAction = useRef<HTMLButtonElement>(null);
   const resetTrigger = useRef<HTMLButtonElement>(null);
 
   const load = useCallback(
@@ -420,6 +421,11 @@ export function KeystoreSettings() {
     setError(null);
     setStatus(next);
     setViewState(next.status);
+  };
+
+  const applyStatusAndFocus = (next: KeystoreStatus) => {
+    applyStatus(next);
+    requestAnimationFrame(() => primaryAction.current?.focus());
   };
 
   const failure = (requestError: unknown) => {
@@ -516,6 +522,7 @@ export function KeystoreSettings() {
               <button
                 className="primary-button"
                 onClick={(event) => openPassword("create", event.currentTarget)}
+                ref={primaryAction}
                 type="button"
               >
                 <KeyRound aria-hidden="true" size={16} />
@@ -526,6 +533,7 @@ export function KeystoreSettings() {
               <button
                 className="primary-button"
                 onClick={(event) => openPassword("unlock", event.currentTarget)}
+                ref={primaryAction}
                 type="button"
               >
                 <UnlockKeyhole aria-hidden="true" size={16} />
@@ -533,7 +541,12 @@ export function KeystoreSettings() {
               </button>
             ) : null}
             {status.status === "unlocked" ? (
-              <button className="secondary-button" onClick={() => void lock()} type="button">
+              <button
+                className="secondary-button"
+                onClick={() => void lock()}
+                ref={primaryAction}
+                type="button"
+              >
                 <LockKeyhole aria-hidden="true" size={16} />
                 锁定
               </button>
@@ -595,7 +608,7 @@ export function KeystoreSettings() {
         onOpenChange={(open) => {
           if (!open) setPasswordAction(null);
         }}
-        onSuccess={applyStatus}
+        onSuccess={applyStatusAndFocus}
         returnFocus={lastPasswordTrigger}
         version={status.version}
       />
@@ -606,7 +619,7 @@ export function KeystoreSettings() {
           setResetOpen(open);
           if (!open && status.configured) setViewState(status.status);
         }}
-        onSuccess={applyStatus}
+        onSuccess={applyStatusAndFocus}
         open={resetOpen}
         preview={preview}
         returnFocus={resetTrigger}
