@@ -46,6 +46,7 @@ interface TransferFixture {
   submitBodies: Array<Record<string, unknown>>;
   submitHeaders: Array<Record<string, string>>;
   submitStatus?: number;
+  unhandledApiRequests: string[];
 }
 
 function envelope(data: unknown) {
@@ -321,6 +322,27 @@ async function installApi(page: Page, fixture: TransferFixture): Promise<void> {
       });
       return;
     }
+    if (pathname === "/api/stats/stream") {
+      await route.fulfill({
+        body: "",
+        contentType: "text/event-stream",
+        headers: { "Cache-Control": "no-cache, no-store, must-revalidate" },
+      });
+      return;
+    }
+    if (pathname === "/api/user/pool-blocklist") {
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({
+          blocklistHash: `sha256:${"0".repeat(64)}`,
+          entries: [],
+          revision: 0,
+          schemaVersion: 1,
+          updatedAt: null,
+        }),
+      });
+      return;
+    }
     if (pathname === "/api/keystore/status") {
       await route.fulfill({
         contentType: "application/json",
@@ -354,6 +376,21 @@ async function installApi(page: Page, fixture: TransferFixture): Promise<void> {
               tokenAddress,
             },
           ],
+          walletId,
+        }),
+      });
+      return;
+    }
+    if (pathname.endsWith("/receive") && request.method() === "GET") {
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({
+          address: walletAddress,
+          amountBaseUnit: null,
+          amountDecimal: null,
+          chainId: 56,
+          eip681: `ethereum:${walletAddress}@56`,
+          tokenAddress: null,
           walletId,
         }),
       });
@@ -402,8 +439,12 @@ async function installApi(page: Page, fixture: TransferFixture): Promise<void> {
       });
       return;
     }
-    console.error(`[P04-06 unhandled API] ${request.method()} ${pathname}`);
-    await route.abort("failed");
+    fixture.unhandledApiRequests.push(`${request.method()} ${pathname}`);
+    await route.fulfill({
+      contentType: "application/json",
+      json: errorEnvelope("UNHANDLED_FIXTURE_REQUEST"),
+      status: 501,
+    });
   });
 }
 
@@ -423,6 +464,7 @@ function fixture(overrides: Partial<TransferFixture> = {}): TransferFixture {
     previewRequests: [],
     submitBodies: [],
     submitHeaders: [],
+    unhandledApiRequests: [],
     ...overrides,
   };
 }
@@ -484,6 +526,7 @@ test("native/ERC-20 preview, MAX, secret ingress and approval boundary work by k
   await expect(page.locator("body")).not.toContainText(securityPassword);
   await page.waitForTimeout(1_700);
   expect(state.pollCount).toBe(0);
+  expect(state.unhandledApiRequests).toEqual([]);
   await assertVisualSafety(page);
 
   if (captureEvidence) {
@@ -524,6 +567,7 @@ test("signed, broadcast, reconciliation, replacement lineage and confirmation st
   await expect(page.getByText("已确认", { exact: true }).first()).toBeVisible({ timeout: 6_000 });
   await expect(page.locator(".transfer-live-region")).toHaveText("转账状态：已确认");
   expect(state.pollCount).toBe(5);
+  expect(state.unhandledApiRequests).toEqual([]);
   await assertVisualSafety(page);
 
   if (captureEvidence) {
@@ -560,5 +604,6 @@ test("expired previews and idempotency conflicts disable blind resubmission", as
   await submit.click({ force: true });
   await page.waitForTimeout(100);
   expect(state.submitBodies).toHaveLength(1);
+  expect(state.unhandledApiRequests).toEqual([]);
   await assertVisualSafety(page);
 });
