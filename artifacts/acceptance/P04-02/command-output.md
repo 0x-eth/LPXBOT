@@ -26,4 +26,4 @@ Environment: local macOS fixture, Node 22.23.1, pnpm 11.17.0, PostgreSQL `127.0.
 
 ## Hosted CI
 
-The hosted six-job result is recorded after the final evidence commit reaches `origin/main`. The work item remains `accepted-with-gaps`, and the manifest commit remains null by governance contract.
+GitHub Actions run [32089913070](https://github.com/0x-eth/LPXBOT/actions/runs/32089913070) completed successfully for commit `2d8f0c84bc2151e97d8f8cbcfaca11808291fc14`. Quality, Governance, Browser, Contracts, Infrastructure, and Security all succeeded. The work item remains `accepted-with-gaps`, and the manifest commit remains null by governance contract.
