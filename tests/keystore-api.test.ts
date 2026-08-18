@@ -196,7 +196,7 @@ describe("P04-03 Keystore API", () => {
       }),
       url: `/api/wallets/${imported.json().data.walletId}/encryption-mode`,
     });
-    expect(switched.statusCode).toBe(200);
+    expect(switched.statusCode).toBe(202);
     expect(switched.json().data.mode).toBe("server-kek");
 
     const preview = await app.inject({

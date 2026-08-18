@@ -174,7 +174,7 @@ describe("P04-02 custody wallet API", () => {
     expect(response.body).not.toContain(userA);
   });
 
-  it("rejects user-password and malformed secret ingress without replay", async () => {
+  it("rejects unconfigured user-password and malformed secret ingress without replay", async () => {
     const { app, proofFor, tokenA } = await fixture();
     for (const body of [
       { mode: "user-password", name: "Unsupported", privateKey: syntheticPrivateKey },
@@ -187,9 +187,9 @@ describe("P04-02 custody wallet API", () => {
         payload: JSON.stringify(body),
         url: "/api/wallets/import",
       });
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(body.mode === "user-password" ? 401 : 400);
       expect(response.json().error.code).toBe(
-        body.mode === "user-password" ? "INVALID_MODE" : "INVALID_PRIVATE_KEY",
+        body.mode === "user-password" ? "INVALID_CREDENTIALS" : "INVALID_PRIVATE_KEY",
       );
       expect(response.headers["cache-control"]).toBe("no-store");
     }
