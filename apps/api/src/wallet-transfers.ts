@@ -160,6 +160,7 @@ export interface WalletTransferAddressClassifier {
 export interface StoredWalletTransferOperation extends WalletTransferOperation {
   fencingToken: string | null;
   plan: WalletTransferPlan | null;
+  reauthenticatedSessionId: string;
   requestHash: `sha256:${string}`;
   securityPasswordVersion: number | null;
   userId: string;
@@ -239,6 +240,7 @@ function publicOperation(operation: StoredWalletTransferOperation): WalletTransf
   const {
     fencingToken: _fencingToken,
     plan: _plan,
+    reauthenticatedSessionId: _reauthenticatedSessionId,
     requestHash: _requestHash,
     securityPasswordVersion: _securityPasswordVersion,
     userId: _userId,
@@ -358,6 +360,7 @@ export class MemoryWalletTransferOperationStore implements WalletTransferOperati
       plan,
       planDigest: plan ? walletTransferPlanDigest(plan) : approvalPlanDigest(input.previewDigest),
       policyDigest: input.policyDigest,
+      reauthenticatedSessionId: input.sessionId,
       recipient: input.recipient,
       reconciliationReason,
       requestHash: input.requestHash,

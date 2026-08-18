@@ -61,6 +61,7 @@ CREATE TABLE wallet_transfer_operations (
   ),
   plan_deadline timestamptz,
   security_password_version bigint CHECK (security_password_version > 0),
+  reauthenticated_session_id uuid NOT NULL,
   active_transaction_id uuid,
   failure_code text CHECK (failure_code IS NULL OR char_length(failure_code) BETWEEN 1 AND 120),
   reconciliation_reason text CHECK (

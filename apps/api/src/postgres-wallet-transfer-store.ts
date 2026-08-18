@@ -45,6 +45,7 @@ interface OperationRow {
   policy_digest: `sha256:${string}`;
   recipient: EvmAddress;
   reconciliation_reason: string | null;
+  reauthenticated_session_id: string;
   request_hash: `sha256:${string}`;
   security_password_version: string | null;
   state: WalletTransferState;
@@ -86,7 +87,8 @@ const operationColumns = `
   gas_limit::text, max_fee_per_gas_base_unit::text,
   max_priority_fee_per_gas_base_unit::text, fee_cap_base_unit::text,
   request_hash, plan_digest, policy_digest, plan_deadline,
-  security_password_version::text, active_transaction_id::text,
+  security_password_version::text, reauthenticated_session_id::text,
+  active_transaction_id::text,
   failure_code, reconciliation_reason, created_at, updated_at`;
 
 function sha256(value: string): string {
@@ -159,6 +161,7 @@ function plan(row: OperationRow): WalletTransferPlan | null {
     nonce: row.nonce,
     operationId: row.operation_id,
     policyDigest: row.policy_digest,
+    reauthenticatedSessionId: row.reauthenticated_session_id,
     recipient: row.recipient,
     transactionData: row.transaction_data,
     transactionTarget: row.transaction_target,
@@ -417,6 +420,7 @@ export class PostgresWalletTransferOperationStore implements WalletTransferOpera
            max_priority_fee_per_gas_base_unit, fee_cap_base_unit,
            preview_digest, request_hash, plan_digest, policy_digest,
            registry_version, policy_version, plan_deadline, security_password_version,
+           reauthenticated_session_id,
            active_transaction_id, failure_code, reconciliation_reason, created_at, updated_at
          ) VALUES (
            $1, $2, $3, $4, $5, $6,
@@ -426,7 +430,7 @@ export class PostgresWalletTransferOperationStore implements WalletTransferOpera
            $19, $20,
            $21, $22, $23, $24,
            $25, $26, $27, $28,
-           NULL, NULL, $29, $30, $30
+           $29, NULL, NULL, $30, $31, $31
          )`,
         [
           operationId,
@@ -457,6 +461,7 @@ export class PostgresWalletTransferOperationStore implements WalletTransferOpera
           input.policyVersion,
           transferPlan?.deadline ?? null,
           input.securityPasswordVersion,
+          input.sessionId,
           reconciliationReason,
           now,
         ],
