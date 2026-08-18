@@ -59,7 +59,7 @@ const paths = [
       "https://bscscan.com/txs?a=0xaba69194bb40f3eeca3e27ce4f4fe526e6ef4139&ps=100&p=1",
     transactionHashes: [
       "0x55cae52b9f02ce0a2bfdc61acd6038f7b594cb4809c379cdfe055ee9393afbed",
-      "0xdf890b9acb1abac79e3589fe1debf23ccafa490b054d4249007e2cfbee1ec5",
+      "0xdf890b9acbcb1abac79e3589fe1debf23ccafa490b054d4249007e2cfbee1ec5",
       "0x0e98d381fc79d4b63a7877c554627a40b42de90320752473a7664fd271afedcd",
       "0xae1ded2d7dda2989df7e62be12531ffff311bd7a3022cd34cc562d5a32b78dd7",
       "0xfd1bf1f062d52020cc8e8333bad35ce617d7137bc42cfa99d4588b29cd748e0b",
@@ -232,6 +232,10 @@ async function main() {
     "every observed path requires at least ten independent samples",
   );
   const hashes = paths.flatMap((entry) => entry.transactionHashes);
+  assert(
+    hashes.every((hash) => /^0x[0-9a-f]{64}$/u.test(hash)),
+    "transaction hashes must be canonical 32-byte hex",
+  );
   assert(new Set(hashes).size === hashes.length, "transaction hashes must be independent");
 
   for (const pathFixture of paths) {
