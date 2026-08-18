@@ -3975,6 +3975,189 @@ html[data-theme="dark"] .online-state[data-online="true"] {
   margin-top: 28px;
 }
 
+.keystore-settings {
+  margin-top: 38px;
+}
+
+.keystore-settings-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+
+.keystore-status-row {
+  display: grid;
+  min-height: 78px;
+  grid-template-columns: minmax(150px, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 16px;
+}
+
+.keystore-status-copy {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.keystore-status-badge {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  padding: 3px 8px;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--muted);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.keystore-status-badge[data-status="unlocked"] {
+  color: #087f5b;
+  border-color: #8acbb7;
+  background: #eefaf6;
+}
+
+.keystore-status-badge[data-status="locked"],
+.keystore-status-badge[data-status="locked-out"] {
+  color: #8b5a00;
+  border-color: #ddc285;
+  background: #fff8e7;
+}
+
+.keystore-status-badge[data-status="locked-out"] {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  background: var(--danger-surface);
+}
+
+html[data-theme="dark"] .keystore-status-badge[data-status="unlocked"] {
+  color: #76d9bb;
+  border-color: #356b5d;
+  background: #183029;
+}
+
+html[data-theme="dark"] .keystore-status-badge[data-status="locked"] {
+  color: #f2c76f;
+  border-color: #6e592d;
+  background: #332b1a;
+}
+
+.keystore-actions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.keystore-actions .primary-button,
+.keystore-actions .secondary-button,
+.keystore-actions .danger-command {
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+}
+
+.keystore-auto-lock-row {
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.keystore-auto-lock-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.keystore-auto-lock-row select {
+  min-width: 112px;
+  min-height: 36px;
+  padding: 5px 30px 5px 9px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--background);
+}
+
+.keystore-auto-lock-row select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.keystore-inline-error {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  color: var(--danger);
+  border-top: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
+  background: var(--danger-surface);
+  font-size: 0.75rem;
+}
+
+.keystore-dialog code {
+  display: block;
+  min-width: 0;
+  color: var(--text);
+  background: transparent;
+  font-size: 0.7rem;
+  overflow-wrap: anywhere;
+}
+
+.reset-risk-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+  padding: 11px 12px;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--muted);
+  font-size: 0.72rem;
+}
+
+.reset-risk-summary strong {
+  color: var(--danger);
+}
+
+@media (max-width: 640px) {
+  .keystore-status-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .keystore-actions {
+    justify-content: flex-start;
+  }
+
+  .keystore-actions .primary-button,
+  .keystore-actions .secondary-button,
+  .keystore-actions .danger-command {
+    flex: 1 1 120px;
+  }
+
+  .reset-risk-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .interface-section-heading,
 .interface-section-heading > div,
 .settings-sync-state,

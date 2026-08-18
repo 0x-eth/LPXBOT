@@ -360,7 +360,7 @@ function ResetDialog({
                     取消
                   </button>
                 </Dialog.Close>
-                <button className="danger-button" disabled={submitting} type="submit">
+                <button className="danger-command" disabled={submitting} type="submit">
                   {submitting ? (
                     <LoaderCircle aria-hidden="true" className="spin-icon" size={16} />
                   ) : (
@@ -550,7 +550,7 @@ export function KeystoreSettings() {
             ) : null}
             {status.configured ? (
               <button
-                className="danger-button"
+                className="danger-command"
                 onClick={() => void openReset()}
                 ref={resetTrigger}
                 type="button"
