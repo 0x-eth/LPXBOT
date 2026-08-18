@@ -8,6 +8,7 @@ import {
   OkxTransportFixture,
   usableOkxFixtureValidation,
 } from "../apps/okx-connector/src/index.js";
+import { RemoteOkxKeyConnectorClient } from "../apps/api/src/okx-key.js";
 import { afterEach, describe, expect, it } from "vitest";
 
 const apiToken = "synthetic-connector-token-at-least-32-bytes";
@@ -57,6 +58,35 @@ afterEach(async () => {
 });
 
 describe("P04-07 isolated connector HTTP boundary", () => {
+  it("serves the API remote client without exposing or retaining credential ingress", async () => {
+    const { url } = await fixture();
+    const client = new RemoteOkxKeyConnectorClient({ apiToken, baseUrl: url });
+    const baseContext = {
+      actor: "api-fixture",
+      requestId: "remote-client-fixture",
+      userId,
+    };
+    const savedIngress = Buffer.from(credentials());
+    await expect(client.save({ ...baseContext, ingress: savedIngress })).resolves.toEqual({
+      configured: true,
+      status: "usable",
+      version: 1,
+    });
+    const testedIngress = Buffer.from(JSON.stringify({ expectedVersion: 1 }));
+    await expect(client.test({ ...baseContext, ingress: testedIngress })).resolves.toEqual({
+      configured: true,
+      status: "usable",
+      version: 1,
+    });
+    await expect(client.status(baseContext)).resolves.toEqual({
+      configured: true,
+      status: "usable",
+      version: 1,
+    });
+    expect(savedIngress.toString("utf8")).toContain("synthetic-http-api-key");
+    expect(testedIngress.toString("utf8")).toContain("expectedVersion");
+  });
+
   it("supports only fixed lifecycle commands and returns exact secret-free status", async () => {
     const { url } = await fixture();
     const saved = await fetch(`${url}/v1/okx-key`, {
@@ -130,5 +160,18 @@ describe("P04-07 isolated connector HTTP boundary", () => {
       data: { configured: false, status: "unconfigured", version: 0 },
       success: true,
     });
+  });
+
+  it("rejects connector client endpoints with a path or non-loopback authority", () => {
+    for (const baseUrl of [
+      "http://127.0.0.1:43210/prefix",
+      "http://HOST:43210",
+      "https://127.0.0.1:43210",
+    ]) {
+      expect(
+        () => new RemoteOkxKeyConnectorClient({ apiToken, baseUrl }),
+        baseUrl,
+      ).toThrow(/loopback/iu);
+    }
   });
 });

@@ -54,6 +54,11 @@ describe("P04-07 fixed OKX egress", () => {
       ["169.254.169.254"],
       ["::1"],
       ["fd00::1"],
+      ["::ffff:127.0.0.1"],
+      ["::ffff:169.254.169.254"],
+      ["::ffff:172.20.1.1"],
+      ["::ffff:ac14:101"],
+      ["64:ff9b::7f00:1"],
       ["203.0.113.10", "127.0.0.1"],
     ]) {
       const transport = new OkxHttpsReadOnlyTransport({
@@ -93,6 +98,8 @@ describe("P04-07 fixed OKX egress", () => {
   it("maps only explicit permissions and never returns the provider IP or body", () => {
     expect(isPublicOkxEgressAddress("203.0.113.10")).toBe(true);
     expect(isPublicOkxEgressAddress("192.168.1.2")).toBe(false);
+    expect(isPublicOkxEgressAddress("::ffff:8.8.8.8")).toBe(true);
+    expect(isPublicOkxEgressAddress("::ffff:172.31.255.254")).toBe(false);
     expect(
       parseOkxAccountConfiguration(
         Buffer.from(JSON.stringify({ code: "0", data: [{ ip: "fixture-ip", perm: "trade" }] })),

@@ -149,6 +149,75 @@ describe("P04-07 OKX credential lifecycle", () => {
     await expect(service.status(userId)).resolves.toMatchObject({ status: "usable", version: 2 });
   });
 
+  it("invalidates an in-flight test capability when the active version is revoked", async () => {
+    let releaseTest!: () => void;
+    let testEntered!: () => void;
+    const entered = new Promise<void>((resolve) => (testEntered = resolve));
+    const released = new Promise<void>((resolve) => (releaseTest = resolve));
+    let calls = 0;
+    const transport: OkxReadOnlyTransport = {
+      async validate(_credentials: OkxCredentialBytes): Promise<OkxProviderValidation> {
+        calls += 1;
+        if (calls === 2) {
+          testEntered();
+          await released;
+        }
+        return usableOkxFixtureValidation;
+      },
+    };
+    const repository = new MemoryOkxCredentialRepository();
+    const service = new OkxCredentialService({
+      kms: new LocalOkxKmsFixture({ key: Buffer.alloc(32, 0x54) }),
+      now: () => now,
+      repository,
+      transport,
+    });
+    await service.save({ ...context("save-before-revoke"), ingress: body("revoke") });
+    const testing = service.test({ ...context("test-before-revoke"), expectedVersion: 1 });
+    await entered;
+    await service.revoke({ ...context("revoke-during-test"), expectedVersion: 1 });
+    releaseTest();
+
+    await expect(testing).rejects.toMatchObject({ code: "CAPABILITY_EXPIRED" });
+    await expect(service.status(userId)).resolves.toEqual({
+      configured: true,
+      status: "revoked",
+      version: 1,
+    });
+  });
+
+  it("recovers a testing state left behind by a connector restart", async () => {
+    const repository = new MemoryOkxCredentialRepository();
+    const service = new OkxCredentialService({
+      kms: new LocalOkxKmsFixture({ key: Buffer.alloc(32, 0x55) }),
+      now: () => now,
+      repository,
+      transport: new OkxTransportFixture(usableOkxFixtureValidation),
+    });
+    await service.save({ ...context("save-before-testing-crash"), ingress: body("testing") });
+    await repository.setStatus({
+      context: context("testing-crash"),
+      expectedVersion: 1,
+      status: "testing",
+    });
+
+    await expect(service.recover({ now })).resolves.toBe(1);
+    await expect(service.status(userId)).resolves.toEqual({
+      configured: true,
+      status: "unknown",
+      version: 1,
+    });
+    expect(repository.auditEvents()).toContainEqual(
+      expect.objectContaining({
+        action: "status-change",
+        actor: "connector-recovery",
+        changed: true,
+        status: "unknown",
+        version: 1,
+      }),
+    );
+  });
+
   it("recovers abandoned staged/deleting work and revokes credentials after 90 days", async () => {
     const repository = new MemoryOkxCredentialRepository();
     const kms = new LocalOkxKmsFixture({ key: Buffer.alloc(32, 0x53) });

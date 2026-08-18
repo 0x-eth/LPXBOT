@@ -1,6 +1,7 @@
 import {
   decryptOkxCredentials,
   encryptOkxCredentials,
+  HttpOkxKmsClient,
   LocalOkxKmsFixture,
   OkxConnectorError,
   parseCredentialIngress,
@@ -26,6 +27,33 @@ function ingress() {
 }
 
 describe("P04-07 OKX envelope cryptography", () => {
+  it("clears the HTTP KMS request buffer after wrapping a DEK", async () => {
+    let requestBody: Buffer | null = null;
+    const client = new HttpOkxKmsClient({
+      fetch: async (_input, init) => {
+        requestBody = init?.body as Buffer;
+        expect(requestBody.toString("utf8")).toContain(Buffer.alloc(32, 0x7a).toString("base64"));
+        return new Response(JSON.stringify({ ciphertext: Buffer.alloc(60, 0x6b).toString("base64") }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        });
+      },
+      identityToken: "synthetic-kms-identity-token-at-least-32-bytes",
+      keyId: "fixture-key",
+      keyVersion: "fixture-v1",
+      url: "https://kms.fixture.invalid",
+    });
+
+    await expect(
+      client.wrapDek({
+        dek: Buffer.alloc(32, 0x7a),
+        key: { kekId: "fixture-key", kekVersion: "fixture-v1" },
+      }),
+    ).resolves.toHaveLength(60);
+    expect(requestBody).not.toBeNull();
+    expect(requestBody!.every((byte) => byte === 0)).toBe(true);
+  });
+
   it("uses an independent random DEK and authenticates all five fixed AAD fields", async () => {
     const kms = new LocalOkxKmsFixture({ key: Buffer.alloc(32, 0x41) });
     const firstCredentials = parseCredentialIngress(ingress());

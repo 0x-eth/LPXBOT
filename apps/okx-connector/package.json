@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@lpbot/api-contract": "workspace:*",
+    "ipaddr.js": "2.5.0",
     "pg": "8.23.0"
   },
   "devDependencies": {
