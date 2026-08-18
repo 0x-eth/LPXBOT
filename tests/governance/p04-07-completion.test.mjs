@@ -68,13 +68,16 @@ test("P04 closes at 12 implemented-assumed / 0 planned with global 61 / 135", as
   assert.match(functionMatrix, /\| SET-07 \|[^\n]*implemented-assumed[^\n]*P04-07/u);
   for (const document of [traceability, roadmap]) {
     assert.match(document, /P04[^\n]*12[^\n]*implemented-assumed[^\n]*0[^\n]*planned/iu);
-    assert.match(document, /61[^\n]*implemented-assumed[^\n]*135[^\n]*planned/iu);
     assert.match(document, /accepted-with-gaps/u);
     assert.match(document, /GAP-P04-OKX-LIVE/u);
     assert.match(document, /生产 KMS\/IAM/u);
     assert.match(document, /独立安全评审/u);
     assert.match(document, /真实只读 sandbox 验证/u);
   }
+  assert.match(traceability, /\| 当前产品实现 \| 61 \|/u);
+  assert.match(traceability, /\| `implemented-assumed` \| 61 \|/u);
+  assert.match(traceability, /\| 其余 `planned` \| 135 \|/u);
+  assert.match(roadmap, /全局为 61 项 `implemented-assumed`、135 项 `planned`/u);
 });
 
 test("P04-07 manifest owns SET-07 and preserves all unresolved boundaries", async () => {
