@@ -1,4 +1,10 @@
-import type { CustodyWallet, KeystoreStatus, WalletEncryptionMode } from "@lpbot/api-contract";
+import type {
+  CustodyWallet,
+  KeystoreStatus,
+  WalletDeletePreview,
+  WalletDeletionReceipt,
+  WalletEncryptionMode,
+} from "@lpbot/api-contract";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   ArrowRightLeft,
@@ -7,9 +13,12 @@ import {
   KeyRound,
   LoaderCircle,
   LockKeyhole,
+  Pencil,
   Plus,
   RefreshCw,
+  ShieldAlert,
   ShieldCheck,
+  Trash2,
   WalletCards,
   X,
 } from "lucide-react";
@@ -20,11 +29,16 @@ import { WalletClient, WalletRequestError } from "./wallet-client";
 
 type WalletPageStatus =
   | "duplicate"
+  | "conflict"
+  | "delete-blocked"
+  | "deleted"
+  | "deleting"
   | "empty"
   | "error"
   | "generate-pending"
   | "import-validating"
   | "loading"
+  | "preview-expired"
   | "reauth-required"
   | "ready"
   | "signer-unavailable";
@@ -46,13 +60,24 @@ function stateForError(error: unknown): WalletPageStatus {
 }
 
 const errorLabels: Partial<Record<WalletPageStatus, string>> = {
+  conflict: "钱包版本已变化，请刷新后重试",
+  "delete-blocked": "当前依赖阻止普通删除",
   duplicate: "该地址已由当前账户托管",
   error: "钱包请求失败",
   "reauth-required": "需要重新验证身份",
+  "preview-expired": "删除预览已过期，请重新预览",
   "signer-unavailable": "签名服务暂时不可用",
 };
 
 function WalletState({ status }: { status: WalletPageStatus }) {
+  if (status === "deleted") {
+    return (
+      <div className="wallet-page-state wallet-page-success" data-state={status} role="status">
+        <ShieldCheck aria-hidden="true" size={19} />
+        <p>钱包已彻底删除</p>
+      </div>
+    );
+  }
   const label = errorLabels[status];
   if (!label) return null;
   return (
@@ -83,6 +108,40 @@ function walletRequestLabel(error: unknown, action: "generate" | "import" | "swi
     default:
       return `${action === "generate" ? "生成" : action === "import" ? "导入" : "切换"}失败`;
   }
+}
+
+function walletLifecycleLabel(error: unknown): string {
+  if (!(error instanceof WalletRequestError)) return "钱包请求失败";
+  switch (error.code) {
+    case "CONFIRMATION_MISMATCH":
+      return "确认短语不一致";
+    case "DELETE_BLOCKED":
+      return "当前依赖阻止删除";
+    case "PREVIEW_CHANGED":
+      return "钱包依赖已变化，请重新预览";
+    case "PREVIEW_EXPIRED":
+      return "删除预览已过期，请重新预览";
+    case "REAUTH_REQUIRED":
+      return "需要重新验证身份";
+    case "REVISION_CONFLICT":
+      return "钱包版本已变化，请刷新后重试";
+    case "SIGNER_UNAVAILABLE":
+      return "签名服务暂时不可用";
+    default:
+      return "钱包请求失败";
+  }
+}
+
+function lifecycleStateForError(error: unknown): WalletPageStatus {
+  if (!(error instanceof WalletRequestError)) return "error";
+  if (error.code === "REVISION_CONFLICT") return "conflict";
+  if (error.code === "DELETE_BLOCKED") return "delete-blocked";
+  if (error.code === "PREVIEW_EXPIRED" || error.code === "PREVIEW_CHANGED") {
+    return "preview-expired";
+  }
+  if (error.code === "REAUTH_REQUIRED") return "reauth-required";
+  if (error.code === "SIGNER_UNAVAILABLE") return "signer-unavailable";
+  return "error";
 }
 
 function WalletModeControl({
@@ -129,10 +188,16 @@ function WalletModeControl({
 }
 
 function WalletRecord({
+  actionsDisabled,
+  onDelete,
+  onRename,
   onSwitch,
   switchDisabled,
   wallet,
 }: {
+  actionsDisabled: boolean;
+  onDelete(wallet: CustodyWallet, trigger: HTMLButtonElement): void;
+  onRename(wallet: CustodyWallet, trigger: HTMLButtonElement): void;
   onSwitch(wallet: CustodyWallet, trigger: HTMLButtonElement): void;
   switchDisabled: boolean;
   wallet: CustodyWallet;
@@ -171,6 +236,26 @@ function WalletRecord({
           type="button"
         >
           <ArrowRightLeft aria-hidden="true" size={15} />
+        </button>
+        <button
+          aria-label={`重命名 ${wallet.name}`}
+          className="icon-button tooltip-control wallet-rename"
+          data-tooltip="重命名"
+          disabled={actionsDisabled}
+          onClick={(event) => onRename(wallet, event.currentTarget)}
+          type="button"
+        >
+          <Pencil aria-hidden="true" size={15} />
+        </button>
+        <button
+          aria-label={`删除 ${wallet.name}`}
+          className="icon-button tooltip-control wallet-delete"
+          data-tooltip="删除"
+          disabled={actionsDisabled}
+          onClick={(event) => onDelete(wallet, event.currentTarget)}
+          type="button"
+        >
+          <Trash2 aria-hidden="true" size={15} />
         </button>
       </div>
     </li>
