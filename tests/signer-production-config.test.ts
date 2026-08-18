@@ -18,9 +18,15 @@ const validEnvironment = {
   SIGNER_PORT: "43210",
 } as const;
 
-describe("P04-02 signer production boundary", () => {
+describe("P04 signer production boundary", () => {
   it("exports no signing, raw transaction, broadcast, or RPC capability", () => {
-    expect(signerCapabilities).toEqual(["import", "generate", "seal", "open-verify"]);
+    expect(signerCapabilities).toEqual([
+      "import",
+      "generate",
+      "seal",
+      "open-verify",
+      "password-reseal",
+    ]);
     expect(signerCapabilities.join(" ")).not.toMatch(
       /digest|message|transaction|broadcast|rpc|sign/u,
     );
