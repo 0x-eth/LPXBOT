@@ -59,12 +59,19 @@ async function fixture() {
 
 async function lifecycleFixture(
   options: {
+    coordinator?: "fail" | "missing" | "ok";
+    failLifecycle?: boolean;
     snapshot?: WalletDependencySnapshot;
   } = {},
 ) {
   const sessionStore = new SessionFixtureStore();
-  const token = await issueFixtureSession(sessionStore, userId, now);
-  const store = new InMemoryCustodyWalletStore();
+  const [token, otherToken] = await Promise.all([
+    issueFixtureSession(sessionStore, userId, now),
+    issueFixtureSession(sessionStore, otherUserId, now),
+  ]);
+  const store = new InMemoryCustodyWalletStore({
+    ...(options.failLifecycle ? { failLifecycleAt: "before-commit" as const } : {}),
+  });
   let clock = now;
   const inventory = {
     snapshot: options.snapshot ?? {
@@ -80,8 +87,17 @@ async function lifecycleFixture(
     },
   };
   const taskCoordinator = {
+    deactivated: false,
+    restoreCount: 0,
     async deactivate() {
-      return { async restore() {} };
+      if (options.coordinator === "fail") throw new Error("TASK_DEACTIVATION_FAILED");
+      this.deactivated = true;
+      return {
+        restore: async () => {
+          this.deactivated = false;
+          this.restoreCount += 1;
+        },
+      };
     },
   };
   const serviceOptions = {
@@ -93,8 +109,8 @@ async function lifecycleFixture(
       }),
     }),
     store,
-    taskCoordinator,
     walletDependencyInventory: inventory,
+    ...(options.coordinator === "missing" ? {} : { taskCoordinator }),
   };
   const custody = new CustodySignerService(serviceOptions);
   const app = buildApiApp({
@@ -126,6 +142,7 @@ async function lifecycleFixture(
     app,
     custody,
     inventory,
+    otherToken,
     proof: `fresh:${session.id}`,
     store,
     taskCoordinator,
@@ -327,5 +344,200 @@ describe("P04-04 wallet delete preview API", () => {
     });
     expect(repeated.statusCode).toBe(404);
     expect(repeated.json().error.code).toBe("WALLET_NOT_FOUND");
+  });
+
+  it("rejects token tampering, expiry, ownership changes, and post-preview state changes", async () => {
+    const { advance, app, inventory, otherToken, proof, token, wallet } =
+      await lifecycleFixture({
+        snapshot: {
+          assetIds: [],
+          assetRiskDigest: "sha256:empty-wallet-risk",
+          complete: true,
+          policyIds: [],
+          positionIds: [],
+          taskIds: [],
+        },
+      });
+    const deleteRequest = async (previewToken: string, expectedRevision = wallet.revision) =>
+      app.inject({
+        headers: { ...auth(token), "x-lpbot-reauthentication": proof },
+        method: "DELETE",
+        payload: { expectedRevision, force: false, previewToken },
+        url: `/api/wallets/${wallet.walletId}`,
+      });
+    const preview = async () =>
+      (
+        await app.inject({
+          headers: auth(token),
+          method: "POST",
+          payload: {},
+          url: `/api/wallets/${wallet.walletId}/delete-preview`,
+        })
+      ).json().data;
+
+    let frozen = await preview();
+    const tampered = await deleteRequest("A".repeat(43));
+    expect(tampered.statusCode).toBe(409);
+    expect(tampered.json().error.code).toBe("PREVIEW_EXPIRED");
+
+    const crossUser = await app.inject({
+      headers: { ...auth(otherToken), "x-lpbot-reauthentication": proof },
+      method: "DELETE",
+      payload: {
+        expectedRevision: wallet.revision,
+        force: false,
+        previewToken: frozen.previewToken,
+      },
+      url: `/api/wallets/${wallet.walletId}`,
+    });
+    expect(crossUser.statusCode).toBe(403);
+
+    inventory.snapshot = {
+      ...inventory.snapshot,
+      assetIds: ["asset:changed"],
+      assetRiskDigest: "sha256:changed-wallet-risk",
+    };
+    const changed = await deleteRequest(frozen.previewToken);
+    expect(changed.statusCode).toBe(409);
+    expect(changed.json().error.code).toBe("PREVIEW_CHANGED");
+
+    inventory.snapshot = {
+      assetIds: [],
+      assetRiskDigest: "sha256:empty-wallet-risk",
+      complete: true,
+      policyIds: [],
+      positionIds: [],
+      taskIds: [],
+    };
+    frozen = await preview();
+    await app.inject({
+      headers: auth(token),
+      method: "PATCH",
+      payload: { expectedRevision: wallet.revision, name: "Changed after preview" },
+      url: `/api/wallets/${wallet.walletId}`,
+    });
+    const revisionChanged = await deleteRequest(frozen.previewToken);
+    expect(revisionChanged.statusCode).toBe(409);
+    expect(revisionChanged.json().error.code).toBe("PREVIEW_CHANGED");
+
+    frozen = await preview();
+    advance(300_001);
+    const expired = await deleteRequest(frozen.previewToken, wallet.revision + 1);
+    expect(expired.statusCode).toBe(409);
+    expect(expired.json().error.code).toBe("PREVIEW_EXPIRED");
+  });
+
+  it("forces only the exact frozen dependency list after task deactivation", async () => {
+    const { app, custody, proof, taskCoordinator, token, wallet } = await lifecycleFixture();
+    const preview = (
+      await app.inject({
+        headers: auth(token),
+        method: "POST",
+        payload: {},
+        url: `/api/wallets/${wallet.walletId}/delete-preview`,
+      })
+    ).json().data;
+    const request = (payload: Record<string, unknown>) =>
+      app.inject({
+        headers: { ...auth(token), "x-lpbot-reauthentication": proof },
+        method: "DELETE",
+        payload,
+        url: `/api/wallets/${wallet.walletId}`,
+      });
+
+    const blocked = await request({
+      expectedRevision: wallet.revision,
+      force: false,
+      previewToken: preview.previewToken,
+    });
+    expect(blocked.statusCode).toBe(409);
+    expect(blocked.json().error.code).toBe("DELETE_BLOCKED");
+
+    const wrongPhrase = await request({
+      confirmationPhrase: "DELETE WALLET DEADBEEF",
+      dependencies: preview.dependencies,
+      expectedRevision: wallet.revision,
+      force: true,
+      previewToken: preview.previewToken,
+    });
+    expect(wrongPhrase.statusCode).toBe(400);
+    expect(wrongPhrase.json().error.code).toBe("CONFIRMATION_MISMATCH");
+
+    const incomplete = await request({
+      confirmationPhrase: preview.confirmationPhrase,
+      dependencies: { ...preview.dependencies, taskIds: [] },
+      expectedRevision: wallet.revision,
+      force: true,
+      previewToken: preview.previewToken,
+    });
+    expect(incomplete.statusCode).toBe(409);
+    expect(incomplete.json().error.code).toBe("PREVIEW_CHANGED");
+
+    const deleted = await request({
+      confirmationPhrase: preview.confirmationPhrase,
+      dependencies: preview.dependencies,
+      expectedRevision: wallet.revision,
+      force: true,
+      previewToken: preview.previewToken,
+    });
+    expect(deleted.statusCode).toBe(200);
+    expect(deleted.json().data.deletionType).toBe("force");
+    expect(taskCoordinator.deactivated).toBe(true);
+    expect(await custody.getWallet(userId, wallet.walletId)).toBeNull();
+  });
+
+  it("fails closed without a coordinator and restores tasks on deletion failure", async () => {
+    const missing = await lifecycleFixture({ coordinator: "missing" });
+    const missingPreview = (
+      await missing.app.inject({
+        headers: auth(missing.token),
+        method: "POST",
+        payload: {},
+        url: `/api/wallets/${missing.wallet.walletId}/delete-preview`,
+      })
+    ).json().data;
+    expect(missingPreview.forceEligible).toBe(false);
+    const denied = await missing.app.inject({
+      headers: { ...auth(missing.token), "x-lpbot-reauthentication": missing.proof },
+      method: "DELETE",
+      payload: {
+        confirmationPhrase: missingPreview.confirmationPhrase,
+        dependencies: missingPreview.dependencies,
+        expectedRevision: missing.wallet.revision,
+        force: true,
+        previewToken: missingPreview.previewToken,
+      },
+      url: `/api/wallets/${missing.wallet.walletId}`,
+    });
+    expect(denied.statusCode).toBe(409);
+    expect(denied.json().error.code).toBe("DELETE_BLOCKED");
+
+    const fault = await lifecycleFixture({ failLifecycle: true });
+    const faultPreview = (
+      await fault.app.inject({
+        headers: auth(fault.token),
+        method: "POST",
+        payload: {},
+        url: `/api/wallets/${fault.wallet.walletId}/delete-preview`,
+      })
+    ).json().data;
+    const failed = await fault.app.inject({
+      headers: { ...auth(fault.token), "x-lpbot-reauthentication": fault.proof },
+      method: "DELETE",
+      payload: {
+        confirmationPhrase: faultPreview.confirmationPhrase,
+        dependencies: faultPreview.dependencies,
+        expectedRevision: fault.wallet.revision,
+        force: true,
+        previewToken: faultPreview.previewToken,
+      },
+      url: `/api/wallets/${fault.wallet.walletId}`,
+    });
+    expect(failed.statusCode).toBe(503);
+    expect(fault.taskCoordinator.deactivated).toBe(false);
+    expect(fault.taskCoordinator.restoreCount).toBe(1);
+    expect(await fault.custody.getWallet(userId, fault.wallet.walletId)).not.toBeNull();
+    expect(fault.store.envelopeCount).toBe(1);
+    expect(fault.store.auditCount).toBe(1);
   });
 });
