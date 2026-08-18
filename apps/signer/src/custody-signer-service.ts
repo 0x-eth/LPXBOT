@@ -208,6 +208,10 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     this.#walletDependencyInventory = input.walletDependencyInventory ?? null;
   }
 
+  transferSigningConfigured(): boolean {
+    return this.#transferPlanAuthorizer !== null && this.#rawTransactionDelivery !== null;
+  }
+
   async keystoreStatus(userId: string, reauthenticatedSessionId?: string): Promise<KeystoreStatus> {
     const store = this.#requireKeystoreStore();
     await this.#expireUnlockSessions(userId);

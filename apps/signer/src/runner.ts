@@ -4,12 +4,18 @@ import type { Server } from "node:http";
 import { Pool, type QueryResultRow } from "pg";
 
 import { CustodySignerService } from "./custody-signer-service.js";
-import type { WalletDependencyInventory, WalletTaskCoordinator } from "./custody-types.js";
+import type {
+  RawTransactionDelivery,
+  WalletDependencyInventory,
+  WalletTaskCoordinator,
+  WalletTransferPlanAuthorizer,
+} from "./custody-types.js";
 import { HttpKmsClient } from "./http-kms-client.js";
 import { createSignerHttpServer } from "./http-server.js";
 import { IsolatedWalletSigner } from "./isolated-wallet-signer.js";
 import type { KmsClient } from "./kms.js";
 import { PostgresCustodyWalletStore } from "./postgres-custody-wallet-store.js";
+import { PostgresWalletTransferPlanAuthorizer } from "./postgres-transfer-plan-authorizer.js";
 import {
   loadSignerProductionConfig,
   SignerConfigurationError,
@@ -29,6 +35,8 @@ interface CustodyTablesRow extends QueryResultRow {
   securityPasswordVersions: string | null;
   securityPasswords: string | null;
   tombstones: string | null;
+  transferNonceLedgers: string | null;
+  transferOperations: string | null;
   wallets: string | null;
 }
 
@@ -40,7 +48,9 @@ export interface SignerRuntime {
 export interface SignerRuntimeDependencies {
   kms?: KmsClient;
   pool?: Pool;
+  rawTransactionDelivery?: RawTransactionDelivery;
   taskCoordinator?: WalletTaskCoordinator;
+  transferPlanAuthorizer?: WalletTransferPlanAuthorizer;
   walletDependencyInventory?: WalletDependencyInventory;
 }
 
@@ -76,7 +86,9 @@ async function assertStoreReady(pool: Pool): Promise<void> {
          to_regclass('public.user_security_password_versions')::text AS "securityPasswordVersions",
          to_regclass('public.user_security_passwords')::text AS "securityPasswords",
          to_regclass('public.custody_wallet_tombstones')::text AS tombstones,
-         to_regclass('public.custody_wallets')::text AS wallets`,
+         to_regclass('public.custody_wallets')::text AS wallets,
+         to_regclass('public.wallet_nonce_ledgers')::text AS "transferNonceLedgers",
+         to_regclass('public.wallet_transfer_operations')::text AS "transferOperations"`,
     );
     row = result.rows[0];
   } catch {
@@ -94,7 +106,9 @@ async function assertStoreReady(pool: Pool): Promise<void> {
     !row.securityPasswordVersions ||
     !row.securityPasswords ||
     !row.tombstones ||
-    !row.wallets
+    !row.wallets ||
+    !row.transferNonceLedgers ||
+    !row.transferOperations
   ) {
     throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
   }
@@ -130,13 +144,20 @@ export async function startSignerRuntime(
 
     const store = new PostgresCustodyWalletStore(pool);
     const signer = new IsolatedWalletSigner({ kms });
+    const transferPlanAuthorizer =
+      dependencies.transferPlanAuthorizer ??
+      new PostgresWalletTransferPlanAuthorizer({ localChainIds: [31_337], pool });
     const service = new CustodySignerService({
+      ...(dependencies.rawTransactionDelivery
+        ? { rawTransactionDelivery: dependencies.rawTransactionDelivery }
+        : {}),
       signer,
       store,
       ...(dependencies.taskCoordinator ? { taskCoordinator: dependencies.taskCoordinator } : {}),
       ...(dependencies.walletDependencyInventory
         ? { walletDependencyInventory: dependencies.walletDependencyInventory }
         : {}),
+      transferPlanAuthorizer,
     });
     server = createSignerHttpServer({ apiToken: config.apiToken, service });
     await listen(server, config);

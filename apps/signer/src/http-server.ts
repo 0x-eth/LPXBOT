@@ -272,7 +272,9 @@ export function createSignerHttpServer(input: {
             "password-reseal",
             "keystore-unlock",
             "keystore-auto-lock",
-            "plan-bound-transaction-signing",
+            ...(input.service.transferSigningConfigured()
+              ? ["plan-bound-transaction-signing"]
+              : []),
           ],
           ready: true,
         },
