@@ -8,7 +8,9 @@ import {
 import type {
   CustodyWallet,
   CustodyWalletPage,
+  DeleteCustodyWalletRequest,
   WalletDeletePreview,
+  WalletDeletionReceipt,
   WalletEncryptionMode,
 } from "@lpbot/api-contract";
 
@@ -128,6 +130,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
   readonly #store: CustodyWalletStore;
   readonly #taskCoordinator: WalletTaskCoordinator | null;
   readonly #unlockSessions = new Map<string, UnlockSession>();
+  readonly #revokedWallets = new Set<string>();
   #unlockVersion = 0;
   readonly #uuid: () => string;
   readonly #walletDependencyInventory: WalletDependencyInventory | null;
@@ -654,6 +657,90 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     }
   }
 
+  async deleteWallet(
+    input: DeleteCustodyWalletRequest & { userId: string; walletId: string },
+  ): Promise<WalletDeletionReceipt> {
+    const wallet = await this.#store.get(input.userId, input.walletId);
+    if (!wallet) throw new SignerError("WALLET_NOT_FOUND");
+    const tokenBytes = Buffer.from(input.previewToken, "base64url");
+    if (tokenBytes.length !== 32 || tokenBytes.toString("base64url") !== input.previewToken) {
+      tokenBytes.fill(0);
+      throw new SignerError("PREVIEW_EXPIRED");
+    }
+    const previewTokenDigest = createHash("sha256").update(tokenBytes).digest();
+    tokenBytes.fill(0);
+    let deactivation: Awaited<ReturnType<WalletTaskCoordinator["deactivate"]>> | null = null;
+    try {
+      const preview = await this.#store.getWalletDeletePreview(
+        input.userId,
+        input.walletId,
+        previewTokenDigest,
+      );
+      const currentTime = this.#now();
+      if (!preview || preview.expiresAt <= currentTime) throw new SignerError("PREVIEW_EXPIRED");
+      if (input.expectedRevision !== preview.revision) throw new SignerError("REVISION_CONFLICT");
+      if (wallet.revision !== preview.revision) throw new SignerError("PREVIEW_CHANGED");
+      const snapshot = await this.#walletDependencySnapshot(input.userId, input.walletId);
+      if (!this.#sameWalletDependencySnapshot(snapshot, preview)) {
+        throw new SignerError("PREVIEW_CHANGED");
+      }
+      const dependencyCount =
+        snapshot.assetIds.length +
+        snapshot.policyIds.length +
+        snapshot.positionIds.length +
+        snapshot.taskIds.length;
+      if (!input.force && dependencyCount > 0) throw new SignerError("DELETE_BLOCKED");
+      if (input.force) {
+        if (
+          !preview.forceEligible ||
+          input.confirmationPhrase !== preview.confirmationPhrase ||
+          !this.#sameWalletDependencySnapshot(input.dependencies, preview)
+        ) {
+          throw new SignerError(
+            input.confirmationPhrase !== preview.confirmationPhrase
+              ? "CONFIRMATION_MISMATCH"
+              : "PREVIEW_CHANGED",
+          );
+        }
+        if (snapshot.taskIds.length > 0) {
+          if (!this.#taskCoordinator) throw new SignerError("DELETE_BLOCKED");
+          try {
+            deactivation = await this.#taskCoordinator.deactivate({
+              taskIds: snapshot.taskIds,
+              userId: input.userId,
+              walletId: input.walletId,
+            });
+          } catch {
+            throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+          }
+        }
+      }
+      const receipt = await this.#store.deleteWallet({
+        ...snapshot,
+        deletionType: input.force ? "force" : "normal",
+        expectedRevision: input.expectedRevision,
+        now: currentTime,
+        previewTokenDigest,
+        userId: input.userId,
+        walletId: input.walletId,
+      });
+      this.#revokedWallets.add(input.walletId);
+      if (wallet.mode === "user-password") this.#dropUserUnlockSessions(input.userId);
+      return receipt;
+    } catch (error) {
+      if (deactivation) {
+        try {
+          await deactivation.restore();
+        } catch {
+          throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+        }
+      }
+      throw error;
+    } finally {
+      previewTokenDigest.fill(0);
+    }
+  }
+
   async getWallet(userId: string, walletId: string): Promise<CustodyWallet | null> {
     const wallet = await this.#store.get(userId, walletId);
     return wallet ? publicWallet(wallet) : null;
@@ -701,6 +788,41 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
       positionIds: list(value.positionIds),
       taskIds: list(value.taskIds),
     };
+  }
+
+  #sameWalletDependencySnapshot(
+    left: {
+      assetIds: readonly string[];
+      assetRiskDigest?: string;
+      policyIds: readonly string[];
+      positionIds: readonly string[];
+      taskIds: readonly string[];
+    },
+    right: {
+      assetIds: readonly string[];
+      assetRiskDigest?: string;
+      policyIds: readonly string[];
+      positionIds: readonly string[];
+      taskIds: readonly string[];
+    },
+  ): boolean {
+    return (
+      (left.assetRiskDigest === undefined ||
+        right.assetRiskDigest === undefined ||
+        left.assetRiskDigest === right.assetRiskDigest) &&
+      JSON.stringify(left.assetIds) === JSON.stringify(right.assetIds) &&
+      JSON.stringify(left.policyIds) === JSON.stringify(right.policyIds) &&
+      JSON.stringify(left.positionIds) === JSON.stringify(right.positionIds) &&
+      JSON.stringify(left.taskIds) === JSON.stringify(right.taskIds)
+    );
+  }
+
+  #dropUserUnlockSessions(userId: string): void {
+    for (const [key, session] of this.#unlockSessions) {
+      if (session.userId !== userId) continue;
+      this.#unlockSessions.delete(key);
+      this.#zeroize("derived-kek", session.kek);
+    }
   }
 
   async renameWallet(input: {

@@ -1,6 +1,7 @@
 import type {
   CustodyWallet,
   CustodyWalletPage,
+  WalletDeletionReceipt,
   WalletEncryptionMode,
   WalletLockStatus,
 } from "@lpbot/api-contract";
@@ -18,6 +19,7 @@ import type {
   StoredWalletDeletePreview,
   WalletEnvelopeMaterial,
   WalletEnvelopeReplacement,
+  WalletDeleteCommit,
 } from "./custody-types.js";
 import { publicWallet } from "./custody-types.js";
 import { SignerError } from "./signer-error.js";
@@ -78,6 +80,21 @@ interface ResetPreviewRow extends QueryResultRow {
   preview_token_digest: Buffer;
   secret_version: string;
   user_id: string;
+}
+
+interface WalletDeletePreviewRow extends QueryResultRow {
+  asset_ids: string[];
+  asset_risk_digest: string;
+  confirmation_phrase: string;
+  expires_at: Date;
+  force_eligible: boolean;
+  policy_ids: string[];
+  position_ids: string[];
+  preview_token_digest: Buffer;
+  task_ids: string[];
+  user_id: string;
+  wallet_id: string;
+  wallet_revision: string;
 }
 
 const walletColumns = `
@@ -258,6 +275,151 @@ export class PostgresCustodyWalletStore implements CustodyWalletStore, KeystoreS
         ],
       );
       await client.query("COMMIT");
+    } catch (error) {
+      await this.#rollback(client);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getWalletDeletePreview(
+    userId: string,
+    walletId: string,
+    previewTokenDigest: Uint8Array,
+  ): Promise<StoredWalletDeletePreview | null> {
+    const result = await this.#pool.query<WalletDeletePreviewRow>(
+      `SELECT user_id::text, wallet_id::text, preview_token_digest,
+              wallet_revision::text, task_ids, policy_ids, position_ids, asset_ids,
+              asset_risk_digest, force_eligible, confirmation_phrase, expires_at
+         FROM custody_wallet_delete_previews
+        WHERE user_id = $1 AND wallet_id = $2 AND preview_token_digest = $3`,
+      [userId, walletId, previewTokenDigest],
+    );
+    const row = result.rows[0];
+    return row
+      ? {
+          assetIds: [...row.asset_ids],
+          assetRiskDigest: row.asset_risk_digest,
+          complete: true,
+          confirmationPhrase: row.confirmation_phrase,
+          expiresAt: row.expires_at,
+          forceEligible: row.force_eligible,
+          policyIds: [...row.policy_ids],
+          positionIds: [...row.position_ids],
+          previewTokenDigest: Buffer.from(row.preview_token_digest),
+          revision: integer(row.wallet_revision, "wallet revision"),
+          taskIds: [...row.task_ids],
+          userId: row.user_id,
+          walletId: row.wallet_id,
+        }
+      : null;
+  }
+
+  async deleteWallet(input: WalletDeleteCommit): Promise<WalletDeletionReceipt> {
+    const client = await this.#pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+        `custody-wallet:${input.userId}:${input.walletId}`,
+      ]);
+      const current = await client.query<WalletRow>(
+        `SELECT ${walletColumns} FROM custody_wallets
+          WHERE user_id = $1 AND wallet_id = $2
+            AND lifecycle_status IN ('active', 'recoverable')
+          FOR UPDATE`,
+        [input.userId, input.walletId],
+      );
+      const wallet = current.rows[0];
+      if (!wallet) throw new SignerError("WALLET_NOT_FOUND");
+      if (integer(wallet.revision, "wallet revision") !== input.expectedRevision) {
+        throw new SignerError("REVISION_CONFLICT");
+      }
+      const previewResult = await client.query<WalletDeletePreviewRow>(
+        `SELECT user_id::text, wallet_id::text, preview_token_digest,
+                wallet_revision::text, task_ids, policy_ids, position_ids, asset_ids,
+                asset_risk_digest, force_eligible, confirmation_phrase, expires_at
+           FROM custody_wallet_delete_previews
+          WHERE user_id = $1 AND wallet_id = $2 AND preview_token_digest = $3
+          FOR UPDATE`,
+        [input.userId, input.walletId, input.previewTokenDigest],
+      );
+      const preview = previewResult.rows[0];
+      if (!preview || preview.expires_at <= input.now) throw new SignerError("PREVIEW_EXPIRED");
+      if (
+        integer(preview.wallet_revision, "wallet revision") !== input.expectedRevision ||
+        preview.asset_risk_digest !== input.assetRiskDigest ||
+        JSON.stringify(preview.asset_ids) !== JSON.stringify(input.assetIds) ||
+        JSON.stringify(preview.policy_ids) !== JSON.stringify(input.policyIds) ||
+        JSON.stringify(preview.position_ids) !== JSON.stringify(input.positionIds) ||
+        JSON.stringify(preview.task_ids) !== JSON.stringify(input.taskIds)
+      ) {
+        throw new SignerError("PREVIEW_CHANGED");
+      }
+      const finalRevision = input.expectedRevision + 1;
+      const audit = await client.query<{ audit_id: string }>(
+        `INSERT INTO custody_wallet_audit_events (
+           wallet_id, user_id, action, outcome, wallet_revision, envelope_version, created_at
+         ) VALUES ($1, $2, $3, 'allowed', $4, $5, $6)
+         RETURNING audit_id::text`,
+        [
+          input.walletId,
+          input.userId,
+          input.deletionType === "force" ? "wallet.force-delete" : "wallet.delete",
+          finalRevision,
+          wallet.current_envelope_version,
+          input.now,
+        ],
+      );
+      const auditId = audit.rows[0]!.audit_id;
+      await client.query(
+        `INSERT INTO custody_wallet_tombstones (
+           wallet_id, user_id, address, final_revision, deletion_type, deletion_audit_id, deleted_at
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          input.walletId,
+          input.userId,
+          wallet.address,
+          finalRevision,
+          input.deletionType,
+          auditId,
+          input.now,
+        ],
+      );
+      if (wallet.mode === "user-password") {
+        const locked = await client.query<WalletRow>(
+          `UPDATE custody_wallets
+              SET lock_status = 'locked', revision = revision + 1, updated_at = $2
+            WHERE user_id = $1 AND wallet_id <> $3 AND mode = 'user-password'
+              AND lifecycle_status IN ('active', 'recoverable') AND lock_status <> 'locked'
+            RETURNING ${walletColumns}`,
+          [input.userId, input.now, input.walletId],
+        );
+        for (const row of locked.rows) {
+          await this.#insertAudit(client, {
+            action: "wallet.lock",
+            envelopeVersion: integer(row.current_envelope_version, "envelope version"),
+            revision: integer(row.revision, "wallet revision"),
+            updatedAt: input.now,
+            userId: input.userId,
+            walletId: row.wallet_id,
+          });
+        }
+      }
+      await client.query("DELETE FROM custody_wallets WHERE wallet_id = $1 AND user_id = $2", [
+        input.walletId,
+        input.userId,
+      ]);
+      this.#lifecycleFault();
+      await client.query("COMMIT");
+      return {
+        address: wallet.address,
+        auditId,
+        deletedAt: input.now.toISOString(),
+        deletionType: input.deletionType,
+        finalRevision,
+        walletId: input.walletId,
+      };
     } catch (error) {
       await this.#rollback(client);
       throw error;

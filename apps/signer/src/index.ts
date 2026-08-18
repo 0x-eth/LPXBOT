@@ -13,6 +13,7 @@ export type {
   StoredKeystoreResetPreview,
   StoredKeystoreVersion,
   StoredWalletDeletePreview,
+  WalletDeleteCommit,
   StoredCustodyWallet,
   WalletEnvelopeMaterial,
   WalletEnvelopeReplacement,

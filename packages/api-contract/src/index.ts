@@ -1050,6 +1050,31 @@ export interface WalletDeletePreview {
   walletId: string;
 }
 
+export type WalletDeletionType = "force" | "normal";
+
+export interface WalletDeletionReceipt {
+  address: EvmAddress;
+  auditId: string;
+  deletedAt: string;
+  deletionType: WalletDeletionType;
+  finalRevision: number;
+  walletId: string;
+}
+
+export type DeleteCustodyWalletRequest =
+  | {
+      expectedRevision: number;
+      force: false;
+      previewToken: string;
+    }
+  | {
+      confirmationPhrase: string;
+      dependencies: WalletDeleteDependencies;
+      expectedRevision: number;
+      force: true;
+      previewToken: string;
+    };
+
 export interface RenameCustodyWalletRequest {
   expectedRevision: number;
   name: string;

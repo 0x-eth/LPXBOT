@@ -1,4 +1,9 @@
-import type { CustodyWallet, CustodyWalletPage, WalletLockStatus } from "@lpbot/api-contract";
+import type {
+  CustodyWallet,
+  CustodyWalletPage,
+  WalletDeletionReceipt,
+  WalletLockStatus,
+} from "@lpbot/api-contract";
 
 import type {
   CustodyEnvelope,
@@ -12,6 +17,7 @@ import type {
   StoredWalletDeletePreview,
   WalletEnvelopeMaterial,
   WalletEnvelopeReplacement,
+  WalletDeleteCommit,
 } from "./custody-types.js";
 import { publicWallet } from "./custody-types.js";
 import { SignerError } from "./signer-error.js";
@@ -89,6 +95,7 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
   readonly #resetPreviews = new Map<string, StoredKeystoreResetPreview>();
   readonly #wallets = new Map<string, StoredCustodyWallet>();
   readonly #walletDeletePreviews = new Map<string, StoredWalletDeletePreview>();
+  readonly #walletTombstones = new Map<string, WalletDeletionReceipt>();
   readonly openAttempts: number[] = [];
 
   constructor(options: { failBeforeCommit?: boolean; failLifecycleAt?: "before-commit" } = {}) {
@@ -130,6 +137,73 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
       `${preview.userId}:${preview.walletId}:${preview.previewTokenDigest.toString("hex")}`,
       cloneWalletDeletePreview(preview),
     );
+  }
+
+  async getWalletDeletePreview(
+    userId: string,
+    walletId: string,
+    previewTokenDigest: Uint8Array,
+  ): Promise<StoredWalletDeletePreview | null> {
+    const key = `${userId}:${walletId}:${Buffer.from(previewTokenDigest).toString("hex")}`;
+    const preview = this.#walletDeletePreviews.get(key);
+    return preview ? cloneWalletDeletePreview(preview) : null;
+  }
+
+  async deleteWallet(input: WalletDeleteCommit): Promise<WalletDeletionReceipt> {
+    const wallet = this.#wallets.get(input.walletId);
+    if (!wallet || wallet.userId !== input.userId) throw new SignerError("WALLET_NOT_FOUND");
+    const key = `${input.userId}:${input.walletId}:${input.previewTokenDigest.toString("hex")}`;
+    const preview = this.#walletDeletePreviews.get(key);
+    if (!preview || preview.expiresAt <= input.now) throw new SignerError("PREVIEW_EXPIRED");
+    if (wallet.revision !== input.expectedRevision || preview.revision !== input.expectedRevision) {
+      throw new SignerError("REVISION_CONFLICT");
+    }
+    if (
+      preview.assetRiskDigest !== input.assetRiskDigest ||
+      JSON.stringify(preview.assetIds) !== JSON.stringify(input.assetIds) ||
+      JSON.stringify(preview.policyIds) !== JSON.stringify(input.policyIds) ||
+      JSON.stringify(preview.positionIds) !== JSON.stringify(input.positionIds) ||
+      JSON.stringify(preview.taskIds) !== JSON.stringify(input.taskIds)
+    ) {
+      throw new SignerError("PREVIEW_CHANGED");
+    }
+    if (this.#failLifecycleAt === "before-commit") {
+      throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+    }
+    const auditId = String(this.#audits.length + 1);
+    const receipt: WalletDeletionReceipt = {
+      address: wallet.address,
+      auditId,
+      deletedAt: input.now.toISOString(),
+      deletionType: input.deletionType,
+      finalRevision: wallet.revision + 1,
+      walletId: wallet.walletId,
+    };
+    this.#audits.push({
+      action: input.deletionType === "force" ? "wallet.force-delete" : "wallet.delete",
+      walletId: wallet.walletId,
+    });
+    this.#walletTombstones.set(wallet.walletId, { ...receipt });
+    this.#wallets.delete(wallet.walletId);
+    this.#envelopes.delete(wallet.walletId);
+    for (const [previewKey, stored] of this.#walletDeletePreviews) {
+      if (stored.walletId === wallet.walletId) this.#walletDeletePreviews.delete(previewKey);
+    }
+    if (wallet.mode === "user-password") {
+      for (const remaining of this.#wallets.values()) {
+        if (
+          remaining.userId !== input.userId ||
+          remaining.mode !== "user-password" ||
+          remaining.lockStatus === "locked"
+        ) {
+          continue;
+        }
+        remaining.lockStatus = "locked";
+        remaining.revision += 1;
+        remaining.updatedAt = new Date(input.now);
+      }
+    }
+    return { ...receipt };
   }
 
   async get(userId: string, walletId: string): Promise<StoredCustodyWallet | null> {

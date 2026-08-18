@@ -129,12 +129,14 @@ import {
 import {
   keystoreSecretBodyLimit,
   keystoreSecretMediaType,
+  parseDeleteCustodyWalletRequest,
   parseGenerateCustodyWalletRequest,
   parseRenameCustodyWalletRequest,
   parseWalletId,
   publicKeystoreResetPreview,
   publicKeystoreStatus,
   publicWalletDeletePreview,
+  publicWalletDeletionReceipt,
   publicWalletDto,
   WalletApiError,
   walletSecretBodyLimit,
@@ -3478,6 +3480,13 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
                           retryable: false,
                           status: 409,
                         }
+                      : code === "DELETE_BLOCKED"
+                        ? {
+                            code,
+                            message: "Wallet deletion is blocked by current dependencies",
+                            retryable: false,
+                            status: 409,
+                          }
                       : code === "WALLET_ADDRESS_EXISTS"
                         ? {
                             code,
@@ -3920,6 +3929,38 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           return reply
             .code(201)
             .send(createSuccessEnvelope(publicWalletDeletePreview(preview), request.id));
+        } catch (error) {
+          return walletFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.delete<{ Params: { walletId: string } }>(
+      "/api/wallets/:walletId",
+      { bodyLimit: 16_384 },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+        if (!options.walletDirectory?.deleteWallet) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "SIGNER_UNAVAILABLE",
+              message: "Wallet deletion is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const input = parseDeleteCustodyWalletRequest(request.body);
+          const receipt = await options.walletDirectory.deleteWallet({
+            ...input,
+            userId: session.userId,
+            walletId: parseWalletId(request.params.walletId),
+          });
+          return createSuccessEnvelope(publicWalletDeletionReceipt(receipt), request.id);
         } catch (error) {
           return walletFailure(error, request, reply) ?? reply;
         }

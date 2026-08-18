@@ -1,8 +1,10 @@
 import type {
   CustodyWallet,
   CustodyWalletPage,
+  DeleteCustodyWalletRequest,
   GenerateCustodyWalletRequest,
   WalletDeletePreview,
+  WalletDeletionReceipt,
   WalletEncryptionMode,
 } from "@lpbot/api-contract";
 import type { StoredSession } from "@lpbot/security";
@@ -65,6 +67,10 @@ export interface KeystoreApplication {
 
 export interface WalletDirectory {
   createWalletDeletePreview?(userId: string, walletId: string): Promise<WalletDeletePreview>;
+  deleteWallet?(input: DeleteCustodyWalletRequest & {
+    userId: string;
+    walletId: string;
+  }): Promise<WalletDeletionReceipt>;
   getWallet(userId: string, walletId: string): Promise<CustodyWallet | null>;
   listWallets(userId: string): Promise<CustodyWalletPage>;
   renameWallet?(input: {
@@ -100,6 +106,7 @@ export interface FreshReauthenticationVerifier {
 }
 
 export type WalletApiErrorCode =
+  | "DELETE_BLOCKED"
   | "INVALID_MODE"
   | "INVALID_AUTO_LOCK"
   | "INVALID_CREDENTIALS"
@@ -286,6 +293,89 @@ export function publicWalletDeletePreview(value: unknown): WalletDeletePreview {
     throw new WalletApiError("SIGNER_UNAVAILABLE");
   }
   return preview as unknown as WalletDeletePreview;
+}
+
+export function parseDeleteCustodyWalletRequest(value: unknown): DeleteCustodyWalletRequest {
+  const input = record(value);
+  const normalKeys = ["expectedRevision", "force", "previewToken"].sort().join(",");
+  const forceKeys = [
+    "confirmationPhrase",
+    "dependencies",
+    "expectedRevision",
+    "force",
+    "previewToken",
+  ]
+    .sort()
+    .join(",");
+  const actualKeys = Object.keys(input).sort().join(",");
+  if (
+    (input.force === false && actualKeys !== normalKeys) ||
+    (input.force === true && actualKeys !== forceKeys) ||
+    (input.force !== false && input.force !== true) ||
+    !Number.isSafeInteger(input.expectedRevision) ||
+    Number(input.expectedRevision) < 1 ||
+    typeof input.previewToken !== "string" ||
+    !/^[A-Za-z0-9_-]{43}$/u.test(input.previewToken)
+  ) {
+    throw new WalletApiError("INVALID_WALLET");
+  }
+  if (input.force === false) {
+    return {
+      expectedRevision: Number(input.expectedRevision),
+      force: false,
+      previewToken: input.previewToken,
+    };
+  }
+  const dependencies = record(input.dependencies);
+  if (
+    Object.keys(dependencies).sort().join(",") !==
+      ["assetIds", "policyIds", "positionIds", "taskIds"].sort().join(",") ||
+    !stringList(dependencies.assetIds) ||
+    !stringList(dependencies.policyIds) ||
+    !stringList(dependencies.positionIds) ||
+    !stringList(dependencies.taskIds) ||
+    typeof input.confirmationPhrase !== "string" ||
+    input.confirmationPhrase.length > 128
+  ) {
+    throw new WalletApiError("INVALID_WALLET");
+  }
+  return {
+    confirmationPhrase: input.confirmationPhrase,
+    dependencies: {
+      assetIds: [...dependencies.assetIds],
+      policyIds: [...dependencies.policyIds],
+      positionIds: [...dependencies.positionIds],
+      taskIds: [...dependencies.taskIds],
+    },
+    expectedRevision: Number(input.expectedRevision),
+    force: true,
+    previewToken: input.previewToken,
+  };
+}
+
+export function publicWalletDeletionReceipt(value: unknown): WalletDeletionReceipt {
+  const receipt = record(value);
+  if (
+    Object.keys(receipt).sort().join(",") !==
+      ["address", "auditId", "deletedAt", "deletionType", "finalRevision", "walletId"]
+        .sort()
+        .join(",") ||
+    typeof receipt.walletId !== "string" ||
+    !uuidPattern.test(receipt.walletId) ||
+    typeof receipt.address !== "string" ||
+    !addressPattern.test(receipt.address) ||
+    typeof receipt.auditId !== "string" ||
+    receipt.auditId.length < 1 ||
+    receipt.auditId.length > 64 ||
+    (receipt.deletionType !== "normal" && receipt.deletionType !== "force") ||
+    !Number.isSafeInteger(receipt.finalRevision) ||
+    Number(receipt.finalRevision) < 2 ||
+    typeof receipt.deletedAt !== "string" ||
+    new Date(receipt.deletedAt).toISOString() !== receipt.deletedAt
+  ) {
+    throw new WalletApiError("SIGNER_UNAVAILABLE");
+  }
+  return receipt as unknown as WalletDeletionReceipt;
 }
 
 export function publicKeystoreStatus(value: unknown): KeystoreStatusDto {

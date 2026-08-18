@@ -1,8 +1,11 @@
 import type {
   CustodyWallet,
   CustodyWalletPage,
+  DeleteCustodyWalletRequest,
   WalletEncryptionMode,
   WalletDeletePreview,
+  WalletDeletionReceipt,
+  WalletDeletionType,
   WalletLockStatus,
 } from "@lpbot/api-contract";
 
@@ -49,8 +52,14 @@ export interface CustodyWalletCreate {
 export interface CustodyWalletStore {
   create(input: CustodyWalletCreate): Promise<CustodyWallet>;
   createWalletDeletePreview(preview: StoredWalletDeletePreview): Promise<void>;
+  deleteWallet(input: WalletDeleteCommit): Promise<WalletDeletionReceipt>;
   get(userId: string, walletId: string): Promise<StoredCustodyWallet | null>;
   getCurrentEnvelope(walletId: string, envelopeVersion: number): Promise<CustodyEnvelope | null>;
+  getWalletDeletePreview(
+    userId: string,
+    walletId: string,
+    previewTokenDigest: Uint8Array,
+  ): Promise<StoredWalletDeletePreview | null>;
   list(userId: string): Promise<CustodyWalletPage>;
   rename(input: {
     expectedRevision: number;
@@ -98,6 +107,15 @@ export interface StoredWalletDeletePreview extends WalletDependencySnapshot {
   forceEligible: boolean;
   previewTokenDigest: Buffer;
   revision: number;
+  userId: string;
+  walletId: string;
+}
+
+export interface WalletDeleteCommit extends WalletDependencySnapshot {
+  deletionType: WalletDeletionType;
+  expectedRevision: number;
+  now: Date;
+  previewTokenDigest: Buffer;
   userId: string;
   walletId: string;
 }
@@ -208,6 +226,9 @@ export interface WalletEnvelopeReplacement extends WalletEnvelopeMaterial {
 
 export interface WalletDirectory {
   createWalletDeletePreview(userId: string, walletId: string): Promise<WalletDeletePreview>;
+  deleteWallet(
+    input: DeleteCustodyWalletRequest & { userId: string; walletId: string },
+  ): Promise<WalletDeletionReceipt>;
   getWallet(userId: string, walletId: string): Promise<CustodyWallet | null>;
   listWallets(userId: string): Promise<CustodyWalletPage>;
   renameWallet(input: {
