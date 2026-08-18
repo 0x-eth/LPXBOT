@@ -255,6 +255,48 @@ describe("P04-04 remote security password adapter", () => {
     expect([...transmitted!]).toEqual(new Array(transmitted!.length).fill(0));
     expect(ingress.equals(Buffer.alloc(ingress.length))).toBe(false);
   });
+
+  it("verifies through the internal signer port and allowlists the verification receipt", async () => {
+    const ingress = Buffer.from(
+      JSON.stringify({ password: "synthetic-security-password" }),
+    );
+    let transmitted: Uint8Array | null = null;
+    const fetcher = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      transmitted = init?.body as Uint8Array;
+      return new Response(
+        JSON.stringify({
+          data: { verified: true, verifier: "forbidden", version: 3 },
+          success: true,
+        }),
+        { headers: { "Content-Type": "application/json" }, status: 200 },
+      );
+    });
+    const client = new RemoteWalletSignerClient({
+      apiToken,
+      fetcher: fetcher as typeof fetch,
+      tenantId,
+      url: "http://127.0.0.1:19090",
+    });
+
+    await expect(client.verifySecurityPassword({ ingress, userId })).resolves.toEqual({
+      verified: true,
+      version: 3,
+    });
+    expect(fetcher).toHaveBeenCalledOnce();
+    expect(new URL(String(fetcher.mock.calls[0]?.[0])).pathname).toBe(
+      "/v1/security-password/verify",
+    );
+    expect(fetcher.mock.calls[0]?.[1]).toMatchObject({
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "application/vnd.lpbot.security-password-secret+json",
+        "X-LPBOT-User-Id": userId,
+      },
+      method: "POST",
+    });
+    expect([...transmitted!]).toEqual(new Array(transmitted!.length).fill(0));
+    expect(ingress.equals(Buffer.alloc(ingress.length))).toBe(false);
+  });
 });
 
 describe("P04-03 remote keystore adapter", () => {

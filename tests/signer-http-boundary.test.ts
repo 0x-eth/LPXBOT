@@ -21,7 +21,7 @@ const wallet = {
 
 const servers: Server[] = [];
 
-async function start(service: Pick<CustodySignerService, "importWallet">): Promise<string> {
+async function start(service: Partial<CustodySignerService>): Promise<string> {
   const server = createSignerHttpServer({
     apiToken,
     service: service as CustodySignerService,
@@ -89,5 +89,36 @@ describe("P04-02 isolated signer HTTP boundary", () => {
 
     release();
     expect((await first).status).toBe(201);
+  });
+});
+
+describe("P04-04 signer security-password HTTP boundary", () => {
+  it("verifies through dedicated no-store ingress and clears the received secret", async () => {
+    let seen: Uint8Array | null = null;
+    const url = await start({
+      verifySecurityPassword: async (input) => {
+        seen = input.ingress;
+        expect(input.userId).toBe(userId);
+        return { verified: true, version: 4 };
+      },
+    });
+
+    const response = await fetch(`${url}/v1/security-password/verify`, {
+      body: JSON.stringify({ password: "synthetic-security-password" }),
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+        "Content-Type": "application/vnd.lpbot.security-password-secret+json",
+        "X-LPBOT-Tenant-Id": tenantId,
+        "X-LPBOT-User-Id": userId,
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    const envelope = await response.json();
+    expect(envelope).toEqual({ data: { verified: true, version: 4 }, success: true });
+    expect(Object.keys(envelope.data).sort()).toEqual(["verified", "version"]);
+    expect(seen && [...seen].every((byte) => byte === 0)).toBe(true);
   });
 });

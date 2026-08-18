@@ -231,6 +231,35 @@ export function createSignerHttpServer(input: {
         send(response, 200, { data: status, success: true });
         return;
       }
+      if (request.method === "POST" && request.url === "/v1/security-password/verify") {
+        if (
+          request.headers["content-type"]?.split(";", 1)[0] !==
+          "application/vnd.lpbot.security-password-secret+json"
+        ) {
+          send(response, 415, {
+            error: { code: "UNSUPPORTED_MEDIA_TYPE", retryable: false },
+            success: false,
+          });
+          return;
+        }
+        body = await readBody(request);
+        const verification = await input.service.verifySecurityPassword({
+          ingress: body,
+          userId: ownership.userId,
+        });
+        if (
+          verification.verified !== true ||
+          !Number.isSafeInteger(verification.version) ||
+          verification.version < 1
+        ) {
+          throw new SignerError("INTERNAL_ERROR");
+        }
+        send(response, 200, {
+          data: { verified: true, version: verification.version },
+          success: true,
+        });
+        return;
+      }
       if (request.method === "GET" && request.url === "/v1/keystore/status") {
         if (!sessionId) throw new SignerError("INVALID_WALLET");
         const status = await input.service.keystoreStatus(ownership.userId, sessionId);
