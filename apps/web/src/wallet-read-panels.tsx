@@ -3,12 +3,12 @@ import type {
   AddressBookEntry,
   AddressBookPage,
   CustodyWallet,
+  EvmAddress,
   WalletBalanceSnapshot,
   WalletReceiveContent,
   WalletTokenPage,
 } from "@lpbot/api-contract";
 import {
-  AddressBook,
   BookUser,
   Check,
   Clipboard,
@@ -33,6 +33,10 @@ const categoryLabels: Record<AddressBookCategory, string> = {
   person: "联系人",
   protocol: "协议",
 };
+
+function isEvmAddress(value: string): value is EvmAddress {
+  return /^0x[0-9a-fA-F]{40}$/u.test(value);
+}
 
 function requestError(error: unknown): string {
   if (!(error instanceof WalletReadRequestError)) return "请求失败";
@@ -125,7 +129,11 @@ function ReceivePanel({
         >
           <label>
             <span>资产</span>
-            <select aria-label="收款资产" onChange={(event) => setAsset(event.target.value)} value={asset}>
+            <select
+              aria-label="收款资产"
+              onChange={(event) => setAsset(event.target.value)}
+              value={asset}
+            >
               <option value="native">BNB</option>
               {tokens?.items.map((token) => (
                 <option key={token.tokenAddress} value={token.tokenAddress}>
@@ -145,7 +153,11 @@ function ReceivePanel({
             />
           </label>
           <button className="secondary-button" disabled={loading} type="submit">
-            {loading ? <LoaderCircle aria-hidden="true" className="spin-icon" size={16} /> : <QrCode aria-hidden="true" size={16} />}
+            {loading ? (
+              <LoaderCircle aria-hidden="true" className="spin-icon" size={16} />
+            ) : (
+              <QrCode aria-hidden="true" size={16} />
+            )}
             生成
           </button>
           {error ? <p role="alert">{error}</p> : null}
@@ -167,7 +179,11 @@ function ReceivePanel({
                 title="复制收款内容"
                 type="button"
               >
-                {copied ? <Check aria-hidden="true" size={16} /> : <Clipboard aria-hidden="true" size={16} />}
+                {copied ? (
+                  <Check aria-hidden="true" size={16} />
+                ) : (
+                  <Clipboard aria-hidden="true" size={16} />
+                )}
               </button>
             </div>
           </div>
@@ -211,12 +227,17 @@ function AddressBookPanel({ client }: { client: WalletReadClient }) {
   }, [load]);
 
   const classify = async () => {
-    if (!/^0x[0-9a-fA-F]{40}$/u.test(address)) return;
+    if (!isEvmAddress(address)) return;
     await load(address);
   };
 
   const create = async (event: FormEvent) => {
     event.preventDefault();
+    if (!isEvmAddress(address)) {
+      setError("地址格式不正确");
+      setStatus("error");
+      return;
+    }
     setStatus("saving");
     setError(null);
     try {
@@ -243,7 +264,10 @@ function AddressBookPanel({ client }: { client: WalletReadClient }) {
           : null;
 
   return (
-    <section aria-labelledby="address-book-title" className="wallet-read-section address-book-section">
+    <section
+      aria-labelledby="address-book-title"
+      className="wallet-read-section address-book-section"
+    >
       <div className="wallet-read-heading">
         <div>
           <BookUser aria-hidden="true" size={18} />
@@ -258,7 +282,11 @@ function AddressBookPanel({ client }: { client: WalletReadClient }) {
           title="刷新地址簿"
           type="button"
         >
-          <RefreshCw aria-hidden="true" className={status === "loading" ? "spin-icon" : undefined} size={16} />
+          <RefreshCw
+            aria-hidden="true"
+            className={status === "loading" ? "spin-icon" : undefined}
+            size={16}
+          />
         </button>
       </div>
       <form className="wallet-read-form address-book-form" onSubmit={(event) => void create(event)}>
@@ -279,19 +307,35 @@ function AddressBookPanel({ client }: { client: WalletReadClient }) {
         </label>
         <label>
           <span>名称</span>
-          <input aria-label="地址簿名称" maxLength={80} onChange={(event) => setLabel(event.target.value)} value={label} />
+          <input
+            aria-label="地址簿名称"
+            maxLength={80}
+            onChange={(event) => setLabel(event.target.value)}
+            value={label}
+          />
         </label>
         <label>
           <span>分类</span>
-          <select aria-label="地址簿分类" onChange={(event) => setCategory(event.target.value as AddressBookCategory)} value={category}>
+          <select
+            aria-label="地址簿分类"
+            onChange={(event) => setCategory(event.target.value as AddressBookCategory)}
+            value={category}
+          >
             {Object.entries(categoryLabels).map(([value, text]) => (
-              <option key={value} value={value}>{text}</option>
+              <option key={value} value={value}>
+                {text}
+              </option>
             ))}
           </select>
         </label>
         <label>
           <span>备注</span>
-          <input aria-label="地址簿备注" maxLength={280} onChange={(event) => setNote(event.target.value)} value={note} />
+          <input
+            aria-label="地址簿备注"
+            maxLength={280}
+            onChange={(event) => setNote(event.target.value)}
+            value={note}
+          />
         </label>
         <label>
           <span>安全密码</span>
@@ -305,13 +349,26 @@ function AddressBookPanel({ client }: { client: WalletReadClient }) {
         </label>
         <button
           className="secondary-button"
-          disabled={status === "saving" || page?.classification?.kind !== "new-external" || label === "" || password === ""}
+          disabled={
+            status === "saving" ||
+            page?.classification?.kind !== "new-external" ||
+            label === "" ||
+            password === ""
+          }
           type="submit"
         >
-          {status === "saving" ? <LoaderCircle aria-hidden="true" className="spin-icon" size={16} /> : <Plus aria-hidden="true" size={16} />}
+          {status === "saving" ? (
+            <LoaderCircle aria-hidden="true" className="spin-icon" size={16} />
+          ) : (
+            <Plus aria-hidden="true" size={16} />
+          )}
           添加
         </button>
-        {classificationLabel ? <p className="address-classification" role="status">{classificationLabel}</p> : null}
+        {classificationLabel ? (
+          <p className="address-classification" role="status">
+            {classificationLabel}
+          </p>
+        ) : null}
         {error ? <p role="alert">{error}</p> : null}
       </form>
 
@@ -320,7 +377,10 @@ function AddressBookPanel({ client }: { client: WalletReadClient }) {
           <h3>自己的钱包</h3>
           <ul>
             {page?.ownWallets.map((wallet) => (
-              <li key={wallet.walletId}><strong>{wallet.name}</strong><code>{wallet.address}</code></li>
+              <li key={wallet.walletId}>
+                <strong>{wallet.name}</strong>
+                <code>{wallet.address}</code>
+              </li>
             ))}
           </ul>
         </div>
@@ -332,35 +392,92 @@ function AddressBookPanel({ client }: { client: WalletReadClient }) {
               <li key={entry.entryId}>
                 {editing?.entryId === entry.entryId ? (
                   <div className="address-entry-editor">
-                    <input aria-label="编辑地址簿名称" onChange={(event) => setEditing({ ...editing, label: event.target.value })} value={editing.label} />
-                    <select aria-label="编辑地址簿分类" onChange={(event) => setEditing({ ...editing, category: event.target.value as AddressBookCategory })} value={editing.category}>
-                      {Object.entries(categoryLabels).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
+                    <input
+                      aria-label="编辑地址簿名称"
+                      onChange={(event) => setEditing({ ...editing, label: event.target.value })}
+                      value={editing.label}
+                    />
+                    <select
+                      aria-label="编辑地址簿分类"
+                      onChange={(event) =>
+                        setEditing({
+                          ...editing,
+                          category: event.target.value as AddressBookCategory,
+                        })
+                      }
+                      value={editing.category}
+                    >
+                      {Object.entries(categoryLabels).map(([value, text]) => (
+                        <option key={value} value={value}>
+                          {text}
+                        </option>
+                      ))}
                     </select>
                     <button
                       aria-label={`保存 ${entry.label}`}
                       className="icon-button"
                       onClick={() => {
-                        void client.patchAddressBookEntry(entry.entryId, {
-                          changes: { category: editing.category, label: editing.label, note: editing.note },
-                          expectedRevision: entry.revision,
-                        }).then(() => { setEditing(null); void load(); }, (failure) => setError(requestError(failure)));
+                        void client
+                          .patchAddressBookEntry(entry.entryId, {
+                            changes: {
+                              category: editing.category,
+                              label: editing.label,
+                              note: editing.note,
+                            },
+                            expectedRevision: entry.revision,
+                          })
+                          .then(
+                            () => {
+                              setEditing(null);
+                              void load();
+                            },
+                            (failure) => setError(requestError(failure)),
+                          );
                       }}
                       type="button"
-                    ><Check aria-hidden="true" size={15} /></button>
-                    <button aria-label="取消编辑" className="icon-button" onClick={() => setEditing(null)} type="button"><X aria-hidden="true" size={15} /></button>
+                    >
+                      <Check aria-hidden="true" size={15} />
+                    </button>
+                    <button
+                      aria-label="取消编辑"
+                      className="icon-button"
+                      onClick={() => setEditing(null)}
+                      type="button"
+                    >
+                      <X aria-hidden="true" size={15} />
+                    </button>
                   </div>
                 ) : (
                   <>
-                    <div><strong>{entry.label}</strong><span>{categoryLabels[entry.category]}</span><code>{entry.address}</code></div>
+                    <div>
+                      <strong>{entry.label}</strong>
+                      <span>{categoryLabels[entry.category]}</span>
+                      <code>{entry.address}</code>
+                    </div>
                     <div className="address-entry-actions">
-                      <button aria-label={`编辑 ${entry.label}`} className="icon-button" onClick={() => setEditing(entry)} title="编辑" type="button"><Pencil aria-hidden="true" size={15} /></button>
+                      <button
+                        aria-label={`编辑 ${entry.label}`}
+                        className="icon-button"
+                        onClick={() => setEditing(entry)}
+                        title="编辑"
+                        type="button"
+                      >
+                        <Pencil aria-hidden="true" size={15} />
+                      </button>
                       <button
                         aria-label={`删除 ${entry.label}`}
                         className="icon-button danger-button"
-                        onClick={() => void client.deleteAddressBookEntry(entry.entryId).then(() => load(), (failure) => setError(requestError(failure)))}
+                        onClick={() =>
+                          void client.deleteAddressBookEntry(entry.entryId).then(
+                            () => load(),
+                            (failure) => setError(requestError(failure)),
+                          )
+                        }
                         title="删除"
                         type="button"
-                      ><Trash2 aria-hidden="true" size={15} /></button>
+                      >
+                        <Trash2 aria-hidden="true" size={15} />
+                      </button>
                     </div>
                   </>
                 )}
@@ -435,38 +552,124 @@ export function WalletReadPanels({ wallets }: { wallets: CustodyWallet[] }) {
     <div className="wallet-read-model">
       <section aria-labelledby="wallet-assets-title" className="wallet-read-section asset-section">
         <div className="wallet-read-heading">
-          <div><Coins aria-hidden="true" size={18} /><h2 id="wallet-assets-title">资产</h2></div>
+          <div>
+            <Coins aria-hidden="true" size={18} />
+            <h2 id="wallet-assets-title">资产</h2>
+          </div>
           <div className="wallet-read-controls">
-            <select aria-label="资产钱包" onChange={(event) => setWalletId(event.target.value)} value={wallet.walletId}>
-              {wallets.map((candidate) => <option key={candidate.walletId} value={candidate.walletId}>{candidate.name}</option>)}
+            <select
+              aria-label="资产钱包"
+              onChange={(event) => setWalletId(event.target.value)}
+              value={wallet.walletId}
+            >
+              {wallets.map((candidate) => (
+                <option key={candidate.walletId} value={candidate.walletId}>
+                  {candidate.name}
+                </option>
+              ))}
             </select>
-            <button aria-label="刷新资产" className="icon-button tooltip-control" data-tooltip="刷新" disabled={status === "loading"} onClick={() => void load()} title="刷新资产" type="button">
-              <RefreshCw aria-hidden="true" className={status === "loading" ? "spin-icon" : undefined} size={16} />
+            <button
+              aria-label="刷新资产"
+              className="icon-button tooltip-control"
+              data-tooltip="刷新"
+              disabled={status === "loading"}
+              onClick={() => void load()}
+              title="刷新资产"
+              type="button"
+            >
+              <RefreshCw
+                aria-hidden="true"
+                className={status === "loading" ? "spin-icon" : undefined}
+                size={16}
+              />
             </button>
           </div>
         </div>
         {balances ? (
           <>
-            <div className="asset-total"><span>总估值</span><strong>{balances.totalUsdValueDecimal === null ? "价格数据不完整" : `$${balances.totalUsdValueDecimal}`}</strong><small>区块 {balances.blockNumberDecimal}</small></div>
+            <div className="asset-total">
+              <span>总估值</span>
+              <strong>
+                {balances.totalUsdValueDecimal === null
+                  ? "价格数据不完整"
+                  : `$${balances.totalUsdValueDecimal}`}
+              </strong>
+              <small>区块 {balances.blockNumberDecimal}</small>
+            </div>
             <div className="asset-table" role="table" aria-label="钱包资产">
               {balances.items.map((asset) => (
                 <div className="asset-row" key={asset.tokenAddress ?? "native"} role="row">
-                  <div><strong>{asset.symbol}</strong><span>{asset.name}</span></div>
-                  <div><strong>{asset.balanceDecimal}</strong><code>{asset.balanceBaseUnit} base units</code></div>
-                  <div><strong>{asset.usdValueDecimal === null ? "--" : `$${asset.usdValueDecimal}`}</strong><span data-price-status={asset.priceStatus}>{asset.priceStatus === "current" ? "价格有效" : asset.priceStatus === "stale" ? "价格已过期" : "暂无价格"}</span></div>
+                  <div>
+                    <strong>{asset.symbol}</strong>
+                    <span>{asset.name}</span>
+                  </div>
+                  <div>
+                    <strong>{asset.balanceDecimal}</strong>
+                    <code>{asset.balanceBaseUnit} base units</code>
+                  </div>
+                  <div>
+                    <strong>
+                      {asset.usdValueDecimal === null ? "--" : `$${asset.usdValueDecimal}`}
+                    </strong>
+                    <span data-price-status={asset.priceStatus}>
+                      {asset.priceStatus === "current"
+                        ? "价格有效"
+                        : asset.priceStatus === "stale"
+                          ? "价格已过期"
+                          : "暂无价格"}
+                    </span>
+                  </div>
                   {asset.assetType === "erc20" && !asset.default ? (
-                    <button aria-label={`删除 ${asset.symbol}`} className="icon-button danger-button" onClick={() => void client.deleteToken(wallet.walletId, chainId, asset.tokenAddress!).then(() => load(), (failure) => setError(requestError(failure)))} title="删除自定义 Token" type="button"><Trash2 aria-hidden="true" size={15} /></button>
-                  ) : <span aria-hidden="true" className="asset-action-placeholder" />}
+                    <button
+                      aria-label={`删除 ${asset.symbol}`}
+                      className="icon-button danger-button"
+                      onClick={() =>
+                        void client.deleteToken(wallet.walletId, chainId, asset.tokenAddress!).then(
+                          () => load(),
+                          (failure) => setError(requestError(failure)),
+                        )
+                      }
+                      title="删除自定义 Token"
+                      type="button"
+                    >
+                      <Trash2 aria-hidden="true" size={15} />
+                    </button>
+                  ) : (
+                    <span aria-hidden="true" className="asset-action-placeholder" />
+                  )}
                 </div>
               ))}
             </div>
           </>
         ) : null}
-        <form className="wallet-read-form token-import-form" onSubmit={(event) => void importToken(event)}>
-          <label><span>自定义 Token</span><input aria-label="Token 合约地址" onChange={(event) => setTokenAddress(event.target.value)} placeholder="0x" spellCheck={false} value={tokenAddress} /></label>
-          <button className="secondary-button" disabled={status === "saving" || tokenAddress === ""} type="submit"><Plus aria-hidden="true" size={16} />导入</button>
+        <form
+          className="wallet-read-form token-import-form"
+          onSubmit={(event) => void importToken(event)}
+        >
+          <label>
+            <span>自定义 Token</span>
+            <input
+              aria-label="Token 合约地址"
+              onChange={(event) => setTokenAddress(event.target.value)}
+              placeholder="0x"
+              spellCheck={false}
+              value={tokenAddress}
+            />
+          </label>
+          <button
+            className="secondary-button"
+            disabled={status === "saving" || tokenAddress === ""}
+            type="submit"
+          >
+            <Plus aria-hidden="true" size={16} />
+            导入
+          </button>
         </form>
-        {error ? <p className="wallet-read-error" role="alert">{error}</p> : null}
+        {error ? (
+          <p className="wallet-read-error" role="alert">
+            {error}
+          </p>
+        ) : null}
       </section>
       <ReceivePanel client={client} tokens={tokens} wallet={wallet} />
       <AddressBookPanel client={client} />
