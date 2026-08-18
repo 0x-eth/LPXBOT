@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P05-01",
+  "implementationStatus": "planned",
+  "classification": "LOCAL-DECISION",
+  "supportedChainIds": [56],
+  "adapters": [
+    { "platformId": 1, "id": "univ3", "generation": "v3", "status": "planned" },
+    { "platformId": 2, "id": "pcsv3", "generation": "v3", "status": "planned" },
+    { "platformId": 4, "id": "univ4", "generation": "v4", "status": "planned" },
+    { "platformId": 5, "id": "pcsv4", "generation": "v4", "status": "planned" }
+  ],
+  "swapQuote": {
+    "schemaId": "p05://swap-quote/v1",
+    "requiredFields": [
+      "chainId",
+      "platformId",
+      "tokenIn",
+      "tokenOut",
+      "amountInBaseUnit",
+      "amountOutBaseUnit",
+      "route",
+      "minOutBaseUnit",
+      "priceImpactBps",
+      "gas",
+      "expiry",
+      "digest"
+    ],
+    "fields": {
+      "chainId": "uint53",
+      "platformId": "1|2|4|5",
+      "tokenIn": "lowercase-address",
+      "tokenOut": "lowercase-address",
+      "amountInBaseUnit": "base10-uint-string",
+      "amountOutBaseUnit": "base10-uint-string",
+      "minOutBaseUnit": "base10-uint-string",
+      "priceImpactBps": "base10-uint-string",
+      "gas": {
+        "estimatedUnits": "base10-uint-string",
+        "maxFeePerGasBaseUnit": "base10-uint-string",
+        "maxPriorityFeePerGasBaseUnit": "base10-uint-string",
+        "estimatedTotalBaseUnit": "base10-uint-string",
+        "nativeToken": "lowercase-address"
+      },
+      "expiry": {
+        "quotedAt": "rfc3339",
+        "expiresAt": "rfc3339",
+        "deadlineEpochSeconds": "base10-uint-string",
+        "maxBlockNumber": "base10-uint-string"
+      },
+      "digest": "0x-prefixed-32-byte-keccak256"
+    },
+    "route": {
+      "requiredFields": [
+        "registryVersion",
+        "tokenPath",
+        "poolPath",
+        "router",
+        "spender",
+        "routerSelector",
+        "calldataDigest",
+        "quoteSource"
+      ],
+      "serverResolvedFields": ["router", "spender", "routerSelector"],
+      "clientSuppliedTargetAllowed": false,
+      "clientSuppliedCalldataAllowed": false,
+      "clientSuppliedSelectorAllowed": false,
+      "clientSuppliedSpenderAllowed": false
+    },
+    "digestDomain": {
+      "name": "LPXBOT_SWAP_QUOTE",
+      "version": "1",
+      "orderedFields": [
+        "schemaId",
+        "chainId",
+        "platformId",
+        "registryVersion",
+        "walletId",
+        "tokenIn",
+        "tokenOut",
+        "amountInBaseUnit",
+        "amountOutBaseUnit",
+        "minOutBaseUnit",
+        "priceImpactBps",
+        "route.calldataDigest",
+        "gas.estimatedUnits",
+        "expiry.deadlineEpochSeconds",
+        "expiry.maxBlockNumber"
+      ]
+    },
+    "invariants": [
+      "amount fields are integer base units and never floating-point display values",
+      "minOutBaseUnit is positive and no greater than amountOutBaseUnit",
+      "tokenIn and tokenOut are distinct and registry-approved",
+      "route begins at tokenIn and ends at tokenOut",
+      "quote is rejected after either expiresAt, deadlineEpochSeconds, or maxBlockNumber",
+      "any field mutation invalidates digest",
+      "a quote with an empty router selector allowlist cannot become executable"
+    ]
+  },
+  "positionDto": {
+    "schemaId": "p05://position/v1",
+    "requiredFields": [
+      "chainId",
+      "platformId",
+      "owner",
+      "tokenId",
+      "pool",
+      "ticks",
+      "liquidity",
+      "fees",
+      "approval",
+      "snapshot"
+    ],
+    "fields": {
+      "owner": "lowercase-address",
+      "tokenId": "base10-uint256-string",
+      "pool": {
+        "poolAddress": "lowercase-address|null",
+        "poolId": "0x-prefixed-32-byte|null",
+        "token0": "lowercase-address",
+        "token1": "lowercase-address",
+        "feePips": "base10-uint-string",
+        "tickSpacing": "base10-int-string",
+        "hooks": "lowercase-address|null"
+      },
+      "ticks": {
+        "lower": "base10-int24-string",
+        "upper": "base10-int24-string",
+        "current": "base10-int24-string",
+        "inRange": "boolean"
+      },
+      "liquidity": {
+        "raw": "base10-uint128-string",
+        "amount0BaseUnit": "base10-uint-string",
+        "amount1BaseUnit": "base10-uint-string"
+      },
+      "fees": {
+        "owed0BaseUnit": "base10-uint-string",
+        "owed1BaseUnit": "base10-uint-string",
+        "estimated0BaseUnit": "base10-uint-string|null",
+        "estimated1BaseUnit": "base10-uint-string|null"
+      },
+      "approval": {
+        "nftOwner": "lowercase-address",
+        "approvedAddress": "lowercase-address|null",
+        "approvedForAll": "boolean",
+        "helperAuthorized": "boolean",
+        "observedAtBlock": "base10-uint-string"
+      },
+      "snapshot": {
+        "blockNumber": "base10-uint-string",
+        "blockHash": "0x-prefixed-32-byte",
+        "blockTimestamp": "rfc3339",
+        "positionManager": "lowercase-address",
+        "positionManagerCodeHash": "0x-prefixed-32-byte",
+        "registryVersion": "string",
+        "digest": "0x-prefixed-32-byte-keccak256"
+      }
+    },
+    "invariants": [
+      "tick lower is less than tick upper and both align to tickSpacing",
+      "V3 uses poolAddress and null poolId; V4 uses poolId and may have null poolAddress",
+      "owner, NFT approval, liquidity, fees, and pool state share one canonical snapshot block",
+      "unknown NFT contracts or mismatched position-manager code hashes are quarantined",
+      "display decimals and fiat prices are projections and never mutate base-unit fields"
+    ]
+  },
+  "observedHelperCodecBoundary": {
+    "module": "@lpbot/test-fixtures",
+    "class": "ObservedHelperCodec",
+    "testOnly": true,
+    "productionImportAllowed": false,
+    "businessFieldNames": "UNKNOWN",
+    "paths": [
+      "observed-v3-path-a",
+      "observed-v3-path-b",
+      "observed-v4-path-a",
+      "observed-v4-path-b"
+    ],
+    "requiredRegression": "decode-then-encode-must-equal-raw-calldata-byte-for-byte"
+  },
+  "outputBoundary": {
+    "simulationRequired": true,
+    "registryVerificationRequired": true,
+    "nonLocalWriteState": "READY_FOR_APPROVAL",
+    "productionCalldataGenerationEnabled": false
+  }
+}

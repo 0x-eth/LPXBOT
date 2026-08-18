@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P05-01",
+  "implementationStatus": "planned",
+  "operationIdentity": {
+    "idempotencyScope": "tenantId+userId+walletId+chainId+operationKind+clientIdempotencyKey",
+    "payloadDigestRequired": true,
+    "sameKeyDifferentDigest": "IDEMPOTENCY_CONFLICT",
+    "planImmutableAfterApproval": true
+  },
+  "states": [
+    "DRAFT",
+    "QUOTED",
+    "READY_FOR_APPROVAL",
+    "APPROVED",
+    "NONCE_RESERVED",
+    "SIGNING",
+    "SIGNED",
+    "BROADCASTING",
+    "PENDING",
+    "CONFIRMED",
+    "RECONCILING",
+    "SUCCEEDED",
+    "RECOVERABLE",
+    "FAILED",
+    "CANCELLED"
+  ],
+  "p05ReferenceReachability": {
+    "localSimulationTerminalStates": ["QUOTED", "READY_FOR_APPROVAL", "FAILED", "CANCELLED"],
+    "nonLocalWriteTerminalState": "READY_FOR_APPROVAL",
+    "statesAfterReadyForApprovalImplemented": false,
+    "signatures": 0,
+    "broadcasts": 0,
+    "chainWrites": 0,
+    "realFundOperations": 0
+  },
+  "p04Reuse": {
+    "newNonceLedgerAllowed": false,
+    "newSignerAllowed": false,
+    "nonceLedger": {
+      "source": "wallet_nonce_ledgers",
+      "serialKey": "chainId+walletId",
+      "reference": "artifacts/acceptance/P04-01/transaction-contracts.json"
+    },
+    "signer": {
+      "references": [
+        "apps/signer/src/postgres-transfer-plan-authorizer.ts",
+        "apps/worker/src/loopback-wallet-transfer-signer-gateway.ts"
+      ],
+      "planDigestMustMatch": true
+    },
+    "broadcast": {
+      "reference": "apps/worker/src/wallet-transfer-worker.ts",
+      "sameSignedTransactionOnly": true
+    },
+    "replacement": {
+      "reference": "packages/domain/src/wallet-transfer.ts",
+      "sameNonce": true,
+      "samePlanDigest": true,
+      "feeIncreaseOnly": true
+    },
+    "reconciliation": {
+      "references": [
+        "apps/worker/src/postgres-wallet-transfer-recovery.ts",
+        "apps/worker/src/viem-local-wallet-transfer-observer.ts"
+      ],
+      "receiptBeforeRetry": true,
+      "queueIsSourceOfTruth": false
+    }
+  },
+  "steps": [
+    {
+      "kind": "approve-or-permit2",
+      "preconditions": [
+        "token, owner, spender, amount, expiration, chain, registry version, and code hashes match the immutable plan",
+        "current allowance is read from the same canonical snapshot",
+        "spender is the exact registry component and arbitrary approval calldata is rejected"
+      ],
+      "postconditions": [
+        "canonical Approval or Permit2 Approval event matches owner, token, spender, amount, and expiration",
+        "on-chain allowance is sufficient but does not exceed the frozen policy",
+        "USDT-style reset-to-zero path is separately reconciled"
+      ],
+      "idempotencyKey": "operationId:approve-or-permit2:token:spender:targetAllowance:expiration",
+      "recoveryActions": [
+        "read canonical allowance before any retry",
+        "skip when the exact bounded allowance is already confirmed",
+        "revoke or reset through a new approved plan when later execution is abandoned",
+        "enter reconciliation on receipt, provider, or allowance divergence"
+      ]
+    },
+    {
+      "kind": "swap",
+      "preconditions": [
+        "unexpired quote digest matches tokenIn, tokenOut, amountIn, minOut, route, router, spender, selector, fee policy, and registry version",
+        "router and spender runtime code hashes match at the execution block",
+        "simulation proves recipient, balance bounds, native value, and no forbidden target or selector"
+      ],
+      "postconditions": [
+        "canonical receipt and protocol events match the exact route",
+        "recipient output delta is at least minOutBaseUnit",
+        "input delta, fee, allowance, native value, and refund reconcile"
+      ],
+      "idempotencyKey": "operationId:swap:quoteDigest",
+      "recoveryActions": [
+        "never reuse an expired quote",
+        "look up receipt and balance deltas before replacement or retry",
+        "requote into a new immutable step when no transaction was signed",
+        "retain assets and enter RECOVERABLE when a preceding approval succeeded"
+      ]
+    },
+    {
+      "kind": "mint-or-increase",
+      "preconditions": [
+        "platform, pool identity, tokens, ticks, amounts, min amounts, deadline, Helper owner, managers, Permit2, fee policy, and code hashes match the plan",
+        "increase requires canonical NFT owner or explicit Helper approval",
+        "mint recipient is exactly the wallet owner"
+      ],
+      "postconditions": [
+        "canonical manager and pool events identify the expected position",
+        "minted NFT owner is the wallet or increased tokenId remains owned by the wallet",
+        "liquidity delta, token deltas, fees, allowances, refund, and Helper dust reconcile"
+      ],
+      "idempotencyKey": "operationId:mint-or-increase:platformId:poolIdentity:tokenIdOrNew:planDigest",
+      "recoveryActions": [
+        "scan canonical NFT and liquidity events before retry",
+        "if mint or increase confirmed, reconcile instead of resubmitting",
+        "if prior swap confirmed but position change did not, preserve assets and create a remaining-step plan",
+        "degrade Helper on owner, code, NFT, allowance, refund, or dust mismatch"
+      ]
+    },
+    {
+      "kind": "collect",
+      "preconditions": [
+        "wallet owns tokenId or has an exact approved operator path",
+        "position manager, recipient, amount maxima, snapshot, and code hash match the plan",
+        "collection cannot redirect proceeds away from the wallet"
+      ],
+      "postconditions": [
+        "canonical collect events and wallet balance deltas match token0 and token1",
+        "NFT ownership and remaining liquidity are unchanged unless another explicit step changed them",
+        "fees ledger records base-unit proceeds separately from new capital"
+      ],
+      "idempotencyKey": "operationId:collect:platformId:tokenId:snapshotDigest",
+      "recoveryActions": [
+        "read tokens owed, receipt, events, and balances before retry",
+        "treat an already-collected zero balance as reconciled only with canonical evidence",
+        "continue later reinvest steps without collecting twice"
+      ]
+    },
+    {
+      "kind": "decrease",
+      "preconditions": [
+        "percentage is 1 through 100 and resolves to a bounded liquidity delta",
+        "wallet ownership or exact NFT approval, ticks, min amounts, deadline, manager, and code hash match",
+        "collect and optional burn are distinct planned steps"
+      ],
+      "postconditions": [
+        "canonical decrease or modify-liquidity event matches tokenId and liquidity delta",
+        "remaining liquidity equals the reconciled expected value",
+        "proceeds are not considered available until collect and balance reconciliation complete"
+      ],
+      "idempotencyKey": "operationId:decrease:platformId:tokenId:liquidityDelta:planDigest",
+      "recoveryActions": [
+        "read position liquidity and receipt before retry",
+        "if decrease confirmed, continue at collect and never decrease twice",
+        "on reorg return to reconciliation using canonical block lineage"
+      ]
+    },
+    {
+      "kind": "refund",
+      "preconditions": [
+        "refund token or native asset is part of the immutable plan",
+        "recipient is the Helper owner",
+        "expected residual and dust threshold were simulated"
+      ],
+      "postconditions": [
+        "wallet receives the reconciled residual",
+        "Helper token and native balances are at or below each asset dust threshold",
+        "wrapped-native unwrap and native transfer events or balance deltas agree"
+      ],
+      "idempotencyKey": "operationId:refund:asset:expectedResidual:planDigest",
+      "recoveryActions": [
+        "scan residual before any separate recovery transaction",
+        "do not refund twice when balance is already bounded",
+        "move Helper to residual when balance remains above threshold"
+      ]
+    },
+    {
+      "kind": "sweep",
+      "preconditions": [
+        "Helper is residual or superseded and owner plus runtime code hash reconcile",
+        "asset is registry-approved and current balance is positive",
+        "recipient is immutable owner and each wallet has a separate approved operation"
+      ],
+      "postconditions": [
+        "canonical receipt and transfer or native balance delta credit the owner",
+        "Helper balance is at or below dust threshold",
+        "allowance and NFT custody checks show no untracked authority or asset"
+      ],
+      "idempotencyKey": "operationId:sweep:helper:asset:snapshotBlock",
+      "recoveryActions": [
+        "read Helper and owner balances plus receipt before retry",
+        "retain per-asset partial results without replaying confirmed sweeps",
+        "keep Helper residual and block new funding on mismatch"
+      ]
+    }
+  ],
+  "successReconciliation": {
+    "canonicalReceiptRequired": true,
+    "requiredChecks": [
+      "receipt block is canonical at required confirmations",
+      "wallet and Helper token plus native balances match expected deltas",
+      "ERC-20 and Permit2 allowances match bounded policy",
+      "NFT owner and approval match the plan",
+      "protocol and transfer events match decoded identities and amounts",
+      "fee recipient and bps match the approved policy",
+      "refund and dust thresholds reconcile"
+    ],
+    "broadcastIsSuccess": false,
+    "receiptWithoutStateReconciliationIsSuccess": false
+  }
+}

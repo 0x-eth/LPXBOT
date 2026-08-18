@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P05-01",
+  "implementationStatus": "planned",
+  "factBoundary": {
+    "allowedClassifications": ["OBSERVED", "OFFICIAL", "LOCAL-DECISION", "INFERRED", "UNKNOWN"],
+    "functionNamesKnown": false,
+    "productionCodecEnabled": false
+  },
+  "observedPaths": [
+    {
+      "name": "observed-v3-path-a",
+      "selector": "0xadc3f25c",
+      "classification": "OBSERVED",
+      "sampleCount": 10,
+      "allowedPlatformIds": [1, 2],
+      "opaqueHeadWordCount": 15,
+      "originalFunctionName": null,
+      "businessSubtype": "UNKNOWN"
+    },
+    {
+      "name": "observed-v3-path-b",
+      "selector": "0xfb691fd9",
+      "classification": "OBSERVED",
+      "sampleCount": 10,
+      "allowedPlatformIds": [1, 2],
+      "opaqueHeadWordCount": 13,
+      "originalFunctionName": null,
+      "businessSubtype": "UNKNOWN"
+    },
+    {
+      "name": "observed-v4-path-a",
+      "selector": "0x71fa74ed",
+      "classification": "OBSERVED",
+      "sampleCount": 10,
+      "allowedPlatformIds": [4, 5],
+      "opaqueHeadWordCount": 18,
+      "originalFunctionName": null,
+      "businessSubtype": "UNKNOWN"
+    },
+    {
+      "name": "observed-v4-path-b",
+      "selector": "0x5dfd8e50",
+      "classification": "OBSERVED",
+      "sampleCount": 10,
+      "allowedPlatformIds": [4, 5],
+      "opaqueHeadWordCount": 19,
+      "originalFunctionName": null,
+      "businessSubtype": "UNKNOWN"
+    }
+  ],
+  "identity": {
+    "scopeKey": "chainId+walletId+helperVersion",
+    "oneActiveHelperPerWalletAndChain": true,
+    "ownerMustEqualWalletAddress": true,
+    "runtimeCodeHashMustMatchRegistry": true,
+    "selectorSetMustMatchRegistry": true,
+    "versionsComparableAcrossChains": false,
+    "proxyAssumed": false,
+    "factoryAssumed": false
+  },
+  "stateMachine": {
+    "states": ["undeployed", "deploying", "active", "degraded", "superseded", "residual"],
+    "initialState": "undeployed",
+    "transitions": [
+      {
+        "from": "undeployed",
+        "to": "deploying",
+        "guard": "unique deployment operation exists and creation-code hash, owner, chain, version, expected address, and gas are frozen"
+      },
+      {
+        "from": "deploying",
+        "to": "active",
+        "guard": "canonical deployment receipt, owner(), runtime code hash, selector set, and registry version reconcile"
+      },
+      {
+        "from": "deploying",
+        "to": "undeployed",
+        "guard": "no canonical deployment receipt exists and nonce lineage is fully reconciled"
+      },
+      {
+        "from": "active",
+        "to": "degraded",
+        "guard": "owner, address, runtime code hash, registry block, allowance, or reconciliation check fails"
+      },
+      {
+        "from": "degraded",
+        "to": "active",
+        "guard": "all failed checks reconcile against the same canonical block without changing identity"
+      },
+      {
+        "from": "active",
+        "to": "superseded",
+        "guard": "a separately registered replacement is active and migration policy has explicit approval"
+      },
+      {
+        "from": "superseded",
+        "to": "residual",
+        "guard": "old Helper has token or native balance, allowance, or NFT custody requiring owner recovery"
+      },
+      {
+        "from": "active",
+        "to": "residual",
+        "guard": "post-operation dust or refundable assets exceed the frozen threshold"
+      },
+      {
+        "from": "residual",
+        "to": "active",
+        "guard": "same-version Helper remains current and sweep reconciliation proves zero bounded residual"
+      },
+      {
+        "from": "residual",
+        "to": "superseded",
+        "guard": "old Helper is not current and sweep reconciliation proves zero bounded residual"
+      }
+    ]
+  },
+  "deployment": {
+    "implementationEnabled": false,
+    "idempotencyKey": "DEPLOY_HELPER:chainId:walletId:helperVersion",
+    "preconditions": [
+      "chainId is 56 and registryVersion is exact",
+      "wallet has no active matching Helper",
+      "creation-code hash and immutable owner encoding are registry-approved",
+      "predicted address has empty code at the simulation block",
+      "nonce is reserved through the P04 ledger",
+      "independent contract review and testnet gate are closed"
+    ],
+    "postconditions": [
+      "canonical receipt contractAddress matches the plan",
+      "owner() equals the wallet",
+      "runtime code hash and selector set match the exact version",
+      "database identity is written once after reconciliation"
+    ],
+    "nonLocalBoundary": "READY_FOR_APPROVAL"
+  },
+  "residualAndSweep": {
+    "scanReads": ["native balance", "allowlisted token balances", "allowances", "NFT owner"],
+    "arbitraryTokenInputAllowed": false,
+    "sweepRecipient": "immutable-owner-only",
+    "batchAcrossWalletsAllowed": false,
+    "oneWalletOneTransaction": true,
+    "successRequires": [
+      "canonical receipt",
+      "owner balance delta",
+      "Helper balance at or below dust threshold",
+      "allowance reconciliation",
+      "expected protocol transfer events"
+    ]
+  },
+  "atomicityBoundary": {
+    "classification": "OBSERVED",
+    "supportedClaim": "the frozen successful combination calls contain asset pull, optional route activity, position events, fees, and refunds within one transaction",
+    "unsupportedClaims": [
+      "all exits are atomic",
+      "all collect operations use Helper",
+      "rebalance is one transaction",
+      "migration is one transaction",
+      "selector path maps to a named mint or increase function"
+    ]
+  },
+  "unresolvedSubjects": [
+    "Helper upgrade trigger and compatibility policy",
+    "meaning of the reported 93-byte runtime delta",
+    "global fee ownership and recipient selection",
+    "exit, rebalance, and migration atomicity",
+    "verified source and original function names"
+  ]
+}
