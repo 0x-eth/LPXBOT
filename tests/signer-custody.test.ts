@@ -5,15 +5,17 @@ import {
   InMemoryCustodyWalletStore,
   IsolatedWalletSigner,
   LocalKmsFixture,
-  SECP256K1_ORDER,
   SignerError,
+} from "../apps/signer/src/index.js";
+import {
+  SECP256K1_ORDER,
   buildWalletAad,
   deriveEvmAddress,
   generatePrivateKey,
   openEnvelope,
   parsePrivateKey,
   sealEnvelope,
-} from "../apps/signer/src/index.js";
+} from "../apps/signer/src/wallet-crypto.js";
 import { describe, expect, it, vi } from "vitest";
 
 const fixtureRoot = new URL("../artifacts/acceptance/P04-01/fixtures/", import.meta.url);

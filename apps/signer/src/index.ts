@@ -16,15 +16,7 @@ export { LocalKmsFixture } from "./kms.js";
 export { InMemoryCustodyWalletStore } from "./memory-custody-wallet-store.js";
 export { PostgresCustodyWalletStore } from "./postgres-custody-wallet-store.js";
 export { SignerError } from "./signer-error.js";
-export {
-  SECP256K1_ORDER,
-  buildWalletAad,
-  deriveEvmAddress,
-  generatePrivateKey,
-  openEnvelope,
-  parsePrivateKey,
-  sealEnvelope,
-} from "./wallet-crypto.js";
+export { SignerConfigurationError, loadSignerProductionConfig } from "./production-config.js";
 
 export const signerApp = {
   capabilities: ["import", "generate", "seal", "open-verify"],
