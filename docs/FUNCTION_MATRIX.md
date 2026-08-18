@@ -205,8 +205,8 @@
 | WALLET-05 | 用户密码加密模式 | UI+BUNDLE | USER | R2 | Argon2id KDF、仅内存解锁、自动锁、忘记密码销毁流程；`implemented-assumed`（P04-03，local fixture only） |
 | WALLET-06 | 设置/修改/重置 keystore 密码 | UI+BUNDLE | USER | R2 | reset preview、确认短语、钱包/任务销毁计数；`implemented-assumed`（P04-03，local fixture only） |
 | WALLET-07 | 安全密码 | UI+BUNDLE | USER | R2 | 转到新地址时二次校验；与 keystore 密码分域；`implemented-assumed`（P04-04，独立生命周期与 signer 内部验证端口；WALLET-10 接线仍 planned） |
-| WALLET-08 | 余额、USD 估值和 token 导入 | UI+API | USER | R0/R1 | 常用/其他 token、原生币、价格缺失 |
-| WALLET-09 | 地址簿、备注和收款二维码 | UI+BUNDLE | USER | R1 | 自钱包、新地址、安全密码分支 |
+| WALLET-08 | 余额、USD 估值和 token 导入 | UI+API | USER | R0/R1 | 常用/其他 token、原生币、精确 decimal/base-unit 字符串、价格缺失/过期；`implemented-assumed`（P04-05，controlled local provider fixture only） |
+| WALLET-09 | 地址簿、备注和收款二维码 | UI+BUNDLE | USER | R1 | 独立地址簿域、自钱包/已知外部/新外部分类、安全密码分支、EIP-681 QR；`implemented-assumed`（P04-05，local fixture only） |
 | WALLET-10 | ERC-20/原生币转账 | UI+API | USER | R3/R4 | 25/50/75/MAX、幂等键、余额/gas/自转校验 |
 | SWAP-01 | Swap 报价 | UI+API | USER | R0 | 滑点、minOut、价格影响、gas、报价过期 |
 | SWAP-02 | Swap 执行 | UI+API | USER | R3/R4 | approve、route、receipt、失败恢复、幂等 |
@@ -281,7 +281,7 @@
 | SET-03 | 钱包多任务开关 | UI+BUNDLE | USER | R1/R3 | 关闭时创建向导阻止同钱包并发 |
 | SET-04 | 自动补仓链开关 | UI+BUNDLE | USER | R1/R3 | BSC/Base 默认；其他链按配置 |
 | SET-05 | 自动补仓与重试参数 | UI+BUNDLE | USER | R1/R3 | Mint/Swap/复投尝试、补仓轮数、最低金额 |
-| SET-06 | 本机 RPC 选择/自定义/测试 | UI+BUNDLE | USER | R2 | 仅客户端读链；URL secret 不进日志 |
+| SET-06 | 本机 RPC 选择/自定义/测试 | UI+BUNDLE | USER | R2 | 仅浏览器沙箱只读链；URL secret 不进服务端、持久化、日志、遥测、Service Worker 或截图；`implemented-assumed`（P04-05，local fixture only） |
 | SET-07 | 用户 OKX API Key | UI+BUNDLE | USER | R2 | 保存/替换/删除/状态；secret 加密且不回显 |
 | ADMIN-01 | 用户列表、搜索、状态 tab | UI+BUNDLE | ADMIN | R0 | 待审批/批准/禁用，分页与空态 |
 | ADMIN-02 | 审批、拒绝、禁用、解禁、删除 | UI+BUNDLE | ADMIN | R2 | 确认框、审计、运行任务处置 |
