@@ -54,7 +54,9 @@ function asset(value: unknown): value is WalletTransferAsset {
   if (!record(value)) return false;
   return value.kind === "native"
     ? exact(value, ["kind"])
-    : value.kind === "erc20" && exact(value, ["kind", "tokenAddress"]) && address(value.tokenAddress);
+    : value.kind === "erc20" &&
+        exact(value, ["kind", "tokenAddress"]) &&
+        address(value.tokenAddress);
 }
 
 function feeLimit(value: unknown): value is WalletTransferFeeLimit {
@@ -74,8 +76,7 @@ function feeLimit(value: unknown): value is WalletTransferFeeLimit {
     return false;
   }
   return (
-    BigInt(value.gasLimit) * BigInt(value.maxFeePerGasBaseUnit) ===
-      BigInt(value.feeCapBaseUnit) &&
+    BigInt(value.gasLimit) * BigInt(value.maxFeePerGasBaseUnit) === BigInt(value.feeCapBaseUnit) &&
     BigInt(value.maxPriorityFeePerGasBaseUnit) <= BigInt(value.maxFeePerGasBaseUnit)
   );
 }
@@ -98,10 +99,7 @@ function invalid(status: number): never {
   throw new WalletTransferRequestError("TRANSFER_RESPONSE_INVALID", true, status);
 }
 
-export function parseWalletTransferPreview(
-  value: unknown,
-  status = 0,
-): WalletTransferPreview {
+export function parseWalletTransferPreview(value: unknown, status = 0): WalletTransferPreview {
   if (
     !record(value) ||
     !exact(value, [
@@ -233,10 +231,7 @@ function parseTransaction(value: unknown, status: number): WalletTransferTransac
   return structuredClone(value) as unknown as WalletTransferTransactionView;
 }
 
-export function parseWalletTransferOperation(
-  value: unknown,
-  status = 0,
-): WalletTransferOperation {
+export function parseWalletTransferOperation(value: unknown, status = 0): WalletTransferOperation {
   if (
     !record(value) ||
     !exact(value, [
@@ -284,7 +279,8 @@ export function parseWalletTransferOperation(
     (value.failureCode !== null && typeof value.failureCode !== "string") ||
     (value.reconciliationReason !== null && typeof value.reconciliationReason !== "string") ||
     (value.activeTransactionId !== null &&
-      (typeof value.activeTransactionId !== "string" || !uuidPattern.test(value.activeTransactionId)))
+      (typeof value.activeTransactionId !== "string" ||
+        !uuidPattern.test(value.activeTransactionId)))
   ) {
     invalid(status);
   }
@@ -292,7 +288,8 @@ export function parseWalletTransferOperation(
   if (
     new Set(transactions.map(({ generation }) => generation)).size !== transactions.length ||
     transactions.filter(({ active }) => active).length > 1 ||
-    (value.activeTransactionId === null) !== (transactions.filter(({ active }) => active).length === 0) ||
+    (value.activeTransactionId === null) !==
+      (transactions.filter(({ active }) => active).length === 0) ||
     (value.activeTransactionId !== null &&
       !transactions.some(
         ({ active, transactionId }) => active && transactionId === value.activeTransactionId,

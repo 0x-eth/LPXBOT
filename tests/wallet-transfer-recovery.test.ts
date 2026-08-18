@@ -91,8 +91,9 @@ function provider(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function signerResult(status: "accepted" | "already-known" = "accepted"):
-  WalletTransferSignerResult {
+function signerResult(
+  status: "accepted" | "already-known" = "accepted",
+): WalletTransferSignerResult {
   return {
     deliveryId: "local-adapter:aaaaaaaaaaaaaaaa",
     planDigest: walletTransferPlanDigest(plan),
@@ -124,11 +125,7 @@ class MemoryRecoveryRepository implements WalletTransferWorkRepository {
     this.broadcasts.push(input.result);
   }
 
-  async failClaim(input: {
-    claim: WalletTransferWorkClaim;
-    code: string;
-    retryable: boolean;
-  }) {
+  async failClaim(input: { claim: WalletTransferWorkClaim; code: string; retryable: boolean }) {
     this.failures.push(input);
     if (input.retryable) this.claims.push(input.claim);
   }
@@ -280,10 +277,12 @@ describe("P04-06 transfer recovery worker", () => {
   it("builds a replacement by changing only higher fee fields", async () => {
     const repository = new MemoryRecoveryRepository([]);
     const signer = {
-      signAndDeliver: vi.fn(async (input: { plan: WalletTransferPlan; planDigest: `sha256:${string}` }) => ({
-        ...signerResult(),
-        planDigest: input.planDigest,
-      })),
+      signAndDeliver: vi.fn(
+        async (input: { plan: WalletTransferPlan; planDigest: `sha256:${string}` }) => ({
+          ...signerResult(),
+          planDigest: input.planDigest,
+        }),
+      ),
     };
     const worker = new WalletTransferRecoveryWorker({
       now: () => now,
@@ -304,9 +303,9 @@ describe("P04-06 transfer recovery worker", () => {
     const replacement = signer.signAndDeliver.mock.calls[0]![0].plan;
     expect({ ...replacement, feeLimit: plan.feeLimit }).toEqual(plan);
     expect(repository.replacements).toHaveLength(1);
-    expect(() =>
-      replacementTransferPlan({ feeLimit: plan.feeLimit, now, plan }),
-    ).toThrowError("TRANSFER_REPLACEMENT_FEE_INVALID");
+    expect(() => replacementTransferPlan({ feeLimit: plan.feeLimit, now, plan })).toThrowError(
+      "TRANSFER_REPLACEMENT_FEE_INVALID",
+    );
   });
 });
 

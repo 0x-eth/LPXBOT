@@ -140,7 +140,8 @@ export class ViemLocalWalletTransferObserver implements WalletTransferObserver {
       toHex(blockNumber),
       false,
     ]);
-    const receiptStatus = quantity(receipt.status, "RECEIPT_STATUS") === 1n ? "success" : "reverted";
+    const receiptStatus =
+      quantity(receipt.status, "RECEIPT_STATUS") === 1n ? "success" : "reverted";
     const identityMatches =
       transaction.hash.toLowerCase() === input.transactionHash &&
       transaction.input.toLowerCase() === input.plan.transactionData &&
@@ -162,8 +163,7 @@ export class ViemLocalWalletTransferObserver implements WalletTransferObserver {
         from: canonicalTransferAddress(receipt.from),
         nonce: quantity(transaction.nonce, "TRANSACTION_NONCE").toString(),
         receiptStatus,
-        tokenTransferLogReconciled:
-          identityMatches && reconciled.tokenTransferLogReconciled,
+        tokenTransferLogReconciled: identityMatches && reconciled.tokenTransferLogReconciled,
         transactionHash: receipt.transactionHash.toLowerCase() as `0x${string}`,
         transactionTarget: canonicalTransferAddress(transaction.to),
       },
@@ -263,8 +263,7 @@ export class ViemLocalWalletTransferObserver implements WalletTransferObserver {
       }
     });
     return {
-      balanceReconciled:
-        nativeSpent === fee && senderSpent === amount && recipientGain === amount,
+      balanceReconciled: nativeSpent === fee && senderSpent === amount && recipientGain === amount,
       tokenTransferLogReconciled: transferLog,
     };
   }

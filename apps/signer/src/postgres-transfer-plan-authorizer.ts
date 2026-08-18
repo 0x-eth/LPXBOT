@@ -43,8 +43,7 @@ export class PostgresWalletTransferPlanAuthorizer implements WalletTransferPlanA
     ) {
       return false;
     }
-    const tokenAddress =
-      input.plan.asset.kind === "erc20" ? input.plan.asset.tokenAddress : null;
+    const tokenAddress = input.plan.asset.kind === "erc20" ? input.plan.asset.tokenAddress : null;
     const result = await this.#pool.query<AuthorizationRow>(
       `SELECT true AS authorized
          FROM wallet_transfer_operations o

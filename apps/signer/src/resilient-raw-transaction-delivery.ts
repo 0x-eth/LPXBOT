@@ -1,23 +1,14 @@
 import { transferHashPattern } from "@lpbot/domain/wallet-transfer";
 
-import type {
-  RawTransactionDelivery,
-  RawTransactionDeliveryResult,
-} from "./custody-types.js";
+import type { RawTransactionDelivery, RawTransactionDeliveryResult } from "./custody-types.js";
 import { SignerError } from "./signer-error.js";
 
 export interface RawTransactionBroadcastPort {
-  broadcast(input: {
-    chainId: number;
-    rawTransaction: Uint8Array;
-  }): Promise<{
+  broadcast(input: { chainId: number; rawTransaction: Uint8Array }): Promise<{
     status: "accepted" | "already-known";
     transactionHash: `0x${string}`;
   }>;
-  transactionKnown(input: {
-    chainId: number;
-    transactionHash: `0x${string}`;
-  }): Promise<boolean>;
+  transactionKnown(input: { chainId: number; transactionHash: `0x${string}` }): Promise<boolean>;
 }
 
 export class ResilientRawTransactionDelivery implements RawTransactionDelivery {

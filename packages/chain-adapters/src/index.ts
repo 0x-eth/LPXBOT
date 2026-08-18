@@ -32,10 +32,7 @@ export {
   ViemBscLogSource,
 } from "./viem-bsc-log-source.js";
 export { LOCAL_EVM_READ_METHODS, LocalEvmRpcClient, localEvmRpcUrl } from "./local-evm-rpc.js";
-export type {
-  LocalEvmReadMethod,
-  LocalEvmRpcClientOptions,
-} from "./local-evm-rpc.js";
+export type { LocalEvmReadMethod, LocalEvmRpcClientOptions } from "./local-evm-rpc.js";
 export type {
   ReadonlyBscRpcMethod,
   ViemBscLogSourceEnvOptions,

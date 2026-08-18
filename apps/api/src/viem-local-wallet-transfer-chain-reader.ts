@@ -41,16 +41,15 @@ function quantity(value: unknown, label: string): bigint {
   return BigInt(value);
 }
 
-function callData(
-  asset: WalletTransferAsset,
-  recipient: EvmAddress,
-  amountBaseUnit: string,
-): Hex {
+function callData(asset: WalletTransferAsset, recipient: EvmAddress, amountBaseUnit: string): Hex {
   return asset.kind === "native"
     ? "0x"
     : encodeFunctionData({
         abi: erc20ReadAbi,
-        args: [getAddress(recipient), BigInt(canonicalBaseUnit(amountBaseUnit, { positive: true }))],
+        args: [
+          getAddress(recipient),
+          BigInt(canonicalBaseUnit(amountBaseUnit, { positive: true })),
+        ],
         functionName: "transfer",
       });
 }
@@ -90,8 +89,7 @@ export class ViemLocalWalletTransferChainReader implements WalletTransferChainRe
     this.#assertChain(input.chainId);
     const client = this.#providers[0]!;
     const data = callData(input.asset, input.recipient, input.amountBaseUnit);
-    const target =
-      input.asset.kind === "native" ? input.recipient : input.asset.tokenAddress;
+    const target = input.asset.kind === "native" ? input.recipient : input.asset.tokenAddress;
     const value = input.asset.kind === "native" ? toHex(BigInt(input.amountBaseUnit)) : "0x0";
     const [gas, block, priority] = await Promise.all([
       client.request<Hex>("eth_estimateGas", [

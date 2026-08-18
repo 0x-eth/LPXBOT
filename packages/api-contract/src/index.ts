@@ -1087,9 +1087,7 @@ export interface WalletReceiveContent {
 
 export const walletTransferAmountPresets = ["25", "50", "75", "MAX"] as const;
 export type WalletTransferAmountPreset = (typeof walletTransferAmountPresets)[number];
-export type WalletTransferAsset =
-  | { kind: "native" }
-  | { kind: "erc20"; tokenAddress: EvmAddress };
+export type WalletTransferAsset = { kind: "native" } | { kind: "erc20"; tokenAddress: EvmAddress };
 export type WalletTransferAmount =
   | { amountBaseUnit: string; kind: "exact" }
   | { kind: "preset"; preset: WalletTransferAmountPreset };
@@ -1102,10 +1100,7 @@ export interface WalletTransferPreviewRequest {
   walletId: string;
 }
 
-export type WalletTransferAddressClassification =
-  | "known-external"
-  | "new-external"
-  | "own-wallet";
+export type WalletTransferAddressClassification = "known-external" | "new-external" | "own-wallet";
 
 export interface WalletTransferBalanceChange {
   assetAfterBaseUnit: string;
