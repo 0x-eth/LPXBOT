@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P04-04",
+  "phase": "P04",
+  "risk": "R3",
+  "status": "accepted-with-gaps",
+  "featureIds": ["WALLET-03", "WALLET-07"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "focused wallet lifecycle, security-password, signer, Keystore, tamper, password, and reset Vitest",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-04/E-REC.md"
+    },
+    {
+      "id": "T-API",
+      "command": "focused lifecycle/security-password API, client, signer HTTP, and remote adapter tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-04/E-API.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "P04-02/P04-03 signer, tamper, password, reset, rollback, and concurrency regression",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-04/E-REC.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm test:postgres with every migration up, all downs in reverse, and every up again",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-04/E-DATA.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "LPBOT_CAPTURE_P04_04=1 pnpm exec playwright test tests/e2e/p04-04-wallet-security.spec.ts --workers=1",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-04/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile screenshots, keyboard, focus, overflow, password clearing, and axe assertions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-04/E-VIS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "Gitleaks full-history, dependency audit, secret ingress, tenant isolation, and zero-execution scans",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-04/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P04-04/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P04-04/E-DATA.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P04-04/E-REC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P04-04/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P04-04/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P04-04/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P04-04/E-SEC.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P04-04/E-OPS.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only; WALLET-03 and WALLET-07 remain implemented-assumed.",
+    "P04 is 7 implemented-assumed and 5 planned; the global state is 56 implemented-assumed and 140 planned.",
+    "Production task, policy, position, and asset inventory plus task-coordinator adapters remain unresolved; deletion fails closed when they are absent or incomplete.",
+    "WALLET-10 transfer integration remains planned; the security-password verifier is signer-internal only.",
+    "Private-key decryptions, signing, raw transactions, broadcast, and external RPC calls are all zero in this work item.",
+    "Independent signer review, locked-memory/core-dump controls, production KMS recovery, staging monitoring, and rollback drills remain unresolved.",
+    "This accepted-with-gaps work item is not custody-ready, not parity-verified, and not released.",
+    "P00 through P04-03 acceptance files remain byte-identical to baseline 7814a13df07e179dd1b058b93a2a3dacce7fe42f."
+  ],
+  "completedAt": "2026-08-18T05:59:29.000Z",
+  "commit": null
+}
