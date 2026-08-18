@@ -35,16 +35,7 @@ const IMPLEMENTED = [
   "WALLET-06",
   "WALLET-07",
 ];
-const REQUIRED_EVIDENCE = [
-  "E-API",
-  "E-DATA",
-  "E-OPS",
-  "E-RBAC",
-  "E-REC",
-  "E-SEC",
-  "E-UI",
-  "E-VIS",
-];
+const REQUIRED_EVIDENCE = ["E-API", "E-DATA", "E-OPS", "E-RBAC", "E-REC", "E-SEC", "E-UI", "E-VIS"];
 const REQUIRED_TESTS = ["T-API", "T-MIG", "T-REC", "T-SEC", "T-UI", "T-UNIT", "T-VIS"];
 
 function digest(value) {
