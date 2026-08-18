@@ -243,13 +243,15 @@ export class ViemLocalWalletTransferObserver implements WalletTransferObserver {
     const senderSpent = positiveDelta(decodeBalance(senderBefore), decodeBalance(senderAfter));
     const recipientGain = gain(decodeBalance(recipientBefore), decodeBalance(recipientAfter));
     const transferLog = receipt.logs.some((log) => {
-      if (log.removed || log.address.toLowerCase() !== tokenAddress) return false;
+      if (log.removed || log.address.toLowerCase() !== tokenAddress || log.topics.length === 0) {
+        return false;
+      }
       try {
         const decoded = decodeEventLog({
           abi: erc20EvidenceAbi,
           data: log.data,
           eventName: "Transfer",
-          topics: log.topics,
+          topics: log.topics as [Hex, ...Hex[]],
         });
         return (
           decoded.args.from.toLowerCase() === plan.walletAddress &&
