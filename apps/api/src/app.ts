@@ -643,6 +643,53 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return isRecord(value) && !Array.isArray(value);
 }
 
+function parsePositiveChainId(value: unknown, defaultValue = 56): number | null {
+  if (value === undefined) return defaultValue;
+  if (typeof value !== "string" || !/^[1-9][0-9]{0,15}$/u.test(value)) return null;
+  const chainId = Number(value);
+  return Number.isSafeInteger(chainId) ? chainId : null;
+}
+
+function parseWalletReadQuery(
+  value: unknown,
+  allowedKeys: readonly string[],
+): { amountDecimal?: string; chainId: number; tokenAddress?: string } | null {
+  if (!isPlainRecord(value) || Object.keys(value).some((key) => !allowedKeys.includes(key))) {
+    return null;
+  }
+  const chainId = parsePositiveChainId(value.chainId);
+  if (!chainId) return null;
+  if (
+    value.tokenAddress !== undefined &&
+    (typeof value.tokenAddress !== "string" || value.tokenAddress.length > 42)
+  ) {
+    return null;
+  }
+  if (
+    value.amountDecimal !== undefined &&
+    (typeof value.amountDecimal !== "string" || value.amountDecimal.length > 160)
+  ) {
+    return null;
+  }
+  return {
+    chainId,
+    ...(value.tokenAddress === undefined ? {} : { tokenAddress: value.tokenAddress }),
+    ...(value.amountDecimal === undefined ? {} : { amountDecimal: value.amountDecimal }),
+  };
+}
+
+function parseWalletTokenImport(value: unknown): { chainId: number; tokenAddress: unknown } | null {
+  if (
+    !isPlainRecord(value) ||
+    Object.keys(value).sort().join(",") !== "chainId,tokenAddress" ||
+    !Number.isSafeInteger(value.chainId) ||
+    Number(value.chainId) < 1
+  ) {
+    return null;
+  }
+  return { chainId: Number(value.chainId), tokenAddress: value.tokenAddress };
+}
+
 function parseChainAccessUpdateBody(value: unknown) {
   if (!isPlainRecord(value)) throw new ChainPolicyStoreError("CONFIG_INVALID");
   const topLevelKeys = Object.keys(value).sort();
@@ -1333,6 +1380,83 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       outcome: "denied",
       resultCode,
     });
+  };
+
+  const addressBookAudit = (
+    action: AddressBookAuditAction,
+    request: FastifyRequest,
+    session: StoredSession,
+    input: { address?: EvmAddress | null; chainId?: number | null; entryId?: string | null } = {},
+  ): AddressBookAllowedAudit => ({
+    action,
+    actorUserId: session.userId,
+    address: input.address ?? null,
+    chainId: input.chainId ?? null,
+    createdAt: now(),
+    entryId: input.entryId ?? null,
+    requestId: request.id,
+    sessionId: session.id,
+  });
+
+  const recordDeniedAddressBook = async (
+    audit: AddressBookAllowedAudit,
+    resultCode: string,
+  ): Promise<void> => {
+    await options.addressBookStore?.recordDenied({
+      ...audit,
+      outcome: "denied",
+      resultCode,
+    });
+  };
+
+  const requireAllowedWalletChain = async (
+    chainId: number,
+    request: FastifyRequest,
+    reply: FastifyReply,
+    session: StoredSession,
+  ): Promise<boolean> => {
+    const registered = findRegisteredChain(chainId);
+    if (!registered?.configurationComplete || !options.chainPolicyStore) {
+      reply.code(403).send(
+        createErrorEnvelope({
+          code: "CHAIN_NOT_ALLOWED",
+          message: "The chain is not available for this account",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+      return false;
+    }
+    let policies: ChainAccessPolicyView[];
+    try {
+      policies = await options.chainPolicyStore.list();
+    } catch {
+      reply.code(503).send(
+        createErrorEnvelope({
+          code: "CHAIN_CONFIG_UNAVAILABLE",
+          message: "Chain configuration is not available",
+          requestId: request.id,
+          retryable: true,
+        }),
+      );
+      return false;
+    }
+    const allowed = effectiveAllowedChainIds(
+      policies,
+      session.account.role,
+      session.account.tier,
+    ).includes(chainId);
+    if (!allowed) {
+      reply.code(403).send(
+        createErrorEnvelope({
+          code: "CHAIN_NOT_ALLOWED",
+          message: "The chain is not available for this account",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+    }
+    return allowed;
   };
 
   const poolProvenanceRateAllowed = (session: StoredSession): boolean =>
@@ -3564,6 +3688,77 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           message: mapped.message,
           requestId: request.id,
           retryable: mapped.retryable,
+        }),
+      );
+    };
+
+    const walletAssetFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply | null => {
+      if (!(error instanceof WalletAssetError)) return null;
+      const conflict =
+        error.code === "DEFAULT_TOKEN_IMMUTABLE" ||
+        error.code === "TOKEN_ALREADY_EXISTS" ||
+        error.code === "TOKEN_METADATA_CONFLICT";
+      const status =
+        error.code === "CHAIN_NOT_ALLOWED"
+          ? 403
+          : error.code === "CHAIN_READ_UNAVAILABLE"
+            ? 503
+            : error.code === "TOKEN_NOT_FOUND"
+              ? 404
+              : conflict
+                ? 409
+                : 400;
+      const messages: Record<WalletAssetError["code"], string> = {
+        CHAIN_NOT_ALLOWED: "The chain is not available for this account",
+        CHAIN_READ_UNAVAILABLE: "The controlled chain reader is unavailable",
+        DEFAULT_TOKEN_IMMUTABLE: "Default tokens cannot be removed or replaced",
+        INVALID_AMOUNT: "The receive amount is invalid",
+        INVALID_TOKEN: "The token address is invalid",
+        TOKEN_ALREADY_EXISTS: "The custom token already exists",
+        TOKEN_METADATA_CONFLICT: "Stored token metadata conflicts with the chain response",
+        TOKEN_METADATA_INVALID: "The ERC-20 metadata response is invalid",
+        TOKEN_NOT_CONTRACT: "The token address has no contract code",
+        TOKEN_NOT_FOUND: "The token is not configured for this wallet",
+      };
+      return reply.code(status).send(
+        createErrorEnvelope({
+          code: error.code,
+          message: messages[error.code],
+          requestId: request.id,
+          retryable: error.code === "CHAIN_READ_UNAVAILABLE",
+        }),
+      );
+    };
+
+    const addressBookFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply | null => {
+      if (!(error instanceof AddressBookError)) return null;
+      const status =
+        error.code === "ADDRESS_BOOK_ENTRY_NOT_FOUND"
+          ? 404
+          : error.code === "ADDRESS_BOOK_INVALID"
+            ? 400
+            : 409;
+      const messages: Record<AddressBookError["code"], string> = {
+        ADDRESS_BOOK_DUPLICATE: "The external address already exists in the address book",
+        ADDRESS_BOOK_ENTRY_NOT_FOUND: "The address-book entry was not found",
+        ADDRESS_BOOK_INVALID: "The address-book request is invalid",
+        ADDRESS_BOOK_REVISION_CONFLICT: "The address-book entry changed in another session",
+        ADDRESS_IS_OWN_WALLET: "Owned wallets are already available in the wallet directory",
+      };
+      return reply.code(status).send(
+        createErrorEnvelope({
+          code: error.code,
+          message: messages[error.code],
+          requestId: request.id,
+          retryable: error.code === "ADDRESS_BOOK_REVISION_CONFLICT",
         }),
       );
     };
