@@ -158,6 +158,11 @@ test("P00 through P04-04 acceptance files remain byte-identical to the requested
     .filter(Boolean)
     .filter(
       (file) =>
+        file === "artifacts/acceptance/README.md" ||
+        /^artifacts\/acceptance\/P0[0-4]-[^/]+\//u.test(file),
+    )
+    .filter(
+      (file) =>
         !file.startsWith("artifacts/acceptance/P04-05/") &&
         !file.startsWith("artifacts/acceptance/P04-06/") &&
         !file.startsWith("artifacts/acceptance/P04-07/"),

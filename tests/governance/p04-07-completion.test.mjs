@@ -106,6 +106,7 @@ test("P04-07 manifest owns SET-07 and preserves all unresolved boundaries", asyn
 test("P00 through P04-06 remain byte-identical to the frozen 568-file inventory", async () => {
   const inventory = parseChecksums(await readFile(PRIOR_CHECKSUMS, "utf8"), "prior checksums");
   const current = (await filesBelow(ACCEPTANCE_ROOT))
+    .filter((file) => file === "README.md" || /^P0[0-4]-[^/]+\//u.test(file))
     .filter((file) => !file.startsWith("P04-07/"))
     .map((file) => `artifacts/acceptance/${file}`);
   assert.equal(inventory.length, 568);

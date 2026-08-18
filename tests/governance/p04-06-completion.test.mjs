@@ -159,6 +159,7 @@ test("P00 through P04-05 acceptance files remain byte-identical to the fixed bas
     .split("\n")
     .filter(Boolean);
   const currentPriorFiles = (await filesBelow(ACCEPTANCE_ROOT))
+    .filter((file) => file === "README.md" || /^P0[0-4]-[^/]+\//u.test(file))
     .map((file) => `artifacts/acceptance/${file}`)
     .filter(
       (file) =>
@@ -174,6 +175,11 @@ test("P00 through P04-05 acceptance files remain byte-identical to the fixed bas
     .trim()
     .split("\n")
     .filter(Boolean)
+    .filter(
+      (file) =>
+        file === "artifacts/acceptance/README.md" ||
+        /^artifacts\/acceptance\/P0[0-4]-[^/]+\//u.test(file),
+    )
     .filter(
       (file) =>
         !file.startsWith("artifacts/acceptance/P04-06/") &&
