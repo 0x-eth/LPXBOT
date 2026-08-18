@@ -413,20 +413,20 @@ test("security password stays separate, clears secrets, and handles errors and c
   const create = page.getByRole("button", { name: "创建安全密码" });
   await create.focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByLabel("新安全密码")).toBeFocused();
-  await page.getByLabel("新安全密码").fill(securityPasswordOne);
+  await expect(page.getByLabel("新安全密码", { exact: true })).toBeFocused();
+  await page.getByLabel("新安全密码", { exact: true }).fill(securityPasswordOne);
   await page.getByLabel("确认安全密码").fill(securityPasswordTwo);
   await page.getByRole("button", { name: "确认创建安全密码" }).click();
   await expect(page.getByRole("alert")).toContainText("两次输入的安全密码不一致");
-  await expect(page.getByLabel("新安全密码")).toHaveValue("");
+  await expect(page.getByLabel("新安全密码", { exact: true })).toHaveValue("");
   await expect(page.getByLabel("确认安全密码")).toHaveValue("");
 
-  await page.getByLabel("新安全密码").fill(securityPasswordOne);
+  await page.getByLabel("新安全密码", { exact: true }).fill(securityPasswordOne);
   await page.getByRole("button", { name: "取消" }).click();
   await expect(create).toBeFocused();
   await create.click();
-  await expect(page.getByLabel("新安全密码")).toHaveValue("");
-  await page.getByLabel("新安全密码").fill(securityPasswordOne);
+  await expect(page.getByLabel("新安全密码", { exact: true })).toHaveValue("");
+  await page.getByLabel("新安全密码", { exact: true }).fill(securityPasswordOne);
   await page.getByLabel("确认安全密码").fill(securityPasswordOne);
   await page.getByRole("button", { name: "确认创建安全密码" }).click();
   await expect(section).toHaveAttribute("data-state", "ready");
@@ -434,25 +434,25 @@ test("security password stays separate, clears secrets, and handles errors and c
   const change = page.getByRole("button", { name: "修改安全密码" });
   await change.click();
   await page.getByLabel("当前安全密码").fill("synthetic-security-password-wrong");
-  await page.getByLabel("新安全密码").fill(securityPasswordTwo);
+  await page.getByLabel("新安全密码", { exact: true }).fill(securityPasswordTwo);
   await page.getByLabel("确认安全密码").fill(securityPasswordTwo);
   state.nextSecurityError = "INVALID_CREDENTIALS";
   await page.getByRole("button", { name: "确认修改安全密码" }).click();
   await expect(section).toHaveAttribute("data-state", "error");
   await expect(page.getByRole("alert")).toContainText("安全密码不正确");
   for (const label of ["当前安全密码", "新安全密码", "确认安全密码"]) {
-    await expect(page.getByLabel(label)).toHaveValue("");
+    await expect(page.getByLabel(label, { exact: true })).toHaveValue("");
   }
 
   state.nextSecurityError = "SECURITY_PASSWORD_VERSION_CONFLICT";
   await page.getByLabel("当前安全密码").fill(securityPasswordOne);
-  await page.getByLabel("新安全密码").fill(securityPasswordTwo);
+  await page.getByLabel("新安全密码", { exact: true }).fill(securityPasswordTwo);
   await page.getByLabel("确认安全密码").fill(securityPasswordTwo);
   await page.getByRole("button", { name: "确认修改安全密码" }).click();
   await expect(section).toHaveAttribute("data-state", "conflict");
   await expect(page.getByRole("alert")).toContainText("安全密码版本已变化");
   for (const label of ["当前安全密码", "新安全密码", "确认安全密码"]) {
-    await expect(page.getByLabel(label)).toHaveValue("");
+    await expect(page.getByLabel(label, { exact: true })).toHaveValue("");
   }
   await page.keyboard.press("Escape");
   await expect(change).toBeFocused();
