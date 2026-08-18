@@ -3,7 +3,7 @@
 > 基线日期：2026-08-13  
 > 范围源：[功能矩阵](./FUNCTION_MATRIX.md)  
 > 阶段源：[开发路线图](./DEVELOPMENT_ROADMAP.md)  
-> 当前状态：P01 的 18 项、P02 的 23 项、P03 的 8 项及 P04 的 5 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 142 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
+> 当前状态：P01 的 18 项、P02 的 23 项、P03 的 8 项及 P04 的 7 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 140 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
 
 ## 1. 使用规则
 
@@ -338,18 +338,18 @@ P03-02 至 P03-04 仅验证 BSC、local-sink 和注入式 DNS/HTTP/TLS/Telegram 
 
 #### P04 当前实现与证据状态
 
-P04-03 在 P04-02 隔离 signer 上完成 user-password DEK 包装、Keystore 密码生命周期、自动锁、模式切换和忘记密码原子重置。P04 当前为 5 项 `implemented-assumed`、7 项 `planned`，阶段与工作项均保持 `accepted-with-gaps`。验收只使用合成密码、钱包、本地 KMS、PostgreSQL 和浏览器 fixture；签名、raw transaction、广播和外部 RPC 调用均为 0。独立 signer 安全评审、生产 KMS 灾难恢复、锁页/core-dump 控制与 live custody 运维证据仍未完成，因此不提升为 `parity-verified`、`released` 或 custody-ready。
+P04-04 在既有隔离 signer 上完成钱包命名、删除预览、普通/强制删除、Envelope 不可恢复清除、持久 tombstone/审计，以及与 Keystore 完全分域的安全密码生命周期和内部验证端口。P04 当前为 7 项 `implemented-assumed`、5 项 `planned`，阶段与工作项均保持 `accepted-with-gaps`。验收只使用合成密码、钱包、本地 KMS、PostgreSQL、浏览器和注入式依赖 fixture；生产任务/策略/仓位/资产 inventory 与任务协调器适配仍未接入，缺失时删除 fail closed。签名、raw transaction、广播和外部 RPC 调用均为 0。独立 signer 安全评审、生产 KMS 灾难恢复、锁页/core-dump 控制与 live custody 运维证据仍未完成，因此不提升为 `parity-verified`、`released` 或 custody-ready。
 
 <!-- P04_STATUS_TABLE_START -->
 | ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
 |---|---|---|---|---|
 | WALLET-01 | `implemented-assumed` | [Signer import/seal](../apps/signer/src/isolated-wallet-signer.ts), [isolated HTTP ingress](../apps/signer/src/http-server.ts), [wallet API](../apps/api/src/app.ts), [remote signer client](../apps/api/src/remote-wallet-signer-client.ts), [wallet UI](../apps/web/src/wallets-page.tsx) | [T-UNIT/T-SEC](../tests/signer-custody.test.ts), [T-API/T-SEC](../tests/wallet-api.test.ts), [T-UI/T-VIS](../tests/e2e/p04-02-wallets.spec.ts) | [P04-02](../artifacts/acceptance/P04-02/manifest.json); local-fixture-verified; no signing, broadcast, or RPC |
 | WALLET-02 | `implemented-assumed` | [CSPRNG generation](../apps/signer/src/wallet-crypto.ts), [custody service](../apps/signer/src/custody-signer-service.ts), [atomic PostgreSQL store](../apps/signer/src/postgres-custody-wallet-store.ts), [generate API/UI](../apps/web/src/wallets-page.tsx) | [T-UNIT/T-REC](../tests/signer-custody.test.ts), [T-REC/T-MIG](../tests/integration/postgres-custody-wallet.integration.ts), [T-API](../tests/wallet-api.test.ts), [T-UI/T-VIS](../tests/e2e/p04-02-wallets.spec.ts) | [P04-02](../artifacts/acceptance/P04-02/manifest.json); local-fixture-verified; synthetic keys only |
-| WALLET-03 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
+| WALLET-03 | `implemented-assumed` | [Lifecycle service](../apps/signer/src/custody-signer-service.ts), [atomic PostgreSQL store](../apps/signer/src/postgres-custody-wallet-store.ts), [wallet API](../apps/api/src/app.ts), [strict remote signer client](../apps/api/src/remote-wallet-signer-client.ts), [wallet UI](../apps/web/src/wallets-page.tsx), [migration](../infra/migrations/20260818000500_create_wallet_lifecycle_security_password.sql) | [T-API/T-SEC](../tests/wallet-lifecycle-api.test.ts), [T-REC/T-MIG](../tests/integration/postgres-wallet-lifecycle.integration.ts), [T-UI/T-VIS](../tests/e2e/p04-04-wallet-security.spec.ts) | [P04-04](../artifacts/acceptance/P04-04/manifest.json); local-fixture-verified; authoritative production dependency adapters unresolved and fail closed |
 | WALLET-04 | `implemented-assumed` | [AES-GCM and frozen AAD](../apps/signer/src/wallet-crypto.ts), [versioned KMS boundary](../apps/signer/src/http-kms-client.ts), [production runtime](../apps/signer/src/runner.ts), [append-only envelope migration](../infra/migrations/20260818000300_create_custody_wallets.sql) | [T-UNIT/T-SEC](../tests/signer-custody.test.ts), [T-REC](../tests/signer-runtime.test.ts), [T-MIG/T-REC](../tests/integration/postgres-custody-wallet.integration.ts) | [P04-02](../artifacts/acceptance/P04-02/manifest.json); local-fixture-verified; production KMS and independent review unresolved |
 | WALLET-05 | `implemented-assumed` | [Argon2id and versioned DEK wrap](../apps/signer/src/password-crypto.ts), [unlock lifecycle](../apps/signer/src/custody-signer-service.ts), [mode-aware signer](../apps/signer/src/isolated-wallet-signer.ts), [PostgreSQL store](../apps/signer/src/postgres-custody-wallet-store.ts), [wallet UI](../apps/web/src/wallets-page.tsx) | [T-UNIT/T-SEC](../tests/keystore-crypto.test.ts), [T-REC](../tests/keystore-lifecycle.test.ts), [T-REC/T-MIG](../tests/integration/postgres-keystore.integration.ts), [T-UI/T-VIS](../tests/e2e/p04-03-keystore.spec.ts) | [P04-03](../artifacts/acceptance/P04-03/manifest.json); local-fixture-verified; locked memory and independent review unresolved |
 | WALLET-06 | `implemented-assumed` | [Keystore lifecycle service](../apps/signer/src/custody-signer-service.ts), [dedicated secret API](../apps/api/src/app.ts), [strict browser client](../apps/web/src/keystore-client.ts), [security settings UI](../apps/web/src/keystore-settings.tsx), [Keystore migration](../infra/migrations/20260818000400_create_user_keystores.sql) | [T-API/T-SEC](../tests/keystore-api.test.ts), [T-UNIT/T-REC](../tests/keystore-reset.test.ts), [T-MIG/T-REC](../tests/integration/postgres-keystore.integration.ts), [T-UI/T-VIS](../tests/e2e/p04-03-keystore.spec.ts) | [P04-03](../artifacts/acceptance/P04-03/manifest.json); local-fixture-verified; destructive reset dependencies fail closed |
-| WALLET-07 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
+| WALLET-07 | `implemented-assumed` | [Independent Argon2id domain](../apps/signer/src/security-password-crypto.ts), [security-password lifecycle](../apps/signer/src/custody-signer-service.ts), [dedicated API ingress](../apps/api/src/app.ts), [internal signer port](../apps/signer/src/http-server.ts), [strict browser client](../apps/web/src/security-password-client.ts), [settings UI](../apps/web/src/security-password-settings.tsx) | [T-UNIT/T-SEC](../tests/security-password.test.ts), [T-API/T-SEC](../tests/security-password-api.test.ts), [T-REC/T-MIG](../tests/integration/postgres-security-password.integration.ts), [T-UI/T-VIS](../tests/e2e/p04-04-wallet-security.spec.ts) | [P04-04](../artifacts/acceptance/P04-04/manifest.json); local-fixture-verified; WALLET-10 transfer integration remains planned |
 | WALLET-08 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
 | WALLET-09 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
 | WALLET-10 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
@@ -384,10 +384,10 @@ P04-03 在 P04-02 隔离 signer 上完成 user-password DEK 包装、Keystore �
 |---|---:|---|
 | 功能矩阵稳定 ID | 196 | 已全部映射 |
 | 追踪表稳定 ID | 196 | 必须由自动检查保持相等 |
-| 当前产品实现 | 54 | P01 的 18 项、P02 的 23 项、P03 的 8 项和 P04 的 5 项完成阶段实现；P04 为 5 implemented-assumed / 7 planned |
-| `implemented-assumed` | 54 | 目标对照或 live 证据仍不完整 |
+| 当前产品实现 | 56 | P01 的 18 项、P02 的 23 项、P03 的 8 项和 P04 的 7 项完成阶段实现；P04 为 7 implemented-assumed / 5 planned |
+| `implemented-assumed` | 56 | 目标对照或 live 证据仍不完整 |
 | `parity-verified` | 0 | 不由 accepted work item 自动提升 |
 | `released` | 0 | 尚无 staging、监控和回滚完整证明 |
-| 其余 `planned` | 142 | P02/P03 已无 planned；P04 仍有 7 planned |
+| 其余 `planned` | 140 | P02/P03 已无 planned；P04 仍有 5 planned |
 
 建议 CI 检查逻辑：从 `FUNCTION_MATRIX.md` 与本文件抽取 `^[A-Z]+-[0-9]{2}$`，比较去重集合；再检查每行非空的阶段、测试和证据列。任何新增功能 ID 必须先进入范围源和本表。
