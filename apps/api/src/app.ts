@@ -3777,6 +3777,62 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       );
     };
 
+    const walletTransferFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply | null => {
+      if (!(error instanceof WalletTransferError)) return null;
+      const status =
+        error.code === "CHAIN_NOT_ALLOWED"
+          ? 403
+          : error.code === "TRANSFER_NOT_FOUND" ||
+              error.code === "WALLET_NOT_FOUND" ||
+              error.code === "TOKEN_NOT_FOUND"
+            ? 404
+            : error.code === "TRANSFER_UNAVAILABLE"
+              ? 503
+              : error.code === "TOKEN_FEE_ON_TRANSFER_UNSUPPORTED"
+                ? 422
+                : error.code === "IDEMPOTENCY_CONFLICT" ||
+                    error.code === "PREVIEW_CHANGED" ||
+                    error.code === "PREVIEW_EXPIRED" ||
+                    error.code === "TRANSFER_BALANCE_INSUFFICIENT" ||
+                    error.code === "TRANSFER_GAS_INSUFFICIENT" ||
+                    error.code === "WALLET_LOCKED"
+                  ? 409
+                  : 400;
+      const messages: Record<WalletTransferError["code"], string> = {
+        CHAIN_NOT_ALLOWED: "The chain is not available for wallet transfers",
+        IDEMPOTENCY_CONFLICT: "The idempotency key is already bound to another request",
+        IDEMPOTENCY_KEY_REQUIRED: "A valid Idempotency-Key header is required",
+        NONCE_RECONCILIATION_REQUIRED: "The wallet nonce requires reconciliation",
+        PREVIEW_CHANGED: "The transfer preview no longer matches current state",
+        PREVIEW_EXPIRED: "The transfer preview has expired",
+        PREVIEW_INVALID: "The transfer preview is invalid",
+        SECURITY_PASSWORD_REQUIRED: "A security password is required for this recipient",
+        TOKEN_FEE_ON_TRANSFER_UNSUPPORTED: "Fee-on-transfer tokens are not supported",
+        TOKEN_NOT_FOUND: "The token is not configured for this wallet",
+        TRANSFER_ADDRESS_INVALID: "The transfer recipient is invalid",
+        TRANSFER_AMOUNT_INVALID: "The transfer amount is invalid",
+        TRANSFER_BALANCE_INSUFFICIENT: "The asset balance is insufficient",
+        TRANSFER_GAS_INSUFFICIENT: "The native balance cannot cover the gas cap",
+        TRANSFER_NOT_FOUND: "The transfer operation was not found",
+        TRANSFER_SELF_FORBIDDEN: "Self-transfers are not supported",
+        TRANSFER_UNAVAILABLE: "The wallet transfer service is unavailable",
+        WALLET_LOCKED: "The wallet must be unlocked before transfer",
+        WALLET_NOT_FOUND: "The wallet was not found",
+      };
+      return reply.code(status).send(
+        createErrorEnvelope({
+          code: error.code,
+          message: messages[error.code],
+          requestId: request.id,
+          retryable: error.retryable,
+        }),
+      );
+    };
+
     const addressBookFailure = (
       error: unknown,
       request: FastifyRequest,
@@ -4398,6 +4454,143 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           return walletFailure(error, request, reply) ?? keystoreUnavailable(request, reply);
         } finally {
           ingress?.fill(0);
+        }
+      },
+    );
+
+    app.post(
+      "/api/wallets/transfers/preview",
+      { bodyLimit: walletTransferBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletDirectory || !options.walletTransfers) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "TRANSFER_UNAVAILABLE",
+              message: "The wallet transfer service is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const transfer = parseWalletTransferPreviewRequest(request.body);
+          if (!(await requireAllowedWalletChain(transfer.chainId, request, reply, session))) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(
+            session.userId,
+            transfer.walletId,
+          );
+          if (!wallet) throw new WalletTransferError("WALLET_NOT_FOUND");
+          const preview = await options.walletTransfers.preview({
+            request: transfer,
+            userId: session.userId,
+            wallet: publicWalletDto(wallet),
+          });
+          return createSuccessEnvelope(preview, request.id);
+        } catch (error) {
+          return (
+            walletTransferFailure(error, request, reply) ??
+            walletFailure(error, request, reply) ??
+            reply
+          );
+        }
+      },
+    );
+
+    app.post(
+      "/api/wallets/transfers",
+      { bodyLimit: walletTransferBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const ingress = Buffer.isBuffer(request.body) ? request.body : null;
+        let parsed: ReturnType<typeof parseWalletTransferSubmit> | null = null;
+        try {
+          const session = await authenticateSessionRequest(request, reply);
+          if (!session) return reply;
+          if (!options.walletDirectory || !options.walletTransfers) {
+            return reply.code(503).send(
+              createErrorEnvelope({
+                code: "TRANSFER_UNAVAILABLE",
+                message: "The wallet transfer service is unavailable",
+                requestId: request.id,
+                retryable: true,
+              }),
+            );
+          }
+          const idempotencyKey = parseWalletTransferIdempotencyKey(
+            request.headers["idempotency-key"],
+          );
+          parsed = parseWalletTransferSubmit(request.body);
+          const wallet = await options.walletDirectory.getWallet(
+            session.userId,
+            parsed.request.walletId,
+          );
+          if (!wallet) throw new WalletTransferError("WALLET_NOT_FOUND");
+          const result = await options.walletTransfers.submit({
+            idempotencyKey,
+            password: parsed.password,
+            request: parsed.request,
+            requestId: request.id,
+            secretIngress: ingress !== null,
+            sessionId: session.id,
+            userId: session.userId,
+            wallet: publicWalletDto(wallet),
+          });
+          parsed.password = null;
+          return reply
+            .code(result.created ? 202 : 200)
+            .send(createSuccessEnvelope(result.operation, request.id));
+        } catch (error) {
+          return (
+            walletTransferFailure(error, request, reply) ??
+            walletFailure(error, request, reply) ??
+            reply
+          );
+        } finally {
+          if (parsed) parsed.password = null;
+          ingress?.fill(0);
+        }
+      },
+    );
+
+    app.get<{ Params: { operationId: string } }>(
+      "/api/wallets/transfers/:operationId",
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (Object.keys(request.query as Record<string, unknown>).length > 0) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "INVALID_QUERY",
+              message: "The transfer query is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.walletTransfers) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "TRANSFER_UNAVAILABLE",
+              message: "The wallet transfer service is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const operation = await options.walletTransfers.get({
+            operationId: parseWalletTransferOperationId(request.params.operationId),
+            userId: session.userId,
+          });
+          return createSuccessEnvelope(operation, request.id);
+        } catch (error) {
+          return walletTransferFailure(error, request, reply) ?? reply;
         }
       },
     );
