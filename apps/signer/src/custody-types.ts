@@ -12,10 +12,14 @@ export interface CustodyEnvelope {
   algorithm: "AES-256-GCM";
   ciphertext: Buffer;
   createdAt: Date;
+  dekWrapNonce?: Buffer | null;
+  dekWrapTag?: Buffer | null;
+  dekWrapVersion?: 1;
   envelopeVersion: number;
   kekId: string;
   kekVersion: string;
   nonce: Buffer;
+  secretVersion?: number | null;
   tag: Buffer;
   wrappedDek: Buffer;
 }
@@ -103,6 +107,7 @@ export interface KeystoreStore {
   rotateKeystore(input: {
     expectedVersion: number;
     next: StoredKeystore;
+    replacements?: WalletEnvelopeReplacement[];
   }): Promise<void>;
   setUserPasswordWalletLockStatus(
     userId: string,
@@ -115,6 +120,27 @@ export interface KeystoreStore {
     updatedAt: Date;
     userId: string;
   }): Promise<void>;
+  listUserPasswordWalletMaterials(userId: string): Promise<WalletEnvelopeMaterial[]>;
+  switchWalletEncryptionMode(input: {
+    envelope: CustodyEnvelope;
+    expectedRevision: number;
+    expectedSecretVersion: number;
+    lockStatus: WalletLockStatus;
+    mode: WalletEncryptionMode;
+    updatedAt: Date;
+    userId: string;
+    walletId: string;
+  }): Promise<CustodyWallet>;
+}
+
+export interface WalletEnvelopeMaterial {
+  envelope: CustodyEnvelope;
+  wallet: StoredCustodyWallet;
+}
+
+export interface WalletEnvelopeReplacement extends WalletEnvelopeMaterial {
+  expectedEnvelopeVersion: number;
+  expectedRevision: number;
 }
 
 export interface WalletDirectory {

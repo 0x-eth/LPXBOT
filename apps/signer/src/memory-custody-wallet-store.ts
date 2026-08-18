@@ -8,6 +8,8 @@ import type {
   StoredKeystore,
   StoredKeystoreFailure,
   StoredCustodyWallet,
+  WalletEnvelopeMaterial,
+  WalletEnvelopeReplacement,
 } from "./custody-types.js";
 import { publicWallet } from "./custody-types.js";
 import { SignerError } from "./signer-error.js";
@@ -17,6 +19,8 @@ function cloneEnvelope(envelope: CustodyEnvelope): CustodyEnvelope {
     ...envelope,
     ciphertext: Buffer.from(envelope.ciphertext),
     createdAt: new Date(envelope.createdAt),
+    dekWrapNonce: envelope.dekWrapNonce ? Buffer.from(envelope.dekWrapNonce) : null,
+    dekWrapTag: envelope.dekWrapTag ? Buffer.from(envelope.dekWrapTag) : null,
     nonce: Buffer.from(envelope.nonce),
     tag: Buffer.from(envelope.tag),
     wrappedDek: Buffer.from(envelope.wrappedDek),
@@ -57,13 +61,17 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
   readonly #audits: Array<{ action: string; walletId: string }> = [];
   readonly #envelopes = new Map<string, Map<number, CustodyEnvelope>>();
   readonly #failBeforeCommit: boolean;
+  readonly #failLifecycleAt: "before-commit" | null;
   readonly #keystoreFailures = new Map<string, StoredKeystoreFailure>();
   readonly #keystores = new Map<string, StoredKeystore>();
   readonly #wallets = new Map<string, StoredCustodyWallet>();
   readonly openAttempts: number[] = [];
 
-  constructor(options: { failBeforeCommit?: boolean } = {}) {
+  constructor(
+    options: { failBeforeCommit?: boolean; failLifecycleAt?: "before-commit" } = {},
+  ) {
     this.#failBeforeCommit = options.failBeforeCommit ?? false;
+    this.#failLifecycleAt = options.failLifecycleAt ?? null;
   }
 
   get auditCount(): number {
@@ -145,10 +153,38 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
   async rotateKeystore(input: {
     expectedVersion: number;
     next: StoredKeystore;
+    replacements?: WalletEnvelopeReplacement[];
   }): Promise<void> {
     const current = this.#keystores.get(input.next.userId);
     if (!current || current.current.secretVersion !== input.expectedVersion) {
       throw new SignerError("SECRET_VERSION_CONFLICT");
+    }
+    const replacements = input.replacements ?? [];
+    for (const replacement of replacements) {
+      const wallet = this.#wallets.get(replacement.wallet.walletId);
+      if (
+        !wallet ||
+        wallet.userId !== input.next.userId ||
+        wallet.mode !== "user-password" ||
+        wallet.revision !== replacement.expectedRevision ||
+        wallet.envelopeVersion !== replacement.expectedEnvelopeVersion ||
+        replacement.envelope.envelopeVersion !== wallet.envelopeVersion + 1
+      ) {
+        throw new SignerError("REVISION_CONFLICT");
+      }
+    }
+    if (this.#failLifecycleAt === "before-commit") {
+      throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+    }
+    for (const replacement of replacements) {
+      const wallet = this.#wallets.get(replacement.wallet.walletId)!;
+      const envelope = cloneEnvelope(replacement.envelope);
+      this.#envelopes.get(wallet.walletId)!.set(envelope.envelopeVersion, envelope);
+      wallet.envelopeVersion = envelope.envelopeVersion;
+      wallet.lockStatus = "locked";
+      wallet.revision += 1;
+      wallet.updatedAt = new Date(input.next.updatedAt);
+      this.#audits.push({ action: "wallet.password-change", walletId: wallet.walletId });
     }
     this.#keystores.set(input.next.userId, cloneKeystore(input.next));
   }
@@ -218,6 +254,54 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
       wallet.updatedAt = new Date(updatedAt);
       wallet.revision += 1;
     }
+  }
+
+  async listUserPasswordWalletMaterials(userId: string): Promise<WalletEnvelopeMaterial[]> {
+    const result: WalletEnvelopeMaterial[] = [];
+    for (const wallet of this.#wallets.values()) {
+      if (wallet.userId !== userId || wallet.mode !== "user-password") continue;
+      const envelope = this.#envelopes.get(wallet.walletId)?.get(wallet.envelopeVersion);
+      if (!envelope) throw new SignerError("INVALID_CREDENTIALS");
+      result.push({ envelope: cloneEnvelope(envelope), wallet: cloneWallet(wallet) });
+    }
+    return result;
+  }
+
+  async switchWalletEncryptionMode(input: {
+    envelope: CustodyEnvelope;
+    expectedRevision: number;
+    expectedSecretVersion: number;
+    lockStatus: WalletLockStatus;
+    mode: StoredCustodyWallet["mode"];
+    updatedAt: Date;
+    userId: string;
+    walletId: string;
+  }): Promise<CustodyWallet> {
+    const wallet = this.#wallets.get(input.walletId);
+    const keystore = this.#keystores.get(input.userId);
+    if (!wallet || wallet.userId !== input.userId) throw new SignerError("WALLET_NOT_FOUND");
+    if (wallet.revision !== input.expectedRevision) throw new SignerError("REVISION_CONFLICT");
+    if (!keystore || keystore.current.secretVersion !== input.expectedSecretVersion) {
+      throw new SignerError("SECRET_VERSION_CONFLICT");
+    }
+    if (
+      input.mode === wallet.mode ||
+      input.envelope.envelopeVersion !== wallet.envelopeVersion + 1
+    ) {
+      throw new SignerError("INVALID_MODE");
+    }
+    if (this.#failLifecycleAt === "before-commit") {
+      throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+    }
+    const envelope = cloneEnvelope(input.envelope);
+    this.#envelopes.get(wallet.walletId)!.set(envelope.envelopeVersion, envelope);
+    wallet.envelopeVersion = envelope.envelopeVersion;
+    wallet.lockStatus = input.lockStatus;
+    wallet.mode = input.mode;
+    wallet.revision += 1;
+    wallet.updatedAt = new Date(input.updatedAt);
+    this.#audits.push({ action: "wallet.mode-switch", walletId: wallet.walletId });
+    return publicWallet(wallet);
   }
 
   async mutateEnvelopeForTest(

@@ -67,6 +67,7 @@ export function buildWalletAad(input: {
   address: string;
   envelopeVersion: number;
   kekVersion: string;
+  mode?: "server-kek" | "user-password";
   tenantId: string;
   userId: string;
   walletId: string;
@@ -81,7 +82,7 @@ export function buildWalletAad(input: {
     canonicalIdentifier(input.userId),
     canonicalIdentifier(input.walletId),
     input.address,
-    "server",
+    input.mode === "user-password" ? "password" : "server",
     String(input.envelopeVersion),
     canonicalIdentifier(input.kekVersion),
   ];
