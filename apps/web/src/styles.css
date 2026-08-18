@@ -4134,6 +4134,118 @@ html[data-theme="dark"] .online-state[data-online="true"] {
   margin-top: 38px;
 }
 
+.okx-key-settings {
+  margin-top: 38px;
+}
+
+.okx-key-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+
+.okx-key-status-row {
+  display: grid;
+  min-height: 78px;
+  grid-template-columns: minmax(150px, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 16px;
+}
+
+.okx-key-status-copy {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.okx-key-status-copy small {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.okx-key-status-badge {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  padding: 3px 8px;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--muted);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.okx-key-status-badge[data-status="usable"] {
+  color: #087f5b;
+  border-color: #8acbb7;
+  background: #eefaf6;
+}
+
+.okx-key-status-badge[data-status="testing"],
+.okx-key-status-badge[data-status="staged"] {
+  color: #855d05;
+  border-color: #d7b969;
+  background: #fff8df;
+}
+
+.okx-key-status-badge[data-status="invalid"],
+.okx-key-status-badge[data-status="revoked"],
+.okx-key-status-badge[data-status="insufficient-permission"] {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  background: var(--danger-surface);
+}
+
+html[data-theme="dark"] .okx-key-status-badge[data-status="usable"] {
+  color: #76d9bb;
+  border-color: #356b5d;
+  background: #183029;
+}
+
+html[data-theme="dark"] .okx-key-status-badge[data-status="testing"],
+html[data-theme="dark"] .okx-key-status-badge[data-status="staged"] {
+  color: #f0ce73;
+  border-color: #6e592d;
+  background: #332b1a;
+}
+
+.okx-key-actions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.okx-key-actions .primary-button,
+.okx-key-actions .secondary-button,
+.okx-key-actions .danger-command {
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+}
+
+.okx-key-inline-error {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  color: var(--danger);
+  border-top: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
+  background: var(--danger-surface);
+  font-size: 0.75rem;
+}
+
 .security-password-panel {
   overflow: hidden;
   border: 1px solid var(--border);
@@ -4384,6 +4496,21 @@ html[data-theme="dark"] .keystore-status-badge[data-status="locked"] {
 }
 
 @media (max-width: 640px) {
+  .okx-key-status-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .okx-key-actions {
+    justify-content: flex-start;
+  }
+
+  .okx-key-actions .primary-button,
+  .okx-key-actions .secondary-button,
+  .okx-key-actions .danger-command {
+    flex: 1 1 108px;
+  }
+
   .security-password-status-row {
     grid-template-columns: minmax(0, 1fr);
     align-items: stretch;

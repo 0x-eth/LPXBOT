@@ -69,6 +69,7 @@ import { KeystoreSettings } from "./keystore-settings";
 import { SecurityPasswordSettings } from "./security-password-settings";
 import { MonitorsPage } from "./monitors-page";
 import { NotificationSettings } from "./notification-settings";
+import { OkxKeySettings } from "./okx-key-settings";
 import { ShellStatsContextProvider, ShellStatusBar, useShellStats } from "./shell-stats-react";
 import { ApiShellStatsProvider, createShellStatsState, shellStatsDisplay } from "./shell-stats";
 import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
@@ -402,6 +403,7 @@ function SettingsPage({ client, session }: { client: AuthClient; session: Sessio
       <InterfaceSettings />
       <KeystoreSettings />
       <SecurityPasswordSettings />
+      <OkxKeySettings />
       <BrowserCustomRpcSettings allowedChainIds={session.allowedChainIds} />
       <NotificationSettings />
       <LoginWalletSettingsSection client={client} />
