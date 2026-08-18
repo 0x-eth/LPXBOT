@@ -232,6 +232,7 @@ export interface ApiAppOptions {
   walletAssets?: WalletAssetApplication;
   walletDirectory?: WalletDirectory;
   walletSigner?: WalletSignerClient;
+  walletTransferLocalChainIds?: readonly number[];
   walletTransfers?: WalletTransferApplication;
   keystore?: KeystoreApplication;
   securityPassword?: SecurityPasswordApplication;
@@ -844,6 +845,15 @@ function telegramBotConfigured(options: ApiAppOptions): options is ApiAppOptions
 }
 
 export function buildApiApp(options: ApiAppOptions): FastifyInstance {
+  const walletTransferLocalChainIds = new Set(options.walletTransferLocalChainIds ?? []);
+  if (
+    walletTransferLocalChainIds.size !== (options.walletTransferLocalChainIds?.length ?? 0) ||
+    [...walletTransferLocalChainIds].some(
+      (chainId) => !Number.isSafeInteger(chainId) || chainId < 1,
+    )
+  ) {
+    throw new RangeError("Wallet transfer local chain IDs must be unique positive integers");
+  }
   const now = options.now ?? (() => new Date());
   const addressRemarkRateLimit: ChainManagementRateLimit = {
     max: 30,
@@ -1459,9 +1469,14 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     request: FastifyRequest,
     reply: FastifyReply,
     session: StoredSession,
+    allowLocalTransferChain = false,
   ): Promise<boolean> => {
     const registered = findRegisteredChain(chainId);
-    if (!registered?.configurationComplete || !options.chainPolicyStore) {
+    if (
+      (!registered?.configurationComplete &&
+        !(allowLocalTransferChain && walletTransferLocalChainIds.has(chainId))) ||
+      !options.chainPolicyStore
+    ) {
       reply.code(403).send(
         createErrorEnvelope({
           code: "CHAIN_NOT_ALLOWED",
@@ -4479,7 +4494,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         }
         try {
           const transfer = parseWalletTransferPreviewRequest(request.body);
-          if (!(await requireAllowedWalletChain(transfer.chainId, request, reply, session))) {
+          if (!(await requireAllowedWalletChain(transfer.chainId, request, reply, session, true))) {
             return reply;
           }
           const wallet = await options.walletDirectory.getWallet(session.userId, transfer.walletId);

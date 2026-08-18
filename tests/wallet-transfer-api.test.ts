@@ -150,6 +150,7 @@ async function fixture(classification: WalletTransferAddressClassification = "kn
     regionPolicy: () => ({ blocked: false, code: null, message: null }),
     sessionStore,
     walletDirectory: new WalletDirectoryFixture(),
+    walletTransferLocalChainIds: [chainId],
     walletTransfers: transfers,
   });
   apps.push(app);
