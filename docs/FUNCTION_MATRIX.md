@@ -282,7 +282,7 @@
 | SET-04 | 自动补仓链开关 | UI+BUNDLE | USER | R1/R3 | BSC/Base 默认；其他链按配置 |
 | SET-05 | 自动补仓与重试参数 | UI+BUNDLE | USER | R1/R3 | Mint/Swap/复投尝试、补仓轮数、最低金额 |
 | SET-06 | 本机 RPC 选择/自定义/测试 | UI+BUNDLE | USER | R2 | 仅浏览器沙箱只读链；URL secret 不进服务端、持久化、日志、遥测、Service Worker 或截图；`implemented-assumed`（P04-05，local fixture only） |
-| SET-07 | 用户 OKX API Key | UI+BUNDLE | USER | R2 | 保存/替换/删除/状态；secret 加密且不回显 |
+| SET-07 | 用户 OKX API Key | UI+BUNDLE | USER | R2 | 保存/替换/测试/删除与稳定状态；独立 connector、AES-256-GCM envelope encryption、固定只读出口，secret 不回显；`implemented-assumed`（P04-07，local fixture only；`GAP-P04-OKX-LIVE`、生产 KMS/IAM、独立安全评审和真实只读 sandbox 验证 unresolved） |
 | ADMIN-01 | 用户列表、搜索、状态 tab | UI+BUNDLE | ADMIN | R0 | 待审批/批准/禁用，分页与空态 |
 | ADMIN-02 | 审批、拒绝、禁用、解禁、删除 | UI+BUNDLE | ADMIN | R2 | 确认框、审计、运行任务处置 |
 | ADMIN-03 | 备注、Pro 升降级 | UI+BUNDLE | ADMIN | R2 | 权限即时失效/生效，已有任务不误停 |

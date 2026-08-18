@@ -187,7 +187,7 @@ flowchart LR
 
 **门禁：** 独立安全评审后才进测试网；测试钱包与研究/生产钱包隔离。
 
-**当前状态：** P04-06 在 P04-02 隔离 signer、P04-03 Keystore、P04-04 安全密码/钱包生命周期和 P04-05 资产/地址簿基础上完成原生币与标准 ERC-20 转账、PostgreSQL nonce/fencing/idempotency ledger、plan-bound 签名、专用广播、恢复/替换/reorg 对账和 desktop/mobile UI。P04 当前为 11 项 `implemented-assumed`、1 项 `planned`，继续 `accepted-with-gaps`；全局为 60 项 `implemented-assumed`、136 项 `planned`。验收仅使用合成钱包、local KMS/PostgreSQL/Redis/browser、loopback Anvil 和本地 ERC-20 fixture；任何非本地写入停在 `READY_FOR_APPROVAL`，公网 RPC、测试网、主网和真实资金调用均为 0。SET-07、独立 signer 安全评审、生产 KMS/provider 灾难恢复、custody monitoring/SLO 与 staging rollback 尚未完成，不标记 `parity-verified`、`released` 或 custody-ready。
+**当前状态：** P04-07 在 P04-02 隔离 signer、P04-03 Keystore、P04-04 安全密码/钱包生命周期、P04-05 资产/地址簿/浏览器 RPC 和 P04-06 转账基础上，完成独立 OKX connector、专用 KMS/数据库所有权、AES-256-GCM envelope encryption、版本化生命周期与恢复、固定只读出口、五个会话 API 和 desktop/mobile UI。P04 阶段实现收官，为 12 项 `implemented-assumed`、0 项 `planned`，继续 `accepted-with-gaps`；全局为 61 项 `implemented-assumed`、135 项 `planned`。P04-07 验收仅使用合成凭证、local KMS/PostgreSQL/browser 和注入式 OKX transport，真实 OKX 请求为 0；既有任何非本地写入仍停在 `READY_FOR_APPROVAL`，公网 RPC、测试网、主网和真实资金调用均为 0。`GAP-P04-OKX-LIVE`、生产 KMS/IAM、独立安全评审、真实只读 sandbox 验证、custody monitoring/SLO 与 staging rollback 继续 unresolved，不标记 `parity-verified`、`released` 或 custody-ready。
 
 ### P05：链适配器、Swap、仓位和 Helper
 

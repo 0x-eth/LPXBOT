@@ -114,7 +114,7 @@ test("P04-05 implemented IDs remain attributed after later P04 work items", asyn
   const rows = statusRows(traceability);
   assert.deepEqual(sorted(rows.keys()), sorted(FEATURE_IDS));
   for (const id of IMPLEMENTED) assert.equal(rows.get(id).status, "implemented-assumed", id);
-  assert.equal(rows.get("SET-07").status, "planned");
+  assert.equal(rows.get("SET-07").status, "implemented-assumed");
   for (const id of ["WALLET-08", "WALLET-09", "SET-06"]) {
     assert.match(rows.get(id).evidence, /P04-05/u, id);
     assert.match(rows.get(id).evidence, /local-fixture-verified/u, id);

@@ -3,7 +3,7 @@
 > 基线日期：2026-08-13  
 > 范围源：[功能矩阵](./FUNCTION_MATRIX.md)  
 > 阶段源：[开发路线图](./DEVELOPMENT_ROADMAP.md)  
-> 当前状态：P01 的 18 项、P02 的 23 项、P03 的 8 项及 P04 的 11 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 136 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
+> 当前状态：P01 的 18 项、P02 的 23 项、P03 的 8 项及 P04 的 12 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 135 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
 
 ## 1. 使用规则
 
@@ -338,7 +338,7 @@ P03-02 至 P03-04 仅验证 BSC、local-sink 和注入式 DNS/HTTP/TLS/Telegram 
 
 #### P04 当前实现与证据状态
 
-P04-06 在既有 custody、Keystore、安全密码、资产与地址簿边界上完成原生币/标准 ERC-20 转账预览与提交、PostgreSQL nonce/fencing/idempotency ledger、plan-bound signer、专用 raw transaction broadcast adapter、恢复/替换/reorg 对账闭环，以及 desktop/mobile 状态 UI。P04 当前为 11 项 `implemented-assumed`、1 项 `planned`，阶段与工作项均保持 `accepted-with-gaps`。写链验收只使用合成钱包、PostgreSQL、浏览器、loopback Anvil 和本地 ERC-20 fixture；公网 RPC、测试网、主网和真实资金调用均为 0，任何非本地写入保持 `READY_FOR_APPROVAL` 且不签名、不广播。独立 signer 安全评审、生产 provider/KMS 灾难恢复、custody monitoring/SLO 和 staging rollback 证据仍未完成，因此不提升为 `parity-verified`、`released` 或 custody-ready。
+P04-07 在既有 custody、Keystore、安全密码、资产、地址簿、转账和浏览器 RPC 边界上完成独立 OKX connector、专用 KMS/数据库所有权、AES-256-GCM envelope encryption、版本化生命周期与恢复、固定只读出口、五个会话 API，以及 desktop/mobile 状态 UI。P04 阶段实现收官，当前为 12 项 `implemented-assumed`、0 项 `planned`，阶段与工作项继续保持 `accepted-with-gaps`。本次验收只使用合成凭证、local KMS/PostgreSQL/browser 和注入式 OKX transport，真实 OKX 请求为 0；既有写链边界仍保持公网 RPC、测试网、主网和真实资金调用为 0。`GAP-P04-OKX-LIVE`、生产 KMS/IAM、独立安全评审、真实只读 sandbox 验证、custody monitoring/SLO 和 staging rollback 证据仍未完成，因此不提升为 `parity-verified`、`released` 或 custody-ready。
 
 <!-- P04_STATUS_TABLE_START -->
 | ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
@@ -354,7 +354,7 @@ P04-06 在既有 custody、Keystore、安全密码、资产与地址簿边界上
 | WALLET-09 | `implemented-assumed` | [Independent address-book domain](../apps/api/src/address-book.ts), [PostgreSQL address-book store](../apps/api/src/postgres-address-book-store.ts), [strict web client](../apps/web/src/wallet-read-client.ts), [address-book and EIP-681 QR UI](../apps/web/src/wallet-read-panels.tsx), [migration](../infra/migrations/20260818000600_create_wallet_assets_address_book.sql) | [T-API/T-SEC](../tests/address-book-api.test.ts), [T-REC/T-MIG](../tests/integration/postgres-wallet-assets-address-book.integration.ts), [T-UI](../tests/wallet-read-client.test.ts), [T-UI/T-VIS](../tests/e2e/p04-05-wallet-assets.spec.ts) | [P04-05](../artifacts/acceptance/P04-05/manifest.json); local-fixture-verified; independent from address_remarks; signer-internal password verification |
 | WALLET-10 | `implemented-assumed` | [Transfer domain](../packages/domain/src/wallet-transfer.ts), [API service](../apps/api/src/wallet-transfers.ts), [PostgreSQL nonce/operation store](../apps/api/src/postgres-wallet-transfer-store.ts), [plan authorizer](../apps/signer/src/postgres-transfer-plan-authorizer.ts), [viem signer](../apps/signer/src/isolated-wallet-signer.ts), [recovery repository](../apps/worker/src/postgres-wallet-transfer-recovery.ts), [local observer](../apps/worker/src/viem-local-wallet-transfer-observer.ts), [transfer UI](../apps/web/src/wallet-transfer-panel.tsx), [migration](../infra/migrations/20260818000700_create_wallet_transfers.sql) | [T-UNIT/T-API](../tests/wallet-transfer.test.ts), [T-API/T-SEC](../tests/wallet-transfer-api.test.ts), [T-CHAIN](../tests/integration/anvil-wallet-transfer.integration.ts), [T-REC/T-MIG](../tests/integration/postgres-wallet-transfer.integration.ts), [T-REC](../tests/wallet-transfer-recovery.test.ts), [T-SEC](../tests/wallet-transfer-signer-gateway.test.ts), [T-UI/T-VIS](../tests/e2e/p04-06-wallet-transfer.spec.ts) | [P04-06](../artifacts/acceptance/P04-06/manifest.json); local-fixture-verified; non-local writes stop at `READY_FOR_APPROVAL`; public RPC and real funds 0 |
 | SET-06 | `implemented-assumed` | [Browser RPC policy client](../apps/web/src/browser-readonly-rpc.ts), [opaque sandbox transport](../apps/web/src/browser-rpc-frame-transport.ts), [custom RPC settings](../apps/web/src/custom-rpc-settings.tsx) | [T-UNIT/T-SEC](../tests/browser-readonly-rpc.test.ts), [T-UI/T-VIS/T-SEC](../tests/e2e/p04-05-wallet-assets.spec.ts) | [P04-05](../artifacts/acceptance/P04-05/manifest.json); local-fixture-verified; browser-only opaque origin; URL secret absent from server and screenshots |
-| SET-07 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
+| SET-07 | `implemented-assumed` | [OKX contract](../packages/api-contract/src/index.ts), [API facade and remote client](../apps/api/src/okx-key.ts), [connector lifecycle](../apps/okx-connector/src/service.ts), [envelope crypto](../apps/okx-connector/src/credential-crypto.ts), [fixed egress](../apps/okx-connector/src/transport.ts), [PostgreSQL store](../apps/okx-connector/src/postgres-store.ts), [migration](../infra/migrations/20260819000100_create_okx_credentials.sql), [settings UI](../apps/web/src/okx-key-settings.tsx) | [T-API/T-SEC](../tests/okx-key-api.test.ts), [T-UNIT/T-REC/T-SEC](../tests/okx-connector-lifecycle.test.ts), [T-UNIT/T-SEC](../tests/okx-connector-crypto.test.ts), [T-SEC](../tests/okx-egress.test.ts), [T-API/T-SEC](../tests/okx-connector-http.test.ts), [T-REC/T-MIG/T-SEC](../tests/integration/postgres-okx-credentials.integration.ts), [T-UI/T-VIS](../tests/e2e/p04-07-okx-key.spec.ts) | [P04-07](../artifacts/acceptance/P04-07/manifest.json); local-fixture-verified; real OKX calls 0; `GAP-P04-OKX-LIVE`, production KMS/IAM, independent security review, and real read-only sandbox validation unresolved |
 <!-- P04_STATUS_TABLE_END -->
 
 ### 管理后台
@@ -384,10 +384,10 @@ P04-06 在既有 custody、Keystore、安全密码、资产与地址簿边界上
 |---|---:|---|
 | 功能矩阵稳定 ID | 196 | 已全部映射 |
 | 追踪表稳定 ID | 196 | 必须由自动检查保持相等 |
-| 当前产品实现 | 60 | P01 的 18 项、P02 的 23 项、P03 的 8 项和 P04 的 11 项完成阶段实现；P04 为 11 implemented-assumed / 1 planned |
-| `implemented-assumed` | 60 | 目标对照或 live 证据仍不完整 |
+| 当前产品实现 | 61 | P01 的 18 项、P02 的 23 项、P03 的 8 项和 P04 的 12 项完成阶段实现；P04 为 12 implemented-assumed / 0 planned，阶段实现收官 |
+| `implemented-assumed` | 61 | 目标对照或 live 证据仍不完整 |
 | `parity-verified` | 0 | 不由 accepted work item 自动提升 |
 | `released` | 0 | 尚无 staging、监控和回滚完整证明 |
-| 其余 `planned` | 136 | P02/P03 已无 planned；P04 仍有 1 planned（SET-07） |
+| 其余 `planned` | 135 | P02/P03/P04 已无 planned |
 
 建议 CI 检查逻辑：从 `FUNCTION_MATRIX.md` 与本文件抽取 `^[A-Z]+-[0-9]{2}$`，比较去重集合；再检查每行非空的阶段、测试和证据列。任何新增功能 ID 必须先进入范围源和本表。
