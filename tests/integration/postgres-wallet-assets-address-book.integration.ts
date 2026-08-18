@@ -17,6 +17,7 @@ const userB = "58000000-0000-4000-8000-000000000002";
 const walletA = "58000000-0000-4000-8000-000000000011";
 const walletB = "58000000-0000-4000-8000-000000000012";
 const sessionA = "58000000-0000-4000-8000-000000000031";
+const auditRequestPrefix = `postgres-p04-05-${process.pid}`;
 const addressA = "0x1111111111111111111111111111111111111111" as const;
 const addressB = "0x2222222222222222222222222222222222222222" as const;
 const tokenAddress = "0x3333333333333333333333333333333333333333" as const;
@@ -73,7 +74,7 @@ function audit(
     chainId: 56,
     createdAt: now,
     entryId: null,
-    requestId: `postgres-${action}`,
+    requestId: `${auditRequestPrefix}-${action}`,
     sessionId,
   };
 }
@@ -200,9 +201,9 @@ describe("P04-05 PostgreSQL wallet asset and address-book stores", () => {
     ).resolves.toBe(true);
     const allowedAudits = await pool.query<{ action: string; result_code: string }>(
       `SELECT action, result_code FROM wallet_address_book_audit_events
-        WHERE actor_user_id = $1 AND outcome = 'allowed'
+        WHERE actor_user_id = $1 AND outcome = 'allowed' AND request_id LIKE $2
         ORDER BY audit_id`,
-      [userA],
+      [userA, `${auditRequestPrefix}-%`],
     );
     expect(allowedAudits.rows).toEqual([
       { action: "address-book.create", result_code: "CREATED" },
@@ -229,8 +230,9 @@ describe("P04-05 PostgreSQL wallet asset and address-book stores", () => {
     expect(denied).toBeUndefined();
     const row = await pool.query<{ audit_id: string }>(
       `SELECT audit_id::text FROM wallet_address_book_audit_events
-        WHERE actor_user_id = $1 AND outcome = 'denied' ORDER BY audit_id DESC LIMIT 1`,
-      [userA],
+        WHERE actor_user_id = $1 AND outcome = 'denied' AND request_id LIKE $2
+        ORDER BY audit_id DESC LIMIT 1`,
+      [userA, `${auditRequestPrefix}-%`],
     );
     await expect(
       pool.query(
