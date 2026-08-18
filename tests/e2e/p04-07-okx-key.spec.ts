@@ -252,7 +252,7 @@ test("OKX settings clears secrets across save, cancel, failure and route changes
     await expect(input).toHaveAttribute("autocomplete", "off");
     expect(
       await input.evaluate((element) => {
-        const event = new ClipboardEvent("copy", { cancelable: true });
+        const event = new ClipboardEvent("copy", { bubbles: true, cancelable: true });
         element.dispatchEvent(event);
         return event.defaultPrevented;
       }),
@@ -270,7 +270,7 @@ test("OKX settings clears secrets across save, cancel, failure and route changes
   await page.getByLabel("Secret Key", { exact: true }).fill(secretKey);
   await page.getByLabel("Passphrase", { exact: true }).fill(passphrase);
   fixture.nextError = "CREDENTIAL_INVALID";
-  await page.getByRole("button", { name: "保存 OKX Key" }).click();
+  await page.getByRole("button", { name: "保存 OKX Key", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("OKX 拒绝了该凭证");
   for (const label of ["API Key", "Secret Key", "Passphrase"]) {
     await expect(page.getByLabel(label, { exact: true })).toHaveValue("");
@@ -286,9 +286,9 @@ test("OKX settings clears secrets across save, cancel, failure and route changes
   await page.getByLabel("API Key", { exact: true }).fill(apiKey);
   await page.getByLabel("Secret Key", { exact: true }).fill(secretKey);
   await page.getByLabel("Passphrase", { exact: true }).fill(passphrase);
-  await page.getByRole("button", { name: "保存 OKX Key" }).click();
+  await page.getByRole("button", { name: "保存 OKX Key", exact: true }).click();
   await expect(section).toHaveAttribute("data-state", "usable");
-  await expect(section.getByLabel("OKX Key 状态")).toHaveText("可用");
+  await expect(section.getByRole("status", { name: "OKX Key 状态" })).toHaveText("可用");
   await expect(page.locator("body")).not.toContainText(apiKey);
   await expect(page.locator("body")).not.toContainText(secretKey);
   await expect(page.locator("body")).not.toContainText(passphrase);
@@ -330,7 +330,7 @@ test("OKX settings exposes testing, conflict, connector failure and destructive 
   await page.getByLabel("Secret Key", { exact: true }).fill(secretKey);
   await page.getByLabel("Passphrase", { exact: true }).fill(passphrase);
   fixture.nextError = "VERSION_CONFLICT";
-  await page.getByRole("button", { name: "替换 OKX Key" }).click();
+  await page.getByRole("button", { name: "替换 OKX Key", exact: true }).click();
   await expect(section).toHaveAttribute("data-state", "conflict");
   for (const label of ["API Key", "Secret Key", "Passphrase"]) {
     await expect(page.getByLabel(label, { exact: true })).toHaveValue("");
@@ -340,7 +340,9 @@ test("OKX settings exposes testing, conflict, connector failure and destructive 
   fixture.nextError = "CONNECTOR_UNAVAILABLE";
   await section.getByRole("button", { name: "刷新 OKX Key 状态" }).click();
   await expect(section).toHaveAttribute("data-state", "connector-unavailable");
-  await expect(section.getByLabel("OKX Key 状态")).toHaveText("Connector 暂不可用");
+  await expect(section.getByRole("status", { name: "OKX Key 状态" })).toHaveText(
+    "Connector 暂不可用",
+  );
 
   await section.getByRole("button", { name: "删除 OKX Key" }).focus();
   await page.keyboard.press("Enter");
@@ -375,7 +377,7 @@ test("OKX settings renders every stable provider status without credential fragm
     fixture.status = status;
     await section.getByRole("button", { name: "刷新 OKX Key 状态" }).click();
     await expect(section).toHaveAttribute("data-state", status);
-    await expect(section.getByLabel("OKX Key 状态")).toHaveText(label);
+    await expect(section.getByRole("status", { name: "OKX Key 状态" })).toHaveText(label);
   }
   await expect(page.locator("body")).not.toContainText(/synthetic-e2e-(?:api|secret|pass)/u);
   await axe(page);
