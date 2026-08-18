@@ -871,6 +871,7 @@ function DeletePreviewDialog({
   wallet: CustodyWallet | null;
 }) {
   const [submitting, setSubmitting] = useState(false);
+  const forceHandoff = useRef(false);
   const dependencyCount = preview
     ? preview.assetCount + preview.policyCount + preview.positionCount + preview.taskCount
     : 0;
@@ -909,7 +910,8 @@ function DeletePreviewDialog({
           className="wallet-dialog wallet-delete-dialog"
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            trigger.current?.focus();
+            if (!forceHandoff.current) trigger.current?.focus();
+            forceHandoff.current = false;
           }}
         >
           <div className="wallet-dialog-heading">
@@ -971,7 +973,14 @@ function DeletePreviewDialog({
               </button>
             ) : null}
             {preview && dependencyCount > 0 && preview.forceEligible ? (
-              <button className="danger-command" onClick={onForce} type="button">
+              <button
+                className="danger-command"
+                onClick={() => {
+                  forceHandoff.current = true;
+                  onForce();
+                }}
+                type="button"
+              >
                 <ShieldAlert aria-hidden="true" size={15} />
                 继续强制删除
               </button>
