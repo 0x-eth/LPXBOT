@@ -90,10 +90,13 @@ const operation = {
 };
 
 function success(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify({ data, requestId: "wallet-transfer-fixture", success: true }), {
-    headers: { "Content-Type": "application/json" },
-    status,
-  });
+  return new Response(
+    JSON.stringify({ data, requestId: "wallet-transfer-fixture", success: true }),
+    {
+      headers: { "Content-Type": "application/json" },
+      status,
+    },
+  );
 }
 
 describe("P04-06 strict wallet transfer browser client", () => {
@@ -127,9 +130,11 @@ describe("P04-06 strict wallet transfer browser client", () => {
   });
 
   it("uses authenticated no-store preview and operation reads", async () => {
-    const fetcher = vi.fn<typeof fetch>().mockImplementation(async (input) =>
-      String(input).endsWith("/preview") ? success(preview) : success(operation),
-    );
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async (input) =>
+        String(input).endsWith("/preview") ? success(preview) : success(operation),
+      );
     const client = new WalletTransferClient(fetcher);
 
     await expect(

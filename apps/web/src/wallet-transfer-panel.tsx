@@ -19,14 +19,7 @@ import {
   ShieldAlert,
   X,
 } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { WalletReadClient } from "./wallet-read-client";
 import { WalletTransferClient, WalletTransferRequestError } from "./wallet-transfer-client";
@@ -104,7 +97,13 @@ function transferError(error: unknown): string {
   return labels[error.code] ?? "转账请求失败";
 }
 
-function PreviewSummary({ preview, secondsLeft }: { preview: WalletTransferPreview; secondsLeft: number }) {
+function PreviewSummary({
+  preview,
+  secondsLeft,
+}: {
+  preview: WalletTransferPreview;
+  secondsLeft: number;
+}) {
   return (
     <div className="transfer-preview-summary" data-testid="transfer-preview-summary">
       <div className="transfer-expiry" data-expired={secondsLeft <= 0}>
@@ -140,7 +139,8 @@ function PreviewSummary({ preview, secondsLeft }: { preview: WalletTransferPrevi
           <dt>资产余额</dt>
           <dd>
             <code>
-              {preview.balanceChange.assetBeforeBaseUnit} -&gt; {preview.balanceChange.assetAfterBaseUnit}
+              {preview.balanceChange.assetBeforeBaseUnit} -&gt;{" "}
+              {preview.balanceChange.assetAfterBaseUnit}
             </code>
           </dd>
         </div>
@@ -261,7 +261,9 @@ function OperationView({
                     <div>
                       <dt>Tx hash</dt>
                       <dd title={transaction.transactionHash ?? undefined}>
-                        {transaction.transactionHash ? shortHash(transaction.transactionHash) : "待生成"}
+                        {transaction.transactionHash
+                          ? shortHash(transaction.transactionHash)
+                          : "待生成"}
                       </dd>
                     </div>
                   </dl>
@@ -336,7 +338,9 @@ export function WalletTransferPanel({
   useEffect(() => {
     if (!preview) return;
     const update = () => {
-      setSecondsLeft(Math.max(0, Math.ceil((new Date(preview.expiresAt).getTime() - Date.now()) / 1_000)));
+      setSecondsLeft(
+        Math.max(0, Math.ceil((new Date(preview.expiresAt).getTime() - Date.now()) / 1_000)),
+      );
     };
     update();
     const interval = window.setInterval(update, 1_000);
@@ -387,10 +391,7 @@ export function WalletTransferPanel({
     setBlocked(false);
     try {
       const result = await transferClient.preview({
-        amount:
-          preset === null
-            ? { amountBaseUnit, kind: "exact" }
-            : { kind: "preset", preset },
+        amount: preset === null ? { amountBaseUnit, kind: "exact" } : { kind: "preset", preset },
         asset: requestAsset,
         chainId,
         recipient: normalizedRecipient,
@@ -549,7 +550,10 @@ export function WalletTransferPanel({
               </div>
             </form>
           ) : (
-            <form className="wallet-form transfer-form" onSubmit={(event) => void createPreview(event)}>
+            <form
+              className="wallet-form transfer-form"
+              onSubmit={(event) => void createPreview(event)}
+            >
               <div className="transfer-wallet-summary">
                 <span>{wallet.name}</span>
                 <code>{wallet.address}</code>
@@ -661,7 +665,7 @@ export function WalletTransferPanel({
             </form>
           )}
           <div className="transfer-live-region" aria-live="polite" aria-atomic="true">
-            {operation ? `转账状态：${stateLabels[operation.state]}` : error ?? ""}
+            {operation ? `转账状态：${stateLabels[operation.state]}` : (error ?? "")}
           </div>
         </Dialog.Content>
       </Dialog.Portal>
