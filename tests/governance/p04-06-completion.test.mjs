@@ -160,7 +160,11 @@ test("P00 through P04-05 acceptance files remain byte-identical to the fixed bas
     .filter(Boolean);
   const currentPriorFiles = (await filesBelow(ACCEPTANCE_ROOT))
     .map((file) => `artifacts/acceptance/${file}`)
-    .filter((file) => !file.startsWith("artifacts/acceptance/P04-06/"));
+    .filter(
+      (file) =>
+        !file.startsWith("artifacts/acceptance/P04-06/") &&
+        !file.startsWith("artifacts/acceptance/P04-07/"),
+    );
   assert.deepEqual(currentPriorFiles, sorted(baselineFiles));
   const changed = execFileSync(
     "git",
@@ -170,7 +174,11 @@ test("P00 through P04-05 acceptance files remain byte-identical to the fixed bas
     .trim()
     .split("\n")
     .filter(Boolean)
-    .filter((file) => !file.startsWith("artifacts/acceptance/P04-06/"));
+    .filter(
+      (file) =>
+        !file.startsWith("artifacts/acceptance/P04-06/") &&
+        !file.startsWith("artifacts/acceptance/P04-07/"),
+    );
   assert.deepEqual(changed, []);
 });
 

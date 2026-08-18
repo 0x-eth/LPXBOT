@@ -55,7 +55,11 @@ test("P04 closes at 12 implemented-assumed / 0 planned with global 61 / 135", as
     readFile(TRACEABILITY, "utf8"),
     readFile(ROADMAP, "utf8"),
   ]);
-  const set07 = traceability.split("\n").find((line) => line.startsWith("| SET-07 |"));
+  const p04Status =
+    traceability
+      .split("<!-- P04_STATUS_TABLE_START -->")[1]
+      ?.split("<!-- P04_STATUS_TABLE_END -->")[0] ?? "";
+  const set07 = p04Status.split("\n").find((line) => line.startsWith("| SET-07 |"));
   assert.ok(set07);
   assert.match(set07, /implemented-assumed/u);
   assert.match(set07, /okx-connector/u);
