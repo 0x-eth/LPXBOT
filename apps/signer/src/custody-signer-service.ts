@@ -1007,6 +1007,70 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     return this.#store.rename({ ...input, name: privateKeyInputName(input.name) });
   }
 
+  async signWalletTransfer(input: {
+    plan: WalletTransferPlan;
+    planDigest: `sha256:${string}`;
+    reauthenticatedSessionId?: string;
+    tenantId: string;
+    userId: string;
+  }): Promise<WalletTransferSigningResult> {
+    const authorizer = this.#transferPlanAuthorizer;
+    const delivery = this.#rawTransactionDelivery;
+    if (!authorizer || !delivery) throw new SignerError("SIGNER_UNAVAILABLE", true);
+    const authorization = {
+      plan: input.plan,
+      planDigest: input.planDigest,
+      tenantId: input.tenantId,
+      userId: input.userId,
+    };
+    if (!(await authorizer.authorize(authorization))) {
+      throw new SignerError("TRANSFER_PLAN_REJECTED");
+    }
+    const wallet = await this.#store.get(input.userId, input.plan.walletId);
+    if (
+      !wallet ||
+      wallet.tenantId !== input.tenantId ||
+      wallet.addressLower !== input.plan.walletAddress ||
+      wallet.lockStatus !== "ready"
+    ) {
+      throw new SignerError("TRANSFER_PLAN_REJECTED");
+    }
+    let passwordKek: Buffer | undefined;
+    if (wallet.mode === "user-password") {
+      await this.#expireUnlockSessions(input.userId);
+      const session = input.reauthenticatedSessionId
+        ? this.#session(input.userId, input.reauthenticatedSessionId)
+        : null;
+      if (!session) throw new SignerError("INVALID_CREDENTIALS");
+      passwordKek = session.kek;
+    }
+    const envelope = await this.#store.getCurrentEnvelope(wallet.walletId, wallet.envelopeVersion);
+    if (!envelope) {
+      await this.#store.setLockStatus(
+        input.userId,
+        input.plan.walletId,
+        wallet.mode === "user-password" ? "locked" : "quarantined",
+        this.#now(),
+      );
+      throw new SignerError(
+        wallet.mode === "user-password" ? "INVALID_CREDENTIALS" : "KEYSTORE_CORRUPTED",
+      );
+    }
+    // Close the database-plan TOCTOU window immediately before private-key use.
+    if (!(await authorizer.authorize(authorization))) {
+      throw new SignerError("TRANSFER_PLAN_REJECTED");
+    }
+    return this.#signer.signAndDeliverTransfer({
+      delivery,
+      envelope,
+      now: this.#now(),
+      passwordKek,
+      plan: input.plan,
+      planDigest: input.planDigest,
+      wallet,
+    });
+  }
+
   async recoverWallet(input: {
     reauthenticatedSessionId?: string;
     tenantId: string;

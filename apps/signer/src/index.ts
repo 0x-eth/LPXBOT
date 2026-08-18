@@ -6,6 +6,8 @@ export type {
   CustodyEnvelope,
   CustodyWalletCreate,
   CustodyWalletStore,
+  RawTransactionDelivery,
+  RawTransactionDeliveryResult,
   KeystoreStatus,
   KeystoreStore,
   SecurityPasswordApplication,
@@ -27,12 +29,15 @@ export type {
   WalletSignerClient,
   WalletTaskCoordinator,
   WalletTaskDeactivation,
+  WalletTransferPlanAuthorizer,
+  WalletTransferSigningResult,
 } from "./custody-types.js";
 export { signerCapabilities, IsolatedWalletSigner } from "./isolated-wallet-signer.js";
 export type { KmsClient, KmsKeyDescriptor, WrappedDek } from "./kms.js";
 export { LocalKmsFixture } from "./kms.js";
 export { InMemoryCustodyWalletStore } from "./memory-custody-wallet-store.js";
 export { PostgresCustodyWalletStore } from "./postgres-custody-wallet-store.js";
+export { PostgresWalletTransferPlanAuthorizer } from "./postgres-transfer-plan-authorizer.js";
 export {
   buildPasswordDekWrapAad,
   createPasswordVerifier,
