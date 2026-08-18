@@ -252,7 +252,7 @@ export function createSignerHttpServer(input: {
           !Number.isSafeInteger(verification.version) ||
           verification.version < 1
         ) {
-          throw new SignerError("INTERNAL_ERROR");
+          throw new SignerError("SIGNER_UNAVAILABLE", true);
         }
         send(response, 200, {
           data: { verified: true, version: verification.version },

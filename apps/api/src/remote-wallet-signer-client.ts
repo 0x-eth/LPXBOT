@@ -5,6 +5,7 @@ import {
   publicKeystoreResetPreview,
   publicKeystoreStatus,
   publicSecurityPasswordStatus,
+  publicSecurityPasswordVerification,
   publicWalletDeletePreview,
   publicWalletDeletionReceipt,
   publicWalletDto,
@@ -234,6 +235,24 @@ export class RemoteWalletSignerClient
           "/v1/security-password",
           input,
           { body: transportCopy, method: "PUT" },
+          "application/vnd.lpbot.security-password-secret+json",
+        ),
+      );
+    } finally {
+      transportCopy.fill(0);
+    }
+  }
+
+  async verifySecurityPassword(
+    input: Parameters<SecurityPasswordApplication["verifySecurityPassword"]>[0],
+  ) {
+    const transportCopy = Buffer.from(input.ingress);
+    try {
+      return publicSecurityPasswordVerification(
+        await this.#requestData(
+          "/v1/security-password/verify",
+          input,
+          { body: transportCopy, method: "POST" },
           "application/vnd.lpbot.security-password-secret+json",
         ),
       );

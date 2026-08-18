@@ -74,6 +74,10 @@ export interface SecurityPasswordApplication {
     userId: string;
   }): Promise<SecurityPasswordStatus>;
   securityPasswordStatus(userId: string): Promise<SecurityPasswordStatus>;
+  verifySecurityPassword(input: {
+    ingress: Uint8Array;
+    userId: string;
+  }): Promise<{ verified: true; version: number }>;
 }
 
 export interface WalletDirectory {
@@ -426,6 +430,22 @@ export function publicSecurityPasswordStatus(value: unknown): SecurityPasswordSt
     throw new WalletApiError("SIGNER_UNAVAILABLE");
   }
   return status as unknown as SecurityPasswordStatus;
+}
+
+export function publicSecurityPasswordVerification(value: unknown): {
+  verified: true;
+  version: number;
+} {
+  const verification = record(value);
+  if (
+    Object.keys(verification).sort().join(",") !== "verified,version" ||
+    verification.verified !== true ||
+    !Number.isSafeInteger(verification.version) ||
+    Number(verification.version) < 1
+  ) {
+    throw new WalletApiError("SIGNER_UNAVAILABLE");
+  }
+  return { verified: true, version: Number(verification.version) };
 }
 
 export function publicKeystoreResetPreview(value: unknown): KeystoreResetPreviewDto {

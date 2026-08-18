@@ -256,7 +256,7 @@ describe("P04-04 remote security password adapter", () => {
     expect(ingress.equals(Buffer.alloc(ingress.length))).toBe(false);
   });
 
-  it("verifies through the internal signer port and allowlists the verification receipt", async () => {
+  it("verifies through the internal signer port and strictly parses the receipt", async () => {
     const ingress = Buffer.from(
       JSON.stringify({ password: "synthetic-security-password" }),
     );
@@ -265,7 +265,7 @@ describe("P04-04 remote security password adapter", () => {
       transmitted = init?.body as Uint8Array;
       return new Response(
         JSON.stringify({
-          data: { verified: true, verifier: "forbidden", version: 3 },
+          data: { verified: true, version: 3 },
           success: true,
         }),
         { headers: { "Content-Type": "application/json" }, status: 200 },
