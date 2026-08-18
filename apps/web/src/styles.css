@@ -7378,3 +7378,434 @@ html[data-theme="dark"] .chain-operation-success {
     transition: none;
   }
 }
+
+.wallet-read-model {
+  display: grid;
+  gap: 0;
+  margin-top: 34px;
+}
+
+.wallet-read-section,
+.custom-rpc-settings {
+  min-width: 0;
+  padding: 24px 0 28px;
+  border-top: 1px solid var(--border);
+}
+
+.wallet-read-heading,
+.custom-rpc-settings .interface-section-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.wallet-read-heading > div:first-child,
+.custom-rpc-settings .interface-section-heading > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wallet-read-heading h2,
+.custom-rpc-settings h2 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.wallet-read-controls,
+.custom-rpc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wallet-read-controls select,
+.wallet-read-form input,
+.wallet-read-form select,
+.address-entry-editor input,
+.address-entry-editor select,
+.custom-rpc-panel input,
+.custom-rpc-panel select {
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 9px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.asset-total {
+  display: grid;
+  min-height: 72px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px 18px;
+  padding: 10px 12px;
+  border-block: 1px solid var(--border);
+}
+
+.asset-total span,
+.asset-total small {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+
+.asset-total strong {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  font-size: 1rem;
+}
+
+.asset-table {
+  display: grid;
+}
+
+.asset-row {
+  display: grid;
+  min-width: 0;
+  min-height: 66px;
+  grid-template-columns: minmax(120px, 1fr) minmax(160px, 1.2fr) minmax(120px, 0.8fr) 34px;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.asset-row > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.asset-row span,
+.asset-row code {
+  min-width: 0;
+  color: var(--muted-foreground);
+  background: transparent;
+  font-size: 0.68rem;
+  overflow-wrap: anywhere;
+}
+
+.asset-row [data-price-status="stale"] {
+  color: #a15c00;
+}
+
+.asset-row [data-price-status="missing"],
+.wallet-read-error,
+.wallet-read-form [role="alert"],
+.custom-rpc-error {
+  color: var(--danger);
+}
+
+.asset-action-placeholder {
+  width: 34px;
+  height: 34px;
+}
+
+.wallet-read-form {
+  display: grid;
+  min-width: 0;
+  align-items: end;
+  gap: 12px;
+}
+
+.wallet-read-form label,
+.custom-rpc-panel label {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.wallet-read-form label > span,
+.custom-rpc-panel label > span {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.token-import-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-top: 18px;
+}
+
+.wallet-read-error {
+  margin: 12px 0 0;
+  font-size: 0.78rem;
+}
+
+.receive-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.75fr) minmax(0, 1.25fr);
+  gap: 24px;
+}
+
+.receive-form {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-content: start;
+}
+
+.receive-form > button,
+.receive-form > p {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.receive-result {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 184px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.receive-result img {
+  display: block;
+  width: 184px;
+  height: 184px;
+  image-rendering: pixelated;
+}
+
+.receive-result > div {
+  display: grid;
+  min-width: 0;
+  justify-items: start;
+  gap: 8px;
+}
+
+.receive-result code {
+  max-width: 100%;
+  color: var(--muted-foreground);
+  background: transparent;
+  font-size: 0.69rem;
+  overflow-wrap: anywhere;
+}
+
+.eip681-content {
+  max-height: 76px;
+  overflow: auto;
+}
+
+.address-book-form {
+  grid-template-columns: minmax(220px, 1.5fr) minmax(120px, 0.7fr) minmax(110px, 0.55fr) minmax(140px, 0.8fr);
+}
+
+.address-book-address-field {
+  grid-column: span 2;
+}
+
+.address-book-form > button {
+  justify-self: start;
+}
+
+.address-book-form > p {
+  align-self: center;
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.address-classification {
+  color: var(--focus-ring);
+  font-weight: 700;
+}
+
+.address-directory {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 26px;
+  margin-top: 24px;
+}
+
+.address-directory h3 {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+}
+
+.address-directory ul {
+  padding: 0;
+  margin: 0;
+  border-top: 1px solid var(--border);
+  list-style: none;
+}
+
+.address-directory li {
+  display: flex;
+  min-width: 0;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.address-directory li > div:first-child,
+.address-directory li:not(:has(> div)) {
+  min-width: 0;
+}
+
+.address-directory li strong,
+.address-directory li code,
+.address-directory li span {
+  display: block;
+  min-width: 0;
+}
+
+.address-directory li code {
+  margin-top: 4px;
+  color: var(--muted-foreground);
+  background: transparent;
+  font-size: 0.66rem;
+  overflow-wrap: anywhere;
+}
+
+.address-directory li span {
+  margin-top: 2px;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+}
+
+.address-entry-actions,
+.address-entry-editor {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.address-entry-editor {
+  width: 100%;
+}
+
+.address-entry-editor input {
+  flex: 1;
+}
+
+.custom-rpc-settings {
+  margin-top: 28px;
+}
+
+.rpc-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.rpc-state[data-state="ready"] {
+  color: #087f5b;
+}
+
+.custom-rpc-panel {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(140px, 0.35fr) minmax(260px, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 18px 16px;
+  border-block: 1px solid var(--border);
+}
+
+.custom-rpc-actions {
+  min-height: 38px;
+}
+
+.rpc-block-number,
+.custom-rpc-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 720px) {
+  .wallet-read-heading {
+    align-items: flex-start;
+  }
+
+  .asset-row {
+    grid-template-columns: minmax(0, 1fr) 34px;
+    gap: 8px 12px;
+  }
+
+  .asset-row > div:nth-child(2),
+  .asset-row > div:nth-child(3) {
+    grid-column: 1;
+  }
+
+  .asset-row > button,
+  .asset-action-placeholder {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .receive-layout,
+  .address-directory,
+  .custom-rpc-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .receive-result {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+
+  .receive-result > div {
+    width: 100%;
+  }
+
+  .address-book-form {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .address-book-address-field {
+    grid-column: 1 / -1;
+  }
+
+  .custom-rpc-panel .rpc-url-field,
+  .custom-rpc-actions,
+  .rpc-block-number,
+  .custom-rpc-error {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .wallet-read-heading,
+  .custom-rpc-settings .interface-section-heading {
+    align-items: flex-start;
+  }
+
+  .wallet-read-controls {
+    max-width: 58%;
+  }
+
+  .wallet-read-controls select {
+    max-width: calc(100% - 42px);
+  }
+
+  .token-import-form,
+  .receive-form,
+  .address-book-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .address-book-address-field,
+  .receive-form > button,
+  .receive-form > p {
+    grid-column: 1;
+  }
+
+  .address-entry-editor {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+}
