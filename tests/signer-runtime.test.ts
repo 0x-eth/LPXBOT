@@ -2,6 +2,7 @@ import type { Pool } from "pg";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { KmsClient } from "../apps/signer/src/kms.js";
+import { CustodySignerService } from "../apps/signer/src/custody-signer-service.js";
 import type { SignerProductionConfig } from "../apps/signer/src/production-config.js";
 import { startSignerRuntime } from "../apps/signer/src/runner.js";
 import { SignerError } from "../apps/signer/src/signer-error.js";
@@ -46,6 +47,10 @@ describe("P04-02 signer production runtime", () => {
     const store = poolFixture({
       auditEvents: "custody_wallet_audit_events",
       envelopes: "custody_wallet_envelopes",
+      failures: "user_keystore_failures",
+      keystoreVersions: "user_keystore_versions",
+      keystores: "user_keystores",
+      resetPreviews: "user_keystore_reset_previews",
       wallets: "custody_wallets",
     });
     const kms = kmsFixture({
@@ -65,6 +70,10 @@ describe("P04-02 signer production runtime", () => {
     const wrongKekStore = poolFixture({
       auditEvents: "custody_wallet_audit_events",
       envelopes: "custody_wallet_envelopes",
+      failures: "user_keystore_failures",
+      keystoreVersions: "user_keystore_versions",
+      keystores: "user_keystores",
+      resetPreviews: "user_keystore_reset_previews",
       wallets: "custody_wallets",
     });
     await expect(
@@ -80,20 +89,43 @@ describe("P04-02 signer production runtime", () => {
     const missingStore = poolFixture({
       auditEvents: "custody_wallet_audit_events",
       envelopes: null,
+      failures: "user_keystore_failures",
+      keystoreVersions: "user_keystore_versions",
+      keystores: "user_keystores",
+      resetPreviews: "user_keystore_reset_previews",
       wallets: "custody_wallets",
     });
     await expect(
       startSignerRuntime(config, { kms: kmsFixture(), pool: missingStore.pool }),
     ).rejects.toMatchObject({ code: "CUSTODY_STORE_UNAVAILABLE" });
     expect(missingStore.end).toHaveBeenCalledOnce();
+
+    const missingKeystoreStore = poolFixture({
+      auditEvents: "custody_wallet_audit_events",
+      envelopes: "custody_wallet_envelopes",
+      failures: "user_keystore_failures",
+      keystoreVersions: null,
+      keystores: "user_keystores",
+      resetPreviews: "user_keystore_reset_previews",
+      wallets: "custody_wallets",
+    });
+    await expect(
+      startSignerRuntime(config, { kms: kmsFixture(), pool: missingKeystoreStore.pool }),
+    ).rejects.toMatchObject({ code: "CUSTODY_STORE_UNAVAILABLE" });
+    expect(missingKeystoreStore.end).toHaveBeenCalledOnce();
   });
 
   it("binds only after readiness probes and closes the dedicated pool", async () => {
     const store = poolFixture({
       auditEvents: "custody_wallet_audit_events",
       envelopes: "custody_wallet_envelopes",
+      failures: "user_keystore_failures",
+      keystoreVersions: "user_keystore_versions",
+      keystores: "user_keystores",
+      resetPreviews: "user_keystore_reset_previews",
       wallets: "custody_wallets",
     });
+    const shutdown = vi.spyOn(CustodySignerService.prototype, "shutdown");
     const runtime = await startSignerRuntime(config, { kms: kmsFixture(), pool: store.pool });
     runtimes.push(runtime);
 
@@ -102,11 +134,24 @@ describe("P04-02 signer production runtime", () => {
     });
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
-      data: { capabilities: ["import", "generate", "seal", "open-verify"], ready: true },
+      data: {
+        capabilities: [
+          "import",
+          "generate",
+          "seal",
+          "open-verify",
+          "password-reseal",
+          "keystore-unlock",
+          "keystore-auto-lock",
+        ],
+        ready: true,
+      },
       success: true,
     });
 
     await runtime.close();
+    expect(shutdown).toHaveBeenCalledOnce();
+    expect(shutdown.mock.invocationCallOrder[0]).toBeLessThan(store.end.mock.invocationCallOrder[0]!);
     expect(store.end).toHaveBeenCalledOnce();
     runtimes.pop();
   });
