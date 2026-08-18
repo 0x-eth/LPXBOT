@@ -9,6 +9,7 @@ import type {
   WalletDeletionType,
   WalletLockStatus,
 } from "@lpbot/api-contract";
+import type { WalletTransferPlan } from "@lpbot/domain/wallet-transfer";
 
 export type CustodyAuditAction = "wallet.generate" | "wallet.import";
 
@@ -75,6 +76,34 @@ export interface CustodyWalletStore {
     status: WalletLockStatus,
     updatedAt: Date,
   ): Promise<void>;
+}
+
+export interface WalletTransferPlanAuthorizer {
+  authorize(input: {
+    plan: WalletTransferPlan;
+    planDigest: `sha256:${string}`;
+    tenantId: string;
+    userId: string;
+  }): Promise<boolean>;
+}
+
+export interface RawTransactionDeliveryResult {
+  deliveryId: string;
+  status: "accepted" | "already-known";
+}
+
+export interface RawTransactionDelivery {
+  deliver(input: {
+    chainId: number;
+    operationId: string;
+    rawTransaction: Uint8Array;
+    transactionHash: `0x${string}`;
+  }): Promise<RawTransactionDeliveryResult>;
+}
+
+export interface WalletTransferSigningResult extends RawTransactionDeliveryResult {
+  planDigest: `sha256:${string}`;
+  transactionHash: `0x${string}`;
 }
 
 export interface WalletDependencySnapshot {

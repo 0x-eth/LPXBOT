@@ -1,8 +1,20 @@
 import { randomBytes as systemRandomBytes } from "node:crypto";
 
 import type { WalletEncryptionMode } from "@lpbot/api-contract";
+import {
+  validateWalletTransferPlan,
+  walletTransferPlanDigest,
+  type WalletTransferPlan,
+} from "@lpbot/domain/wallet-transfer";
+import { keccak256, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
-import type { CustodyEnvelope, StoredCustodyWallet } from "./custody-types.js";
+import type {
+  CustodyEnvelope,
+  RawTransactionDelivery,
+  StoredCustodyWallet,
+  WalletTransferSigningResult,
+} from "./custody-types.js";
 import type { KmsClient } from "./kms.js";
 import {
   buildPasswordDekWrapAad,
@@ -26,6 +38,7 @@ export const signerCapabilities = [
   "seal",
   "open-verify",
   "password-reseal",
+  "plan-bound-transaction-signing",
 ] as const;
 
 export interface SealedWalletDraft {
@@ -193,6 +206,91 @@ export class IsolatedWalletSigner {
     try {
       return { address: deriveEvmAddress(material.privateKey).checksumAddress, verified: true };
     } finally {
+      this.#zeroize("private-key", material.privateKey);
+      this.#zeroize("dek", material.dek);
+    }
+  }
+
+  async signAndDeliverTransfer(input: {
+    delivery: RawTransactionDelivery;
+    envelope: CustodyEnvelope;
+    now?: Date;
+    passwordKek?: Uint8Array | undefined;
+    plan: WalletTransferPlan;
+    planDigest: `sha256:${string}`;
+    wallet: StoredCustodyWallet;
+  }): Promise<WalletTransferSigningResult> {
+    const now = input.now ?? new Date();
+    try {
+      validateWalletTransferPlan(input.plan, now);
+    } catch (error) {
+      throw new SignerError(
+        error instanceof Error && error.message === "TRANSFER_PLAN_EXPIRED"
+          ? "TRANSFER_PLAN_EXPIRED"
+          : "TRANSFER_PLAN_REJECTED",
+      );
+    }
+    if (
+      walletTransferPlanDigest(input.plan) !== input.planDigest ||
+      input.plan.walletId !== input.wallet.walletId ||
+      input.plan.walletAddress !== input.wallet.addressLower ||
+      input.wallet.lockStatus !== "ready"
+    ) {
+      throw new SignerError("TRANSFER_PLAN_REJECTED");
+    }
+    const nonce = Number(input.plan.nonce);
+    if (!Number.isSafeInteger(nonce) || nonce < 0) {
+      throw new SignerError("TRANSFER_PLAN_REJECTED");
+    }
+    const material = await this.#openMaterial({
+      envelope: input.envelope,
+      passwordKek: input.passwordKek,
+      wallet: input.wallet,
+    });
+    let rawBytes: Buffer | null = null;
+    try {
+      const account = privateKeyToAccount(
+        `0x${Buffer.from(material.privateKey).toString("hex")}` as Hex,
+      );
+      const rawTransaction = await account.signTransaction({
+        chainId: input.plan.chainId,
+        data: input.plan.transactionData,
+        gas: BigInt(input.plan.feeLimit.gasLimit),
+        maxFeePerGas: BigInt(input.plan.feeLimit.maxFeePerGasBaseUnit),
+        maxPriorityFeePerGas: BigInt(input.plan.feeLimit.maxPriorityFeePerGasBaseUnit),
+        nonce,
+        to: input.plan.transactionTarget,
+        type: "eip1559",
+        value: BigInt(input.plan.transactionValueBaseUnit),
+      });
+      const transactionHash = keccak256(rawTransaction);
+      rawBytes = Buffer.from(rawTransaction.slice(2), "hex");
+      let delivered;
+      try {
+        delivered = await input.delivery.deliver({
+          chainId: input.plan.chainId,
+          operationId: input.plan.operationId,
+          rawTransaction: rawBytes,
+          transactionHash,
+        });
+      } catch (error) {
+        if (error instanceof SignerError) throw error;
+        throw new SignerError("TRANSFER_DELIVERY_UNAVAILABLE", true);
+      }
+      if (
+        (delivered.status !== "accepted" && delivered.status !== "already-known") ||
+        typeof delivered.deliveryId !== "string" ||
+        !/^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u.test(delivered.deliveryId)
+      ) {
+        throw new SignerError("TRANSFER_DELIVERY_UNAVAILABLE", true);
+      }
+      return {
+        ...delivered,
+        planDigest: input.planDigest,
+        transactionHash,
+      };
+    } finally {
+      rawBytes?.fill(0);
       this.#zeroize("private-key", material.privateKey);
       this.#zeroize("dek", material.dek);
     }

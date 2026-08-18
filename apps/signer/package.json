@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@lpbot/api-contract": "workspace:*",
+    "@lpbot/domain": "workspace:*",
     "@lpbot/observability": "workspace:*",
     "@lpbot/security": "workspace:*",
     "@noble/hashes": "1.8.0",
