@@ -58,7 +58,12 @@ async function fail(route: Route, code: string): Promise<void> {
   await route.fulfill({
     contentType: "application/json",
     json: {
-      error: { code, message: "fixture detail must not render", requestId: "fixture", retryable: false },
+      error: {
+        code,
+        message: "fixture detail must not render",
+        requestId: "fixture",
+        retryable: false,
+      },
       success: false,
     },
     status:
@@ -169,9 +174,7 @@ async function install(page: Page, state: FixtureState): Promise<void> {
       return;
     }
     if (path === "/api/keystore/password" && request.method() === "POST") {
-      expect(request.headers()["content-type"]).toBe(
-        "application/vnd.lpbot.keystore-secret+json",
-      );
+      expect(request.headers()["content-type"]).toBe("application/vnd.lpbot.keystore-secret+json");
       state.configured = true;
       state.status = "locked";
       state.version = 1;
@@ -241,7 +244,10 @@ async function install(page: Page, state: FixtureState): Promise<void> {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (request.method() === "GET" && path === "/api/wallets") {
-      await route.fulfill({ contentType: "application/json", json: envelope({ items: state.wallets }) });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({ items: state.wallets }),
+      });
       return;
     }
     const body = JSON.parse(request.postData() ?? "{}") as Record<string, unknown>;
@@ -257,7 +263,11 @@ async function install(page: Page, state: FixtureState): Promise<void> {
         revision: current.revision + 1,
       };
       state.wallets = state.wallets.map((item) => (item.walletId === walletId ? changed : item));
-      await route.fulfill({ contentType: "application/json", json: envelope(changed), status: 202 });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope(changed),
+        status: 202,
+      });
       return;
     }
     const next = {
@@ -333,19 +343,19 @@ test("settings creates, unlocks, locks, changes password and clears every passwo
   await expect(page.getByLabel("新密码", { exact: true })).toHaveValue("");
   await expect(page.locator("body")).not.toContainText(passwordOne);
   await expect(page.locator("body")).not.toContainText(passwordTwo);
-  expect(await page.evaluate(() => `${location.href}\n${JSON.stringify(localStorage)}`)).not.toContain(
-    "synthetic-password",
-  );
+  expect(
+    await page.evaluate(() => `${location.href}\n${JSON.stringify(localStorage)}`),
+  ).not.toContain("synthetic-password");
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await axe(page);
 
   if (captureEvidence) {
     await page.keyboard.press("Escape");
     await expect(page.getByRole("button", { name: "修改密码" })).toBeFocused();
+    await section.scrollIntoViewIfNeeded();
     await page.screenshot({
       animations: "disabled",
       caret: "hide",
-      fullPage: true,
       path: `artifacts/acceptance/P04-03/ui/settings-keystore-${testInfo.project.name}.png`,
     });
   }
@@ -358,10 +368,7 @@ test("settings handles locked-out, reset preview changes, confirmation and atomi
     configured: true,
     status: "locked-out",
     version: 2,
-    wallets: [
-      wallet(serverWalletId, "server-kek"),
-      wallet(passwordWalletId, "user-password"),
-    ],
+    wallets: [wallet(serverWalletId, "server-kek"), wallet(passwordWalletId, "user-password")],
   });
   await install(page, state);
   await page.goto("/settings");
@@ -398,10 +405,7 @@ test("wallets selects password mode, shows lock state, and switches modes with s
     configured: true,
     status: "locked",
     version: 2,
-    wallets: [
-      wallet(serverWalletId, "server-kek"),
-      wallet(passwordWalletId, "user-password"),
-    ],
+    wallets: [wallet(serverWalletId, "server-kek"), wallet(passwordWalletId, "user-password")],
   });
   await install(page, state);
   await page.goto("/wallets");
