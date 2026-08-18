@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "classification": "OBSERVED",
+  "fixtureType": "execution-registry-code-snapshot",
+  "registryVersion": "p05-bsc-execution-v1",
+  "network": {
+    "chainId": 56,
+    "name": "BNB Smart Chain",
+    "blockNumber": "116718413"
+  },
+  "source": {
+    "endpoint": "https://bsc-dataseed.binance.org",
+    "method": "eth_getCode",
+    "retrievedAt": "2026-08-19T00:00:00.000Z",
+    "readOnly": true
+  },
+  "components": [
+    { "id": "univ3Factory", "address": "0xdb1d10011ad0ff90774d0c6bb92e5c5c8b4461f7", "runtimeCodeBytes": 24535, "runtimeCodeHash": "0x34b1009d0f004e58da791225992645e2df7697ac71ac89dc5e80469c4ef7e322" },
+    { "id": "univ3PositionManager", "address": "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613", "runtimeCodeBytes": 24384, "runtimeCodeHash": "0xbc0177f23ffd65c41e41fb201e170cb253489d7d637f8f6a15743a1f861160f5" },
+    { "id": "pcsv3Factory", "address": "0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865", "runtimeCodeBytes": 5151, "runtimeCodeHash": "0x8191d3ab1d55d3da9822199f28865415c99566b6f1aee4a4b16713f57930678c" },
+    { "id": "pcsv3PositionManager", "address": "0x46a15b0b27311cedf172ab29e4f4766fbe7f4364", "runtimeCodeBytes": 24466, "runtimeCodeHash": "0xf64dd82357e77afddcd6dd56f4ba161f44fe90a6f72da5433f8fc6901440197f" },
+    { "id": "univ4PoolManager", "address": "0x28e2ea090877bf75740558f6bfb36a5ffee9e9df", "runtimeCodeBytes": 24009, "runtimeCodeHash": "0x48752321ee7abf0d2a17c30679df9a1ddd14dc75d28b26e2509b76396145a005" },
+    { "id": "univ4PositionManager", "address": "0x7a4a5c919ae2541aed11041a1aeee68f1287f95b", "runtimeCodeBytes": 23877, "runtimeCodeHash": "0x07867576e9a6a0fdcead21a487dce04eae6161fb350edc8c56954c09fa015ef0" },
+    { "id": "univ4Permit2", "address": "0x000000000022d473030f116ddee9f6b43ac78ba3", "runtimeCodeBytes": 9152, "runtimeCodeHash": "0x48774d936722dd7002887f307f58bcddb3eeabad39149e7dcb5c08e4ebe3310f" },
+    { "id": "pcsv4PoolManager", "address": "0xa0ffb9c1ce1fe56963b0321b32e7a0302114058b", "runtimeCodeBytes": 20885, "runtimeCodeHash": "0x3caf72836cb6603c6af03bba1578ec70ece8c3e5b1d0ef73667b5fbd74b02a0f" },
+    { "id": "pcsv4PositionManager", "address": "0x55f4c8aba71a1e923edc303eb4feff14608cc226", "runtimeCodeBytes": 24004, "runtimeCodeHash": "0xe8fea1721cd1cb164280e02614b06d7d8033dcc81ed6fa97f5e7cc63341d34ed" },
+    { "id": "pcsv4Permit2", "address": "0x31c2f6fcff4f8759b3bd5bf0e1084a055615c768", "runtimeCodeBytes": 7020, "runtimeCodeHash": "0xb8e27757651b074ffccdca43caff003b9f071d45ee74c379fad1a5a67ecaf9d6" },
+    { "id": "router", "address": "0x62ccef0b4545166f721caa9fee13c1d3767e27dc", "runtimeCodeBytes": 24571, "runtimeCodeHash": "0xb535b72b5d56de100c08c58e8d1beedc739ccf2f842cc527285684c7ae0d29d1" },
+    { "id": "spender", "address": "0x2c34a2fb1d0b4f55de51e1d0bdefaddce6b7cdd6", "runtimeCodeBytes": 2133, "runtimeCodeHash": "0xe8711c5f0fe7f3c28078140bb97b65aa015a58c06c14bad5abffa44f00f1ddf5" },
+    { "id": "wrappedNative", "address": "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c", "runtimeCodeBytes": 3124, "runtimeCodeHash": "0xb7d84205eaaf83ce7b3940c6beaad6d22790255e34a9a2b486aa8cdfff118fe6" }
+  ],
+  "executionCounters": {
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "chainWrites": 0,
+    "realFundOperations": 0
+  }
+}
