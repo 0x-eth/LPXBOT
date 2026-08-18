@@ -1438,6 +1438,37 @@ export const loginWalletAuthContracts = {
   unlink: { method: "DELETE", path: "/api/auth/wallet/link/{linkId}" },
 } as const;
 
+export const okxKeySecretMediaType = "application/vnd.lpbot.okx-key-secret+json" as const;
+export const okxKeySecretBodyLimit = 8_192 as const;
+
+export const okxKeyStatuses = [
+  "unconfigured",
+  "staged",
+  "testing",
+  "usable",
+  "invalid",
+  "revoked",
+  "insufficient-permission",
+  "unknown",
+  "deleting",
+] as const;
+
+export type OkxKeyStatusName = (typeof okxKeyStatuses)[number];
+
+export interface OkxKeyStatus {
+  configured: boolean;
+  status: OkxKeyStatusName;
+  version: number;
+}
+
+export const okxKeyContracts = {
+  delete: { method: "DELETE", path: "/api/settings/okx-key" },
+  get: { method: "GET", path: "/api/settings/okx-key" },
+  replace: { method: "PUT", path: "/api/settings/okx-key" },
+  save: { method: "POST", path: "/api/settings/okx-key" },
+  test: { method: "POST", path: "/api/settings/okx-key/test" },
+} as const;
+
 export type AuthState =
   | { status: "booting" }
   | { status: "anonymous" }
