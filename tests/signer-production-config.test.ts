@@ -21,7 +21,9 @@ const validEnvironment = {
 describe("P04-02 signer production boundary", () => {
   it("exports no signing, raw transaction, broadcast, or RPC capability", () => {
     expect(signerCapabilities).toEqual(["import", "generate", "seal", "open-verify"]);
-    expect(signerCapabilities.join(" ")).not.toMatch(/digest|message|transaction|broadcast|rpc|sign/u);
+    expect(signerCapabilities.join(" ")).not.toMatch(
+      /digest|message|transaction|broadcast|rpc|sign/u,
+    );
   });
 
   it("fails closed when KMS, ciphertext store, or signer identity configuration is missing", () => {

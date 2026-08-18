@@ -153,16 +153,13 @@ async function axe(page: Page) {
   ).toEqual([]);
 }
 
-test("wallets renders loading, empty, ready, desktop/mobile, and axe states", async (
-  { page },
-  testInfo,
-) => {
+test("wallets renders loading, empty, ready, desktop/mobile, and axe states", async ({
+  page,
+}, testInfo) => {
   const state = { items: [] as ReturnType<typeof wallet>[], loadingMs: 400 };
   await install(page, state);
   await page.goto("/wallets");
-  await expect(page.getByRole("status", { name: "正在加载钱包" })).toContainText(
-    "正在加载钱包",
-  );
+  await expect(page.getByRole("status", { name: "正在加载钱包" })).toContainText("正在加载钱包");
   await expect(page.getByRole("heading", { level: 1, name: "钱包" })).toBeVisible();
   await expect(page.getByText("还没有托管钱包")).toBeVisible();
   await axe(page);

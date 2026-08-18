@@ -21,7 +21,10 @@ export class SignerConfigurationError extends Error {
   }
 }
 
-function required(environment: NodeJS.ProcessEnv | Record<string, string | undefined>, key: string): string {
+function required(
+  environment: NodeJS.ProcessEnv | Record<string, string | undefined>,
+  key: string,
+): string {
   const value = environment[key];
   if (typeof value !== "string" || value.length === 0) throw new SignerConfigurationError();
   return value;
@@ -94,9 +97,7 @@ export function loadSignerProductionConfig(
 
   return {
     apiToken: credential(required(environment, "SIGNER_API_TOKEN")),
-    ciphertextDatabaseUrl: databaseUrl(
-      required(environment, "SIGNER_CIPHERTEXT_DATABASE_URL"),
-    ),
+    ciphertextDatabaseUrl: databaseUrl(required(environment, "SIGNER_CIPHERTEXT_DATABASE_URL")),
     host,
     identity: identity(required(environment, "SIGNER_IDENTITY")),
     kms: {
