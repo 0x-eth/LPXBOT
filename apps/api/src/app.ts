@@ -1002,7 +1002,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             ? securityPasswordSecretMediaType
             : isAddressBookSecretRequest(request.method, path)
               ? addressBookSecretMediaType
-              : null;
+              : isWalletTransferSecretRequest(request.method, path)
+                ? walletTransferSecretMediaType
+                : null;
     if (
       requiredMediaType &&
       mediaType !== requiredMediaType &&
@@ -4480,10 +4482,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           if (!(await requireAllowedWalletChain(transfer.chainId, request, reply, session))) {
             return reply;
           }
-          const wallet = await options.walletDirectory.getWallet(
-            session.userId,
-            transfer.walletId,
-          );
+          const wallet = await options.walletDirectory.getWallet(session.userId, transfer.walletId);
           if (!wallet) throw new WalletTransferError("WALLET_NOT_FOUND");
           const preview = await options.walletTransfers.preview({
             request: transfer,

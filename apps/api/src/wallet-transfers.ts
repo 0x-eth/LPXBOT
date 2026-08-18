@@ -668,6 +668,7 @@ export class WalletTransferService implements WalletTransferApplication {
   readonly #addresses: WalletTransferAddressClassifier;
   readonly #assets: WalletTransferAssetRegistry;
   readonly #chain: WalletTransferChainReader;
+  readonly #localChainIds: ReadonlySet<number>;
   readonly #now: () => Date;
   readonly #operations: WalletTransferOperationStore;
   readonly #policies: WalletTransferPolicySource;
@@ -680,6 +681,7 @@ export class WalletTransferService implements WalletTransferApplication {
     addresses: WalletTransferAddressClassifier;
     assets: WalletTransferAssetRegistry;
     chain: WalletTransferChainReader;
+    localChainIds: readonly number[];
     now?: () => Date;
     operations: WalletTransferOperationStore;
     policies: WalletTransferPolicySource;
@@ -691,6 +693,14 @@ export class WalletTransferService implements WalletTransferApplication {
     this.#addresses = input.addresses;
     this.#assets = input.assets;
     this.#chain = input.chain;
+    if (
+      input.localChainIds.length < 1 ||
+      input.localChainIds.some((chainId) => !Number.isSafeInteger(chainId) || chainId < 1) ||
+      new Set(input.localChainIds).size !== input.localChainIds.length
+    ) {
+      throw new RangeError("localChainIds must contain unique positive chain identifiers");
+    }
+    this.#localChainIds = new Set(input.localChainIds);
     this.#now = input.now ?? (() => new Date());
     this.#operations = input.operations;
     this.#policies = input.policies;
@@ -825,31 +835,12 @@ export class WalletTransferService implements WalletTransferApplication {
       }
 
       const nonceViews =
-        currentFacts.policyVersion &&
-        (
-          await this.#policies.current({
-            chainId: stored.request.chainId,
-            userId: input.userId,
-            walletId: input.wallet.walletId,
-          })
-        ).executionMode === "local-auto"
+        currentFacts.executionMode === "local-auto"
           ? await this.#chain.nonceViews({
               chainId: stored.request.chainId,
               walletAddress: canonicalTransferAddress(input.wallet.address),
             })
           : [];
-      const policy = await this.#policies.current({
-        chainId: stored.request.chainId,
-        userId: input.userId,
-        walletId: input.wallet.walletId,
-      });
-      if (
-        policy.policyDigest !== stored.facts.policyDigest ||
-        policy.policyVersion !== stored.facts.policyVersion ||
-        policy.registryVersion !== stored.facts.registryVersion
-      ) {
-        throw new WalletTransferError("PREVIEW_CHANGED");
-      }
       const result = await this.#operations.create({
         addressClassification: stored.facts.addressClassification,
         amountBaseUnit: stored.facts.amountBaseUnit,
@@ -870,7 +861,7 @@ export class WalletTransferService implements WalletTransferApplication {
             walletId: input.wallet.walletId,
           }),
         chainId: stored.request.chainId,
-        executionMode: policy.executionMode,
+        executionMode: currentFacts.executionMode,
         feeLimit: stored.facts.feeLimit,
         idempotencyKey,
         nonceViews,
@@ -915,7 +906,7 @@ export class WalletTransferService implements WalletTransferApplication {
     const { request } = input;
     const walletAddress = canonicalTransferAddress(input.wallet.address);
     const [policy, classification, resolvedAsset] = await Promise.all([
-      this.#policies.current({
+      this.#currentPolicy({
         chainId: request.chainId,
         userId: input.userId,
         walletId: request.walletId,
@@ -1001,6 +992,7 @@ export class WalletTransferService implements WalletTransferApplication {
       assetBalanceBaseUnit: state.assetBalanceBaseUnit,
       blockNumber: state.blockNumber,
       chainId: request.chainId,
+      executionMode: policy.executionMode,
       expiresAt: input.expiresAt,
       feeLimit: fees,
       nativeBalanceBaseUnit: state.nativeBalanceBaseUnit,
@@ -1010,6 +1002,23 @@ export class WalletTransferService implements WalletTransferApplication {
       registryVersion: policy.registryVersion,
       walletAddress,
       walletId: request.walletId,
+    };
+  }
+
+  async #currentPolicy(input: {
+    chainId: number;
+    userId: string;
+    walletId: string;
+  }): Promise<WalletTransferPolicySnapshot> {
+    const policy = await this.#policies.current(input);
+    if (policy.executionMode !== "approval-required" && policy.executionMode !== "local-auto") {
+      throw new WalletTransferError("TRANSFER_UNAVAILABLE", true);
+    }
+    return {
+      ...policy,
+      executionMode: this.#localChainIds.has(input.chainId)
+        ? policy.executionMode
+        : "approval-required",
     };
   }
 

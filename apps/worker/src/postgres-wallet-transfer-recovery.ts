@@ -282,6 +282,7 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
                   )
               AND e.attempt_count < $2
               AND o.state NOT IN ('ready-for-approval', 'replaced')
+              AND o.nonce IS NOT NULL
             ORDER BY e.available_at, e.created_at, e.event_id
             FOR UPDATE OF e SKIP LOCKED
             LIMIT $3

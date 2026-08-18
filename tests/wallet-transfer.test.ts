@@ -81,10 +81,12 @@ class ChainFixture implements WalletTransferChainReader {
   }
 }
 
-function fixture(input: {
-  classification?: WalletTransferAddressClassification;
-  executionMode?: WalletTransferPolicySnapshot["executionMode"];
-} = {}) {
+function fixture(
+  input: {
+    classification?: WalletTransferAddressClassification;
+    executionMode?: WalletTransferPolicySnapshot["executionMode"];
+  } = {},
+) {
   const chain = new ChainFixture();
   const operations = new MemoryWalletTransferOperationStore({
     now: () => now,
@@ -119,6 +121,7 @@ function fixture(input: {
         requested === tokenAddress ? token : null,
     },
     chain,
+    localChainIds: [31_337],
     now: () => now,
     operations,
     policies: { current: async () => policy },
@@ -322,7 +325,7 @@ describe("P04-06 wallet transfer domain", () => {
   });
 
   it("stops non-local writes at ready-for-approval and quarantines provider divergence", async () => {
-    const approval = fixture({ executionMode: "approval-required" });
+    const approval = fixture({ executionMode: "local-auto" });
     const preview = await approval.service.preview({
       request: {
         amount: { amountBaseUnit: "1", kind: "exact" },
@@ -338,7 +341,11 @@ describe("P04-06 wallet transfer domain", () => {
       approval.service.submit({
         idempotencyKey: "fixture-transfer-key-0003",
         password: null,
-        request: { previewDigest: preview.previewDigest, previewToken: preview.previewToken, walletId },
+        request: {
+          previewDigest: preview.previewDigest,
+          previewToken: preview.previewToken,
+          walletId,
+        },
         requestId: "request-4",
         secretIngress: false,
         sessionId: userId,
@@ -398,7 +405,7 @@ describe("P04-06 wallet transfer domain", () => {
       policyDigest,
       recipient,
       transactionData:
-        `0xa9059cbb${recipient.slice(2).padStart(64, "0")}${(100n).toString(16).padStart(64, "0")}` as const,
+        `0xa9059cbb${recipient.slice(2).padStart(64, "0")}${100n.toString(16).padStart(64, "0")}` as const,
       transactionTarget: tokenAddress,
       transactionValueBaseUnit: "0",
       walletAddress: wallet.address.toLowerCase() as EvmAddress,
@@ -421,4 +428,3 @@ describe("P04-06 wallet transfer domain", () => {
     expect(canTransitionWalletTransfer("confirmed", "signed")).toBe(false);
   });
 });
-

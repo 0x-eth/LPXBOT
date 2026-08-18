@@ -33,8 +33,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const enabled = process.env.RUN_ANVIL_INTEGRATION === "1";
 const chainId = 31_337;
-const privateKey =
-  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" as const;
+const privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" as const;
 const recipient = "0x70997970c51812dc3a010c7d01b50e0d17dc79c8" as const;
 const userId = "54000000-0000-4000-8000-000000000001";
 const walletId = "54000000-0000-4000-8000-000000000011";
@@ -107,7 +106,11 @@ describe.skipIf(!enabled)("P04-06 local Anvil transfer closure", () => {
     });
     const account = privateKeyToAccount(privateKey);
     const publicClient = createPublicClient({ chain: localChain, transport: http(rpcUrl) });
-    const walletClient = createWalletClient({ account, chain: localChain, transport: http(rpcUrl) });
+    const walletClient = createWalletClient({
+      account,
+      chain: localChain,
+      transport: http(rpcUrl),
+    });
     const artifact = JSON.parse(
       await readFile("contracts/out/TestOnlyERC20.sol/TestOnlyERC20.json", "utf8"),
     ) as ForgeArtifact;
@@ -143,6 +146,7 @@ describe.skipIf(!enabled)("P04-06 local Anvil transfer closure", () => {
           requested === token.tokenAddress ? token : null,
       },
       chain,
+      localChainIds: [chainId],
       operations,
       policies: {
         current: async () => ({

@@ -40,6 +40,7 @@ export interface WalletTransferPreviewFacts {
   assetBalanceBaseUnit: string;
   blockNumber: string;
   chainId: number;
+  executionMode: "approval-required" | "local-auto";
   expiresAt: string;
   feeLimit: WalletTransferFeeLimit;
   nativeBalanceBaseUnit: string;
@@ -179,7 +180,8 @@ export function walletTransferRequestHash(input: {
   if (!Number.isSafeInteger(input.chainId) || input.chainId < 1) {
     throw new RangeError("TRANSFER_CHAIN_INVALID");
   }
-  const token = input.asset.kind === "native" ? "native" : canonicalTransferAddress(input.asset.tokenAddress);
+  const token =
+    input.asset.kind === "native" ? "native" : canonicalTransferAddress(input.asset.tokenAddress);
   const fields = [
     "transfer-request/v1",
     canonicalIdentifier(input.userId, "TRANSFER_OWNER_INVALID"),
@@ -217,6 +219,7 @@ export function walletTransferPreviewDigest(input: WalletTransferPreviewFacts): 
     canonicalBaseUnit(input.assetBalanceBaseUnit),
     canonicalBaseUnit(input.nativeBalanceBaseUnit),
     canonicalBaseUnit(input.blockNumber),
+    input.executionMode,
     canonicalBaseUnit(input.feeLimit.gasLimit, { positive: true }),
     canonicalBaseUnit(input.feeLimit.maxFeePerGasBaseUnit, { positive: true }),
     canonicalBaseUnit(input.feeLimit.maxPriorityFeePerGasBaseUnit),
@@ -235,6 +238,7 @@ export function walletTransferPreviewDigest(input: WalletTransferPreviewFacts): 
     input.asset.symbol.length < 1 ||
     input.asset.symbol.length > 32 ||
     !["known-external", "new-external", "own-wallet"].includes(input.addressClassification) ||
+    (input.executionMode !== "approval-required" && input.executionMode !== "local-auto") ||
     fields.some((field) => field.includes("\n") || field === "")
   ) {
     throw new RangeError("TRANSFER_PREVIEW_INVALID");
