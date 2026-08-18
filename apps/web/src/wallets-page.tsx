@@ -51,6 +51,15 @@ function validPrivateKey(value: string): boolean {
   return scalar > 0n && scalar < scalarOrder;
 }
 
+function validWalletName(value: string): boolean {
+  return (
+    [...value].length >= 1 &&
+    [...value].length <= 80 &&
+    value.trim() === value &&
+    !/\p{Cc}/u.test(value)
+  );
+}
+
 function stateForError(error: unknown): WalletPageStatus {
   if (!(error instanceof WalletRequestError)) return "error";
   if (error.code === "WALLET_ADDRESS_EXISTS") return "duplicate";
@@ -698,6 +707,434 @@ function ModeSwitchDialog({
               </button>
             </div>
           </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function RenameWalletDialog({
+  client,
+  onChanged,
+  onFailure,
+  onOpenChange,
+  open,
+  trigger,
+  wallet,
+}: {
+  client: WalletClient;
+  onChanged(wallet: CustodyWallet): void;
+  onFailure(error: unknown): void;
+  onOpenChange(open: boolean): void;
+  open: boolean;
+  trigger: React.RefObject<HTMLButtonElement | null>;
+  wallet: CustodyWallet | null;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (open) setName(wallet?.name ?? "");
+  }, [open, wallet]);
+
+  const reset = () => {
+    setError(null);
+    setName("");
+    setSubmitting(false);
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!wallet) return;
+    setError(null);
+    if (!validWalletName(name)) {
+      setError("钱包名称需为 1 至 80 个字符，且首尾不能有空白");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const renamed = await client.rename(wallet.walletId, {
+        expectedRevision: wallet.revision,
+        name,
+      });
+      reset();
+      onOpenChange(false);
+      onChanged(renamed);
+    } catch (requestError) {
+      setError(walletLifecycleLabel(requestError));
+      setSubmitting(false);
+      onFailure(requestError);
+    }
+  };
+
+  return (
+    <Dialog.Root
+      onOpenChange={(next) => {
+        if (!next) reset();
+        onOpenChange(next);
+      }}
+      open={open}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="dialog-overlay" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          className="wallet-dialog"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            trigger.current?.focus();
+          }}
+        >
+          <div className="wallet-dialog-heading">
+            <Dialog.Title>重命名钱包</Dialog.Title>
+            <Dialog.Close asChild>
+              <button
+                aria-label="关闭重命名钱包"
+                className="icon-button tooltip-control"
+                data-tooltip="关闭"
+                type="button"
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
+            </Dialog.Close>
+          </div>
+          <form className="wallet-form" onSubmit={(event) => void submit(event)}>
+            <label htmlFor="wallet-rename-name">
+              <span>钱包名称</span>
+              <input
+                autoComplete="off"
+                autoFocus
+                id="wallet-rename-name"
+                maxLength={80}
+                onChange={(event) => setName(event.target.value)}
+                value={name}
+              />
+            </label>
+            {error ? <p role="alert">{error}</p> : null}
+            <div className="wallet-dialog-actions">
+              <Dialog.Close asChild>
+                <button className="secondary-button" disabled={submitting} type="button">
+                  取消
+                </button>
+              </Dialog.Close>
+              <button className="primary-button" disabled={submitting} type="submit">
+                {submitting ? (
+                  <LoaderCircle aria-hidden="true" className="spin-icon" size={16} />
+                ) : (
+                  <Pencil aria-hidden="true" size={15} />
+                )}
+                保存名称
+              </button>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function DeleteRiskSummary({ preview }: { preview: WalletDeletePreview }) {
+  return (
+    <div aria-label="删除风险计数" className="wallet-delete-risk-summary">
+      <strong>任务 {preview.taskCount}</strong>
+      <strong>策略 {preview.policyCount}</strong>
+      <strong>非零资产 {preview.assetCount}</strong>
+      <strong>仓位 {preview.positionCount}</strong>
+    </div>
+  );
+}
+
+function DeletePreviewDialog({
+  client,
+  error,
+  onDeleted,
+  onFailure,
+  onForce,
+  onOpenChange,
+  onState,
+  open,
+  preview,
+  trigger,
+  wallet,
+}: {
+  client: WalletClient;
+  error: string | null;
+  onDeleted(receipt: WalletDeletionReceipt): void;
+  onFailure(error: unknown): void;
+  onForce(): void;
+  onOpenChange(open: boolean): void;
+  onState(status: WalletPageStatus): void;
+  open: boolean;
+  preview: WalletDeletePreview | null;
+  trigger: React.RefObject<HTMLButtonElement | null>;
+  wallet: CustodyWallet | null;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const dependencyCount = preview
+    ? preview.assetCount + preview.policyCount + preview.positionCount + preview.taskCount
+    : 0;
+
+  const submit = async () => {
+    if (!wallet || !preview) return;
+    setSubmitting(true);
+    onState("deleting");
+    try {
+      const receipt = await client.deleteWallet(wallet.walletId, {
+        expectedRevision: preview.revision,
+        force: false,
+        previewToken: preview.previewToken,
+      });
+      setSubmitting(false);
+      onOpenChange(false);
+      onDeleted(receipt);
+    } catch (requestError) {
+      setSubmitting(false);
+      onFailure(requestError);
+    }
+  };
+
+  return (
+    <Dialog.Root
+      onOpenChange={(next) => {
+        if (!next) setSubmitting(false);
+        onOpenChange(next);
+      }}
+      open={open}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="dialog-overlay" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          className="wallet-dialog wallet-delete-dialog"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            trigger.current?.focus();
+          }}
+        >
+          <div className="wallet-dialog-heading">
+            <Dialog.Title>删除钱包预览</Dialog.Title>
+            <Dialog.Close asChild>
+              <button
+                aria-label="关闭删除钱包预览"
+                className="icon-button tooltip-control"
+                data-tooltip="关闭"
+                disabled={submitting}
+                type="button"
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
+            </Dialog.Close>
+          </div>
+          {!preview && !error ? (
+            <div aria-label="正在生成删除预览" className="wallet-preview-loading" role="status">
+              <LoaderCircle aria-hidden="true" className="spin-icon" size={18} />
+              正在生成删除预览
+            </div>
+          ) : null}
+          {preview ? (
+            <div className="wallet-delete-preview-body">
+              <div className="wallet-delete-target">
+                <strong>{wallet?.name}</strong>
+                <code>{wallet?.address}</code>
+              </div>
+              <DeleteRiskSummary preview={preview} />
+              {dependencyCount > 0 ? (
+                <p className="wallet-delete-warning">
+                  <ShieldAlert aria-hidden="true" size={16} />
+                  普通删除已被当前依赖阻止
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          {error ? <p className="wallet-delete-error" role="alert">{error}</p> : null}
+          <div className="wallet-dialog-actions">
+            <Dialog.Close asChild>
+              <button className="secondary-button" disabled={submitting} type="button">
+                取消
+              </button>
+            </Dialog.Close>
+            {preview && dependencyCount === 0 ? (
+              <button
+                aria-label={submitting ? "正在删除" : "确认删除"}
+                className="danger-command"
+                disabled={submitting}
+                onClick={() => void submit()}
+                type="button"
+              >
+                {submitting ? (
+                  <LoaderCircle aria-hidden="true" className="spin-icon" size={16} />
+                ) : (
+                  <Trash2 aria-hidden="true" size={15} />
+                )}
+                {submitting ? "正在删除" : "确认删除"}
+              </button>
+            ) : null}
+            {preview && dependencyCount > 0 && preview.forceEligible ? (
+              <button className="danger-command" onClick={onForce} type="button">
+                <ShieldAlert aria-hidden="true" size={15} />
+                继续强制删除
+              </button>
+            ) : null}
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function DependencyInventory({ preview }: { preview: WalletDeletePreview }) {
+  const groups = [
+    ["任务", preview.dependencies.taskIds],
+    ["策略", preview.dependencies.policyIds],
+    ["非零资产", preview.dependencies.assetIds],
+    ["仓位", preview.dependencies.positionIds],
+  ] as const;
+  return (
+    <div aria-label="完整依赖清单" className="wallet-dependency-inventory">
+      {groups.map(([label, values]) => (
+        <div key={label}>
+          <strong>{label}</strong>
+          {values.length === 0 ? <span>无</span> : values.map((value) => <code key={value}>{value}</code>)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ForceDeleteDialog({
+  client,
+  error,
+  onDeleted,
+  onFailure,
+  onOpenChange,
+  onState,
+  open,
+  preview,
+  trigger,
+  wallet,
+}: {
+  client: WalletClient;
+  error: string | null;
+  onDeleted(receipt: WalletDeletionReceipt): void;
+  onFailure(error: unknown): void;
+  onOpenChange(open: boolean): void;
+  onState(status: WalletPageStatus): void;
+  open: boolean;
+  preview: WalletDeletePreview | null;
+  trigger: React.RefObject<HTMLButtonElement | null>;
+  wallet: CustodyWallet | null;
+}) {
+  const [confirmation, setConfirmation] = useState("");
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const reset = () => {
+    setConfirmation("");
+    setLocalError(null);
+    setSubmitting(false);
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!wallet || !preview) return;
+    const phrase = confirmation;
+    setConfirmation("");
+    setLocalError(null);
+    if (phrase !== preview.confirmationPhrase) {
+      setLocalError("确认短语不一致");
+      return;
+    }
+    setSubmitting(true);
+    onState("deleting");
+    try {
+      const receipt = await client.deleteWallet(wallet.walletId, {
+        confirmationPhrase: phrase,
+        dependencies: preview.dependencies,
+        expectedRevision: preview.revision,
+        force: true,
+        previewToken: preview.previewToken,
+      });
+      reset();
+      onOpenChange(false);
+      onDeleted(receipt);
+    } catch (requestError) {
+      setSubmitting(false);
+      onFailure(requestError);
+    }
+  };
+
+  return (
+    <Dialog.Root
+      onOpenChange={(next) => {
+        if (!next) reset();
+        onOpenChange(next);
+      }}
+      open={open}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="dialog-overlay" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          className="wallet-dialog wallet-delete-dialog"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            trigger.current?.focus();
+          }}
+        >
+          <div className="wallet-dialog-heading">
+            <Dialog.Title>强制删除钱包</Dialog.Title>
+            <Dialog.Close asChild>
+              <button
+                aria-label="关闭强制删除钱包"
+                className="icon-button tooltip-control"
+                data-tooltip="关闭"
+                disabled={submitting}
+                type="button"
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
+            </Dialog.Close>
+          </div>
+          {preview ? (
+            <form className="wallet-form" onSubmit={(event) => void submit(event)}>
+              <DeleteRiskSummary preview={preview} />
+              <DependencyInventory preview={preview} />
+              <label htmlFor="wallet-force-confirmation">
+                <span>输入确认短语</span>
+                <code>{preview.confirmationPhrase}</code>
+                <input
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                  autoFocus
+                  id="wallet-force-confirmation"
+                  onChange={(event) => setConfirmation(event.target.value)}
+                  spellCheck={false}
+                  value={confirmation}
+                />
+              </label>
+              {localError || error ? (
+                <p className="wallet-delete-error" role="alert">
+                  {localError ?? error}
+                </p>
+              ) : null}
+              <div className="wallet-dialog-actions">
+                <Dialog.Close asChild>
+                  <button className="secondary-button" disabled={submitting} type="button">
+                    取消
+                  </button>
+                </Dialog.Close>
+                <button className="danger-command" disabled={submitting} type="submit">
+                  {submitting ? (
+                    <LoaderCircle aria-hidden="true" className="spin-icon" size={16} />
+                  ) : (
+                    <Trash2 aria-hidden="true" size={15} />
+                  )}
+                  强制删除
+                </button>
+              </div>
+            </form>
+          ) : null}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
