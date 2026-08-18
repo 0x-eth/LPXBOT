@@ -1,6 +1,7 @@
-import type { CustodyWallet } from "@lpbot/api-contract";
+import type { CustodyWallet, KeystoreStatus, WalletEncryptionMode } from "@lpbot/api-contract";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
+  ArrowRightLeft,
   CircleAlert,
   Download,
   KeyRound,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
+import { KeystoreClient } from "./keystore-client";
 import { WalletClient, WalletRequestError } from "./wallet-client";
 
 type WalletPageStatus =
@@ -60,9 +62,80 @@ function WalletState({ status }: { status: WalletPageStatus }) {
   );
 }
 
-function WalletRecord({ wallet }: { wallet: CustodyWallet }) {
+function walletRequestLabel(error: unknown, action: "generate" | "import" | "switch"): string {
+  if (!(error instanceof WalletRequestError)) return `${action === "generate" ? "生成" : action === "import" ? "导入" : "切换"}失败`;
+  switch (error.code) {
+    case "WALLET_ADDRESS_EXISTS":
+      return "该地址已由当前账户托管";
+    case "REAUTH_REQUIRED":
+      return "需要重新验证身份";
+    case "SIGNER_UNAVAILABLE":
+      return "签名服务暂时不可用";
+    case "INVALID_CREDENTIALS":
+      return "Keystore 密码不正确";
+    case "LOCKED_OUT":
+      return "尝试次数过多，请稍后重试";
+    case "REVISION_CONFLICT":
+    case "SECRET_VERSION_CONFLICT":
+      return "钱包或密码版本已变化，请刷新后重试";
+    default:
+      return `${action === "generate" ? "生成" : action === "import" ? "导入" : "切换"}失败`;
+  }
+}
+
+function WalletModeControl({
+  configured,
+  mode,
+  onChange,
+}: {
+  configured: boolean;
+  mode: WalletEncryptionMode;
+  onChange(mode: WalletEncryptionMode): void;
+}) {
+  return (
+    <div className="wallet-mode-field">
+      <span id="wallet-mode-label">加密模式</span>
+      <div
+        aria-labelledby="wallet-mode-label"
+        className="segmented-control wallet-mode-options"
+        role="radiogroup"
+      >
+        <button
+          aria-checked={mode === "server-kek"}
+          className="segmented-option"
+          onClick={() => onChange("server-kek")}
+          role="radio"
+          type="button"
+        >
+          <ShieldCheck aria-hidden="true" size={14} />
+          服务器密钥
+        </button>
+        <button
+          aria-checked={mode === "user-password"}
+          className="segmented-option"
+          disabled={!configured}
+          onClick={() => onChange("user-password")}
+          role="radio"
+          type="button"
+        >
+          <KeyRound aria-hidden="true" size={14} />
+          用户密码
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function WalletRecord({
+  onSwitch,
+  wallet,
+}: {
+  onSwitch(wallet: CustodyWallet, trigger: HTMLButtonElement): void;
+  wallet: CustodyWallet;
+}) {
   const custodyLabel =
     wallet.lockStatus === "ready" ? "已托管" : wallet.lockStatus === "locked" ? "已锁定" : "已隔离";
+  const modeLabel = wallet.mode === "server-kek" ? "服务器密钥" : "用户密码";
   return (
     <li className="wallet-record">
       <div className="wallet-record-icon" aria-hidden="true">
@@ -75,12 +148,25 @@ function WalletRecord({ wallet }: { wallet: CustodyWallet }) {
       <div className="wallet-record-facts">
         <span className="wallet-mode-badge">
           <KeyRound aria-hidden="true" size={13} />
-          服务器密钥
+          {modeLabel}
         </span>
         <span className="wallet-custody-badge" data-status={wallet.lockStatus}>
-          <ShieldCheck aria-hidden="true" size={13} />
+          {wallet.lockStatus === "locked" ? (
+            <LockKeyhole aria-hidden="true" size={13} />
+          ) : (
+            <ShieldCheck aria-hidden="true" size={13} />
+          )}
           {custodyLabel}
         </span>
+        <button
+          aria-label={`切换 ${wallet.name} 加密模式`}
+          className="icon-button tooltip-control wallet-mode-switch"
+          data-tooltip="切换加密模式"
+          onClick={(event) => onSwitch(wallet, event.currentTarget)}
+          type="button"
+        >
+          <ArrowRightLeft aria-hidden="true" size={15} />
+        </button>
       </div>
     </li>
   );
@@ -88,6 +174,7 @@ function WalletRecord({ wallet }: { wallet: CustodyWallet }) {
 
 function ImportWalletDialog({
   client,
+  keystoreConfigured,
   onCreated,
   onFailure,
   onPending,
@@ -96,6 +183,7 @@ function ImportWalletDialog({
   trigger,
 }: {
   client: WalletClient;
+  keystoreConfigured: boolean;
   onCreated(wallet: CustodyWallet): void;
   onFailure(error: unknown): void;
   onPending(): void;
@@ -104,12 +192,16 @@ function ImportWalletDialog({
   trigger: React.RefObject<HTMLButtonElement | null>;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<WalletEncryptionMode>("server-kek");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
   const [privateKey, setPrivateKey] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
     setPrivateKey("");
+    setPassword("");
+    setMode("server-kek");
     setName("");
     setError(null);
     setSubmitting(false);
@@ -118,7 +210,9 @@ function ImportWalletDialog({
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const secret = privateKey;
+    const keystorePassword = password;
     setPrivateKey("");
+    setPassword("");
     setError(null);
     onPending();
     if (!validPrivateKey(secret)) {
@@ -127,27 +221,29 @@ function ImportWalletDialog({
       onFailure(new WalletRequestError("INVALID_PRIVATE_KEY", false, 400));
       return;
     }
+    if (mode === "user-password" && keystorePassword.length < 12) {
+      setError("Keystore 密码至少需要 12 个字符");
+      setSubmitting(false);
+      onFailure(new WalletRequestError("INVALID_CREDENTIALS", false, 400));
+      return;
+    }
     setSubmitting(true);
     try {
-      const wallet = await client.importWallet({
-        mode: "server-kek",
-        name: name.trim() || "Imported wallet",
-        privateKey: secret,
-      });
+      const wallet = await client.importWallet(
+        mode === "user-password"
+          ? {
+              mode,
+              name: name.trim() || "Imported wallet",
+              password: keystorePassword,
+              privateKey: secret,
+            }
+          : { mode, name: name.trim() || "Imported wallet", privateKey: secret },
+      );
       reset();
       setOpen(false);
       onCreated(wallet);
     } catch (requestError) {
-      setError(
-        requestError instanceof WalletRequestError && requestError.code === "WALLET_ADDRESS_EXISTS"
-          ? "该地址已由当前账户托管"
-          : requestError instanceof WalletRequestError && requestError.code === "REAUTH_REQUIRED"
-            ? "需要重新验证身份"
-            : requestError instanceof WalletRequestError &&
-                requestError.code === "SIGNER_UNAVAILABLE"
-              ? "签名服务暂时不可用"
-              : "导入失败",
-      );
+      setError(walletRequestLabel(requestError, "import"));
       setSubmitting(false);
       onFailure(requestError);
     }
@@ -207,6 +303,23 @@ function ImportWalletDialog({
                 value={privateKey}
               />
             </label>
+            <WalletModeControl
+              configured={keystoreConfigured}
+              mode={mode}
+              onChange={setMode}
+            />
+            {mode === "user-password" ? (
+              <label htmlFor="wallet-import-password">
+                <span>Keystore 密码</span>
+                <input
+                  autoComplete="current-password"
+                  id="wallet-import-password"
+                  onChange={(event) => setPassword(event.target.value)}
+                  type="password"
+                  value={password}
+                />
+              </label>
+            ) : null}
             {error ? <p role="alert">{error}</p> : null}
             <div className="wallet-dialog-actions">
               <Dialog.Close asChild>
@@ -488,3 +601,4 @@ export function WalletsPage() {
     </main>
   );
 }
+  LockKeyhole,
