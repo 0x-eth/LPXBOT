@@ -812,7 +812,7 @@ test("check:p05-reference is offline and CI retains exactly six jobs", async () 
   assert.match(workflow, /run: pnpm check:p05-reference/u);
   assert.doesNotMatch(workflow, /capture:p05|capture-p05-01-fixtures/u);
   const jobsSection = workflow.slice(workflow.indexOf("\njobs:\n") + "\njobs:\n".length);
-  const jobNames = [...jobsSection.matchAll(/^  ([a-z][a-z0-9-]+):$/gmu)].map(
+  const jobNames = [...jobsSection.matchAll(/^ {2}([a-z][a-z0-9-]+):$/gmu)].map(
     (match) => match[1],
   );
   assert.deepEqual(jobNames, [
