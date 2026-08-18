@@ -1028,6 +1028,135 @@ export interface CustodyWalletPage {
   items: CustodyWallet[];
 }
 
+export const walletPriceStatuses = ["current", "missing", "stale"] as const;
+export type WalletPriceStatus = (typeof walletPriceStatuses)[number];
+
+export interface WalletTokenDefinition {
+  chainId: number;
+  decimals: number;
+  default: boolean;
+  name: string;
+  symbol: string;
+  tokenAddress: EvmAddress;
+}
+
+export interface WalletTokenPage {
+  chainId: number;
+  items: WalletTokenDefinition[];
+  walletId: string;
+}
+
+export interface ImportWalletTokenRequest {
+  chainId: number;
+  tokenAddress: EvmAddress;
+}
+
+export interface WalletAssetBalance {
+  assetType: "native" | "erc20";
+  balanceBaseUnit: string;
+  balanceDecimal: string;
+  decimals: number;
+  default: boolean;
+  name: string;
+  priceStatus: WalletPriceStatus;
+  symbol: string;
+  tokenAddress: EvmAddress | null;
+  usdPriceDecimal: string | null;
+  usdValueDecimal: string | null;
+}
+
+export interface WalletBalanceSnapshot {
+  address: EvmAddress;
+  blockNumberDecimal: string;
+  chainId: number;
+  items: WalletAssetBalance[];
+  readAt: string;
+  totalUsdValueDecimal: string | null;
+  walletId: string;
+}
+
+export interface WalletReceiveContent {
+  address: EvmAddress;
+  amountBaseUnit: string | null;
+  amountDecimal: string | null;
+  chainId: number;
+  eip681: string;
+  tokenAddress: EvmAddress | null;
+  walletId: string;
+}
+
+export const walletAssetContracts = {
+  balances: { method: "GET", path: "/api/wallets/{walletId}/balances" },
+  deleteToken: { method: "DELETE", path: "/api/wallets/{walletId}/tokens/{tokenAddress}" },
+  importToken: { method: "POST", path: "/api/wallets/{walletId}/tokens" },
+  receive: { method: "GET", path: "/api/wallets/{walletId}/receive" },
+  tokens: { method: "GET", path: "/api/wallets/{walletId}/tokens" },
+} as const;
+
+export const addressBookCategories = ["person", "exchange", "protocol", "other"] as const;
+export type AddressBookCategory = (typeof addressBookCategories)[number];
+export type AddressClassification = "known-external" | "new-external" | "own-wallet";
+
+export interface AddressBookEntry {
+  address: EvmAddress;
+  category: AddressBookCategory;
+  chainId: number;
+  createdAt: string;
+  entryId: string;
+  label: string;
+  note: string;
+  revision: number;
+  updatedAt: string;
+}
+
+export interface OwnedWalletAddress {
+  address: EvmAddress;
+  name: string;
+  walletId: string;
+}
+
+export interface AddressClassificationView {
+  address: EvmAddress;
+  entryId: string | null;
+  kind: AddressClassification;
+  walletId: string | null;
+}
+
+export interface AddressBookPage {
+  chainId: number;
+  classification: AddressClassificationView | null;
+  entries: AddressBookEntry[];
+  ownWallets: OwnedWalletAddress[];
+}
+
+export interface CreateAddressBookEntryRequest {
+  address: EvmAddress;
+  category?: AddressBookCategory;
+  chainId: number;
+  label: string;
+  note?: string;
+  password: string;
+}
+
+export interface PatchAddressBookEntryRequest {
+  changes: {
+    category?: AddressBookCategory;
+    label?: string;
+    note?: string;
+  };
+  expectedRevision: number;
+}
+
+export const addressBookSecretMediaType =
+  "application/vnd.lpbot.address-book-secret+json" as const;
+
+export const addressBookContracts = {
+  create: { method: "POST", path: "/api/address-book" },
+  delete: { method: "DELETE", path: "/api/address-book/{entryId}" },
+  list: { method: "GET", path: "/api/address-book" },
+  patch: { method: "PATCH", path: "/api/address-book/{entryId}" },
+} as const;
+
 export interface WalletDeleteDependencies {
   assetIds: string[];
   policyIds: string[];
