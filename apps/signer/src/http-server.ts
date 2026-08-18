@@ -2,6 +2,11 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 
 import type { DeleteCustodyWalletRequest, WalletDeleteDependencies } from "@lpbot/api-contract";
+import {
+  transferDigestPattern,
+  validateWalletTransferPlan,
+  type WalletTransferPlan,
+} from "@lpbot/domain/wallet-transfer";
 
 import type { CustodySignerService } from "./custody-signer-service.js";
 import { SignerError, asSignerError } from "./signer-error.js";
@@ -103,6 +108,79 @@ function deleteRequest(value: Record<string, unknown>): DeleteCustodyWalletReque
   };
 }
 
+function transferSigningRequest(value: unknown): {
+  plan: WalletTransferPlan;
+  planDigest: `sha256:${string}`;
+} {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new SignerError("TRANSFER_PLAN_REJECTED");
+  }
+  const request = value as Record<string, unknown>;
+  if (
+    Object.keys(request).sort().join(",") !== "plan,planDigest" ||
+    typeof request.planDigest !== "string" ||
+    !transferDigestPattern.test(request.planDigest) ||
+    typeof request.plan !== "object" ||
+    request.plan === null ||
+    Array.isArray(request.plan)
+  ) {
+    throw new SignerError("TRANSFER_PLAN_REJECTED");
+  }
+  const plan = request.plan as Record<string, unknown>;
+  if (
+    Object.keys(plan).sort().join(",") !==
+      [
+        "amountBaseUnit",
+        "asset",
+        "chainId",
+        "deadline",
+        "feeLimit",
+        "fencingToken",
+        "nonce",
+        "operationId",
+        "policyDigest",
+        "recipient",
+        "transactionData",
+        "transactionTarget",
+        "transactionValueBaseUnit",
+        "walletAddress",
+        "walletId",
+      ]
+        .sort()
+        .join(",") ||
+    typeof plan.asset !== "object" ||
+    plan.asset === null ||
+    Array.isArray(plan.asset) ||
+    typeof plan.feeLimit !== "object" ||
+    plan.feeLimit === null ||
+    Array.isArray(plan.feeLimit)
+  ) {
+    throw new SignerError("TRANSFER_PLAN_REJECTED");
+  }
+  const asset = plan.asset as Record<string, unknown>;
+  const fee = plan.feeLimit as Record<string, unknown>;
+  if (
+    (asset.kind === "native" && Object.keys(asset).join(",") !== "kind") ||
+    (asset.kind === "erc20" && Object.keys(asset).sort().join(",") !== "kind,tokenAddress") ||
+    (asset.kind !== "native" && asset.kind !== "erc20") ||
+    Object.keys(fee).sort().join(",") !==
+      "feeCapBaseUnit,gasLimit,maxFeePerGasBaseUnit,maxPriorityFeePerGasBaseUnit"
+  ) {
+    throw new SignerError("TRANSFER_PLAN_REJECTED");
+  }
+  const candidate = plan as unknown as WalletTransferPlan;
+  try {
+    validateWalletTransferPlan(candidate);
+  } catch (error) {
+    throw new SignerError(
+      error instanceof Error && error.message === "TRANSFER_PLAN_EXPIRED"
+        ? "TRANSFER_PLAN_EXPIRED"
+        : "TRANSFER_PLAN_REJECTED",
+    );
+  }
+  return { plan: candidate, planDigest: request.planDigest as `sha256:${string}` };
+}
+
 async function readBody(request: IncomingMessage): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let size = 0;
@@ -153,7 +231,9 @@ function failure(response: ServerResponse, error: unknown): void {
                 signerError.code === "REVISION_CONFLICT" ||
                 signerError.code === "PASSWORD_ALREADY_CONFIGURED" ||
                 signerError.code === "PREVIEW_EXPIRED" ||
-                signerError.code === "PREVIEW_CHANGED"
+                signerError.code === "PREVIEW_CHANGED" ||
+                signerError.code === "TRANSFER_PLAN_EXPIRED" ||
+                signerError.code === "TRANSFER_PLAN_REJECTED"
               ? 409
               : signerError.code === "WALLET_ADDRESS_EXISTS"
                 ? 409
@@ -192,6 +272,7 @@ export function createSignerHttpServer(input: {
             "password-reseal",
             "keystore-unlock",
             "keystore-auto-lock",
+            "plan-bound-transaction-signing",
           ],
           ready: true,
         },
@@ -208,6 +289,30 @@ export function createSignerHttpServer(input: {
     let importAcquired = false;
     try {
       const sessionId = reauthenticatedSessionId(request);
+      if (request.method === "POST" && request.url === "/v1/wallet-transfers/sign-and-deliver") {
+        if (request.headers["content-type"]?.split(";", 1)[0] !== "application/json") {
+          send(response, 415, {
+            error: { code: "UNSUPPORTED_MEDIA_TYPE", retryable: false },
+            success: false,
+          });
+          return;
+        }
+        body = await readBody(request);
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(body.toString("utf8"));
+        } catch {
+          throw new SignerError("TRANSFER_PLAN_REJECTED");
+        }
+        const transfer = transferSigningRequest(parsed);
+        const signed = await input.service.signWalletTransfer({
+          ...ownership,
+          ...(sessionId ? { reauthenticatedSessionId: sessionId } : {}),
+          ...transfer,
+        });
+        send(response, 202, { data: signed, success: true });
+        return;
+      }
       if (request.method === "GET" && request.url === "/v1/security-password/status") {
         const status = await input.service.securityPasswordStatus(ownership.userId);
         send(response, 200, { data: status, success: true });
