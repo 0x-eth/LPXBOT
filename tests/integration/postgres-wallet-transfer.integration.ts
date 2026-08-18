@@ -224,6 +224,64 @@ describe("P04-06 PostgreSQL nonce and transfer recovery", () => {
       },
     });
 
+    const replacement = await repository.prepareReplacement({
+      feeLimit: {
+        feeCapBaseUnit: "63000",
+        gasLimit: "21000",
+        maxFeePerGasBaseUnit: "3",
+        maxPriorityFeePerGasBaseUnit: "2",
+      },
+      now: new Date(baseTime.getTime() + 5_000),
+      operationId: operationB.operationId,
+      reason: "pending-fee-bump",
+    });
+    expect(replacement.plan.nonce).toBe(operationB.plan!.nonce);
+    expect(replacement.plan.recipient).toBe(operationB.plan!.recipient);
+    expect(replacement.plan.amountBaseUnit).toBe(operationB.plan!.amountBaseUnit);
+    expect(walletTransferPlanDigest(replacement.plan)).toBe(replacement.planDigest);
+    expect(
+      await authorizer.authorize({
+        plan: replacement.plan,
+        planDigest: replacement.planDigest,
+        tenantId: replacement.tenantId,
+        userId,
+      }),
+    ).toBe(true);
+    expect(
+      await authorizer.authorize({
+        plan: { ...replacement.plan, recipient: recipientA, transactionTarget: recipientA },
+        planDigest: replacement.planDigest,
+        tenantId: replacement.tenantId,
+        userId,
+      }),
+    ).toBe(false);
+    await repository.completeReplacement({
+      authorization: replacement,
+      deliveredAt: new Date(baseTime.getTime() + 5_001),
+      result: {
+        deliveryId: "postgres-fixture:replacement",
+        planDigest: replacement.planDigest,
+        status: "accepted",
+        transactionHash: `0x${"4".repeat(64)}`,
+      },
+    });
+    const lineage = await pool.query<{
+      active: boolean;
+      generation: number;
+      state: string;
+    }>(
+      `SELECT generation, state, active
+         FROM wallet_transfer_transactions
+        WHERE operation_id = $1
+        ORDER BY generation`,
+      [operationB.operationId],
+    );
+    expect(lineage.rows).toEqual([
+      { active: false, generation: 0, state: "replaced" },
+      { active: true, generation: 1, state: "broadcast" },
+    ]);
+    expect(lineage.rows.filter(({ active }) => active)).toHaveLength(1);
+
     const pendingClaims = await repository.claimDue({
         leaseMilliseconds: 10_000,
         limit: 10,
@@ -291,64 +349,6 @@ describe("P04-06 PostgreSQL nonce and transfer recovery", () => {
       reconciliationReason: "REORG_RECEIPT_REMOVED",
       state: "reconciling",
     });
-
-    const replacement = await repository.prepareReplacement({
-      feeLimit: {
-        feeCapBaseUnit: "63000",
-        gasLimit: "21000",
-        maxFeePerGasBaseUnit: "3",
-        maxPriorityFeePerGasBaseUnit: "2",
-      },
-      now: new Date(baseTime.getTime() + 5_000),
-      operationId: operationB.operationId,
-      reason: "pending-fee-bump",
-    });
-    expect(replacement.plan.nonce).toBe(operationB.plan!.nonce);
-    expect(replacement.plan.recipient).toBe(operationB.plan!.recipient);
-    expect(replacement.plan.amountBaseUnit).toBe(operationB.plan!.amountBaseUnit);
-    expect(walletTransferPlanDigest(replacement.plan)).toBe(replacement.planDigest);
-    expect(
-      await authorizer.authorize({
-        plan: replacement.plan,
-        planDigest: replacement.planDigest,
-        tenantId: replacement.tenantId,
-        userId,
-      }),
-    ).toBe(true);
-    expect(
-      await authorizer.authorize({
-        plan: { ...replacement.plan, recipient: recipientA, transactionTarget: recipientA },
-        planDigest: replacement.planDigest,
-        tenantId: replacement.tenantId,
-        userId,
-      }),
-    ).toBe(false);
-    await repository.completeReplacement({
-      authorization: replacement,
-      deliveredAt: new Date(baseTime.getTime() + 5_001),
-      result: {
-        deliveryId: "postgres-fixture:replacement",
-        planDigest: replacement.planDigest,
-        status: "accepted",
-        transactionHash: `0x${"4".repeat(64)}`,
-      },
-    });
-    const lineage = await pool.query<{
-      active: boolean;
-      generation: number;
-      state: string;
-    }>(
-      `SELECT generation, state, active
-         FROM wallet_transfer_transactions
-        WHERE operation_id = $1
-        ORDER BY generation`,
-      [operationB.operationId],
-    );
-    expect(lineage.rows).toEqual([
-      { active: false, generation: 0, state: "replaced" },
-      { active: true, generation: 1, state: "broadcast" },
-    ]);
-    expect(lineage.rows.filter(({ active }) => active)).toHaveLength(1);
 
     const evidence = await pool.query<{ evidence_id: string }>(
       `SELECT evidence_id::text FROM wallet_transfer_receipt_evidence
