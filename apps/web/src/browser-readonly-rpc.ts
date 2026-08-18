@@ -71,9 +71,58 @@ export const browserRpcLimits = Object.freeze({
 
 const allowedMethods = new Set<string>(browserReadonlyRpcMethods);
 const hexQuantityPattern = /^0x(?:0|[1-9a-f][0-9a-f]*)$/u;
+const addressPattern = /^0x[0-9a-fA-F]{40}$/u;
+const hexDataPattern = /^0x(?:[0-9a-fA-F]{2})*$/u;
+const requestBodyBytes = 262_144;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function boundedCall(method: string, params: readonly unknown[]): boolean {
+  if (method !== "eth_call" && method !== "eth_estimateGas") return true;
+  if (params.length < 1 || params.length > 2 || !isRecord(params[0])) return false;
+  const call = params[0];
+  if (typeof call.to !== "string" || !addressPattern.test(call.to)) return false;
+  const data = call.data ?? call.input ?? "0x";
+  return typeof data === "string" && data.length <= 131_074 && hexDataPattern.test(data);
+}
+
+function boundedLogs(method: string, params: readonly unknown[]): boolean {
+  if (method !== "eth_getLogs") return true;
+  if (params.length !== 1 || !isRecord(params[0])) return false;
+  const filter = params[0];
+  const hasBlockHash = Object.hasOwn(filter, "blockHash");
+  const hasRange = Object.hasOwn(filter, "fromBlock") || Object.hasOwn(filter, "toBlock");
+  if (hasBlockHash && hasRange) return false;
+  if (hasBlockHash) {
+    return typeof filter.blockHash === "string" && /^0x[0-9a-fA-F]{64}$/u.test(filter.blockHash);
+  }
+  if (typeof filter.fromBlock !== "string" || typeof filter.toBlock !== "string") return false;
+  if (filter.fromBlock === filter.toBlock) return true;
+  if (!hexQuantityPattern.test(filter.fromBlock) || !hexQuantityPattern.test(filter.toBlock)) {
+    return false;
+  }
+  const from = BigInt(filter.fromBlock);
+  const to = BigInt(filter.toBlock);
+  return to >= from && to - from <= 5_000n;
+}
+
+function serializeRequest(id: number, input: BrowserReadonlyRpcRequest): string {
+  const params = input.params ?? [];
+  if (!boundedCall(input.method, params) || !boundedLogs(input.method, params)) {
+    throw new BrowserRpcError("CLIENT_RPC_METHOD_DENIED", false, "invalid-response");
+  }
+  let body: string;
+  try {
+    body = JSON.stringify({ id, jsonrpc: "2.0", method: input.method, params });
+  } catch {
+    throw new BrowserRpcError("CLIENT_RPC_METHOD_DENIED", false, "invalid-response");
+  }
+  if (new TextEncoder().encode(body).byteLength > requestBodyBytes) {
+    throw new BrowserRpcError("CLIENT_RPC_METHOD_DENIED", false, "invalid-response");
+  }
+  return body;
 }
 
 function loopback(hostname: string): boolean {
@@ -166,7 +215,11 @@ export class BrowserReadonlyRpcClient {
 
   constructor(options: BrowserReadonlyRpcClientOptions) {
     this.#url = validateBrowserRpcUrl(options.url, options.development).href;
-    this.#fetcher = options.fetcher ?? globalThis.fetch.bind(globalThis);
+    if (!options.fetcher && (typeof window === "undefined" || typeof document === "undefined")) {
+      throw new BrowserRpcError("CLIENT_RPC_URL_INVALID", false, "unconfigured");
+    }
+    this.#fetcher =
+      options.fetcher ?? createSandboxedBrowserRpcFetcher(browserRpcLimits).bind(globalThis);
     this.#now = options.now ?? (() => Date.now());
   }
 
@@ -180,36 +233,50 @@ export class BrowserReadonlyRpcClient {
     ) {
       throw new BrowserRpcError("CLIENT_RPC_METHOD_DENIED", false, "invalid-response");
     }
+    const id = ++this.#id;
+    const body = serializeRequest(id, input);
     this.#consumeRate();
     await this.#acquire();
-    const id = ++this.#id;
     const controller = new AbortController();
-    const timeout = globalThis.setTimeout(() => controller.abort(), browserRpcLimits.timeoutMs);
+    let rejectTimeout: (() => void) | null = null;
+    const timeoutFailure = new Promise<never>((_resolve, reject) => {
+      rejectTimeout = () => reject(new Error("timeout"));
+    });
+    const timeout = globalThis.setTimeout(() => {
+      controller.abort();
+      rejectTimeout?.();
+    }, browserRpcLimits.timeoutMs);
     try {
       let response: Response;
       try {
-        response = await this.#fetcher(this.#url, {
-          body: JSON.stringify({
-            id,
-            jsonrpc: "2.0",
-            method: input.method,
-            params: input.params ?? [],
+        response = await Promise.race([
+          this.#fetcher(this.#url, {
+            body,
+            cache: "no-store",
+            credentials: "omit",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+            method: "POST",
+            mode: "cors",
+            redirect: "error",
+            referrerPolicy: "no-referrer",
+            signal: controller.signal,
           }),
-          cache: "no-store",
-          credentials: "omit",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          method: "POST",
-          mode: "cors",
-          redirect: "error",
-          referrerPolicy: "no-referrer",
-          signal: controller.signal,
-        });
-      } catch {
+          timeoutFailure,
+        ]);
+      } catch (error) {
         if (controller.signal.aborted) {
           throw new BrowserRpcError("CLIENT_RPC_TIMEOUT", true, "timeout");
+        }
+        if (error instanceof BrowserRpcFrameTransportError) {
+          if (error.failure === "timeout") {
+            throw new BrowserRpcError("CLIENT_RPC_TIMEOUT", true, "timeout");
+          }
+          if (error.failure === "invalid-response") {
+            throw new BrowserRpcError("CLIENT_RPC_INVALID_RESPONSE", false, "invalid-response");
+          }
         }
         throw new BrowserRpcError("CLIENT_RPC_NETWORK_ERROR", true, "network-error");
       }
@@ -315,3 +382,7 @@ export class BrowserCustomRpcSession {
 }
 
 export const browserCustomRpcSession = new BrowserCustomRpcSession();
+import {
+  BrowserRpcFrameTransportError,
+  createSandboxedBrowserRpcFetcher,
+} from "./browser-rpc-frame-transport";

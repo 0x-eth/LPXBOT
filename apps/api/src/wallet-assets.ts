@@ -8,13 +8,7 @@ import type {
   WalletTokenPage,
 } from "@lpbot/api-contract";
 import { Decimal } from "decimal.js";
-import {
-  decodeFunctionResult,
-  encodeFunctionData,
-  formatUnits,
-  getAddress,
-  type Hex,
-} from "viem";
+import { decodeFunctionResult, encodeFunctionData, formatUnits, getAddress, type Hex } from "viem";
 
 export type WalletAssetErrorCode =
   | "CHAIN_NOT_ALLOWED"
@@ -72,7 +66,9 @@ export interface WalletTokenStore {
     userId: string;
     walletId: string;
   }): Promise<boolean>;
-  insert(input: StoredWalletToken & { userId: string; walletId: string }): Promise<WalletTokenInsertResult>;
+  insert(
+    input: StoredWalletToken & { userId: string; walletId: string },
+  ): Promise<WalletTokenInsertResult>;
   list(input: { chainId: number; userId: string; walletId: string }): Promise<StoredWalletToken[]>;
 }
 
@@ -213,7 +209,10 @@ const canonicalDecimalPattern = /^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/u;
 const hexDataPattern = /^0x(?:[0-9a-fA-F]{2})*$/u;
 const controlCharacterPattern = /\p{Cc}/u;
 
-export function canonicalWalletAddress(value: unknown, code: WalletAssetErrorCode = "INVALID_TOKEN") {
+export function canonicalWalletAddress(
+  value: unknown,
+  code: WalletAssetErrorCode = "INVALID_TOKEN",
+) {
   if (typeof value !== "string" || !/^0x[0-9a-fA-F]{40}$/u.test(value)) {
     throw new WalletAssetError(code);
   }
@@ -573,9 +572,7 @@ export class WalletAssetService implements WalletAssetApplication {
         ...tokenBalances,
       ];
       const totalUsdValueDecimal = items.every(({ usdValueDecimal }) => usdValueDecimal !== null)
-        ? items
-            .reduce((total, item) => total.add(item.usdValueDecimal!), new Decimal(0))
-            .toFixed()
+        ? items.reduce((total, item) => total.add(item.usdValueDecimal!), new Decimal(0)).toFixed()
         : null;
       return {
         address: input.wallet.address,
@@ -606,15 +603,19 @@ export class WalletAssetService implements WalletAssetApplication {
         ? null
         : canonicalWalletAddress(input.tokenAddress);
     const token = tokenAddress
-      ? (await this.listTokens({
-          chainId: input.chainId,
-          userId: input.userId,
-          walletId: input.wallet.walletId,
-        })).items.find((candidate) => candidate.tokenAddress === tokenAddress)
+      ? (
+          await this.listTokens({
+            chainId: input.chainId,
+            userId: input.userId,
+            walletId: input.wallet.walletId,
+          })
+        ).items.find((candidate) => candidate.tokenAddress === tokenAddress)
       : null;
     if (tokenAddress && !token) throw new WalletAssetError("TOKEN_NOT_FOUND");
     const amountDecimal =
-      input.amountDecimal === undefined || input.amountDecimal === null || input.amountDecimal === ""
+      input.amountDecimal === undefined ||
+      input.amountDecimal === null ||
+      input.amountDecimal === ""
         ? null
         : typeof input.amountDecimal === "string"
           ? input.amountDecimal
