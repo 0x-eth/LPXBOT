@@ -29,6 +29,7 @@ function fixture() {
   const signer = new IsolatedWalletSigner({ kms });
   const makeService = () =>
     new CustodySignerService({
+      backoffJitter: () => 0,
       derivePasswordKek: (password, salt) =>
         deriveArgon2idKek(password, salt, {
           argonVersion: 19,
