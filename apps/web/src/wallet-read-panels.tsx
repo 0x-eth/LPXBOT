@@ -100,9 +100,6 @@ function ReceivePanel({
   }, [amount, asset, client, wallet.walletId]);
 
   useEffect(() => {
-    setAmount("");
-    setAsset("native");
-    setContent(null);
     queueMicrotask(() => void generate());
   }, [wallet.walletId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -206,6 +203,7 @@ function AddressBookPanel({ client }: { client: WalletReadClient }) {
 
   const load = useCallback(
     async (classify?: string, signal?: AbortSignal) => {
+      if (signal?.aborted) return;
       setStatus("loading");
       setError(null);
       try {
@@ -222,7 +220,7 @@ function AddressBookPanel({ client }: { client: WalletReadClient }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(undefined, controller.signal);
+    queueMicrotask(() => void load(undefined, controller.signal));
     return () => controller.abort();
   }, [load]);
 
@@ -500,15 +498,9 @@ export function WalletReadPanels({ wallets }: { wallets: CustodyWallet[] }) {
   const [error, setError] = useState<string | null>(null);
   const wallet = wallets.find((candidate) => candidate.walletId === walletId) ?? wallets[0]!;
 
-  useEffect(() => {
-    if (!wallets.some((candidate) => candidate.walletId === walletId)) {
-      setWalletId(wallets[0]?.walletId ?? "");
-    }
-  }, [walletId, wallets]);
-
   const load = useCallback(
     async (signal?: AbortSignal) => {
-      if (!wallet) return;
+      if (!wallet || signal?.aborted) return;
       setStatus("loading");
       setError(null);
       try {
@@ -530,7 +522,7 @@ export function WalletReadPanels({ wallets }: { wallets: CustodyWallet[] }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
+    queueMicrotask(() => void load(controller.signal));
     return () => controller.abort();
   }, [load]);
 
@@ -671,7 +663,7 @@ export function WalletReadPanels({ wallets }: { wallets: CustodyWallet[] }) {
           </p>
         ) : null}
       </section>
-      <ReceivePanel client={client} tokens={tokens} wallet={wallet} />
+      <ReceivePanel key={wallet.walletId} client={client} tokens={tokens} wallet={wallet} />
       <AddressBookPanel client={client} />
     </div>
   );

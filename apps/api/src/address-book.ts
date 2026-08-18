@@ -29,9 +29,7 @@ export class AddressBookError extends Error {
 }
 
 export type AddressBookAuditAction =
-  | "address-book.create"
-  | "address-book.delete"
-  | "address-book.patch";
+  "address-book.create" | "address-book.delete" | "address-book.patch";
 
 export interface AddressBookAuditInput {
   action: AddressBookAuditAction;
@@ -132,7 +130,9 @@ export function parseAddressBookEntryId(value: unknown): string {
 export function parseAddressBookCreateIngress(value: Uint8Array): ParsedAddressBookCreate {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString("utf8"));
+    parsed = JSON.parse(
+      Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString("utf8"),
+    );
   } catch (error) {
     throw new AddressBookError("ADDRESS_BOOK_INVALID", { cause: error });
   }
@@ -238,7 +238,12 @@ export class MemoryAddressBookStore implements AddressBookStore {
       userId: input.userId,
     };
     this.#entries.set(value.entryId, value);
-    this.audits.push({ ...input.audit, entryId: value.entryId, outcome: "allowed", resultCode: "CREATED" });
+    this.audits.push({
+      ...input.audit,
+      entryId: value.entryId,
+      outcome: "allowed",
+      resultCode: "CREATED",
+    });
     return this.#public(value);
   }
 
@@ -261,7 +266,10 @@ export class MemoryAddressBookStore implements AddressBookStore {
   async list(input: { chainId: number; userId: string }): Promise<AddressBookEntry[]> {
     return [...this.#entries.values()]
       .filter((entry) => entry.userId === input.userId && entry.chainId === input.chainId)
-      .sort((left, right) => left.label.localeCompare(right.label) || left.entryId.localeCompare(right.entryId))
+      .sort(
+        (left, right) =>
+          left.label.localeCompare(right.label) || left.entryId.localeCompare(right.entryId),
+      )
       .map((entry) => this.#public(entry));
   }
 
@@ -289,7 +297,16 @@ export class MemoryAddressBookStore implements AddressBookStore {
   }
 
   #public(value: AddressBookEntry & { userId: string }): AddressBookEntry {
-    const { userId: _userId, ...entry } = value;
-    return structuredClone(entry);
+    return structuredClone({
+      address: value.address,
+      category: value.category,
+      chainId: value.chainId,
+      createdAt: value.createdAt,
+      entryId: value.entryId,
+      label: value.label,
+      note: value.note,
+      revision: value.revision,
+      updatedAt: value.updatedAt,
+    });
   }
 }
