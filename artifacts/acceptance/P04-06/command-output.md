@@ -12,12 +12,13 @@ Environment: local macOS fixture, repository target Node 22.23.1, local runner N
 | `pnpm test:e2e` | 209 passed / 23 pre-existing conditional mobile skips / 0 failed |
 | `pnpm test:pwa` | 4/4 passed |
 | `pnpm test:infra` | 8/8 passed; PostgreSQL, Redis, MinIO, and Anvil healthy; migration and seed repeatable |
-| `pnpm format:check` | passed after repository formatting of eight newly added files |
+| `pnpm format:check`, `pnpm lint`, `pnpm typecheck` | passed; 15 lint tasks and 23 typecheck/build tasks |
 | `pnpm build` | 15/15 package builds passed |
-| focused API lint and root TypeScript | passed |
+| `pnpm test` | 124 Vitest files / 747 tests and 128/128 governance tests passed |
+| `pnpm check:all` | frozen baseline, 196/196 IDs, P00, 566 links, 31 manifests, and P02-P04 reference checks passed |
 | `pnpm audit:dependencies` | no known vulnerabilities |
 | `gitleaks git --config=.gitleaks.toml --redact .` | 1,178 commits / 24.18 MB scanned; no leaks found |
 | fixed-baseline acceptance comparison | P00 through P04-05: zero changed files |
 | Public RPC/testnet/mainnet/real-fund calls | 0 |
 
-Final full `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm check:all`, formatting, security scan, and acceptance checksum verification are recorded only after the P04-06 documents and governance assertions are finalized.
+All final local gates completed after the P04-06 documents and governance assertions were finalized. GitHub Actions results are recorded separately after the branch push because they are remote execution evidence rather than local command output.
