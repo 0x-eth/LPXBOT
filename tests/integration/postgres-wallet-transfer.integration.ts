@@ -4,7 +4,10 @@ import { PostgresWalletTransferOperationStore } from "../../apps/api/src/index.j
 import { PostgresWalletTransferPlanAuthorizer } from "../../apps/signer/src/index.js";
 import { PostgresCustodyWalletStore } from "../../apps/signer/src/postgres-custody-wallet-store.js";
 import { PostgresWalletTransferRecoveryRepository } from "../../apps/worker/src/index.js";
-import { walletTransferPlanDigest, type WalletTransferPlan } from "../../packages/domain/src/wallet-transfer.js";
+import {
+  walletTransferPlanDigest,
+  type WalletTransferPlan,
+} from "../../packages/domain/src/wallet-transfer.js";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -148,12 +151,22 @@ describe("P04-06 PostgreSQL nonce and transfer recovery", () => {
       recipient: recipientB,
       requestHash: `sha256:${"d".repeat(64)}`,
     });
-    const results = await Promise.all([store.create(inputA), store.create(inputA), store.create(inputB)]);
+    const results = await Promise.all([
+      store.create(inputA),
+      store.create(inputA),
+      store.create(inputB),
+    ]);
     expect(results.filter(({ kind }) => kind === "created")).toHaveLength(2);
     expect(results.filter(({ kind }) => kind === "duplicate")).toHaveLength(1);
-    const operationA = results.find(({ operation }) => operation.recipient === recipientA)!.operation;
-    const operationB = results.find(({ operation }) => operation.recipient === recipientB)!.operation;
+    const operationA = results.find(
+      ({ operation }) => operation.recipient === recipientA,
+    )!.operation;
+    const operationB = results.find(
+      ({ operation }) => operation.recipient === recipientB,
+    )!.operation;
     expect(new Set([operationA.nonce, operationB.nonce])).toEqual(new Set(["0", "1"]));
+    expect(operationA.reauthenticatedSessionId).toBe(sessionId);
+    expect(operationB.reauthenticatedSessionId).toBe(sessionId);
     await expect(
       store.create({ ...inputA, requestHash: `sha256:${"e".repeat(64)}` }),
     ).rejects.toMatchObject({ code: "IDEMPOTENCY_CONFLICT" });
@@ -199,8 +212,14 @@ describe("P04-06 PostgreSQL nonce and transfer recovery", () => {
       workerId: "postgres-transfer-worker",
     });
     expect(claims).toHaveLength(2);
-    const claimA = claims.find(({ operation }) => operation.operationId === operationA.operationId)!;
-    const claimB = claims.find(({ operation }) => operation.operationId === operationB.operationId)!;
+    const claimA = claims.find(
+      ({ operation }) => operation.operationId === operationA.operationId,
+    )!;
+    const claimB = claims.find(
+      ({ operation }) => operation.operationId === operationB.operationId,
+    )!;
+    expect(claimA.operation.reauthenticatedSessionId).toBe(sessionId);
+    expect(claimB.operation.reauthenticatedSessionId).toBe(sessionId);
     const hashA = `0x${"1".repeat(64)}` as const;
     const hashB = `0x${"2".repeat(64)}` as const;
     await repository.completeBroadcast({
@@ -238,6 +257,7 @@ describe("P04-06 PostgreSQL nonce and transfer recovery", () => {
     expect(replacement.plan.nonce).toBe(operationB.plan!.nonce);
     expect(replacement.plan.recipient).toBe(operationB.plan!.recipient);
     expect(replacement.plan.amountBaseUnit).toBe(operationB.plan!.amountBaseUnit);
+    expect(replacement.reauthenticatedSessionId).toBe(sessionId);
     expect(walletTransferPlanDigest(replacement.plan)).toBe(replacement.planDigest);
     expect(
       await authorizer.authorize({
@@ -283,11 +303,11 @@ describe("P04-06 PostgreSQL nonce and transfer recovery", () => {
     expect(lineage.rows.filter(({ active }) => active)).toHaveLength(1);
 
     const pendingClaims = await repository.claimDue({
-        leaseMilliseconds: 10_000,
-        limit: 10,
-        now: baseTime,
-        workerId: "postgres-transfer-worker",
-      });
+      leaseMilliseconds: 10_000,
+      limit: 10,
+      now: baseTime,
+      workerId: "postgres-transfer-worker",
+    });
     const pendingClaim = pendingClaims.find(
       ({ operation }) => operation.operationId === operationA.operationId,
     )!;
@@ -297,11 +317,11 @@ describe("P04-06 PostgreSQL nonce and transfer recovery", () => {
       observedAt: new Date(baseTime.getTime() + 1),
     });
     const confirmationClaims = await repository.claimDue({
-        leaseMilliseconds: 10_000,
-        limit: 10,
-        now: new Date(baseTime.getTime() + 2_000),
-        workerId: "postgres-transfer-worker",
-      });
+      leaseMilliseconds: 10_000,
+      limit: 10,
+      now: new Date(baseTime.getTime() + 2_000),
+      workerId: "postgres-transfer-worker",
+    });
     const confirmationClaim = confirmationClaims.find(
       ({ operation }) => operation.operationId === operationA.operationId,
     )!;
@@ -328,11 +348,11 @@ describe("P04-06 PostgreSQL nonce and transfer recovery", () => {
       observedAt: new Date(baseTime.getTime() + 2_001),
     });
     const reorgClaims = await repository.claimDue({
-        leaseMilliseconds: 10_000,
-        limit: 10,
-        now: new Date(baseTime.getTime() + 4_000),
-        workerId: "postgres-transfer-worker",
-      });
+      leaseMilliseconds: 10_000,
+      limit: 10,
+      now: new Date(baseTime.getTime() + 4_000),
+      workerId: "postgres-transfer-worker",
+    });
     const reorgClaim = reorgClaims.find(
       ({ operation }) => operation.operationId === operationA.operationId,
     )!;
