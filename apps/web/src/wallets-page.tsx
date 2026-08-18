@@ -1144,6 +1144,11 @@ function ForceDeleteDialog({
 export function WalletsPage() {
   const client = useMemo(() => new WalletClient(), []);
   const keystoreClient = useMemo(() => new KeystoreClient(), []);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletePreview, setDeletePreview] = useState<WalletDeletePreview | null>(null);
+  const [deletePreviewOpen, setDeletePreviewOpen] = useState(false);
+  const [deletingWallet, setDeletingWallet] = useState<CustodyWallet | null>(null);
+  const [forceDeleteOpen, setForceDeleteOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [keystoreStatus, setKeystoreStatus] = useState<KeystoreStatus>({
@@ -1152,12 +1157,17 @@ export function WalletsPage() {
     version: 0,
   });
   const [modeSwitchOpen, setModeSwitchOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renamingWallet, setRenamingWallet] = useState<CustodyWallet | null>(null);
   const [status, setStatus] = useState<WalletPageStatus>("loading");
   const [switchingWallet, setSwitchingWallet] = useState<CustodyWallet | null>(null);
   const [wallets, setWallets] = useState<CustodyWallet[]>([]);
+  const deleteRequestVersion = useRef(0);
+  const deleteTrigger = useRef<HTMLButtonElement>(null);
   const generateTrigger = useRef<HTMLButtonElement>(null);
   const importTrigger = useRef<HTMLButtonElement>(null);
   const modeSwitchTrigger = useRef<HTMLButtonElement>(null);
+  const renameTrigger = useRef<HTMLButtonElement>(null);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -1216,6 +1226,49 @@ export function WalletsPage() {
     );
     setSwitchingWallet(null);
     setStatus("ready");
+  };
+
+  const openDelete = async (wallet: CustodyWallet, trigger: HTMLButtonElement) => {
+    const requestVersion = ++deleteRequestVersion.current;
+    deleteTrigger.current = trigger;
+    setDeleteError(null);
+    setDeletePreview(null);
+    setDeletingWallet(wallet);
+    setDeletePreviewOpen(true);
+    setForceDeleteOpen(false);
+    try {
+      const preview = await client.deletePreview(wallet.walletId);
+      if (requestVersion !== deleteRequestVersion.current) return;
+      setDeletePreview(preview);
+      const dependencyCount =
+        preview.assetCount + preview.policyCount + preview.positionCount + preview.taskCount;
+      setStatus(dependencyCount > 0 ? "delete-blocked" : "ready");
+    } catch (requestError) {
+      if (requestVersion !== deleteRequestVersion.current) return;
+      setDeleteError(walletLifecycleLabel(requestError));
+      setStatus(lifecycleStateForError(requestError));
+    }
+  };
+
+  const clearDelete = () => {
+    deleteRequestVersion.current += 1;
+    setDeleteError(null);
+    setDeletePreview(null);
+    setDeletingWallet(null);
+  };
+
+  const deletionFailed = (requestError: unknown) => {
+    setDeleteError(walletLifecycleLabel(requestError));
+    setStatus(lifecycleStateForError(requestError));
+  };
+
+  const deleted = (receipt: WalletDeletionReceipt) => {
+    setWallets((current) => current.filter(({ walletId }) => walletId !== receipt.walletId));
+    setDeletePreviewOpen(false);
+    setForceDeleteOpen(false);
+    clearDelete();
+    setStatus("deleted");
+    requestAnimationFrame(() => generateTrigger.current?.focus());
   };
 
   return (
@@ -1277,18 +1330,32 @@ export function WalletsPage() {
           <p>还没有托管钱包</p>
         </div>
       ) : null}
-      {!importOpen && !generateOpen && !modeSwitchOpen ? <WalletState status={status} /> : null}
+      {!importOpen &&
+      !generateOpen &&
+      !modeSwitchOpen &&
+      !renameOpen &&
+      !deletePreviewOpen &&
+      !forceDeleteOpen ? (
+        <WalletState status={status} />
+      ) : null}
       {wallets.length > 0 ? (
         <ul aria-label="托管钱包" className="wallet-list">
           {wallets.map((wallet) => (
             <WalletRecord
+              actionsDisabled={status === "deleting"}
               key={wallet.walletId}
+              onDelete={(selected, trigger) => void openDelete(selected, trigger)}
+              onRename={(selected, trigger) => {
+                renameTrigger.current = trigger;
+                setRenamingWallet(selected);
+                setRenameOpen(true);
+              }}
               onSwitch={(selected, trigger) => {
                 modeSwitchTrigger.current = trigger;
                 setSwitchingWallet(selected);
                 setModeSwitchOpen(true);
               }}
-              switchDisabled={!keystoreStatus.configured}
+              switchDisabled={!keystoreStatus.configured || status === "deleting"}
               wallet={wallet}
             />
           ))}
@@ -1327,6 +1394,62 @@ export function WalletsPage() {
         open={modeSwitchOpen}
         trigger={modeSwitchTrigger}
         wallet={switchingWallet}
+      />
+      <RenameWalletDialog
+        client={client}
+        onChanged={(wallet) => {
+          changed(wallet);
+          setRenamingWallet(null);
+        }}
+        onFailure={(error) => setStatus(lifecycleStateForError(error))}
+        onOpenChange={(open) => {
+          setRenameOpen(open);
+          if (!open) setRenamingWallet(null);
+        }}
+        open={renameOpen}
+        trigger={renameTrigger}
+        wallet={renamingWallet}
+      />
+      <DeletePreviewDialog
+        client={client}
+        error={deleteError}
+        onDeleted={deleted}
+        onFailure={deletionFailed}
+        onForce={() => {
+          setDeleteError(null);
+          setDeletePreviewOpen(false);
+          setForceDeleteOpen(true);
+        }}
+        onOpenChange={(open) => {
+          setDeletePreviewOpen(open);
+          if (!open && !forceDeleteOpen) {
+            clearDelete();
+            if (status !== "deleted" && status !== "deleting") setStatus("ready");
+          }
+        }}
+        onState={setStatus}
+        open={deletePreviewOpen}
+        preview={deletePreview}
+        trigger={deleteTrigger}
+        wallet={deletingWallet}
+      />
+      <ForceDeleteDialog
+        client={client}
+        error={deleteError}
+        onDeleted={deleted}
+        onFailure={deletionFailed}
+        onOpenChange={(open) => {
+          setForceDeleteOpen(open);
+          if (!open) {
+            clearDelete();
+            if (status !== "deleted" && status !== "deleting") setStatus("ready");
+          }
+        }}
+        onState={setStatus}
+        open={forceDeleteOpen}
+        preview={deletePreview}
+        trigger={deleteTrigger}
+        wallet={deletingWallet}
       />
     </main>
   );
