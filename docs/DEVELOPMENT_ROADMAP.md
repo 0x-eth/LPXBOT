@@ -187,7 +187,7 @@ flowchart LR
 
 **门禁：** 独立安全评审后才进测试网；测试钱包与研究/生产钱包隔离。
 
-**当前状态：** P04-04 在 P04-02 隔离 signer 与 P04-03 Keystore 生命周期上完成钱包命名、删除预览、普通/强制删除、Envelope 不可恢复清除，以及与 Keystore 完全分域的安全密码生命周期和 signer 内部验证端口。P04 当前为 7 项 `implemented-assumed`、5 项 `planned`，继续 `accepted-with-gaps`。验收仅使用合成密码/钱包和本地 KMS/PostgreSQL/browser/依赖 fixture；生产任务、策略、仓位、资产 inventory 与任务协调器适配未接入时删除 fail closed。签名、raw transaction、广播和外部 RPC 调用均为 0，独立安全评审和生产 custody 运维仍未完成，不标记 `parity-verified`、`released` 或 custody-ready。
+**当前状态：** P04-06 在 P04-02 隔离 signer、P04-03 Keystore、P04-04 安全密码/钱包生命周期和 P04-05 资产/地址簿基础上完成原生币与标准 ERC-20 转账、PostgreSQL nonce/fencing/idempotency ledger、plan-bound 签名、专用广播、恢复/替换/reorg 对账和 desktop/mobile UI。P04 当前为 11 项 `implemented-assumed`、1 项 `planned`，继续 `accepted-with-gaps`；全局为 60 项 `implemented-assumed`、136 项 `planned`。验收仅使用合成钱包、local KMS/PostgreSQL/Redis/browser、loopback Anvil 和本地 ERC-20 fixture；任何非本地写入停在 `READY_FOR_APPROVAL`，公网 RPC、测试网、主网和真实资金调用均为 0。SET-07、独立 signer 安全评审、生产 KMS/provider 灾难恢复、custody monitoring/SLO 与 staging rollback 尚未完成，不标记 `parity-verified`、`released` 或 custody-ready。
 
 ### P05：链适配器、Swap、仓位和 Helper
 

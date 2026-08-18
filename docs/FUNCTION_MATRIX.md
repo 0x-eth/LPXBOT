@@ -204,10 +204,10 @@
 | WALLET-04 | 服务器密钥加密模式 | UI+BUNDLE | USER | R2 | envelope encryption、重启自动恢复；密钥不进数据库；`implemented-assumed`（P04-02，local fixture only） |
 | WALLET-05 | 用户密码加密模式 | UI+BUNDLE | USER | R2 | Argon2id KDF、仅内存解锁、自动锁、忘记密码销毁流程；`implemented-assumed`（P04-03，local fixture only） |
 | WALLET-06 | 设置/修改/重置 keystore 密码 | UI+BUNDLE | USER | R2 | reset preview、确认短语、钱包/任务销毁计数；`implemented-assumed`（P04-03，local fixture only） |
-| WALLET-07 | 安全密码 | UI+BUNDLE | USER | R2 | 转到新地址时二次校验；与 keystore 密码分域；`implemented-assumed`（P04-04，独立生命周期与 signer 内部验证端口；WALLET-10 接线仍 planned） |
+| WALLET-07 | 安全密码 | UI+BUNDLE | USER | R2 | 转到新地址时二次校验；与 keystore 密码分域；`implemented-assumed`（P04-04/P04-06，独立生命周期、signer 内部验证端口与新外部地址转账接线；local fixture only） |
 | WALLET-08 | 余额、USD 估值和 token 导入 | UI+API | USER | R0/R1 | 常用/其他 token、原生币、精确 decimal/base-unit 字符串、价格缺失/过期；`implemented-assumed`（P04-05，controlled local provider fixture only） |
 | WALLET-09 | 地址簿、备注和收款二维码 | UI+BUNDLE | USER | R1 | 独立地址簿域、自钱包/已知外部/新外部分类、安全密码分支、EIP-681 QR；`implemented-assumed`（P04-05，local fixture only） |
-| WALLET-10 | ERC-20/原生币转账 | UI+API | USER | R3/R4 | 25/50/75/MAX、幂等键、余额/gas/自转校验 |
+| WALLET-10 | ERC-20/原生币转账 | UI+API | USER | R3/R4 | 25/50/75/MAX、幂等键、余额/gas/自转校验；`implemented-assumed`（P04-06，PostgreSQL nonce/recovery、local Anvil fixture only；非本地写入停在 `READY_FOR_APPROVAL`） |
 | SWAP-01 | Swap 报价 | UI+API | USER | R0 | 滑点、minOut、价格影响、gas、报价过期 |
 | SWAP-02 | Swap 执行 | UI+API | USER | R3/R4 | approve、route、receipt、失败恢复、幂等 |
 | POS-01 | V3/V4 NFT 仓位扫描 | UI+API+BUNDLE | USER | R0 | Uniswap/Pancake、分页、链、未知 NFT |
