@@ -1,0 +1,15 @@
+P05-01 local quality gates
+
+Required commands:
+- pnpm format:check
+- pnpm lint
+- pnpm typecheck
+- pnpm test
+- pnpm build
+- pnpm check:all
+
+Final result: pending final verification.
+
+The GitHub Actions workflow retains six jobs. Governance includes
+check:p05-reference; browser, contracts, infrastructure, and security remain
+independent jobs.

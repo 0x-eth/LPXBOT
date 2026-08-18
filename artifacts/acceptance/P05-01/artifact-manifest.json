@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P05-01",
+  "phase": "P05",
+  "risk": "R0",
+  "status": "contract-frozen-with-unresolved-gaps",
+  "featureIds": [],
+  "capturedAt": "2026-08-19T00:00:00Z",
+  "referenceBaseline": "1ae85706d4c17c5dbfeebee447a76d069b14c845",
+  "scope": {
+    "mode": "reference-only",
+    "implementationOwnership": "none",
+    "productionRegistry": false,
+    "productionAdapters": false,
+    "productionHelper": false,
+    "productionApiRoutes": false,
+    "productionUi": false,
+    "databaseChanges": false,
+    "signerRuntime": false,
+    "mainnetReadOnlyEvidenceCapture": true,
+    "ciNetworkAccess": false,
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "chainWrites": 0,
+    "realFundOperations": 0
+  },
+  "checksumScope": {
+    "algorithm": "SHA-256",
+    "excludedSelfReferentialFiles": ["artifact-manifest.json", "sha256sums.txt"],
+    "priorAcceptance": "all baseline P00-P04-07 acceptance files"
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "artifacts/acceptance/P04-01/transaction-contracts.json",
+      "commit": "1ae85706d4c17c5dbfeebee447a76d069b14c845",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "Frozen P04 nonce, signing, broadcast, replacement, and reconciliation contract reused by P05 operations",
+      "classification": "LOCAL-DECISION"
+    },
+    {
+      "path": "docs/ARCHITECTURE_AND_WORKFLOWS.md",
+      "commit": "1ae85706d4c17c5dbfeebee447a76d069b14c845",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "Registry, Helper, operation, reconciliation, and security architecture",
+      "classification": "LOCAL-DECISION"
+    },
+    {
+      "path": "docs/DEVELOPMENT_ROADMAP.md",
+      "commit": "1ae85706d4c17c5dbfeebee447a76d069b14c845",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "P05 scope, fixture minimums, tests, and release gates",
+      "classification": "LOCAL-DECISION"
+    },
+    {
+      "path": "docs/FUNCTION_MATRIX.md",
+      "commit": "1ae85706d4c17c5dbfeebee447a76d069b14c845",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "SWAP-01..02, POS-01..04, and HELPER-01..06 feature definitions",
+      "classification": "OFFICIAL"
+    },
+    {
+      "path": "docs/TRACEABILITY_MATRIX.md",
+      "commit": "1ae85706d4c17c5dbfeebee447a76d069b14c845",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "P05 feature-to-test and evidence mapping",
+      "classification": "LOCAL-DECISION"
+    },
+    {
+      "path": "docs/VIBE_CODING_PLAYBOOK.md",
+      "commit": "1ae85706d4c17c5dbfeebee447a76d069b14c845",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "Fixture-first P05 codec and fail-closed execution guidance",
+      "classification": "LOCAL-DECISION"
+    },
+    {
+      "path": "docs/research/onchain-helper.md",
+      "commit": "1ae85706d4c17c5dbfeebee447a76d069b14c845",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "BSC Helper owner, runtime, selector, receipt, fee, refund, and limitation observations",
+      "classification": "OBSERVED"
+    },
+    {
+      "path": "docs/research/prior-thread.md",
+      "commit": "1ae85706d4c17c5dbfeebee447a76d069b14c845",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "Historical static-analysis and outer calldata-layout inferences",
+      "classification": "INFERRED"
+    },
+    {
+      "path": "packages/chain-registry/src/index.ts",
+      "commit": "1ae85706d4c17c5dbfeebee447a76d069b14c845",
+      "bytes": 1,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "Existing BSC protocol IDs, addresses, ABI hashes, runtime hashes, and fail-closed validation",
+      "classification": "LOCAL-DECISION"
+    }
+  ],
+  "checks": [
+    { "id": "initial-red", "result": "expected-failure", "evidencePath": "checks/initial-failure.txt" },
+    { "id": "governance-test", "result": "passed", "evidencePath": "checks/governance-test.txt" },
+    { "id": "artifact-schema", "result": "passed", "evidencePath": "checks/artifact-schema.txt" },
+    { "id": "prior-acceptance-integrity", "result": "passed", "evidencePath": "checks/prior-acceptance-integrity.txt" },
+    { "id": "fixture-byte-regression", "result": "passed", "evidencePath": "checks/fixture-byte-regression.txt" },
+    { "id": "quality-gates", "result": "passed", "evidencePath": "checks/quality-gates.txt" },
+    { "id": "secret-scan", "result": "passed", "evidencePath": "checks/security-audit.txt" },
+    { "id": "dependency-audit", "result": "passed", "evidencePath": "checks/security-audit.txt" }
+  ],
+  "limitations": [
+    "P05-01 owns no production feature implementation; P05 remains 0 implemented-assumed and 12 planned.",
+    "The global inventory remains 61 implemented-assumed and 135 planned.",
+    "The forty mainnet fixtures were captured with read-only JSON-RPC and BscScan index evidence; CI only reads their frozen bytes.",
+    "ObservedHelperCodec is test-only and preserves opaque ABI words; it cannot be imported as a production encoder.",
+    "The four selectors are named only observed-v3/v4-path-a/b; original function names and business subtypes remain unknown.",
+    "Router selector and fee-recipient allowlists are intentionally empty, so execution fails closed.",
+    "Helper upgrades, fee ownership, and exit or migration atomicity remain unresolved gaps.",
+    "No signature, broadcast, chain write, deployment, approval, swap, NFT mutation, sweep, or real-fund operation occurred.",
+    "Fork, testnet, malicious-contract, independent audit, authenticated API, and visual parity evidence remain unresolved."
+  ]
+}

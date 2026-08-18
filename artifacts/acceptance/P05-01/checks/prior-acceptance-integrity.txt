@@ -1,0 +1,9 @@
+P05-01 prior acceptance integrity
+
+Command: pnpm check:p05-reference
+Expected result: passed
+
+prior-acceptance-sha256s.txt inventories every acceptance file present under
+P00 through P04-07 at baseline 1ae85706d4c17c5dbfeebee447a76d069b14c845.
+The governance test compares both current bytes and baseline bytes to each
+frozen SHA-256 digest.

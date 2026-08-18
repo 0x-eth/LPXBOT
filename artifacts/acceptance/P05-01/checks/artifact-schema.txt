@@ -1,0 +1,9 @@
+P05-01 artifact schema checks
+
+Command: pnpm check:p05-reference
+Expected result: passed
+
+schemas/p05-reference-artifacts.schema.json fixes workItemId P05-01, phase P05,
+risk R0, baseline 1ae85706d4c17c5dbfeebee447a76d069b14c845, reference-only ownership,
+read-only evidence capture, CI offline behavior, and zero signatures,
+broadcasts, chain writes, and real-fund operations.

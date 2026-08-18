@@ -1,0 +1,11 @@
+P05-01 governance red phase
+
+Baseline: 1ae85706d4c17c5dbfeebee447a76d069b14c845
+
+At the requested baseline, artifacts/acceptance/P05-01, the P05 reference
+schema, check:p05-reference, the governance test, and the test-only
+ObservedHelperCodec did not exist. The required existence and command checks
+therefore failed as expected before this contract-freeze change.
+
+No signature, broadcast, chain write, or real-fund action was used to establish
+the red phase.

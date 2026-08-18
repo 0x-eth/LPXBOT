@@ -1,0 +1,11 @@
+P05-01 security gates
+
+Required commands:
+- gitleaks detect --source . --config .gitleaks.toml --no-banner
+- pnpm audit:dependencies
+
+Final result: pending final verification.
+
+Fixture capture used only frozen BSC read methods. Transaction signatures,
+broadcasts, chain writes, and real-fund operations are all zero. CI performs no
+fixture recapture and no public-network request.

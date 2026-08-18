@@ -1,0 +1,11 @@
+P05-01 focused governance checks
+
+Command: pnpm check:p05-reference
+Expected result: passed
+
+The check validates the P05 manifest schema; the five fact classifications;
+0/12 P05 and 61/135 global counts; chain 56 registry identity and fail-closed
+mutations; quote, position, Helper, operation, API, UI, and security contracts;
+forty independent observed fixtures; and prior acceptance byte integrity.
+
+The command is offline and does not invoke the capture script.

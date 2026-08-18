@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-01",
+  "networkPolicy": "ci-offline-frozen-observed-only",
+  "capturePolicy": {
+    "network": "BNB Smart Chain mainnet",
+    "chainId": 56,
+    "readOnly": true,
+    "allowedCaptureMethods": [
+      "eth_chainId",
+      "eth_getTransactionByHash",
+      "eth_getTransactionReceipt",
+      "eth_getBlockByHash",
+      "eth_getCode",
+      "eth_call"
+    ],
+    "ciRecaptureAllowed": false,
+    "syntheticSamplesAllowed": false,
+    "minimumIndependentSamplesPerPath": 10
+  },
+  "requiredPaths": [
+    "observed-v3-path-a",
+    "observed-v3-path-b",
+    "observed-v4-path-a",
+    "observed-v4-path-b"
+  ],
+  "counts": {
+    "observed-v3-path-a": 0,
+    "observed-v3-path-b": 0,
+    "observed-v4-path-a": 0,
+    "observed-v4-path-b": 0,
+    "total": 0
+  },
+  "executionCounts": {
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "chainWrites": 0,
+    "realFundOperations": 0
+  },
+  "fixtures": []
+}

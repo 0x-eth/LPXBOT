@@ -1,0 +1,9 @@
+P05-01 frozen production calldata regression
+
+Command: pnpm exec vitest run tests/observed-helper-codec.test.ts
+Result: passed (3 tests)
+
+Each of observed-v3-path-a, observed-v3-path-b, observed-v4-path-a, and
+observed-v4-path-b contains ten independent successful BSC transaction
+fixtures. The test-only ObservedHelperCodec decodes the canonical outer ABI and
+encodes it back to the exact raw calldata bytes. No fixture is synthetic.
