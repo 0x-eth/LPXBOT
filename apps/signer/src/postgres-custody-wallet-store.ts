@@ -12,10 +12,12 @@ import type {
   CustodyWalletCreate,
   CustodyWalletStore,
   KeystoreStore,
+  SecurityPasswordStore,
   StoredCustodyWallet,
   StoredKeystore,
   StoredKeystoreFailure,
   StoredKeystoreResetPreview,
+  StoredSecurityPassword,
   StoredWalletDeletePreview,
   WalletEnvelopeMaterial,
   WalletEnvelopeReplacement,
@@ -97,6 +99,18 @@ interface WalletDeletePreviewRow extends QueryResultRow {
   wallet_revision: string;
 }
 
+interface SecurityPasswordRow extends QueryResultRow {
+  current_version: string;
+  failure_count: number;
+  locked_until: Date | null;
+  parameter_version: number;
+  salt: Buffer;
+  updated_at: Date;
+  user_id: string;
+  verifier: Buffer;
+  version_created_at: Date;
+}
+
 const walletColumns = `
   wallet_id::text, tenant_id, user_id::text, name, address, address_lower, mode,
   lock_status, current_envelope_version, revision::text, created_at, updated_at`;
@@ -105,6 +119,10 @@ const envelopeColumns = `
   envelope_version, algorithm, ciphertext, nonce, authentication_tag, aad_version,
   wrapped_dek, kek_id, kek_version, dek_wrap_version, dek_wrap_nonce,
   dek_wrap_authentication_tag, secret_version::text, created_at`;
+
+const securityPasswordColumns = `
+  p.user_id::text, p.current_version::text, p.failure_count, p.locked_until, p.updated_at,
+  v.parameter_version, v.salt, v.verifier, v.created_at AS version_created_at`;
 
 function integer(value: string | number, field: string): number {
   const parsed = Number(value);
@@ -166,6 +184,25 @@ function storedKeystore(row: KeystoreRow): StoredKeystore {
   };
 }
 
+function storedSecurityPassword(row: SecurityPasswordRow): StoredSecurityPassword {
+  if (!Number.isSafeInteger(row.failure_count) || row.failure_count < 0 || row.failure_count > 5) {
+    throw new RangeError("Stored security password failure count is invalid");
+  }
+  return {
+    current: {
+      createdAt: row.version_created_at,
+      parameterVersion: row.parameter_version as 1,
+      salt: row.salt,
+      verifier: row.verifier,
+      version: integer(row.current_version, "security password version"),
+    },
+    failureCount: row.failure_count,
+    lockedUntil: row.locked_until,
+    updatedAt: row.updated_at,
+    userId: row.user_id,
+  };
+}
+
 function pgCode(error: unknown): string | null {
   return typeof error === "object" && error !== null && "code" in error
     ? String((error as { code: unknown }).code)
@@ -176,7 +213,9 @@ export interface PostgresCustodyWalletStoreOptions {
   failAt?: "before-commit" | "before-lifecycle-commit";
 }
 
-export class PostgresCustodyWalletStore implements CustodyWalletStore, KeystoreStore {
+export class PostgresCustodyWalletStore
+  implements CustodyWalletStore, KeystoreStore, SecurityPasswordStore
+{
   readonly #failAt: "before-commit" | "before-lifecycle-commit" | null;
   readonly #pool: Pool;
 
@@ -546,6 +585,177 @@ export class PostgresCustodyWalletStore implements CustodyWalletStore, KeystoreS
         updatedAt,
         userId,
         walletId,
+      });
+      await client.query("COMMIT");
+    } catch (error) {
+      await this.#rollback(client);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getSecurityPassword(userId: string): Promise<StoredSecurityPassword | null> {
+    const result = await this.#pool.query<SecurityPasswordRow>(
+      `SELECT ${securityPasswordColumns}
+         FROM user_security_passwords p
+         JOIN user_security_password_versions v
+           ON v.user_id = p.user_id AND v.version = p.current_version
+        WHERE p.user_id = $1`,
+      [userId],
+    );
+    return result.rows[0] ? storedSecurityPassword(result.rows[0]) : null;
+  }
+
+  async createSecurityPassword(password: StoredSecurityPassword): Promise<void> {
+    const client = await this.#pool.connect();
+    try {
+      await client.query("BEGIN");
+      await this.#lockSecurityPasswordUser(client, password.userId);
+      await client.query(
+        `INSERT INTO user_security_passwords (
+           user_id, current_version, failure_count, locked_until, created_at, updated_at
+         ) VALUES ($1, $2, 0, NULL, $3, $4)`,
+        [
+          password.userId,
+          password.current.version,
+          password.current.createdAt,
+          password.updatedAt,
+        ],
+      );
+      await this.#insertSecurityPasswordVersion(client, password);
+      await this.#insertSecurityPasswordAudit(client, {
+        action: "security-password.create",
+        now: password.updatedAt,
+        outcome: "allowed",
+        userId: password.userId,
+        version: password.current.version,
+      });
+      this.#lifecycleFault();
+      await client.query("COMMIT");
+    } catch (error) {
+      await this.#rollback(client);
+      if (pgCode(error) === "23505") {
+        throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async rotateSecurityPassword(input: {
+    expectedVersion: number;
+    next: StoredSecurityPassword;
+  }): Promise<void> {
+    const client = await this.#pool.connect();
+    try {
+      await client.query("BEGIN");
+      await this.#lockSecurityPasswordUser(client, input.next.userId);
+      const current = await this.#lockedSecurityPassword(client, input.next.userId);
+      if (!current || integer(current.current_version, "security password version") !== input.expectedVersion) {
+        throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
+      }
+      await this.#insertSecurityPasswordVersion(client, input.next);
+      const updated = await client.query(
+        `UPDATE user_security_passwords
+            SET current_version = $3, failure_count = 0, locked_until = NULL, updated_at = $4
+          WHERE user_id = $1 AND current_version = $2`,
+        [
+          input.next.userId,
+          input.expectedVersion,
+          input.next.current.version,
+          input.next.updatedAt,
+        ],
+      );
+      if (updated.rowCount !== 1) throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
+      await this.#insertSecurityPasswordAudit(client, {
+        action: "security-password.change",
+        now: input.next.updatedAt,
+        outcome: "allowed",
+        userId: input.next.userId,
+        version: input.next.current.version,
+      });
+      this.#lifecycleFault();
+      await client.query("COMMIT");
+    } catch (error) {
+      await this.#rollback(client);
+      if (pgCode(error) === "23505") {
+        throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async recordSecurityPasswordFailure(input: {
+    maxAttempts: number;
+    now: Date;
+    userId: string;
+    version: number;
+  }): Promise<StoredSecurityPassword> {
+    const client = await this.#pool.connect();
+    try {
+      await client.query("BEGIN");
+      await this.#lockSecurityPasswordUser(client, input.userId);
+      const current = await this.#lockedSecurityPassword(client, input.userId);
+      if (!current || integer(current.current_version, "security password version") !== input.version) {
+        throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
+      }
+      const failureCount = Math.min(input.maxAttempts, current.failure_count + 1);
+      const lockedUntil =
+        failureCount >= input.maxAttempts ? new Date(input.now.getTime() + 15 * 60_000) : null;
+      await client.query(
+        `UPDATE user_security_passwords
+            SET failure_count = $3, locked_until = $4, updated_at = $5
+          WHERE user_id = $1 AND current_version = $2`,
+        [input.userId, input.version, failureCount, lockedUntil, input.now],
+      );
+      await this.#insertSecurityPasswordAudit(client, {
+        action: "security-password.verify",
+        now: input.now,
+        outcome: "denied",
+        userId: input.userId,
+        version: input.version,
+      });
+      await client.query("COMMIT");
+      return {
+        ...storedSecurityPassword(current),
+        failureCount,
+        lockedUntil,
+        updatedAt: input.now,
+      };
+    } catch (error) {
+      await this.#rollback(client);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async clearSecurityPasswordFailures(input: {
+    now: Date;
+    userId: string;
+    version: number;
+  }): Promise<void> {
+    const client = await this.#pool.connect();
+    try {
+      await client.query("BEGIN");
+      await this.#lockSecurityPasswordUser(client, input.userId);
+      const updated = await client.query(
+        `UPDATE user_security_passwords
+            SET failure_count = 0, locked_until = NULL, updated_at = $3
+          WHERE user_id = $1 AND current_version = $2`,
+        [input.userId, input.version, input.now],
+      );
+      if (updated.rowCount !== 1) throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
+      await this.#insertSecurityPasswordAudit(client, {
+        action: "security-password.verify",
+        now: input.now,
+        outcome: "allowed",
+        userId: input.userId,
+        version: input.version,
       });
       await client.query("COMMIT");
     } catch (error) {
