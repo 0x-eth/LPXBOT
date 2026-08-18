@@ -12,11 +12,16 @@ export type {
   StoredKeystoreFailure,
   StoredKeystoreResetPreview,
   StoredKeystoreVersion,
+  StoredWalletDeletePreview,
   StoredCustodyWallet,
   WalletEnvelopeMaterial,
   WalletEnvelopeReplacement,
+  WalletDependencyInventory,
+  WalletDependencySnapshot,
   WalletDirectory,
   WalletSignerClient,
+  WalletTaskCoordinator,
+  WalletTaskDeactivation,
 } from "./custody-types.js";
 export { signerCapabilities, IsolatedWalletSigner } from "./isolated-wallet-signer.js";
 export type { KmsClient, KmsKeyDescriptor, WrappedDek } from "./kms.js";

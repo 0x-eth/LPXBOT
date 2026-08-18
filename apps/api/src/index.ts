@@ -27,6 +27,7 @@ export {
   parseWalletId,
   publicKeystoreResetPreview,
   publicKeystoreStatus,
+  publicWalletDeletePreview,
   publicWalletDto,
   WalletApiError,
   walletSecretBodyLimit,

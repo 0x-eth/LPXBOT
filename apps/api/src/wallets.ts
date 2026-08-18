@@ -2,6 +2,7 @@ import type {
   CustodyWallet,
   CustodyWalletPage,
   GenerateCustodyWalletRequest,
+  WalletDeletePreview,
   WalletEncryptionMode,
 } from "@lpbot/api-contract";
 import type { StoredSession } from "@lpbot/security";
@@ -63,6 +64,7 @@ export interface KeystoreApplication {
 }
 
 export interface WalletDirectory {
+  createWalletDeletePreview?(userId: string, walletId: string): Promise<WalletDeletePreview>;
   getWallet(userId: string, walletId: string): Promise<CustodyWallet | null>;
   listWallets(userId: string): Promise<CustodyWalletPage>;
   renameWallet?(input: {
@@ -225,6 +227,65 @@ export function publicWalletDto(value: unknown): CustodyWallet {
     updatedAt: wallet.updatedAt,
     walletId: wallet.walletId.toLowerCase(),
   };
+}
+
+function stringList(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) => typeof item === "string" && item.length > 0 && item.length <= 256 && !/\p{Cc}/u.test(item),
+    ) &&
+    new Set(value).size === value.length
+  );
+}
+
+export function publicWalletDeletePreview(value: unknown): WalletDeletePreview {
+  const preview = record(value);
+  const dependencies = record(preview.dependencies);
+  const expectedKeys = [
+    "assetCount",
+    "assetRiskDigest",
+    "confirmationPhrase",
+    "dependencies",
+    "expiresAt",
+    "forceEligible",
+    "policyCount",
+    "positionCount",
+    "previewToken",
+    "revision",
+    "taskCount",
+    "walletId",
+  ].sort();
+  if (
+    Object.keys(preview).sort().join(",") !== expectedKeys.join(",") ||
+    Object.keys(dependencies).sort().join(",") !==
+      ["assetIds", "policyIds", "positionIds", "taskIds"].sort().join(",") ||
+    !stringList(dependencies.assetIds) ||
+    !stringList(dependencies.policyIds) ||
+    !stringList(dependencies.positionIds) ||
+    !stringList(dependencies.taskIds) ||
+    preview.assetCount !== dependencies.assetIds.length ||
+    preview.policyCount !== dependencies.policyIds.length ||
+    preview.positionCount !== dependencies.positionIds.length ||
+    preview.taskCount !== dependencies.taskIds.length ||
+    typeof preview.assetRiskDigest !== "string" ||
+    preview.assetRiskDigest.length < 1 ||
+    preview.assetRiskDigest.length > 256 ||
+    typeof preview.confirmationPhrase !== "string" ||
+    !/^DELETE WALLET [A-F0-9]{8}$/u.test(preview.confirmationPhrase) ||
+    typeof preview.previewToken !== "string" ||
+    !/^[A-Za-z0-9_-]{43}$/u.test(preview.previewToken) ||
+    typeof preview.walletId !== "string" ||
+    !uuidPattern.test(preview.walletId) ||
+    !Number.isSafeInteger(preview.revision) ||
+    Number(preview.revision) < 1 ||
+    typeof preview.forceEligible !== "boolean" ||
+    typeof preview.expiresAt !== "string" ||
+    new Date(preview.expiresAt).toISOString() !== preview.expiresAt
+  ) {
+    throw new WalletApiError("SIGNER_UNAVAILABLE");
+  }
+  return preview as unknown as WalletDeletePreview;
 }
 
 export function publicKeystoreStatus(value: unknown): KeystoreStatusDto {

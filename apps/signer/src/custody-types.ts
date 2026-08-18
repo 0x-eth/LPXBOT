@@ -2,6 +2,7 @@ import type {
   CustodyWallet,
   CustodyWalletPage,
   WalletEncryptionMode,
+  WalletDeletePreview,
   WalletLockStatus,
 } from "@lpbot/api-contract";
 
@@ -47,6 +48,7 @@ export interface CustodyWalletCreate {
 
 export interface CustodyWalletStore {
   create(input: CustodyWalletCreate): Promise<CustodyWallet>;
+  createWalletDeletePreview(preview: StoredWalletDeletePreview): Promise<void>;
   get(userId: string, walletId: string): Promise<StoredCustodyWallet | null>;
   getCurrentEnvelope(walletId: string, envelopeVersion: number): Promise<CustodyEnvelope | null>;
   list(userId: string): Promise<CustodyWalletPage>;
@@ -63,6 +65,41 @@ export interface CustodyWalletStore {
     status: WalletLockStatus,
     updatedAt: Date,
   ): Promise<void>;
+}
+
+export interface WalletDependencySnapshot {
+  assetIds: string[];
+  assetRiskDigest: string;
+  complete: boolean;
+  policyIds: string[];
+  positionIds: string[];
+  taskIds: string[];
+}
+
+export interface WalletDependencyInventory {
+  inspect(input: { userId: string; walletId: string }): Promise<WalletDependencySnapshot>;
+}
+
+export interface WalletTaskDeactivation {
+  restore(): Promise<void>;
+}
+
+export interface WalletTaskCoordinator {
+  deactivate(input: {
+    taskIds: readonly string[];
+    userId: string;
+    walletId: string;
+  }): Promise<WalletTaskDeactivation>;
+}
+
+export interface StoredWalletDeletePreview extends WalletDependencySnapshot {
+  confirmationPhrase: string;
+  expiresAt: Date;
+  forceEligible: boolean;
+  previewTokenDigest: Buffer;
+  revision: number;
+  userId: string;
+  walletId: string;
 }
 
 export type KeystoreState = "locked" | "locked-out" | "unconfigured" | "unlocked";
@@ -170,6 +207,7 @@ export interface WalletEnvelopeReplacement extends WalletEnvelopeMaterial {
 }
 
 export interface WalletDirectory {
+  createWalletDeletePreview(userId: string, walletId: string): Promise<WalletDeletePreview>;
   getWallet(userId: string, walletId: string): Promise<CustodyWallet | null>;
   listWallets(userId: string): Promise<CustodyWalletPage>;
   renameWallet(input: {

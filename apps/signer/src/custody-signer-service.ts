@@ -5,7 +5,12 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 
-import type { CustodyWallet, CustodyWalletPage, WalletEncryptionMode } from "@lpbot/api-contract";
+import type {
+  CustodyWallet,
+  CustodyWalletPage,
+  WalletDeletePreview,
+  WalletEncryptionMode,
+} from "@lpbot/api-contract";
 
 import type {
   CustodyWalletStore,
@@ -14,7 +19,9 @@ import type {
   StoredKeystore,
   StoredKeystoreFailure,
   WalletDirectory,
+  WalletDependencyInventory,
   WalletSignerClient,
+  WalletTaskCoordinator,
 } from "./custody-types.js";
 import { publicWallet } from "./custody-types.js";
 import type { IsolatedWalletSigner, SealedWalletDraft } from "./isolated-wallet-signer.js";
@@ -119,9 +126,11 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
   readonly #signer: IsolatedWalletSigner;
   readonly #signerInstance: string;
   readonly #store: CustodyWalletStore;
+  readonly #taskCoordinator: WalletTaskCoordinator | null;
   readonly #unlockSessions = new Map<string, UnlockSession>();
   #unlockVersion = 0;
   readonly #uuid: () => string;
+  readonly #walletDependencyInventory: WalletDependencyInventory | null;
 
   constructor(input: {
     backoffJitter?: (maximumExclusive: number) => number;
@@ -135,7 +144,9 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     signer: IsolatedWalletSigner;
     signerInstance?: string;
     store: CustodyWalletStore;
+    taskCoordinator?: WalletTaskCoordinator;
     uuid?: () => string;
+    walletDependencyInventory?: WalletDependencyInventory;
   }) {
     this.#backoffJitter =
       input.backoffJitter ??
@@ -152,7 +163,9 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     this.#signer = input.signer;
     this.#signerInstance = input.signerInstance ?? randomUUID();
     this.#store = input.store;
+    this.#taskCoordinator = input.taskCoordinator ?? null;
     this.#uuid = input.uuid ?? randomUUID;
+    this.#walletDependencyInventory = input.walletDependencyInventory ?? null;
   }
 
   async keystoreStatus(userId: string, reauthenticatedSessionId?: string): Promise<KeystoreStatus> {
@@ -588,9 +601,106 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     return this.#store.list(userId);
   }
 
+  async createWalletDeletePreview(userId: string, walletId: string): Promise<WalletDeletePreview> {
+    const wallet = await this.#store.get(userId, walletId);
+    if (!wallet) throw new SignerError("WALLET_NOT_FOUND");
+    const snapshot = await this.#walletDependencySnapshot(userId, walletId);
+    const tokenBytes = bufferView(this.#randomBytes(32));
+    const phraseBytes = bufferView(this.#randomBytes(4));
+    if (tokenBytes.length !== 32 || phraseBytes.length !== 4) {
+      tokenBytes.fill(0);
+      phraseBytes.fill(0);
+      throw new SignerError("SIGNER_UNAVAILABLE", true);
+    }
+    const previewToken = tokenBytes.toString("base64url");
+    const previewTokenDigest = createHash("sha256").update(tokenBytes).digest();
+    const confirmationPhrase = `DELETE WALLET ${phraseBytes.toString("hex").toUpperCase()}`;
+    const expiresAt = new Date(this.#now().getTime() + 300_000);
+    const forceEligible = snapshot.taskIds.length === 0 || this.#taskCoordinator !== null;
+    try {
+      await this.#store.createWalletDeletePreview({
+        ...snapshot,
+        confirmationPhrase,
+        expiresAt,
+        forceEligible,
+        previewTokenDigest,
+        revision: wallet.revision,
+        userId,
+        walletId,
+      });
+      return {
+        assetCount: snapshot.assetIds.length,
+        assetRiskDigest: snapshot.assetRiskDigest,
+        confirmationPhrase,
+        dependencies: {
+          assetIds: [...snapshot.assetIds],
+          policyIds: [...snapshot.policyIds],
+          positionIds: [...snapshot.positionIds],
+          taskIds: [...snapshot.taskIds],
+        },
+        expiresAt: expiresAt.toISOString(),
+        forceEligible,
+        policyCount: snapshot.policyIds.length,
+        positionCount: snapshot.positionIds.length,
+        previewToken,
+        revision: wallet.revision,
+        taskCount: snapshot.taskIds.length,
+        walletId,
+      };
+    } finally {
+      tokenBytes.fill(0);
+      phraseBytes.fill(0);
+      previewTokenDigest.fill(0);
+    }
+  }
+
   async getWallet(userId: string, walletId: string): Promise<CustodyWallet | null> {
     const wallet = await this.#store.get(userId, walletId);
     return wallet ? publicWallet(wallet) : null;
+  }
+
+  async #walletDependencySnapshot(userId: string, walletId: string) {
+    if (!this.#walletDependencyInventory) {
+      throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+    }
+    let value;
+    try {
+      value = await this.#walletDependencyInventory.inspect({ userId, walletId });
+    } catch {
+      throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+    }
+    const list = (items: unknown): string[] => {
+      if (
+        !Array.isArray(items) ||
+        items.some(
+          (item) =>
+            typeof item !== "string" ||
+            item.length < 1 ||
+            item.length > 256 ||
+            /\p{Cc}/u.test(item),
+        ) ||
+        new Set(items).size !== items.length
+      ) {
+        throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+      }
+      return [...items].sort();
+    };
+    if (
+      value.complete !== true ||
+      typeof value.assetRiskDigest !== "string" ||
+      value.assetRiskDigest.length < 1 ||
+      value.assetRiskDigest.length > 256
+    ) {
+      throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+    }
+    return {
+      assetIds: list(value.assetIds),
+      assetRiskDigest: value.assetRiskDigest,
+      complete: true,
+      policyIds: list(value.policyIds),
+      positionIds: list(value.positionIds),
+      taskIds: list(value.taskIds),
+    };
   }
 
   async renameWallet(input: {

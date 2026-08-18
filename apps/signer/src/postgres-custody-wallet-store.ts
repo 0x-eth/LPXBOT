@@ -15,6 +15,7 @@ import type {
   StoredKeystore,
   StoredKeystoreFailure,
   StoredKeystoreResetPreview,
+  StoredWalletDeletePreview,
   WalletEnvelopeMaterial,
   WalletEnvelopeReplacement,
 } from "./custody-types.js";
@@ -209,6 +210,56 @@ export class PostgresCustodyWalletStore implements CustodyWalletStore, KeystoreS
     } catch (error) {
       await this.#rollback(client);
       if (pgCode(error) === "23505") throw new SignerError("WALLET_ADDRESS_EXISTS");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async createWalletDeletePreview(preview: StoredWalletDeletePreview): Promise<void> {
+    const client = await this.#pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+        `custody-wallet:${preview.userId}:${preview.walletId}`,
+      ]);
+      const wallet = await client.query(
+        `SELECT 1 FROM custody_wallets
+          WHERE user_id = $1 AND wallet_id = $2 AND revision = $3
+            AND lifecycle_status IN ('active', 'recoverable')
+          FOR UPDATE`,
+        [preview.userId, preview.walletId, preview.revision],
+      );
+      if (wallet.rowCount !== 1) throw new SignerError("REVISION_CONFLICT");
+      await client.query(
+        "DELETE FROM custody_wallet_delete_previews WHERE user_id = $1 AND wallet_id = $2",
+        [preview.userId, preview.walletId],
+      );
+      await client.query(
+        `INSERT INTO custody_wallet_delete_previews (
+           user_id, wallet_id, preview_token_digest, wallet_revision, task_ids, policy_ids,
+           position_ids, asset_ids, asset_risk_digest, force_eligible, confirmation_phrase,
+           expires_at, created_at
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        [
+          preview.userId,
+          preview.walletId,
+          preview.previewTokenDigest,
+          preview.revision,
+          preview.taskIds,
+          preview.policyIds,
+          preview.positionIds,
+          preview.assetIds,
+          preview.assetRiskDigest,
+          preview.forceEligible,
+          preview.confirmationPhrase,
+          preview.expiresAt,
+          new Date(preview.expiresAt.getTime() - 300_000),
+        ],
+      );
+      await client.query("COMMIT");
+    } catch (error) {
+      await this.#rollback(client);
       throw error;
     } finally {
       client.release();

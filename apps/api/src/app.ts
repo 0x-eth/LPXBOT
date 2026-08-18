@@ -134,6 +134,7 @@ import {
   parseWalletId,
   publicKeystoreResetPreview,
   publicKeystoreStatus,
+  publicWalletDeletePreview,
   publicWalletDto,
   WalletApiError,
   walletSecretBodyLimit,
@@ -3872,6 +3873,53 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             walletId: parseWalletId(request.params.walletId),
           });
           return createSuccessEnvelope(publicWalletDto(wallet), request.id);
+        } catch (error) {
+          return walletFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.post<{ Params: { walletId: string } }>(
+      "/api/wallets/:walletId/delete-preview",
+      { bodyLimit: 16_384 },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (
+          request.body !== undefined &&
+          (typeof request.body !== "object" ||
+            request.body === null ||
+            Array.isArray(request.body) ||
+            Object.keys(request.body).length > 0)
+        ) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "INVALID_WALLET",
+              message: "The wallet request is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.walletDirectory?.createWalletDeletePreview) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "SIGNER_UNAVAILABLE",
+              message: "Wallet deletion inventory is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const preview = await options.walletDirectory.createWalletDeletePreview(
+            session.userId,
+            parseWalletId(request.params.walletId),
+          );
+          return reply
+            .code(201)
+            .send(createSuccessEnvelope(publicWalletDeletePreview(preview), request.id));
         } catch (error) {
           return walletFailure(error, request, reply) ?? reply;
         }

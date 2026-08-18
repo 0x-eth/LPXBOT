@@ -9,6 +9,7 @@ import type {
   StoredKeystoreFailure,
   StoredKeystoreResetPreview,
   StoredCustodyWallet,
+  StoredWalletDeletePreview,
   WalletEnvelopeMaterial,
   WalletEnvelopeReplacement,
 } from "./custody-types.js";
@@ -66,6 +67,18 @@ function cloneResetPreview(preview: StoredKeystoreResetPreview): StoredKeystoreR
   };
 }
 
+function cloneWalletDeletePreview(preview: StoredWalletDeletePreview): StoredWalletDeletePreview {
+  return {
+    ...preview,
+    assetIds: [...preview.assetIds],
+    expiresAt: new Date(preview.expiresAt),
+    policyIds: [...preview.policyIds],
+    positionIds: [...preview.positionIds],
+    previewTokenDigest: Buffer.from(preview.previewTokenDigest),
+    taskIds: [...preview.taskIds],
+  };
+}
+
 export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreStore {
   readonly #audits: Array<{ action: string; walletId: string }> = [];
   readonly #envelopes = new Map<string, Map<number, CustodyEnvelope>>();
@@ -75,6 +88,7 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
   readonly #keystores = new Map<string, StoredKeystore>();
   readonly #resetPreviews = new Map<string, StoredKeystoreResetPreview>();
   readonly #wallets = new Map<string, StoredCustodyWallet>();
+  readonly #walletDeletePreviews = new Map<string, StoredWalletDeletePreview>();
   readonly openAttempts: number[] = [];
 
   constructor(options: { failBeforeCommit?: boolean; failLifecycleAt?: "before-commit" } = {}) {
@@ -104,6 +118,18 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
     this.#envelopes.set(wallet.walletId, new Map([[envelope.envelopeVersion, envelope]]));
     this.#audits.push({ action: input.auditAction, walletId: wallet.walletId });
     return publicWallet(wallet);
+  }
+
+  async createWalletDeletePreview(preview: StoredWalletDeletePreview): Promise<void> {
+    for (const [key, stored] of this.#walletDeletePreviews) {
+      if (stored.userId === preview.userId && stored.walletId === preview.walletId) {
+        this.#walletDeletePreviews.delete(key);
+      }
+    }
+    this.#walletDeletePreviews.set(
+      `${preview.userId}:${preview.walletId}:${preview.previewTokenDigest.toString("hex")}`,
+      cloneWalletDeletePreview(preview),
+    );
   }
 
   async get(userId: string, walletId: string): Promise<StoredCustodyWallet | null> {

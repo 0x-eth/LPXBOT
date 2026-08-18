@@ -1028,6 +1028,33 @@ export interface CustodyWalletPage {
   items: CustodyWallet[];
 }
 
+export interface WalletDeleteDependencies {
+  assetIds: string[];
+  policyIds: string[];
+  positionIds: string[];
+  taskIds: string[];
+}
+
+export interface WalletDeletePreview {
+  assetCount: number;
+  assetRiskDigest: string;
+  confirmationPhrase: string;
+  dependencies: WalletDeleteDependencies;
+  expiresAt: string;
+  forceEligible: boolean;
+  policyCount: number;
+  positionCount: number;
+  previewToken: string;
+  revision: number;
+  taskCount: number;
+  walletId: string;
+}
+
+export interface RenameCustodyWalletRequest {
+  expectedRevision: number;
+  name: string;
+}
+
 export interface GenerateCustodyWalletRequest {
   mode: WalletEncryptionMode;
   name: string;
