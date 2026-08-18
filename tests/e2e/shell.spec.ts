@@ -91,7 +91,7 @@ test("SHELL-01 keeps localized route outlets and current navigation stable", asy
     ["/pools", "池子发现", "池子"],
     ["/strategies", "自动策略", "策略"],
     ["/activity", "操作日志", "日志"],
-    ["/wallets", "钱包管理", "钱包"],
+    ["/wallets", "钱包", "钱包"],
     ["/developer", "开发者", null],
     ["/settings", "设置", null],
   ] as const;
