@@ -134,11 +134,12 @@ export function sealPasswordDekWrap(input: {
   }
   const cipher = createCipheriv("aes-256-gcm", input.kek, input.nonce, { authTagLength: 16 });
   cipher.setAAD(input.aad);
+  const wrappedDek = Buffer.concat([cipher.update(input.dek), cipher.final()]);
   return {
     nonce: Buffer.from(input.nonce),
     tag: cipher.getAuthTag(),
     wrapVersion: 1,
-    wrappedDek: Buffer.concat([cipher.update(input.dek), cipher.final()]),
+    wrappedDek,
   };
 }
 
