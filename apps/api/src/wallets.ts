@@ -3,6 +3,7 @@ import type {
   CustodyWalletPage,
   DeleteCustodyWalletRequest,
   GenerateCustodyWalletRequest,
+  SecurityPasswordStatus,
   WalletDeletePreview,
   WalletDeletionReceipt,
   WalletEncryptionMode,
@@ -11,6 +12,8 @@ import type { StoredSession } from "@lpbot/security";
 
 export const walletSecretMediaType = "application/vnd.lpbot.wallet-secret+json";
 export const keystoreSecretMediaType = "application/vnd.lpbot.keystore-secret+json";
+export const securityPasswordSecretMediaType =
+  "application/vnd.lpbot.security-password-secret+json";
 export const walletSecretBodyLimit = 16_384;
 export const keystoreSecretBodyLimit = 16_384;
 
@@ -63,6 +66,14 @@ export interface KeystoreApplication {
     reauthenticatedSessionId: string;
     userId: string;
   }): Promise<KeystoreStatusDto>;
+}
+
+export interface SecurityPasswordApplication {
+  putSecurityPassword(input: {
+    ingress: Uint8Array;
+    userId: string;
+  }): Promise<SecurityPasswordStatus>;
+  securityPasswordStatus(userId: string): Promise<SecurityPasswordStatus>;
 }
 
 export interface WalletDirectory {
@@ -118,6 +129,7 @@ export type WalletApiErrorCode =
   | "REQUEST_TOO_LARGE"
   | "SIGNER_UNAVAILABLE"
   | "SECRET_VERSION_CONFLICT"
+  | "SECURITY_PASSWORD_VERSION_CONFLICT"
   | "LOCKED_OUT"
   | "PASSWORD_ALREADY_CONFIGURED"
   | "PASSWORD_POLICY_FAILED"
@@ -396,6 +408,24 @@ export function publicKeystoreStatus(value: unknown): KeystoreStatusDto {
     throw new WalletApiError("SIGNER_UNAVAILABLE");
   }
   return status as unknown as KeystoreStatusDto;
+}
+
+export function publicSecurityPasswordStatus(value: unknown): SecurityPasswordStatus {
+  const status = record(value);
+  if (
+    Object.keys(status).sort().join(",") !== "configured,status,version" ||
+    typeof status.configured !== "boolean" ||
+    !Number.isSafeInteger(status.version) ||
+    Number(status.version) < 0 ||
+    (status.status !== "unconfigured" &&
+      status.status !== "ready" &&
+      status.status !== "locked-out") ||
+    (status.configured === false && (status.version !== 0 || status.status !== "unconfigured")) ||
+    (status.configured === true && Number(status.version) < 1)
+  ) {
+    throw new WalletApiError("SIGNER_UNAVAILABLE");
+  }
+  return status as unknown as SecurityPasswordStatus;
 }
 
 export function publicKeystoreResetPreview(value: unknown): KeystoreResetPreviewDto {

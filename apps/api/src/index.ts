@@ -28,10 +28,12 @@ export {
   parseWalletId,
   publicKeystoreResetPreview,
   publicKeystoreStatus,
+  publicSecurityPasswordStatus,
   publicWalletDeletePreview,
   publicWalletDeletionReceipt,
   publicWalletDto,
   WalletApiError,
+  securityPasswordSecretMediaType,
   walletSecretBodyLimit,
   walletSecretMediaType,
 } from "./wallets.js";
@@ -40,6 +42,7 @@ export type {
   KeystoreApplication,
   KeystoreResetPreviewDto,
   KeystoreStatusDto,
+  SecurityPasswordApplication,
   WalletDirectory,
   WalletSignerClient,
 } from "./wallets.js";

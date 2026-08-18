@@ -8,10 +8,14 @@ export type {
   CustodyWalletStore,
   KeystoreStatus,
   KeystoreStore,
+  SecurityPasswordApplication,
+  SecurityPasswordStore,
   StoredKeystore,
   StoredKeystoreFailure,
   StoredKeystoreResetPreview,
   StoredKeystoreVersion,
+  StoredSecurityPassword,
+  StoredSecurityPasswordVersion,
   StoredWalletDeletePreview,
   WalletDeleteCommit,
   StoredCustodyWallet,
@@ -38,6 +42,11 @@ export {
   sealPasswordDekWrap,
 } from "./password-crypto.js";
 export type { PasswordDekWrap, PasswordKdfParameters } from "./password-crypto.js";
+export {
+  createSecurityPasswordVerifier,
+  deriveSecurityPasswordKey,
+  securityPasswordKdfV1,
+} from "./security-password-crypto.js";
 export { SignerError } from "./signer-error.js";
 export { SignerConfigurationError, loadSignerProductionConfig } from "./production-config.js";
 

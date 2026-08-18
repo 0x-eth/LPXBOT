@@ -1154,6 +1154,58 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     return this.#keystoreStore;
   }
 
+  #requireSecurityPasswordStore(): SecurityPasswordStore {
+    if (!this.#securityPasswordStore) throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+    return this.#securityPasswordStore;
+  }
+
+  async #newSecurityPasswordSalt(userId: string): Promise<Buffer> {
+    const keystore = this.#keystoreStore ? await this.#keystoreStore.getKeystore(userId) : null;
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const salt = bufferView(this.#randomBytes(16));
+      if (salt.length !== 16) {
+        salt.fill(0);
+        throw new SignerError("SIGNER_UNAVAILABLE", true);
+      }
+      if (
+        !keystore ||
+        keystore.current.salt.length !== salt.length ||
+        !timingSafeEqual(keystore.current.salt, salt)
+      ) {
+        return salt;
+      }
+      salt.fill(0);
+    }
+    throw new SignerError("SIGNER_UNAVAILABLE", true);
+  }
+
+  #verifySecurityPassword(password: StoredSecurityPassword, candidate: Uint8Array): Buffer {
+    if (
+      password.current.parameterVersion !== 1 ||
+      password.current.salt.length !== 16 ||
+      password.current.verifier.length !== 32
+    ) {
+      throw new SignerError("INVALID_CREDENTIALS");
+    }
+    const key = this.#deriveSecurityPasswordKey(candidate, password.current.salt);
+    let verifier: Buffer | null = null;
+    try {
+      verifier = createSecurityPasswordVerifier(key, {
+        userId: password.userId,
+        version: password.current.version,
+      });
+      if (!timingSafeEqual(verifier, password.current.verifier)) {
+        throw new SignerError("INVALID_CREDENTIALS");
+      }
+      return key;
+    } catch (error) {
+      this.#zeroize("derived-kek", key);
+      throw error;
+    } finally {
+      verifier?.fill(0);
+    }
+  }
+
   #verifyPassword(keystore: StoredKeystore, password: Uint8Array): Buffer {
     if (
       keystore.current.parameterVersion !== 1 ||
