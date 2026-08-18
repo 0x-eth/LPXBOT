@@ -511,7 +511,7 @@ test("signed, broadcast, reconciliation, replacement lineage and confirmation st
   await expect(page.getByText("已广播", { exact: true }).first()).toBeVisible({ timeout: 6_000 });
   await expect(page.getByText("对账中", { exact: true }).first()).toBeVisible({ timeout: 6_000 });
   await expect(page.getByText("PROVIDER_DIVERGENCE", { exact: true })).toBeVisible();
-  await expect(page.getByText("已替换", { exact: true })).toBeVisible({ timeout: 6_000 });
+  await expect(page.getByText("已替换", { exact: true }).first()).toBeVisible({ timeout: 6_000 });
   const lineage = page.getByLabel("交易替换链");
   await expect(lineage.getByRole("listitem")).toHaveCount(2);
   await expect(lineage.locator("li[data-active='true']")).toHaveCount(1);
