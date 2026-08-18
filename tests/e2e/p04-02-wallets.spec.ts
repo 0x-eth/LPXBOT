@@ -228,10 +228,11 @@ test("wallets renders loading, empty, ready, desktop/mobile, and axe states", as
 
   state.items = [wallet()];
   await page.getByRole("button", { name: "刷新钱包" }).click();
-  await expect(page.getByText("Main signer")).toBeVisible();
-  await expect(page.getByText(address)).toBeVisible();
-  await expect(page.getByText("服务器密钥")).toBeVisible();
-  await expect(page.getByText("已托管")).toBeVisible();
+  const custodyWallets = page.getByLabel("托管钱包");
+  await expect(custodyWallets.getByText("Main signer")).toBeVisible();
+  await expect(custodyWallets.getByText(address)).toBeVisible();
+  await expect(custodyWallets.getByText("服务器密钥")).toBeVisible();
+  await expect(custodyWallets.getByText("已托管")).toBeVisible();
   await expect(page.getByRole("heading", { name: "资产" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "收款" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "地址簿" })).toBeVisible();
@@ -278,7 +279,7 @@ test("import is write-only, validates, clears on failure/cancel/success, and res
     "import-validating",
   );
   await expect(input).toHaveValue("");
-  await expect(page.getByText("Imported")).toBeVisible();
+  await expect(page.getByLabel("托管钱包").getByText("Imported")).toBeVisible();
   await expect(page.locator("body")).not.toContainText(secret);
   await expect(trigger).toBeFocused();
 });
@@ -295,7 +296,7 @@ test("generate has pending state and duplicate/reauth/signer/error states are ex
     "data-state",
     "generate-pending",
   );
-  await expect(page.getByText("Generated")).toBeVisible();
+  await expect(page.getByLabel("托管钱包").getByText("Generated")).toBeVisible();
 
   for (const [code, text] of [
     ["WALLET_ADDRESS_EXISTS", "该地址已由当前账户托管"],
@@ -314,7 +315,7 @@ test("generate has pending state and duplicate/reauth/signer/error states are ex
 test("wallet actions are keyboard reachable with stable dialog focus", async ({ page }) => {
   await install(page, { items: [wallet()] });
   await page.goto("/wallets");
-  await expect(page.getByText("Main signer")).toBeVisible();
+  await expect(page.getByLabel("托管钱包").getByText("Main signer")).toBeVisible();
   const controls = ["刷新钱包", "导入钱包", "生成钱包"];
   for (const name of controls) {
     await page.keyboard.press("Tab");

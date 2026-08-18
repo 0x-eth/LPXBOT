@@ -588,9 +588,9 @@ export function WalletReadPanels({ wallets }: { wallets: CustodyWallet[] }) {
               </strong>
               <small>区块 {balances.blockNumberDecimal}</small>
             </div>
-            <div className="asset-table" role="table" aria-label="钱包资产">
+            <div className="asset-table" role="list" aria-label="钱包资产">
               {balances.items.map((asset) => (
-                <div className="asset-row" key={asset.tokenAddress ?? "native"} role="row">
+                <div className="asset-row" key={asset.tokenAddress ?? "native"} role="listitem">
                   <div>
                     <strong>{asset.symbol}</strong>
                     <span>{asset.name}</span>

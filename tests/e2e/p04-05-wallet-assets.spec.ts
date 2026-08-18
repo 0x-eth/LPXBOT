@@ -447,9 +447,10 @@ test("wallet assets, custom tokens, EIP-681 QR and address book work on desktop/
 
   await page.getByLabel("Token 合约地址").fill(importedToken);
   await page.getByRole("button", { name: "导入", exact: true }).click();
-  await expect(page.getByText("NEW", { exact: true })).toBeVisible();
+  const walletAssets = page.getByLabel("钱包资产");
+  await expect(walletAssets.getByText("NEW", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "删除 NEW" }).click();
-  await expect(page.getByText("NEW", { exact: true })).toHaveCount(0);
+  await expect(walletAssets.getByText("NEW", { exact: true })).toHaveCount(0);
 
   await page.getByLabel("地址簿地址").fill(newAddress);
   await page.getByLabel("地址簿名称").click();
