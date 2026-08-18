@@ -1061,7 +1061,7 @@
     "parentBeaconBlockRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "requestsHash": "0x000000000000000000000001ba4233f6e478db76698b0a5000972af0196b7be1",
     "totalDifficulty": "0xd80fe1b",
-    "size": "0x7700a",
+    "size": "0x16dd2",
     "milliTimestamp": "0x19fc20f9b56",
     "uncles": [],
     "transactions": [
