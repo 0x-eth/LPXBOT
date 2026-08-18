@@ -15,6 +15,7 @@ const expectedWorkspaces = new Map([
   ["apps/worker", "@lpbot/worker"],
   ["apps/indexer", "@lpbot/indexer"],
   ["apps/signer", "@lpbot/signer"],
+  ["apps/okx-connector", "@lpbot/okx-connector"],
   ["apps/telegram-bot", "@lpbot/telegram-bot"],
   ["packages/api-contract", "@lpbot/api-contract"],
   ["packages/domain", "@lpbot/domain"],
