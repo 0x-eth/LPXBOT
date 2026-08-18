@@ -126,6 +126,17 @@ import {
   UserPreferencesValidationError,
   type UserPreferencesStore,
 } from "./user-preferences.js";
+import {
+  parseGenerateCustodyWalletRequest,
+  parseWalletId,
+  publicWalletDto,
+  WalletApiError,
+  walletSecretBodyLimit,
+  walletSecretMediaType,
+  type FreshReauthenticationVerifier,
+  type WalletDirectory,
+  type WalletSignerClient,
+} from "./wallets.js";
 
 export interface MaintenanceConfig {
   enabled: boolean;
@@ -146,6 +157,7 @@ export interface ApiAppOptions {
   chainActivityProvider?: ChainActivityProvider;
   chainManagementRateLimit?: ChainManagementRateLimit;
   chainPolicyStore?: ChainAccessPolicyStore;
+  freshReauthentication?: FreshReauthenticationVerifier;
   logger?: { write(line: string): void };
   liquidityFlowProvider?: LiquidityFlowProvider;
   liquidityFlowRateLimit?: PublicReadRateLimit;
@@ -174,8 +186,11 @@ export interface ApiAppOptions {
   telegramBot?: TelegramBotLoginApplication;
   telegramBotUsername?: string;
   telegramMiniApp?: TelegramMiniAppAuthenticator;
+  tenantId?: string;
   testRoutes?: boolean;
   walletAuth?: LoginWalletAuthenticationApplication;
+  walletDirectory?: WalletDirectory;
+  walletSigner?: WalletSignerClient;
 }
 
 export interface ChainActivityProvider {
@@ -849,6 +864,31 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     logger: false,
   });
 
+  app.addHook("onRequest", (request, reply, done) => {
+    if (request.method === "POST" && request.url.split("?", 1)[0] === "/api/wallets/import") {
+      const mediaType = request.headers["content-type"]?.split(";", 1)[0]?.trim().toLowerCase();
+      if (mediaType !== walletSecretMediaType) {
+        reply.header("Cache-Control", "no-store");
+        void reply.code(415).send(
+          createErrorEnvelope({
+            code: "UNSUPPORTED_MEDIA_TYPE",
+            message: "Wallet import requires the dedicated secret ingress",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+        return;
+      }
+    }
+    done();
+  });
+
+  app.addContentTypeParser(
+    walletSecretMediaType,
+    { parseAs: "buffer" },
+    (_request, body, done) => done(null, body),
+  );
+
   void app.register(cookie);
   void app.register(rateLimit, {
     errorResponseBuilder(_request, context) {
@@ -884,6 +924,21 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   app.setErrorHandler(async (error, request, reply) => {
     const errorCode = (error as { code?: unknown }).code;
     const requestPath = request.url.split("?", 1)[0]!;
+    if (
+      errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
+      request.method === "POST" &&
+      requestPath === "/api/wallets/import"
+    ) {
+      reply.header("Cache-Control", "no-store");
+      return reply.code(413).send(
+        createErrorEnvelope({
+          code: "REQUEST_TOO_LARGE",
+          message: "The wallet secret request is too large",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+    }
     if (
       errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
       (request.method === "POST" || request.method === "PATCH" || request.method === "DELETE") &&
