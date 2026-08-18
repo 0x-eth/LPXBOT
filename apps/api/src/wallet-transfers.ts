@@ -821,13 +821,14 @@ export class WalletTransferService implements WalletTransferApplication {
         addressClassification: stored.facts.addressClassification,
         amountBaseUnit: stored.facts.amountBaseUnit,
         asset: stored.request.asset,
-        buildPlan: ({ nonce, operationId }) =>
+        buildPlan: ({ fencingToken, nonce, operationId }) =>
           this.#buildPlan({
             amountBaseUnit: stored.facts.amountBaseUnit,
             asset: stored.request.asset,
             chainId: stored.request.chainId,
             deadline: stored.facts.expiresAt,
             feeLimit: stored.facts.feeLimit,
+            fencingToken,
             nonce,
             operationId,
             policyDigest: stored.facts.policyDigest,

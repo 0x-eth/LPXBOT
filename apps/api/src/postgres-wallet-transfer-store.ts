@@ -133,6 +133,7 @@ function transaction(row: TransactionRow): WalletTransferTransactionView {
 function plan(row: OperationRow): WalletTransferPlan | null {
   if (
     row.nonce === null ||
+    row.fencing_token === null ||
     row.transaction_target === null ||
     row.transaction_value_base_unit === null ||
     row.transaction_data === null ||
@@ -154,6 +155,7 @@ function plan(row: OperationRow): WalletTransferPlan | null {
       maxFeePerGasBaseUnit: row.max_fee_per_gas_base_unit,
       maxPriorityFeePerGasBaseUnit: row.max_priority_fee_per_gas_base_unit,
     },
+    fencingToken: row.fencing_token,
     nonce: row.nonce,
     operationId: row.operation_id,
     policyDigest: row.policy_digest,
@@ -610,4 +612,3 @@ export class PostgresWalletTransferOperationStore implements WalletTransferOpera
     return result.rows.map(transaction);
   }
 }
-

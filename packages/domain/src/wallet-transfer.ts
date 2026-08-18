@@ -21,6 +21,7 @@ export interface WalletTransferPlan {
   chainId: number;
   deadline: string;
   feeLimit: WalletTransferFeeLimit;
+  fencingToken: string;
   nonce: string;
   operationId: string;
   policyDigest: `sha256:${string}`;
@@ -256,6 +257,7 @@ export function walletTransferPlanDigest(plan: WalletTransferPlan): `sha256:${st
       plan.walletAddress,
       String(plan.chainId),
       plan.nonce,
+      plan.fencingToken,
       plan.asset.kind,
       plan.asset.kind === "native" ? "native" : plan.asset.tokenAddress,
       plan.recipient,
@@ -280,6 +282,7 @@ export function validateWalletTransferPlan(plan: WalletTransferPlan, at = new Da
   canonicalTransferAddress(plan.recipient);
   canonicalTransferAddress(plan.transactionTarget);
   canonicalBaseUnit(plan.nonce);
+  canonicalBaseUnit(plan.fencingToken, { positive: true });
   canonicalBaseUnit(plan.amountBaseUnit, { positive: true });
   canonicalBaseUnit(plan.transactionValueBaseUnit);
   canonicalBaseUnit(plan.feeLimit.gasLimit, { positive: true });
@@ -378,4 +381,3 @@ export function reconcileWalletTransferReceipt(input: {
   }
   return { reason: null, state: "confirmed" };
 }
-
