@@ -68,6 +68,7 @@ import { NotificationSettings } from "./notification-settings";
 import { ShellStatsContextProvider, ShellStatusBar, useShellStats } from "./shell-stats-react";
 import { ApiShellStatsProvider, createShellStatsState, shellStatsDisplay } from "./shell-stats";
 import { browserTelegramMiniAppAdapter } from "./telegram-mini-app";
+import { WalletsPage } from "./wallets-page";
 
 function BootingPage() {
   return (
@@ -599,12 +600,6 @@ const routeFixtures = [
   },
   {
     eyebrow: "Local empty fixture",
-    localizedTitle: "钱包管理",
-    path: "/wallets",
-    title: "Wallets",
-  },
-  {
-    eyebrow: "Local empty fixture",
     localizedTitle: "开发者",
     path: "/developer",
     title: "Developer",
@@ -922,6 +917,7 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
               <Route path="/all" element={<Navigate to="/tasks/running" replace />} />
               <Route path="/all/:status" element={<LegacyAllRedirect />} />
               <Route path="/monitors" element={<MonitorsPage />} />
+              <Route path="/wallets" element={<WalletsPage />} />
               <Route
                 path="/settings"
                 element={<SettingsPage client={client} session={state.session} />}
