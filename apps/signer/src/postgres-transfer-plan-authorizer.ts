@@ -57,7 +57,6 @@ export class PostgresWalletTransferPlanAuthorizer implements WalletTransferPlanA
           AND w.tenant_id = $3
           AND w.lifecycle_status = 'active'
           AND w.lock_status = 'ready'
-          AND o.state = 'queued'
           AND o.wallet_id = $4
           AND o.wallet_address = $5
           AND o.chain_id = $6
@@ -72,19 +71,51 @@ export class PostgresWalletTransferPlanAuthorizer implements WalletTransferPlanA
           AND o.transaction_target = $13
           AND o.transaction_value_base_unit = $14
           AND o.transaction_data = $15
-          AND o.gas_limit = $16
-          AND o.max_fee_per_gas_base_unit = $17
-          AND o.max_priority_fee_per_gas_base_unit = $18
-          AND o.fee_cap_base_unit = $19
           AND o.plan_deadline = $20
           AND o.plan_deadline > clock_timestamp()
           AND o.policy_digest = $21
-          AND o.plan_digest = $22
           AND (o.address_classification <> 'new-external' OR o.security_password_version IS NOT NULL)
-          AND NOT EXISTS (
-            SELECT 1
-              FROM wallet_transfer_transactions t
-             WHERE t.operation_id = o.operation_id AND t.active
+          AND (
+            (
+              o.state = 'queued'
+              AND o.gas_limit = $16
+              AND o.max_fee_per_gas_base_unit = $17
+              AND o.max_priority_fee_per_gas_base_unit = $18
+              AND o.fee_cap_base_unit = $19
+              AND o.plan_digest = $22
+              AND NOT EXISTS (
+                SELECT 1
+                  FROM wallet_transfer_transactions t
+                 WHERE t.operation_id = o.operation_id AND t.active
+              )
+            )
+            OR
+            (
+              o.state IN ('broadcast', 'pending', 'dropped')
+              AND EXISTS (
+                SELECT 1
+                  FROM wallet_transfer_transactions t
+                  JOIN wallet_transfer_replacement_authorizations r
+                    ON r.operation_id = o.operation_id
+                   AND r.replaced_transaction_id = t.transaction_id
+                   AND r.generation = t.generation + 1
+                 WHERE t.operation_id = o.operation_id
+                   AND t.active
+                   AND r.state = 'pending'
+                   AND r.expires_at > clock_timestamp()
+                   AND r.plan_digest = $22
+                   AND r.gas_limit = $16
+                   AND r.max_fee_per_gas_base_unit = $17
+                   AND r.max_priority_fee_per_gas_base_unit = $18
+                   AND r.fee_cap_base_unit = $19
+                   AND r.max_fee_per_gas_base_unit >= t.max_fee_per_gas_base_unit
+                   AND r.max_priority_fee_per_gas_base_unit >= t.max_priority_fee_per_gas_base_unit
+                   AND (
+                     r.max_fee_per_gas_base_unit > t.max_fee_per_gas_base_unit
+                     OR r.max_priority_fee_per_gas_base_unit > t.max_priority_fee_per_gas_base_unit
+                   )
+              )
+            )
           )`,
       [
         input.plan.operationId,
@@ -114,4 +145,3 @@ export class PostgresWalletTransferPlanAuthorizer implements WalletTransferPlanA
     return result.rows[0]?.authorized === true;
   }
 }
-
