@@ -52,6 +52,7 @@ const readyTables = {
   tombstones: "custody_wallet_tombstones",
   transferNonceLedgers: "wallet_nonce_ledgers",
   transferOperations: "wallet_transfer_operations",
+  transferReplacementAuthorizations: "wallet_transfer_replacement_authorizations",
   wallets: "custody_wallets",
 };
 

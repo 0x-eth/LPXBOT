@@ -166,6 +166,34 @@ ALTER TABLE wallet_transfer_operations
   REFERENCES wallet_transfer_transactions(transaction_id)
   DEFERRABLE INITIALLY DEFERRED;
 
+CREATE TABLE wallet_transfer_replacement_authorizations (
+  authorization_id uuid PRIMARY KEY,
+  operation_id uuid NOT NULL REFERENCES wallet_transfer_operations(operation_id) ON DELETE CASCADE,
+  replaced_transaction_id uuid NOT NULL REFERENCES wallet_transfer_transactions(transaction_id),
+  generation integer NOT NULL CHECK (generation > 0),
+  plan_digest text NOT NULL CHECK (plan_digest ~ '^sha256:[0-9a-f]{64}$'),
+  gas_limit numeric(78, 0) NOT NULL CHECK (gas_limit > 0),
+  max_fee_per_gas_base_unit numeric(78, 0) NOT NULL CHECK (max_fee_per_gas_base_unit > 0),
+  max_priority_fee_per_gas_base_unit numeric(78, 0) NOT NULL CHECK (
+    max_priority_fee_per_gas_base_unit >= 0
+  ),
+  fee_cap_base_unit numeric(78, 0) NOT NULL CHECK (fee_cap_base_unit > 0),
+  reason text NOT NULL CHECK (char_length(reason) BETWEEN 1 AND 120),
+  state text NOT NULL CHECK (state IN ('pending', 'consumed', 'cancelled')),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL,
+  consumed_at timestamptz,
+  UNIQUE (operation_id, generation),
+  CHECK (max_priority_fee_per_gas_base_unit <= max_fee_per_gas_base_unit),
+  CHECK (fee_cap_base_unit = gas_limit * max_fee_per_gas_base_unit),
+  CHECK (expires_at > created_at),
+  CHECK ((state = 'consumed') = (consumed_at IS NOT NULL))
+);
+
+CREATE UNIQUE INDEX wallet_transfer_replacement_pending_unique
+  ON wallet_transfer_replacement_authorizations (operation_id)
+  WHERE state = 'pending';
+
 CREATE TABLE wallet_transfer_outbox (
   event_id uuid PRIMARY KEY,
   aggregate_id uuid NOT NULL REFERENCES wallet_transfer_operations(operation_id) ON DELETE CASCADE,
@@ -287,6 +315,8 @@ COMMENT ON TABLE wallet_transfer_outbox IS
   'Credential-free operation intents. Raw signed transactions are forbidden from this queue.';
 COMMENT ON TABLE wallet_transfer_transactions IS
   'Transaction lineage metadata and hashes only; raw signed transactions are never persisted.';
+COMMENT ON TABLE wallet_transfer_replacement_authorizations IS
+  'One-time plan-bound fee bump authorization; recipient, amount, nonce, and calldata remain on the immutable operation.';
 COMMENT ON TABLE wallet_transfer_audit_events IS
   'Append-only transfer decisions without passwords, private material, raw transactions, or provider credentials.';
 
@@ -294,6 +324,7 @@ REVOKE ALL ON wallet_nonce_ledgers FROM PUBLIC;
 REVOKE ALL ON wallet_transfer_operations FROM PUBLIC;
 REVOKE ALL ON wallet_transfer_idempotency FROM PUBLIC;
 REVOKE ALL ON wallet_transfer_transactions FROM PUBLIC;
+REVOKE ALL ON wallet_transfer_replacement_authorizations FROM PUBLIC;
 REVOKE ALL ON wallet_transfer_outbox FROM PUBLIC;
 REVOKE ALL ON wallet_transfer_reconciliation_cases FROM PUBLIC;
 REVOKE ALL ON wallet_transfer_receipt_evidence FROM PUBLIC;
@@ -308,6 +339,7 @@ DROP TABLE wallet_transfer_audit_events;
 DROP TABLE wallet_transfer_receipt_evidence;
 DROP TABLE wallet_transfer_reconciliation_cases;
 DROP TABLE wallet_transfer_outbox;
+DROP TABLE wallet_transfer_replacement_authorizations;
 ALTER TABLE wallet_transfer_operations DROP CONSTRAINT wallet_transfer_operations_active_transaction_fk;
 DROP TABLE wallet_transfer_transactions;
 DROP TABLE wallet_transfer_idempotency;

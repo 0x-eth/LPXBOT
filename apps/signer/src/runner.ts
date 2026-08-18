@@ -37,6 +37,7 @@ interface CustodyTablesRow extends QueryResultRow {
   tombstones: string | null;
   transferNonceLedgers: string | null;
   transferOperations: string | null;
+  transferReplacementAuthorizations: string | null;
   wallets: string | null;
 }
 
@@ -88,7 +89,9 @@ async function assertStoreReady(pool: Pool): Promise<void> {
          to_regclass('public.custody_wallet_tombstones')::text AS tombstones,
          to_regclass('public.custody_wallets')::text AS wallets,
          to_regclass('public.wallet_nonce_ledgers')::text AS "transferNonceLedgers",
-         to_regclass('public.wallet_transfer_operations')::text AS "transferOperations"`,
+         to_regclass('public.wallet_transfer_operations')::text AS "transferOperations",
+         to_regclass('public.wallet_transfer_replacement_authorizations')::text
+           AS "transferReplacementAuthorizations"`,
     );
     row = result.rows[0];
   } catch {
@@ -108,7 +111,8 @@ async function assertStoreReady(pool: Pool): Promise<void> {
     !row.tombstones ||
     !row.wallets ||
     !row.transferNonceLedgers ||
-    !row.transferOperations
+    !row.transferOperations ||
+    !row.transferReplacementAuthorizations
   ) {
     throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
   }
