@@ -28,7 +28,7 @@ function fixture(options: { failLifecycleAt?: "before-commit" } = {}) {
   });
   const signer = new IsolatedWalletSigner({
     kms,
-    randomBytes: () => Buffer.from(privateKeyOne, "hex"),
+    randomBytes: () => Buffer.from("0".repeat(63) + "2", "hex"),
     secretRandomBytes: (length) => Buffer.alloc(length, random++),
   });
   const service = new CustodySignerService({
@@ -176,7 +176,7 @@ describe("P04-03 password-mode wallets", () => {
     await expect(
       service.unlockKeystore({
         ingress: ingress({ password: "synthetic-password-two" }),
-        reauthenticatedSessionId: sessionId,
+        reauthenticatedSessionId: "45000000-0000-4000-8000-000000000011",
         userId,
       }),
     ).resolves.toMatchObject({ version: 2 });
