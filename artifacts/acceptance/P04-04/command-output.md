@@ -8,6 +8,12 @@ Environment: local macOS fixture, Node 26.5.0, pnpm 11.17.0, PostgreSQL 17.10 cl
 | `pnpm test:postgres` | 22 files / 95 tests passed, including all migrations up/down/up |
 | P04-02/P04-03/P04-04 Playwright regression | 24/24 passed |
 | `LPBOT_CAPTURE_P04_04=1 pnpm exec playwright test tests/e2e/p04-04-wallet-security.spec.ts --workers=1` | 10/10 passed; four screenshots captured |
+| `pnpm format:check` | passed; all matched files use Prettier style |
+| `pnpm lint` | passed; 15/15 workspace lint tasks plus root ESLint |
+| `pnpm typecheck` | passed; 23/23 workspace dependency/typecheck tasks plus root TypeScript |
+| `pnpm build` | passed; 15/15 workspace build tasks |
+| `pnpm test` | 114 Vitest files / 700 tests and 118 governance tests passed |
+| `pnpm check:all` | passed; baseline, 196/196 traceability IDs, P00, 524 documentation links, 29 acceptance manifests, and P02/P03/P04 references valid |
 | Gitleaks 8.30.1 full-history | 1073 commits / approximately 23.47 MB / no leaks |
 | `pnpm audit:dependencies` | no known vulnerabilities |
 | P00-P04-03 acceptance comparison to `7814a13df07e179dd1b058b93a2a3dacce7fe42f` | 0 changed files |
