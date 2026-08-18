@@ -85,7 +85,10 @@ class ProviderFixture implements ControlledWalletReadProvider {
     const custom = input.to === customToken;
     switch (input.data.slice(0, 10)) {
       case "0x06fdde03":
-        return encodeAbiParameters([{ type: "string" }], [custom ? "Fixture Dollar" : "Default Token"]);
+        return encodeAbiParameters(
+          [{ type: "string" }],
+          [custom ? "Fixture Dollar" : "Default Token"],
+        );
       case "0x95d89b41":
         return encodeAbiParameters([{ type: "string" }], [custom ? "FIX" : "USD"]);
       case "0x313ce567":

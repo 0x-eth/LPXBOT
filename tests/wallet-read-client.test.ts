@@ -108,9 +108,9 @@ describe("P04-05 strict wallet read browser client", () => {
     expect(() =>
       parseWalletReceiveContent({ ...receive, eip681: `ethereum:${address}@56?value=1234567` }),
     ).toThrowError(WalletReadRequestError);
-    expect(() =>
-      parseWalletReceiveContent({ ...receive, amountBaseUnit: "1234568" }),
-    ).toThrowError(WalletReadRequestError);
+    expect(() => parseWalletReceiveContent({ ...receive, amountBaseUnit: "1234568" })).toThrowError(
+      WalletReadRequestError,
+    );
   });
 
   it("enforces address classification pointer semantics", () => {

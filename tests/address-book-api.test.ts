@@ -1,4 +1,7 @@
-import { addressBookSecretMediaType, type CustodyWallet } from "../packages/api-contract/src/index.js";
+import {
+  addressBookSecretMediaType,
+  type CustodyWallet,
+} from "../packages/api-contract/src/index.js";
 import {
   buildApiApp,
   MemoryAddressBookStore,
@@ -156,9 +159,9 @@ afterAll(async () => {
 describe("P04-05 independent address-book API", () => {
   it("classifies owned, known and new addresses without reusing address remarks", async () => {
     const { app, tokenA } = await fixture();
-    expect((await app.inject({ method: "GET", url: "/api/address-book?chainId=56" })).statusCode).toBe(
-      401,
-    );
+    expect(
+      (await app.inject({ method: "GET", url: "/api/address-book?chainId=56" })).statusCode,
+    ).toBe(401);
 
     const owned = await app.inject({
       headers: auth(tokenA),
@@ -228,7 +231,9 @@ describe("P04-05 independent address-book API", () => {
     expect(verifier.calls).toBe(1);
     expect(verifier.ingresses[0]!.during).toContain(password);
     expect(verifier.ingresses[0]!.bytes.every((byte) => byte === 0)).toBe(true);
-    expect(`${created.body}\n${logs.join("\n")}\n${JSON.stringify(store.audits)}`).not.toContain(password);
+    expect(`${created.body}\n${logs.join("\n")}\n${JSON.stringify(store.audits)}`).not.toContain(
+      password,
+    );
 
     const duplicate = await app.inject({
       headers: auth(tokenA, true),
@@ -317,7 +322,10 @@ describe("P04-05 independent address-book API", () => {
     expect(disallowed.statusCode).toBe(403);
     expect(disallowed.json().error.code).toBe("CHAIN_NOT_ALLOWED");
     expect(verifier.calls).toBe(0);
-    expect(store.audits.at(-1)).toMatchObject({ outcome: "denied", resultCode: "CHAIN_NOT_ALLOWED" });
+    expect(store.audits.at(-1)).toMatchObject({
+      outcome: "denied",
+      resultCode: "CHAIN_NOT_ALLOWED",
+    });
 
     const malformed = await app.inject({
       headers: auth(tokenA, true),

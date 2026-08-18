@@ -44,9 +44,9 @@ afterEach(() => {
 
 describe("P04-05 browser-only read RPC", () => {
   it("accepts HTTPS, limits the development exception to loopback, and redacts every secret URL part", () => {
-    expect(validateBrowserRpcUrl("https://user:pass@rpc.fixture:8443/private?k=secret").protocol).toBe(
-      "https:",
-    );
+    expect(
+      validateBrowserRpcUrl("https://user:pass@rpc.fixture:8443/private?k=secret").protocol,
+    ).toBe("https:");
     expect(redactBrowserRpcUrl("https://user:pass@rpc.fixture:8443/private?k=secret")).toBe(
       "https://rpc.fixture:8443/<redacted>",
     );
@@ -111,9 +111,9 @@ describe("P04-05 browser-only read RPC", () => {
         retryable: false,
       });
     }
-    await expect(
-      client.request([] as unknown as { method: string }),
-    ).rejects.toMatchObject({ code: "CLIENT_RPC_METHOD_DENIED" });
+    await expect(client.request([] as unknown as { method: string })).rejects.toMatchObject({
+      code: "CLIENT_RPC_METHOD_DENIED",
+    });
     expect(browserReadonlyRpcMethods).not.toContain("eth_sendTransaction");
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
@@ -133,7 +133,9 @@ describe("P04-05 browser-only read RPC", () => {
         params: [{ fromBlock: "0x1", toBlock: "0x1389" }],
       }),
     ).resolves.toBe("0x0");
-    await expect(client.request({ method: "eth_call", params: [{ data: "0x" }] })).rejects.toMatchObject({
+    await expect(
+      client.request({ method: "eth_call", params: [{ data: "0x" }] }),
+    ).rejects.toMatchObject({
       code: "CLIENT_RPC_METHOD_DENIED",
     });
     await expect(
@@ -164,7 +166,9 @@ describe("P04-05 browser-only read RPC", () => {
       {
         expected: "CLIENT_RPC_PROVIDER_ERROR",
         response: (id) =>
-          new Response(JSON.stringify({ error: { code: -32_000, data: "secret" }, id, jsonrpc: "2.0" })),
+          new Response(
+            JSON.stringify({ error: { code: -32_000, data: "secret" }, id, jsonrpc: "2.0" }),
+          ),
       },
       {
         expected: "CLIENT_RPC_INVALID_RESPONSE",
@@ -179,9 +183,9 @@ describe("P04-05 browser-only read RPC", () => {
       },
     ];
     for (const testCase of cases) {
-      const fetcher = vi.fn<typeof fetch>().mockImplementation(async (_input, init) =>
-        testCase.response(parseBody(init).id),
-      );
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockImplementation(async (_input, init) => testCase.response(parseBody(init).id));
       const client = new BrowserReadonlyRpcClient({ fetcher, url: "https://rpc.fixture" });
       await expect(client.request({ method: "eth_blockNumber" })).rejects.toMatchObject({
         code: testCase.expected,
@@ -192,7 +196,11 @@ describe("P04-05 browser-only read RPC", () => {
   it("enforces five requests per second and at most two in-flight requests", async () => {
     const now = () => 10_000;
     const fastFetcher = fixtureFetcher();
-    const rateClient = new BrowserReadonlyRpcClient({ fetcher: fastFetcher, now, url: "https://rpc.fixture" });
+    const rateClient = new BrowserReadonlyRpcClient({
+      fetcher: fastFetcher,
+      now,
+      url: "https://rpc.fixture",
+    });
     for (let index = 0; index < 5; index += 1) {
       await rateClient.request({ method: "eth_blockNumber" });
     }
@@ -223,10 +231,13 @@ describe("P04-05 browser-only read RPC", () => {
 
   it("applies an eight-second total network timeout and validates chain test responses", async () => {
     vi.useFakeTimers();
-    const hangingFetcher = vi.fn<typeof fetch>().mockImplementation(
-      async () => await new Promise<Response>(() => undefined),
-    );
-    const client = new BrowserReadonlyRpcClient({ fetcher: hangingFetcher, url: "https://rpc.fixture" });
+    const hangingFetcher = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async () => await new Promise<Response>(() => undefined));
+    const client = new BrowserReadonlyRpcClient({
+      fetcher: hangingFetcher,
+      url: "https://rpc.fixture",
+    });
     const request = client.request({ method: "eth_blockNumber" });
     await vi.advanceTimersByTimeAsync(browserRpcLimits.timeoutMs);
     await expect(request).rejects.toMatchObject({

@@ -101,7 +101,12 @@ function fixture() {
 describe("P04-05 wallet asset read model", () => {
   it("keeps balances, prices and valuations as exact strings with explicit stale/missing states", async () => {
     const { provider, service } = fixture();
-    await service.importToken({ chainId: 56, tokenAddress: customToken, userId, walletId: wallet.walletId });
+    await service.importToken({
+      chainId: 56,
+      tokenAddress: customToken,
+      userId,
+      walletId: wallet.walletId,
+    });
     provider.balances.set(customToken, 1_234_567n);
     provider.prices.set("native", { observedAt: now, priceDecimal: "300.12" });
     provider.prices.set(bscUsdt, {
@@ -158,10 +163,20 @@ describe("P04-05 wallet asset read model", () => {
     ).rejects.toMatchObject({ code: "TOKEN_METADATA_INVALID" });
 
     await expect(
-      service.importToken({ chainId: 56, tokenAddress: customToken, userId, walletId: wallet.walletId }),
+      service.importToken({
+        chainId: 56,
+        tokenAddress: customToken,
+        userId,
+        walletId: wallet.walletId,
+      }),
     ).resolves.toMatchObject({ decimals: 6, default: false, symbol: "FIX" });
     await expect(
-      service.importToken({ chainId: 56, tokenAddress: customToken, userId, walletId: wallet.walletId }),
+      service.importToken({
+        chainId: 56,
+        tokenAddress: customToken,
+        userId,
+        walletId: wallet.walletId,
+      }),
     ).rejects.toMatchObject({ code: "TOKEN_ALREADY_EXISTS" });
 
     await tokens.insert({
@@ -176,26 +191,51 @@ describe("P04-05 wallet asset read model", () => {
       walletId: wallet.walletId,
     });
     await expect(
-      service.importToken({ chainId: 56, tokenAddress: conflictToken, userId, walletId: wallet.walletId }),
+      service.importToken({
+        chainId: 56,
+        tokenAddress: conflictToken,
+        userId,
+        walletId: wallet.walletId,
+      }),
     ).rejects.toMatchObject({ code: "TOKEN_METADATA_CONFLICT" });
 
     await expect(
-      service.importToken({ chainId: 56, tokenAddress: bscUsdt, userId, walletId: wallet.walletId }),
+      service.importToken({
+        chainId: 56,
+        tokenAddress: bscUsdt,
+        userId,
+        walletId: wallet.walletId,
+      }),
     ).rejects.toMatchObject({ code: "DEFAULT_TOKEN_IMMUTABLE" });
     await expect(
-      service.deleteToken({ chainId: 56, tokenAddress: bscUsdt, userId, walletId: wallet.walletId }),
+      service.deleteToken({
+        chainId: 56,
+        tokenAddress: bscUsdt,
+        userId,
+        walletId: wallet.walletId,
+      }),
     ).rejects.toMatchObject({ code: "DEFAULT_TOKEN_IMMUTABLE" });
     await expect(
-      service.deleteToken({ chainId: 56, tokenAddress: customToken, userId, walletId: wallet.walletId }),
+      service.deleteToken({
+        chainId: 56,
+        tokenAddress: customToken,
+        userId,
+        walletId: wallet.walletId,
+      }),
     ).resolves.toBe(true);
-    expect((await service.listTokens({ chainId: 56, userId, walletId: wallet.walletId })).items).not.toContainEqual(
-      expect.objectContaining({ tokenAddress: customToken }),
-    );
+    expect(
+      (await service.listTokens({ chainId: 56, userId, walletId: wallet.walletId })).items,
+    ).not.toContainEqual(expect.objectContaining({ tokenAddress: customToken }));
   });
 
   it("builds canonical EIP-681 native and ERC-20 receive requests without floating-point conversion", async () => {
     const { service } = fixture();
-    await service.importToken({ chainId: 56, tokenAddress: customToken, userId, walletId: wallet.walletId });
+    await service.importToken({
+      chainId: 56,
+      tokenAddress: customToken,
+      userId,
+      walletId: wallet.walletId,
+    });
 
     await expect(
       service.receive({ amountDecimal: "1.000000000000000001", chainId: 56, userId, wallet }),
