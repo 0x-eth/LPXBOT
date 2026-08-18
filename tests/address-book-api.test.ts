@@ -139,7 +139,7 @@ function auth(token: string, secret = false) {
   };
 }
 
-function createBody(address = externalAddress, secret = password) {
+function createBody(address: string = externalAddress, secret = password) {
   return JSON.stringify({
     address,
     category: "exchange",

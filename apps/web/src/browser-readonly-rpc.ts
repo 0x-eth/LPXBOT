@@ -1,7 +1,7 @@
 import {
   BrowserRpcFrameTransportError,
   createSandboxedBrowserRpcFetcher,
-} from "./browser-rpc-frame-transport";
+} from "./browser-rpc-frame-transport.js";
 
 export const browserReadonlyRpcMethods = [
   "eth_chainId",
