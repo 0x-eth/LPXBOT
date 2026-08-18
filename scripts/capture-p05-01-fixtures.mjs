@@ -7,6 +7,8 @@ import { keccak256 } from "viem";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUTPUT = path.join(ROOT, "artifacts/acceptance/P05-01/fixtures/observed-helper");
 const RPC_URL = process.env.BSC_RPC_URL ?? "https://bsc-dataseed.binance.org";
+const ARCHIVE_RPC_URL =
+  process.env.BSC_ARCHIVE_RPC_URL ?? "https://bsc-mainnet.public.blastapi.io";
 const CAPTURED_AT = "2026-08-19T00:00:00.000Z";
 const OWNER_SELECTOR = "0x8da5cb5b";
 
@@ -95,12 +97,12 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-async function rpc(method, params) {
+async function rpc(method, params, endpoint = RPC_URL) {
   const id = ++requestId;
   let lastError;
   for (let attempt = 1; attempt <= 5; attempt += 1) {
     try {
-      const response = await fetch(RPC_URL, {
+      const response = await fetch(endpoint, {
         body: JSON.stringify({ id, jsonrpc: "2.0", method, params }),
         headers: { "content-type": "application/json" },
         method: "POST",
@@ -134,8 +136,12 @@ async function capture(pathFixture, transactionHash) {
     rpc("eth_chainId", []),
     rpc("eth_getTransactionReceipt", [transactionHash]),
     rpc("eth_getBlockByHash", [transaction.blockHash, false]),
-    rpc("eth_getCode", [pathFixture.helper, transaction.blockNumber]),
-    rpc("eth_call", [{ data: OWNER_SELECTOR, to: pathFixture.helper }, transaction.blockNumber]),
+    rpc("eth_getCode", [pathFixture.helper, transaction.blockNumber], ARCHIVE_RPC_URL),
+    rpc(
+      "eth_call",
+      [{ data: OWNER_SELECTOR, to: pathFixture.helper }, transaction.blockNumber],
+      ARCHIVE_RPC_URL,
+    ),
   ]);
   assert(chainId === "0x38", `${transactionHash}: expected chainId 56`);
   assert(receipt?.transactionHash === transactionHash, `${transactionHash}: receipt missing`);
@@ -194,6 +200,13 @@ async function capture(pathFixture, transactionHash) {
           "eth_getTransactionByHash",
           "eth_getTransactionReceipt",
           "eth_getBlockByHash",
+        ],
+        retrievedAt: CAPTURED_AT,
+      },
+      {
+        endpoint: ARCHIVE_RPC_URL,
+        kind: "bsc-archive-json-rpc",
+        methods: [
           "eth_getCode",
           "eth_call",
         ],
