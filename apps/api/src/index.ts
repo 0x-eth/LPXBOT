@@ -19,6 +19,7 @@ export type { LoginWalletAuthEnvironment } from "./login-wallet-auth-config.js";
 export { PostgresSessionStore } from "./postgres-session-store.js";
 export { PostgresWalletDirectory } from "./postgres-wallet-directory.js";
 export { PostgresWalletTokenStore } from "./postgres-wallet-token-store.js";
+export { PostgresWalletTransferOperationStore } from "./postgres-wallet-transfer-store.js";
 export { PostgresAddressBookStore } from "./postgres-address-book-store.js";
 export { RemoteWalletSignerClient } from "./remote-wallet-signer-client.js";
 export {
@@ -47,6 +48,40 @@ export {
   WalletAssetError,
   WalletAssetService,
 } from "./wallet-assets.js";
+export {
+  DirectoryWalletTransferAddressClassifier,
+  MemoryWalletTransferOperationStore,
+  MemoryWalletTransferPreviewStore,
+  parseWalletTransferIdempotencyKey,
+  parseWalletTransferOperationId,
+  parseWalletTransferPreviewRequest,
+  parseWalletTransferSubmit,
+  WalletTransferError,
+  WalletTransferService,
+  walletTransferBodyLimit,
+  walletTransferIdempotencyRetentionHours,
+  walletTransferPreviewTtlMilliseconds,
+} from "./wallet-transfers.js";
+export type {
+  MemoryWalletTransferOutboxEvent,
+  ParsedWalletTransferSubmit,
+  StoredWalletTransferOperation,
+  WalletTransferAddressClassifier,
+  WalletTransferApplication,
+  WalletTransferAssetDefinition,
+  WalletTransferAssetRegistry,
+  WalletTransferChainAssetState,
+  WalletTransferChainReader,
+  WalletTransferCreateInput,
+  WalletTransferCreateResult,
+  WalletTransferErrorCode,
+  WalletTransferIdempotencyRecord,
+  WalletTransferNonceView,
+  WalletTransferOperationStore,
+  WalletTransferPolicySnapshot,
+  WalletTransferPolicySource,
+  WalletTransferPreviewStore,
+} from "./wallet-transfers.js";
 export type {
   ControlledWalletReadProvider,
   ControlledWalletReadProviderRegistry,

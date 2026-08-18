@@ -18,6 +18,7 @@ import {
   type MarketWindowMinutes,
   type SessionView,
   type ShellStatsSnapshot,
+  walletTransferSecretMediaType,
 } from "@lpbot/api-contract";
 import { findRegisteredChain } from "@lpbot/chain-registry";
 import {
@@ -144,6 +145,15 @@ import {
   type WalletAssetApplication,
 } from "./wallet-assets.js";
 import {
+  parseWalletTransferIdempotencyKey,
+  parseWalletTransferOperationId,
+  parseWalletTransferPreviewRequest,
+  parseWalletTransferSubmit,
+  WalletTransferError,
+  walletTransferBodyLimit,
+  type WalletTransferApplication,
+} from "./wallet-transfers.js";
+import {
   keystoreSecretBodyLimit,
   keystoreSecretMediaType,
   parseDeleteCustodyWalletRequest,
@@ -222,6 +232,7 @@ export interface ApiAppOptions {
   walletAssets?: WalletAssetApplication;
   walletDirectory?: WalletDirectory;
   walletSigner?: WalletSignerClient;
+  walletTransfers?: WalletTransferApplication;
   keystore?: KeystoreApplication;
   securityPassword?: SecurityPasswordApplication;
 }
@@ -976,6 +987,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   const isAddressBookSecretRequest = (method: string, path: string): boolean =>
     method === "POST" && path === "/api/address-book";
 
+  const isWalletTransferSecretRequest = (method: string, path: string): boolean =>
+    method === "POST" && path === "/api/wallets/transfers";
+
   app.addHook("onRequest", (request, reply, done) => {
     const path = request.url.split("?", 1)[0]!;
     const mediaType = request.headers["content-type"]?.split(";", 1)[0]?.trim().toLowerCase();
@@ -989,7 +1003,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             : isAddressBookSecretRequest(request.method, path)
               ? addressBookSecretMediaType
               : null;
-    if (requiredMediaType && mediaType !== requiredMediaType) {
+    if (
+      requiredMediaType &&
+      mediaType !== requiredMediaType &&
+      !(isWalletTransferSecretRequest(request.method, path) && mediaType === "application/json")
+    ) {
       reply.header("Cache-Control", "no-store");
       void reply.code(415).send(
         createErrorEnvelope({
@@ -1017,6 +1035,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   );
   app.addContentTypeParser(
     addressBookSecretMediaType,
+    { parseAs: "buffer" },
+    (_request, body, done) => done(null, body),
+  );
+  app.addContentTypeParser(
+    walletTransferSecretMediaType,
     { parseAs: "buffer" },
     (_request, body, done) => done(null, body),
   );
@@ -1062,13 +1085,15 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         (requestPath === "/api/wallets/import" || requestPath === "/api/wallets/generate")) ||
         isKeystoreSecretRequest(request.method, requestPath) ||
         isSecurityPasswordSecretRequest(request.method, requestPath) ||
-        isAddressBookSecretRequest(request.method, requestPath))
+        isAddressBookSecretRequest(request.method, requestPath) ||
+        isWalletTransferSecretRequest(request.method, requestPath) ||
+        (request.method === "POST" && requestPath === "/api/wallets/transfers/preview"))
     ) {
       reply.header("Cache-Control", "no-store");
       return reply.code(413).send(
         createErrorEnvelope({
           code: "REQUEST_TOO_LARGE",
-          message: "The wallet secret request is too large",
+          message: "The wallet secret or transfer request is too large",
           requestId: request.id,
           retryable: false,
         }),
