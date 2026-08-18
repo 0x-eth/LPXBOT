@@ -1006,7 +1006,7 @@ export interface LoginWalletLinkView {
   updatedAt: string;
 }
 
-export const walletEncryptionModes = ["server-kek"] as const;
+export const walletEncryptionModes = ["server-kek", "user-password"] as const;
 export type WalletEncryptionMode = (typeof walletEncryptionModes)[number];
 
 export const walletLockStatuses = ["ready", "locked", "quarantined"] as const;

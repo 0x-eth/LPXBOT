@@ -54,6 +54,69 @@ export interface CustodyWalletStore {
   ): Promise<void>;
 }
 
+export type KeystoreState = "locked" | "locked-out" | "unconfigured" | "unlocked";
+
+export interface KeystoreStatus {
+  configured: boolean;
+  status: KeystoreState;
+  version: number;
+}
+
+export interface StoredKeystoreVersion {
+  createdAt: Date;
+  parameterVersion: 1;
+  salt: Buffer;
+  secretVersion: number;
+  verifier: Buffer;
+}
+
+export interface StoredKeystore {
+  autoLockMinutes: 1 | 5 | 15 | 30 | 60;
+  current: StoredKeystoreVersion;
+  updatedAt: Date;
+  userId: string;
+}
+
+export interface StoredKeystoreFailure {
+  backoffUntil: Date;
+  failureCount: number;
+  lockedUntil: Date | null;
+  windowStartedAt: Date;
+}
+
+export interface KeystoreStore {
+  clearKeystoreFailures(userId: string, sourceSessionId: string): Promise<void>;
+  createKeystore(keystore: StoredKeystore): Promise<void>;
+  getKeystore(userId: string): Promise<StoredKeystore | null>;
+  getKeystoreFailure(
+    userId: string,
+    sourceSessionId: string,
+  ): Promise<StoredKeystoreFailure | null>;
+  recordKeystoreFailure(input: {
+    backoffMilliseconds: number;
+    maxAttempts: number;
+    now: Date;
+    sourceSessionId: string;
+    userId: string;
+    windowMilliseconds: number;
+  }): Promise<StoredKeystoreFailure>;
+  rotateKeystore(input: {
+    expectedVersion: number;
+    next: StoredKeystore;
+  }): Promise<void>;
+  setUserPasswordWalletLockStatus(
+    userId: string,
+    status: WalletLockStatus,
+    updatedAt: Date,
+  ): Promise<void>;
+  updateKeystoreAutoLock(input: {
+    expectedVersion: number;
+    minutes: 1 | 5 | 15 | 30 | 60;
+    updatedAt: Date;
+    userId: string;
+  }): Promise<void>;
+}
+
 export interface WalletDirectory {
   getWallet(userId: string, walletId: string): Promise<CustodyWallet | null>;
   listWallets(userId: string): Promise<CustodyWalletPage>;

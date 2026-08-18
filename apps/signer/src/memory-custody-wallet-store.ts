@@ -4,6 +4,9 @@ import type {
   CustodyEnvelope,
   CustodyWalletCreate,
   CustodyWalletStore,
+  KeystoreStore,
+  StoredKeystore,
+  StoredKeystoreFailure,
   StoredCustodyWallet,
 } from "./custody-types.js";
 import { publicWallet } from "./custody-types.js";
@@ -28,10 +31,34 @@ function cloneWallet(wallet: StoredCustodyWallet): StoredCustodyWallet {
   };
 }
 
-export class InMemoryCustodyWalletStore implements CustodyWalletStore {
+function cloneKeystore(keystore: StoredKeystore): StoredKeystore {
+  return {
+    ...keystore,
+    current: {
+      ...keystore.current,
+      createdAt: new Date(keystore.current.createdAt),
+      salt: Buffer.from(keystore.current.salt),
+      verifier: Buffer.from(keystore.current.verifier),
+    },
+    updatedAt: new Date(keystore.updatedAt),
+  };
+}
+
+function cloneFailure(failure: StoredKeystoreFailure): StoredKeystoreFailure {
+  return {
+    ...failure,
+    backoffUntil: new Date(failure.backoffUntil),
+    lockedUntil: failure.lockedUntil ? new Date(failure.lockedUntil) : null,
+    windowStartedAt: new Date(failure.windowStartedAt),
+  };
+}
+
+export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreStore {
   readonly #audits: Array<{ action: string; walletId: string }> = [];
   readonly #envelopes = new Map<string, Map<number, CustodyEnvelope>>();
   readonly #failBeforeCommit: boolean;
+  readonly #keystoreFailures = new Map<string, StoredKeystoreFailure>();
+  readonly #keystores = new Map<string, StoredKeystore>();
   readonly #wallets = new Map<string, StoredCustodyWallet>();
   readonly openAttempts: number[] = [];
 
@@ -101,6 +128,96 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore {
     wallet.lockStatus = status;
     wallet.updatedAt = new Date(updatedAt);
     wallet.revision += 1;
+  }
+
+  async createKeystore(keystore: StoredKeystore): Promise<void> {
+    if (this.#keystores.has(keystore.userId)) {
+      throw new SignerError("PASSWORD_ALREADY_CONFIGURED");
+    }
+    this.#keystores.set(keystore.userId, cloneKeystore(keystore));
+  }
+
+  async getKeystore(userId: string): Promise<StoredKeystore | null> {
+    const keystore = this.#keystores.get(userId);
+    return keystore ? cloneKeystore(keystore) : null;
+  }
+
+  async rotateKeystore(input: {
+    expectedVersion: number;
+    next: StoredKeystore;
+  }): Promise<void> {
+    const current = this.#keystores.get(input.next.userId);
+    if (!current || current.current.secretVersion !== input.expectedVersion) {
+      throw new SignerError("SECRET_VERSION_CONFLICT");
+    }
+    this.#keystores.set(input.next.userId, cloneKeystore(input.next));
+  }
+
+  async updateKeystoreAutoLock(input: {
+    expectedVersion: number;
+    minutes: 1 | 5 | 15 | 30 | 60;
+    updatedAt: Date;
+    userId: string;
+  }): Promise<void> {
+    const keystore = this.#keystores.get(input.userId);
+    if (!keystore || keystore.current.secretVersion !== input.expectedVersion) {
+      throw new SignerError("SECRET_VERSION_CONFLICT");
+    }
+    keystore.autoLockMinutes = input.minutes;
+    keystore.updatedAt = new Date(input.updatedAt);
+  }
+
+  async getKeystoreFailure(
+    userId: string,
+    sourceSessionId: string,
+  ): Promise<StoredKeystoreFailure | null> {
+    const failure = this.#keystoreFailures.get(`${userId}:${sourceSessionId}`);
+    return failure ? cloneFailure(failure) : null;
+  }
+
+  async recordKeystoreFailure(input: {
+    backoffMilliseconds: number;
+    maxAttempts: number;
+    now: Date;
+    sourceSessionId: string;
+    userId: string;
+    windowMilliseconds: number;
+  }): Promise<StoredKeystoreFailure> {
+    const key = `${input.userId}:${input.sourceSessionId}`;
+    const previous = this.#keystoreFailures.get(key);
+    const expired =
+      !previous || input.now.getTime() - previous.windowStartedAt.getTime() >= input.windowMilliseconds;
+    const windowStartedAt = expired ? input.now : previous.windowStartedAt;
+    const failureCount = expired ? 1 : previous.failureCount + 1;
+    const failure: StoredKeystoreFailure = {
+      backoffUntil: new Date(input.now.getTime() + input.backoffMilliseconds),
+      failureCount,
+      lockedUntil:
+        failureCount >= input.maxAttempts
+          ? new Date(windowStartedAt.getTime() + input.windowMilliseconds)
+          : null,
+      windowStartedAt: new Date(windowStartedAt),
+    };
+    this.#keystoreFailures.set(key, failure);
+    return cloneFailure(failure);
+  }
+
+  async clearKeystoreFailures(userId: string, sourceSessionId: string): Promise<void> {
+    this.#keystoreFailures.delete(`${userId}:${sourceSessionId}`);
+  }
+
+  async setUserPasswordWalletLockStatus(
+    userId: string,
+    status: WalletLockStatus,
+    updatedAt: Date,
+  ): Promise<void> {
+    for (const wallet of this.#wallets.values()) {
+      if (wallet.userId !== userId || wallet.mode !== "user-password") continue;
+      if (wallet.lockStatus === status) continue;
+      wallet.lockStatus = status;
+      wallet.updatedAt = new Date(updatedAt);
+      wallet.revision += 1;
+    }
   }
 
   async mutateEnvelopeForTest(
