@@ -11,6 +11,8 @@ import {
   type ManagedChainView,
   marketStreamKey,
   marketWindowMinutes,
+  okxKeySecretBodyLimit,
+  okxKeySecretMediaType,
   parseLiquidityProtocolFilter,
   type MarketPoolByTokenSort,
   type MarketCandleBar,
@@ -112,6 +114,11 @@ import {
   type NotificationDestinationMutationResult,
 } from "./notifications.js";
 import {
+  OkxKeyError,
+  publicOkxKeyStatus,
+  type OkxKeyApplication,
+} from "./okx-key.js";
+import {
   parsePoolBlocklistPatch,
   PoolBlocklistValidationError,
   type PoolBlocklistStore,
@@ -209,6 +216,7 @@ export interface ApiAppOptions {
   monitorStore?: MonitorStore;
   notificationStore?: NotificationConfigurationStore;
   notificationHistoryStore?: NotificationHistoryStore;
+  okxKey?: OkxKeyApplication;
   managementOrigin?: string;
   now?: () => Date;
   poolBlocklistRateLimit?: ChainManagementRateLimit;
@@ -1000,6 +1008,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   const isWalletTransferSecretRequest = (method: string, path: string): boolean =>
     method === "POST" && path === "/api/wallets/transfers";
 
+  const isOkxKeySecretRequest = (method: string, path: string): boolean =>
+    (path === "/api/settings/okx-key" &&
+      (method === "POST" || method === "PUT" || method === "DELETE")) ||
+    (path === "/api/settings/okx-key/test" && method === "POST");
+
   app.addHook("onRequest", (request, reply, done) => {
     const path = request.url.split("?", 1)[0]!;
     const mediaType = request.headers["content-type"]?.split(";", 1)[0]?.trim().toLowerCase();
@@ -1014,7 +1027,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
               ? addressBookSecretMediaType
               : isWalletTransferSecretRequest(request.method, path)
                 ? walletTransferSecretMediaType
-                : null;
+                : isOkxKeySecretRequest(request.method, path)
+                  ? okxKeySecretMediaType
+                  : null;
     if (
       requiredMediaType &&
       mediaType !== requiredMediaType &&
@@ -1052,6 +1067,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   );
   app.addContentTypeParser(
     walletTransferSecretMediaType,
+    { parseAs: "buffer" },
+    (_request, body, done) => done(null, body),
+  );
+  app.addContentTypeParser(
+    okxKeySecretMediaType,
     { parseAs: "buffer" },
     (_request, body, done) => done(null, body),
   );
@@ -3928,6 +3948,141 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           retryable: true,
         }),
       );
+
+    const okxKeyFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply => {
+      if (!(error instanceof OkxKeyError)) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "CONNECTOR_UNAVAILABLE",
+            message: "The OKX credential connector is unavailable",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      const status =
+        error.code === "INVALID_CREDENTIAL_INGRESS"
+          ? 400
+          : error.code === "CREDENTIAL_NOT_CONFIGURED"
+            ? 404
+            : error.code === "VERSION_CONFLICT" ||
+                error.code === "CREDENTIAL_ALREADY_CONFIGURED" ||
+                error.code === "CAPABILITY_EXPIRED" ||
+                error.code === "CREDENTIAL_REVOKED"
+              ? 409
+              : error.code === "CREDENTIAL_INVALID" ||
+                  error.code === "INSUFFICIENT_PERMISSION"
+                ? 422
+                : 503;
+      const messages: Record<OkxKeyError["code"], string> = {
+        CAPABILITY_EXPIRED: "The OKX credential changed while the request was running",
+        CONNECTOR_UNAVAILABLE: "The OKX credential connector is unavailable",
+        CREDENTIAL_ALREADY_CONFIGURED: "An OKX credential is already configured",
+        CREDENTIAL_INTEGRITY_FAILED: "The OKX credential integrity check failed",
+        CREDENTIAL_INVALID: "OKX rejected the credential",
+        CREDENTIAL_NOT_CONFIGURED: "No OKX credential is configured",
+        CREDENTIAL_REVOKED: "The OKX credential must be replaced",
+        EGRESS_DENIED: "The OKX validation egress policy denied the request",
+        INSUFFICIENT_PERMISSION: "The OKX credential must be read-only and IP restricted",
+        INVALID_CREDENTIAL_INGRESS: "The OKX credential request is invalid",
+        KMS_UNAVAILABLE: "The OKX credential key service is unavailable",
+        PROVIDER_UNKNOWN: "The OKX credential could not be verified",
+        VERSION_CONFLICT: "The OKX credential version changed in another session",
+      };
+      return reply.code(status).send(
+        createErrorEnvelope({
+          code: error.code,
+          message: messages[error.code],
+          requestId: request.id,
+          retryable: error.retryable,
+        }),
+      );
+    };
+
+    app.get("/api/settings/okx-key", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.okxKey) return okxKeyFailure(null, request, reply);
+      try {
+        return createSuccessEnvelope(
+          publicOkxKeyStatus(
+            await options.okxKey.status({
+              actor: `session:${session.id}`,
+              requestId: request.id,
+              userId: session.userId,
+            }),
+          ),
+          request.id,
+        );
+      } catch (error) {
+        return okxKeyFailure(error, request, reply);
+      }
+    });
+
+    const mutateOkxKey = async (
+      operation: "delete" | "replace" | "save" | "test",
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): Promise<unknown> => {
+      reply.header("Cache-Control", "no-store");
+      const ingress = Buffer.isBuffer(request.body) ? request.body : null;
+      try {
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+        if (!ingress) {
+          return reply.code(415).send(
+            createErrorEnvelope({
+              code: "UNSUPPORTED_MEDIA_TYPE",
+              message: "OKX credential mutations require the dedicated secret ingress",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.okxKey) return okxKeyFailure(null, request, reply);
+        const context = {
+          actor: `session:${session.id}`,
+          ingress,
+          requestId: request.id,
+          userId: session.userId,
+        };
+        const status = await options.okxKey[operation](context);
+        return reply
+          .code(operation === "save" ? 201 : 200)
+          .send(createSuccessEnvelope(publicOkxKeyStatus(status), request.id));
+      } catch (error) {
+        return okxKeyFailure(error, request, reply);
+      } finally {
+        ingress?.fill(0);
+      }
+    };
+
+    app.post(
+      "/api/settings/okx-key",
+      { bodyLimit: okxKeySecretBodyLimit },
+      (request, reply) => mutateOkxKey("save", request, reply),
+    );
+    app.put(
+      "/api/settings/okx-key",
+      { bodyLimit: okxKeySecretBodyLimit },
+      (request, reply) => mutateOkxKey("replace", request, reply),
+    );
+    app.delete(
+      "/api/settings/okx-key",
+      { bodyLimit: okxKeySecretBodyLimit },
+      (request, reply) => mutateOkxKey("delete", request, reply),
+    );
+    app.post(
+      "/api/settings/okx-key/test",
+      { bodyLimit: okxKeySecretBodyLimit },
+      (request, reply) => mutateOkxKey("test", request, reply),
+    );
 
     app.get("/api/security-password/status", async (request, reply) => {
       reply.header("Cache-Control", "no-store");
