@@ -128,12 +128,13 @@ describe("P04-04 PostgreSQL wallet lifecycle", () => {
         await pool.query(
           `SELECT
              (SELECT count(*)::int FROM custody_wallet_envelopes WHERE wallet_id = $1) AS envelopes,
+             (SELECT count(*)::int FROM custody_wallet_delete_previews WHERE wallet_id = $1) AS previews,
              (SELECT count(*)::int FROM custody_wallet_tombstones WHERE wallet_id = $1) AS tombstones,
              (SELECT count(*)::int FROM custody_wallet_audit_events WHERE wallet_id = $1) AS audits`,
           [walletId],
         )
       ).rows[0],
-    ).toEqual({ audits: 3, envelopes: 0, tombstones: 1 });
+    ).toEqual({ audits: 3, envelopes: 0, previews: 0, tombstones: 1 });
 
     const reimported = await store.create(draft(randomUUID()));
     expect(reimported.address).toBe(address);
@@ -184,12 +185,13 @@ describe("P04-04 PostgreSQL wallet lifecycle", () => {
         await pool.query(
           `SELECT
              (SELECT count(*)::int FROM custody_wallet_envelopes WHERE wallet_id = $1) AS envelopes,
+             (SELECT count(*)::int FROM custody_wallet_delete_previews WHERE wallet_id = $1) AS previews,
              (SELECT count(*)::int FROM custody_wallet_tombstones WHERE wallet_id = $1) AS tombstones,
              (SELECT count(*)::int FROM custody_wallet_audit_events WHERE wallet_id = $1) AS audits`,
           [faultWalletId],
         )
       ).rows[0],
-    ).toEqual({ audits: 1, envelopes: 1, tombstones: 0 });
+    ).toEqual({ audits: 1, envelopes: 1, previews: 1, tombstones: 0 });
   });
 
   it("preserves the non-secret tombstone and deletion audit after its user is deleted", async () => {

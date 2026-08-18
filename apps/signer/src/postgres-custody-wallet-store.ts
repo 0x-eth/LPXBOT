@@ -445,6 +445,10 @@ export class PostgresCustodyWalletStore
           });
         }
       }
+      await client.query(
+        "DELETE FROM custody_wallet_delete_previews WHERE user_id = $1 AND wallet_id = $2",
+        [input.userId, input.walletId],
+      );
       await client.query("DELETE FROM custody_wallets WHERE wallet_id = $1 AND user_id = $2", [
         input.walletId,
         input.userId,

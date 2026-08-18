@@ -52,8 +52,6 @@ CREATE TABLE custody_wallet_delete_previews (
   expires_at timestamptz NOT NULL,
   created_at timestamptz NOT NULL,
   PRIMARY KEY (user_id, wallet_id, preview_token_digest),
-  FOREIGN KEY (user_id, wallet_id)
-    REFERENCES custody_wallets(user_id, wallet_id) ON DELETE CASCADE,
   CHECK (array_position(task_ids, NULL) IS NULL),
   CHECK (array_position(policy_ids, NULL) IS NULL),
   CHECK (array_position(position_ids, NULL) IS NULL),
