@@ -4,6 +4,8 @@ import {
   keystoreSecretMediaType,
   publicKeystoreResetPreview,
   publicKeystoreStatus,
+  publicWalletDeletePreview,
+  publicWalletDeletionReceipt,
   publicWalletDto,
   WalletApiError,
   type KeystoreApplication,
@@ -16,6 +18,7 @@ const identityPattern = /^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const forwardedErrors = new Set<WalletApiErrorCode>([
   "CONFIRMATION_MISMATCH",
+  "DELETE_BLOCKED",
   "INVALID_AUTO_LOCK",
   "INVALID_CREDENTIALS",
   "INVALID_MODE",
@@ -123,6 +126,81 @@ export class RemoteWalletSignerClient implements WalletSignerClient, KeystoreApp
       input,
       input.ingress,
       walletSecretMediaType,
+    );
+  }
+
+  async renameWallet(input: {
+    expectedRevision: number;
+    name: string;
+    updatedAt: Date;
+    userId: string;
+    walletId: string;
+  }) {
+    return publicWalletDto(
+      await this.#requestData(
+        `/v1/wallets/${input.walletId}`,
+        input,
+        {
+          body: JSON.stringify({
+            expectedRevision: input.expectedRevision,
+            name: input.name,
+            updatedAt: input.updatedAt.toISOString(),
+          }),
+          method: "PATCH",
+        },
+        "application/json",
+      ),
+    );
+  }
+
+  async createWalletDeletePreview(userId: string, walletId: string) {
+    return publicWalletDeletePreview(
+      await this.#requestData(
+        `/v1/wallets/${walletId}/delete-preview`,
+        { userId },
+        { method: "POST" },
+      ),
+    );
+  }
+
+  async deleteWallet(input: {
+    confirmationPhrase?: string;
+    dependencies?: {
+      assetIds: string[];
+      policyIds: string[];
+      positionIds: string[];
+      taskIds: string[];
+    };
+    expectedRevision: number;
+    force: boolean;
+    previewToken: string;
+    userId: string;
+    walletId: string;
+  }) {
+    return publicWalletDeletionReceipt(
+      await this.#requestData(
+        `/v1/wallets/${input.walletId}`,
+        input,
+        {
+          body: JSON.stringify(
+            input.force
+              ? {
+                  confirmationPhrase: input.confirmationPhrase,
+                  dependencies: input.dependencies,
+                  expectedRevision: input.expectedRevision,
+                  force: true,
+                  previewToken: input.previewToken,
+                }
+              : {
+                  expectedRevision: input.expectedRevision,
+                  force: false,
+                  previewToken: input.previewToken,
+                },
+          ),
+          method: "DELETE",
+        },
+        "application/json",
+      ),
     );
   }
 

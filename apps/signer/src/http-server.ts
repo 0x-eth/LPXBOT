@@ -1,6 +1,8 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 
+import type { DeleteCustodyWalletRequest, WalletDeleteDependencies } from "@lpbot/api-contract";
+
 import type { CustodySignerService } from "./custody-signer-service.js";
 import { SignerError, asSignerError } from "./signer-error.js";
 
@@ -33,6 +35,71 @@ function owner(request: IncomingMessage): { tenantId: string; userId: string } |
 function reauthenticatedSessionId(request: IncomingMessage): string | null {
   const value = request.headers["x-lpbot-reauthenticated-session-id"];
   return typeof value === "string" && uuidPattern.test(value) ? value.toLowerCase() : null;
+}
+
+function dependencyList(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) => typeof item === "string" && item.length > 0 && item.length <= 256 && !/\p{Cc}/u.test(item),
+    ) &&
+    new Set(value).size === value.length
+  );
+}
+
+function deleteRequest(value: Record<string, unknown>): DeleteCustodyWalletRequest {
+  const validBase =
+    Number.isSafeInteger(value.expectedRevision) &&
+    Number(value.expectedRevision) > 0 &&
+    typeof value.previewToken === "string" &&
+    /^[A-Za-z0-9_-]{43}$/u.test(value.previewToken);
+  if (
+    value.force === false &&
+    validBase &&
+    Object.keys(value).sort().join(",") === "expectedRevision,force,previewToken"
+  ) {
+    return {
+      expectedRevision: Number(value.expectedRevision),
+      force: false,
+      previewToken: value.previewToken as string,
+    };
+  }
+  const dependencies = value.dependencies;
+  if (
+    value.force !== true ||
+    !validBase ||
+    Object.keys(value).sort().join(",") !==
+      "confirmationPhrase,dependencies,expectedRevision,force,previewToken" ||
+    typeof value.confirmationPhrase !== "string" ||
+    value.confirmationPhrase.length > 128 ||
+    typeof dependencies !== "object" ||
+    dependencies === null ||
+    Array.isArray(dependencies)
+  ) {
+    throw new SignerError("INVALID_WALLET");
+  }
+  const lists = dependencies as Record<keyof WalletDeleteDependencies, unknown>;
+  if (
+    Object.keys(lists).sort().join(",") !== "assetIds,policyIds,positionIds,taskIds" ||
+    !dependencyList(lists.assetIds) ||
+    !dependencyList(lists.policyIds) ||
+    !dependencyList(lists.positionIds) ||
+    !dependencyList(lists.taskIds)
+  ) {
+    throw new SignerError("INVALID_WALLET");
+  }
+  return {
+    confirmationPhrase: value.confirmationPhrase,
+    dependencies: {
+      assetIds: lists.assetIds,
+      policyIds: lists.policyIds,
+      positionIds: lists.positionIds,
+      taskIds: lists.taskIds,
+    },
+    expectedRevision: Number(value.expectedRevision),
+    force: true,
+    previewToken: value.previewToken as string,
+  };
 }
 
 async function readBody(request: IncomingMessage): Promise<Buffer> {
@@ -70,7 +137,8 @@ function failure(response: ServerResponse, error: unknown): void {
   const status =
     signerError.code === "REQUEST_TOO_LARGE"
       ? 413
-      : signerError.code === "INVALID_MODE" ||
+      : signerError.code === "CONFIRMATION_MISMATCH" ||
+          signerError.code === "INVALID_MODE" ||
           signerError.code === "INVALID_PRIVATE_KEY" ||
           signerError.code === "INVALID_WALLET"
         ? 400
@@ -78,7 +146,8 @@ function failure(response: ServerResponse, error: unknown): void {
           ? 401
           : signerError.code === "LOCKED_OUT"
             ? 429
-            : signerError.code === "SECRET_VERSION_CONFLICT" ||
+            : signerError.code === "DELETE_BLOCKED" ||
+                signerError.code === "SECRET_VERSION_CONFLICT" ||
                 signerError.code === "REVISION_CONFLICT" ||
                 signerError.code === "PASSWORD_ALREADY_CONFIGURED" ||
                 signerError.code === "PREVIEW_EXPIRED" ||
@@ -234,6 +303,63 @@ export function createSignerHttpServer(input: {
           walletId: modeSwitch[1].toLowerCase(),
         });
         send(response, 202, { data: wallet, success: true });
+        return;
+      }
+      const deletePreview = /^\/v1\/wallets\/([0-9a-f-]+)\/delete-preview$/iu.exec(
+        request.url ?? "",
+      );
+      if (request.method === "POST" && deletePreview?.[1]) {
+        const preview = await input.service.createWalletDeletePreview(
+          ownership.userId,
+          deletePreview[1].toLowerCase(),
+        );
+        send(response, 201, { data: preview, success: true });
+        return;
+      }
+      const walletLifecycle = /^\/v1\/wallets\/([0-9a-f-]+)$/iu.exec(request.url ?? "");
+      if (
+        walletLifecycle?.[1] &&
+        (request.method === "PATCH" || request.method === "DELETE")
+      ) {
+        body = await readBody(request);
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(body.toString("utf8"));
+        } catch {
+          throw new SignerError("INVALID_WALLET");
+        }
+        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+          throw new SignerError("INVALID_WALLET");
+        }
+        const value = parsed as Record<string, unknown>;
+        if (request.method === "PATCH") {
+          const updatedAt =
+            typeof value.updatedAt === "string" ? new Date(value.updatedAt) : new Date(Number.NaN);
+          if (
+            Object.keys(value).sort().join(",") !== "expectedRevision,name,updatedAt" ||
+            typeof value.name !== "string" ||
+            !Number.isSafeInteger(value.expectedRevision) ||
+            Number.isNaN(updatedAt.getTime()) ||
+            updatedAt.toISOString() !== value.updatedAt
+          ) {
+            throw new SignerError("INVALID_WALLET");
+          }
+          const renamed = await input.service.renameWallet({
+            expectedRevision: Number(value.expectedRevision),
+            name: value.name,
+            updatedAt,
+            userId: ownership.userId,
+            walletId: walletLifecycle[1].toLowerCase(),
+          });
+          send(response, 200, { data: renamed, success: true });
+          return;
+        }
+        const deleted = await input.service.deleteWallet({
+          ...deleteRequest(value),
+          userId: ownership.userId,
+          walletId: walletLifecycle[1].toLowerCase(),
+        });
+        send(response, 200, { data: deleted, success: true });
         return;
       }
       if (request.method === "POST" && request.url === "/v1/wallets/import") {

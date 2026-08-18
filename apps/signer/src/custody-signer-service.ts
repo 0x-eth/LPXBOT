@@ -29,6 +29,7 @@ import { publicWallet } from "./custody-types.js";
 import type { IsolatedWalletSigner, SealedWalletDraft } from "./isolated-wallet-signer.js";
 import { createPasswordVerifier, deriveArgon2idKek } from "./password-crypto.js";
 import { SignerError, asSignerError } from "./signer-error.js";
+import { privateKeyInputName } from "./wallet-crypto.js";
 
 const autoLockMinutes = new Set([1, 5, 15, 30, 60]);
 const failureWindowMilliseconds = 15 * 60 * 1_000;
@@ -832,7 +833,10 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     userId: string;
     walletId: string;
   }): Promise<CustodyWallet> {
-    return this.#store.rename(input);
+    if (!Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 1) {
+      throw new SignerError("REVISION_CONFLICT");
+    }
+    return this.#store.rename({ ...input, name: privateKeyInputName(input.name) });
   }
 
   async recoverWallet(input: {
