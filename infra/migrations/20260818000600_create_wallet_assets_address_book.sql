@@ -1,8 +1,5 @@
 -- migrate:up
 
-ALTER TABLE custody_wallets
-  ADD CONSTRAINT custody_wallets_user_wallet_unique UNIQUE (user_id, wallet_id);
-
 CREATE TABLE custody_wallet_custom_tokens (
   user_id uuid NOT NULL,
   wallet_id uuid NOT NULL,
@@ -107,4 +104,3 @@ DROP TABLE wallet_address_book_audit_events;
 DROP FUNCTION reject_wallet_address_book_audit_mutation();
 DROP TABLE wallet_address_book_entries;
 DROP TABLE custody_wallet_custom_tokens;
-ALTER TABLE custody_wallets DROP CONSTRAINT custody_wallets_user_wallet_unique;
