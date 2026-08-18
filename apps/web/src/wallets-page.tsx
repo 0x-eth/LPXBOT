@@ -379,9 +379,18 @@ export function WalletsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
+    void client.list(controller.signal).then(
+      (page) => {
+        setWallets(page.items);
+        setStatus(page.items.length === 0 ? "empty" : "ready");
+      },
+      (error: unknown) => {
+        if (controller.signal.aborted) return;
+        setStatus(stateForError(error));
+      },
+    );
     return () => controller.abort();
-  }, [load]);
+  }, [client]);
 
   const created = (wallet: CustodyWallet) => {
     setWallets((current) => [
