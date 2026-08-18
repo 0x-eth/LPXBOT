@@ -17,6 +17,8 @@ export { sessionCookieName, setBrowserSessionCookie } from "./browser-session-co
 export { createLoginWalletAuthenticationFromEnvironment } from "./login-wallet-auth-config.js";
 export type { LoginWalletAuthEnvironment } from "./login-wallet-auth-config.js";
 export { PostgresSessionStore } from "./postgres-session-store.js";
+export { PostgresWalletDirectory } from "./postgres-wallet-directory.js";
+export { RemoteWalletSignerClient } from "./remote-wallet-signer-client.js";
 export {
   parseGenerateCustodyWalletRequest,
   parseWalletId,
