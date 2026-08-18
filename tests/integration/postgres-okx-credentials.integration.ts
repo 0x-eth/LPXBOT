@@ -1,9 +1,12 @@
 import { randomUUID } from "node:crypto";
 
 import {
+  clearCredentialBytes,
+  encryptOkxCredentials,
   LocalOkxKmsFixture,
   OkxCredentialService,
   OkxTransportFixture,
+  parseCredentialIngress,
   PostgresOkxCredentialRepository,
   usableOkxFixtureValidation,
 } from "../../apps/okx-connector/src/index.js";
@@ -225,6 +228,77 @@ describe("P04-07 PostgreSQL OKX credential store", () => {
         )
       ).rows,
     ).toEqual([{ tombstones: 1 }]);
+  });
+
+  it("recovers replacement and testing interruptions without changing the active version", async () => {
+    const target = randomUUID();
+    await pool.query(
+      `INSERT INTO users (id, role, tier, status, display_name, created_at, updated_at)
+       VALUES ($1, 'user', 'normal', 'active', 'Interrupted replacement fixture', now(), now())`,
+      [target],
+    );
+    const kms = new LocalOkxKmsFixture({ key: Buffer.alloc(32, 0x64) });
+    const repository = new PostgresOkxCredentialRepository(pool);
+    const running = service({ kms, repository });
+    await running.save({ ...context(target, "interruption-save"), ingress: credential("active") });
+    const head = await repository.getHead(target);
+    expect(head).not.toBeNull();
+    const stagedCredentials = parseCredentialIngress(credential("staged-replacement"));
+    try {
+      const staged = await encryptOkxCredentials({
+        credentials: stagedCredentials,
+        identity: {
+          credentialId: head!.credentialId,
+          environment: "production",
+          userId: target,
+          version: 2,
+        },
+        kms,
+        now,
+      });
+      await repository.createStaged({
+        context: context(target, "interruption-stage"),
+        envelope: staged,
+        expectedActiveVersion: 1,
+      });
+    } finally {
+      clearCredentialBytes(stagedCredentials);
+    }
+
+    const restarted = service({ kms, repository: new PostgresOkxCredentialRepository(pool) });
+    await expect(
+      restarted.recover({ now, stagedTtlMilliseconds: 0 }),
+    ).resolves.toBe(1);
+    await expect(restarted.status(target)).resolves.toEqual({
+      configured: true,
+      status: "usable",
+      version: 1,
+    });
+    const afterReplacementRecovery = await pool.query<{
+      active_count: number;
+      staged_count: number;
+    }>(
+      `SELECT count(*) FILTER (WHERE active)::int active_count,
+              count(*) FILTER (WHERE version = 2)::int staged_count
+         FROM okx_credential_versions WHERE user_id = $1`,
+      [target],
+    );
+    expect(afterReplacementRecovery.rows).toEqual([{ active_count: 1, staged_count: 0 }]);
+
+    const testing = await repository.setStatus({
+      context: context(target, "interruption-testing"),
+      expectedVersion: 1,
+      status: "testing",
+    });
+    await expect(restarted.recover({ now })).resolves.toBe(1);
+    const recovered = await repository.getHead(target);
+    expect(recovered).toMatchObject({
+      capabilityEpoch: testing.capabilityEpoch + 1,
+      configured: true,
+      status: "unknown",
+      version: 1,
+    });
+    await pool.query("DELETE FROM users WHERE id = $1", [target]);
   });
 
   it("grants ciphertext access only to the connector role and enforces append-only audit", async () => {
