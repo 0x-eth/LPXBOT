@@ -6,6 +6,7 @@ import {
   Download,
   KeyRound,
   LoaderCircle,
+  LockKeyhole,
   Plus,
   RefreshCw,
   ShieldCheck,
@@ -813,4 +814,3 @@ export function WalletsPage() {
     </main>
   );
 }
-  LockKeyhole,

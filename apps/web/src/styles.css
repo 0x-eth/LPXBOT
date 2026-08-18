@@ -280,6 +280,23 @@ html[data-theme="dark"] .wallet-custody-badge[data-status="locked"] {
   background: var(--muted);
 }
 
+.wallet-mode-options {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: initial;
+}
+
+.wallet-mode-switch {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+}
+
+.wallet-mode-switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .wallet-form > p[role="alert"] {
   padding: 9px 10px;
   margin: 0;
