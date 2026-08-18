@@ -16,6 +16,7 @@ function decode(value: unknown, expectedBytes: number | null): Buffer {
   const bytes = Buffer.from(value, "base64");
   if (
     (expectedBytes !== null && bytes.length !== expectedBytes) ||
+    (expectedBytes === null && (bytes.length === 0 || bytes.length > 16_384)) ||
     bytes.toString("base64") !== value
   ) {
     bytes.fill(0);
