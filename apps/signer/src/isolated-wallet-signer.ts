@@ -99,8 +99,8 @@ export class IsolatedWalletSigner {
   async importAndSeal(input: {
     envelopeVersion: number;
     ingress: Uint8Array;
-    passwordKek?: Uint8Array;
-    secretVersion?: number;
+    passwordKek?: Uint8Array | undefined;
+    secretVersion?: number | undefined;
     tenantId: string;
     userId: string;
     walletId: string;
@@ -121,8 +121,8 @@ export class IsolatedWalletSigner {
     envelopeVersion: number;
     mode: WalletEncryptionMode;
     name: string;
-    passwordKek?: Uint8Array;
-    secretVersion?: number;
+    passwordKek?: Uint8Array | undefined;
+    secretVersion?: number | undefined;
     tenantId: string;
     userId: string;
     walletId: string;
@@ -142,9 +142,9 @@ export class IsolatedWalletSigner {
     envelopeVersion: number;
     mode: WalletEncryptionMode;
     name: string;
-    passwordKek?: Uint8Array;
+    passwordKek?: Uint8Array | undefined;
     privateKey: Uint8Array;
-    secretVersion?: number;
+    secretVersion?: number | undefined;
     tenantId: string;
     userId: string;
     walletId: string;
@@ -182,7 +182,7 @@ export class IsolatedWalletSigner {
 
   async openAndVerify(input: {
     envelope: CustodyEnvelope;
-    passwordKek?: Uint8Array;
+    passwordKek?: Uint8Array | undefined;
     wallet: StoredCustodyWallet;
   }): Promise<{ address: `0x${string}`; verified: true }> {
     const material = await this.#openMaterial(input);
@@ -196,10 +196,10 @@ export class IsolatedWalletSigner {
 
   async rekeyEnvelope(input: {
     envelope: CustodyEnvelope;
-    passwordKek?: Uint8Array;
+    passwordKek?: Uint8Array | undefined;
     targetMode: WalletEncryptionMode;
-    targetPasswordKek?: Uint8Array;
-    targetSecretVersion?: number;
+    targetPasswordKek?: Uint8Array | undefined;
+    targetSecretVersion?: number | undefined;
     wallet: StoredCustodyWallet;
   }): Promise<CustodyEnvelope> {
     const material = await this.#openMaterial({
@@ -231,9 +231,9 @@ export class IsolatedWalletSigner {
     dek: Uint8Array;
     envelopeVersion: number;
     mode: WalletEncryptionMode;
-    passwordKek?: Uint8Array;
+    passwordKek?: Uint8Array | undefined;
     privateKey: Uint8Array;
-    secretVersion?: number;
+    secretVersion?: number | undefined;
     tenantId: string;
     userId: string;
     walletId: string;
@@ -351,7 +351,7 @@ export class IsolatedWalletSigner {
 
   async #openMaterial(input: {
     envelope: CustodyEnvelope;
-    passwordKek?: Uint8Array;
+    passwordKek?: Uint8Array | undefined;
     wallet: StoredCustodyWallet;
   }): Promise<{ dek: Buffer; privateKey: Buffer }> {
     const { envelope, wallet } = input;

@@ -207,6 +207,25 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
         userId: input.userId,
       });
       const now = this.#now();
+      const materials = await store.listUserPasswordWalletMaterials(input.userId);
+      const replacements = [];
+      for (const material of materials) {
+        const envelope = await this.#signer.rekeyEnvelope({
+          envelope: material.envelope,
+          passwordKek: oldKek,
+          targetMode: "user-password",
+          targetPasswordKek: newKek,
+          targetSecretVersion: nextVersion,
+          wallet: material.wallet,
+        });
+        envelope.createdAt = now;
+        replacements.push({
+          envelope,
+          expectedEnvelopeVersion: material.wallet.envelopeVersion,
+          expectedRevision: material.wallet.revision,
+          wallet: material.wallet,
+        });
+      }
       await store.rotateKeystore({
         expectedVersion: Number(body.expectedVersion),
         next: {
@@ -221,6 +240,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
           updatedAt: now,
           userId: input.userId,
         },
+        replacements,
       });
       committed = true;
       await this.#revokeUser(input.userId);
@@ -337,41 +357,93 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     userId: string;
   }): Promise<CustodyWallet> {
     const walletId = this.#uuid();
-    const sealed = await this.#signer.importAndSeal({
-      envelopeVersion: 1,
-      ingress: input.ingress,
-      tenantId: input.tenantId,
-      userId: input.userId,
-      walletId,
-    });
-    return this.#commit("wallet.import", input, walletId, sealed);
+    let password: Buffer | null = null;
+    let passwordKek: Buffer | null = null;
+    let signerOwnsIngress = false;
+    try {
+      let secretVersion: number | undefined;
+      const mode = this.#walletIngressMode(input.ingress);
+      if (mode === "user-password") {
+        const body = secretRecord(input.ingress, ["mode", "name", "password", "privateKey"]);
+        password = passwordBytes(body.password);
+        body.password = "";
+        const keystore = await this.#requireKeystoreStore().getKeystore(input.userId);
+        if (!keystore) throw new SignerError("INVALID_CREDENTIALS");
+        passwordKek = this.#verifyPassword(keystore, password);
+        secretVersion = keystore.current.secretVersion;
+      }
+      signerOwnsIngress = true;
+      const sealed = await this.#signer.importAndSeal({
+        envelopeVersion: 1,
+        ingress: input.ingress,
+        passwordKek: passwordKek ?? undefined,
+        secretVersion,
+        tenantId: input.tenantId,
+        userId: input.userId,
+        walletId,
+      });
+      return this.#commit("wallet.import", input, walletId, sealed);
+    } finally {
+      if (password) this.#zeroize("password", password);
+      if (passwordKek) this.#zeroize("derived-kek", passwordKek);
+      if (!signerOwnsIngress) this.#zeroize("secret-ingress", input.ingress);
+    }
   }
 
   async generateWallet(input: {
+    ingress?: Uint8Array;
     mode: WalletEncryptionMode;
     name: string;
     tenantId: string;
     userId: string;
   }): Promise<CustodyWallet> {
-    if (input.mode !== "server-kek") throw new SignerError("INVALID_MODE");
-    for (let attempt = 0; attempt < 32; attempt += 1) {
-      const walletId = this.#uuid();
-      const sealed = await this.#signer.generateAndSeal({
-        envelopeVersion: 1,
-        mode: input.mode,
-        name: input.name,
-        tenantId: input.tenantId,
-        userId: input.userId,
-        walletId,
-      });
-      try {
-        return await this.#commit("wallet.generate", input, walletId, sealed);
-      } catch (error) {
-        const signerError = asSignerError(error);
-        if (signerError.code !== "WALLET_ADDRESS_EXISTS") throw signerError;
-      }
+    if (input.mode !== "server-kek" && input.mode !== "user-password") {
+      throw new SignerError("INVALID_MODE");
     }
-    throw new SignerError("SIGNER_UNAVAILABLE", true);
+    let password: Buffer | null = null;
+    let passwordKek: Buffer | null = null;
+    try {
+      let name = input.name;
+      let secretVersion: number | undefined;
+      if (input.mode === "user-password") {
+        if (!input.ingress) throw new SignerError("INVALID_CREDENTIALS");
+        const body = secretRecord(input.ingress, ["mode", "name", "password"]);
+        if (body.mode !== "user-password" || typeof body.name !== "string") {
+          throw new SignerError("INVALID_MODE");
+        }
+        name = body.name;
+        password = passwordBytes(body.password);
+        body.password = "";
+        const keystore = await this.#requireKeystoreStore().getKeystore(input.userId);
+        if (!keystore) throw new SignerError("INVALID_CREDENTIALS");
+        passwordKek = this.#verifyPassword(keystore, password);
+        secretVersion = keystore.current.secretVersion;
+      }
+      for (let attempt = 0; attempt < 32; attempt += 1) {
+        const walletId = this.#uuid();
+        const sealed = await this.#signer.generateAndSeal({
+          envelopeVersion: 1,
+          mode: input.mode,
+          name,
+          passwordKek: passwordKek ?? undefined,
+          secretVersion,
+          tenantId: input.tenantId,
+          userId: input.userId,
+          walletId,
+        });
+        try {
+          return await this.#commit("wallet.generate", input, walletId, sealed);
+        } catch (error) {
+          const signerError = asSignerError(error);
+          if (signerError.code !== "WALLET_ADDRESS_EXISTS") throw signerError;
+        }
+      }
+      throw new SignerError("SIGNER_UNAVAILABLE", true);
+    } finally {
+      if (password) this.#zeroize("password", password);
+      if (passwordKek) this.#zeroize("derived-kek", passwordKek);
+      if (input.ingress) this.#zeroize("secret-ingress", input.ingress);
+    }
   }
 
   async listWallets(userId: string): Promise<CustodyWalletPage> {
@@ -384,28 +456,120 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
   }
 
   async recoverWallet(input: {
+    reauthenticatedSessionId?: string;
     tenantId: string;
     userId: string;
     walletId: string;
   }): Promise<CustodyWallet> {
     const wallet = await this.#store.get(input.userId, input.walletId);
     if (!wallet || wallet.tenantId !== input.tenantId) throw new SignerError("WALLET_NOT_FOUND");
+    let passwordKek: Buffer | undefined;
+    if (wallet.mode === "user-password") {
+      await this.#expireUnlockSessions(input.userId);
+      const session = input.reauthenticatedSessionId
+        ? this.#session(input.userId, input.reauthenticatedSessionId)
+        : null;
+      if (!session) throw new SignerError("INVALID_CREDENTIALS");
+      passwordKek = session.kek;
+    }
     const envelope = await this.#store.getCurrentEnvelope(wallet.walletId, wallet.envelopeVersion);
     if (!envelope) {
-      await this.#store.setLockStatus(input.userId, input.walletId, "quarantined", this.#now());
-      throw new SignerError("KEYSTORE_CORRUPTED");
+      const code = wallet.mode === "user-password" ? "INVALID_CREDENTIALS" : "KEYSTORE_CORRUPTED";
+      await this.#store.setLockStatus(
+        input.userId,
+        input.walletId,
+        wallet.mode === "user-password" ? "locked" : "quarantined",
+        this.#now(),
+      );
+      throw new SignerError(code);
     }
     try {
-      await this.#signer.openAndVerify({ envelope, wallet });
+      await this.#signer.openAndVerify({ envelope, passwordKek, wallet });
       if (wallet.lockStatus !== "ready") {
         await this.#store.setLockStatus(input.userId, input.walletId, "ready", this.#now());
       }
       return (await this.getWallet(input.userId, input.walletId))!;
     } catch (error) {
       const signerError = asSignerError(error);
-      const lockStatus = signerError.code === "KEYSTORE_CORRUPTED" ? "quarantined" : "locked";
+      const lockStatus =
+        wallet.mode === "server-kek" && signerError.code === "KEYSTORE_CORRUPTED"
+          ? "quarantined"
+          : "locked";
       await this.#store.setLockStatus(input.userId, input.walletId, lockStatus, this.#now());
       throw signerError;
+    }
+  }
+
+  async changeWalletEncryptionMode(input: {
+    ingress: Uint8Array;
+    tenantId: string;
+    userId: string;
+    walletId: string;
+  }): Promise<CustodyWallet> {
+    const store = this.#requireKeystoreStore();
+    let password: Buffer | null = null;
+    let passwordKek: Buffer | null = null;
+    try {
+      const body = secretRecord(input.ingress, [
+        "expectedRevision",
+        "expectedSecretVersion",
+        "mode",
+        "password",
+      ]);
+      if (body.mode !== "server-kek" && body.mode !== "user-password") {
+        throw new SignerError("INVALID_MODE");
+      }
+      if (!Number.isSafeInteger(body.expectedRevision) || Number(body.expectedRevision) < 1) {
+        throw new SignerError("REVISION_CONFLICT");
+      }
+      if (
+        !Number.isSafeInteger(body.expectedSecretVersion) ||
+        Number(body.expectedSecretVersion) < 1
+      ) {
+        throw new SignerError("SECRET_VERSION_CONFLICT");
+      }
+      const wallet = await this.#store.get(input.userId, input.walletId);
+      if (!wallet || wallet.tenantId !== input.tenantId) throw new SignerError("WALLET_NOT_FOUND");
+      if (wallet.revision !== body.expectedRevision) throw new SignerError("REVISION_CONFLICT");
+      if (wallet.mode === body.mode) throw new SignerError("INVALID_MODE");
+      const keystore = await store.getKeystore(input.userId);
+      if (!keystore || keystore.current.secretVersion !== body.expectedSecretVersion) {
+        throw new SignerError("SECRET_VERSION_CONFLICT");
+      }
+      password = passwordBytes(body.password);
+      body.password = "";
+      passwordKek = this.#verifyPassword(keystore, password);
+      const envelope = await this.#store.getCurrentEnvelope(wallet.walletId, wallet.envelopeVersion);
+      if (!envelope) {
+        throw new SignerError(wallet.mode === "user-password" ? "INVALID_CREDENTIALS" : "KEYSTORE_CORRUPTED");
+      }
+      const replacement = await this.#signer.rekeyEnvelope({
+        envelope,
+        passwordKek: wallet.mode === "user-password" ? passwordKek : undefined,
+        targetMode: body.mode,
+        targetPasswordKek: body.mode === "user-password" ? passwordKek : undefined,
+        targetSecretVersion:
+          body.mode === "user-password" ? keystore.current.secretVersion : undefined,
+        wallet,
+      });
+      const now = this.#now();
+      replacement.createdAt = now;
+      const result = await store.switchWalletEncryptionMode({
+        envelope: replacement,
+        expectedRevision: Number(body.expectedRevision),
+        expectedSecretVersion: Number(body.expectedSecretVersion),
+        lockStatus: body.mode === "user-password" ? "locked" : "ready",
+        mode: body.mode,
+        updatedAt: now,
+        userId: input.userId,
+        walletId: input.walletId,
+      });
+      await this.#revokeUser(input.userId);
+      return result;
+    } finally {
+      if (password) this.#zeroize("password", password);
+      if (passwordKek) this.#zeroize("derived-kek", passwordKek);
+      this.#zeroize("secret-ingress", input.ingress);
     }
   }
 
@@ -425,7 +589,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
         addressLower: sealed.addressLower,
         createdAt: now,
         envelopeVersion: sealed.envelope.envelopeVersion,
-        lockStatus: "ready",
+        lockStatus: sealed.mode === "user-password" ? "locked" : "ready",
         mode: sealed.mode,
         name: sealed.name,
         revision: 1,
@@ -466,6 +630,17 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
       throw error;
     } finally {
       verifier?.fill(0);
+    }
+  }
+
+  #walletIngressMode(ingress: Uint8Array): unknown {
+    try {
+      const value = JSON.parse(Buffer.from(ingress).toString("utf8")) as unknown;
+      return typeof value === "object" && value !== null && !Array.isArray(value)
+        ? (value as Record<string, unknown>).mode
+        : null;
+    } catch {
+      return null;
     }
   }
 
