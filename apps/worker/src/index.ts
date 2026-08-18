@@ -39,6 +39,7 @@ export {
   decideWalletTransferObservation,
   replacementTransferPlan,
 } from "./wallet-transfer-worker.js";
+export { PostgresWalletTransferRecoveryRepository } from "./postgres-wallet-transfer-recovery.js";
 export type {
   WalletTransferBatchResult,
   WalletTransferObservation,
