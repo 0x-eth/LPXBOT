@@ -33,6 +33,27 @@ export type {
   MonitorOutboxDestination,
   NotificationOutboxDelivery,
 } from "./postgres-monitor-outbox.js";
+export {
+  WalletTransferRecoveryWorker,
+  WalletTransferWorkerError,
+  decideWalletTransferObservation,
+  replacementTransferPlan,
+} from "./wallet-transfer-worker.js";
+export type {
+  WalletTransferBatchResult,
+  WalletTransferObservation,
+  WalletTransferObservationDecision,
+  WalletTransferObserver,
+  WalletTransferProviderObservation,
+  WalletTransferReceiptObservation,
+  WalletTransferReplacementAuthorization,
+  WalletTransferSignerGateway,
+  WalletTransferSignerResult,
+  WalletTransferTransactionHead,
+  WalletTransferWorkClaim,
+  WalletTransferWorkOperation,
+  WalletTransferWorkRepository,
+} from "./wallet-transfer-worker.js";
 
 export const workerApp = {
   domain: domainPackage.name,
