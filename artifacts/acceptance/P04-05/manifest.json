@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P04-05",
+  "phase": "P04",
+  "risk": "R2",
+  "status": "accepted-with-gaps",
+  "featureIds": ["WALLET-08", "WALLET-09", "SET-06"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "focused wallet asset, browser RPC, and strict-client Vitest",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-05/E-CHAIN.md"
+    },
+    {
+      "id": "T-API",
+      "command": "focused wallet asset and address-book API Vitest",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-05/E-API.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "injected controlled-provider and browser JSON-RPC fixture tests with public RPC calls equal to zero",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-05/E-CHAIN.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm test:postgres with every migration up, all downs in reverse, and every up again",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-05/E-DATA.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "P04-02 and P04-05 desktop/mobile Playwright regression",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-05/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile screenshots, QR render, overflow, and Axe assertions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-05/E-VIS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "browser RPC isolation, secret absence, full-history Gitleaks, and dependency audit",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-05/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P04-05/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P04-05/E-DATA.md" },
+    { "id": "E-CHAIN", "path": "artifacts/acceptance/P04-05/E-CHAIN.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P04-05/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P04-05/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P04-05/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P04-05/E-SEC.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P04-05/E-OPS.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only; WALLET-08, WALLET-09, and SET-06 remain implemented-assumed.",
+    "P04 is 10 implemented-assumed and 2 planned; the global state is 59 implemented-assumed and 137 planned.",
+    "Server balances use only an injected controlled read provider and never read a browser custom RPC URL.",
+    "The browser custom RPC URL remains in current-tab memory and an opaque-origin request frame; it is absent from server APIs, databases, queues, telemetry, logs, Service Worker, and screenshots.",
+    "Private-key decryptions, account access, signing, raw transactions, broadcasts, and public RPC calls are all zero in this work item.",
+    "WALLET-10 transfer and SET-07 OKX key management remain planned.",
+    "Production providers, price-source SLOs, staging monitoring, and rollback drills remain unresolved.",
+    "This accepted-with-gaps work item is not custody-ready, not parity-verified, and not released.",
+    "P00 through P04-04 acceptance files remain byte-identical to baseline 6437ed066dfc8b41281e2c2e836ceb68dc4a9580."
+  ],
+  "completedAt": "2026-08-18T11:54:09.000Z",
+  "commit": null
+}
