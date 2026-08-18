@@ -70,10 +70,7 @@ function decimalSum(values: readonly string[]): string {
   const parts = values.map(decimalParts);
   const scale = Math.max(0, ...parts.map((part) => part.scale));
   return scaledDecimal(
-    parts.reduce(
-      (sum, part) => sum + part.coefficient * 10n ** BigInt(scale - part.scale),
-      0n,
-    ),
+    parts.reduce((sum, part) => sum + part.coefficient * 10n ** BigInt(scale - part.scale), 0n),
     scale,
   );
 }
@@ -393,7 +390,8 @@ export function parseAddressBookPage(value: unknown, status = 0): AddressBookPag
       (item.kind !== "own-wallet" &&
         item.kind !== "known-external" &&
         item.kind !== "new-external") ||
-      (item.entryId !== null && (typeof item.entryId !== "string" || !uuidPattern.test(item.entryId))) ||
+      (item.entryId !== null &&
+        (typeof item.entryId !== "string" || !uuidPattern.test(item.entryId))) ||
       (item.walletId !== null &&
         (typeof item.walletId !== "string" || !uuidPattern.test(item.walletId)))
     ) {
@@ -406,7 +404,8 @@ export function parseAddressBookPage(value: unknown, status = 0): AddressBookPag
     );
     const known = entries.find(
       (entry) =>
-        entry.entryId === item.entryId && entry.address.toLowerCase() === item.address.toLowerCase(),
+        entry.entryId === item.entryId &&
+        entry.address.toLowerCase() === item.address.toLowerCase(),
     );
     const validPointers =
       (item.kind === "own-wallet" && item.entryId === null && item.walletId !== null && owned) ||
@@ -417,9 +416,7 @@ export function parseAddressBookPage(value: unknown, status = 0): AddressBookPag
       (item.kind === "new-external" &&
         item.entryId === null &&
         item.walletId === null &&
-        !ownWallets.some(
-          (wallet) => wallet.address.toLowerCase() === item.address.toLowerCase(),
-        ) &&
+        !ownWallets.some((wallet) => wallet.address.toLowerCase() === item.address.toLowerCase()) &&
         !entries.some((entry) => entry.address.toLowerCase() === item.address.toLowerCase()));
     if (!validPointers) {
       throw new WalletReadRequestError("ADDRESS_BOOK_RESPONSE_INVALID", true, status);
@@ -466,7 +463,11 @@ export class WalletReadClient {
       `/api/wallets/${this.#uuid(walletId)}/tokens/${encodeURIComponent(tokenAddress)}?chainId=${chainId}`,
       { method: "DELETE" },
     );
-    if (!record(response.data) || !exact(response.data, ["deleted"]) || typeof response.data.deleted !== "boolean") {
+    if (
+      !record(response.data) ||
+      !exact(response.data, ["deleted"]) ||
+      typeof response.data.deleted !== "boolean"
+    ) {
       throw new WalletReadRequestError("WALLET_READ_RESPONSE_INVALID", true, response.status);
     }
     return response.data.deleted;
@@ -524,7 +525,11 @@ export class WalletReadClient {
     const response = await this.#request(`/api/address-book/${this.#uuid(entryId)}`, {
       method: "DELETE",
     });
-    if (!record(response.data) || !exact(response.data, ["deleted"]) || response.data.deleted !== true) {
+    if (
+      !record(response.data) ||
+      !exact(response.data, ["deleted"]) ||
+      response.data.deleted !== true
+    ) {
       throw new WalletReadRequestError("ADDRESS_BOOK_RESPONSE_INVALID", true, response.status);
     }
   }
@@ -556,7 +561,9 @@ export class WalletReadClient {
     if (!response.ok) {
       const envelope = record(body) ? (body as ErrorEnvelope) : null;
       const code =
-        typeof envelope?.error?.code === "string" ? envelope.error.code : "WALLET_READ_REQUEST_FAILED";
+        typeof envelope?.error?.code === "string"
+          ? envelope.error.code
+          : "WALLET_READ_REQUEST_FAILED";
       throw new WalletReadRequestError(code, envelope?.error?.retryable === true, response.status);
     }
     if (!record(body) || body.success !== true || !Object.hasOwn(body, "data")) {
