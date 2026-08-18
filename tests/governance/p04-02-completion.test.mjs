@@ -33,7 +33,10 @@ function sorted(values) {
 
 function statusRows(markdown) {
   const rows = new Map();
-  for (const line of markdown.split("\n")) {
+  const section =
+    markdown.split("<!-- P04_STATUS_TABLE_START -->")[1]?.split("<!-- P04_STATUS_TABLE_END -->")[0] ??
+    "";
+  for (const line of section.split("\n")) {
     if (!line.startsWith("|")) continue;
     const columns = line
       .split("|")
@@ -69,10 +72,9 @@ test("P04 status is exactly 3 implemented-assumed / 9 planned with global 52 / 1
     assert.match(rows.get(id).evidence, /local-fixture-verified/u, id);
   }
   assert.match(traceability, /P04[^\n]*3[^\n]*implemented-assumed[^\n]*9[^\n]*planned/iu);
-  assert.match(traceability, /current product implementation|\| current product implementation |\| current product implementation/u);
-  assert.match(traceability, /\| current product implementation \| 52 \|/u);
+  assert.match(traceability, /\| 当前产品实现 \| 52 \|/u);
   assert.match(traceability, /\| `implemented-assumed` \| 52 \|/u);
-  assert.match(traceability, /\| remaining `planned` \| 144 \|/u);
+  assert.match(traceability, /\| 其余 `planned` \| 144 \|/u);
   assert.match(roadmap, /P04[^\n]*3[^\n]*implemented-assumed[^\n]*9[^\n]*planned/iu);
   for (const id of IMPLEMENTED) {
     assert.match(functionMatrix, new RegExp(`\\| ${id} \\|[^\\n]*implemented-assumed[^\\n]*P04-02`, "u"));

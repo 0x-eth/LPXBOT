@@ -198,10 +198,10 @@
 
 | ID | 功能 | 证据 | 权限 | 风险 | 复现与验收要点 |
 |---|---|---|---|---|---|
-| WALLET-01 | 导入私钥钱包 | UI+API | USER | R2 | 64 hex 校验；前端不回显；日志永不记录私钥 |
-| WALLET-02 | 服务端生成钱包 | UI+BUNDLE | USER | R2 | CSPRNG、地址回显、密文落库、备份策略 |
+| WALLET-01 | 导入私钥钱包 | UI+API | USER | R2 | 64 hex 校验；前端不回显；日志永不记录私钥；`implemented-assumed`（P04-02，local fixture only） |
+| WALLET-02 | 服务端生成钱包 | UI+BUNDLE | USER | R2 | CSPRNG、地址回显、密文落库、备份策略；`implemented-assumed`（P04-02，local fixture only） |
 | WALLET-03 | 命名、删除和强制删除 | UI+API | USER | R2/R3 | 关联策略/任务检查；资产/仓位风险说明 |
-| WALLET-04 | 服务器密钥加密模式 | UI+BUNDLE | USER | R2 | envelope encryption、重启自动恢复；密钥不进数据库 |
+| WALLET-04 | 服务器密钥加密模式 | UI+BUNDLE | USER | R2 | envelope encryption、重启自动恢复；密钥不进数据库；`implemented-assumed`（P04-02，local fixture only） |
 | WALLET-05 | 用户密码加密模式 | UI+BUNDLE | USER | R2 | Argon2id KDF、仅内存解锁、自动锁、忘记密码销毁流程 |
 | WALLET-06 | 设置/修改/重置 keystore 密码 | UI+BUNDLE | USER | R2 | reset preview、确认短语、钱包/任务销毁计数 |
 | WALLET-07 | 安全密码 | UI+BUNDLE | USER | R2 | 转到新地址时二次校验；与 keystore 密码分域 |

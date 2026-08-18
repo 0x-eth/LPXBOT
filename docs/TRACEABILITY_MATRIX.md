@@ -3,7 +3,7 @@
 > 基线日期：2026-08-13  
 > 范围源：[功能矩阵](./FUNCTION_MATRIX.md)  
 > 阶段源：[开发路线图](./DEVELOPMENT_ROADMAP.md)  
-> 当前状态：P01 的 18 项、P02 的 23 项及 P03 的 8 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 147 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
+> 当前状态：P01 的 18 项、P02 的 23 项、P03 的 8 项及 P04 的 3 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 144 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
 
 ## 1. 使用规则
 
@@ -336,6 +336,27 @@ P03-02 至 P03-04 仅验证 BSC、local-sink 和注入式 DNS/HTTP/TLS/Telegram 
 | NOTIFY-02 | `implemented-assumed` | [Destination contract](../packages/api-contract/src/index.ts), [Template and HMAC functions](../packages/security/src/notification-delivery.ts), [PostgreSQL configuration store](../apps/api/src/postgres-notification-store.ts), [Webhook egress](../apps/dispatcher/src/webhook-adapter.ts), [Strict web client](../apps/web/src/notification-client.ts), [Settings UI](../apps/web/src/notification-settings.tsx) | [T-UNIT/T-SEC](../tests/notification-delivery-security.test.ts), [T-SEC](../tests/webhook-egress.test.ts), [T-API/T-SEC](../tests/notification-settings-api.test.ts), [T-REC/T-MIG](../tests/integration/postgres-notifications.integration.ts), [T-UI/T-VIS](../tests/e2e/p03-03-notifications.spec.ts) | [P03-03](../artifacts/acceptance/P03-03/manifest.json), [P03-04](../artifacts/acceptance/P03-04/manifest.json); local-fixture-verified; complete SSRF egress exercised only with injected fixtures; live delivery unresolved |
 <!-- P03_STATUS_TABLE_END -->
 
+#### P04 当前实现与证据状态
+
+P04-02 仅实现 server-KEK 托管钱包的导入、生成和 envelope encryption 纵向切片。P04 当前为 3 项 `implemented-assumed`、9 项 `planned`，阶段与工作项均保持 `accepted-with-gaps`。验收只使用合成私钥、本地 KMS、PostgreSQL 和浏览器 fixture；未启用 user-password、签名、raw transaction、广播或外部 RPC。独立 signer 安全评审、生产 KMS 灾难恢复、锁页/core-dump 控制与 live custody 运维证据仍未完成，因此不提升为 `parity-verified`、`released` 或 custody-ready。
+
+<!-- P04_STATUS_TABLE_START -->
+| ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
+|---|---|---|---|---|
+| WALLET-01 | `implemented-assumed` | [Signer import/seal](../apps/signer/src/isolated-wallet-signer.ts), [isolated HTTP ingress](../apps/signer/src/http-server.ts), [wallet API](../apps/api/src/app.ts), [remote signer client](../apps/api/src/remote-wallet-signer-client.ts), [wallet UI](../apps/web/src/wallets-page.tsx) | [T-UNIT/T-SEC](../tests/signer-custody.test.ts), [T-API/T-SEC](../tests/wallet-api.test.ts), [T-UI/T-VIS](../tests/e2e/p04-02-wallets.spec.ts) | [P04-02](../artifacts/acceptance/P04-02/manifest.json); local-fixture-verified; no signing, broadcast, or RPC |
+| WALLET-02 | `implemented-assumed` | [CSPRNG generation](../apps/signer/src/wallet-crypto.ts), [custody service](../apps/signer/src/custody-signer-service.ts), [atomic PostgreSQL store](../apps/signer/src/postgres-custody-wallet-store.ts), [generate API/UI](../apps/web/src/wallets-page.tsx) | [T-UNIT/T-REC](../tests/signer-custody.test.ts), [T-REC/T-MIG](../tests/integration/postgres-custody-wallet.integration.ts), [T-API](../tests/wallet-api.test.ts), [T-UI/T-VIS](../tests/e2e/p04-02-wallets.spec.ts) | [P04-02](../artifacts/acceptance/P04-02/manifest.json); local-fixture-verified; synthetic keys only |
+| WALLET-03 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
+| WALLET-04 | `implemented-assumed` | [AES-GCM and frozen AAD](../apps/signer/src/wallet-crypto.ts), [versioned KMS boundary](../apps/signer/src/http-kms-client.ts), [production runtime](../apps/signer/src/runner.ts), [append-only envelope migration](../infra/migrations/20260818000300_create_custody_wallets.sql) | [T-UNIT/T-SEC](../tests/signer-custody.test.ts), [T-REC](../tests/signer-runtime.test.ts), [T-MIG/T-REC](../tests/integration/postgres-custody-wallet.integration.ts) | [P04-02](../artifacts/acceptance/P04-02/manifest.json); local-fixture-verified; production KMS and independent review unresolved |
+| WALLET-05 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
+| WALLET-06 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
+| WALLET-07 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
+| WALLET-08 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
+| WALLET-09 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
+| WALLET-10 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
+| SET-06 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
+| SET-07 | `planned` | — | — | [P04-01](../artifacts/acceptance/P04-01/artifact-manifest.json); frozen reference only |
+<!-- P04_STATUS_TABLE_END -->
+
 ### 管理后台
 
 | ID | 阶段 | 最低测试 | 最低验收证据 |
@@ -363,10 +384,10 @@ P03-02 至 P03-04 仅验证 BSC、local-sink 和注入式 DNS/HTTP/TLS/Telegram 
 |---|---:|---|
 | 功能矩阵稳定 ID | 196 | 已全部映射 |
 | 追踪表稳定 ID | 196 | 必须由自动检查保持相等 |
-| 当前产品实现 | 49 | P01 的 18 项、P02 的 23 项和 P03 的 8 项完成阶段实现；P03 为 8 implemented-assumed / 0 planned |
-| `implemented-assumed` | 49 | 目标对照或 live 证据仍不完整 |
+| 当前产品实现 | 52 | P01 的 18 项、P02 的 23 项、P03 的 8 项和 P04 的 3 项完成阶段实现；P04 为 3 implemented-assumed / 9 planned |
+| `implemented-assumed` | 52 | 目标对照或 live 证据仍不完整 |
 | `parity-verified` | 0 | 不由 accepted work item 自动提升 |
 | `released` | 0 | 尚无 staging、监控和回滚完整证明 |
-| 其余 `planned` | 147 | P02/P03 已无 planned；P04-P13 状态未改变 |
+| 其余 `planned` | 144 | P02/P03 已无 planned；P04 仍有 9 planned |
 
 建议 CI 检查逻辑：从 `FUNCTION_MATRIX.md` 与本文件抽取 `^[A-Z]+-[0-9]{2}$`，比较去重集合；再检查每行非空的阶段、测试和证据列。任何新增功能 ID 必须先进入范围源和本表。

@@ -187,6 +187,8 @@ flowchart LR
 
 **门禁：** 独立安全评审后才进测试网；测试钱包与研究/生产钱包隔离。
 
+**当前状态：** P04-02 完成 server-KEK 导入、生成、envelope encryption、元数据 API 和基础钱包 UI 的本地纵向切片。P04 当前为 3 项 `implemented-assumed`、9 项 `planned`，继续 `accepted-with-gaps`。验收仅使用合成私钥和本地 KMS/PostgreSQL/browser fixture；user-password、签名、广播、外部 RPC、独立安全评审和生产 custody 运维均未完成，不标记 `parity-verified`、`released` 或 custody-ready。
+
 ### P05：链适配器、Swap、仓位和 Helper
 
 **依赖：** P02、P04。
