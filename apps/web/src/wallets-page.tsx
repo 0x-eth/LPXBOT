@@ -128,9 +128,11 @@ function WalletModeControl({
 
 function WalletRecord({
   onSwitch,
+  switchDisabled,
   wallet,
 }: {
   onSwitch(wallet: CustodyWallet, trigger: HTMLButtonElement): void;
+  switchDisabled: boolean;
   wallet: CustodyWallet;
 }) {
   const custodyLabel =
@@ -162,6 +164,7 @@ function WalletRecord({
           aria-label={`切换 ${wallet.name} 加密模式`}
           className="icon-button tooltip-control wallet-mode-switch"
           data-tooltip="切换加密模式"
+          disabled={switchDisabled}
           onClick={(event) => onSwitch(wallet, event.currentTarget)}
           type="button"
         >
@@ -345,6 +348,7 @@ function ImportWalletDialog({
 
 function GenerateWalletDialog({
   client,
+  keystoreConfigured,
   onCreated,
   onFailure,
   onPending,
@@ -353,6 +357,7 @@ function GenerateWalletDialog({
   trigger,
 }: {
   client: WalletClient;
+  keystoreConfigured: boolean;
   onCreated(wallet: CustodyWallet): void;
   onFailure(error: unknown): void;
   onPending(): void;
@@ -362,30 +367,39 @@ function GenerateWalletDialog({
 }) {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<WalletEncryptionMode>("server-kek");
+  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    const keystorePassword = password;
+    setPassword("");
     setError(null);
+    if (mode === "user-password" && keystorePassword.length < 12) {
+      setError("Keystore 密码至少需要 12 个字符");
+      onFailure(new WalletRequestError("INVALID_CREDENTIALS", false, 400));
+      return;
+    }
     setSubmitting(true);
     onPending();
     try {
-      const wallet = await client.generateWallet({
-        mode: "server-kek",
-        name: name.trim() || "Generated wallet",
-      });
+      const wallet = await client.generateWallet(
+        mode === "user-password"
+          ? {
+              mode,
+              name: name.trim() || "Generated wallet",
+              password: keystorePassword,
+            }
+          : { mode, name: name.trim() || "Generated wallet" },
+      );
       setName("");
+      setMode("server-kek");
       setSubmitting(false);
       setOpen(false);
       onCreated(wallet);
     } catch (requestError) {
-      setError(
-        requestError instanceof WalletRequestError && requestError.code === "REAUTH_REQUIRED"
-          ? "需要重新验证身份"
-          : requestError instanceof WalletRequestError && requestError.code === "SIGNER_UNAVAILABLE"
-            ? "签名服务暂时不可用"
-            : "生成失败",
-      );
+      setError(walletRequestLabel(requestError, "generate"));
       setSubmitting(false);
       onFailure(requestError);
     }
@@ -396,6 +410,8 @@ function GenerateWalletDialog({
       onOpenChange={(next) => {
         if (!next) {
           setName("");
+          setPassword("");
+          setMode("server-kek");
           setError(null);
           setSubmitting(false);
         }
@@ -437,13 +453,23 @@ function GenerateWalletDialog({
                 value={name}
               />
             </label>
-            <div className="wallet-mode-field">
-              <span>加密模式</span>
-              <strong>
-                <KeyRound aria-hidden="true" size={15} />
-                服务器密钥
-              </strong>
-            </div>
+            <WalletModeControl
+              configured={keystoreConfigured}
+              mode={mode}
+              onChange={setMode}
+            />
+            {mode === "user-password" ? (
+              <label htmlFor="wallet-generate-password">
+                <span>Keystore 密码</span>
+                <input
+                  autoComplete="current-password"
+                  id="wallet-generate-password"
+                  onChange={(event) => setPassword(event.target.value)}
+                  type="password"
+                  value={password}
+                />
+              </label>
+            ) : null}
             {error ? <p role="alert">{error}</p> : null}
             <div className="wallet-dialog-actions">
               <Dialog.Close asChild>
@@ -467,14 +493,155 @@ function GenerateWalletDialog({
   );
 }
 
+function ModeSwitchDialog({
+  client,
+  keystoreVersion,
+  onChanged,
+  onFailure,
+  onOpenChange,
+  open,
+  trigger,
+  wallet,
+}: {
+  client: WalletClient;
+  keystoreVersion: number;
+  onChanged(wallet: CustodyWallet): void;
+  onFailure(error: unknown): void;
+  onOpenChange(open: boolean): void;
+  open: boolean;
+  trigger: React.RefObject<HTMLButtonElement | null>;
+  wallet: CustodyWallet | null;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const reset = () => {
+    setError(null);
+    setPassword("");
+    setSubmitting(false);
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!wallet) return;
+    const secret = password;
+    setPassword("");
+    setError(null);
+    if (secret.length < 12) {
+      setError("Keystore 密码至少需要 12 个字符");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const changed = await client.changeEncryptionMode(wallet.walletId, {
+        expectedRevision: wallet.revision,
+        expectedSecretVersion: keystoreVersion,
+        mode: wallet.mode === "server-kek" ? "user-password" : "server-kek",
+        password: secret,
+      });
+      reset();
+      onOpenChange(false);
+      onChanged(changed);
+    } catch (requestError) {
+      setError(walletRequestLabel(requestError, "switch"));
+      setSubmitting(false);
+      onFailure(requestError);
+    }
+  };
+
+  const targetLabel = wallet?.mode === "server-kek" ? "用户密码" : "服务器密钥";
+
+  return (
+    <Dialog.Root
+      onOpenChange={(next) => {
+        if (!next) reset();
+        onOpenChange(next);
+      }}
+      open={open}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="dialog-overlay" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          className="wallet-dialog"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            trigger.current?.focus();
+          }}
+        >
+          <div className="wallet-dialog-heading">
+            <Dialog.Title>切换加密模式</Dialog.Title>
+            <Dialog.Close asChild>
+              <button
+                aria-label="关闭切换加密模式"
+                className="icon-button tooltip-control"
+                data-tooltip="关闭"
+                type="button"
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
+            </Dialog.Close>
+          </div>
+          <form className="wallet-form" onSubmit={(event) => void submit(event)}>
+            <div className="wallet-mode-field">
+              <span>目标模式</span>
+              <strong>
+                <ArrowRightLeft aria-hidden="true" size={15} />
+                {targetLabel}
+              </strong>
+            </div>
+            <label htmlFor="wallet-mode-password">
+              <span>Keystore 密码</span>
+              <input
+                autoComplete="current-password"
+                autoFocus
+                id="wallet-mode-password"
+                onChange={(event) => setPassword(event.target.value)}
+                type="password"
+                value={password}
+              />
+            </label>
+            {error ? <p role="alert">{error}</p> : null}
+            <div className="wallet-dialog-actions">
+              <Dialog.Close asChild>
+                <button className="secondary-button" disabled={submitting} type="button">
+                  取消
+                </button>
+              </Dialog.Close>
+              <button className="primary-button" disabled={submitting} type="submit">
+                {submitting ? (
+                  <LoaderCircle aria-hidden="true" className="spin-icon" size={16} />
+                ) : (
+                  <ArrowRightLeft aria-hidden="true" size={16} />
+                )}
+                确认切换
+              </button>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 export function WalletsPage() {
   const client = useMemo(() => new WalletClient(), []);
+  const keystoreClient = useMemo(() => new KeystoreClient(), []);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [keystoreStatus, setKeystoreStatus] = useState<KeystoreStatus>({
+    configured: false,
+    status: "unconfigured",
+    version: 0,
+  });
+  const [modeSwitchOpen, setModeSwitchOpen] = useState(false);
   const [status, setStatus] = useState<WalletPageStatus>("loading");
+  const [switchingWallet, setSwitchingWallet] = useState<CustodyWallet | null>(null);
   const [wallets, setWallets] = useState<CustodyWallet[]>([]);
   const generateTrigger = useRef<HTMLButtonElement>(null);
   const importTrigger = useRef<HTMLButtonElement>(null);
+  const modeSwitchTrigger = useRef<HTMLButtonElement>(null);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -490,8 +657,20 @@ export function WalletsPage() {
     [client],
   );
 
+  const loadKeystore = useCallback(
+    async (signal?: AbortSignal) => {
+      try {
+        setKeystoreStatus(await keystoreClient.status(signal));
+      } catch {
+        // Wallet metadata remains usable when Keystore status is temporarily unavailable.
+      }
+    },
+    [keystoreClient],
+  );
+
   useEffect(() => {
     const controller = new AbortController();
+    void loadKeystore(controller.signal);
     void client.list(controller.signal).then(
       (page) => {
         setWallets(page.items);
@@ -503,13 +682,21 @@ export function WalletsPage() {
       },
     );
     return () => controller.abort();
-  }, [client]);
+  }, [client, loadKeystore]);
 
   const created = (wallet: CustodyWallet) => {
     setWallets((current) => [
       wallet,
       ...current.filter(({ walletId }) => walletId !== wallet.walletId),
     ]);
+    setStatus("ready");
+  };
+
+  const changed = (wallet: CustodyWallet) => {
+    setWallets((current) =>
+      current.map((candidate) => (candidate.walletId === wallet.walletId ? wallet : candidate)),
+    );
+    setSwitchingWallet(null);
     setStatus("ready");
   };
 
@@ -529,6 +716,7 @@ export function WalletsPage() {
             onClick={() => {
               setStatus("loading");
               void load();
+              void loadKeystore();
             }}
             type="button"
           >
@@ -571,17 +759,27 @@ export function WalletsPage() {
           <p>还没有托管钱包</p>
         </div>
       ) : null}
-      {!importOpen && !generateOpen ? <WalletState status={status} /> : null}
+      {!importOpen && !generateOpen && !modeSwitchOpen ? <WalletState status={status} /> : null}
       {wallets.length > 0 ? (
         <ul aria-label="托管钱包" className="wallet-list">
           {wallets.map((wallet) => (
-            <WalletRecord key={wallet.walletId} wallet={wallet} />
+            <WalletRecord
+              key={wallet.walletId}
+              onSwitch={(selected, trigger) => {
+                modeSwitchTrigger.current = trigger;
+                setSwitchingWallet(selected);
+                setModeSwitchOpen(true);
+              }}
+              switchDisabled={!keystoreStatus.configured}
+              wallet={wallet}
+            />
           ))}
         </ul>
       ) : null}
 
       <ImportWalletDialog
         client={client}
+        keystoreConfigured={keystoreStatus.configured}
         onCreated={created}
         onFailure={(error) => setStatus(stateForError(error))}
         onPending={() => setStatus("import-validating")}
@@ -591,12 +789,26 @@ export function WalletsPage() {
       />
       <GenerateWalletDialog
         client={client}
+        keystoreConfigured={keystoreStatus.configured}
         onCreated={created}
         onFailure={(error) => setStatus(stateForError(error))}
         onPending={() => setStatus("generate-pending")}
         open={generateOpen}
         setOpen={setGenerateOpen}
         trigger={generateTrigger}
+      />
+      <ModeSwitchDialog
+        client={client}
+        keystoreVersion={keystoreStatus.version}
+        onChanged={changed}
+        onFailure={(error) => setStatus(stateForError(error))}
+        onOpenChange={(open) => {
+          setModeSwitchOpen(open);
+          if (!open) setSwitchingWallet(null);
+        }}
+        open={modeSwitchOpen}
+        trigger={modeSwitchTrigger}
+        wallet={switchingWallet}
       />
     </main>
   );
