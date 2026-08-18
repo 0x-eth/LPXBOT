@@ -20,6 +20,8 @@ export { PostgresSessionStore } from "./postgres-session-store.js";
 export { PostgresWalletDirectory } from "./postgres-wallet-directory.js";
 export { PostgresWalletTokenStore } from "./postgres-wallet-token-store.js";
 export { PostgresWalletTransferOperationStore } from "./postgres-wallet-transfer-store.js";
+export { ViemLocalWalletTransferChainReader } from "./viem-local-wallet-transfer-chain-reader.js";
+export type { ViemLocalWalletTransferChainReaderOptions } from "./viem-local-wallet-transfer-chain-reader.js";
 export { PostgresAddressBookStore } from "./postgres-address-book-store.js";
 export { RemoteWalletSignerClient } from "./remote-wallet-signer-client.js";
 export {
