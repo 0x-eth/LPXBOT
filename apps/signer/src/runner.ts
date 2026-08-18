@@ -4,6 +4,10 @@ import type { Server } from "node:http";
 import { Pool, type QueryResultRow } from "pg";
 
 import { CustodySignerService } from "./custody-signer-service.js";
+import type {
+  WalletDependencyInventory,
+  WalletTaskCoordinator,
+} from "./custody-types.js";
 import { HttpKmsClient } from "./http-kms-client.js";
 import { createSignerHttpServer } from "./http-server.js";
 import { IsolatedWalletSigner } from "./isolated-wallet-signer.js";
@@ -39,6 +43,8 @@ export interface SignerRuntime {
 export interface SignerRuntimeDependencies {
   kms?: KmsClient;
   pool?: Pool;
+  taskCoordinator?: WalletTaskCoordinator;
+  walletDependencyInventory?: WalletDependencyInventory;
 }
 
 function listen(server: Server, config: SignerProductionConfig): Promise<void> {
@@ -127,7 +133,16 @@ export async function startSignerRuntime(
 
     const store = new PostgresCustodyWalletStore(pool);
     const signer = new IsolatedWalletSigner({ kms });
-    const service = new CustodySignerService({ signer, store });
+    const service = new CustodySignerService({
+      signer,
+      store,
+      ...(dependencies.taskCoordinator
+        ? { taskCoordinator: dependencies.taskCoordinator }
+        : {}),
+      ...(dependencies.walletDependencyInventory
+        ? { walletDependencyInventory: dependencies.walletDependencyInventory }
+        : {}),
+    });
     server = createSignerHttpServer({ apiToken: config.apiToken, service });
     await listen(server, config);
     const address = server.address();

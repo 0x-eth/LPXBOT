@@ -53,6 +53,47 @@ const readyTables = {
   wallets: "custody_wallets",
 };
 
+function lifecyclePoolFixture() {
+  const walletId = "54000000-0000-4000-8000-000000000011";
+  const userId = "54000000-0000-4000-8000-000000000001";
+  const walletRow = {
+    address: "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+    address_lower: "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",
+    created_at: new Date("2026-08-18T05:00:00.000Z"),
+    current_envelope_version: 1,
+    lock_status: "ready",
+    mode: "server-kek",
+    name: "Runtime fixture",
+    revision: "1",
+    tenant_id: "tenant-fixture-01",
+    updated_at: new Date("2026-08-18T05:00:00.000Z"),
+    user_id: userId,
+    wallet_id: walletId,
+  };
+  const client = {
+    query: vi.fn(async (sql: string) =>
+      sql.includes("SELECT 1 FROM custody_wallets")
+        ? { rowCount: 1, rows: [{ "?column?": 1 }] }
+        : { rowCount: 0, rows: [] },
+    ),
+    release: vi.fn(),
+  };
+  const query = vi.fn(async (sql: string) =>
+    sql.includes("to_regclass")
+      ? { rows: [readyTables] }
+      : sql.includes("FROM custody_wallets")
+        ? { rows: [walletRow] }
+        : { rows: [] },
+  );
+  const end = vi.fn(async () => undefined);
+  return {
+    end,
+    pool: { connect: async () => client, end, query } as unknown as Pool,
+    userId,
+    walletId,
+  };
+}
+
 afterEach(async () => {
   await Promise.all(runtimes.splice(0).map((runtime) => runtime.close()));
 });
@@ -137,5 +178,51 @@ describe("P04-02 signer production runtime", () => {
     );
     expect(store.end).toHaveBeenCalledOnce();
     runtimes.pop();
+  });
+});
+
+describe("P04-04 signer lifecycle runtime wiring", () => {
+  it("passes an injected authoritative inventory into the signer service", async () => {
+    const store = lifecyclePoolFixture();
+    const inventory = {
+      inspect: vi.fn(async () => ({
+        assetIds: [],
+        assetRiskDigest: "sha256:runtime-empty",
+        complete: true,
+        policyIds: [],
+        positionIds: [],
+        taskIds: [],
+      })),
+    };
+    const runtime = await startSignerRuntime(config, {
+      kms: kmsFixture(),
+      pool: store.pool,
+      walletDependencyInventory: inventory,
+    });
+    runtimes.push(runtime);
+
+    const response = await fetch(`${runtime.url}/v1/wallets/${store.walletId}/delete-preview`, {
+      headers: {
+        Authorization: `Bearer ${config.apiToken}`,
+        "X-LPBOT-Tenant-Id": "tenant-fixture-01",
+        "X-LPBOT-User-Id": store.userId,
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toMatchObject({
+      data: {
+        assetCount: 0,
+        assetRiskDigest: "sha256:runtime-empty",
+        forceEligible: true,
+        walletId: store.walletId,
+      },
+      success: true,
+    });
+    expect(inventory.inspect).toHaveBeenCalledWith({
+      userId: store.userId,
+      walletId: store.walletId,
+    });
   });
 });
