@@ -84,10 +84,14 @@ function passwordBytes(value: unknown): Buffer {
   return bytes;
 }
 
+function bufferView(bytes: Uint8Array): Buffer {
+  return Buffer.from(bytes.buffer as ArrayBuffer, bytes.byteOffset, bytes.byteLength);
+}
+
 function secretRecord(ingress: Uint8Array, keys: readonly string[]): Record<string, unknown> {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(Buffer.from(ingress).toString("utf8"));
+    parsed = JSON.parse(bufferView(ingress).toString("utf8"));
   } catch {
     throw new SignerError("INVALID_CREDENTIALS");
   }
@@ -180,7 +184,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
       const record = secretRecord(input.ingress, ["newPassword"]);
       password = passwordBytes(record.newPassword);
       record.newPassword = "";
-      const salt = Buffer.from(this.#randomBytes(16));
+      const salt = bufferView(this.#randomBytes(16));
       if (salt.length !== 16) throw new SignerError("SIGNER_UNAVAILABLE", true);
       kek = this.#derivePasswordKek(password, salt);
       verifier = createPasswordVerifier(kek, { secretVersion: 1, userId: input.userId });
@@ -232,7 +236,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
       }
       oldKek = this.#verifyPassword(current, oldPassword);
       const nextVersion = current.current.secretVersion + 1;
-      const salt = Buffer.from(this.#randomBytes(16));
+      const salt = bufferView(this.#randomBytes(16));
       if (salt.length !== 16) throw new SignerError("SIGNER_UNAVAILABLE", true);
       newKek = this.#derivePasswordKek(newPassword, salt);
       verifier = createPasswordVerifier(newKek, {
@@ -364,6 +368,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
   async updateKeystoreAutoLock(input: {
     expectedVersion: number;
     minutes: number;
+    reauthenticatedSessionId: string;
     userId: string;
   }): Promise<KeystoreStatus> {
     const store = this.#requireKeystoreStore();
@@ -379,7 +384,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
         session.deadline = this.#monotonicNow() + input.minutes * 60_000;
       }
     }
-    return this.keystoreStatus(input.userId);
+    return this.keystoreStatus(input.userId, input.reauthenticatedSessionId);
   }
 
   async shutdown(): Promise<void> {
@@ -392,7 +397,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     const keystore = await store.getKeystore(userId);
     if (!keystore) throw new SignerError("INVALID_CREDENTIALS");
     const snapshot = await this.#resetSnapshot(userId);
-    const tokenBytes = Buffer.from(this.#randomBytes(32));
+    const tokenBytes = bufferView(this.#randomBytes(32));
     if (tokenBytes.length !== 32) throw new SignerError("SIGNER_UNAVAILABLE", true);
     const previewToken = tokenBytes.toString("base64url");
     const previewTokenDigest = createHash("sha256").update(tokenBytes).digest();
@@ -773,7 +778,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
 
   #walletIngressMode(ingress: Uint8Array): unknown {
     try {
-      const value = JSON.parse(Buffer.from(ingress).toString("utf8")) as unknown;
+      const value = JSON.parse(bufferView(ingress).toString("utf8")) as unknown;
       return typeof value === "object" && value !== null && !Array.isArray(value)
         ? (value as Record<string, unknown>).mode
         : null;

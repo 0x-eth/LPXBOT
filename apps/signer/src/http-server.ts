@@ -200,6 +200,7 @@ export function createSignerHttpServer(input: {
         return;
       }
       if (request.method === "PATCH" && request.url === "/v1/keystore/auto-lock") {
+        if (!sessionId) throw new SignerError("INVALID_WALLET");
         body = await readBody(request);
         const parsed = JSON.parse(body.toString("utf8")) as unknown;
         if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
@@ -209,6 +210,7 @@ export function createSignerHttpServer(input: {
         const status = await input.service.updateKeystoreAutoLock({
           expectedVersion: Number(value.expectedVersion),
           minutes: Number(value.minutes),
+          reauthenticatedSessionId: sessionId,
           userId: ownership.userId,
         });
         send(response, 200, { data: status, success: true });

@@ -42,9 +42,13 @@ interface SecretImportBody {
   privateKey: string;
 }
 
+function bufferView(bytes: Uint8Array): Buffer {
+  return Buffer.from(bytes.buffer as ArrayBuffer, bytes.byteOffset, bytes.byteLength);
+}
+
 function parseIngress(bytes: Uint8Array): SecretImportBody {
   try {
-    const parsed = JSON.parse(Buffer.from(bytes).toString("utf8")) as unknown;
+    const parsed = JSON.parse(bufferView(bytes).toString("utf8")) as unknown;
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
       throw new SignerError("INVALID_PRIVATE_KEY");
     }
@@ -150,7 +154,7 @@ export class IsolatedWalletSigner {
     walletId: string;
   }): Promise<SealedWalletDraft> {
     const address = deriveEvmAddress(input.privateKey);
-    const dek = Buffer.from(this.#secretRandomBytes(32));
+    const dek = bufferView(this.#secretRandomBytes(32));
     if (dek.length !== 32) {
       dek.fill(0);
       throw new SignerError("SIGNER_UNAVAILABLE", true);
@@ -241,7 +245,7 @@ export class IsolatedWalletSigner {
     if (input.mode !== "server-kek" && input.mode !== "user-password") {
       throw new SignerError("INVALID_MODE");
     }
-    const mainNonce = Buffer.from(this.#secretRandomBytes(12));
+    const mainNonce = bufferView(this.#secretRandomBytes(12));
     if (mainNonce.length !== 12) {
       mainNonce.fill(0);
       throw new SignerError("SIGNER_UNAVAILABLE", true);
@@ -318,7 +322,7 @@ export class IsolatedWalletSigner {
         walletId: input.walletId,
         wrapVersion: 1,
       });
-      wrapNonce = Buffer.from(this.#secretRandomBytes(12));
+      wrapNonce = bufferView(this.#secretRandomBytes(12));
       const wrapped = sealPasswordDekWrap({
         aad: wrapAad,
         dek: input.dek,

@@ -188,8 +188,23 @@ describe("P04-03 user-password lifecycle", () => {
 
     await service.lockKeystore(userA);
     expect((await service.keystoreStatus(userA, sessionA)).status).toBe("locked");
-    await service.updateKeystoreAutoLock({ expectedVersion: 1, minutes: 1, userId: userA });
+    await expect(
+      service.updateKeystoreAutoLock({
+        expectedVersion: 1,
+        minutes: 1,
+        reauthenticatedSessionId: sessionA,
+        userId: userA,
+      }),
+    ).resolves.toMatchObject({ status: "locked" });
     await unlock(service, userA, sessionA, "synthetic-password-one");
+    await expect(
+      service.updateKeystoreAutoLock({
+        expectedVersion: 1,
+        minutes: 1,
+        reauthenticatedSessionId: sessionA,
+        userId: userA,
+      }),
+    ).resolves.toMatchObject({ status: "unlocked" });
     advance(60_001);
     expect((await service.keystoreStatus(userA, sessionA)).status).toBe("locked");
     expect(zeroized.some(({ label }) => label === "derived-kek")).toBe(true);

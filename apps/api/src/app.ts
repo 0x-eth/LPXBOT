@@ -3639,6 +3639,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         const status = await options.keystore.updateKeystoreAutoLock({
           expectedVersion: Number(value.expectedVersion),
           minutes: Number(value.minutes),
+          reauthenticatedSessionId: session.id,
           userId: session.userId,
         });
         return createSuccessEnvelope(publicKeystoreStatus(status), request.id);

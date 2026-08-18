@@ -57,6 +57,7 @@ export interface KeystoreApplication {
   updateKeystoreAutoLock(input: {
     expectedVersion: number;
     minutes: number;
+    reauthenticatedSessionId: string;
     userId: string;
   }): Promise<KeystoreStatusDto>;
 }

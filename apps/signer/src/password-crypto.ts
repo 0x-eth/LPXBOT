@@ -59,15 +59,14 @@ export function deriveArgon2idKek(
     throw new SignerError("INVALID_CREDENTIALS");
   }
   try {
-    return Buffer.from(
-      argon2id(password, salt, {
-        dkLen: parameters.outputBytes,
-        m: parameters.memoryKiB,
-        p: parameters.parallelism,
-        t: parameters.iterations,
-        version: parameters.argonVersion,
-      }),
-    );
+    const derived = argon2id(password, salt, {
+      dkLen: parameters.outputBytes,
+      m: parameters.memoryKiB,
+      p: parameters.parallelism,
+      t: parameters.iterations,
+      version: parameters.argonVersion,
+    });
+    return Buffer.from(derived.buffer as ArrayBuffer, derived.byteOffset, derived.byteLength);
   } catch {
     throw new SignerError("INVALID_CREDENTIALS");
   }

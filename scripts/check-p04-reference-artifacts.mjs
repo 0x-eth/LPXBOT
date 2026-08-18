@@ -9,6 +9,7 @@ const ACCEPTANCE = path.join(ROOT, "artifacts/acceptance/P04-01");
 const MANIFEST_PATH = path.join(ACCEPTANCE, "artifact-manifest.json");
 const SCHEMA_PATH = path.join(ROOT, "schemas/p04-reference-artifacts.schema.json");
 const TEST_PATH = path.join(ROOT, "tests/governance/p04-reference.test.mjs");
+const COMPLETION_TEST_PATH = path.join(ROOT, "tests/governance/p04-03-completion.test.mjs");
 
 function formatAjvErrors(errors = []) {
   return errors.map((error) => `${error.instancePath || "/"} ${error.message}`).join("\n");
@@ -24,7 +25,7 @@ async function main() {
     throw new Error(`artifact schema validation failed:\n${formatAjvErrors(validate.errors)}`);
   }
 
-  const result = spawnSync(process.execPath, ["--test", TEST_PATH], {
+  const result = spawnSync(process.execPath, ["--test", TEST_PATH, COMPLETION_TEST_PATH], {
     cwd: ROOT,
     encoding: "utf8",
     maxBuffer: 64 * 1024 * 1024,
