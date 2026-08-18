@@ -14,12 +14,20 @@
       "types": "./dist/monitor-evaluator.d.ts",
       "import": "./dist/monitor-evaluator.js",
       "default": "./dist/monitor-evaluator.js"
+    },
+    "./wallet-transfer": {
+      "types": "./dist/wallet-transfer.d.ts",
+      "import": "./dist/wallet-transfer.js",
+      "default": "./dist/wallet-transfer.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@lpbot/api-contract": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "22.20.1"

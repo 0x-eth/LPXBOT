@@ -309,6 +309,10 @@ importers:
         version: 2.55.16(typescript@6.0.3)(zod@4.4.3)
 
   packages/domain:
+    dependencies:
+      '@lpbot/api-contract':
+        specifier: workspace:*
+        version: link:../api-contract
     devDependencies:
       '@types/node':
         specifier: 22.20.1
