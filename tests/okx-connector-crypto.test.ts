@@ -33,10 +33,13 @@ describe("P04-07 OKX envelope cryptography", () => {
       fetch: async (_input, init) => {
         requestBody = init?.body as Buffer;
         expect(requestBody.toString("utf8")).toContain(Buffer.alloc(32, 0x7a).toString("base64"));
-        return new Response(JSON.stringify({ ciphertext: Buffer.alloc(60, 0x6b).toString("base64") }), {
-          headers: { "Content-Type": "application/json" },
-          status: 200,
-        });
+        return new Response(
+          JSON.stringify({ ciphertext: Buffer.alloc(60, 0x6b).toString("base64") }),
+          {
+            headers: { "Content-Type": "application/json" },
+            status: 200,
+          },
+        );
       },
       identityToken: "synthetic-kms-identity-token-at-least-32-bytes",
       keyId: "fixture-key",

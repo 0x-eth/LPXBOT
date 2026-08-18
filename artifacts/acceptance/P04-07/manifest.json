@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P04-07",
+  "phase": "P04",
+  "risk": "R2",
+  "status": "accepted-with-gaps",
+  "featureIds": ["SET-07"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "focused connector lifecycle, crypto, permission, and strict-client Vitest",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-07/E-DATA.md"
+    },
+    {
+      "id": "T-API",
+      "command": "real Fastify facade and isolated connector HTTP boundary Vitest",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-07/E-API.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "memory and PostgreSQL restart, interruption, rotation, and capability races",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-07/E-REC.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm test:postgres with every migration up, down in reverse, and up again",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-07/E-DATA.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "P04-07 desktop/mobile Playwright interaction, Axe, and keyboard coverage",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-07/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile usable-state screenshots and overflow assertions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-07/E-VIS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "RBAC, KMS grant, tamper, SSRF/DNS/timeout/limit, Gitleaks, and dependency audit",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-07/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P04-07/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P04-07/E-DATA.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P04-07/E-REC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P04-07/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P04-07/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P04-07/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P04-07/E-SEC.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P04-07/E-OPS.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only; SET-07 remains implemented-assumed.",
+    "All credentials are synthetic and all DNS/provider behavior is injected; real OKX requests are 0.",
+    "GAP-P04-OKX-LIVE remains unresolved.",
+    "Production KMS/IAM provisioning remains unresolved.",
+    "An independent security review remains unresolved.",
+    "Real read-only sandbox validation remains unresolved.",
+    "This accepted-with-gaps work item is not parity-verified and not released.",
+    "P00 through P04-06 acceptance files remain byte-identical to the frozen 568-file inventory."
+  ],
+  "completedAt": "2026-08-18T19:03:54.000Z",
+  "commit": null
+}

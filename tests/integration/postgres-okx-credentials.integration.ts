@@ -266,9 +266,7 @@ describe("P04-07 PostgreSQL OKX credential store", () => {
     }
 
     const restarted = service({ kms, repository: new PostgresOkxCredentialRepository(pool) });
-    await expect(
-      restarted.recover({ now, stagedTtlMilliseconds: 0 }),
-    ).resolves.toBe(1);
+    await expect(restarted.recover({ now, stagedTtlMilliseconds: 0 })).resolves.toBe(1);
     await expect(restarted.status(target)).resolves.toEqual({
       configured: true,
       status: "usable",

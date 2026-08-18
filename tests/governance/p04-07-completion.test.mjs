@@ -41,7 +41,8 @@ async function filesBelow(directory, prefix = "") {
   const files = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const relative = path.posix.join(prefix, entry.name);
-    if (entry.isDirectory()) files.push(...(await filesBelow(path.join(directory, entry.name), relative)));
+    if (entry.isDirectory())
+      files.push(...(await filesBelow(path.join(directory, entry.name), relative)));
     else if (entry.isFile()) files.push(relative);
     else assert.fail(`unsupported acceptance entry ${relative}`);
   }
@@ -54,9 +55,7 @@ test("P04 closes at 12 implemented-assumed / 0 planned with global 61 / 135", as
     readFile(TRACEABILITY, "utf8"),
     readFile(ROADMAP, "utf8"),
   ]);
-  const set07 = traceability
-    .split("\n")
-    .find((line) => line.startsWith("| SET-07 |"));
+  const set07 = traceability.split("\n").find((line) => line.startsWith("| SET-07 |"));
   assert.ok(set07);
   assert.match(set07, /implemented-assumed/u);
   assert.match(set07, /okx-connector/u);

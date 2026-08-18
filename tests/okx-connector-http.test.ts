@@ -168,10 +168,9 @@ describe("P04-07 isolated connector HTTP boundary", () => {
       "http://HOST:43210",
       "https://127.0.0.1:43210",
     ]) {
-      expect(
-        () => new RemoteOkxKeyConnectorClient({ apiToken, baseUrl }),
-        baseUrl,
-      ).toThrow(/loopback/iu);
+      expect(() => new RemoteOkxKeyConnectorClient({ apiToken, baseUrl }), baseUrl).toThrow(
+        /loopback/iu,
+      );
     }
   });
 });
