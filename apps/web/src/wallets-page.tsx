@@ -447,7 +447,7 @@ export function WalletsPage() {
           <p>还没有托管钱包</p>
         </div>
       ) : null}
-      <WalletState status={status} />
+      {!importOpen && !generateOpen ? <WalletState status={status} /> : null}
       {wallets.length > 0 ? (
         <ul aria-label="托管钱包" className="wallet-list">
           {wallets.map((wallet) => (
