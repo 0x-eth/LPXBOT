@@ -4,11 +4,13 @@ import {
   keystoreSecretMediaType,
   publicKeystoreResetPreview,
   publicKeystoreStatus,
+  publicSecurityPasswordStatus,
   publicWalletDeletePreview,
   publicWalletDeletionReceipt,
   publicWalletDto,
   WalletApiError,
   type KeystoreApplication,
+  type SecurityPasswordApplication,
   type WalletApiErrorCode,
   type WalletSignerClient,
   walletSecretMediaType,
@@ -31,6 +33,7 @@ const forwardedErrors = new Set<WalletApiErrorCode>([
   "PREVIEW_EXPIRED",
   "REVISION_CONFLICT",
   "SECRET_VERSION_CONFLICT",
+  "SECURITY_PASSWORD_VERSION_CONFLICT",
   "WALLET_ADDRESS_EXISTS",
   "WALLET_NOT_FOUND",
 ]);
@@ -79,7 +82,9 @@ interface RemoteOwner {
   userId: string;
 }
 
-export class RemoteWalletSignerClient implements WalletSignerClient, KeystoreApplication {
+export class RemoteWalletSignerClient
+  implements WalletSignerClient, KeystoreApplication, SecurityPasswordApplication
+{
   readonly #apiToken: string;
   readonly #fetcher: typeof fetch;
   readonly #tenantId: string;
@@ -211,6 +216,30 @@ export class RemoteWalletSignerClient implements WalletSignerClient, KeystoreApp
         userId,
       }),
     );
+  }
+
+  async securityPasswordStatus(userId: string) {
+    return publicSecurityPasswordStatus(
+      await this.#requestData("/v1/security-password/status", { userId }),
+    );
+  }
+
+  async putSecurityPassword(
+    input: Parameters<SecurityPasswordApplication["putSecurityPassword"]>[0],
+  ) {
+    const transportCopy = Buffer.from(input.ingress);
+    try {
+      return publicSecurityPasswordStatus(
+        await this.#requestData(
+          "/v1/security-password",
+          input,
+          { body: transportCopy, method: "PUT" },
+          "application/vnd.lpbot.security-password-secret+json",
+        ),
+      );
+    } finally {
+      transportCopy.fill(0);
+    }
   }
 
   async unlockKeystore(input: Parameters<KeystoreApplication["unlockKeystore"]>[0]) {

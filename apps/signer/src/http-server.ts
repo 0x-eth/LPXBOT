@@ -148,6 +148,7 @@ function failure(response: ServerResponse, error: unknown): void {
             ? 429
             : signerError.code === "DELETE_BLOCKED" ||
                 signerError.code === "SECRET_VERSION_CONFLICT" ||
+                signerError.code === "SECURITY_PASSWORD_VERSION_CONFLICT" ||
                 signerError.code === "REVISION_CONFLICT" ||
                 signerError.code === "PASSWORD_ALREADY_CONFIGURED" ||
                 signerError.code === "PREVIEW_EXPIRED" ||
@@ -206,6 +207,30 @@ export function createSignerHttpServer(input: {
     let importAcquired = false;
     try {
       const sessionId = reauthenticatedSessionId(request);
+      if (request.method === "GET" && request.url === "/v1/security-password/status") {
+        const status = await input.service.securityPasswordStatus(ownership.userId);
+        send(response, 200, { data: status, success: true });
+        return;
+      }
+      if (request.method === "PUT" && request.url === "/v1/security-password") {
+        if (
+          request.headers["content-type"]?.split(";", 1)[0] !==
+          "application/vnd.lpbot.security-password-secret+json"
+        ) {
+          send(response, 415, {
+            error: { code: "UNSUPPORTED_MEDIA_TYPE", retryable: false },
+            success: false,
+          });
+          return;
+        }
+        body = await readBody(request);
+        const status = await input.service.putSecurityPassword({
+          ingress: body,
+          userId: ownership.userId,
+        });
+        send(response, 200, { data: status, success: true });
+        return;
+      }
       if (request.method === "GET" && request.url === "/v1/keystore/status") {
         if (!sessionId) throw new SignerError("INVALID_WALLET");
         const status = await input.service.keystoreStatus(ownership.userId, sessionId);

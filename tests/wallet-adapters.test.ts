@@ -197,6 +197,66 @@ describe("P04-04 remote wallet lifecycle adapter", () => {
   });
 });
 
+describe("P04-04 remote security password adapter", () => {
+  it("uses its dedicated secret ingress and clears the transport copy", async () => {
+    const ingress = Buffer.from(
+      JSON.stringify({
+        expectedVersion: 0,
+        newPassword: "synthetic-security-password",
+        oldPassword: null,
+      }),
+    );
+    let transmitted: Uint8Array | null = null;
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: { configured: false, status: "unconfigured", version: 0 },
+            success: true,
+          }),
+          { headers: { "Content-Type": "application/json" }, status: 200 },
+        ),
+      )
+      .mockImplementationOnce(async (_url, init) => {
+        transmitted = init?.body as Uint8Array;
+        return new Response(
+          JSON.stringify({
+            data: { configured: true, status: "ready", version: 1 },
+            success: true,
+          }),
+          { headers: { "Content-Type": "application/json" }, status: 200 },
+        );
+      });
+    const client = new RemoteWalletSignerClient({
+      apiToken,
+      fetcher: fetcher as typeof fetch,
+      tenantId,
+      url: "http://127.0.0.1:19090",
+    });
+
+    await expect(client.securityPasswordStatus(userId)).resolves.toEqual({
+      configured: false,
+      status: "unconfigured",
+      version: 0,
+    });
+    await expect(client.putSecurityPassword({ ingress, userId })).resolves.toEqual({
+      configured: true,
+      status: "ready",
+      version: 1,
+    });
+    expect(fetcher.mock.calls[1]?.[1]).toMatchObject({
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "application/vnd.lpbot.security-password-secret+json",
+      },
+      method: "PUT",
+    });
+    expect([...transmitted!]).toEqual(new Array(transmitted!.length).fill(0));
+    expect(ingress.equals(Buffer.alloc(ingress.length))).toBe(false);
+  });
+});
+
 describe("P04-03 remote keystore adapter", () => {
   it("sends a secret once with no-store session binding and clears only its transport copy", async () => {
     const ingress = Buffer.from(JSON.stringify({ password: "synthetic-password-fixture" }));
