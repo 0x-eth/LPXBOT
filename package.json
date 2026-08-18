@@ -45,6 +45,7 @@
     "infra:verify": "bash scripts/infra.sh verify",
     "lint": "turbo run lint && eslint scripts tests eslint.config.mjs prettier.config.mjs vitest.config.ts --max-warnings=0",
     "test": "turbo run build && vitest run && node --test tests/governance/*.test.mjs",
+    "test:anvil": "RUN_ANVIL_INTEGRATION=1 vitest run --config vitest.anvil.config.ts",
     "test:contracts": "forge test -vvv",
     "test:e2e": "pnpm --filter @lpbot/web^... build && playwright test",
     "test:pwa": "playwright test --config=playwright.pwa.config.ts",
