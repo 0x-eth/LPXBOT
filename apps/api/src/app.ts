@@ -135,14 +135,17 @@ import {
   parseWalletId,
   publicKeystoreResetPreview,
   publicKeystoreStatus,
+  publicSecurityPasswordStatus,
   publicWalletDeletePreview,
   publicWalletDeletionReceipt,
   publicWalletDto,
   WalletApiError,
+  securityPasswordSecretMediaType,
   walletSecretBodyLimit,
   walletSecretMediaType,
   type FreshReauthenticationVerifier,
   type KeystoreApplication,
+  type SecurityPasswordApplication,
   type WalletDirectory,
   type WalletSignerClient,
 } from "./wallets.js";
@@ -201,6 +204,7 @@ export interface ApiAppOptions {
   walletDirectory?: WalletDirectory;
   walletSigner?: WalletSignerClient;
   keystore?: KeystoreApplication;
+  securityPassword?: SecurityPasswordApplication;
 }
 
 export interface ChainActivityProvider {
@@ -882,6 +886,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     (method === "PUT" && path === "/api/keystore/password") ||
     (method === "POST" && /^\/api\/wallets\/[^/]+\/encryption-mode$/u.test(path));
 
+  const isSecurityPasswordSecretRequest = (method: string, path: string): boolean =>
+    method === "PUT" && path === "/api/security-password";
+
   app.addHook("onRequest", (request, reply, done) => {
     const path = request.url.split("?", 1)[0]!;
     const mediaType = request.headers["content-type"]?.split(";", 1)[0]?.trim().toLowerCase();
@@ -890,7 +897,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         ? walletSecretMediaType
         : isKeystoreSecretRequest(request.method, path)
           ? keystoreSecretMediaType
-          : null;
+          : isSecurityPasswordSecretRequest(request.method, path)
+            ? securityPasswordSecretMediaType
+            : null;
     if (requiredMediaType && mediaType !== requiredMediaType) {
       reply.header("Cache-Control", "no-store");
       void reply.code(415).send(
@@ -911,6 +920,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   );
   app.addContentTypeParser(keystoreSecretMediaType, { parseAs: "buffer" }, (_request, body, done) =>
     done(null, body),
+  );
+  app.addContentTypeParser(
+    securityPasswordSecretMediaType,
+    { parseAs: "buffer" },
+    (_request, body, done) => done(null, body),
   );
 
   void app.register(cookie);
@@ -952,7 +966,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
       ((request.method === "POST" &&
         (requestPath === "/api/wallets/import" || requestPath === "/api/wallets/generate")) ||
-        isKeystoreSecretRequest(request.method, requestPath))
+        (isKeystoreSecretRequest(request.method, requestPath) ||
+          isSecurityPasswordSecretRequest(request.method, requestPath)))
     ) {
       reply.header("Cache-Control", "no-store");
       return reply.code(413).send(
@@ -3470,6 +3485,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
                         status: 400,
                       }
                     : code === "SECRET_VERSION_CONFLICT" ||
+                        code === "SECURITY_PASSWORD_VERSION_CONFLICT" ||
                         code === "REVISION_CONFLICT" ||
                         code === "PASSWORD_ALREADY_CONFIGURED" ||
                         code === "PREVIEW_EXPIRED" ||
@@ -3561,6 +3577,67 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           retryable: true,
         }),
       );
+
+    const securityPasswordUnavailable = (request: FastifyRequest, reply: FastifyReply) =>
+      reply.code(503).send(
+        createErrorEnvelope({
+          code: "SIGNER_UNAVAILABLE",
+          message: "The security password service is unavailable",
+          requestId: request.id,
+          retryable: true,
+        }),
+      );
+
+    app.get("/api/security-password/status", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.securityPassword) return securityPasswordUnavailable(request, reply);
+      try {
+        return createSuccessEnvelope(
+          publicSecurityPasswordStatus(
+            await options.securityPassword.securityPasswordStatus(session.userId),
+          ),
+          request.id,
+        );
+      } catch (error) {
+        return walletFailure(error, request, reply) ?? securityPasswordUnavailable(request, reply);
+      }
+    });
+
+    app.put("/api/security-password", { bodyLimit: 16_384 }, async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const ingress = Buffer.isBuffer(request.body) ? request.body : null;
+      try {
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+        if (!ingress) {
+          return reply.code(415).send(
+            createErrorEnvelope({
+              code: "UNSUPPORTED_MEDIA_TYPE",
+              message: "Security password mutation requires the dedicated secret ingress",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.securityPassword) return securityPasswordUnavailable(request, reply);
+        return createSuccessEnvelope(
+          publicSecurityPasswordStatus(
+            await options.securityPassword.putSecurityPassword({
+              ingress,
+              userId: session.userId,
+            }),
+          ),
+          request.id,
+        );
+      } catch (error) {
+        return walletFailure(error, request, reply) ?? securityPasswordUnavailable(request, reply);
+      } finally {
+        ingress?.fill(0);
+      }
+    });
 
     app.get("/api/keystore/status", async (request, reply) => {
       reply.header("Cache-Control", "no-store");

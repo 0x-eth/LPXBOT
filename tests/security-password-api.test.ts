@@ -2,6 +2,7 @@ import { buildApiApp } from "../apps/api/src/app.js";
 import {
   CustodySignerService,
   deriveArgon2idKek,
+  deriveSecurityPasswordKey,
   InMemoryCustodyWalletStore,
   IsolatedWalletSigner,
   LocalKmsFixture,
@@ -36,6 +37,14 @@ async function fixture() {
   const custody = new CustodySignerService({
     derivePasswordKek: (password, salt) =>
       deriveArgon2idKek(password, salt, {
+        argonVersion: 19,
+        iterations: 2,
+        memoryKiB: 32,
+        outputBytes: 32,
+        parallelism: 1,
+      }),
+    deriveSecurityPasswordKey: (password, salt) =>
+      deriveSecurityPasswordKey(password, salt, {
         argonVersion: 19,
         iterations: 2,
         memoryKiB: 32,
