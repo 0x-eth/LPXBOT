@@ -1,6 +1,7 @@
 import { buildApiApp } from "../apps/api/src/app.js";
 import {
   CustodySignerService,
+  deriveArgon2idKek,
   InMemoryCustodyWalletStore,
   IsolatedWalletSigner,
   LocalKmsFixture,
@@ -15,6 +16,7 @@ const tenantId = "tenant-fixture-01";
 const userId = "52000000-0000-4000-8000-000000000001";
 const otherUserId = "52000000-0000-4000-8000-000000000002";
 const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";
+const privateKeyTwo = "0000000000000000000000000000000000000000000000000000000000000002";
 const apps: Array<ReturnType<typeof buildApiApp>> = [];
 
 async function fixture() {
@@ -100,7 +102,16 @@ async function lifecycleFixture(
       };
     },
   };
+  const zeroized: string[] = [];
   const serviceOptions = {
+    derivePasswordKek: (password: Uint8Array, salt: Uint8Array) =>
+      deriveArgon2idKek(password, salt, {
+        argonVersion: 19,
+        iterations: 2,
+        memoryKiB: 32,
+        outputBytes: 32,
+        parallelism: 1,
+      }),
     now: () => clock,
     signer: new IsolatedWalletSigner({
       kms: new LocalKmsFixture({
@@ -109,6 +120,7 @@ async function lifecycleFixture(
       }),
     }),
     store,
+    onZeroize: (label: string) => zeroized.push(label),
     walletDependencyInventory: inventory,
     ...(options.coordinator === "missing" ? {} : { taskCoordinator }),
   };
@@ -148,10 +160,12 @@ async function lifecycleFixture(
     otherToken,
     otherProof: `fresh:${otherSession.id}`,
     proof: `fresh:${session.id}`,
+    sessionId: session.id,
     store,
     taskCoordinator,
     token,
     wallet,
+    zeroized,
   };
 }
 
@@ -544,5 +558,156 @@ describe("P04-04 wallet delete preview API", () => {
     expect(await fault.custody.getWallet(userId, fault.wallet.walletId)).not.toBeNull();
     expect(fault.store.envelopeCount).toBe(1);
     expect(fault.store.auditCount).toBe(1);
+  });
+
+  it("fails closed for incomplete inventory and task deactivation errors", async () => {
+    const incomplete = await lifecycleFixture({
+      snapshot: {
+        assetIds: [],
+        assetRiskDigest: "sha256:incomplete",
+        complete: false,
+        policyIds: [],
+        positionIds: [],
+        taskIds: [],
+      },
+    });
+    const unavailable = await incomplete.app.inject({
+      headers: auth(incomplete.token),
+      method: "POST",
+      payload: {},
+      url: `/api/wallets/${incomplete.wallet.walletId}/delete-preview`,
+    });
+    expect(unavailable.statusCode).toBe(503);
+    expect(unavailable.json().error.code).toBe("SIGNER_UNAVAILABLE");
+
+    const taskFailure = await lifecycleFixture({ coordinator: "fail" });
+    const preview = (
+      await taskFailure.app.inject({
+        headers: auth(taskFailure.token),
+        method: "POST",
+        payload: {},
+        url: `/api/wallets/${taskFailure.wallet.walletId}/delete-preview`,
+      })
+    ).json().data;
+    const failed = await taskFailure.app.inject({
+      headers: {
+        ...auth(taskFailure.token),
+        "x-lpbot-reauthentication": taskFailure.proof,
+      },
+      method: "DELETE",
+      payload: {
+        confirmationPhrase: preview.confirmationPhrase,
+        dependencies: preview.dependencies,
+        expectedRevision: taskFailure.wallet.revision,
+        force: true,
+        previewToken: preview.previewToken,
+      },
+      url: `/api/wallets/${taskFailure.wallet.walletId}`,
+    });
+    expect(failed.statusCode).toBe(503);
+    expect(await taskFailure.custody.getWallet(userId, taskFailure.wallet.walletId)).not.toBeNull();
+    expect(taskFailure.store.envelopeCount).toBe(1);
+    expect(taskFailure.store.auditCount).toBe(1);
+  });
+
+  it("serializes concurrent deletion so exactly one request consumes the wallet", async () => {
+    const state = await lifecycleFixture({
+      snapshot: {
+        assetIds: [],
+        assetRiskDigest: "sha256:concurrent-empty",
+        complete: true,
+        policyIds: [],
+        positionIds: [],
+        taskIds: [],
+      },
+    });
+    const preview = (
+      await state.app.inject({
+        headers: auth(state.token),
+        method: "POST",
+        payload: {},
+        url: `/api/wallets/${state.wallet.walletId}/delete-preview`,
+      })
+    ).json().data;
+    const remove = () =>
+      state.app.inject({
+        headers: { ...auth(state.token), "x-lpbot-reauthentication": state.proof },
+        method: "DELETE",
+        payload: {
+          expectedRevision: state.wallet.revision,
+          force: false,
+          previewToken: preview.previewToken,
+        },
+        url: `/api/wallets/${state.wallet.walletId}`,
+      });
+    const responses = await Promise.all([remove(), remove()]);
+    expect(responses.map(({ statusCode }) => statusCode).sort()).toEqual([200, 404]);
+    expect(state.store.envelopeCount).toBe(0);
+    expect(state.store.auditCount).toBe(2);
+  });
+
+  it("revokes and zeroizes user-password unlock sessions when deleting that wallet", async () => {
+    const state = await lifecycleFixture({
+      snapshot: {
+        assetIds: [],
+        assetRiskDigest: "sha256:password-empty",
+        complete: true,
+        policyIds: [],
+        positionIds: [],
+        taskIds: [],
+      },
+    });
+    const password = "synthetic-password-one";
+    await state.custody.createKeystorePassword({
+      ingress: Buffer.from(JSON.stringify({ newPassword: password })),
+      userId,
+    });
+    const passwordWallet = await state.custody.importWallet({
+      ingress: Buffer.from(
+        JSON.stringify({
+          mode: "user-password",
+          name: "Password wallet",
+          password,
+          privateKey: privateKeyTwo,
+        }),
+      ),
+      tenantId,
+      userId,
+    });
+    await state.custody.unlockKeystore({
+      ingress: Buffer.from(JSON.stringify({ password })),
+      reauthenticatedSessionId: state.sessionId,
+      userId,
+    });
+    expect(await state.custody.keystoreStatus(userId, state.sessionId)).toMatchObject({
+      status: "unlocked",
+    });
+    const zeroizedBeforeDelete = state.zeroized.filter((label) => label === "derived-kek").length;
+    const preview = (
+      await state.app.inject({
+        headers: auth(state.token),
+        method: "POST",
+        payload: {},
+        url: `/api/wallets/${passwordWallet.walletId}/delete-preview`,
+      })
+    ).json().data;
+    const deleted = await state.app.inject({
+      headers: { ...auth(state.token), "x-lpbot-reauthentication": state.proof },
+      method: "DELETE",
+      payload: {
+        expectedRevision: preview.revision,
+        force: false,
+        previewToken: preview.previewToken,
+      },
+      url: `/api/wallets/${passwordWallet.walletId}`,
+    });
+    expect(deleted.statusCode).toBe(200);
+    expect(await state.custody.keystoreStatus(userId, state.sessionId)).toMatchObject({
+      status: "locked",
+    });
+    expect(state.zeroized.filter((label) => label === "derived-kek").length).toBeGreaterThan(
+      zeroizedBeforeDelete,
+    );
+    expect(state.store.envelopeCount).toBe(1);
   });
 });
