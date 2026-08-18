@@ -1006,6 +1006,33 @@ export interface LoginWalletLinkView {
   updatedAt: string;
 }
 
+export const walletEncryptionModes = ["server-kek"] as const;
+export type WalletEncryptionMode = (typeof walletEncryptionModes)[number];
+
+export const walletLockStatuses = ["ready", "locked", "quarantined"] as const;
+export type WalletLockStatus = (typeof walletLockStatuses)[number];
+
+export interface CustodyWallet {
+  address: EvmAddress;
+  createdAt: string;
+  envelopeVersion: number;
+  lockStatus: WalletLockStatus;
+  mode: WalletEncryptionMode;
+  name: string;
+  revision: number;
+  updatedAt: string;
+  walletId: string;
+}
+
+export interface CustodyWalletPage {
+  items: CustodyWallet[];
+}
+
+export interface GenerateCustodyWalletRequest {
+  mode: WalletEncryptionMode;
+  name: string;
+}
+
 export const loginWalletAuthContracts = {
   link: { method: "POST", path: "/api/auth/wallet/link" },
   linkNonce: { method: "POST", path: "/api/auth/wallet/link-nonce" },
