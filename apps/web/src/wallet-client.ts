@@ -1,8 +1,9 @@
 import type {
+  ChangeWalletEncryptionModeRequest,
   CustodyWallet,
   CustodyWalletPage,
-  GenerateCustodyWalletRequest,
 } from "@lpbot/api-contract";
+import { keystoreSecretMediaType } from "@lpbot/api-contract";
 
 type WalletFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -10,9 +11,13 @@ interface ErrorEnvelope {
   error?: { code?: unknown; retryable?: unknown };
 }
 
-export interface ImportCustodyWalletRequest extends GenerateCustodyWalletRequest {
-  privateKey: string;
-}
+export type ImportCustodyWalletRequest =
+  | { mode: "server-kek"; name: string; privateKey: string }
+  | { mode: "user-password"; name: string; password: string; privateKey: string };
+
+export type GenerateCustodyWalletInput =
+  | { mode: "server-kek"; name: string }
+  | { mode: "user-password"; name: string; password: string };
 
 const walletKeys = [
   "address",
@@ -58,7 +63,7 @@ export function parseCustodyWallet(value: unknown, status = 0): CustodyWallet {
     value.name.length > 80 ||
     typeof value.address !== "string" ||
     !addressPattern.test(value.address) ||
-    value.mode !== "server-kek" ||
+    (value.mode !== "server-kek" && value.mode !== "user-password") ||
     (value.lockStatus !== "ready" &&
       value.lockStatus !== "locked" &&
       value.lockStatus !== "quarantined") ||
@@ -120,23 +125,21 @@ export class WalletClient {
   }
 
   async importWallet(input: ImportCustodyWalletRequest): Promise<CustodyWallet> {
-    const bytes = new TextEncoder().encode(JSON.stringify(input));
-    try {
-      const response = await this.#request("/api/wallets/import", {
-        body: bytes as unknown as BodyInit,
-        headers: {
-          "Content-Type": "application/vnd.lpbot.wallet-secret+json",
-          ...this.#reauthenticationHeader(),
-        },
-        method: "POST",
-      });
-      return parseCustodyWallet(response.data, response.status);
-    } finally {
-      bytes.fill(0);
-    }
+    return this.#secretWalletMutation(
+      "/api/wallets/import",
+      input,
+      "application/vnd.lpbot.wallet-secret+json",
+    );
   }
 
-  async generateWallet(input: GenerateCustodyWalletRequest): Promise<CustodyWallet> {
+  async generateWallet(input: GenerateCustodyWalletInput): Promise<CustodyWallet> {
+    if (input.mode === "user-password") {
+      return this.#secretWalletMutation(
+        "/api/wallets/generate",
+        input,
+        "application/vnd.lpbot.wallet-secret+json",
+      );
+    }
     const response = await this.#request("/api/wallets/generate", {
       body: JSON.stringify(input),
       headers: {
@@ -146,6 +149,41 @@ export class WalletClient {
       method: "POST",
     });
     return parseCustodyWallet(response.data, response.status);
+  }
+
+  async changeEncryptionMode(
+    walletId: string,
+    input: ChangeWalletEncryptionModeRequest,
+  ): Promise<CustodyWallet> {
+    if (!uuidPattern.test(walletId)) {
+      throw new WalletRequestError("WALLET_NOT_FOUND", false, 0);
+    }
+    return this.#secretWalletMutation(
+      `/api/wallets/${walletId.toLowerCase()}/encryption-mode`,
+      input,
+      keystoreSecretMediaType,
+    );
+  }
+
+  async #secretWalletMutation(
+    path: string,
+    input: ChangeWalletEncryptionModeRequest | GenerateCustodyWalletInput | ImportCustodyWalletRequest,
+    contentType: string,
+  ): Promise<CustodyWallet> {
+    const bytes = new TextEncoder().encode(JSON.stringify(input));
+    try {
+      const response = await this.#request(path, {
+        body: bytes as unknown as BodyInit,
+        headers: {
+          "Content-Type": contentType,
+          ...this.#reauthenticationHeader(),
+        },
+        method: "POST",
+      });
+      return parseCustodyWallet(response.data, response.status);
+    } finally {
+      bytes.fill(0);
+    }
   }
 
   #reauthenticationHeader(): Record<string, string> {
