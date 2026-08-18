@@ -182,4 +182,27 @@ describe("P04-04 security password API", () => {
       /salt|verifier|fingerprint|digest/iu,
     );
   });
+
+  it("rejects dedicated secret ingress above 16 KiB without creating a password", async () => {
+    const { app, proofA, tokenA } = await fixture();
+    const tooLarge = await app.inject({
+      headers: { ...auth(tokenA, proofA), "content-type": mediaType },
+      method: "PUT",
+      payload: "x".repeat(16_385),
+      url: "/api/security-password",
+    });
+
+    expect(tooLarge.statusCode).toBe(413);
+    expect(tooLarge.headers["cache-control"]).toBe("no-store");
+    const status = await app.inject({
+      headers: auth(tokenA),
+      method: "GET",
+      url: "/api/security-password/status",
+    });
+    expect(status.json().data).toEqual({
+      configured: false,
+      status: "unconfigured",
+      version: 0,
+    });
+  });
 });
