@@ -8,6 +8,8 @@ ALTER TABLE custody_wallets
 ALTER TABLE custody_wallet_audit_events
   DROP CONSTRAINT custody_wallet_audit_events_wallet_id_fkey;
 ALTER TABLE custody_wallet_audit_events
+  DROP CONSTRAINT custody_wallet_audit_events_user_id_fkey;
+ALTER TABLE custody_wallet_audit_events
   DROP CONSTRAINT custody_wallet_audit_events_action_check;
 ALTER TABLE custody_wallet_audit_events
   ADD CONSTRAINT custody_wallet_audit_events_action_check CHECK (
@@ -195,6 +197,9 @@ ALTER TABLE custody_wallet_audit_events
 ALTER TABLE custody_wallet_audit_events
   ADD CONSTRAINT custody_wallet_audit_events_wallet_id_fkey
   FOREIGN KEY (wallet_id) REFERENCES custody_wallets(wallet_id) ON DELETE CASCADE;
+ALTER TABLE custody_wallet_audit_events
+  ADD CONSTRAINT custody_wallet_audit_events_user_id_fkey
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 CREATE TRIGGER custody_wallet_audit_events_append_only
 BEFORE UPDATE OR DELETE ON custody_wallet_audit_events
 FOR EACH ROW EXECUTE FUNCTION prevent_custody_append_only_mutation();

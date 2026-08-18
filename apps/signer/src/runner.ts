@@ -18,11 +18,16 @@ import { SignerError } from "./signer-error.js";
 
 interface CustodyTablesRow extends QueryResultRow {
   auditEvents: string | null;
+  deletePreviews: string | null;
   envelopes: string | null;
   failures: string | null;
   keystoreVersions: string | null;
   keystores: string | null;
   resetPreviews: string | null;
+  securityPasswordAudits: string | null;
+  securityPasswordVersions: string | null;
+  securityPasswords: string | null;
+  tombstones: string | null;
   wallets: string | null;
 }
 
@@ -58,11 +63,16 @@ async function assertStoreReady(pool: Pool): Promise<void> {
     const result = await pool.query<CustodyTablesRow>(
       `SELECT
          to_regclass('public.custody_wallet_audit_events')::text AS "auditEvents",
+         to_regclass('public.custody_wallet_delete_previews')::text AS "deletePreviews",
          to_regclass('public.custody_wallet_envelopes')::text AS envelopes,
          to_regclass('public.user_keystore_failures')::text AS failures,
          to_regclass('public.user_keystore_versions')::text AS "keystoreVersions",
          to_regclass('public.user_keystores')::text AS keystores,
          to_regclass('public.user_keystore_reset_previews')::text AS "resetPreviews",
+         to_regclass('public.security_password_audit_events')::text AS "securityPasswordAudits",
+         to_regclass('public.user_security_password_versions')::text AS "securityPasswordVersions",
+         to_regclass('public.user_security_passwords')::text AS "securityPasswords",
+         to_regclass('public.custody_wallet_tombstones')::text AS tombstones,
          to_regclass('public.custody_wallets')::text AS wallets`,
     );
     row = result.rows[0];
@@ -71,11 +81,16 @@ async function assertStoreReady(pool: Pool): Promise<void> {
   }
   if (
     !row?.auditEvents ||
+    !row.deletePreviews ||
     !row.envelopes ||
     !row.failures ||
     !row.keystoreVersions ||
     !row.keystores ||
     !row.resetPreviews ||
+    !row.securityPasswordAudits ||
+    !row.securityPasswordVersions ||
+    !row.securityPasswords ||
+    !row.tombstones ||
     !row.wallets
   ) {
     throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
