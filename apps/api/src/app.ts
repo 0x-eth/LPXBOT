@@ -4450,6 +4450,239 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       }
     });
 
+    app.get<{ Params: { walletId: string } }>(
+      "/api/wallets/:walletId/balances",
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        const query = parseWalletReadQuery(request.query, ["chainId"]);
+        if (!query) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "INVALID_QUERY",
+              message: "The wallet balance query is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
+        if (!options.walletDirectory || !options.walletAssets) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "CHAIN_READ_UNAVAILABLE",
+              message: "The controlled chain reader is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const walletId = parseWalletId(request.params.walletId);
+          const wallet = await options.walletDirectory.getWallet(session.userId, walletId);
+          if (!wallet) throw new WalletApiError("WALLET_NOT_FOUND");
+          const snapshot = await options.walletAssets.balances({
+            chainId: query.chainId,
+            userId: session.userId,
+            wallet: publicWalletDto(wallet),
+          });
+          return createSuccessEnvelope(snapshot, request.id);
+        } catch (error) {
+          return walletAssetFailure(error, request, reply) ?? walletFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.get<{ Params: { walletId: string } }>(
+      "/api/wallets/:walletId/tokens",
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        const query = parseWalletReadQuery(request.query, ["chainId"]);
+        if (!query) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "INVALID_QUERY",
+              message: "The wallet token query is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
+        if (!options.walletDirectory || !options.walletAssets) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "CHAIN_READ_UNAVAILABLE",
+              message: "Wallet tokens are unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const walletId = parseWalletId(request.params.walletId);
+          const wallet = await options.walletDirectory.getWallet(session.userId, walletId);
+          if (!wallet) throw new WalletApiError("WALLET_NOT_FOUND");
+          return createSuccessEnvelope(
+            await options.walletAssets.listTokens({
+              chainId: query.chainId,
+              userId: session.userId,
+              walletId,
+            }),
+            request.id,
+          );
+        } catch (error) {
+          return walletAssetFailure(error, request, reply) ?? walletFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.post<{ Params: { walletId: string } }>(
+      "/api/wallets/:walletId/tokens",
+      { bodyLimit: 2_048 },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        const input = parseWalletTokenImport(request.body);
+        if (!input) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "INVALID_TOKEN",
+              message: "The custom token request is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!(await requireAllowedWalletChain(input.chainId, request, reply, session))) return reply;
+        if (!options.walletDirectory || !options.walletAssets) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "CHAIN_READ_UNAVAILABLE",
+              message: "Wallet tokens are unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const walletId = parseWalletId(request.params.walletId);
+          const wallet = await options.walletDirectory.getWallet(session.userId, walletId);
+          if (!wallet) throw new WalletApiError("WALLET_NOT_FOUND");
+          const token = await options.walletAssets.importToken({
+            chainId: input.chainId,
+            tokenAddress: input.tokenAddress,
+            userId: session.userId,
+            walletId,
+          });
+          return reply.code(201).send(createSuccessEnvelope(token, request.id));
+        } catch (error) {
+          return walletAssetFailure(error, request, reply) ?? walletFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.delete<{ Params: { tokenAddress: string; walletId: string } }>(
+      "/api/wallets/:walletId/tokens/:tokenAddress",
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        const query = parseWalletReadQuery(request.query, ["chainId"]);
+        if (!query) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "INVALID_QUERY",
+              message: "The wallet token query is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
+        if (!options.walletDirectory || !options.walletAssets) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "CHAIN_READ_UNAVAILABLE",
+              message: "Wallet tokens are unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const walletId = parseWalletId(request.params.walletId);
+          const wallet = await options.walletDirectory.getWallet(session.userId, walletId);
+          if (!wallet) throw new WalletApiError("WALLET_NOT_FOUND");
+          const deleted = await options.walletAssets.deleteToken({
+            chainId: query.chainId,
+            tokenAddress: request.params.tokenAddress,
+            userId: session.userId,
+            walletId,
+          });
+          return createSuccessEnvelope({ deleted }, request.id);
+        } catch (error) {
+          return walletAssetFailure(error, request, reply) ?? walletFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.get<{ Params: { walletId: string } }>(
+      "/api/wallets/:walletId/receive",
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        const query = parseWalletReadQuery(request.query, [
+          "amountDecimal",
+          "chainId",
+          "tokenAddress",
+        ]);
+        if (!query) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "INVALID_QUERY",
+              message: "The receive-content query is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
+        if (!options.walletDirectory || !options.walletAssets) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "CHAIN_READ_UNAVAILABLE",
+              message: "Receive content is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const walletId = parseWalletId(request.params.walletId);
+          const wallet = await options.walletDirectory.getWallet(session.userId, walletId);
+          if (!wallet) throw new WalletApiError("WALLET_NOT_FOUND");
+          return createSuccessEnvelope(
+            await options.walletAssets.receive({
+              amountDecimal: query.amountDecimal,
+              chainId: query.chainId,
+              tokenAddress: query.tokenAddress,
+              userId: session.userId,
+              wallet: publicWalletDto(wallet),
+            }),
+            request.id,
+          );
+        } catch (error) {
+          return walletAssetFailure(error, request, reply) ?? walletFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
     app.patch<{ Params: { walletId: string } }>(
       "/api/wallets/:walletId",
       { bodyLimit: 16_384 },

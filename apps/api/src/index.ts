@@ -18,7 +18,45 @@ export { createLoginWalletAuthenticationFromEnvironment } from "./login-wallet-a
 export type { LoginWalletAuthEnvironment } from "./login-wallet-auth-config.js";
 export { PostgresSessionStore } from "./postgres-session-store.js";
 export { PostgresWalletDirectory } from "./postgres-wallet-directory.js";
+export { PostgresWalletTokenStore } from "./postgres-wallet-token-store.js";
+export { PostgresAddressBookStore } from "./postgres-address-book-store.js";
 export { RemoteWalletSignerClient } from "./remote-wallet-signer-client.js";
+export {
+  AddressBookError,
+  classifyAddress,
+  MemoryAddressBookStore,
+  parseAddressBookCreateIngress,
+  parseAddressBookEntryId,
+  parseAddressBookPatch,
+} from "./address-book.js";
+export type {
+  AddressBookAllowedAudit,
+  AddressBookAuditAction,
+  AddressBookAuditInput,
+  AddressBookCreateInput,
+  AddressBookDeleteInput,
+  AddressBookPatchInput,
+  AddressBookStore,
+  ParsedAddressBookCreate,
+} from "./address-book.js";
+export {
+  canonicalWalletAddress,
+  defaultWalletTokens,
+  inspectErc20Token,
+  MemoryWalletTokenStore,
+  WalletAssetError,
+  WalletAssetService,
+} from "./wallet-assets.js";
+export type {
+  ControlledWalletReadProvider,
+  ControlledWalletReadProviderRegistry,
+  StoredWalletToken,
+  WalletAssetApplication,
+  WalletAssetErrorCode,
+  WalletTokenInsertResult,
+  WalletTokenStore,
+  WalletUsdPrice,
+} from "./wallet-assets.js";
 export {
   keystoreSecretBodyLimit,
   keystoreSecretMediaType,

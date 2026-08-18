@@ -7,7 +7,7 @@ import type {
   WalletTokenDefinition,
   WalletTokenPage,
 } from "@lpbot/api-contract";
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 import {
   decodeFunctionResult,
   encodeFunctionData,
