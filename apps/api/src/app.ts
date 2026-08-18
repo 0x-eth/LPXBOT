@@ -127,13 +127,18 @@ import {
   type UserPreferencesStore,
 } from "./user-preferences.js";
 import {
+  keystoreSecretBodyLimit,
+  keystoreSecretMediaType,
   parseGenerateCustodyWalletRequest,
   parseWalletId,
+  publicKeystoreResetPreview,
+  publicKeystoreStatus,
   publicWalletDto,
   WalletApiError,
   walletSecretBodyLimit,
   walletSecretMediaType,
   type FreshReauthenticationVerifier,
+  type KeystoreApplication,
   type WalletDirectory,
   type WalletSignerClient,
 } from "./wallets.js";
@@ -191,6 +196,7 @@ export interface ApiAppOptions {
   walletAuth?: LoginWalletAuthenticationApplication;
   walletDirectory?: WalletDirectory;
   walletSigner?: WalletSignerClient;
+  keystore?: KeystoreApplication;
 }
 
 export interface ChainActivityProvider {
@@ -864,26 +870,42 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     logger: false,
   });
 
+  const isKeystoreSecretRequest = (method: string, path: string): boolean =>
+    (method === "POST" &&
+      (path === "/api/keystore/password" ||
+        path === "/api/keystore/unlock" ||
+        path === "/api/keystore/reset")) ||
+    (method === "PUT" && path === "/api/keystore/password") ||
+    (method === "POST" && /^\/api\/wallets\/[^/]+\/encryption-mode$/u.test(path));
+
   app.addHook("onRequest", (request, reply, done) => {
-    if (request.method === "POST" && request.url.split("?", 1)[0] === "/api/wallets/import") {
-      const mediaType = request.headers["content-type"]?.split(";", 1)[0]?.trim().toLowerCase();
-      if (mediaType !== walletSecretMediaType) {
+    const path = request.url.split("?", 1)[0]!;
+    const mediaType = request.headers["content-type"]?.split(";", 1)[0]?.trim().toLowerCase();
+    const requiredMediaType =
+      request.method === "POST" && path === "/api/wallets/import"
+        ? walletSecretMediaType
+        : isKeystoreSecretRequest(request.method, path)
+          ? keystoreSecretMediaType
+          : null;
+    if (requiredMediaType && mediaType !== requiredMediaType) {
         reply.header("Cache-Control", "no-store");
         void reply.code(415).send(
           createErrorEnvelope({
             code: "UNSUPPORTED_MEDIA_TYPE",
-            message: "Wallet import requires the dedicated secret ingress",
+            message: "This operation requires the dedicated secret ingress",
             requestId: request.id,
             retryable: false,
           }),
         );
         return;
-      }
     }
     done();
   });
 
   app.addContentTypeParser(walletSecretMediaType, { parseAs: "buffer" }, (_request, body, done) =>
+    done(null, body),
+  );
+  app.addContentTypeParser(keystoreSecretMediaType, { parseAs: "buffer" }, (_request, body, done) =>
     done(null, body),
   );
 
@@ -924,8 +946,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     const requestPath = request.url.split("?", 1)[0]!;
     if (
       errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
-      request.method === "POST" &&
-      requestPath === "/api/wallets/import"
+      ((request.method === "POST" &&
+        (requestPath === "/api/wallets/import" || requestPath === "/api/wallets/generate")) ||
+        isKeystoreSecretRequest(request.method, requestPath))
     ) {
       reply.header("Cache-Control", "no-store");
       return reply.code(413).send(
@@ -3411,14 +3434,48 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         code === "INVALID_MODE"
           ? {
               code,
-              message: "Only server-kek wallet encryption is available",
+              message: "The wallet encryption mode is invalid",
               retryable: false,
               status: 400,
             }
-          : code === "INVALID_PRIVATE_KEY"
+            : code === "INVALID_PRIVATE_KEY"
             ? { code, message: "The private key is invalid", retryable: false, status: 400 }
             : code === "INVALID_WALLET"
               ? { code, message: "The wallet request is invalid", retryable: false, status: 400 }
+              : code === "INVALID_CREDENTIALS" || code === "KEYSTORE_CORRUPTED"
+                ? {
+                    code: "INVALID_CREDENTIALS",
+                    message: "The credentials are invalid",
+                    retryable: false,
+                    status: 401,
+                  }
+                : code === "LOCKED_OUT"
+                  ? {
+                      code,
+                      message: "The Keystore is temporarily locked",
+                      retryable: false,
+                      status: 429,
+                    }
+                  : code === "INVALID_AUTO_LOCK" ||
+                      code === "PASSWORD_POLICY_FAILED" ||
+                      code === "CONFIRMATION_MISMATCH"
+                    ? {
+                        code,
+                        message: "The Keystore request is invalid",
+                        retryable: false,
+                        status: 400,
+                      }
+                    : code === "SECRET_VERSION_CONFLICT" ||
+                        code === "REVISION_CONFLICT" ||
+                        code === "PASSWORD_ALREADY_CONFIGURED" ||
+                        code === "PREVIEW_EXPIRED" ||
+                        code === "PREVIEW_CHANGED"
+                      ? {
+                          code,
+                          message: "The Keystore state changed",
+                          retryable: false,
+                          status: 409,
+                        }
               : code === "WALLET_ADDRESS_EXISTS"
                 ? {
                     code,
