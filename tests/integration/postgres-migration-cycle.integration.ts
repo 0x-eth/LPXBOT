@@ -140,6 +140,15 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "users",
       "wallet_address_book_audit_events",
       "wallet_address_book_entries",
+      "wallet_nonce_ledgers",
+      "wallet_transfer_audit_events",
+      "wallet_transfer_idempotency",
+      "wallet_transfer_operations",
+      "wallet_transfer_outbox",
+      "wallet_transfer_receipt_evidence",
+      "wallet_transfer_reconciliation_cases",
+      "wallet_transfer_replacement_authorizations",
+      "wallet_transfer_transactions",
     ]);
 
     await migrateDown();
@@ -223,6 +232,15 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "users",
       "wallet_address_book_audit_events",
       "wallet_address_book_entries",
+      "wallet_nonce_ledgers",
+      "wallet_transfer_audit_events",
+      "wallet_transfer_idempotency",
+      "wallet_transfer_operations",
+      "wallet_transfer_outbox",
+      "wallet_transfer_receipt_evidence",
+      "wallet_transfer_reconciliation_cases",
+      "wallet_transfer_replacement_authorizations",
+      "wallet_transfer_transactions",
     ]);
 
     const seeded = await fixturePool.query<{ history_count: string; policy_count: string }>(
