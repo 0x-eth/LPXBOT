@@ -1,0 +1,164 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://lpbot.local/schemas/p05-reference-artifacts.schema.json",
+  "title": "LPBot P05-01 execution contract-freeze artifact manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractVersion",
+    "workItemId",
+    "phase",
+    "risk",
+    "status",
+    "featureIds",
+    "capturedAt",
+    "referenceBaseline",
+    "scope",
+    "checksumScope",
+    "files",
+    "references",
+    "checks",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "contractVersion": { "const": "1.0.0" },
+    "workItemId": { "const": "P05-01" },
+    "phase": { "const": "P05" },
+    "risk": { "const": "R0" },
+    "status": { "const": "contract-frozen-with-unresolved-gaps" },
+    "featureIds": { "type": "array", "maxItems": 0 },
+    "capturedAt": { "type": "string", "format": "date-time" },
+    "referenceBaseline": { "const": "1ae85706d4c17c5dbfeebee447a76d069b14c845" },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "implementationOwnership",
+        "productionRegistry",
+        "productionAdapters",
+        "productionHelper",
+        "productionApiRoutes",
+        "productionUi",
+        "databaseChanges",
+        "signerRuntime",
+        "mainnetReadOnlyEvidenceCapture",
+        "ciNetworkAccess",
+        "transactionSignatures",
+        "transactionBroadcasts",
+        "chainWrites",
+        "realFundOperations"
+      ],
+      "properties": {
+        "mode": { "const": "reference-only" },
+        "implementationOwnership": { "const": "none" },
+        "productionRegistry": { "const": false },
+        "productionAdapters": { "const": false },
+        "productionHelper": { "const": false },
+        "productionApiRoutes": { "const": false },
+        "productionUi": { "const": false },
+        "databaseChanges": { "const": false },
+        "signerRuntime": { "const": false },
+        "mainnetReadOnlyEvidenceCapture": { "const": true },
+        "ciNetworkAccess": { "const": false },
+        "transactionSignatures": { "const": 0 },
+        "transactionBroadcasts": { "const": 0 },
+        "chainWrites": { "const": 0 },
+        "realFundOperations": { "const": 0 }
+      }
+    },
+    "checksumScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "excludedSelfReferentialFiles", "priorAcceptance"],
+      "properties": {
+        "algorithm": { "const": "SHA-256" },
+        "excludedSelfReferentialFiles": { "const": ["artifact-manifest.json", "sha256sums.txt"] },
+        "priorAcceptance": { "const": "all baseline P00-P04-07 acceptance files" }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 60,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "bytes", "sha256", "mediaType", "category"],
+        "properties": {
+          "path": { "$ref": "#/definitions/artifactPath" },
+          "bytes": { "type": "integer", "minimum": 1 },
+          "sha256": { "$ref": "#/definitions/sha256" },
+          "mediaType": { "enum": ["application/json", "text/plain"] },
+          "category": { "enum": ["contract", "catalog", "fixture", "check", "integrity"] }
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "commit", "bytes", "sha256", "source", "classification"],
+        "properties": {
+          "path": { "$ref": "#/definitions/repositoryPath" },
+          "commit": { "const": "1ae85706d4c17c5dbfeebee447a76d069b14c845" },
+          "bytes": { "type": "integer", "minimum": 1 },
+          "sha256": { "$ref": "#/definitions/sha256" },
+          "source": { "type": "string", "minLength": 1 },
+          "classification": { "enum": ["OBSERVED", "OFFICIAL", "LOCAL-DECISION", "INFERRED", "UNKNOWN"] }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "result", "evidencePath"],
+        "properties": {
+          "id": {
+            "enum": [
+              "initial-red",
+              "governance-test",
+              "artifact-schema",
+              "prior-acceptance-integrity",
+              "fixture-byte-regression",
+              "quality-gates",
+              "secret-scan",
+              "dependency-audit"
+            ]
+          },
+          "result": { "enum": ["expected-failure", "passed"] },
+          "evidencePath": { "$ref": "#/definitions/artifactPath" }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 8,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "definitions": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "artifactPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!artifact-manifest\\.json$)(?!sha256sums\\.txt$).+$"
+    }
+  }
+}
