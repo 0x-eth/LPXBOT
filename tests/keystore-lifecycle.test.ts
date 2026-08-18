@@ -3,8 +3,14 @@ import {
   InMemoryCustodyWalletStore,
   IsolatedWalletSigner,
   LocalKmsFixture,
+  type RawTransactionDelivery,
+  type WalletTransferPlanAuthorizer,
 } from "../apps/signer/src/index.js";
 import { deriveArgon2idKek } from "../apps/signer/src/password-crypto.js";
+import {
+  walletTransferPlanDigest,
+  type WalletTransferPlan,
+} from "../packages/domain/src/wallet-transfer.js";
 import { describe, expect, it } from "vitest";
 
 const userA = "44000000-0000-4000-8000-000000000001";
@@ -19,6 +25,8 @@ function secret(value: Record<string, unknown>): Buffer {
 function fixture(
   options: {
     derivePasswordKek?: (password: Uint8Array, salt: Uint8Array) => Buffer;
+    rawTransactionDelivery?: RawTransactionDelivery;
+    transferPlanAuthorizer?: WalletTransferPlanAuthorizer;
   } = {},
 ) {
   let wall = Date.parse("2026-08-18T06:00:00.000Z");
@@ -49,8 +57,14 @@ function fixture(
       now: () => new Date(wall),
       onZeroize: (label, bytes) => zeroized.push({ bytes: Uint8Array.from(bytes), label }),
       randomBytes: (length) => Buffer.alloc(length, randomSeed++),
+      ...(options.rawTransactionDelivery
+        ? { rawTransactionDelivery: options.rawTransactionDelivery }
+        : {}),
       signer,
       store,
+      ...(options.transferPlanAuthorizer
+        ? { transferPlanAuthorizer: options.transferPlanAuthorizer }
+        : {}),
       uuid: () => "44000000-0000-4000-8000-000000000099",
     });
   const service = makeService();
@@ -237,6 +251,84 @@ describe("P04-03 user-password lifecycle", () => {
     expect((await service.keystoreStatus(userA, sessionA)).status).toBe("locked");
     expect(zeroized.some(({ label }) => label === "derived-kek")).toBe(true);
     expect(zeroized.every(({ bytes }) => bytes.every((byte) => byte === 0))).toBe(true);
+  });
+
+  it("requires the matching unlock session for plan-bound signing and clears delivered raw bytes", async () => {
+    const deliveredRaw: Uint8Array[] = [];
+    const authorizer: WalletTransferPlanAuthorizer = {
+      authorize: async ({ plan, planDigest }) => walletTransferPlanDigest(plan) === planDigest,
+    };
+    const delivery: RawTransactionDelivery = {
+      async deliver(input) {
+        deliveredRaw.push(input.rawTransaction);
+        return { deliveryId: "anvil-local:session-bound", status: "accepted" };
+      },
+    };
+    const { service } = fixture({
+      rawTransactionDelivery: delivery,
+      transferPlanAuthorizer: authorizer,
+    });
+    const password = "synthetic-password-one";
+    await createPassword(service, userA, password);
+    const wallet = await service.importWallet({
+      ingress: secret({
+        mode: "user-password",
+        name: "Signing fixture",
+        password,
+        privateKey: "0000000000000000000000000000000000000000000000000000000000000001",
+      }),
+      tenantId: "tenant-fixture-01",
+      userId: userA,
+    });
+    await unlock(service, userA, sessionA, password);
+    const plan: WalletTransferPlan = {
+      amountBaseUnit: "1000",
+      asset: { kind: "native" },
+      chainId: 31_337,
+      deadline: "2026-08-18T06:01:00.000Z",
+      feeLimit: {
+        feeCapBaseUnit: "42000",
+        gasLimit: "21000",
+        maxFeePerGasBaseUnit: "2",
+        maxPriorityFeePerGasBaseUnit: "1",
+      },
+      fencingToken: "1",
+      nonce: "0",
+      operationId: "44000000-0000-4000-8000-000000000088",
+      policyDigest: `sha256:${"a".repeat(64)}`,
+      recipient: "0x1111111111111111111111111111111111111111",
+      transactionData: "0x",
+      transactionTarget: "0x1111111111111111111111111111111111111111",
+      transactionValueBaseUnit: "1000",
+      walletAddress: wallet.address.toLowerCase() as `0x${string}`,
+      walletId: wallet.walletId,
+    };
+    const planDigest = walletTransferPlanDigest(plan);
+
+    await expect(
+      service.signWalletTransfer({
+        plan,
+        planDigest,
+        reauthenticatedSessionId: sessionB,
+        tenantId: "tenant-fixture-01",
+        userId: userA,
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
+    const signed = await service.signWalletTransfer({
+      plan,
+      planDigest,
+      reauthenticatedSessionId: sessionA,
+      tenantId: "tenant-fixture-01",
+      userId: userA,
+    });
+    expect(signed).toMatchObject({
+      deliveryId: "anvil-local:session-bound",
+      planDigest,
+      status: "accepted",
+    });
+    expect(JSON.stringify(signed)).not.toContain("rawTransaction");
+    expect(deliveredRaw).toHaveLength(1);
+    expect(deliveredRaw[0]?.every((byte) => byte === 0)).toBe(true);
   });
 
   it("starts locked after signer restart and clears password/KEK buffers on every path", async () => {
