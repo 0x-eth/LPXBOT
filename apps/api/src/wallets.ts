@@ -149,8 +149,8 @@ export function parseGenerateCustodyWalletRequest(value: unknown): GenerateCusto
   }
   if (
     typeof input.name !== "string" ||
-    input.name.length < 1 ||
-    input.name.length > 80 ||
+    [...input.name].length < 1 ||
+    [...input.name].length > 80 ||
     input.name.trim() !== input.name ||
     /\p{Cc}/u.test(input.name)
   ) {
@@ -172,8 +172,8 @@ export function parseRenameCustodyWalletRequest(value: unknown): {
   }
   if (
     typeof input.name !== "string" ||
-    input.name.length < 1 ||
-    input.name.length > 80 ||
+    [...input.name].length < 1 ||
+    [...input.name].length > 80 ||
     input.name.trim() !== input.name ||
     /\p{Cc}/u.test(input.name)
   ) {
@@ -195,8 +195,8 @@ export function publicWalletDto(value: unknown): CustodyWallet {
     typeof wallet.walletId !== "string" ||
     !uuidPattern.test(wallet.walletId) ||
     typeof wallet.name !== "string" ||
-    wallet.name.length < 1 ||
-    wallet.name.length > 80 ||
+    [...wallet.name].length < 1 ||
+    [...wallet.name].length > 80 ||
     typeof wallet.address !== "string" ||
     !addressPattern.test(wallet.address) ||
     (wallet.mode !== "server-kek" && wallet.mode !== "user-password") ||

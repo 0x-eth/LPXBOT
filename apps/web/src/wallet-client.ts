@@ -58,8 +58,8 @@ export function parseCustodyWallet(value: unknown, status = 0): CustodyWallet {
     typeof value.walletId !== "string" ||
     !uuidPattern.test(value.walletId) ||
     typeof value.name !== "string" ||
-    value.name.length < 1 ||
-    value.name.length > 80 ||
+    [...value.name].length < 1 ||
+    [...value.name].length > 80 ||
     typeof value.address !== "string" ||
     !addressPattern.test(value.address) ||
     (value.mode !== "server-kek" && value.mode !== "user-password") ||
