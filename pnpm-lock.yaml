@@ -83,6 +83,9 @@ importers:
       '@lpbot/api-contract':
         specifier: workspace:*
         version: link:../../packages/api-contract
+      '@lpbot/chain-adapters':
+        specifier: workspace:*
+        version: link:../../packages/chain-adapters
       '@lpbot/chain-registry':
         specifier: workspace:*
         version: link:../../packages/chain-registry
@@ -267,6 +270,9 @@ importers:
       '@lpbot/api-contract':
         specifier: workspace:*
         version: link:../../packages/api-contract
+      '@lpbot/chain-adapters':
+        specifier: workspace:*
+        version: link:../../packages/chain-adapters
       '@lpbot/chain-registry':
         specifier: workspace:*
         version: link:../../packages/chain-registry
@@ -279,6 +285,9 @@ importers:
       pg:
         specifier: 8.23.0
         version: 8.23.0
+      viem:
+        specifier: 2.55.16
+        version: 2.55.16(typescript@6.0.3)(zod@4.4.3)
     devDependencies:
       '@types/node':
         specifier: 22.20.1

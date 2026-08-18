@@ -40,6 +40,8 @@ export {
   replacementTransferPlan,
 } from "./wallet-transfer-worker.js";
 export { PostgresWalletTransferRecoveryRepository } from "./postgres-wallet-transfer-recovery.js";
+export { ViemLocalWalletTransferObserver } from "./viem-local-wallet-transfer-observer.js";
+export type { ViemLocalWalletTransferObserverOptions } from "./viem-local-wallet-transfer-observer.js";
 export type {
   WalletTransferBatchResult,
   WalletTransferObservation,
