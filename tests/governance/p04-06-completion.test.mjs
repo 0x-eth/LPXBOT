@@ -40,16 +40,7 @@ const REQUIRED_EVIDENCE = [
   "E-UI",
   "E-VIS",
 ];
-const REQUIRED_TESTS = [
-  "T-API",
-  "T-CHAIN",
-  "T-MIG",
-  "T-REC",
-  "T-SEC",
-  "T-UI",
-  "T-UNIT",
-  "T-VIS",
-];
+const REQUIRED_TESTS = ["T-API", "T-CHAIN", "T-MIG", "T-REC", "T-SEC", "T-UI", "T-UNIT", "T-VIS"];
 
 function digest(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -225,6 +216,9 @@ test("P04-06 screenshots and evidence freeze local-only write execution", async 
   ).then((parts) => parts.join("\n"));
   assert.match(evidence, /public RPC calls[^\n]*0/iu);
   assert.match(evidence, /non-local signing and broadcast calls[^\n]*0/iu);
-  assert.match(evidence, /raw transaction[^\n]*did not enter PostgreSQL, Redis, queues, logs, audit, telemetry/iu);
+  assert.match(
+    evidence,
+    /raw transaction[^\n]*did not enter PostgreSQL, Redis, queues, logs, audit, telemetry/iu,
+  );
   assert.match(evidence, /ready-for-approval/iu);
 });
