@@ -157,7 +157,6 @@ export class LoopbackWalletTransferSignerGateway implements WalletTransferSigner
     try {
       const response = await this.#fetcher(`${this.#url}/v1/wallet-transfers/sign-and-deliver`, {
         body: JSON.stringify({ plan: input.plan, planDigest: input.planDigest }),
-        cache: "no-store",
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${this.#apiToken}`,
@@ -171,7 +170,6 @@ export class LoopbackWalletTransferSignerGateway implements WalletTransferSigner
         },
         method: "POST",
         redirect: "error",
-        referrerPolicy: "no-referrer",
         signal: controller.signal,
       });
       const text = await response.text();

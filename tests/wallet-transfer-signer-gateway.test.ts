@@ -87,7 +87,7 @@ describe("P04-06 loopback wallet transfer signer gateway", () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
     const [url, init] = fetcher.mock.calls[0]!;
     expect(url).toBe("http://127.0.0.1:43210/v1/wallet-transfers/sign-and-deliver");
-    expect(init).toMatchObject({ cache: "no-store", method: "POST", redirect: "error" });
+    expect(init).toMatchObject({ method: "POST", redirect: "error" });
     expect(init?.headers).toMatchObject({
       Authorization: `Bearer ${apiToken}`,
       "Cache-Control": "no-store",
