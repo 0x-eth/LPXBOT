@@ -243,11 +243,9 @@ export class MemoryOkxCredentialRepository implements OkxCredentialRepository {
     ) {
       throw new OkxConnectorError("VERSION_CONFLICT");
     }
-    const nextEpoch =
-      input.status === "testing" ? state.head.capabilityEpoch + 1 : state.head.capabilityEpoch;
     state.head = {
       ...state.head,
-      capabilityEpoch: nextEpoch,
+      capabilityEpoch: state.head.capabilityEpoch + 1,
       status: input.status,
       updatedAt: input.context.now,
     };
@@ -320,6 +318,7 @@ export class MemoryOkxCredentialRepository implements OkxCredentialRepository {
     for (const { head, versions } of this.#states.values()) {
       if (
         head.status === "deleting" ||
+        head.status === "testing" ||
         (head.configured &&
           head.rotationDueAt !== null &&
           head.rotationDueAt.getTime() <= now.getTime())

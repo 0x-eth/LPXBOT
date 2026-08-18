@@ -5,6 +5,7 @@ import { request as httpsRequest } from "node:https";
 
 import { OkxConnectorError } from "./errors.js";
 import type { OkxCredentialBytes, OkxProviderValidation, OkxReadOnlyTransport } from "./types.js";
+import ipaddr from "ipaddr.js";
 
 export const okxProductionEgress = {
   host: "www.okx.com",
@@ -57,19 +58,9 @@ function ipv4Public(address: string): boolean {
 
 function ipv6Public(address: string): boolean {
   const normalized = address.toLowerCase().split("%", 1)[0]!;
-  return !(
-    normalized === "::" ||
-    normalized === "::1" ||
-    normalized.startsWith("fc") ||
-    normalized.startsWith("fd") ||
-    /^fe[89ab]/u.test(normalized) ||
-    normalized.startsWith("ff") ||
-    normalized.startsWith("::ffff:10.") ||
-    normalized.startsWith("::ffff:127.") ||
-    normalized.startsWith("::ffff:169.254.") ||
-    normalized.startsWith("::ffff:172.16.") ||
-    normalized.startsWith("::ffff:192.168.")
-  );
+  const parsed = ipaddr.IPv6.parse(normalized);
+  if (parsed.isIPv4MappedAddress()) return ipv4Public(parsed.toIPv4Address().toString());
+  return parsed.range() === "unicast";
 }
 
 export function isPublicOkxEgressAddress(address: string): boolean {

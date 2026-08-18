@@ -216,6 +216,14 @@ export class OkxCredentialService implements OkxConnectorApplication {
         });
         await this.#audit("delete", context, deleted, true);
         changed += 1;
+      } else if (head.status === "testing") {
+        const unknown = await this.#repository.setStatus({
+          context,
+          expectedVersion: head.version,
+          status: "unknown",
+        });
+        await this.#audit("status-change", context, unknown, true);
+        changed += 1;
       } else if (
         head.rotationDueAt &&
         head.rotationDueAt.getTime() <= now.getTime() &&

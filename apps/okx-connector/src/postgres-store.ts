@@ -353,7 +353,7 @@ export class PostgresOkxCredentialRepository implements OkxCredentialRepository 
       const updated = await client.query<HeadRow>(
         `UPDATE okx_credential_heads
             SET status = $3,
-                capability_epoch = capability_epoch + CASE WHEN $3 = 'testing' THEN 1 ELSE 0 END,
+                capability_epoch = capability_epoch + 1,
                 updated_at = $4
           WHERE user_id = $1 AND active_version = $2
           RETURNING user_id, credential_id, active_version, configured, status,
@@ -477,7 +477,7 @@ export class PostgresOkxCredentialRepository implements OkxCredentialRepository 
         `SELECT user_id, credential_id, active_version, configured, status,
                 capability_epoch, rotation_due_at, updated_at
            FROM okx_credential_heads
-          WHERE status = 'deleting'
+          WHERE status IN ('deleting', 'testing')
              OR (configured AND rotation_due_at <= $1 AND status <> 'revoked')
          UNION ALL
          SELECT h.user_id, h.credential_id, v.version AS active_version,

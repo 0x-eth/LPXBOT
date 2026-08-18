@@ -149,6 +149,14 @@ function CredentialDialog({
   const [secretKey, setSecretKey] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const apiKeyInput = useRef<HTMLInputElement | null>(null);
+  const passphraseInput = useRef<HTMLInputElement | null>(null);
+  const secretKeyInput = useRef<HTMLInputElement | null>(null);
+
+  const clearDomInputs = useCallback(() => {
+    if (apiKeyInput.current) apiKeyInput.current.value = "";
+    if (secretKeyInput.current) secretKeyInput.current.value = "";
+    if (passphraseInput.current) passphraseInput.current.value = "";
+  }, []);
 
   const clear = useCallback(() => {
     setApiKey("");
@@ -156,10 +164,10 @@ function CredentialDialog({
     setPassphrase("");
     setError(null);
     setSubmitting(false);
-    if (apiKeyInput.current) apiKeyInput.current.value = "";
-  }, []);
+    clearDomInputs();
+  }, [clearDomInputs]);
 
-  useEffect(() => clear, [clear]);
+  useEffect(() => () => clearDomInputs(), [clearDomInputs]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -230,8 +238,18 @@ function CredentialDialog({
               onChange={setApiKey}
               value={apiKey}
             />
-            <SecretInput label="Secret Key" onChange={setSecretKey} value={secretKey} />
-            <SecretInput label="Passphrase" onChange={setPassphrase} value={passphrase} />
+            <SecretInput
+              inputRef={secretKeyInput}
+              label="Secret Key"
+              onChange={setSecretKey}
+              value={secretKey}
+            />
+            <SecretInput
+              inputRef={passphraseInput}
+              label="Passphrase"
+              onChange={setPassphrase}
+              value={passphrase}
+            />
             {error ? <p role="alert">{error}</p> : null}
             <div className="wallet-dialog-actions">
               <Dialog.Close asChild>
