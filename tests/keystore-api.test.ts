@@ -178,6 +178,7 @@ describe("P04-03 Keystore API", () => {
       url: "/api/keystore/auto-lock",
     });
     expect(autoLock.statusCode).toBe(200);
+    expect(autoLock.json().data.status).toBe("unlocked");
     const stale = await app.inject({
       headers: { ...auth, "content-type": keystoreMediaType },
       method: "PUT",

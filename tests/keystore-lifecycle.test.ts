@@ -16,7 +16,11 @@ function secret(value: Record<string, unknown>): Buffer {
   return Buffer.from(JSON.stringify(value), "utf8");
 }
 
-function fixture() {
+function fixture(
+  options: {
+    derivePasswordKek?: (password: Uint8Array, salt: Uint8Array) => Buffer;
+  } = {},
+) {
   let wall = Date.parse("2026-08-18T06:00:00.000Z");
   let monotonic = 10_000;
   let randomSeed = 1;
@@ -30,14 +34,16 @@ function fixture() {
   const makeService = () =>
     new CustodySignerService({
       backoffJitter: () => 0,
-      derivePasswordKek: (password, salt) =>
-        deriveArgon2idKek(password, salt, {
-          argonVersion: 19,
-          iterations: 2,
-          memoryKiB: 32,
-          outputBytes: 32,
-          parallelism: 1,
-        }),
+      derivePasswordKek:
+        options.derivePasswordKek ??
+        ((password, salt) =>
+          deriveArgon2idKek(password, salt, {
+            argonVersion: 19,
+            iterations: 2,
+            memoryKiB: 32,
+            outputBytes: 32,
+            parallelism: 1,
+          })),
       keystoreStore: store,
       monotonicNow: () => monotonic,
       now: () => new Date(wall),
@@ -177,6 +183,28 @@ describe("P04-03 user-password lifecycle", () => {
         status: "unlocked",
       },
     );
+    advance(15 * 60_000);
+    await expect(unlock(service, userA, sessionA, "synthetic-password-one")).resolves.toMatchObject(
+      {
+        status: "unlocked",
+      },
+    );
+  });
+
+  it("starts a fresh failure window after 15 minutes", async () => {
+    const { advance, service, store } = fixture();
+    await createPassword(service, userA, "synthetic-password-one");
+    await expect(unlock(service, userA, sessionA, "wrong-password-value")).rejects.toMatchObject({
+      code: "INVALID_CREDENTIALS",
+    });
+    advance(15 * 60_000);
+    await expect(unlock(service, userA, sessionA, "wrong-password-value")).rejects.toMatchObject({
+      code: "INVALID_CREDENTIALS",
+    });
+    await expect(store.getKeystoreFailure(userA, sessionA)).resolves.toMatchObject({
+      failureCount: 1,
+      lockedUntil: null,
+    });
   });
 
   it("binds capabilities to the reauthenticated session and revokes them on manual/auto lock", async () => {
@@ -224,6 +252,21 @@ describe("P04-03 user-password lifecycle", () => {
     await service.shutdown();
     expect(zeroized.some(({ label }) => label === "password")).toBe(true);
     expect(zeroized.some(({ label }) => label === "derived-kek")).toBe(true);
+    expect(zeroized.every(({ bytes }) => bytes.every((byte) => byte === 0))).toBe(true);
+  });
+
+  it("clears ingress, password and partial KEK material when derivation fails", async () => {
+    const partialKek = Buffer.alloc(31, 0xa5);
+    const { service, zeroized } = fixture({ derivePasswordKek: () => partialKek });
+    const ingress = secret({ newPassword: "synthetic-password-one" });
+    await expect(service.createKeystorePassword({ ingress, userId: userA })).rejects.toMatchObject({
+      code: "INVALID_CREDENTIALS",
+    });
+    expect(ingress.every((byte) => byte === 0)).toBe(true);
+    expect(partialKek.every((byte) => byte === 0)).toBe(true);
+    expect(zeroized.map(({ label }) => label)).toEqual(
+      expect.arrayContaining(["password", "derived-kek", "secret-ingress"]),
+    );
     expect(zeroized.every(({ bytes }) => bytes.every((byte) => byte === 0))).toBe(true);
   });
 });
