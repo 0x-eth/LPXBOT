@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P04-06",
+  "phase": "P04",
+  "risk": "R3",
+  "status": "accepted-with-gaps",
+  "featureIds": ["WALLET-10"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "focused wallet transfer domain and strict-client Vitest",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-06/E-API.md"
+    },
+    {
+      "id": "T-API",
+      "command": "real Fastify preview, submit, idempotency, ownership, and get Vitest",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-06/E-API.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "local Anvil native/ERC-20 closure plus Foundry fixture tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-06/E-CHAIN.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "PostgreSQL nonce, restart, timeout, dropped, replacement, reorg, and divergence tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-06/E-REC.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "pnpm test:postgres with all migrations up, down in reverse, and up again",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-06/E-DATA.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "P04-06 desktop/mobile Playwright state and keyboard coverage",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-06/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile screenshots, overflow, focus, live-region, and Axe assertions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-06/E-VIS.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "signer boundary, secret/raw-byte zeroization, full-history Gitleaks, and dependency audit",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P04-06/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P04-06/E-API.md" },
+    { "id": "E-CHAIN", "path": "artifacts/acceptance/P04-06/E-CHAIN.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P04-06/E-REC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P04-06/E-UI.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P04-06/E-SEC.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P04-06/E-DATA.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P04-06/E-RBAC.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P04-06/E-OPS.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P04-06/E-VIS.md" }
+  ],
+  "assumptions": [
+    "Evidence is local-fixture-verified only; WALLET-10 remains implemented-assumed.",
+    "P04 is 11 implemented-assumed and 1 planned; the global state is 60 implemented-assumed and 136 planned.",
+    "All wallets and keys are synthetic; write-chain execution used only loopback Anvil and the local ERC-20 fixture.",
+    "Every non-local write remains ready-for-approval and has zero signing or broadcast activity.",
+    "Passwords and raw transactions are absent from databases, Redis, queues, logs, audit, telemetry, and public responses.",
+    "SET-07, Swap, approve, LP, arbitrary calldata, public RPC, testnet, mainnet, and real funds remain outside this work item.",
+    "Independent signer/security review, production provider/KMS recovery, custody monitoring, and staging rollback drills remain unresolved.",
+    "This accepted-with-gaps work item is not custody-ready, not parity-verified, and not released.",
+    "P00 through P04-05 acceptance files remain byte-identical to fixed baseline bcf7d80035e7884fa390a5d37f30569e637ff4ad."
+  ],
+  "completedAt": "2026-08-18T15:05:00.000Z",
+  "commit": null
+}
