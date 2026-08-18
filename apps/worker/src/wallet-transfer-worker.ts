@@ -491,9 +491,7 @@ export class WalletTransferRecoveryWorker {
           throw new WalletTransferWorkerError("ACTIVE_TRANSACTION_MISSING");
         }
         const transactionLineage =
-          claim.operation.state === "confirmed"
-            ? [active]
-            : claim.operation.transactionLineage;
+          claim.operation.state === "confirmed" ? [active] : claim.operation.transactionLineage;
         const observations = await Promise.all(
           transactionLineage.map(async (transaction) => ({
             observation: await this.#observer.observe({
@@ -590,7 +588,8 @@ export class WalletTransferRecoveryWorker {
       walletTransferPlanDigest(claim.operation.plan) !== claim.operation.planDigest ||
       claim.operation.plan.operationId !== claim.operation.operationId ||
       (claim.operation.state === "queued"
-        ? claim.operation.activeTransaction !== null || claim.operation.transactionLineage.length > 0
+        ? claim.operation.activeTransaction !== null ||
+          claim.operation.transactionLineage.length > 0
         : claim.operation.activeTransaction === null ||
           !lineageIds.has(claim.operation.activeTransaction.transactionId))
     ) {
