@@ -41,7 +41,8 @@ function dependencyList(value: unknown): value is string[] {
   return (
     Array.isArray(value) &&
     value.every(
-      (item) => typeof item === "string" && item.length > 0 && item.length <= 256 && !/\p{Cc}/u.test(item),
+      (item) =>
+        typeof item === "string" && item.length > 0 && item.length <= 256 && !/\p{Cc}/u.test(item),
     ) &&
     new Set(value).size === value.length
   );
@@ -371,10 +372,7 @@ export function createSignerHttpServer(input: {
         return;
       }
       const walletLifecycle = /^\/v1\/wallets\/([0-9a-f-]+)$/iu.exec(request.url ?? "");
-      if (
-        walletLifecycle?.[1] &&
-        (request.method === "PATCH" || request.method === "DELETE")
-      ) {
+      if (walletLifecycle?.[1] && (request.method === "PATCH" || request.method === "DELETE")) {
         body = await readBody(request);
         let parsed: unknown;
         try {

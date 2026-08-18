@@ -1,21 +1,21 @@
 import type { SecurityPasswordStatus } from "@lpbot/api-contract";
 import * as Dialog from "@radix-ui/react-dialog";
-import { KeyRound, LoaderCircle, Pencil, RefreshCw, ShieldAlert, ShieldCheck, X } from "lucide-react";
+import {
+  KeyRound,
+  LoaderCircle,
+  Pencil,
+  RefreshCw,
+  ShieldAlert,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
-import {
-  SecurityPasswordClient,
-  SecurityPasswordRequestError,
-} from "./security-password-client";
+import { SecurityPasswordClient, SecurityPasswordRequestError } from "./security-password-client";
 
 type PasswordAction = "change" | "create";
 type ViewState =
-  | "conflict"
-  | "error"
-  | "loading"
-  | "locked-out"
-  | "ready"
-  | "security-unconfigured";
+  "conflict" | "error" | "loading" | "locked-out" | "ready" | "security-unconfigured";
 
 const statusLabels: Record<SecurityPasswordStatus["status"], string> = {
   "locked-out": "暂时锁定",

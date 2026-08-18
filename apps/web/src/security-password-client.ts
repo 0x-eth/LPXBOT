@@ -1,10 +1,7 @@
 import type { SecurityPasswordStatus, UpdateSecurityPasswordRequest } from "@lpbot/api-contract";
 import { securityPasswordSecretMediaType } from "@lpbot/api-contract";
 
-type SecurityPasswordFetch = (
-  input: RequestInfo | URL,
-  init?: RequestInit,
-) => Promise<Response>;
+type SecurityPasswordFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 interface ErrorEnvelope {
   error?: { code?: unknown; retryable?: unknown };
@@ -44,9 +41,12 @@ export function parseSecurityPasswordStatus(
     typeof value.configured !== "boolean" ||
     !Number.isSafeInteger(value.version) ||
     (value.version as number) < 0 ||
-    (value.status !== "locked-out" && value.status !== "ready" && value.status !== "unconfigured") ||
+    (value.status !== "locked-out" &&
+      value.status !== "ready" &&
+      value.status !== "unconfigured") ||
     (value.configured === false && (value.status !== "unconfigured" || value.version !== 0)) ||
-    (value.configured === true && (value.status === "unconfigured" || (value.version as number) < 1))
+    (value.configured === true &&
+      (value.status === "unconfigured" || (value.version as number) < 1))
   ) {
     throw new SecurityPasswordRequestError(
       "SECURITY_PASSWORD_RESPONSE_INVALID",

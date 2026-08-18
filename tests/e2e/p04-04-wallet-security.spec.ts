@@ -293,7 +293,9 @@ function fixture(): FixtureState {
   };
 }
 
-test("wallet rename is keyboard reachable, revision aware, and restores focus", async ({ page }) => {
+test("wallet rename is keyboard reachable, revision aware, and restores focus", async ({
+  page,
+}) => {
   const state = fixture();
   await install(page, state);
   await page.goto("/wallets");
@@ -408,7 +410,9 @@ test("security password stays separate, clears secrets, and handles errors and c
   const section = page.locator(".security-password-settings");
   await expect(section).toHaveAttribute("data-state", "security-unconfigured");
   await expect(section.getByRole("heading", { name: "安全密码" })).toBeVisible();
-  await expect(page.locator(".keystore-settings").getByRole("heading", { name: "Keystore" })).toBeVisible();
+  await expect(
+    page.locator(".keystore-settings").getByRole("heading", { name: "Keystore" }),
+  ).toBeVisible();
 
   const create = page.getByRole("button", { name: "创建安全密码" });
   await create.focus();

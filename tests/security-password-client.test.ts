@@ -9,10 +9,13 @@ import { describe, expect, it, vi } from "vitest";
 const status: SecurityPasswordStatus = { configured: true, status: "ready", version: 2 };
 
 function success(data: unknown): Response {
-  return new Response(JSON.stringify({ data, requestId: "security-password-client", success: true }), {
-    headers: { "Content-Type": "application/json" },
-    status: 200,
-  });
+  return new Response(
+    JSON.stringify({ data, requestId: "security-password-client", success: true }),
+    {
+      headers: { "Content-Type": "application/json" },
+      status: 200,
+    },
+  );
 }
 
 describe("P04-04 security password browser client", () => {
@@ -23,7 +26,9 @@ describe("P04-04 security password browser client", () => {
       { ...status, status: "unlocked" },
       { configured: false, status: "unconfigured", version: 1 },
     ]) {
-      expect(() => parseSecurityPasswordStatus(malformed)).toThrowError(SecurityPasswordRequestError);
+      expect(() => parseSecurityPasswordStatus(malformed)).toThrowError(
+        SecurityPasswordRequestError,
+      );
     }
   });
 

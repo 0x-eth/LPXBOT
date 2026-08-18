@@ -121,10 +121,7 @@ function dependencyList(value: unknown): value is string[] {
     Array.isArray(value) &&
     value.every(
       (item) =>
-        typeof item === "string" &&
-        item.length > 0 &&
-        item.length <= 256 &&
-        !/\p{Cc}/u.test(item),
+        typeof item === "string" && item.length > 0 && item.length <= 256 && !/\p{Cc}/u.test(item),
     ) &&
     new Set(value).size === value.length
   );

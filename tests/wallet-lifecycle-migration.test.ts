@@ -12,7 +12,9 @@ describe("P04-04 wallet lifecycle and security password migration", () => {
     expect(up).toContain("LOCAL-DECISION");
     expect(up).toContain("CREATE TABLE custody_wallet_delete_previews");
     expect(up).toContain("CREATE TABLE custody_wallet_tombstones");
-    expect(up).toMatch(/preview_token_digest bytea[^\n]+octet_length\(preview_token_digest\) = 32/u);
+    expect(up).toMatch(
+      /preview_token_digest bytea[^\n]+octet_length\(preview_token_digest\) = 32/u,
+    );
     expect(up).toMatch(/expires_at = created_at \+ interval '300 seconds'/u);
     expect(up).toContain("asset_risk_digest");
     expect(up).toContain("force_eligible");

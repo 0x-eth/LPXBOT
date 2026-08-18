@@ -91,9 +91,9 @@ describe("P04-04 PostgreSQL security password lifecycle", () => {
         userId: userA,
       }),
     ).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
-    expect((await new PostgresCustodyWalletStore(pool).getSecurityPassword(userA))!.failureCount).toBe(
-      1,
-    );
+    expect(
+      (await new PostgresCustodyWalletStore(pool).getSecurityPassword(userA))!.failureCount,
+    ).toBe(1);
 
     await first.putSecurityPassword({
       ingress: secret({

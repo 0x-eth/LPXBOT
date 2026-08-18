@@ -138,10 +138,13 @@ describe("P04-04 remote wallet lifecycle adapter", () => {
     const fetcher = vi
       .fn()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ data: { ...wallet, name: "Renamed", revision: 2 }, success: true }), {
-          headers: { "Content-Type": "application/json" },
-          status: 200,
-        }),
+        new Response(
+          JSON.stringify({ data: { ...wallet, name: "Renamed", revision: 2 }, success: true }),
+          {
+            headers: { "Content-Type": "application/json" },
+            status: 200,
+          },
+        ),
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ data: preview, success: true }), {
@@ -171,7 +174,9 @@ describe("P04-04 remote wallet lifecycle adapter", () => {
         walletId: wallet.walletId,
       }),
     ).resolves.toMatchObject({ name: "Renamed", revision: 2 });
-    await expect(client.createWalletDeletePreview(userId, wallet.walletId)).resolves.toEqual(preview);
+    await expect(client.createWalletDeletePreview(userId, wallet.walletId)).resolves.toEqual(
+      preview,
+    );
     await expect(
       client.deleteWallet({
         expectedRevision: 2,
@@ -257,9 +262,7 @@ describe("P04-04 remote security password adapter", () => {
   });
 
   it("verifies through the internal signer port and strictly parses the receipt", async () => {
-    const ingress = Buffer.from(
-      JSON.stringify({ password: "synthetic-security-password" }),
-    );
+    const ingress = Buffer.from(JSON.stringify({ password: "synthetic-security-password" }));
     let transmitted: Uint8Array | null = null;
     const fetcher = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
       transmitted = init?.body as Uint8Array;
@@ -301,14 +304,15 @@ describe("P04-04 remote security password adapter", () => {
   it("fails closed when signer verification returns fields outside the receipt contract", async () => {
     const client = new RemoteWalletSignerClient({
       apiToken,
-      fetcher: vi.fn(async () =>
-        new Response(
-          JSON.stringify({
-            data: { verified: true, verifier: "forbidden", version: 3 },
-            success: true,
-          }),
-          { headers: { "Content-Type": "application/json" }, status: 200 },
-        ),
+      fetcher: vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              data: { verified: true, verifier: "forbidden", version: 3 },
+              success: true,
+            }),
+            { headers: { "Content-Type": "application/json" }, status: 200 },
+          ),
       ) as typeof fetch,
       tenantId,
       url: "http://127.0.0.1:19090",

@@ -158,7 +158,10 @@ export interface SecurityPasswordStore {
 }
 
 export interface SecurityPasswordApplication {
-  putSecurityPassword(input: { ingress: Uint8Array; userId: string }): Promise<SecurityPasswordStatus>;
+  putSecurityPassword(input: {
+    ingress: Uint8Array;
+    userId: string;
+  }): Promise<SecurityPasswordStatus>;
   securityPasswordStatus(userId: string): Promise<SecurityPasswordStatus>;
   verifySecurityPassword(input: {
     ingress: Uint8Array;

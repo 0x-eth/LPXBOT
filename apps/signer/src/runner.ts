@@ -4,10 +4,7 @@ import type { Server } from "node:http";
 import { Pool, type QueryResultRow } from "pg";
 
 import { CustodySignerService } from "./custody-signer-service.js";
-import type {
-  WalletDependencyInventory,
-  WalletTaskCoordinator,
-} from "./custody-types.js";
+import type { WalletDependencyInventory, WalletTaskCoordinator } from "./custody-types.js";
 import { HttpKmsClient } from "./http-kms-client.js";
 import { createSignerHttpServer } from "./http-server.js";
 import { IsolatedWalletSigner } from "./isolated-wallet-signer.js";
@@ -136,9 +133,7 @@ export async function startSignerRuntime(
     const service = new CustodySignerService({
       signer,
       store,
-      ...(dependencies.taskCoordinator
-        ? { taskCoordinator: dependencies.taskCoordinator }
-        : {}),
+      ...(dependencies.taskCoordinator ? { taskCoordinator: dependencies.taskCoordinator } : {}),
       ...(dependencies.walletDependencyInventory
         ? { walletDependencyInventory: dependencies.walletDependencyInventory }
         : {}),

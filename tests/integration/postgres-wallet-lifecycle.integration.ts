@@ -13,11 +13,7 @@ const otherUserId = randomUUID();
 const address = "0x1111111111111111111111111111111111111111" as const;
 const now = new Date("2026-08-18T10:00:00.000Z");
 
-function draft(
-  walletId: string,
-  walletAddress: `0x${string}` = address,
-  ownerId = userId,
-) {
+function draft(walletId: string, walletAddress: `0x${string}` = address, ownerId = userId) {
   return {
     auditAction: "wallet.import" as const,
     envelope: {
@@ -164,7 +160,10 @@ describe("P04-04 PostgreSQL wallet lifecycle", () => {
       userId,
       walletId,
     };
-    const attempts = await Promise.allSettled([store.deleteWallet(commit), store.deleteWallet(commit)]);
+    const attempts = await Promise.allSettled([
+      store.deleteWallet(commit),
+      store.deleteWallet(commit),
+    ]);
     expect(attempts.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
     expect(attempts.filter(({ status }) => status === "rejected")).toHaveLength(1);
 

@@ -189,8 +189,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     this.#onZeroize = input.onZeroize ?? (() => undefined);
     this.#randomBytes = input.randomBytes ?? systemRandomBytes;
     this.#securityPasswordStore =
-      input.securityPasswordStore ??
-      (supportsSecurityPassword(input.store) ? input.store : null);
+      input.securityPasswordStore ?? (supportsSecurityPassword(input.store) ? input.store : null);
     this.#signer = input.signer;
     this.#signerInstance = input.signerInstance ?? randomUUID();
     this.#store = input.store;

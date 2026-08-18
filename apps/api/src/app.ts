@@ -966,8 +966,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       errorCode === "FST_ERR_CTP_BODY_TOO_LARGE" &&
       ((request.method === "POST" &&
         (requestPath === "/api/wallets/import" || requestPath === "/api/wallets/generate")) ||
-        (isKeystoreSecretRequest(request.method, requestPath) ||
-          isSecurityPasswordSecretRequest(request.method, requestPath)))
+        isKeystoreSecretRequest(request.method, requestPath) ||
+        isSecurityPasswordSecretRequest(request.method, requestPath))
     ) {
       reply.header("Cache-Control", "no-store");
       return reply.code(413).send(
@@ -3503,30 +3503,30 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
                             retryable: false,
                             status: 409,
                           }
-                      : code === "WALLET_ADDRESS_EXISTS"
-                        ? {
-                            code,
-                            message: "This address is already managed",
-                            retryable: false,
-                            status: 409,
-                          }
-                        : code === "WALLET_NOT_FOUND"
+                        : code === "WALLET_ADDRESS_EXISTS"
                           ? {
                               code,
-                              message: "The wallet was not found",
+                              message: "This address is already managed",
                               retryable: false,
-                              status: 404,
+                              status: 409,
                             }
-                          : code === "SIGNER_UNAVAILABLE" ||
-                              code === "CUSTODY_STORE_UNAVAILABLE" ||
-                              code === "KEK_VERSION_UNAVAILABLE"
+                          : code === "WALLET_NOT_FOUND"
                             ? {
-                                code: "SIGNER_UNAVAILABLE",
-                                message: "The wallet signer is unavailable",
-                                retryable: true,
-                                status: 503,
+                                code,
+                                message: "The wallet was not found",
+                                retryable: false,
+                                status: 404,
                               }
-                            : null;
+                            : code === "SIGNER_UNAVAILABLE" ||
+                                code === "CUSTODY_STORE_UNAVAILABLE" ||
+                                code === "KEK_VERSION_UNAVAILABLE"
+                              ? {
+                                  code: "SIGNER_UNAVAILABLE",
+                                  message: "The wallet signer is unavailable",
+                                  retryable: true,
+                                  status: 503,
+                                }
+                              : null;
       if (!mapped) return null;
       return reply.code(mapped.status).send(
         createErrorEnvelope({

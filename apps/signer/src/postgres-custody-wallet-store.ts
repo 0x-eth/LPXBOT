@@ -620,12 +620,7 @@ export class PostgresCustodyWalletStore
         `INSERT INTO user_security_passwords (
            user_id, current_version, failure_count, locked_until, created_at, updated_at
          ) VALUES ($1, $2, 0, NULL, $3, $4)`,
-        [
-          password.userId,
-          password.current.version,
-          password.current.createdAt,
-          password.updatedAt,
-        ],
+        [password.userId, password.current.version, password.current.createdAt, password.updatedAt],
       );
       await this.#insertSecurityPasswordVersion(client, password);
       await this.#insertSecurityPasswordAudit(client, {
@@ -657,7 +652,10 @@ export class PostgresCustodyWalletStore
       await client.query("BEGIN");
       await this.#lockSecurityPasswordUser(client, input.next.userId);
       const current = await this.#lockedSecurityPassword(client, input.next.userId);
-      if (!current || integer(current.current_version, "security password version") !== input.expectedVersion) {
+      if (
+        !current ||
+        integer(current.current_version, "security password version") !== input.expectedVersion
+      ) {
         throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
       }
       await this.#insertSecurityPasswordVersion(client, input.next);
@@ -704,7 +702,10 @@ export class PostgresCustodyWalletStore
       await client.query("BEGIN");
       await this.#lockSecurityPasswordUser(client, input.userId);
       const current = await this.#lockedSecurityPassword(client, input.userId);
-      if (!current || integer(current.current_version, "security password version") !== input.version) {
+      if (
+        !current ||
+        integer(current.current_version, "security password version") !== input.version
+      ) {
         throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
       }
       const failureCount = Math.min(input.maxAttempts, current.failure_count + 1);

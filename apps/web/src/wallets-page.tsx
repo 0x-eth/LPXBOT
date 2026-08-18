@@ -945,7 +945,11 @@ function DeletePreviewDialog({
               ) : null}
             </div>
           ) : null}
-          {error ? <p className="wallet-delete-error" role="alert">{error}</p> : null}
+          {error ? (
+            <p className="wallet-delete-error" role="alert">
+              {error}
+            </p>
+          ) : null}
           <div className="wallet-dialog-actions">
             <Dialog.Close asChild>
               <button className="secondary-button" disabled={submitting} type="button">
@@ -1000,7 +1004,11 @@ function DependencyInventory({ preview }: { preview: WalletDeletePreview }) {
       {groups.map(([label, values]) => (
         <div key={label}>
           <strong>{label}</strong>
-          {values.length === 0 ? <span>无</span> : values.map((value) => <code key={value}>{value}</code>)}
+          {values.length === 0 ? (
+            <span>无</span>
+          ) : (
+            values.map((value) => <code key={value}>{value}</code>)
+          )}
         </div>
       ))}
     </div>
@@ -1409,9 +1417,7 @@ export function WalletsPage() {
       <RenameWalletDialog
         client={client}
         key={
-          renamingWallet
-            ? `${renamingWallet.walletId}:${renamingWallet.revision}`
-            : "rename-closed"
+          renamingWallet ? `${renamingWallet.walletId}:${renamingWallet.revision}` : "rename-closed"
         }
         onChanged={(wallet) => {
           changed(wallet);

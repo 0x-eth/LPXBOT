@@ -82,10 +82,12 @@ export interface SecurityPasswordApplication {
 
 export interface WalletDirectory {
   createWalletDeletePreview?(userId: string, walletId: string): Promise<WalletDeletePreview>;
-  deleteWallet?(input: DeleteCustodyWalletRequest & {
-    userId: string;
-    walletId: string;
-  }): Promise<WalletDeletionReceipt>;
+  deleteWallet?(
+    input: DeleteCustodyWalletRequest & {
+      userId: string;
+      walletId: string;
+    },
+  ): Promise<WalletDeletionReceipt>;
   getWallet(userId: string, walletId: string): Promise<CustodyWallet | null>;
   listWallets(userId: string): Promise<CustodyWalletPage>;
   renameWallet?(input: {
@@ -256,7 +258,8 @@ function stringList(value: unknown): value is string[] {
   return (
     Array.isArray(value) &&
     value.every(
-      (item) => typeof item === "string" && item.length > 0 && item.length <= 256 && !/\p{Cc}/u.test(item),
+      (item) =>
+        typeof item === "string" && item.length > 0 && item.length <= 256 && !/\p{Cc}/u.test(item),
     ) &&
     new Set(value).size === value.length
   );
