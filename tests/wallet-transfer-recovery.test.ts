@@ -24,8 +24,11 @@ const now = new Date("2026-08-18T12:00:00.000Z");
 const walletAddress = "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf" as const;
 const recipient = "0x1111111111111111111111111111111111111111" as const;
 const transactionHash = `0x${"a".repeat(64)}` as const;
+const replacementTransactionHash = `0x${"d".repeat(64)}` as const;
 const blockHash = `0x${"b".repeat(64)}` as const;
 const policyDigest = `sha256:${"c".repeat(64)}` as const;
+const originalTransactionId = "54000000-0000-4000-8000-000000000300";
+const replacementTransactionId = "54000000-0000-4000-8000-000000000301";
 
 const plan: WalletTransferPlan = {
   amountBaseUnit: "1000",
@@ -53,31 +56,70 @@ const plan: WalletTransferPlan = {
 function workClaim(
   state: WalletTransferWorkClaim["operation"]["state"] = "pending",
 ): WalletTransferWorkClaim {
+  const activeTransaction =
+    state === "queued"
+      ? null
+      : {
+          generation: 0,
+          maxFeePerGasBaseUnit: "2",
+          maxPriorityFeePerGasBaseUnit: "1",
+          state: state === "reconciling" ? ("pending" as const) : state,
+          transactionHash,
+          transactionId: originalTransactionId,
+          updatedAt: "2026-08-18T11:50:00.000Z",
+        };
   return {
     eventId: "54000000-0000-4000-8000-000000000200",
     leaseToken: "54000000-0000-4000-8000-000000000201",
     operation: {
-      activeTransaction:
-        state === "queued"
-          ? null
-          : {
-              generation: 0,
-              maxFeePerGasBaseUnit: "2",
-              maxPriorityFeePerGasBaseUnit: "1",
-              state: state === "reconciling" ? "pending" : state,
-              transactionHash,
-              transactionId: "54000000-0000-4000-8000-000000000300",
-              updatedAt: "2026-08-18T11:50:00.000Z",
-            },
+      activeTransaction,
       assetKind: "native",
       operationId: plan.operationId,
       plan,
       planDigest: walletTransferPlanDigest(plan),
       state,
       tenantId: "tenant-fixture-01",
+      transactionLineage: activeTransaction
+        ? [
+            {
+              generation: activeTransaction.generation,
+              transactionHash: activeTransaction.transactionHash,
+              transactionId: activeTransaction.transactionId,
+              updatedAt: activeTransaction.updatedAt,
+            },
+          ]
+        : [],
       userId: "54000000-0000-4000-8000-000000000001",
     },
   };
+}
+
+function replacedWorkClaim(): WalletTransferWorkClaim {
+  const claim = workClaim("broadcast");
+  claim.operation.activeTransaction = {
+    generation: 1,
+    maxFeePerGasBaseUnit: "3",
+    maxPriorityFeePerGasBaseUnit: "2",
+    state: "broadcast",
+    transactionHash: replacementTransactionHash,
+    transactionId: replacementTransactionId,
+    updatedAt: "2026-08-18T11:59:00.000Z",
+  };
+  claim.operation.transactionLineage = [
+    {
+      generation: 0,
+      transactionHash,
+      transactionId: originalTransactionId,
+      updatedAt: "2026-08-18T11:50:00.000Z",
+    },
+    {
+      generation: 1,
+      transactionHash: replacementTransactionHash,
+      transactionId: replacementTransactionId,
+      updatedAt: "2026-08-18T11:59:00.000Z",
+    },
+  ];
+  return claim;
 }
 
 function provider(overrides: Record<string, unknown> = {}) {
@@ -306,6 +348,52 @@ describe("P04-06 transfer recovery worker", () => {
     expect(() => replacementTransferPlan({ feeLimit: plan.feeLimit, now, plan })).toThrowError(
       "TRANSFER_REPLACEMENT_FEE_INVALID",
     );
+  });
+
+  it("confirms the historical lineage transaction when it wins the nonce race", async () => {
+    const claim = replacedWorkClaim();
+    const repository = new MemoryRecoveryRepository([claim]);
+    const observer = {
+      observe: vi.fn(async ({ transactionHash: observedHash }: { transactionHash: string }) => ({
+        providers: [
+          provider(
+            observedHash === transactionHash
+              ? {
+                  receipt: {
+                    balanceReconciled: true,
+                    blockCanonical: true,
+                    blockHash,
+                    blockNumber: "10",
+                    from: walletAddress,
+                    nonce: plan.nonce,
+                    receiptStatus: "success",
+                    tokenTransferLogReconciled: true,
+                    transactionHash,
+                    transactionTarget: plan.transactionTarget,
+                  },
+                }
+              : { latestNonce: "4", pendingNonce: "4", transactionFound: false },
+          ),
+        ],
+      })),
+    };
+    const worker = new WalletTransferRecoveryWorker({
+      now: () => now,
+      observer,
+      repository,
+      signer: { signAndDeliver: vi.fn() },
+      workerId: "transfer-worker-fixture",
+    });
+
+    await expect(worker.processBatch()).resolves.toMatchObject({ claimed: 1, observed: 1 });
+    expect(observer.observe).toHaveBeenCalledTimes(2);
+    expect(repository.decisions).toEqual([
+      expect.objectContaining({
+        kind: "receipt",
+        state: "confirmed",
+        transactionId: originalTransactionId,
+      }),
+    ]);
   });
 });
 
