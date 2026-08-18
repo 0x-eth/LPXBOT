@@ -30,6 +30,11 @@ function owner(request: IncomingMessage): { tenantId: string; userId: string } |
     : null;
 }
 
+function reauthenticatedSessionId(request: IncomingMessage): string | null {
+  const value = request.headers["x-lpbot-reauthenticated-session-id"];
+  return typeof value === "string" && uuidPattern.test(value) ? value.toLowerCase() : null;
+}
+
 async function readBody(request: IncomingMessage): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let size = 0;
@@ -39,7 +44,7 @@ async function readBody(request: IncomingMessage): Promise<Buffer> {
       size += bytes.length;
       if (size > bodyLimit) {
         bytes.fill(0);
-        throw new SignerError("INVALID_WALLET");
+        throw new SignerError("REQUEST_TOO_LARGE");
       }
       chunks.push(bytes);
     }
@@ -63,10 +68,22 @@ function send(response: ServerResponse, status: number, body: unknown): void {
 function failure(response: ServerResponse, error: unknown): void {
   const signerError = asSignerError(error);
   const status =
-    signerError.code === "INVALID_MODE" ||
+    signerError.code === "REQUEST_TOO_LARGE"
+      ? 413
+      : signerError.code === "INVALID_MODE" ||
     signerError.code === "INVALID_PRIVATE_KEY" ||
     signerError.code === "INVALID_WALLET"
       ? 400
+      : signerError.code === "INVALID_CREDENTIALS"
+        ? 401
+        : signerError.code === "LOCKED_OUT"
+          ? 429
+          : signerError.code === "SECRET_VERSION_CONFLICT" ||
+              signerError.code === "REVISION_CONFLICT" ||
+              signerError.code === "PASSWORD_ALREADY_CONFIGURED" ||
+              signerError.code === "PREVIEW_EXPIRED" ||
+              signerError.code === "PREVIEW_CHANGED"
+            ? 409
       : signerError.code === "WALLET_ADDRESS_EXISTS"
         ? 409
         : signerError.code === "WALLET_NOT_FOUND"
@@ -95,7 +112,16 @@ export function createSignerHttpServer(input: {
     }
     if (request.method === "GET" && request.url === "/health") {
       send(response, 200, {
-        data: { capabilities: ["import", "generate", "seal", "open-verify"], ready: true },
+        data: {
+          capabilities: [
+            "import",
+            "generate",
+            "seal",
+            "open-verify",
+            "password-reseal",
+          ],
+          ready: true,
+        },
         success: true,
       });
       return;
@@ -108,6 +134,106 @@ export function createSignerHttpServer(input: {
     let body: Buffer | null = null;
     let importAcquired = false;
     try {
+      const sessionId = reauthenticatedSessionId(request);
+      if (request.method === "GET" && request.url === "/v1/keystore/status") {
+        if (!sessionId) throw new SignerError("INVALID_WALLET");
+        const status = await input.service.keystoreStatus(ownership.userId, sessionId);
+        send(response, 200, { data: status, success: true });
+        return;
+      }
+      if (request.method === "POST" && request.url === "/v1/keystore/lock") {
+        const status = await input.service.lockKeystore(ownership.userId);
+        send(response, 200, { data: status, success: true });
+        return;
+      }
+      if (request.method === "GET" && request.url === "/v1/keystore/reset-preview") {
+        const preview = await input.service.createKeystoreResetPreview(ownership.userId);
+        send(response, 200, { data: preview, success: true });
+        return;
+      }
+      const secretKeystorePath =
+        request.url === "/v1/keystore/unlock" ||
+        request.url === "/v1/keystore/password" ||
+        request.url === "/v1/keystore/reset" ||
+        /^\/v1\/wallets\/[0-9a-f-]+\/encryption-mode$/iu.test(request.url ?? "");
+      if (
+        secretKeystorePath &&
+        (request.method === "POST" || request.method === "PUT") &&
+        request.headers["content-type"]?.split(";", 1)[0] !==
+          "application/vnd.lpbot.keystore-secret+json"
+      ) {
+        send(response, 415, {
+          error: { code: "UNSUPPORTED_MEDIA_TYPE", retryable: false },
+          success: false,
+        });
+        return;
+      }
+      if (request.method === "POST" && request.url === "/v1/keystore/unlock") {
+        if (!sessionId) throw new SignerError("INVALID_WALLET");
+        body = await readBody(request);
+        const status = await input.service.unlockKeystore({
+          ingress: body,
+          reauthenticatedSessionId: sessionId,
+          userId: ownership.userId,
+        });
+        send(response, 200, { data: status, success: true });
+        return;
+      }
+      if (
+        (request.method === "POST" || request.method === "PUT") &&
+        request.url === "/v1/keystore/password"
+      ) {
+        body = await readBody(request);
+        const status =
+          request.method === "POST"
+            ? await input.service.createKeystorePassword({
+                ingress: body,
+                userId: ownership.userId,
+              })
+            : await input.service.changeKeystorePassword({
+                ingress: body,
+                userId: ownership.userId,
+              });
+        send(response, 200, { data: status, success: true });
+        return;
+      }
+      if (request.method === "PATCH" && request.url === "/v1/keystore/auto-lock") {
+        body = await readBody(request);
+        const parsed = JSON.parse(body.toString("utf8")) as unknown;
+        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+          throw new SignerError("INVALID_AUTO_LOCK");
+        }
+        const value = parsed as Record<string, unknown>;
+        const status = await input.service.updateKeystoreAutoLock({
+          expectedVersion: Number(value.expectedVersion),
+          minutes: Number(value.minutes),
+          userId: ownership.userId,
+        });
+        send(response, 200, { data: status, success: true });
+        return;
+      }
+      if (request.method === "POST" && request.url === "/v1/keystore/reset") {
+        body = await readBody(request);
+        const status = await input.service.resetKeystore({
+          ingress: body,
+          userId: ownership.userId,
+        });
+        send(response, 202, { data: status, success: true });
+        return;
+      }
+      const modeSwitch = /^\/v1\/wallets\/([0-9a-f-]+)\/encryption-mode$/iu.exec(
+        request.url ?? "",
+      );
+      if (request.method === "POST" && modeSwitch?.[1]) {
+        body = await readBody(request);
+        const wallet = await input.service.changeWalletEncryptionMode({
+          ingress: body,
+          ...ownership,
+          walletId: modeSwitch[1].toLowerCase(),
+        });
+        send(response, 202, { data: wallet, success: true });
+        return;
+      }
       if (request.method === "POST" && request.url === "/v1/wallets/import") {
         if (
           request.headers["content-type"]?.split(";", 1)[0] !==
@@ -135,6 +261,17 @@ export function createSignerHttpServer(input: {
       }
       if (request.method === "POST" && request.url === "/v1/wallets/generate") {
         body = await readBody(request);
+        const mediaType = request.headers["content-type"]?.split(";", 1)[0];
+        if (mediaType === "application/vnd.lpbot.wallet-secret+json") {
+          const wallet = await input.service.generateWallet({
+            ingress: body,
+            mode: "user-password",
+            name: "secret-ingress",
+            ...ownership,
+          });
+          send(response, 201, { data: wallet, success: true });
+          return;
+        }
         const parsed = JSON.parse(body.toString("utf8")) as unknown;
         if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
           throw new SignerError("INVALID_WALLET");
