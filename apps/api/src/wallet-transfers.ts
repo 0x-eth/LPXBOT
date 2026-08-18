@@ -244,16 +244,27 @@ function cloneOperation(operation: StoredWalletTransferOperation): StoredWalletT
 }
 
 function publicOperation(operation: StoredWalletTransferOperation): WalletTransferOperation {
-  const {
-    fencingToken: _fencingToken,
-    plan: _plan,
-    reauthenticatedSessionId: _reauthenticatedSessionId,
-    requestHash: _requestHash,
-    securityPasswordVersion: _securityPasswordVersion,
-    userId: _userId,
-    ...value
-  } = cloneOperation(operation);
-  return value;
+  const value = cloneOperation(operation);
+  return {
+    activeTransactionId: value.activeTransactionId,
+    addressClassification: value.addressClassification,
+    amountBaseUnit: value.amountBaseUnit,
+    asset: value.asset,
+    chainId: value.chainId,
+    createdAt: value.createdAt,
+    failureCode: value.failureCode,
+    feeLimit: value.feeLimit,
+    nonce: value.nonce,
+    operationId: value.operationId,
+    planDigest: value.planDigest,
+    policyDigest: value.policyDigest,
+    recipient: value.recipient,
+    reconciliationReason: value.reconciliationReason,
+    state: value.state,
+    transactions: value.transactions,
+    updatedAt: value.updatedAt,
+    walletId: value.walletId,
+  };
 }
 
 function operationScope(input: {

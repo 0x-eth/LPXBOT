@@ -1,6 +1,7 @@
 import {
   walletTransferSecretMediaType,
   type CustodyWallet,
+  type WalletTransferAddressClassification,
 } from "../packages/api-contract/src/index.js";
 import {
   buildApiApp,
@@ -12,7 +13,6 @@ import {
   type ChainAccessPolicyView,
   type SecurityPasswordApplication,
   type WalletDirectory,
-  type WalletTransferAddressClassification,
 } from "../apps/api/src/index.js";
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -161,7 +161,7 @@ function auth(token: string) {
   return { cookie: `lpbot_session=${token}` };
 }
 
-function previewPayload(recipient = recipientA, amountBaseUnit = "100") {
+function previewPayload(recipient: string = recipientA, amountBaseUnit = "100") {
   return {
     amount: { amountBaseUnit, kind: "exact" },
     asset: { kind: "native" },

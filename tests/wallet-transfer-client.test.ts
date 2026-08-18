@@ -12,8 +12,8 @@ const operationId = "5a000000-0000-4000-8000-000000000021";
 const transactionId = "5a000000-0000-4000-8000-000000000031";
 const recipient = "0x2222222222222222222222222222222222222222";
 const tokenAddress = "0x3333333333333333333333333333333333333333";
-const digest = `sha256:${"ab".repeat(32)}`;
-const policyDigest = `sha256:${"cd".repeat(32)}`;
+const digest: `sha256:${string}` = `sha256:${"ab".repeat(32)}`;
+const policyDigest: `sha256:${string}` = `sha256:${"cd".repeat(32)}`;
 
 const feeLimit = {
   feeCapBaseUnit: "2100000",
