@@ -217,7 +217,7 @@ describe("P04-05 PostgreSQL wallet asset and address-book stores", () => {
         `INSERT INTO wallet_address_book_entries (
            user_id, chain_id, canonical_address, label, note, category, created_at, updated_at
          ) VALUES ($1, 56, $2, 'Invalid', '', 'person', $3, $3)`,
-        [userA, addressA.toUpperCase().replace("0X", "0x"), now],
+        [userA, "0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", now],
       ),
     ).rejects.toMatchObject({ code: "23514" });
 
