@@ -111,6 +111,92 @@ describe("P04-02 API wallet adapters", () => {
   });
 });
 
+describe("P04-04 remote wallet lifecycle adapter", () => {
+  it("forwards rename, preview, and deletion through owner-scoped no-store requests", async () => {
+    const preview = {
+      assetCount: 0,
+      assetRiskDigest: "sha256:remote-empty",
+      confirmationPhrase: "DELETE WALLET 1234ABCD",
+      dependencies: { assetIds: [], policyIds: [], positionIds: [], taskIds: [] },
+      expiresAt: "2026-08-18T05:05:00.000Z",
+      forceEligible: true,
+      policyCount: 0,
+      positionCount: 0,
+      previewToken: "A".repeat(43),
+      revision: 2,
+      taskCount: 0,
+      walletId: wallet.walletId,
+    };
+    const receipt = {
+      address: wallet.address,
+      auditId: "52",
+      deletedAt: "2026-08-18T05:01:00.000Z",
+      deletionType: "normal",
+      finalRevision: 3,
+      walletId: wallet.walletId,
+    };
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { ...wallet, name: "Renamed", revision: 2 }, success: true }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: preview, success: true }), {
+          headers: { "Content-Type": "application/json" },
+          status: 201,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: receipt, success: true }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        }),
+      );
+    const client = new RemoteWalletSignerClient({
+      apiToken,
+      fetcher: fetcher as typeof fetch,
+      tenantId,
+      url: "http://127.0.0.1:19090",
+    });
+
+    await expect(
+      client.renameWallet({
+        expectedRevision: 1,
+        name: "Renamed",
+        updatedAt: new Date("2026-08-18T05:01:00.000Z"),
+        userId,
+        walletId: wallet.walletId,
+      }),
+    ).resolves.toMatchObject({ name: "Renamed", revision: 2 });
+    await expect(client.createWalletDeletePreview(userId, wallet.walletId)).resolves.toEqual(preview);
+    await expect(
+      client.deleteWallet({
+        expectedRevision: 2,
+        force: false,
+        previewToken: preview.previewToken,
+        userId,
+        walletId: wallet.walletId,
+      }),
+    ).resolves.toEqual(receipt);
+
+    expect(fetcher.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
+      `/v1/wallets/${wallet.walletId}`,
+      `/v1/wallets/${wallet.walletId}/delete-preview`,
+      `/v1/wallets/${wallet.walletId}`,
+    ]);
+    expect(fetcher.mock.calls.map(([, init]) => init?.method)).toEqual(["PATCH", "POST", "DELETE"]);
+    for (const [, init] of fetcher.mock.calls) {
+      expect(init?.headers).toMatchObject({
+        "Cache-Control": "no-store",
+        "X-LPBOT-User-Id": userId,
+      });
+    }
+  });
+});
+
 describe("P04-03 remote keystore adapter", () => {
   it("sends a secret once with no-store session binding and clears only its transport copy", async () => {
     const ingress = Buffer.from(JSON.stringify({ password: "synthetic-password-fixture" }));
