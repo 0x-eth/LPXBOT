@@ -204,6 +204,40 @@ describe("P04-06 wallet transfer domain", () => {
     expect(token).toMatchObject({ amountBaseUnit: "750000", asset: { symbol: "FIX" } });
   });
 
+  it("classifies another owned wallet without treating it as a self-transfer", async () => {
+    const { service } = fixture({ classification: "own-wallet" });
+    await expect(
+      service.preview({
+        request: {
+          amount: { amountBaseUnit: "100", kind: "exact" },
+          asset: { kind: "native" },
+          chainId: 31_337,
+          recipient,
+          walletId,
+        },
+        userId,
+        wallet,
+      }),
+    ).resolves.toMatchObject({
+      addressClassification: "own-wallet",
+      requiresSecurityPassword: false,
+    });
+
+    await expect(
+      service.preview({
+        request: {
+          amount: { amountBaseUnit: "100", kind: "exact" },
+          asset: { kind: "native" },
+          chainId: 31_337,
+          recipient: wallet.address.toLowerCase() as EvmAddress,
+          walletId,
+        },
+        userId,
+        wallet,
+      }),
+    ).rejects.toMatchObject({ code: "TRANSFER_SELF_FORBIDDEN" });
+  });
+
   it("creates one queued operation for same-key retries and detects changed requests", async () => {
     const { operations, service } = fixture();
     const preview = await service.preview({

@@ -929,7 +929,6 @@ export class WalletTransferService implements WalletTransferApplication {
       }),
       this.#resolveAsset(request.asset, request.chainId, input.userId, request.walletId),
     ]);
-    if (classification === "own-wallet") throw new WalletTransferError("TRANSFER_SELF_FORBIDDEN");
     const state = await this.#chain.readAssetState({
       asset: request.asset,
       chainId: request.chainId,
