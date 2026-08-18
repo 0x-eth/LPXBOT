@@ -63,6 +63,7 @@ import { parsePoolActionIntent } from "./pool-actions";
 import { PwaUpdateBridge } from "./pwa-updates";
 import { PoolsPage } from "./pools-page";
 import { InterfaceSettings } from "./settings-interface";
+import { KeystoreSettings } from "./keystore-settings";
 import { MonitorsPage } from "./monitors-page";
 import { NotificationSettings } from "./notification-settings";
 import { ShellStatsContextProvider, ShellStatusBar, useShellStats } from "./shell-stats-react";
@@ -396,6 +397,7 @@ function SettingsPage({ client, session }: { client: AuthClient; session: Sessio
         <span className="sr-only">Settings</span>
       </h1>
       <InterfaceSettings />
+      <KeystoreSettings />
       <NotificationSettings />
       <LoginWalletSettingsSection client={client} />
       {session.role === "admin" ? <AdminChainManagementSection /> : null}
