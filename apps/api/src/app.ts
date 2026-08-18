@@ -3536,6 +3536,222 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       return false;
     };
 
+    const keystoreUnavailable = (request: FastifyRequest, reply: FastifyReply) =>
+      reply.code(503).send(
+        createErrorEnvelope({
+          code: "SIGNER_UNAVAILABLE",
+          message: "The Keystore signer is unavailable",
+          requestId: request.id,
+          retryable: true,
+        }),
+      );
+
+    app.get("/api/keystore/status", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.keystore) return keystoreUnavailable(request, reply);
+      try {
+        const status = await options.keystore.keystoreStatus(session.userId, session.id);
+        return createSuccessEnvelope(publicKeystoreStatus(status), request.id);
+      } catch (error) {
+        return walletFailure(error, request, reply) ?? keystoreUnavailable(request, reply);
+      }
+    });
+
+    app.post(
+      "/api/keystore/unlock",
+      { bodyLimit: keystoreSecretBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const ingress = Buffer.isBuffer(request.body) ? request.body : null;
+        try {
+          const session = await authenticateSessionRequest(request, reply);
+          if (!session) return reply;
+          if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+          if (!ingress) return reply.code(415).send(createErrorEnvelope({
+            code: "UNSUPPORTED_MEDIA_TYPE",
+            message: "Keystore unlock requires the dedicated secret ingress",
+            requestId: request.id,
+            retryable: false,
+          }));
+          if (!options.keystore) return keystoreUnavailable(request, reply);
+          const status = await options.keystore.unlockKeystore({
+            ingress,
+            reauthenticatedSessionId: session.id,
+            userId: session.userId,
+          });
+          return createSuccessEnvelope(publicKeystoreStatus(status), request.id);
+        } catch (error) {
+          return walletFailure(error, request, reply) ?? keystoreUnavailable(request, reply);
+        } finally {
+          ingress?.fill(0);
+        }
+      },
+    );
+
+    app.post("/api/keystore/lock", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.keystore) return keystoreUnavailable(request, reply);
+      try {
+        return createSuccessEnvelope(
+          publicKeystoreStatus(await options.keystore.lockKeystore(session.userId)),
+          request.id,
+        );
+      } catch (error) {
+        return walletFailure(error, request, reply) ?? keystoreUnavailable(request, reply);
+      }
+    });
+
+    app.patch("/api/keystore/auto-lock", { bodyLimit: 16_384 }, async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.keystore) return keystoreUnavailable(request, reply);
+      const body = request.body;
+      if (
+        typeof body !== "object" ||
+        body === null ||
+        Array.isArray(body) ||
+        Object.keys(body).sort().join(",") !== "expectedVersion,minutes"
+      ) {
+        return reply.code(400).send(createErrorEnvelope({
+          code: "INVALID_AUTO_LOCK",
+          message: "The auto-lock request is invalid",
+          requestId: request.id,
+          retryable: false,
+        }));
+      }
+      try {
+        const value = body as Record<string, unknown>;
+        const status = await options.keystore.updateKeystoreAutoLock({
+          expectedVersion: Number(value.expectedVersion),
+          minutes: Number(value.minutes),
+          userId: session.userId,
+        });
+        return createSuccessEnvelope(publicKeystoreStatus(status), request.id);
+      } catch (error) {
+        return walletFailure(error, request, reply) ?? keystoreUnavailable(request, reply);
+      }
+    });
+
+    const mutateKeystorePassword = async (
+      mode: "create" | "change",
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ) => {
+      reply.header("Cache-Control", "no-store");
+      const ingress = Buffer.isBuffer(request.body) ? request.body : null;
+      try {
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+        if (!ingress) return reply.code(415).send(createErrorEnvelope({
+          code: "UNSUPPORTED_MEDIA_TYPE",
+          message: "Password mutation requires the dedicated secret ingress",
+          requestId: request.id,
+          retryable: false,
+        }));
+        if (!options.keystore) return keystoreUnavailable(request, reply);
+        const status =
+          mode === "create"
+            ? await options.keystore.createKeystorePassword({ ingress, userId: session.userId })
+            : await options.keystore.changeKeystorePassword({ ingress, userId: session.userId });
+        return createSuccessEnvelope(publicKeystoreStatus(status), request.id);
+      } catch (error) {
+        return walletFailure(error, request, reply) ?? keystoreUnavailable(request, reply);
+      } finally {
+        ingress?.fill(0);
+      }
+    };
+
+    app.post(
+      "/api/keystore/password",
+      { bodyLimit: keystoreSecretBodyLimit },
+      (request, reply) => mutateKeystorePassword("create", request, reply),
+    );
+    app.put(
+      "/api/keystore/password",
+      { bodyLimit: keystoreSecretBodyLimit },
+      (request, reply) => mutateKeystorePassword("change", request, reply),
+    );
+
+    app.get("/api/keystore/reset-preview", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.keystore) return keystoreUnavailable(request, reply);
+      try {
+        const preview = await options.keystore.createKeystoreResetPreview(session.userId);
+        return createSuccessEnvelope(publicKeystoreResetPreview(preview), request.id);
+      } catch (error) {
+        return walletFailure(error, request, reply) ?? keystoreUnavailable(request, reply);
+      }
+    });
+
+    app.post(
+      "/api/keystore/reset",
+      { bodyLimit: keystoreSecretBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const ingress = Buffer.isBuffer(request.body) ? request.body : null;
+        try {
+          const session = await authenticateSessionRequest(request, reply);
+          if (!session) return reply;
+          if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+          if (!ingress) return reply.code(415).send(createErrorEnvelope({
+            code: "UNSUPPORTED_MEDIA_TYPE",
+            message: "Keystore reset requires the dedicated secret ingress",
+            requestId: request.id,
+            retryable: false,
+          }));
+          if (!options.keystore) return keystoreUnavailable(request, reply);
+          const status = await options.keystore.resetKeystore({ ingress, userId: session.userId });
+          return reply
+            .code(202)
+            .send(createSuccessEnvelope(publicKeystoreStatus(status), request.id));
+        } catch (error) {
+          return walletFailure(error, request, reply) ?? keystoreUnavailable(request, reply);
+        } finally {
+          ingress?.fill(0);
+        }
+      },
+    );
+
+    app.post<{ Params: { walletId: string } }>(
+      "/api/wallets/:walletId/encryption-mode",
+      { bodyLimit: keystoreSecretBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const ingress = Buffer.isBuffer(request.body) ? request.body : null;
+        try {
+          const session = await authenticateSessionRequest(request, reply);
+          if (!session) return reply;
+          if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+          if (!ingress) return reply.code(415).send(createErrorEnvelope({
+            code: "UNSUPPORTED_MEDIA_TYPE",
+            message: "Mode switching requires the dedicated secret ingress",
+            requestId: request.id,
+            retryable: false,
+          }));
+          if (!options.keystore || !options.tenantId) return keystoreUnavailable(request, reply);
+          const wallet = await options.keystore.changeWalletEncryptionMode({
+            ingress,
+            tenantId: options.tenantId,
+            userId: session.userId,
+            walletId: parseWalletId(request.params.walletId),
+          });
+          return reply.code(202).send(createSuccessEnvelope(publicWalletDto(wallet), request.id));
+        } catch (error) {
+          return walletFailure(error, request, reply) ?? keystoreUnavailable(request, reply);
+        } finally {
+          ingress?.fill(0);
+        }
+      },
+    );
+
     app.get("/api/wallets", async (request, reply) => {
       reply.header("Cache-Control", "no-store");
       const session = await authenticateSessionRequest(request, reply);
@@ -3661,6 +3877,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
 
     app.post("/api/wallets/generate", { bodyLimit: 16_384 }, async (request, reply) => {
       reply.header("Cache-Control", "no-store");
+      const ingress = Buffer.isBuffer(request.body) ? request.body : null;
       const session = await authenticateSessionRequest(request, reply);
       if (!session) return reply;
       if (!(await requireFreshReauthentication(request, reply, session))) return reply;
@@ -3675,7 +3892,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         );
       }
       try {
-        const input = parseGenerateCustodyWalletRequest(request.body);
+        const input = ingress
+          ? { ingress, mode: "user-password" as const, name: "secret-ingress" }
+          : parseGenerateCustodyWalletRequest(request.body);
         const wallet = await options.walletSigner.generateWallet({
           ...input,
           tenantId: options.tenantId,
@@ -3686,6 +3905,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         const response = walletFailure(error, request, reply);
         if (response) return response;
         throw error;
+      } finally {
+        ingress?.fill(0);
       }
     });
 
