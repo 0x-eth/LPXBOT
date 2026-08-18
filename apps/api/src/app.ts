@@ -690,6 +690,24 @@ function parseWalletTokenImport(value: unknown): { chainId: number; tokenAddress
   return { chainId: Number(value.chainId), tokenAddress: value.tokenAddress };
 }
 
+function parseAddressBookQuery(value: unknown): { address?: string; chainId: number } | null {
+  if (
+    !isPlainRecord(value) ||
+    Object.keys(value).some((key) => key !== "address" && key !== "chainId")
+  ) {
+    return null;
+  }
+  const chainId = parsePositiveChainId(value.chainId);
+  if (
+    !chainId ||
+    (value.address !== undefined &&
+      (typeof value.address !== "string" || value.address.length > 42))
+  ) {
+    return null;
+  }
+  return { chainId, ...(value.address === undefined ? {} : { address: value.address }) };
+}
+
 function parseChainAccessUpdateBody(value: unknown) {
   if (!isPlainRecord(value)) throw new ChainPolicyStoreError("CONFIG_INVALID");
   const topLevelKeys = Object.keys(value).sort();
