@@ -192,7 +192,11 @@ export interface WalletTransferCreateInput {
   userId: string;
   walletAddress: EvmAddress;
   walletId: string;
-  buildPlan(input: { fencingToken: string; nonce: string; operationId: string }): WalletTransferPlan;
+  buildPlan(input: {
+    fencingToken: string;
+    nonce: string;
+    operationId: string;
+  }): WalletTransferPlan;
 }
 
 export type WalletTransferCreateResult =
@@ -207,7 +211,10 @@ export interface WalletTransferOperationStore {
     userId: string;
     walletId: string;
   }): Promise<WalletTransferIdempotencyRecord | null>;
-  get(input: { operationId: string; userId: string }): Promise<StoredWalletTransferOperation | null>;
+  get(input: {
+    operationId: string;
+    userId: string;
+  }): Promise<StoredWalletTransferOperation | null>;
 }
 
 interface StoredPreview {
@@ -261,7 +268,8 @@ export interface MemoryWalletTransferOutboxEvent {
   aggregateId: string;
   createdAt: string;
   eventId: string;
-  eventType: "wallet-transfer.queued" | "wallet-transfer.ready-for-approval" | "wallet-transfer.reconciling";
+  eventType:
+    "wallet-transfer.queued" | "wallet-transfer.ready-for-approval" | "wallet-transfer.reconciling";
   payload: {
     chainId: number;
     operationId: string;
@@ -278,7 +286,10 @@ interface MemoryNonceLedger {
 
 export class MemoryWalletTransferOperationStore implements WalletTransferOperationStore {
   readonly outbox: MemoryWalletTransferOutboxEvent[] = [];
-  readonly #idempotency = new Map<string, { operationId: string; requestHash: `sha256:${string}` }>();
+  readonly #idempotency = new Map<
+    string,
+    { operationId: string; requestHash: `sha256:${string}` }
+  >();
   readonly #ledgers = new Map<string, MemoryNonceLedger>();
   readonly #now: () => Date;
   readonly #operations = new Map<string, StoredWalletTransferOperation>();
@@ -492,7 +503,10 @@ function transferAmount(value: unknown): WalletTransferAmount {
   const input = plainRecord(value);
   if (input.kind === "exact" && exactKeys(input, ["amountBaseUnit", "kind"])) {
     try {
-      return { amountBaseUnit: canonicalBaseUnit(input.amountBaseUnit, { positive: true }), kind: "exact" };
+      return {
+        amountBaseUnit: canonicalBaseUnit(input.amountBaseUnit, { positive: true }),
+        kind: "exact",
+      };
     } catch (error) {
       throw new WalletTransferError("TRANSFER_AMOUNT_INVALID", false, { cause: error });
     }
@@ -500,7 +514,10 @@ function transferAmount(value: unknown): WalletTransferAmount {
   if (
     input.kind === "preset" &&
     exactKeys(input, ["kind", "preset"]) &&
-    (input.preset === "25" || input.preset === "50" || input.preset === "75" || input.preset === "MAX")
+    (input.preset === "25" ||
+      input.preset === "50" ||
+      input.preset === "75" ||
+      input.preset === "MAX")
   ) {
     return { kind: "preset", preset: input.preset };
   }
@@ -543,7 +560,9 @@ export function parseWalletTransferSubmit(value: unknown): ParsedWalletTransferS
   let parsed = value;
   if (value instanceof Uint8Array) {
     try {
-      parsed = JSON.parse(Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString("utf8"));
+      parsed = JSON.parse(
+        Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString("utf8"),
+      );
     } catch (error) {
       throw new WalletTransferError("PREVIEW_INVALID", false, { cause: error });
     }
@@ -604,7 +623,8 @@ function feeLimit(value: WalletTransferFeeLimit): WalletTransferFeeLimit {
     };
     if (
       BigInt(parsed.maxPriorityFeePerGasBaseUnit) > BigInt(parsed.maxFeePerGasBaseUnit) ||
-      BigInt(parsed.gasLimit) * BigInt(parsed.maxFeePerGasBaseUnit) !== BigInt(parsed.feeCapBaseUnit)
+      BigInt(parsed.gasLimit) * BigInt(parsed.maxFeePerGasBaseUnit) !==
+        BigInt(parsed.feeCapBaseUnit)
     ) {
       throw new RangeError("fee mismatch");
     }
@@ -675,8 +695,12 @@ export class WalletTransferService implements WalletTransferApplication {
     this.#operations = input.operations;
     this.#policies = input.policies;
     this.#previews = input.previews;
-    this.#previewTtlMilliseconds = input.previewTtlMilliseconds ?? walletTransferPreviewTtlMilliseconds;
-    if (!Number.isSafeInteger(this.#previewTtlMilliseconds) || this.#previewTtlMilliseconds < 1_000) {
+    this.#previewTtlMilliseconds =
+      input.previewTtlMilliseconds ?? walletTransferPreviewTtlMilliseconds;
+    if (
+      !Number.isSafeInteger(this.#previewTtlMilliseconds) ||
+      this.#previewTtlMilliseconds < 1_000
+    ) {
       throw new RangeError("previewTtlMilliseconds must be at least one second");
     }
     this.#randomBytes = input.randomBytes ?? systemRandomBytes;
@@ -788,7 +812,11 @@ export class WalletTransferService implements WalletTransferApplication {
           ingress: passwordIngress,
           userId: input.userId,
         });
-        if (verified.verified !== true || !Number.isSafeInteger(verified.version) || verified.version < 1) {
+        if (
+          verified.verified !== true ||
+          !Number.isSafeInteger(verified.version) ||
+          verified.version < 1
+        ) {
           throw new WalletTransferError("TRANSFER_UNAVAILABLE", true);
         }
         securityPasswordVersion = verified.version;
@@ -798,11 +826,13 @@ export class WalletTransferService implements WalletTransferApplication {
 
       const nonceViews =
         currentFacts.policyVersion &&
-        (await this.#policies.current({
-          chainId: stored.request.chainId,
-          userId: input.userId,
-          walletId: input.wallet.walletId,
-        })).executionMode === "local-auto"
+        (
+          await this.#policies.current({
+            chainId: stored.request.chainId,
+            userId: input.userId,
+            walletId: input.wallet.walletId,
+          })
+        ).executionMode === "local-auto"
           ? await this.#chain.nonceViews({
               chainId: stored.request.chainId,
               walletAddress: canonicalTransferAddress(input.wallet.address),
@@ -868,7 +898,8 @@ export class WalletTransferService implements WalletTransferApplication {
     this.#assertWalletId(request.walletId, wallet);
     if (wallet.lockStatus !== "ready") throw new WalletTransferError("WALLET_LOCKED");
     const walletAddress = canonicalTransferAddress(wallet.address);
-    if (walletAddress === request.recipient) throw new WalletTransferError("TRANSFER_SELF_FORBIDDEN");
+    if (walletAddress === request.recipient)
+      throw new WalletTransferError("TRANSFER_SELF_FORBIDDEN");
   }
 
   #assertWalletId(walletId: string, wallet: CustodyWallet): void {
@@ -916,8 +947,7 @@ export class WalletTransferService implements WalletTransferApplication {
     ) {
       throw new WalletTransferError("TOKEN_NOT_FOUND");
     }
-    const provisionalAmount =
-      request.amount.kind === "exact" ? request.amount.amountBaseUnit : "1";
+    const provisionalAmount = request.amount.kind === "exact" ? request.amount.amountBaseUnit : "1";
     let fees = feeLimit(
       await this.#chain.estimateFee({
         amountBaseUnit: provisionalAmount,
@@ -1007,10 +1037,20 @@ export class WalletTransferService implements WalletTransferApplication {
     });
     if (!token) throw new WalletTransferError("TOKEN_NOT_FOUND");
     if (token.feeOnTransfer) throw new WalletTransferError("TOKEN_FEE_ON_TRANSFER_UNSUPPORTED");
-    return { decimals: token.decimals, name: token.name, symbol: token.symbol, tokenDefinition: token };
+    return {
+      decimals: token.decimals,
+      name: token.name,
+      symbol: token.symbol,
+      tokenDefinition: token,
+    };
   }
 
-  #buildPlan(input: Omit<WalletTransferPlan, "transactionData" | "transactionTarget" | "transactionValueBaseUnit">): WalletTransferPlan {
+  #buildPlan(
+    input: Omit<
+      WalletTransferPlan,
+      "transactionData" | "transactionTarget" | "transactionValueBaseUnit"
+    >,
+  ): WalletTransferPlan {
     const native = input.asset.kind === "native";
     const transactionTarget =
       input.asset.kind === "native" ? input.recipient : input.asset.tokenAddress;
@@ -1069,11 +1109,15 @@ export class WalletTransferService implements WalletTransferApplication {
 }
 
 export class DirectoryWalletTransferAddressClassifier implements WalletTransferAddressClassifier {
-  readonly #addresses: { list(input: { chainId: number; userId: string }): Promise<Array<{ address: EvmAddress }>> };
+  readonly #addresses: {
+    list(input: { chainId: number; userId: string }): Promise<Array<{ address: EvmAddress }>>;
+  };
   readonly #wallets: WalletDirectory;
 
   constructor(input: {
-    addresses: { list(input: { chainId: number; userId: string }): Promise<Array<{ address: EvmAddress }>> };
+    addresses: {
+      list(input: { chainId: number; userId: string }): Promise<Array<{ address: EvmAddress }>>;
+    };
     wallets: WalletDirectory;
   }) {
     this.#addresses = input.addresses;

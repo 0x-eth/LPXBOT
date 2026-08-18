@@ -108,7 +108,11 @@ export class LoopbackWalletTransferSignerGateway implements WalletTransferSigner
     timeoutMilliseconds?: number;
     url: string;
   }) {
-    if (input.apiToken.length < 32 || input.apiToken.length > 4_096 || /[\r\n]/u.test(input.apiToken)) {
+    if (
+      input.apiToken.length < 32 ||
+      input.apiToken.length > 4_096 ||
+      /[\r\n]/u.test(input.apiToken)
+    ) {
       throw new RangeError("wallet transfer signer token is invalid");
     }
     const timeoutMilliseconds = input.timeoutMilliseconds ?? 10_000;

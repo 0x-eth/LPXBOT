@@ -161,7 +161,6 @@ function plan(row: OperationRow): WalletTransferPlan | null {
     nonce: row.nonce,
     operationId: row.operation_id,
     policyDigest: row.policy_digest,
-    reauthenticatedSessionId: row.reauthenticated_session_id,
     recipient: row.recipient,
     transactionData: row.transaction_data,
     transactionTarget: row.transaction_target,
@@ -211,6 +210,7 @@ function operation(
     plan: transferPlan,
     planDigest: row.plan_digest,
     policyDigest: row.policy_digest,
+    reauthenticatedSessionId: row.reauthenticated_session_id,
     recipient: row.recipient,
     reconciliationReason: row.reconciliation_reason,
     requestHash: row.request_hash,
@@ -279,7 +279,9 @@ export class PostgresWalletTransferOperationStore implements WalletTransferOpera
     userId: string;
     walletId: string;
   }): Promise<WalletTransferIdempotencyRecord | null> {
-    const result = await this.#pool.query<OperationRow & { idempotency_request_hash: `sha256:${string}` }>(
+    const result = await this.#pool.query<
+      OperationRow & { idempotency_request_hash: `sha256:${string}` }
+    >(
       `SELECT ${operationColumns}, i.request_hash AS idempotency_request_hash
          FROM wallet_transfer_idempotency i
          JOIN wallet_transfer_operations o ON o.operation_id = i.operation_id
@@ -321,7 +323,8 @@ export class PostgresWalletTransferOperationStore implements WalletTransferOpera
             userId: input.userId,
             walletId: input.walletId,
           });
-          if (!existing) throw new WalletTransferError("TRANSFER_UNAVAILABLE", true, { cause: error });
+          if (!existing)
+            throw new WalletTransferError("TRANSFER_UNAVAILABLE", true, { cause: error });
           if (existing.requestHash !== input.requestHash) {
             throw new WalletTransferError("IDEMPOTENCY_CONFLICT");
           }
@@ -337,7 +340,10 @@ export class PostgresWalletTransferOperationStore implements WalletTransferOpera
     const client = await this.#pool.connect();
     try {
       await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
-      const existing = await client.query<{ operation_id: string; request_hash: `sha256:${string}` }>(
+      const existing = await client.query<{
+        operation_id: string;
+        request_hash: `sha256:${string}`;
+      }>(
         `SELECT operation_id::text, request_hash
            FROM wallet_transfer_idempotency
           WHERE user_id = $1 AND command_type = 'wallet.transfer'

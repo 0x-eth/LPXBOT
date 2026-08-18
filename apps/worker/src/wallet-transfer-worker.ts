@@ -336,8 +336,7 @@ function workerFailure(error: unknown): { code: string; retryable: boolean } {
   ) {
     return {
       code: (error as { code: string }).code,
-      retryable:
-        "retryable" in error && (error as { retryable?: unknown }).retryable === true,
+      retryable: "retryable" in error && (error as { retryable?: unknown }).retryable === true,
     };
   }
   return { code: "TRANSFER_WORKER_UNAVAILABLE", retryable: true };

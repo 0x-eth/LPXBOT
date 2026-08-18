@@ -416,8 +416,7 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
       const operation = await this.#lockOperation(client, input.claim.operation.operationId);
       if (
         operation.state !== input.claim.operation.state ||
-        operation.active_transaction_id !==
-          input.claim.operation.activeTransaction?.transactionId
+        operation.active_transaction_id !== input.claim.operation.activeTransaction?.transactionId
       ) {
         await this.#finishClaim(client, input.claim, input.observedAt);
         return;
@@ -532,7 +531,11 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
         });
       }
       await this.#finishClaim(client, input.claim, input.observedAt);
-      if (targetState === "broadcast" || targetState === "pending" || targetState === "reconciling") {
+      if (
+        targetState === "broadcast" ||
+        targetState === "pending" ||
+        targetState === "reconciling"
+      ) {
         await this.#enqueue(
           client,
           operation,
@@ -593,13 +596,11 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
         [operation.operation_id, targetState, input.code, input.failedAt],
       );
       if (targetState === "reconciling") {
-        await this.#openReconciliation(
-          client,
-          operation,
-          input.code,
-          input.failedAt,
-          { kind: "transition", reason: input.code, state: "reconciling" },
-        );
+        await this.#openReconciliation(client, operation, input.code, input.failedAt, {
+          kind: "transition",
+          reason: input.code,
+          state: "reconciling",
+        });
         await this.#enqueue(
           client,
           operation,
@@ -676,8 +677,7 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
         gas_limit: replacement.feeLimit.gasLimit,
         generation: operation.active_generation + 1,
         max_fee_per_gas_base_unit: replacement.feeLimit.maxFeePerGasBaseUnit,
-        max_priority_fee_per_gas_base_unit:
-          replacement.feeLimit.maxPriorityFeePerGasBaseUnit,
+        max_priority_fee_per_gas_base_unit: replacement.feeLimit.maxPriorityFeePerGasBaseUnit,
         operation_id: operation.operation_id,
         plan_digest: planDigest,
         reason,
@@ -830,7 +830,11 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
           SET state = 'cancelled'
         WHERE operation_id = $1 AND generation = $2 AND plan_digest = $3
           AND state = 'pending'`,
-      [input.authorization.operationId, input.authorization.generation, input.authorization.planDigest],
+      [
+        input.authorization.operationId,
+        input.authorization.generation,
+        input.authorization.planDigest,
+      ],
     );
   }
 
@@ -924,7 +928,8 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
         WHERE event_id = $1 AND state = 'leased' AND lease_token = $2`,
       [claim.eventId, claim.leaseToken, deliveredAt],
     );
-    if (result.rowCount !== 1) throw new WalletTransferWorkerError("TRANSFER_WORK_LEASE_LOST", true);
+    if (result.rowCount !== 1)
+      throw new WalletTransferWorkerError("TRANSFER_WORK_LEASE_LOST", true);
   }
 
   async #lockClaim(client: PoolClient, claim: WalletTransferWorkClaim): Promise<EventLockRow> {
@@ -1010,7 +1015,10 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
     );
   }
 
-  async #transaction<T>(work: (client: PoolClient) => Promise<T>, serializable = false): Promise<T> {
+  async #transaction<T>(
+    work: (client: PoolClient) => Promise<T>,
+    serializable = false,
+  ): Promise<T> {
     const client = await this.#pool.connect();
     try {
       await client.query(serializable ? "BEGIN ISOLATION LEVEL SERIALIZABLE" : "BEGIN");
