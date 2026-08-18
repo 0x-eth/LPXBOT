@@ -731,12 +731,8 @@ function RenameWalletDialog({
   wallet: CustodyWallet | null;
 }) {
   const [error, setError] = useState<string | null>(null);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(wallet?.name ?? "");
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (open) setName(wallet?.name ?? "");
-  }, [open, wallet]);
 
   const reset = () => {
     setError(null);
@@ -1412,6 +1408,11 @@ export function WalletsPage() {
       />
       <RenameWalletDialog
         client={client}
+        key={
+          renamingWallet
+            ? `${renamingWallet.walletId}:${renamingWallet.revision}`
+            : "rename-closed"
+        }
         onChanged={(wallet) => {
           changed(wallet);
           setRenamingWallet(null);

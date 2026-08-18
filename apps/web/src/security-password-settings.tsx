@@ -250,9 +250,20 @@ export function SecurityPasswordSettings() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
+    void client.status(controller.signal).then(
+      (next) => {
+        if (controller.signal.aborted) return;
+        setStatus(next);
+        setViewState(stateForStatus(next));
+      },
+      (requestError: unknown) => {
+        if (controller.signal.aborted) return;
+        setError(requestLabel(requestError));
+        setViewState("error");
+      },
+    );
     return () => controller.abort();
-  }, [load]);
+  }, [client]);
 
   const open = (next: PasswordAction, trigger: HTMLButtonElement) => {
     actionTrigger.current = trigger;
