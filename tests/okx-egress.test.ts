@@ -48,14 +48,21 @@ describe("P04-07 fixed OKX egress", () => {
   });
 
   it("denies private/rebound DNS, redirects and oversized bodies without following", async () => {
-    for (const address of ["127.0.0.1", "10.0.0.1", "169.254.169.254", "::1", "fd00::1"]) {
+    for (const addresses of [
+      ["127.0.0.1"],
+      ["10.0.0.1"],
+      ["169.254.169.254"],
+      ["::1"],
+      ["fd00::1"],
+      ["203.0.113.10", "127.0.0.1"],
+    ]) {
       const transport = new OkxHttpsReadOnlyTransport({
         request: async () => {
           throw new Error("request must not run");
         },
-        resolve: async () => [address],
+        resolve: async () => addresses,
       });
-      await expect(transport.validate(credentials), address).rejects.toMatchObject({
+      await expect(transport.validate(credentials), addresses.join(",")).rejects.toMatchObject({
         code: "EGRESS_DENIED",
       });
     }
@@ -69,6 +76,14 @@ describe("P04-07 fixed OKX egress", () => {
       resolve: async () => ["203.0.113.10"],
     });
     await expect(oversized.validate(credentials)).rejects.toMatchObject({ code: "EGRESS_DENIED" });
+
+    const timedOut = new OkxHttpsReadOnlyTransport({
+      request: async () => {
+        throw new Error("synthetic timeout detail");
+      },
+      resolve: async () => ["203.0.113.10"],
+    });
+    await expect(timedOut.validate(credentials)).rejects.toThrow("synthetic timeout detail");
   });
 
   it("maps only explicit permissions and never returns the provider IP or body", () => {
@@ -92,5 +107,24 @@ describe("P04-07 fixed OKX egress", () => {
         ),
       ),
     ).not.toContain("fixture-ip");
+  });
+
+  it("maps authentication status codes without exposing upstream bodies", async () => {
+    for (const [statusCode, authentication] of [
+      [401, "invalid"],
+      [403, "invalid"],
+      [429, "unknown"],
+      [500, "unknown"],
+    ] as const) {
+      const body = Buffer.from(`synthetic upstream ${statusCode}`);
+      const transport = new OkxHttpsReadOnlyTransport({
+        request: async () => ({ body, statusCode }),
+        resolve: async () => ["203.0.113.10"],
+      });
+      const result = await transport.validate(credentials);
+      expect(result.authentication).toBe(authentication);
+      expect(JSON.stringify(result)).not.toContain("synthetic upstream");
+      expect(body.every((byte) => byte === 0)).toBe(true);
+    }
   });
 });
