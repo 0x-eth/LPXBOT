@@ -307,7 +307,7 @@ export function parseWalletTransferOperation(
 export class WalletTransferClient {
   readonly #fetcher: typeof fetch;
 
-  constructor(fetcher: typeof fetch = fetch) {
+  constructor(fetcher: typeof fetch = globalThis.fetch.bind(globalThis)) {
     this.#fetcher = fetcher;
   }
 
