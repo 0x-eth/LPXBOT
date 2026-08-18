@@ -17,7 +17,8 @@ function client(fetcher: typeof fetch) {
 
 describe("P04-02 signer KMS boundary", () => {
   it("authenticates the signer identity and verifies the configured KEK version", async () => {
-    const fetcher = vi.fn(async (..._arguments: Parameters<typeof fetch>) =>
+    const fetcher = vi.fn<typeof fetch>();
+    fetcher.mockResolvedValue(
       Response.json({
         available: true,
         keyId: "custody-fixture",
