@@ -61,17 +61,20 @@ export class ResilientRawTransactionDelivery implements RawTransactionDelivery {
       }
       return { deliveryId, status: result.status };
     } catch (error) {
-      let known = false;
       try {
-        known = await this.#broadcast.transactionKnown({
-          chainId: input.chainId,
-          transactionHash: input.transactionHash,
-        });
+        if (
+          await this.#broadcast.transactionKnown({
+            chainId: input.chainId,
+            transactionHash: input.transactionHash,
+          })
+        ) {
+          return { deliveryId, status: "already-known" };
+        }
       } catch {
-        throw new SignerError("TRANSFER_DELIVERY_UNAVAILABLE", true, { cause: error });
+        throw new SignerError("TRANSFER_DELIVERY_UNAVAILABLE", true);
       }
-      if (known) return { deliveryId, status: "already-known" };
-      throw new SignerError("TRANSFER_DELIVERY_UNAVAILABLE", true, { cause: error });
+      if (error instanceof SignerError && !error.retryable) throw error;
+      throw new SignerError("TRANSFER_DELIVERY_UNAVAILABLE", true);
     }
   }
 }
