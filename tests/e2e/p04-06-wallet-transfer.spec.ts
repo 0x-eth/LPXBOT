@@ -28,6 +28,7 @@ type TransferState =
   | "dropped"
   | "replaced"
   | "reconciling";
+type ObservedState = TransferState | "replacement-broadcast";
 
 interface TransferPreviewRequest {
   amount: { amountBaseUnit: string; kind: "exact" } | { kind: "preset"; preset: string };
@@ -39,7 +40,7 @@ interface TransferPreviewRequest {
 
 interface TransferFixture {
   initialState: TransferState;
-  pollSequence: TransferState[];
+  pollSequence: ObservedState[];
   pollCount: number;
   previewRequests: TransferPreviewRequest[];
   submitBodies: Array<Record<string, unknown>>;
@@ -214,8 +215,9 @@ function transaction(
   };
 }
 
-function operation(request: TransferPreviewRequest, state: TransferState) {
+function operation(request: TransferPreviewRequest, state: ObservedState) {
   const amountBaseUnit = resolvedAmount(request);
+  const publicState = state === "replacement-broadcast" ? "broadcast" : state;
   let transactions: ReturnType<typeof transaction>[] = [];
   if (state === "signed" || state === "broadcast") {
     transactions = [transaction(0, state, true)];
@@ -223,6 +225,8 @@ function operation(request: TransferPreviewRequest, state: TransferState) {
     transactions = [transaction(0, "pending", true)];
   } else if (state === "confirmed") {
     transactions = [transaction(0, "replaced", false), transaction(1, "confirmed", true)];
+  } else if (state === "replacement-broadcast") {
+    transactions = [transaction(0, "replaced", false), transaction(1, "broadcast", true)];
   } else if (state === "replaced") {
     transactions = [transaction(0, "replaced", false), transaction(1, "pending", true)];
   } else if (state === "failed" || state === "dropped") {
@@ -236,15 +240,15 @@ function operation(request: TransferPreviewRequest, state: TransferState) {
     asset: request.asset,
     chainId: 56,
     createdAt: new Date(Date.now() - 5_000).toISOString(),
-    failureCode: state === "failed" ? "BROADCAST_REJECTED" : null,
+    failureCode: publicState === "failed" ? "BROADCAST_REJECTED" : null,
     feeLimit: feeLimit(request.asset),
     nonce: transactions.length === 0 ? null : "7",
     operationId,
     planDigest: digest,
     policyDigest,
     recipient: request.recipient,
-    reconciliationReason: state === "reconciling" ? "PROVIDER_DIVERGENCE" : null,
-    state,
+    reconciliationReason: publicState === "reconciling" ? "PROVIDER_DIVERGENCE" : null,
+    state: publicState,
     transactions,
     updatedAt: new Date().toISOString(),
     walletId,
@@ -497,7 +501,7 @@ test("signed, broadcast, reconciliation, replacement lineage and confirmation st
 }, testInfo) => {
   const state = fixture({
     initialState: "queued",
-    pollSequence: ["signed", "broadcast", "reconciling", "replaced", "confirmed"],
+    pollSequence: ["signed", "broadcast", "reconciling", "replacement-broadcast", "confirmed"],
   });
   await installApi(page, state);
   await page.goto("/wallets");
