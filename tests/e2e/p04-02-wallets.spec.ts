@@ -1,6 +1,7 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
+const captureEvidence = process.env.LPBOT_CAPTURE_P04_02 === "1";
 const userId = "44000000-0000-4000-8000-000000000001";
 const walletId = "44000000-0000-4000-8000-000000000011";
 const address = "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf";
@@ -45,7 +46,12 @@ async function auth(route: Route) {
 
 async function install(
   page: Page,
-  state: { error?: string; items: ReturnType<typeof wallet>[]; loadingMs?: number },
+  state: {
+    error?: string;
+    items: ReturnType<typeof wallet>[];
+    loadingMs?: number;
+    mutationMs?: number;
+  },
 ) {
   await page.route("**/api/auth/me", auth);
   await page.route("**/api/user/preferences", (route) =>
@@ -100,6 +106,7 @@ async function install(
       return;
     }
     if (request.method() === "POST" && pathname.endsWith("/import")) {
+      if (state.mutationMs) await new Promise((resolve) => setTimeout(resolve, state.mutationMs));
       const body = JSON.parse(request.postData() ?? "{}") as { privateKey?: string };
       if (body.privateKey !== secret) {
         await route.fulfill({
@@ -126,6 +133,7 @@ async function install(
       return;
     }
     if (request.method() === "POST" && pathname.endsWith("/generate")) {
+      if (state.mutationMs) await new Promise((resolve) => setTimeout(resolve, state.mutationMs));
       state.items = [wallet("Generated")];
       await route.fulfill({
         contentType: "application/json",
@@ -145,7 +153,10 @@ async function axe(page: Page) {
   ).toEqual([]);
 }
 
-test("wallets renders loading, empty, ready, desktop/mobile, and axe states", async ({ page }) => {
+test("wallets renders loading, empty, ready, desktop/mobile, and axe states", async (
+  { page },
+  testInfo,
+) => {
   const state = { items: [] as ReturnType<typeof wallet>[], loadingMs: 400 };
   await install(page, state);
   await page.goto("/wallets");
@@ -163,12 +174,24 @@ test("wallets renders loading, empty, ready, desktop/mobile, and axe states", as
   await expect(page.getByText("服务器密钥")).toBeVisible();
   await expect(page.getByText("已托管")).toBeVisible();
   await expect(page.getByText(/余额|Token|地址簿|删除|转账/u)).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(
+    false,
+  );
+  if (captureEvidence) {
+    const screenshot = await page.screenshot({
+      animations: "disabled",
+      caret: "hide",
+      fullPage: true,
+      path: `artifacts/acceptance/P04-02/ui/wallets-ready-${testInfo.project.name}.png`,
+    });
+    expect(screenshot.byteLength).toBeGreaterThan(10_000);
+  }
 });
 
 test("import is write-only, validates, clears on failure/cancel/success, and restores focus", async ({
   page,
 }) => {
-  await install(page, { items: [] });
+  await install(page, { items: [], mutationMs: 300 });
   await page.goto("/wallets");
   const trigger = page.getByRole("button", { name: "导入钱包" });
   await trigger.click();
@@ -187,6 +210,11 @@ test("import is write-only, validates, clears on failure/cancel/success, and res
   await input.fill(secret);
   await page.getByLabel("钱包名称").fill("Imported");
   await page.getByRole("button", { name: "确认导入" }).click();
+  await expect(page.locator("main.wallets-workspace")).toHaveAttribute(
+    "data-state",
+    "import-validating",
+  );
+  await expect(input).toHaveValue("");
   await expect(page.getByText("Imported")).toBeVisible();
   await expect(page.locator("body")).not.toContainText(secret);
   await expect(trigger).toBeFocused();
@@ -195,11 +223,15 @@ test("import is write-only, validates, clears on failure/cancel/success, and res
 test("generate has pending state and duplicate/reauth/signer/error states are explicit", async ({
   page,
 }) => {
-  await install(page, { items: [] });
+  await install(page, { items: [], mutationMs: 300 });
   await page.goto("/wallets");
   await page.getByRole("button", { name: "生成钱包" }).click();
   await page.getByLabel("钱包名称").fill("Generated");
   await page.getByRole("button", { name: "确认生成" }).click();
+  await expect(page.locator("main.wallets-workspace")).toHaveAttribute(
+    "data-state",
+    "generate-pending",
+  );
   await expect(page.getByText("Generated")).toBeVisible();
 
   for (const [code, text] of [
