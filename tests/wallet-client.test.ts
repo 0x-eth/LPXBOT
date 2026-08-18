@@ -1,5 +1,9 @@
 import type { CustodyWallet } from "../packages/api-contract/src/index.js";
-import { WalletClient, WalletRequestError } from "../apps/web/src/wallet-client.js";
+import {
+  parseCustodyWallet,
+  WalletClient,
+  WalletRequestError,
+} from "../apps/web/src/wallet-client.js";
 import { describe, expect, it, vi } from "vitest";
 
 const wallet: CustodyWallet = {
@@ -30,7 +34,7 @@ describe("P04-02 wallet browser client", () => {
 
     for (const malformed of [
       { ...wallet, ciphertext: "forbidden" },
-      { ...wallet, mode: "user-password" },
+      { ...wallet, mode: "raw-key" },
       { ...wallet, lockStatus: "open" },
       { ...wallet, address: "0x01" },
     ]) {
@@ -117,5 +121,58 @@ describe("P04-02 wallet browser client", () => {
         method: "POST",
       }),
     );
+  });
+
+  it("supports password wallets, secret generation, and optimistic mode switching", async () => {
+    const passwordWallet: CustodyWallet = {
+      ...wallet,
+      lockStatus: "locked",
+      mode: "user-password",
+    };
+    const bodies: Array<{ after: Uint8Array; during: string }> = [];
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async (_input, init) => {
+      const body = init?.body as unknown as Uint8Array;
+      bodies.push({ after: body, during: new TextDecoder().decode(body) });
+      return success(passwordWallet, 202);
+    });
+    const client = new WalletClient(fetcher, () => "fresh-proof");
+
+    expect(parseCustodyWallet(passwordWallet)).toEqual(passwordWallet);
+    await expect(
+      client.generateWallet({
+        mode: "user-password",
+        name: "Password wallet",
+        password: "synthetic-password-one",
+      }),
+    ).resolves.toEqual(passwordWallet);
+    await expect(
+      client.changeEncryptionMode(wallet.walletId, {
+        expectedRevision: 1,
+        expectedSecretVersion: 2,
+        mode: "user-password",
+        password: "synthetic-password-one",
+      }),
+    ).resolves.toEqual(passwordWallet);
+
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher.mock.calls[0]).toEqual([
+      "/api/wallets/generate",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "Content-Type": "application/vnd.lpbot.wallet-secret+json",
+        }),
+        method: "POST",
+      }),
+    ]);
+    expect(fetcher.mock.calls[1]).toEqual([
+      `/api/wallets/${wallet.walletId}/encryption-mode`,
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "Content-Type": "application/vnd.lpbot.keystore-secret+json",
+        }),
+        method: "POST",
+      }),
+    ]);
+    expect(bodies.every(({ after }) => after.every((byte) => byte === 0))).toBe(true);
   });
 });
