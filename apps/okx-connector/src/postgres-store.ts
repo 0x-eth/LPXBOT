@@ -99,6 +99,14 @@ export class PostgresOkxCredentialRepository implements OkxCredentialRepository 
     } catch (error) {
       await client.query("ROLLBACK").catch(() => undefined);
       if (error instanceof OkxConnectorError) throw error;
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code?: unknown }).code === "23505"
+      ) {
+        throw new OkxConnectorError("VERSION_CONFLICT");
+      }
       throw new OkxConnectorError("CONNECTOR_UNAVAILABLE", true);
     } finally {
       client.release();

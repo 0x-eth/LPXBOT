@@ -286,16 +286,33 @@ export class MemoryOkxCredentialRepository implements OkxCredentialRepository {
   }
 
   async listRecoverable(now: Date, stagedBefore: Date): Promise<OkxCredentialHead[]> {
-    return [...this.#states.values()]
-      .map(({ head }) => head)
-      .filter(
-        (head) =>
-          head.status === "deleting" ||
-          (head.status === "staged" && head.updatedAt.getTime() <= stagedBefore.getTime()) ||
-          (head.configured &&
-            head.rotationDueAt !== null &&
-            head.rotationDueAt.getTime() <= now.getTime()),
-      )
-      .map(cloneHead);
+    const recoverable: OkxCredentialHead[] = [];
+    for (const { head, versions } of this.#states.values()) {
+      if (
+        head.status === "deleting" ||
+        (head.configured &&
+          head.rotationDueAt !== null &&
+          head.rotationDueAt.getTime() <= now.getTime())
+      ) {
+        recoverable.push(cloneHead(head));
+      }
+      for (const [version, record] of versions) {
+        if (
+          !record.active &&
+          record.status === "staged" &&
+          !record.destroyedAt &&
+          record.envelope.createdAt.getTime() <= stagedBefore.getTime()
+        ) {
+          recoverable.push({
+            ...cloneHead(head),
+            configured: false,
+            status: "staged",
+            updatedAt: new Date(record.envelope.createdAt),
+            version,
+          });
+        }
+      }
+    }
+    return recoverable;
   }
 }

@@ -169,15 +169,25 @@ export class OkxCredentialService implements OkxConnectorApplication {
       await this.#audit("delete", input, before, false);
       return publicStatus(before);
     }
-    const deleting = await this.#repository.beginDelete(input);
+    const deleting = await this.#repository.beginDelete({
+      context: input,
+      expectedVersion: input.expectedVersion,
+    });
     await this.#audit("status-change", input, deleting, true);
-    const deleted = await this.#repository.completeDelete({ ...input, now: this.#now() });
+    const deleted = await this.#repository.completeDelete({
+      context: { ...input, now: this.#now() },
+      expectedVersion: input.expectedVersion,
+    });
     await this.#audit("delete", input, deleted, true);
     return publicStatus(deleted);
   }
 
   async revoke(input: OkxCredentialMutationContext & { expectedVersion: number }): Promise<void> {
-    const revoked = await this.#repository.setStatus({ ...input, status: "revoked" });
+    const revoked = await this.#repository.setStatus({
+      context: input,
+      expectedVersion: input.expectedVersion,
+      status: "revoked",
+    });
     await this.#audit("status-change", input, revoked, true);
   }
 
