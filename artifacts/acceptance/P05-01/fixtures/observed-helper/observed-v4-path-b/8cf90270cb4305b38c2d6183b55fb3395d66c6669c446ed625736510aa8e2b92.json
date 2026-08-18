@@ -1027,7 +1027,7 @@
     "parentBeaconBlockRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "requestsHash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "totalDifficulty": "0xd80b57d",
-    "size": "0x11346",
+    "size": "0x31406",
     "milliTimestamp": "0x19fc1cfc5bc",
     "uncles": [],
     "transactions": [
@@ -1141,7 +1141,7 @@
     {
       "kind": "bscscan-transaction-index",
       "retrievedAt": "2026-08-19T00:00:00.000Z",
-      "url": "https://bscscan.com/txs?a=0x30df22a0afb4167bad5c1af4aa0b6bf81506e0a5&ps=100&p=1"
+      "url": "https://bscscan.com/txs?a=0x30df22a0afb4167bad5c1af4aa0b6bf81506e0a5"
     },
     {
       "kind": "bscscan-transaction",

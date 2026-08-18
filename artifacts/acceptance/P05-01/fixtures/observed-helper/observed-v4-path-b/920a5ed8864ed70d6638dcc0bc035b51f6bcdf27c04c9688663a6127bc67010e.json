@@ -1045,7 +1045,7 @@
     {
       "kind": "bscscan-transaction-index",
       "retrievedAt": "2026-08-19T00:00:00.000Z",
-      "url": "https://bscscan.com/txs?a=0x30df22a0afb4167bad5c1af4aa0b6bf81506e0a5&ps=100&p=1"
+      "url": "https://bscscan.com/txs?a=0x30df22a0afb4167bad5c1af4aa0b6bf81506e0a5"
     },
     {
       "kind": "bscscan-transaction",
