@@ -3882,6 +3882,280 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       }
     });
 
+    app.get("/api/address-book", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.addressBookStore || !options.walletDirectory) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "ADDRESS_BOOK_UNAVAILABLE",
+            message: "The address book is unavailable",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      const query = parseAddressBookQuery(request.query);
+      if (!query) {
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "ADDRESS_BOOK_INVALID",
+            message: "The address-book query is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
+      try {
+        const [entries, walletPage] = await Promise.all([
+          options.addressBookStore.list({ chainId: query.chainId, userId: session.userId }),
+          options.walletDirectory.listWallets(session.userId),
+        ]);
+        const wallets = walletPage.items.map(publicWalletDto);
+        let classification = null;
+        if (query.address !== undefined) {
+          try {
+            classification = classifyAddress({
+              address: canonicalWalletAddress(query.address),
+              entries,
+              wallets,
+            });
+          } catch {
+            throw new AddressBookError("ADDRESS_BOOK_INVALID");
+          }
+        }
+        return createSuccessEnvelope(
+          {
+            chainId: query.chainId,
+            classification,
+            entries,
+            ownWallets: wallets.map(({ address, name, walletId }) => ({ address, name, walletId })),
+          },
+          request.id,
+        );
+      } catch (error) {
+        return (
+          addressBookFailure(error, request, reply) ??
+          walletFailure(error, request, reply) ??
+          reply.code(503).send(
+            createErrorEnvelope({
+              code: "ADDRESS_BOOK_UNAVAILABLE",
+              message: "The address book is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          )
+        );
+      }
+    });
+
+    app.post("/api/address-book", { bodyLimit: 4_096 }, async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const ingress = Buffer.isBuffer(request.body) ? request.body : null;
+      let passwordIngress: Buffer | null = null;
+      let audit: AddressBookAllowedAudit | null = null;
+      try {
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!ingress) {
+          return reply.code(415).send(
+            createErrorEnvelope({
+              code: "UNSUPPORTED_MEDIA_TYPE",
+              message: "Address-book creation requires the dedicated secret ingress",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.addressBookStore || !options.walletDirectory) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "ADDRESS_BOOK_UNAVAILABLE",
+              message: "The address book is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        if (!options.securityPassword) return securityPasswordUnavailable(request, reply);
+        let parsed;
+        try {
+          parsed = parseAddressBookCreateIngress(ingress);
+        } catch (error) {
+          if (error instanceof WalletAssetError) {
+            throw new AddressBookError("ADDRESS_BOOK_INVALID", { cause: error });
+          }
+          throw error;
+        }
+        audit = addressBookAudit("address-book.create", request, session, {
+          address: parsed.address,
+          chainId: parsed.chainId,
+        });
+        if (!(await requireAllowedWalletChain(parsed.chainId, request, reply, session))) {
+          await recordDeniedAddressBook(audit, "CHAIN_NOT_ALLOWED");
+          return reply;
+        }
+        const [entries, walletPage] = await Promise.all([
+          options.addressBookStore.list({ chainId: parsed.chainId, userId: session.userId }),
+          options.walletDirectory.listWallets(session.userId),
+        ]);
+        const classification = classifyAddress({
+          address: parsed.address,
+          entries,
+          wallets: walletPage.items.map(publicWalletDto),
+        });
+        if (classification.kind === "own-wallet") {
+          throw new AddressBookError("ADDRESS_IS_OWN_WALLET");
+        }
+        if (classification.kind === "known-external") {
+          throw new AddressBookError("ADDRESS_BOOK_DUPLICATE");
+        }
+        passwordIngress = Buffer.from(JSON.stringify({ password: parsed.password }), "utf8");
+        parsed.password = "";
+        const verified = await options.securityPassword.verifySecurityPassword({
+          ingress: passwordIngress,
+          userId: session.userId,
+        });
+        if (verified.verified !== true || !Number.isSafeInteger(verified.version) || verified.version < 1) {
+          throw new WalletApiError("SIGNER_UNAVAILABLE");
+        }
+        const value = await options.addressBookStore.create({
+          address: parsed.address,
+          audit,
+          category: parsed.category,
+          chainId: parsed.chainId,
+          createdAt: now(),
+          label: parsed.label,
+          note: parsed.note,
+          userId: session.userId,
+        });
+        audit = null;
+        return reply.code(201).send(createSuccessEnvelope(value, request.id));
+      } catch (error) {
+        if (audit) {
+          const resultCode =
+            typeof error === "object" && error !== null && "code" in error
+              ? String((error as { code: unknown }).code)
+              : "INTERNAL_ERROR";
+          await recordDeniedAddressBook(audit, resultCode);
+        }
+        const response =
+          addressBookFailure(error, request, reply) ?? walletFailure(error, request, reply);
+        if (response) return response;
+        throw error;
+      } finally {
+        passwordIngress?.fill(0);
+        ingress?.fill(0);
+      }
+    });
+
+    app.patch<{ Params: { entryId: string } }>(
+      "/api/address-book/:entryId",
+      { bodyLimit: 2_048 },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.addressBookStore) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "ADDRESS_BOOK_UNAVAILABLE",
+              message: "The address book is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        let audit: AddressBookAllowedAudit | null = null;
+        try {
+          const entryId = parseAddressBookEntryId(request.params.entryId);
+          const current = await options.addressBookStore.get({ entryId, userId: session.userId });
+          if (!current) throw new AddressBookError("ADDRESS_BOOK_ENTRY_NOT_FOUND");
+          audit = addressBookAudit("address-book.patch", request, session, {
+            address: current.address,
+            chainId: current.chainId,
+            entryId,
+          });
+          if (!(await requireAllowedWalletChain(current.chainId, request, reply, session))) {
+            await recordDeniedAddressBook(audit, "CHAIN_NOT_ALLOWED");
+            audit = null;
+            return reply;
+          }
+          const patch = parseAddressBookPatch(request.body);
+          const value = await options.addressBookStore.patch({
+            ...patch,
+            audit,
+            entryId,
+            updatedAt: now(),
+            userId: session.userId,
+          });
+          audit = null;
+          return createSuccessEnvelope(value, request.id);
+        } catch (error) {
+          if (audit) {
+            await recordDeniedAddressBook(
+              audit,
+              error instanceof AddressBookError ? error.code : "INTERNAL_ERROR",
+            );
+          }
+          return addressBookFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.delete<{ Params: { entryId: string } }>(
+      "/api/address-book/:entryId",
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.addressBookStore) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "ADDRESS_BOOK_UNAVAILABLE",
+              message: "The address book is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        let audit: AddressBookAllowedAudit | null = null;
+        try {
+          const entryId = parseAddressBookEntryId(request.params.entryId);
+          const current = await options.addressBookStore.get({ entryId, userId: session.userId });
+          if (!current) throw new AddressBookError("ADDRESS_BOOK_ENTRY_NOT_FOUND");
+          audit = addressBookAudit("address-book.delete", request, session, {
+            address: current.address,
+            chainId: current.chainId,
+            entryId,
+          });
+          if (!(await requireAllowedWalletChain(current.chainId, request, reply, session))) {
+            await recordDeniedAddressBook(audit, "CHAIN_NOT_ALLOWED");
+            audit = null;
+            return reply;
+          }
+          const deleted = await options.addressBookStore.delete({
+            audit,
+            deletedAt: now(),
+            entryId,
+            userId: session.userId,
+          });
+          audit = null;
+          return createSuccessEnvelope({ deleted }, request.id);
+        } catch (error) {
+          if (audit) {
+            await recordDeniedAddressBook(
+              audit,
+              error instanceof AddressBookError ? error.code : "INTERNAL_ERROR",
+            );
+          }
+          return addressBookFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
     app.get("/api/keystore/status", async (request, reply) => {
       reply.header("Cache-Control", "no-store");
       const session = await authenticateSessionRequest(request, reply);
