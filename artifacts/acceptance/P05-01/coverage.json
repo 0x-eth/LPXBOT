@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-01",
+  "phase": "P05",
+  "mode": "reference-only",
+  "risk": "R0",
+  "workItemFeatureIds": [],
+  "implementationOwnership": "none",
+  "counts": {
+    "implemented-assumed": 0,
+    "planned": 12
+  },
+  "globalCounts": {
+    "implemented-assumed": 61,
+    "planned": 135
+  },
+  "features": [
+    {
+      "id": "SWAP-01",
+      "phase": "P05",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["registry-contracts.json", "adapter-contracts.json", "api-contracts.json", "ui-state-contracts.json", "security-boundary-contracts.json"],
+      "fixtureGroups": ["observed-v3-path-a", "observed-v3-path-b", "observed-v4-path-a", "observed-v4-path-b"]
+    },
+    {
+      "id": "SWAP-02",
+      "phase": "P05",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["registry-contracts.json", "adapter-contracts.json", "operation-contracts.json", "api-contracts.json", "ui-state-contracts.json", "security-boundary-contracts.json"],
+      "fixtureGroups": ["observed-v3-path-a", "observed-v3-path-b", "observed-v4-path-a", "observed-v4-path-b"]
+    },
+    {
+      "id": "POS-01",
+      "phase": "P05",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["registry-contracts.json", "adapter-contracts.json", "api-contracts.json", "ui-state-contracts.json"],
+      "fixtureGroups": []
+    },
+    {
+      "id": "POS-02",
+      "phase": "P05",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["adapter-contracts.json", "operation-contracts.json", "api-contracts.json", "security-boundary-contracts.json"],
+      "fixtureGroups": []
+    },
+    {
+      "id": "POS-03",
+      "phase": "P05",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["adapter-contracts.json", "operation-contracts.json", "api-contracts.json", "ui-state-contracts.json", "security-boundary-contracts.json"],
+      "fixtureGroups": []
+    },
+    {
+      "id": "POS-04",
+      "phase": "P05",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["adapter-contracts.json", "api-contracts.json", "ui-state-contracts.json"],
+      "fixtureGroups": []
+    },
+    {
+      "id": "HELPER-01",
+      "phase": "P05",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["registry-contracts.json", "helper-contracts.json", "api-contracts.json", "ui-state-contracts.json"],
+      "fixtureGroups": ["observed-v3-path-a", "observed-v3-path-b", "observed-v4-path-a", "observed-v4-path-b"]
+    },
+    {
+      "id": "HELPER-02",
+      "phase": "P05",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["helper-contracts.json", "operation-contracts.json", "security-boundary-contracts.json"],
+      "fixtureGroups": []
+    },
+    {
+      "id": "HELPER-03",
+      "phase": "P05",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["registry-contracts.json", "helper-contracts.json", "operation-contracts.json", "ui-state-contracts.json"],
+      "fixtureGroups": []
+    },
+    {
+      "id": "HELPER-04",
+      "phase": "P05",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["registry-contracts.json", "adapter-contracts.json", "helper-contracts.json", "operation-contracts.json", "security-boundary-contracts.json"],
+      "fixtureGroups": ["observed-v3-path-a", "observed-v3-path-b", "observed-v4-path-a", "observed-v4-path-b"]
+    },
+    {
+      "id": "HELPER-05",
+      "phase": "P05",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["helper-contracts.json", "api-contracts.json", "ui-state-contracts.json"],
+      "fixtureGroups": []
+    },
+    {
+      "id": "HELPER-06",
+      "phase": "P05",
+      "status": "planned",
+      "implementationOwner": null,
+      "contractArtifacts": ["helper-contracts.json", "operation-contracts.json", "api-contracts.json", "ui-state-contracts.json", "security-boundary-contracts.json"],
+      "fixtureGroups": []
+    }
+  ],
+  "nonClaims": [
+    "P05-01 owns no production feature implementation; all twelve P05 features remain planned.",
+    "The test-only codec and offline governance checks do not authorize production calldata generation.",
+    "No fork, testnet, mainnet write, signature, broadcast, deployment, approval, swap, NFT mutation, sweep, or real-fund operation is accepted here.",
+    "No target parity, release readiness, contract audit, or production execution claim is made."
+  ]
+}

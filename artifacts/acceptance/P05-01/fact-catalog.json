@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-01",
+  "phase": "P05",
+  "implementationStatus": "planned",
+  "classifications": {
+    "OBSERVED": "Directly captured from frozen BSC transaction, receipt, log, block, eth_call, or runtime-code evidence.",
+    "OFFICIAL": "Published by a protocol or product owner in an official deployment, interface, or API source.",
+    "LOCAL-DECISION": "A conservative LPXBOT contract chosen locally; it does not claim target behavior.",
+    "INFERRED": "Supported by multiple observations or static analysis but not established by verified source or an official interface.",
+    "UNKNOWN": "Evidence is insufficient; the subject must remain disabled or represented by an unresolved gap."
+  },
+  "facts": [
+    {
+      "id": "P05-CHAIN-SCOPE",
+      "classification": "LOCAL-DECISION",
+      "claim": {
+        "supportedChainIds": [56],
+        "otherChainsFailClosed": true,
+        "phase": "first"
+      },
+      "sources": ["docs/DEVELOPMENT_ROADMAP.md", "docs/ARCHITECTURE_AND_WORKFLOWS.md"],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "P05-PLATFORM-IDS",
+      "classification": "OFFICIAL",
+      "claim": {
+        "1": "UniV3",
+        "2": "PCSV3",
+        "4": "UniV4",
+        "5": "PCSV4"
+      },
+      "sources": ["docs/research/onchain-helper.md", "docs/research/prior-thread.md"],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "P05-OBSERVED-HELPER-PATHS",
+      "classification": "OBSERVED",
+      "claim": [
+        {
+          "name": "observed-v3-path-a",
+          "selector": "0xadc3f25c",
+          "sampleCount": 10,
+          "originalFunctionName": null
+        },
+        {
+          "name": "observed-v3-path-b",
+          "selector": "0xfb691fd9",
+          "sampleCount": 10,
+          "originalFunctionName": null
+        },
+        {
+          "name": "observed-v4-path-a",
+          "selector": "0x71fa74ed",
+          "sampleCount": 10,
+          "originalFunctionName": null
+        },
+        {
+          "name": "observed-v4-path-b",
+          "selector": "0x5dfd8e50",
+          "sampleCount": 10,
+          "originalFunctionName": null
+        }
+      ],
+      "sources": ["fixtures/observed-helper", "docs/research/onchain-helper.md"],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "P05-HELPER-IDENTITY",
+      "classification": "OBSERVED",
+      "claim": {
+        "helpers": [
+          {
+            "address": "0x30df22a0afb4167bad5c1af4aa0b6bf81506e0a5",
+            "owner": "0xc623ab46fa6ff2f547e35f88679a9ebf0b823227",
+            "runtimeCodeBytes": 19133,
+            "runtimeCodeHash": "0xaf866c449723b487e87ce38974433ea413a2e7826226865c678665d84c86cd85"
+          },
+          {
+            "address": "0xaba69194bb40f3eeca3e27ce4f4fe526e6ef4139",
+            "owner": "0xfd6f4bdea39a8796dc120f1cc08b92dcc0290549",
+            "runtimeCodeBytes": 19133,
+            "runtimeCodeHash": "0x42795bc1467d4c1aad4704c13255eb646768885f22886c486430b30a93caebd7"
+          }
+        ],
+        "ownerIsTransactionSender": true
+      },
+      "sources": ["fixtures/observed-helper"],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "P05-REGISTRY-SNAPSHOT",
+      "classification": "OBSERVED",
+      "claim": {
+        "chainId": 56,
+        "blockNumber": "116718413",
+        "componentCount": 13,
+        "allComponentsHadRuntimeCode": true
+      },
+      "sources": ["registry-contracts.json"],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "P05-QUOTE-CONTRACT",
+      "classification": "LOCAL-DECISION",
+      "claim": {
+        "baseUnitsOnly": true,
+        "routeBoundToDigest": true,
+        "minOutRequired": true,
+        "priceImpactRequired": true,
+        "gasRequired": true,
+        "expiryRequired": true
+      },
+      "sources": ["adapter-contracts.json"],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "P05-POSITION-CONTRACT",
+      "classification": "LOCAL-DECISION",
+      "claim": {
+        "ownerRequired": true,
+        "tokenIdRequired": true,
+        "poolRequired": true,
+        "ticksRequired": true,
+        "liquidityRequired": true,
+        "feesRequired": true,
+        "approvalRequired": true,
+        "snapshotRequired": true
+      },
+      "sources": ["adapter-contracts.json"],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "P05-P04-EXECUTION-REUSE",
+      "classification": "LOCAL-DECISION",
+      "claim": {
+        "nonceLedgerReused": true,
+        "signerReused": true,
+        "broadcastLineageReused": true,
+        "replacementReused": true,
+        "reconciliationReused": true,
+        "nonLocalWriteBoundary": "READY_FOR_APPROVAL"
+      },
+      "sources": ["operation-contracts.json", "artifacts/acceptance/P04-01/transaction-contracts.json"],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "P05-HELPER-UPGRADE-SEMANTICS",
+      "classification": "UNKNOWN",
+      "claim": null,
+      "sources": ["gaps.json"],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "P05-FEE-OWNERSHIP",
+      "classification": "UNKNOWN",
+      "claim": null,
+      "sources": ["gaps.json", "docs/research/onchain-helper.md"],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "P05-EXIT-ATOMICITY",
+      "classification": "UNKNOWN",
+      "claim": null,
+      "sources": ["gaps.json", "docs/research/onchain-helper.md"],
+      "implementationStatus": "planned"
+    },
+    {
+      "id": "P05-OBSERVED-OUTER-ABI",
+      "classification": "INFERRED",
+      "claim": {
+        "dynamicBytesAtTail": true,
+        "pathHeadWordCounts": {
+          "observed-v3-path-a": 15,
+          "observed-v3-path-b": 13,
+          "observed-v4-path-a": 18,
+          "observed-v4-path-b": 19
+        },
+        "businessFieldNamesFrozen": false
+      },
+      "sources": ["packages/test-fixtures/src/observed-helper-codec.ts", "fixtures/observed-helper"],
+      "implementationStatus": "planned"
+    }
+  ],
+  "promotionPolicy": {
+    "observedMayNameUnknownFunction": false,
+    "officialAddressMayBypassCodeHash": false,
+    "localDecisionMayClaimTargetParity": false,
+    "inferenceMayEnableProductionEncoding": false,
+    "unknownMayEnableExecution": false
+  }
+}
