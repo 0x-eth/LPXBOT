@@ -691,8 +691,8 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
         snapshot.taskIds.length;
       if (!input.force && dependencyCount > 0) throw new SignerError("DELETE_BLOCKED");
       if (input.force) {
+        if (!preview.forceEligible) throw new SignerError("DELETE_BLOCKED");
         if (
-          !preview.forceEligible ||
           input.confirmationPhrase !== preview.confirmationPhrase ||
           !this.#sameWalletDependencySnapshot(input.dependencies, preview)
         ) {

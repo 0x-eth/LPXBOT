@@ -135,6 +135,9 @@ async function lifecycleFixture(
     userId,
   });
   const session = [...sessionStore.sessions.values()].find((value) => value.userId === userId)!;
+  const otherSession = [...sessionStore.sessions.values()].find(
+    (value) => value.userId === otherUserId,
+  )!;
   return {
     advance(milliseconds: number) {
       clock = new Date(clock.getTime() + milliseconds);
@@ -143,6 +146,7 @@ async function lifecycleFixture(
     custody,
     inventory,
     otherToken,
+    otherProof: `fresh:${otherSession.id}`,
     proof: `fresh:${session.id}`,
     store,
     taskCoordinator,
@@ -347,7 +351,7 @@ describe("P04-04 wallet delete preview API", () => {
   });
 
   it("rejects token tampering, expiry, ownership changes, and post-preview state changes", async () => {
-    const { advance, app, inventory, otherToken, proof, token, wallet } =
+    const { advance, app, inventory, otherProof, otherToken, proof, token, wallet } =
       await lifecycleFixture({
         snapshot: {
           assetIds: [],
@@ -381,7 +385,7 @@ describe("P04-04 wallet delete preview API", () => {
     expect(tampered.json().error.code).toBe("PREVIEW_EXPIRED");
 
     const crossUser = await app.inject({
-      headers: { ...auth(otherToken), "x-lpbot-reauthentication": proof },
+      headers: { ...auth(otherToken), "x-lpbot-reauthentication": otherProof },
       method: "DELETE",
       payload: {
         expectedRevision: wallet.revision,
@@ -390,7 +394,8 @@ describe("P04-04 wallet delete preview API", () => {
       },
       url: `/api/wallets/${wallet.walletId}`,
     });
-    expect(crossUser.statusCode).toBe(403);
+    expect(crossUser.statusCode).toBe(404);
+    expect(crossUser.json().error.code).toBe("WALLET_NOT_FOUND");
 
     inventory.snapshot = {
       ...inventory.snapshot,
