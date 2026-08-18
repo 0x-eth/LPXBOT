@@ -85,15 +85,15 @@
     },
     {
       "path": "checks/quality-gates.txt",
-      "bytes": 343,
-      "sha256": "b7e4a8bf0972ea82d3a7ef36c544fdbd2bd3659eff7cd1364b33c1aecee86e44",
+      "bytes": 919,
+      "sha256": "7036757c1938d97c17ecdc736ee21cffcd8ee985681c04c17c14ca4e68a75c10",
       "mediaType": "text/plain",
       "category": "check"
     },
     {
       "path": "checks/security-audit.txt",
-      "bytes": 381,
-      "sha256": "9c63f2b4544c26a4d614e8609f19bf230d986d7f3c14448e18a00098fb58ff43",
+      "bytes": 503,
+      "sha256": "39a7d7c788a24a0754a78a334bd64e7c8e2bce140a3204cc5cc38e3d38866ece",
       "mediaType": "text/plain",
       "category": "check"
     },

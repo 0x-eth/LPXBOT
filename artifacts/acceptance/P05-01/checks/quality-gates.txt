@@ -1,6 +1,9 @@
 P05-01 local quality gates
 
+Runtime: Node.js v22.23.1, pnpm 11.17.0, Foundry 1.7.1
+
 Required commands:
+- pnpm format
 - pnpm format:check
 - pnpm lint
 - pnpm typecheck
@@ -8,7 +11,19 @@ Required commands:
 - pnpm build
 - pnpm check:all
 
-Final result: pending final verification.
+Final result: passed.
+
+Observed results:
+- format and format:check passed
+- lint and typecheck passed across all 16 workspace packages
+- Vitest passed 780/780 tests in 132 files
+- Node governance passed 149/149 tests
+- build passed across all 16 workspace packages
+- check:all passed, including check:p05-reference
+- Foundry format/build passed and contract tests passed 4/4
+- Playwright passed 215 tests with 23 project-configured skips
+- infrastructure health and tests passed 8/8
+- PostgreSQL integration passed 104 tests with 1 configured skip
 
 The GitHub Actions workflow retains six jobs. Governance includes
 check:p05-reference; browser, contracts, infrastructure, and security remain

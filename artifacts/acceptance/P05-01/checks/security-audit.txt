@@ -4,7 +4,10 @@ Required commands:
 - gitleaks detect --source . --config .gitleaks.toml --no-banner
 - pnpm audit:dependencies
 
-Final result: pending final verification.
+Final result: passed.
+
+Gitleaks 8.30.1 scanned 1,248 commits and approximately 28.14 MB with no leaks.
+The pnpm dependency audit reported no known vulnerabilities.
 
 Fixture capture used only frozen BSC read methods. Transaction signatures,
 broadcasts, chain writes, and real-fund operations are all zero. CI performs no
