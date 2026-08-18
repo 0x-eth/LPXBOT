@@ -38,6 +38,8 @@ export { LocalKmsFixture } from "./kms.js";
 export { InMemoryCustodyWalletStore } from "./memory-custody-wallet-store.js";
 export { PostgresCustodyWalletStore } from "./postgres-custody-wallet-store.js";
 export { PostgresWalletTransferPlanAuthorizer } from "./postgres-transfer-plan-authorizer.js";
+export { ResilientRawTransactionDelivery } from "./resilient-raw-transaction-delivery.js";
+export type { RawTransactionBroadcastPort } from "./resilient-raw-transaction-delivery.js";
 export {
   buildPasswordDekWrapAad,
   createPasswordVerifier,
