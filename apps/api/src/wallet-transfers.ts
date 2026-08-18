@@ -180,10 +180,12 @@ export interface WalletTransferCreateInput {
   idempotencyKey: string;
   nonceViews: readonly WalletTransferNonceView[];
   policyDigest: `sha256:${string}`;
+  policyVersion: string;
   previewDigest: `sha256:${string}`;
   recipient: EvmAddress;
   requestHash: `sha256:${string}`;
   requestId: string;
+  registryVersion: string;
   securityPasswordVersion: number | null;
   sessionId: string;
   userId: string;
@@ -839,10 +841,12 @@ export class WalletTransferService implements WalletTransferApplication {
         idempotencyKey,
         nonceViews,
         policyDigest: stored.facts.policyDigest,
+        policyVersion: stored.facts.policyVersion,
         previewDigest: stored.previewDigest,
         recipient: stored.request.recipient,
         requestHash,
         requestId: input.requestId,
+        registryVersion: stored.facts.registryVersion,
         securityPasswordVersion,
         sessionId: input.sessionId,
         userId: input.userId,
