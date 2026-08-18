@@ -239,12 +239,13 @@ describe("P04-05 browser-only read RPC", () => {
       url: "https://rpc.fixture",
     });
     const request = client.request({ method: "eth_blockNumber" });
-    await vi.advanceTimersByTimeAsync(browserRpcLimits.timeoutMs);
-    await expect(request).rejects.toMatchObject({
+    const rejection = expect(request).rejects.toMatchObject({
       code: "CLIENT_RPC_TIMEOUT",
       retryable: true,
       state: "timeout",
     });
+    await vi.advanceTimersByTimeAsync(browserRpcLimits.timeoutMs);
+    await rejection;
     vi.useRealTimers();
 
     const connection = new BrowserReadonlyRpcClient({

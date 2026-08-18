@@ -12,6 +12,7 @@ import type {
   WalletTokenPage,
 } from "@lpbot/api-contract";
 import { addressBookSecretMediaType } from "@lpbot/api-contract";
+import { getAddress } from "viem";
 
 type WalletReadFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -42,6 +43,43 @@ function timestamp(value: unknown): value is string {
   } catch {
     return false;
   }
+}
+
+function scaledDecimal(value: bigint, scale: number): string {
+  const digits = value.toString().padStart(scale + 1, "0");
+  if (scale === 0) return digits;
+  const fraction = digits.slice(-scale).replace(/0+$/u, "");
+  return fraction === "" ? digits.slice(0, -scale) : `${digits.slice(0, -scale)}.${fraction}`;
+}
+
+function decimalParts(value: string): { coefficient: bigint; scale: number } {
+  const [whole, fraction = ""] = value.split(".");
+  return { coefficient: BigInt(`${whole}${fraction}`), scale: fraction.length };
+}
+
+function decimalProduct(left: string, right: string): string {
+  const leftParts = decimalParts(left);
+  const rightParts = decimalParts(right);
+  return scaledDecimal(
+    leftParts.coefficient * rightParts.coefficient,
+    leftParts.scale + rightParts.scale,
+  );
+}
+
+function decimalSum(values: readonly string[]): string {
+  const parts = values.map(decimalParts);
+  const scale = Math.max(0, ...parts.map((part) => part.scale));
+  return scaledDecimal(
+    parts.reduce(
+      (sum, part) => sum + part.coefficient * 10n ** BigInt(scale - part.scale),
+      0n,
+    ),
+    scale,
+  );
+}
+
+function baseUnitDecimal(value: string, decimals: number): string {
+  return scaledDecimal(BigInt(value), decimals);
 }
 
 function token(value: unknown, status: number): WalletTokenDefinition {
@@ -110,7 +148,25 @@ function balance(value: unknown, status: number): WalletAssetBalance {
   ) {
     throw new WalletReadRequestError("WALLET_READ_RESPONSE_INVALID", true, status);
   }
-  return { ...value } as unknown as WalletAssetBalance;
+  const parsed = { ...value } as unknown as WalletAssetBalance;
+  const priceShapeValid =
+    (parsed.priceStatus === "current" &&
+      parsed.usdPriceDecimal !== null &&
+      parsed.usdValueDecimal !== null &&
+      decimalProduct(parsed.balanceDecimal, parsed.usdPriceDecimal) === parsed.usdValueDecimal) ||
+    (parsed.priceStatus === "stale" &&
+      parsed.usdPriceDecimal !== null &&
+      parsed.usdValueDecimal === null) ||
+    (parsed.priceStatus === "missing" &&
+      parsed.usdPriceDecimal === null &&
+      parsed.usdValueDecimal === null);
+  if (
+    baseUnitDecimal(parsed.balanceBaseUnit, parsed.decimals) !== parsed.balanceDecimal ||
+    !priceShapeValid
+  ) {
+    throw new WalletReadRequestError("WALLET_READ_RESPONSE_INVALID", true, status);
+  }
+  return parsed;
 }
 
 function addressBookEntry(value: unknown, status: number): AddressBookEntry {
@@ -176,7 +232,10 @@ export function parseWalletTokenPage(value: unknown, status = 0): WalletTokenPag
     throw new WalletReadRequestError("WALLET_READ_RESPONSE_INVALID", true, status);
   }
   const items = value.items.map((item) => token(item, status));
-  if (new Set(items.map(({ tokenAddress }) => tokenAddress.toLowerCase())).size !== items.length) {
+  if (
+    items.some((item) => item.chainId !== value.chainId) ||
+    new Set(items.map(({ tokenAddress }) => tokenAddress.toLowerCase())).size !== items.length
+  ) {
     throw new WalletReadRequestError("WALLET_READ_RESPONSE_INVALID", true, status);
   }
   return { chainId: Number(value.chainId), items, walletId: value.walletId };
@@ -210,11 +269,28 @@ export function parseWalletBalanceSnapshot(value: unknown, status = 0): WalletBa
   ) {
     throw new WalletReadRequestError("WALLET_READ_RESPONSE_INVALID", true, status);
   }
+  const items = value.items.map((item) => balance(item, status));
+  const tokenAddresses = items
+    .filter((item) => item.assetType === "erc20")
+    .map((item) => item.tokenAddress!.toLowerCase());
+  const valued = items.every((item) => item.usdValueDecimal !== null);
+  if (
+    items.length < 1 ||
+    items[0]?.assetType !== "native" ||
+    items.filter((item) => item.assetType === "native").length !== 1 ||
+    new Set(tokenAddresses).size !== tokenAddresses.length ||
+    (valued &&
+      (value.totalUsdValueDecimal === null ||
+        decimalSum(items.map((item) => item.usdValueDecimal!)) !== value.totalUsdValueDecimal)) ||
+    (!valued && value.totalUsdValueDecimal !== null)
+  ) {
+    throw new WalletReadRequestError("WALLET_READ_RESPONSE_INVALID", true, status);
+  }
   return {
     address: value.address as EvmAddress,
     blockNumberDecimal: value.blockNumberDecimal,
     chainId: Number(value.chainId),
-    items: value.items.map((item) => balance(item, status)),
+    items,
     readAt: value.readAt,
     totalUsdValueDecimal: value.totalUsdValueDecimal as string | null,
     walletId: value.walletId,
@@ -253,7 +329,19 @@ export function parseWalletReceiveContent(value: unknown, status = 0): WalletRec
   ) {
     throw new WalletReadRequestError("WALLET_READ_RESPONSE_INVALID", true, status);
   }
-  return { ...value } as unknown as WalletReceiveContent;
+  const parsed = { ...value } as unknown as WalletReceiveContent;
+  const expected =
+    parsed.tokenAddress === null
+      ? `ethereum:${parsed.address}@${parsed.chainId}${
+          parsed.amountBaseUnit === null ? "" : `?value=${parsed.amountBaseUnit}`
+        }`
+      : `ethereum:${getAddress(parsed.tokenAddress)}@${parsed.chainId}/transfer?address=${
+          parsed.address
+        }${parsed.amountBaseUnit === null ? "" : `&uint256=${parsed.amountBaseUnit}`}`;
+  if (parsed.eip681 !== expected) {
+    throw new WalletReadRequestError("WALLET_READ_RESPONSE_INVALID", true, status);
+  }
+  return parsed;
 }
 
 export function parseAddressBookPage(value: unknown, status = 0): AddressBookPage {
@@ -261,6 +349,7 @@ export function parseAddressBookPage(value: unknown, status = 0): AddressBookPag
     !record(value) ||
     !exact(value, ["chainId", "classification", "entries", "ownWallets"]) ||
     !Number.isSafeInteger(value.chainId) ||
+    Number(value.chainId) < 1 ||
     !Array.isArray(value.entries) ||
     !Array.isArray(value.ownWallets)
   ) {
@@ -274,6 +363,9 @@ export function parseAddressBookPage(value: unknown, status = 0): AddressBookPag
       typeof item.address !== "string" ||
       !addressPattern.test(item.address) ||
       typeof item.name !== "string" ||
+      item.name.length < 1 ||
+      item.name.length > 80 ||
+      /\p{Cc}/u.test(item.name) ||
       typeof item.walletId !== "string" ||
       !uuidPattern.test(item.walletId)
     ) {
@@ -281,6 +373,15 @@ export function parseAddressBookPage(value: unknown, status = 0): AddressBookPag
     }
     return { address: item.address as EvmAddress, name: item.name, walletId: item.walletId };
   });
+  if (
+    entries.some((entry) => entry.chainId !== value.chainId) ||
+    new Set(entries.map((entry) => entry.entryId)).size !== entries.length ||
+    new Set(entries.map((entry) => entry.address.toLowerCase())).size !== entries.length ||
+    new Set(ownWallets.map((wallet) => wallet.walletId)).size !== ownWallets.length ||
+    new Set(ownWallets.map((wallet) => wallet.address.toLowerCase())).size !== ownWallets.length
+  ) {
+    throw new WalletReadRequestError("ADDRESS_BOOK_RESPONSE_INVALID", true, status);
+  }
   let classification: AddressBookPage["classification"] = null;
   if (value.classification !== null) {
     const item = value.classification;
@@ -296,6 +397,31 @@ export function parseAddressBookPage(value: unknown, status = 0): AddressBookPag
       (item.walletId !== null &&
         (typeof item.walletId !== "string" || !uuidPattern.test(item.walletId)))
     ) {
+      throw new WalletReadRequestError("ADDRESS_BOOK_RESPONSE_INVALID", true, status);
+    }
+    const owned = ownWallets.find(
+      (wallet) =>
+        wallet.walletId === item.walletId &&
+        wallet.address.toLowerCase() === item.address.toLowerCase(),
+    );
+    const known = entries.find(
+      (entry) =>
+        entry.entryId === item.entryId && entry.address.toLowerCase() === item.address.toLowerCase(),
+    );
+    const validPointers =
+      (item.kind === "own-wallet" && item.entryId === null && item.walletId !== null && owned) ||
+      (item.kind === "known-external" &&
+        item.entryId !== null &&
+        item.walletId === null &&
+        known) ||
+      (item.kind === "new-external" &&
+        item.entryId === null &&
+        item.walletId === null &&
+        !ownWallets.some(
+          (wallet) => wallet.address.toLowerCase() === item.address.toLowerCase(),
+        ) &&
+        !entries.some((entry) => entry.address.toLowerCase() === item.address.toLowerCase()));
+    if (!validPointers) {
       throw new WalletReadRequestError("ADDRESS_BOOK_RESPONSE_INVALID", true, status);
     }
     classification = item as unknown as AddressBookPage["classification"];
