@@ -88,6 +88,14 @@ export interface StoredKeystoreFailure {
   windowStartedAt: Date;
 }
 
+export interface StoredKeystoreResetPreview {
+  contentDigest: string;
+  expiresAt: Date;
+  previewTokenDigest: Buffer;
+  secretVersion: number;
+  userId: string;
+}
+
 export interface KeystoreStore {
   clearKeystoreFailures(userId: string, sourceSessionId: string): Promise<void>;
   createKeystore(keystore: StoredKeystore): Promise<void>;
@@ -131,6 +139,17 @@ export interface KeystoreStore {
     userId: string;
     walletId: string;
   }): Promise<CustodyWallet>;
+  createKeystoreResetPreview(preview: StoredKeystoreResetPreview): Promise<void>;
+  getKeystoreResetPreview(
+    userId: string,
+    previewTokenDigest: Uint8Array,
+  ): Promise<StoredKeystoreResetPreview | null>;
+  resetKeystore(input: {
+    expectedVersion: number;
+    now: Date;
+    previewTokenDigest: Uint8Array;
+    userId: string;
+  }): Promise<void>;
 }
 
 export interface WalletEnvelopeMaterial {

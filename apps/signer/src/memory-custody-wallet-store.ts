@@ -7,6 +7,7 @@ import type {
   KeystoreStore,
   StoredKeystore,
   StoredKeystoreFailure,
+  StoredKeystoreResetPreview,
   StoredCustodyWallet,
   WalletEnvelopeMaterial,
   WalletEnvelopeReplacement,
@@ -57,6 +58,14 @@ function cloneFailure(failure: StoredKeystoreFailure): StoredKeystoreFailure {
   };
 }
 
+function cloneResetPreview(preview: StoredKeystoreResetPreview): StoredKeystoreResetPreview {
+  return {
+    ...preview,
+    expiresAt: new Date(preview.expiresAt),
+    previewTokenDigest: Buffer.from(preview.previewTokenDigest),
+  };
+}
+
 export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreStore {
   readonly #audits: Array<{ action: string; walletId: string }> = [];
   readonly #envelopes = new Map<string, Map<number, CustodyEnvelope>>();
@@ -64,6 +73,7 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
   readonly #failLifecycleAt: "before-commit" | null;
   readonly #keystoreFailures = new Map<string, StoredKeystoreFailure>();
   readonly #keystores = new Map<string, StoredKeystore>();
+  readonly #resetPreviews = new Map<string, StoredKeystoreResetPreview>();
   readonly #wallets = new Map<string, StoredCustodyWallet>();
   readonly openAttempts: number[] = [];
 
@@ -302,6 +312,58 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
     wallet.updatedAt = new Date(input.updatedAt);
     this.#audits.push({ action: "wallet.mode-switch", walletId: wallet.walletId });
     return publicWallet(wallet);
+  }
+
+  async createKeystoreResetPreview(preview: StoredKeystoreResetPreview): Promise<void> {
+    this.#resetPreviews.set(
+      `${preview.userId}:${preview.previewTokenDigest.toString("hex")}`,
+      cloneResetPreview(preview),
+    );
+  }
+
+  async getKeystoreResetPreview(
+    userId: string,
+    previewTokenDigest: Uint8Array,
+  ): Promise<StoredKeystoreResetPreview | null> {
+    const preview = this.#resetPreviews.get(
+      `${userId}:${Buffer.from(previewTokenDigest).toString("hex")}`,
+    );
+    return preview ? cloneResetPreview(preview) : null;
+  }
+
+  async resetKeystore(input: {
+    expectedVersion: number;
+    now: Date;
+    previewTokenDigest: Uint8Array;
+    userId: string;
+  }): Promise<void> {
+    const previewKey = `${input.userId}:${Buffer.from(input.previewTokenDigest).toString("hex")}`;
+    const preview = this.#resetPreviews.get(previewKey);
+    const keystore = this.#keystores.get(input.userId);
+    if (!preview || preview.expiresAt <= input.now) throw new SignerError("PREVIEW_EXPIRED");
+    if (!keystore || keystore.current.secretVersion !== input.expectedVersion) {
+      throw new SignerError("SECRET_VERSION_CONFLICT");
+    }
+    if (this.#failLifecycleAt === "before-commit") {
+      throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+    }
+    const destroyed = [...this.#wallets.values()]
+      .filter((wallet) => wallet.userId === input.userId && wallet.mode === "user-password")
+      .map(({ walletId }) => walletId);
+    for (const walletId of destroyed) {
+      this.#wallets.delete(walletId);
+      this.#envelopes.delete(walletId);
+    }
+    for (let index = this.#audits.length - 1; index >= 0; index -= 1) {
+      if (destroyed.includes(this.#audits[index]!.walletId)) this.#audits.splice(index, 1);
+    }
+    this.#keystores.delete(input.userId);
+    for (const key of this.#keystoreFailures.keys()) {
+      if (key.startsWith(`${input.userId}:`)) this.#keystoreFailures.delete(key);
+    }
+    for (const key of this.#resetPreviews.keys()) {
+      if (key.startsWith(`${input.userId}:`)) this.#resetPreviews.delete(key);
+    }
   }
 
   async mutateEnvelopeForTest(

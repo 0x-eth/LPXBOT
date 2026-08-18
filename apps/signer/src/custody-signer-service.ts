@@ -1,4 +1,9 @@
-import { randomBytes as systemRandomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import {
+  createHash,
+  randomBytes as systemRandomBytes,
+  randomUUID,
+  timingSafeEqual,
+} from "node:crypto";
 
 import type { CustodyWallet, CustodyWalletPage, WalletEncryptionMode } from "@lpbot/api-contract";
 
@@ -22,6 +27,33 @@ const maximumFailures = 5;
 
 type ZeroizeLabel = "derived-kek" | "password" | "secret-ingress";
 type DerivePasswordKek = (password: Uint8Array, salt: Uint8Array) => Buffer;
+
+export interface KeystoreDependencySnapshot {
+  assetRiskDigest: string;
+  complete: boolean;
+  policyCount: number;
+  strategyCount: number;
+  taskCount: number;
+  walletsWithNonzeroAssets: number;
+  walletsWithPositions: number;
+}
+
+export interface KeystoreDependencyInventory {
+  inspect(userId: string): Promise<KeystoreDependencySnapshot>;
+}
+
+export interface KeystoreResetPreview {
+  confirmationPhrase: "I_LOSE_ALL_PASSWORD_WALLETS";
+  expiresAt: string;
+  policyCount: number;
+  previewToken: string;
+  secretVersion: number;
+  strategyCount: number;
+  taskCount: number;
+  walletCount: number;
+  walletsWithNonzeroAssets: number;
+  walletsWithPositions: number;
+}
 
 interface UnlockSession {
   deadline: number;
@@ -75,6 +107,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
   readonly #now: () => Date;
   readonly #backoffJitter: (maximumExclusive: number) => number;
   readonly #derivePasswordKek: DerivePasswordKek;
+  readonly #dependencyInventory: KeystoreDependencyInventory | null;
   readonly #keystoreStore: KeystoreStore | null;
   readonly #monotonicNow: () => number;
   readonly #onZeroize: (label: ZeroizeLabel, bytes: Uint8Array) => void;
@@ -88,6 +121,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
 
   constructor(input: {
     backoffJitter?: (maximumExclusive: number) => number;
+    dependencyInventory?: KeystoreDependencyInventory | undefined;
     derivePasswordKek?: DerivePasswordKek;
     keystoreStore?: KeystoreStore;
     monotonicNow?: () => number;
@@ -104,6 +138,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
       ((maximumExclusive) =>
         maximumExclusive <= 1 ? 0 : systemRandomBytes(4).readUInt32BE(0) % maximumExclusive);
     this.#derivePasswordKek = input.derivePasswordKek ?? deriveArgon2idKek;
+    this.#dependencyInventory = input.dependencyInventory ?? null;
     this.#keystoreStore = input.keystoreStore ?? (supportsKeystore(input.store) ? input.store : null);
     this.#monotonicNow = input.monotonicNow ?? (() => performance.now());
     this.#now = input.now ?? (() => new Date());
@@ -349,6 +384,106 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
   async shutdown(): Promise<void> {
     const users = new Set([...this.#unlockSessions.values()].map(({ userId }) => userId));
     for (const userId of users) await this.#revokeUser(userId);
+  }
+
+  async createKeystoreResetPreview(userId: string): Promise<KeystoreResetPreview> {
+    const store = this.#requireKeystoreStore();
+    const keystore = await store.getKeystore(userId);
+    if (!keystore) throw new SignerError("INVALID_CREDENTIALS");
+    const snapshot = await this.#resetSnapshot(userId);
+    const tokenBytes = Buffer.from(this.#randomBytes(32));
+    if (tokenBytes.length !== 32) throw new SignerError("SIGNER_UNAVAILABLE", true);
+    const previewToken = tokenBytes.toString("base64url");
+    const previewTokenDigest = createHash("sha256").update(tokenBytes).digest();
+    tokenBytes.fill(0);
+    const now = this.#now();
+    const expiresAt = new Date(now.getTime() + 300_000);
+    try {
+      await store.createKeystoreResetPreview({
+        contentDigest: this.#resetContentDigest(snapshot),
+        expiresAt,
+        previewTokenDigest,
+        secretVersion: keystore.current.secretVersion,
+        userId,
+      });
+    } finally {
+      previewTokenDigest.fill(0);
+    }
+    return {
+      confirmationPhrase: "I_LOSE_ALL_PASSWORD_WALLETS",
+      expiresAt: expiresAt.toISOString(),
+      policyCount: snapshot.policyCount,
+      previewToken,
+      secretVersion: keystore.current.secretVersion,
+      strategyCount: snapshot.strategyCount,
+      taskCount: snapshot.taskCount,
+      walletCount: snapshot.walletCount,
+      walletsWithNonzeroAssets: snapshot.walletsWithNonzeroAssets,
+      walletsWithPositions: snapshot.walletsWithPositions,
+    };
+  }
+
+  async resetKeystore(input: {
+    ingress: Uint8Array;
+    userId: string;
+  }): Promise<KeystoreStatus> {
+    const store = this.#requireKeystoreStore();
+    let previewTokenBytes: Buffer | null = null;
+    let previewTokenDigest: Buffer | null = null;
+    try {
+      const body = secretRecord(input.ingress, [
+        "confirmationPhrase",
+        "expectedVersion",
+        "previewToken",
+      ]);
+      if (body.confirmationPhrase !== "I_LOSE_ALL_PASSWORD_WALLETS") {
+        throw new SignerError("CONFIRMATION_MISMATCH");
+      }
+      if (!Number.isSafeInteger(body.expectedVersion) || Number(body.expectedVersion) < 1) {
+        throw new SignerError("SECRET_VERSION_CONFLICT");
+      }
+      if (
+        typeof body.previewToken !== "string" ||
+        body.previewToken.length < 32 ||
+        body.previewToken.length > 128
+      ) {
+        throw new SignerError("PREVIEW_EXPIRED");
+      }
+      previewTokenBytes = Buffer.from(body.previewToken, "base64url");
+      if (
+        previewTokenBytes.length !== 32 ||
+        previewTokenBytes.toString("base64url") !== body.previewToken
+      ) {
+        throw new SignerError("PREVIEW_EXPIRED");
+      }
+      body.previewToken = "";
+      previewTokenDigest = createHash("sha256").update(previewTokenBytes).digest();
+      const preview = await store.getKeystoreResetPreview(input.userId, previewTokenDigest);
+      const now = this.#now();
+      if (!preview || preview.expiresAt <= now) throw new SignerError("PREVIEW_EXPIRED");
+      if (
+        preview.secretVersion !== body.expectedVersion ||
+        (await store.getKeystore(input.userId))?.current.secretVersion !== body.expectedVersion
+      ) {
+        throw new SignerError("SECRET_VERSION_CONFLICT");
+      }
+      const snapshot = await this.#resetSnapshot(input.userId);
+      if (this.#resetContentDigest(snapshot) !== preview.contentDigest) {
+        throw new SignerError("PREVIEW_CHANGED");
+      }
+      await store.resetKeystore({
+        expectedVersion: Number(body.expectedVersion),
+        now,
+        previewTokenDigest,
+        userId: input.userId,
+      });
+      await this.#revokeUser(input.userId);
+      return { configured: false, status: "unconfigured", version: 0 };
+    } finally {
+      previewTokenBytes?.fill(0);
+      previewTokenDigest?.fill(0);
+      this.#zeroize("secret-ingress", input.ingress);
+    }
   }
 
   async importWallet(input: {
@@ -642,6 +777,54 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     } catch {
       return null;
     }
+  }
+
+  async #resetSnapshot(userId: string): Promise<KeystoreDependencySnapshot & { walletCount: number }> {
+    if (!this.#dependencyInventory) {
+      throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+    }
+    let inventory: KeystoreDependencySnapshot;
+    try {
+      inventory = await this.#dependencyInventory.inspect(userId);
+    } catch {
+      throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+    }
+    const counts = [
+      inventory.policyCount,
+      inventory.strategyCount,
+      inventory.taskCount,
+      inventory.walletsWithNonzeroAssets,
+      inventory.walletsWithPositions,
+    ];
+    if (
+      inventory.complete !== true ||
+      counts.some((count) => !Number.isSafeInteger(count) || count < 0) ||
+      typeof inventory.assetRiskDigest !== "string" ||
+      inventory.assetRiskDigest.length < 1 ||
+      inventory.assetRiskDigest.length > 256
+    ) {
+      throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+    }
+    const walletCount = (await this.#requireKeystoreStore().listUserPasswordWalletMaterials(userId))
+      .length;
+    return { ...inventory, walletCount };
+  }
+
+  #resetContentDigest(snapshot: KeystoreDependencySnapshot & { walletCount: number }): string {
+    return createHash("sha256")
+      .update(
+        JSON.stringify({
+          assetRiskDigest: snapshot.assetRiskDigest,
+          policyCount: snapshot.policyCount,
+          strategyCount: snapshot.strategyCount,
+          taskCount: snapshot.taskCount,
+          walletCount: snapshot.walletCount,
+          walletsWithNonzeroAssets: snapshot.walletsWithNonzeroAssets,
+          walletsWithPositions: snapshot.walletsWithPositions,
+        }),
+        "utf8",
+      )
+      .digest("hex");
   }
 
   async #expireUnlockSessions(userId: string): Promise<void> {
