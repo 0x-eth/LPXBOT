@@ -6,7 +6,6 @@ import {
   OkxTransportFixture,
   parseCredentialIngress,
   usableOkxFixtureValidation,
-  type OkxCredentialBytes,
   type OkxProviderValidation,
   type OkxReadOnlyTransport,
 } from "../apps/okx-connector/src/index.js";
@@ -119,7 +118,7 @@ describe("P04-07 OKX credential lifecycle", () => {
     const released = new Promise<void>((resolve) => (releaseTest = resolve));
     let calls = 0;
     const transport: OkxReadOnlyTransport = {
-      async validate(_credentials: OkxCredentialBytes): Promise<OkxProviderValidation> {
+      async validate(): Promise<OkxProviderValidation> {
         calls += 1;
         if (calls === 2) {
           testEntered();
@@ -156,7 +155,7 @@ describe("P04-07 OKX credential lifecycle", () => {
     const released = new Promise<void>((resolve) => (releaseTest = resolve));
     let calls = 0;
     const transport: OkxReadOnlyTransport = {
-      async validate(_credentials: OkxCredentialBytes): Promise<OkxProviderValidation> {
+      async validate(): Promise<OkxProviderValidation> {
         calls += 1;
         if (calls === 2) {
           testEntered();

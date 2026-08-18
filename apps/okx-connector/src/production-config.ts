@@ -20,7 +20,14 @@ export class OkxConnectorConfigurationError extends Error {
 
 function required(environment: NodeJS.ProcessEnv, key: string, minimum = 1): string {
   const value = environment[key];
-  if (!value || value.length < minimum || /[\u0000-\u001f\u007f]/u.test(value)) {
+  if (
+    !value ||
+    value.length < minimum ||
+    [...value].some((character) => {
+      const codePoint = character.codePointAt(0)!;
+      return codePoint <= 0x1f || codePoint === 0x7f;
+    })
+  ) {
     throw new OkxConnectorConfigurationError(`${key} is required`);
   }
   return value;

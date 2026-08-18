@@ -18,7 +18,14 @@ const credentialFields = ["apiKey", "secretKey", "passphrase"] as const;
 
 function validSecretLength(value: string): boolean {
   const bytes = Buffer.byteLength(value, "utf8");
-  return bytes >= 1 && bytes <= 512 && !/[\u0000-\u001f\u007f]/u.test(value);
+  return (
+    bytes >= 1 &&
+    bytes <= 512 &&
+    ![...value].some((character) => {
+      const codePoint = character.codePointAt(0)!;
+      return codePoint <= 0x1f || codePoint === 0x7f;
+    })
+  );
 }
 
 export function parseCredentialIngress(ingress: Buffer): OkxCredentialBytes {

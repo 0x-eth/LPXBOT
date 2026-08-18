@@ -282,7 +282,7 @@ export class OkxTransportFixture implements OkxReadOnlyTransport {
     this.#results = [...results];
   }
 
-  async validate(_credentials: OkxCredentialBytes): Promise<OkxProviderValidation> {
+  async validate(): Promise<OkxProviderValidation> {
     this.calls += 1;
     const result = this.#results.shift();
     if (!result) throw new Error("No OKX fixture response configured");

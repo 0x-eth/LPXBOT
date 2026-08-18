@@ -128,7 +128,7 @@ export class OkxCredentialService implements OkxConnectorApplication {
     const envelope = await this.#repository.getActiveEnvelope(input.userId, input.expectedVersion);
     if (!envelope) throw new OkxConnectorError("CAPABILITY_EXPIRED");
     let credentials: OkxCredentialBytes | null = null;
-    let nextStatus: OkxKeyStatusName = "unknown";
+    let nextStatus: OkxKeyStatusName;
     try {
       credentials = await decryptOkxCredentials(envelope, this.#kms);
       nextStatus = validationStatus(
@@ -137,8 +137,6 @@ export class OkxCredentialService implements OkxConnectorApplication {
     } catch (error) {
       if (error instanceof OkxConnectorError && error.code === "CREDENTIAL_INTEGRITY_FAILED") {
         nextStatus = "revoked";
-      } else if (error instanceof OkxConnectorError && error.code === "KMS_UNAVAILABLE") {
-        nextStatus = "unknown";
       } else {
         nextStatus = "unknown";
       }
