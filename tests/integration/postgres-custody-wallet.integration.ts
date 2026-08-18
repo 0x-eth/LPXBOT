@@ -19,6 +19,11 @@ const walletAssetMigration = readFileSync(
   "utf8",
 );
 const [, walletAssetDown] = walletAssetMigration.split("-- migrate:down");
+const walletTransferMigration = readFileSync(
+  path.resolve("infra/migrations/20260818000700_create_wallet_transfers.sql"),
+  "utf8",
+);
+const [, walletTransferDown] = walletTransferMigration.split("-- migrate:down");
 const userA = "43000000-0000-4000-8000-000000000001";
 const userB = "43000000-0000-4000-8000-000000000002";
 const address = "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf";
@@ -79,6 +84,7 @@ describe("P04-02 PostgreSQL custody wallet store", () => {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
+      await client.query(walletTransferDown!);
       await client.query(walletAssetDown!);
       await client.query(down!);
       await client.query(up!);
