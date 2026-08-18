@@ -34,8 +34,9 @@ function sorted(values) {
 function statusRows(markdown) {
   const rows = new Map();
   const section =
-    markdown.split("<!-- P04_STATUS_TABLE_START -->")[1]?.split("<!-- P04_STATUS_TABLE_END -->")[0] ??
-    "";
+    markdown
+      .split("<!-- P04_STATUS_TABLE_START -->")[1]
+      ?.split("<!-- P04_STATUS_TABLE_END -->")[0] ?? "";
   for (const line of section.split("\n")) {
     if (!line.startsWith("|")) continue;
     const columns = line
@@ -77,7 +78,10 @@ test("P04 status is exactly 3 implemented-assumed / 9 planned with global 52 / 1
   assert.match(traceability, /\| 其余 `planned` \| 144 \|/u);
   assert.match(roadmap, /P04[^\n]*3[^\n]*implemented-assumed[^\n]*9[^\n]*planned/iu);
   for (const id of IMPLEMENTED) {
-    assert.match(functionMatrix, new RegExp(`\\| ${id} \\|[^\\n]*implemented-assumed[^\\n]*P04-02`, "u"));
+    assert.match(
+      functionMatrix,
+      new RegExp(`\\| ${id} \\|[^\\n]*implemented-assumed[^\\n]*P04-02`, "u"),
+    );
   }
 });
 
