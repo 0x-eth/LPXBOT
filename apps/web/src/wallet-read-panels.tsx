@@ -25,6 +25,8 @@ import encodeQR from "qr";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { WalletReadClient, WalletReadRequestError } from "./wallet-read-client";
+import { WalletTransferClient } from "./wallet-transfer-client";
+import { WalletTransferPanel } from "./wallet-transfer-panel";
 
 const chainId = 56;
 const categoryLabels: Record<AddressBookCategory, string> = {
@@ -490,6 +492,7 @@ function AddressBookPanel({ client }: { client: WalletReadClient }) {
 
 export function WalletReadPanels({ wallets }: { wallets: CustodyWallet[] }) {
   const client = useMemo(() => new WalletReadClient(), []);
+  const transferClient = useMemo(() => new WalletTransferClient(), []);
   const [walletId, setWalletId] = useState(wallets[0]?.walletId ?? "");
   const [balances, setBalances] = useState<WalletBalanceSnapshot | null>(null);
   const [tokens, setTokens] = useState<WalletTokenPage | null>(null);
@@ -611,24 +614,32 @@ export function WalletReadPanels({ wallets }: { wallets: CustodyWallet[] }) {
                           : "暂无价格"}
                     </span>
                   </div>
-                  {asset.assetType === "erc20" && !asset.default ? (
-                    <button
-                      aria-label={`删除 ${asset.symbol}`}
-                      className="icon-button danger-button"
-                      onClick={() =>
-                        void client.deleteToken(wallet.walletId, chainId, asset.tokenAddress!).then(
-                          () => load(),
-                          (failure) => setError(requestError(failure)),
-                        )
-                      }
-                      title="删除自定义 Token"
-                      type="button"
-                    >
-                      <Trash2 aria-hidden="true" size={15} />
-                    </button>
-                  ) : (
-                    <span aria-hidden="true" className="asset-action-placeholder" />
-                  )}
+                  <div className="wallet-asset-actions">
+                    <WalletTransferPanel
+                      asset={asset}
+                      readClient={client}
+                      transferClient={transferClient}
+                      wallet={wallet}
+                    />
+                    {asset.assetType === "erc20" && !asset.default ? (
+                      <button
+                        aria-label={`删除 ${asset.symbol}`}
+                        className="icon-button danger-button"
+                        onClick={() =>
+                          void client
+                            .deleteToken(wallet.walletId, chainId, asset.tokenAddress!)
+                            .then(
+                              () => load(),
+                              (failure) => setError(requestError(failure)),
+                            )
+                        }
+                        title="删除自定义 Token"
+                        type="button"
+                      >
+                        <Trash2 aria-hidden="true" size={15} />
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>
