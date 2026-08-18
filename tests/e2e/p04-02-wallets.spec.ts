@@ -43,7 +43,10 @@ async function auth(route: Route) {
   });
 }
 
-async function install(page: Page, state: { error?: string; items: ReturnType<typeof wallet>[]; loadingMs?: number }) {
+async function install(
+  page: Page,
+  state: { error?: string; items: ReturnType<typeof wallet>[]; loadingMs?: number },
+) {
   await page.route("**/api/auth/me", auth);
   await page.route("**/api/user/preferences", (route) =>
     route.fulfill({
@@ -82,12 +85,18 @@ async function install(page: Page, state: { error?: string; items: ReturnType<ty
       if (state.error) {
         await route.fulfill({
           contentType: "application/json",
-          json: { error: { code: state.error, message: state.error, requestId: "error", retryable: true }, success: false },
+          json: {
+            error: { code: state.error, message: state.error, requestId: "error", retryable: true },
+            success: false,
+          },
           status: state.error === "SIGNER_UNAVAILABLE" ? 503 : 500,
         });
         return;
       }
-      await route.fulfill({ contentType: "application/json", json: envelope({ items: state.items }) });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({ items: state.items }),
+      });
       return;
     }
     if (request.method() === "POST" && pathname.endsWith("/import")) {
@@ -95,18 +104,34 @@ async function install(page: Page, state: { error?: string; items: ReturnType<ty
       if (body.privateKey !== secret) {
         await route.fulfill({
           contentType: "application/json",
-          json: { error: { code: "INVALID_PRIVATE_KEY", message: "invalid", requestId: "invalid", retryable: false }, success: false },
+          json: {
+            error: {
+              code: "INVALID_PRIVATE_KEY",
+              message: "invalid",
+              requestId: "invalid",
+              retryable: false,
+            },
+            success: false,
+          },
           status: 400,
         });
         return;
       }
       state.items = [wallet("Imported")];
-      await route.fulfill({ contentType: "application/json", json: envelope(state.items[0]), status: 201 });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope(state.items[0]),
+        status: 201,
+      });
       return;
     }
     if (request.method() === "POST" && pathname.endsWith("/generate")) {
       state.items = [wallet("Generated")];
-      await route.fulfill({ contentType: "application/json", json: envelope(state.items[0]), status: 201 });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope(state.items[0]),
+        status: 201,
+      });
       return;
     }
     await route.abort("failed");
@@ -115,7 +140,9 @@ async function install(page: Page, state: { error?: string; items: ReturnType<ty
 
 async function axe(page: Page) {
   const result = await new AxeBuilder({ page }).analyze();
-  expect(result.violations.filter(({ impact }) => impact === "serious" || impact === "critical")).toEqual([]);
+  expect(
+    result.violations.filter(({ impact }) => impact === "serious" || impact === "critical"),
+  ).toEqual([]);
 }
 
 test("wallets renders loading, empty, ready, desktop/mobile, and axe states", async ({ page }) => {
@@ -136,7 +163,9 @@ test("wallets renders loading, empty, ready, desktop/mobile, and axe states", as
   await expect(page.getByText(/余额|Token|地址簿|删除|转账/u)).toHaveCount(0);
 });
 
-test("import is write-only, validates, clears on failure/cancel/success, and restores focus", async ({ page }) => {
+test("import is write-only, validates, clears on failure/cancel/success, and restores focus", async ({
+  page,
+}) => {
   await install(page, { items: [] });
   await page.goto("/wallets");
   const trigger = page.getByRole("button", { name: "导入钱包" });
@@ -161,7 +190,9 @@ test("import is write-only, validates, clears on failure/cancel/success, and res
   await expect(trigger).toBeFocused();
 });
 
-test("generate has pending state and duplicate/reauth/signer/error states are explicit", async ({ page }) => {
+test("generate has pending state and duplicate/reauth/signer/error states are explicit", async ({
+  page,
+}) => {
   await install(page, { items: [] });
   await page.goto("/wallets");
   await page.getByRole("button", { name: "生成钱包" }).click();
@@ -190,7 +221,11 @@ test("wallet actions are keyboard reachable with stable dialog focus", async ({ 
   const controls = ["刷新钱包", "导入钱包", "生成钱包"];
   for (const name of controls) {
     await page.keyboard.press("Tab");
-    while (!(await page.getByRole("button", { name }).evaluate((element) => element === document.activeElement))) {
+    while (
+      !(await page
+        .getByRole("button", { name })
+        .evaluate((element) => element === document.activeElement))
+    ) {
       await page.keyboard.press("Tab");
     }
     await expect(page.getByRole("button", { name })).toBeFocused();

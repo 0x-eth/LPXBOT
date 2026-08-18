@@ -23,7 +23,9 @@ function success(data: unknown, status = 200): Response {
 
 describe("P04-02 wallet browser client", () => {
   it("strictly parses the wallet DTO allowlist", async () => {
-    const valid = new WalletClient(vi.fn<typeof fetch>().mockResolvedValue(success({ items: [wallet] })));
+    const valid = new WalletClient(
+      vi.fn<typeof fetch>().mockResolvedValue(success({ items: [wallet] })),
+    );
     await expect(valid.list()).resolves.toEqual({ items: [wallet] });
 
     for (const malformed of [

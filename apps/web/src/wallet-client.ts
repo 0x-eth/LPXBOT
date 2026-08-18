@@ -174,7 +174,8 @@ export class WalletClient {
     }
     if (!response.ok) {
       const envelope = isRecord(body) ? (body as ErrorEnvelope) : null;
-      const code = typeof envelope?.error?.code === "string" ? envelope.error.code : "WALLET_REQUEST_FAILED";
+      const code =
+        typeof envelope?.error?.code === "string" ? envelope.error.code : "WALLET_REQUEST_FAILED";
       const retryable = envelope?.error?.retryable === true;
       throw new WalletRequestError(code, retryable, response.status);
     }

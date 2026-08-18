@@ -62,11 +62,7 @@ function WalletState({ status }: { status: WalletPageStatus }) {
 
 function WalletRecord({ wallet }: { wallet: CustodyWallet }) {
   const custodyLabel =
-    wallet.lockStatus === "ready"
-      ? "已托管"
-      : wallet.lockStatus === "locked"
-        ? "已锁定"
-        : "已隔离";
+    wallet.lockStatus === "ready" ? "已托管" : wallet.lockStatus === "locked" ? "已锁定" : "已隔离";
   return (
     <li className="wallet-record">
       <div className="wallet-record-icon" aria-hidden="true">
@@ -147,7 +143,8 @@ function ImportWalletDialog({
           ? "该地址已由当前账户托管"
           : requestError instanceof WalletRequestError && requestError.code === "REAUTH_REQUIRED"
             ? "需要重新验证身份"
-            : requestError instanceof WalletRequestError && requestError.code === "SIGNER_UNAVAILABLE"
+            : requestError instanceof WalletRequestError &&
+                requestError.code === "SIGNER_UNAVAILABLE"
               ? "签名服务暂时不可用"
               : "导入失败",
       );
@@ -218,7 +215,11 @@ function ImportWalletDialog({
                 </button>
               </Dialog.Close>
               <button className="primary-button" disabled={submitting} type="submit">
-                {submitting ? <LoaderCircle aria-hidden="true" className="spin-icon" size={16} /> : <Download aria-hidden="true" size={16} />}
+                {submitting ? (
+                  <LoaderCircle aria-hidden="true" className="spin-icon" size={16} />
+                ) : (
+                  <Download aria-hidden="true" size={16} />
+                )}
                 确认导入
               </button>
             </div>
@@ -338,7 +339,11 @@ function GenerateWalletDialog({
                 </button>
               </Dialog.Close>
               <button className="primary-button" disabled={submitting} type="submit">
-                {submitting ? <LoaderCircle aria-hidden="true" className="spin-icon" size={16} /> : <Plus aria-hidden="true" size={16} />}
+                {submitting ? (
+                  <LoaderCircle aria-hidden="true" className="spin-icon" size={16} />
+                ) : (
+                  <Plus aria-hidden="true" size={16} />
+                )}
                 确认生成
               </button>
             </div>
@@ -380,7 +385,10 @@ export function WalletsPage() {
   }, [load]);
 
   const created = (wallet: CustodyWallet) => {
-    setWallets((current) => [wallet, ...current.filter(({ walletId }) => walletId !== wallet.walletId)]);
+    setWallets((current) => [
+      wallet,
+      ...current.filter(({ walletId }) => walletId !== wallet.walletId),
+    ]);
     setStatus("ready");
   };
 
@@ -400,7 +408,11 @@ export function WalletsPage() {
             onClick={() => void load()}
             type="button"
           >
-            <RefreshCw aria-hidden="true" className={status === "loading" ? "spin-icon" : undefined} size={18} />
+            <RefreshCw
+              aria-hidden="true"
+              className={status === "loading" ? "spin-icon" : undefined}
+              size={18}
+            />
           </button>
           <button
             className="secondary-button"
