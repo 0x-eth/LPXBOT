@@ -4,6 +4,7 @@ import {
   InMemoryCustodyWalletStore,
   IsolatedWalletSigner,
   LocalKmsFixture,
+  type WalletDependencySnapshot,
 } from "../apps/signer/src/index.js";
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -56,12 +57,17 @@ async function fixture() {
   return { app, otherToken, store, token, wallet };
 }
 
-async function lifecycleFixture() {
+async function lifecycleFixture(
+  options: {
+    snapshot?: WalletDependencySnapshot;
+  } = {},
+) {
   const sessionStore = new SessionFixtureStore();
   const token = await issueFixtureSession(sessionStore, userId, now);
   const store = new InMemoryCustodyWalletStore();
+  let clock = now;
   const inventory = {
-    snapshot: {
+    snapshot: options.snapshot ?? {
       assetIds: ["asset:8453:USDC"],
       assetRiskDigest: "sha256:wallet-risk-fixture-v1",
       complete: true,
@@ -79,7 +85,7 @@ async function lifecycleFixture() {
     },
   };
   const serviceOptions = {
-    now: () => now,
+    now: () => clock,
     signer: new IsolatedWalletSigner({
       kms: new LocalKmsFixture({
         activeVersion: "kek-fixture-v1",
@@ -92,9 +98,11 @@ async function lifecycleFixture() {
   };
   const custody = new CustodySignerService(serviceOptions);
   const app = buildApiApp({
-    freshReauthentication: { verify: async () => true },
+    freshReauthentication: {
+      verify: async ({ proof, session }) => proof === `fresh:${session.id}`,
+    },
     maintenance: { enabled: false, message: null, until: null },
-    now: () => now,
+    now: () => clock,
     regionPolicy: () => ({ blocked: false, code: null, message: null }),
     sessionStore,
     tenantId,
@@ -110,7 +118,20 @@ async function lifecycleFixture() {
     tenantId,
     userId,
   });
-  return { app, custody, inventory, store, taskCoordinator, token, wallet };
+  const session = [...sessionStore.sessions.values()].find((value) => value.userId === userId)!;
+  return {
+    advance(milliseconds: number) {
+      clock = new Date(clock.getTime() + milliseconds);
+    },
+    app,
+    custody,
+    inventory,
+    proof: `fresh:${session.id}`,
+    store,
+    taskCoordinator,
+    token,
+    wallet,
+  };
 }
 
 function auth(token: string) {
@@ -224,5 +245,87 @@ describe("P04-04 wallet delete preview API", () => {
     });
     expect(response.json().data.previewToken).toMatch(/^[A-Za-z0-9_-]{43}$/u);
     expect(response.json().data.confirmationPhrase).toMatch(/^DELETE WALLET [A-F0-9]{8}$/u);
+  });
+
+  it("permanently deletes a zero-risk wallet and consumes the preview once", async () => {
+    const { app, custody, proof, store, token, wallet } = await lifecycleFixture({
+      snapshot: {
+        assetIds: [],
+        assetRiskDigest: "sha256:empty-wallet-risk",
+        complete: true,
+        policyIds: [],
+        positionIds: [],
+        taskIds: [],
+      },
+    });
+    const previewResponse = await app.inject({
+      headers: auth(token),
+      method: "POST",
+      payload: {},
+      url: `/api/wallets/${wallet.walletId}/delete-preview`,
+    });
+    const preview = previewResponse.json().data;
+
+    const staleAuthentication = await app.inject({
+      headers: auth(token),
+      method: "DELETE",
+      payload: {
+        expectedRevision: wallet.revision,
+        force: false,
+        previewToken: preview.previewToken,
+      },
+      url: `/api/wallets/${wallet.walletId}`,
+    });
+    expect(staleAuthentication.statusCode).toBe(403);
+    expect(staleAuthentication.json().error.code).toBe("REAUTH_REQUIRED");
+
+    const deleted = await app.inject({
+      headers: { ...auth(token), "x-lpbot-reauthentication": proof },
+      method: "DELETE",
+      payload: {
+        expectedRevision: wallet.revision,
+        force: false,
+        previewToken: preview.previewToken,
+      },
+      url: `/api/wallets/${wallet.walletId}`,
+    });
+    expect(deleted.statusCode).toBe(200);
+    expect(deleted.json().data).toMatchObject({
+      address: wallet.address,
+      deletedAt: now.toISOString(),
+      deletionType: "normal",
+      finalRevision: wallet.revision + 1,
+      walletId: wallet.walletId,
+    });
+    expect(await custody.getWallet(userId, wallet.walletId)).toBeNull();
+    expect(store.envelopeCount).toBe(0);
+    expect(store.auditCount).toBe(2);
+
+    await expect(
+      custody.recoverWallet({ tenantId, userId, walletId: wallet.walletId }),
+    ).rejects.toMatchObject({ code: "WALLET_NOT_FOUND" });
+    await expect(
+      custody.importWallet({
+        ingress: Buffer.from(
+          JSON.stringify({ mode: "server-kek", name: "Reimported", privateKey }),
+          "utf8",
+        ),
+        tenantId,
+        userId,
+      }),
+    ).resolves.toMatchObject({ address: wallet.address });
+
+    const repeated = await app.inject({
+      headers: { ...auth(token), "x-lpbot-reauthentication": proof },
+      method: "DELETE",
+      payload: {
+        expectedRevision: wallet.revision,
+        force: false,
+        previewToken: preview.previewToken,
+      },
+      url: `/api/wallets/${wallet.walletId}`,
+    });
+    expect(repeated.statusCode).toBe(404);
+    expect(repeated.json().error.code).toBe("WALLET_NOT_FOUND");
   });
 });
