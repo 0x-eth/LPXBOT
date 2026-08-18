@@ -55,6 +55,8 @@ import {
   type LoginWalletLinkView,
 } from "./auth-client";
 import { AdminChainManagementSection } from "./chain-management";
+import { browserCustomRpcSession } from "./browser-readonly-rpc";
+import { BrowserCustomRpcSettings } from "./custom-rpc-settings";
 import { Eip1193WalletAdapter, browserEip1193Provider } from "./eip1193-wallet";
 import { ConfirmDialog, FeedbackProvider, useFeedback } from "./feedback";
 import { UserPreferencesProvider, useUserPreferences } from "./preferences";
@@ -400,6 +402,7 @@ function SettingsPage({ client, session }: { client: AuthClient; session: Sessio
       <InterfaceSettings />
       <KeystoreSettings />
       <SecurityPasswordSettings />
+      <BrowserCustomRpcSettings allowedChainIds={session.allowedChainIds} />
       <NotificationSettings />
       <LoginWalletSettingsSection client={client} />
       {session.role === "admin" ? <AdminChainManagementSection /> : null}
@@ -806,6 +809,7 @@ function Shell({ client, onClientChange, page, state }: ShellProps) {
   };
 
   const logout = async () => {
+    browserCustomRpcSession.clear();
     const next = await client.logout();
     onClientChange(next, client.page);
     navigate("/login", { replace: true });
