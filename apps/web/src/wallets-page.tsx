@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 
 import { KeystoreClient } from "./keystore-client";
 import { WalletClient, WalletRequestError } from "./wallet-client";
+import { WalletReadPanels } from "./wallet-read-panels";
 
 type WalletPageStatus =
   | "duplicate"
@@ -1380,6 +1381,7 @@ export function WalletsPage() {
           ))}
         </ul>
       ) : null}
+      {wallets.length > 0 ? <WalletReadPanels wallets={wallets} /> : null}
 
       <ImportWalletDialog
         client={client}
