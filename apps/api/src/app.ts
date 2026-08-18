@@ -883,10 +883,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     done();
   });
 
-  app.addContentTypeParser(
-    walletSecretMediaType,
-    { parseAs: "buffer" },
-    (_request, body, done) => done(null, body),
+  app.addContentTypeParser(walletSecretMediaType, { parseAs: "buffer" }, (_request, body, done) =>
+    done(null, body),
   );
 
   void app.register(cookie);
@@ -3398,6 +3396,240 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         );
       }
       return createSuccessEnvelope(result.value, request.id);
+    });
+
+    const walletFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply | null => {
+      const code =
+        typeof error === "object" && error !== null && "code" in error
+          ? String((error as { code: unknown }).code)
+          : null;
+      const mapped =
+        code === "INVALID_MODE"
+          ? {
+              code,
+              message: "Only server-kek wallet encryption is available",
+              retryable: false,
+              status: 400,
+            }
+          : code === "INVALID_PRIVATE_KEY"
+            ? { code, message: "The private key is invalid", retryable: false, status: 400 }
+            : code === "INVALID_WALLET"
+              ? { code, message: "The wallet request is invalid", retryable: false, status: 400 }
+              : code === "WALLET_ADDRESS_EXISTS"
+                ? {
+                    code,
+                    message: "This address is already managed",
+                    retryable: false,
+                    status: 409,
+                  }
+                : code === "WALLET_NOT_FOUND"
+                  ? { code, message: "The wallet was not found", retryable: false, status: 404 }
+                  : code === "SIGNER_UNAVAILABLE" ||
+                      code === "CUSTODY_STORE_UNAVAILABLE" ||
+                      code === "KEK_VERSION_UNAVAILABLE"
+                    ? {
+                        code: "SIGNER_UNAVAILABLE",
+                        message: "The wallet signer is unavailable",
+                        retryable: true,
+                        status: 503,
+                      }
+                    : null;
+      if (!mapped) return null;
+      return reply.code(mapped.status).send(
+        createErrorEnvelope({
+          code: mapped.code,
+          message: mapped.message,
+          requestId: request.id,
+          retryable: mapped.retryable,
+        }),
+      );
+    };
+
+    const requireFreshReauthentication = async (
+      request: FastifyRequest,
+      reply: FastifyReply,
+      session: StoredSession,
+    ): Promise<boolean> => {
+      const header = request.headers["x-lpbot-reauthentication"];
+      const proof = typeof header === "string" && header.length <= 512 ? header : null;
+      let verified = false;
+      try {
+        verified =
+          (await options.freshReauthentication?.verify({
+            proof,
+            requestId: request.id,
+            session,
+          })) ?? false;
+      } catch {
+        verified = false;
+      }
+      if (verified) return true;
+      reply.code(403).send(
+        createErrorEnvelope({
+          code: "REAUTH_REQUIRED",
+          message: "Fresh reauthentication is required",
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+      return false;
+    };
+
+    app.get("/api/wallets", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (Object.keys(request.query as Record<string, unknown>).length > 0) {
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "INVALID_QUERY",
+            message: "The wallet query is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!options.walletDirectory) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "SIGNER_UNAVAILABLE",
+            message: "Wallet metadata is unavailable",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      try {
+        const page = await options.walletDirectory.listWallets(session.userId);
+        if (!Array.isArray(page.items)) throw new WalletApiError("SIGNER_UNAVAILABLE");
+        return createSuccessEnvelope({ items: page.items.map(publicWalletDto) }, request.id);
+      } catch (error) {
+        return (
+          walletFailure(error, request, reply) ??
+          reply.code(503).send(
+            createErrorEnvelope({
+              code: "SIGNER_UNAVAILABLE",
+              message: "Wallet metadata is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          )
+        );
+      }
+    });
+
+    app.get<{ Params: { walletId: string } }>("/api/wallets/:walletId", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.walletDirectory) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "SIGNER_UNAVAILABLE",
+            message: "Wallet metadata is unavailable",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      try {
+        const walletId = parseWalletId(request.params.walletId);
+        const wallet = await options.walletDirectory.getWallet(session.userId, walletId);
+        if (!wallet) throw new WalletApiError("WALLET_NOT_FOUND");
+        return createSuccessEnvelope(publicWalletDto(wallet), request.id);
+      } catch (error) {
+        return (
+          walletFailure(error, request, reply) ??
+          reply.code(503).send(
+            createErrorEnvelope({
+              code: "SIGNER_UNAVAILABLE",
+              message: "Wallet metadata is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          )
+        );
+      }
+    });
+
+    app.post(
+      "/api/wallets/import",
+      { bodyLimit: walletSecretBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const ingress = Buffer.isBuffer(request.body) ? request.body : null;
+        try {
+          const session = await authenticateSessionRequest(request, reply);
+          if (!session) return reply;
+          if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+          if (!ingress) {
+            return reply.code(415).send(
+              createErrorEnvelope({
+                code: "UNSUPPORTED_MEDIA_TYPE",
+                message: "Wallet import requires the dedicated secret ingress",
+                requestId: request.id,
+                retryable: false,
+              }),
+            );
+          }
+          if (!options.walletSigner || !options.tenantId) {
+            return reply.code(503).send(
+              createErrorEnvelope({
+                code: "SIGNER_UNAVAILABLE",
+                message: "The wallet signer is unavailable",
+                requestId: request.id,
+                retryable: true,
+              }),
+            );
+          }
+          const wallet = await options.walletSigner.importWallet({
+            ingress,
+            tenantId: options.tenantId,
+            userId: session.userId,
+          });
+          return reply.code(201).send(createSuccessEnvelope(publicWalletDto(wallet), request.id));
+        } catch (error) {
+          const response = walletFailure(error, request, reply);
+          if (response) return response;
+          throw error;
+        } finally {
+          ingress?.fill(0);
+        }
+      },
+    );
+
+    app.post("/api/wallets/generate", { bodyLimit: 16_384 }, async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+      if (!options.walletSigner || !options.tenantId) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "SIGNER_UNAVAILABLE",
+            message: "The wallet signer is unavailable",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      try {
+        const input = parseGenerateCustodyWalletRequest(request.body);
+        const wallet = await options.walletSigner.generateWallet({
+          ...input,
+          tenantId: options.tenantId,
+          userId: session.userId,
+        });
+        return reply.code(201).send(createSuccessEnvelope(publicWalletDto(wallet), request.id));
+      } catch (error) {
+        const response = walletFailure(error, request, reply);
+        if (response) return response;
+        throw error;
+      }
     });
 
     app.post(

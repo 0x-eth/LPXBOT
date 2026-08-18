@@ -17,6 +17,19 @@ export { sessionCookieName, setBrowserSessionCookie } from "./browser-session-co
 export { createLoginWalletAuthenticationFromEnvironment } from "./login-wallet-auth-config.js";
 export type { LoginWalletAuthEnvironment } from "./login-wallet-auth-config.js";
 export { PostgresSessionStore } from "./postgres-session-store.js";
+export {
+  parseGenerateCustodyWalletRequest,
+  parseWalletId,
+  publicWalletDto,
+  WalletApiError,
+  walletSecretBodyLimit,
+  walletSecretMediaType,
+} from "./wallets.js";
+export type {
+  FreshReauthenticationVerifier,
+  WalletDirectory,
+  WalletSignerClient,
+} from "./wallets.js";
 export { PostgresChainAccessPolicyStore } from "./postgres-chain-access-policy-store.js";
 export { PostgresUserPreferencesStore } from "./postgres-user-preferences-store.js";
 export { PostgresAddressRemarkStore } from "./postgres-address-remark-store.js";

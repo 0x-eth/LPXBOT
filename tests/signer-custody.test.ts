@@ -52,7 +52,7 @@ function service(
   const store = options.store ?? new InMemoryCustodyWalletStore();
   const signer = new IsolatedWalletSigner({
     kms,
-    randomBytes: options.candidates ? randomBytes : undefined,
+    ...(options.candidates ? { randomBytes } : {}),
   });
   return { application: new CustodySignerService({ signer, store }), kms, signer, store };
 }
@@ -263,7 +263,7 @@ describe("P04-02 isolated signer cryptography", () => {
     });
     await store.mutateEnvelopeForTest(wallet.walletId, (envelope) => {
       const tag = Buffer.from(envelope.tag);
-      tag[0] ^= 1;
+      tag[0] = tag[0]! ^ 1;
       return { ...envelope, tag };
     });
     await expect(

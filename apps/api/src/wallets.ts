@@ -29,7 +29,11 @@ export interface WalletSignerClient {
 }
 
 export interface FreshReauthenticationVerifier {
-  verify(input: { proof: string | null; requestId: string; session: StoredSession }): Promise<boolean>;
+  verify(input: {
+    proof: string | null;
+    requestId: string;
+    session: StoredSession;
+  }): Promise<boolean>;
 }
 
 export type WalletApiErrorCode =

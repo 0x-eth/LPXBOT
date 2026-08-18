@@ -43,6 +43,7 @@ function draft(walletId: string, userId: string) {
       mode: "server-kek" as const,
       name: "Fixture",
       revision: 1,
+      tenantId: "tenant-fixture-01",
       updatedAt: createdAt,
       userId,
       walletId,
