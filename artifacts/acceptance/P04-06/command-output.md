@@ -4,7 +4,7 @@ Environment: local macOS fixture, repository target Node 22.23.1, local runner N
 
 | Command | Observed result |
 |---|---|
-| focused P04-06 API/domain/client/recovery/signer/runtime Vitest | 8 files / 39 tests passed |
+| focused P04-06 API/domain/client/recovery/signer/runtime Vitest | 8 files / 41 tests passed |
 | `pnpm test:postgres` | 24 files / 99 tests passed, 1 explicit skip; every migration up/down/up |
 | `pnpm test:anvil` | 1/1 passed; native and ERC-20 balances, sequential nonce, receipts, canonical evidence, and Transfer log reconciled |
 | `forge fmt --check`, `forge build`, `pnpm test:contracts` | passed; 4/4 contract tests |

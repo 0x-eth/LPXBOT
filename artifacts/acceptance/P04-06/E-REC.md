@@ -12,10 +12,11 @@ Recovery coverage proves:
 - a stale missing transaction becomes dropped only after nonce evidence is classified;
 - confirmation requires a canonical successful receipt, matching hash/from/target/nonce, exact balance evidence, and an ERC-20 Transfer log when applicable;
 - removal of a previously canonical receipt moves the operation back to reconciliation with `REORG_RECEIPT_REMOVED`;
+- every signed hash in replacement lineage remains observable; if a historical transaction wins the nonce race, its canonical receipt promotes that transaction to the unique active confirmed head and marks the losing replacement dropped;
 - pre-sign operations without an allocated nonce are excluded from transaction recovery claims.
 
 Replacement authorization preserves operation, chain, wallet, nonce, recipient, amount, asset, calldata target/data/value, and deadline. Only the fee fields increase. PostgreSQL stores bidirectional generation lineage and enforces one active head; a mutated replacement recipient is rejected by the signer plan authorizer.
 
 The PostgreSQL integration also demonstrated queued -> broadcast/already-known -> pending -> confirmed -> reconciling, persisted immutable receipt evidence, append-only enforcement, recovery leases, and the reauthenticated session binding through create, recovery claim, and replacement authorization.
 
-Results: the focused recovery suite passed as part of 8 files / 39 tests. `pnpm test:postgres` passed 24 files / 99 tests with one explicitly skipped fixture and completed every migration up, all downs in reverse, and every up plus repeatable seed again.
+Results: the focused recovery suite passed as part of 8 files / 41 tests. `pnpm test:postgres` passed 24 files / 99 tests with one explicitly skipped fixture and completed every migration up, all downs in reverse, and every up plus repeatable seed again.
