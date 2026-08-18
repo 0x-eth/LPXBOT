@@ -86,6 +86,7 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "chain_access_policies",
       "chain_access_policy_history",
       "custody_wallet_audit_events",
+      "custody_wallet_custom_tokens",
       "custody_wallet_delete_previews",
       "custody_wallet_envelopes",
       "custody_wallet_tombstones",
@@ -137,6 +138,8 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "user_security_password_versions",
       "user_security_passwords",
       "users",
+      "wallet_address_book_audit_events",
+      "wallet_address_book_entries",
     ]);
 
     await migrateDown();
@@ -166,6 +169,7 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "chain_access_policies",
       "chain_access_policy_history",
       "custody_wallet_audit_events",
+      "custody_wallet_custom_tokens",
       "custody_wallet_delete_previews",
       "custody_wallet_envelopes",
       "custody_wallet_tombstones",
@@ -217,6 +221,8 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "user_security_password_versions",
       "user_security_passwords",
       "users",
+      "wallet_address_book_audit_events",
+      "wallet_address_book_entries",
     ]);
 
     const seeded = await fixturePool.query<{ history_count: string; policy_count: string }>(

@@ -1,3 +1,8 @@
+import {
+  BrowserRpcFrameTransportError,
+  createSandboxedBrowserRpcFetcher,
+} from "./browser-rpc-frame-transport";
+
 export const browserReadonlyRpcMethods = [
   "eth_chainId",
   "eth_blockNumber",
@@ -218,8 +223,7 @@ export class BrowserReadonlyRpcClient {
     if (!options.fetcher && (typeof window === "undefined" || typeof document === "undefined")) {
       throw new BrowserRpcError("CLIENT_RPC_URL_INVALID", false, "unconfigured");
     }
-    this.#fetcher =
-      options.fetcher ?? createSandboxedBrowserRpcFetcher(browserRpcLimits).bind(globalThis);
+    this.#fetcher = options.fetcher ?? createSandboxedBrowserRpcFetcher(browserRpcLimits);
     this.#now = options.now ?? (() => Date.now());
   }
 
@@ -382,7 +386,3 @@ export class BrowserCustomRpcSession {
 }
 
 export const browserCustomRpcSession = new BrowserCustomRpcSession();
-import {
-  BrowserRpcFrameTransportError,
-  createSandboxedBrowserRpcFetcher,
-} from "./browser-rpc-frame-transport";
