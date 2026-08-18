@@ -7594,7 +7594,10 @@ html[data-theme="dark"] .chain-operation-success {
 }
 
 .address-book-form {
-  grid-template-columns: minmax(220px, 1.5fr) minmax(120px, 0.7fr) minmax(110px, 0.55fr) minmax(140px, 0.8fr);
+  grid-template-columns: minmax(220px, 1.5fr) minmax(120px, 0.7fr) minmax(110px, 0.55fr) minmax(
+      140px,
+      0.8fr
+    );
 }
 
 .address-book-address-field {

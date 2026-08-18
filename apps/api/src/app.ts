@@ -4018,7 +4018,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           ingress: passwordIngress,
           userId: session.userId,
         });
-        if (verified.verified !== true || !Number.isSafeInteger(verified.version) || verified.version < 1) {
+        if (
+          verified.verified !== true ||
+          !Number.isSafeInteger(verified.version) ||
+          verified.version < 1
+        ) {
           throw new WalletApiError("SIGNER_UNAVAILABLE");
         }
         const value = await options.addressBookStore.create({
@@ -4467,7 +4471,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             }),
           );
         }
-        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
+        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session)))
+          return reply;
         if (!options.walletDirectory || !options.walletAssets) {
           return reply.code(503).send(
             createErrorEnvelope({
@@ -4489,7 +4494,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           });
           return createSuccessEnvelope(snapshot, request.id);
         } catch (error) {
-          return walletAssetFailure(error, request, reply) ?? walletFailure(error, request, reply) ?? reply;
+          return (
+            walletAssetFailure(error, request, reply) ??
+            walletFailure(error, request, reply) ??
+            reply
+          );
         }
       },
     );
@@ -4511,7 +4520,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             }),
           );
         }
-        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
+        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session)))
+          return reply;
         if (!options.walletDirectory || !options.walletAssets) {
           return reply.code(503).send(
             createErrorEnvelope({
@@ -4535,7 +4545,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             request.id,
           );
         } catch (error) {
-          return walletAssetFailure(error, request, reply) ?? walletFailure(error, request, reply) ?? reply;
+          return (
+            walletAssetFailure(error, request, reply) ??
+            walletFailure(error, request, reply) ??
+            reply
+          );
         }
       },
     );
@@ -4558,7 +4572,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             }),
           );
         }
-        if (!(await requireAllowedWalletChain(input.chainId, request, reply, session))) return reply;
+        if (!(await requireAllowedWalletChain(input.chainId, request, reply, session)))
+          return reply;
         if (!options.walletDirectory || !options.walletAssets) {
           return reply.code(503).send(
             createErrorEnvelope({
@@ -4581,7 +4596,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           });
           return reply.code(201).send(createSuccessEnvelope(token, request.id));
         } catch (error) {
-          return walletAssetFailure(error, request, reply) ?? walletFailure(error, request, reply) ?? reply;
+          return (
+            walletAssetFailure(error, request, reply) ??
+            walletFailure(error, request, reply) ??
+            reply
+          );
         }
       },
     );
@@ -4603,7 +4622,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             }),
           );
         }
-        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
+        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session)))
+          return reply;
         if (!options.walletDirectory || !options.walletAssets) {
           return reply.code(503).send(
             createErrorEnvelope({
@@ -4626,7 +4646,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           });
           return createSuccessEnvelope({ deleted }, request.id);
         } catch (error) {
-          return walletAssetFailure(error, request, reply) ?? walletFailure(error, request, reply) ?? reply;
+          return (
+            walletAssetFailure(error, request, reply) ??
+            walletFailure(error, request, reply) ??
+            reply
+          );
         }
       },
     );
@@ -4652,7 +4676,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             }),
           );
         }
-        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
+        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session)))
+          return reply;
         if (!options.walletDirectory || !options.walletAssets) {
           return reply.code(503).send(
             createErrorEnvelope({
@@ -4678,7 +4703,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             request.id,
           );
         } catch (error) {
-          return walletAssetFailure(error, request, reply) ?? walletFailure(error, request, reply) ?? reply;
+          return (
+            walletAssetFailure(error, request, reply) ??
+            walletFailure(error, request, reply) ??
+            reply
+          );
         }
       },
     );

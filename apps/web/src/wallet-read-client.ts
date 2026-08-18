@@ -397,31 +397,29 @@ export function parseAddressBookPage(value: unknown, status = 0): AddressBookPag
     ) {
       throw new WalletReadRequestError("ADDRESS_BOOK_RESPONSE_INVALID", true, status);
     }
+    const address = item.address as EvmAddress;
+    const entryId = item.entryId as string | null;
+    const kind = item.kind;
+    const walletId = item.walletId as string | null;
     const owned = ownWallets.find(
       (wallet) =>
-        wallet.walletId === item.walletId &&
-        wallet.address.toLowerCase() === item.address.toLowerCase(),
+        wallet.walletId === walletId && wallet.address.toLowerCase() === address.toLowerCase(),
     );
     const known = entries.find(
-      (entry) =>
-        entry.entryId === item.entryId &&
-        entry.address.toLowerCase() === item.address.toLowerCase(),
+      (entry) => entry.entryId === entryId && entry.address.toLowerCase() === address.toLowerCase(),
     );
     const validPointers =
-      (item.kind === "own-wallet" && item.entryId === null && item.walletId !== null && owned) ||
-      (item.kind === "known-external" &&
-        item.entryId !== null &&
-        item.walletId === null &&
-        known) ||
-      (item.kind === "new-external" &&
-        item.entryId === null &&
-        item.walletId === null &&
-        !ownWallets.some((wallet) => wallet.address.toLowerCase() === item.address.toLowerCase()) &&
-        !entries.some((entry) => entry.address.toLowerCase() === item.address.toLowerCase()));
+      (kind === "own-wallet" && entryId === null && walletId !== null && owned) ||
+      (kind === "known-external" && entryId !== null && walletId === null && known) ||
+      (kind === "new-external" &&
+        entryId === null &&
+        walletId === null &&
+        !ownWallets.some((wallet) => wallet.address.toLowerCase() === address.toLowerCase()) &&
+        !entries.some((entry) => entry.address.toLowerCase() === address.toLowerCase()));
     if (!validPointers) {
       throw new WalletReadRequestError("ADDRESS_BOOK_RESPONSE_INVALID", true, status);
     }
-    classification = item as unknown as AddressBookPage["classification"];
+    classification = { address, entryId, kind, walletId };
   }
   return { chainId: Number(value.chainId), classification, entries, ownWallets };
 }

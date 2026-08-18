@@ -7,10 +7,8 @@ import {
   MemoryAddressBookStore,
   WalletApiError,
   type ChainAccessPolicyStore,
-  type ChainAccessPolicyUpdateInput,
   type ChainAccessPolicyUpdateResult,
   type ChainAccessPolicyView,
-  type ChainManagementAuditInput,
   type SecurityPasswordApplication,
   type WalletDirectory,
 } from "../apps/api/src/index.js";
@@ -70,9 +68,9 @@ class ChainPolicies implements ChainAccessPolicyStore {
     ];
   }
 
-  async recordManagementAudit(_input: ChainManagementAuditInput): Promise<void> {}
+  async recordManagementAudit(): Promise<void> {}
 
-  async update(_input: ChainAccessPolicyUpdateInput): Promise<ChainAccessPolicyUpdateResult> {
+  async update(): Promise<ChainAccessPolicyUpdateResult> {
     throw new Error("not used by local fixture");
   }
 }

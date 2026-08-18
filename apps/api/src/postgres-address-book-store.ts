@@ -207,9 +207,6 @@ export class PostgresAddressBookStore implements AddressBookStore {
     input: Omit<AddressBookAuditInput, "outcome" | "resultCode">,
     resultCode: string,
   ): Promise<void> {
-    await client.query(
-      insertAuditSql,
-      auditValues({ ...input, outcome: "allowed", resultCode }),
-    );
+    await client.query(insertAuditSql, auditValues({ ...input, outcome: "allowed", resultCode }));
   }
 }

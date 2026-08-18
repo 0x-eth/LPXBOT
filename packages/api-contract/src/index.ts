@@ -1147,8 +1147,7 @@ export interface PatchAddressBookEntryRequest {
   expectedRevision: number;
 }
 
-export const addressBookSecretMediaType =
-  "application/vnd.lpbot.address-book-secret+json" as const;
+export const addressBookSecretMediaType = "application/vnd.lpbot.address-book-secret+json" as const;
 
 export const addressBookContracts = {
   create: { method: "POST", path: "/api/address-book" },

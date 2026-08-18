@@ -226,7 +226,10 @@ async function installWalletRoutes(page: Page, state: WalletReadFixture): Promis
     const request = route.request();
     const url = new URL(request.url());
     if (request.method() === "GET" && url.pathname === "/api/wallets") {
-      await route.fulfill({ contentType: "application/json", json: envelope({ items: [wallet()] }) });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({ items: [wallet()] }),
+      });
       return;
     }
     if (request.method() === "GET" && url.pathname.endsWith("/balances")) {
@@ -251,7 +254,11 @@ async function installWalletRoutes(page: Page, state: WalletReadFixture): Promis
         tokenAddress: body.tokenAddress.toLowerCase(),
       };
       state.tokens.push(imported);
-      await route.fulfill({ contentType: "application/json", json: envelope(imported), status: 201 });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope(imported),
+        status: 201,
+      });
       return;
     }
     if (request.method() === "DELETE" && url.pathname.includes("/tokens/")) {
@@ -268,9 +275,7 @@ async function installWalletRoutes(page: Page, state: WalletReadFixture): Promis
       const tokenAddress = url.searchParams.get("tokenAddress");
       const amountDecimal = url.searchParams.get("amountDecimal");
       const token = state.tokens.find((candidate) => candidate.tokenAddress === tokenAddress);
-      const amount = amountDecimal
-        ? amountBaseUnit(amountDecimal, token?.decimals ?? 18)
-        : null;
+      const amount = amountDecimal ? amountBaseUnit(amountDecimal, token?.decimals ?? 18) : null;
       const eip681 = tokenAddress
         ? `ethereum:${tokenAddress}@56/transfer?address=${walletAddress}${
             amount === null ? "" : `&uint256=${amount}`
@@ -305,7 +310,12 @@ async function installWalletRoutes(page: Page, state: WalletReadFixture): Promis
           : classify === walletAddress.toLowerCase()
             ? { address: classify, entryId: null, kind: "own-wallet", walletId }
             : known
-              ? { address: classify, entryId: known.entryId, kind: "known-external", walletId: null }
+              ? {
+                  address: classify,
+                  entryId: known.entryId,
+                  kind: "known-external",
+                  walletId: null,
+                }
               : { address: classify, entryId: null, kind: "new-external", walletId: null };
       await route.fulfill({
         contentType: "application/json",
@@ -342,7 +352,11 @@ async function installWalletRoutes(page: Page, state: WalletReadFixture): Promis
         updatedAt: "2026-08-18T12:01:00.000Z",
       };
       state.entries.push(created);
-      await route.fulfill({ contentType: "application/json", json: envelope(created), status: 201 });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope(created),
+        status: 201,
+      });
       return;
     }
     if (request.method() === "DELETE") {
@@ -390,7 +404,10 @@ async function installSettingsRoutes(page: Page): Promise<void> {
     }),
   );
   await page.route("**/api/notification-destinations/options", (route) =>
-    route.fulfill({ contentType: "application/json", json: envelope({ telegramIdentityId: null }) }),
+    route.fulfill({
+      contentType: "application/json",
+      json: envelope({ telegramIdentityId: null }),
+    }),
   );
   await page.route("**/api/notification-destinations", (route) =>
     route.fulfill({ contentType: "application/json", json: envelope([]) }),
