@@ -365,7 +365,6 @@ export function WalletsPage() {
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
-      setStatus("loading");
       try {
         const page = await client.list(signal);
         setWallets(page.items);
@@ -405,7 +404,10 @@ export function WalletsPage() {
             className="icon-button tooltip-control"
             data-tooltip="刷新"
             disabled={status === "loading"}
-            onClick={() => void load()}
+            onClick={() => {
+              setStatus("loading");
+              void load();
+            }}
             type="button"
           >
             <RefreshCw

@@ -3456,7 +3456,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     ): Promise<boolean> => {
       const header = request.headers["x-lpbot-reauthentication"];
       const proof = typeof header === "string" && header.length <= 512 ? header : null;
-      let verified = false;
+      let verified: boolean;
       try {
         verified =
           (await options.freshReauthentication?.verify({
