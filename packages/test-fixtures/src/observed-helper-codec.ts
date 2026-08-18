@@ -1,10 +1,7 @@
 type Hex = `0x${string}`;
 
 export type ObservedHelperPathName =
-  | "observed-v3-path-a"
-  | "observed-v3-path-b"
-  | "observed-v4-path-a"
-  | "observed-v4-path-b";
+  "observed-v3-path-a" | "observed-v3-path-b" | "observed-v4-path-a" | "observed-v4-path-b";
 
 export interface ObservedHelperPathDefinition {
   allowedPlatformIds: readonly number[];
@@ -46,10 +43,7 @@ export const OBSERVED_HELPER_PATHS = {
 } as const satisfies Record<ObservedHelperPathName, ObservedHelperPathDefinition>;
 
 const pathBySelector = new Map<string, ObservedHelperPathDefinition>(
-  Object.values(OBSERVED_HELPER_PATHS).map((definition) => [
-    definition.selector,
-    definition,
-  ]),
+  Object.values(OBSERVED_HELPER_PATHS).map((definition) => [definition.selector, definition]),
 );
 const canonicalHexPattern = /^0x(?:[0-9a-f]{2})+$/u;
 const wordPattern = /^[0-9a-f]{64}$/u;
@@ -153,10 +147,7 @@ export class ObservedHelperCodec {
     ) {
       invalid("platform ID changed or is not allowed for the observed generation");
     }
-    const dynamicOffset = toSafeNumber(
-      decoded.opaqueHeadWords[1] ?? "",
-      "dynamic offset",
-    );
+    const dynamicOffset = toSafeNumber(decoded.opaqueHeadWords[1] ?? "", "dynamic offset");
     if (dynamicOffset !== definition.headWordCount * 32) {
       invalid("dynamic offset changed");
     }

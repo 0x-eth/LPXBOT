@@ -7,9 +7,7 @@ import {
 } from "../packages/test-fixtures/src/index.js";
 import { describe, expect, it } from "vitest";
 
-const fixtureRoot = path.resolve(
-  "artifacts/acceptance/P05-01/fixtures/observed-helper",
-);
+const fixtureRoot = path.resolve("artifacts/acceptance/P05-01/fixtures/observed-helper");
 const pathNames = Object.keys(OBSERVED_HELPER_PATHS) as ObservedHelperPathName[];
 
 interface FrozenFixture {
@@ -84,9 +82,9 @@ describe("P05-01 test-only ObservedHelperCodec", () => {
         expect(fixture.block.hash).toBe(fixture.network.blockHash);
         expect(fixture.block.transactions).toContain(fixture.transaction.hash);
         expect(fixture.logs).toEqual(fixture.receipt.logs);
-        expect(
-          fixture.logs.every((log) => log.transactionHash === fixture.transaction.hash),
-        ).toBe(true);
+        expect(fixture.logs.every((log) => log.transactionHash === fixture.transaction.hash)).toBe(
+          true,
+        );
         expect(fixture.helper.runtimeCodeBytes).toBeGreaterThan(0);
         expect(fixture.helper.runtimeCodeHash).toMatch(/^0x[0-9a-f]{64}$/u);
         expect(fixture.helper.ownerCallResult.slice(-40)).toBe(fixture.helper.owner.slice(2));
@@ -98,15 +96,11 @@ describe("P05-01 test-only ObservedHelperCodec", () => {
             "bsc-archive-json-rpc",
           ]),
         );
-        expect(Object.values(fixture.executionCounters).every((value) => value === 0)).toBe(
-          true,
-        );
+        expect(Object.values(fixture.executionCounters).every((value) => value === 0)).toBe(true);
 
         const decoded = ObservedHelperCodec.decode(fixture.rawInput);
         expect(decoded.path).toBe(name);
-        expect(decoded.opaqueHeadWords).toHaveLength(
-          OBSERVED_HELPER_PATHS[name].headWordCount,
-        );
+        expect(decoded.opaqueHeadWords).toHaveLength(OBSERVED_HELPER_PATHS[name].headWordCount);
         expect(ObservedHelperCodec.encode(decoded)).toBe(fixture.rawInput);
         expect(allHashes.has(fixture.transaction.hash)).toBe(false);
         allHashes.add(fixture.transaction.hash);

@@ -111,7 +111,9 @@
           "bytes": { "type": "integer", "minimum": 1 },
           "sha256": { "$ref": "#/definitions/sha256" },
           "source": { "type": "string", "minLength": 1 },
-          "classification": { "enum": ["OBSERVED", "OFFICIAL", "LOCAL-DECISION", "INFERRED", "UNKNOWN"] }
+          "classification": {
+            "enum": ["OBSERVED", "OFFICIAL", "LOCAL-DECISION", "INFERRED", "UNKNOWN"]
+          }
         }
       }
     },
