@@ -43,9 +43,8 @@ function service(input?: {
     now: () => now,
     repository: input?.repository ?? new PostgresOkxCredentialRepository(pool),
     transport: new OkxTransportFixture(
-      ...Array.from(
-        { length: input?.responses ?? 8 },
-        () => structuredClone(usableOkxFixtureValidation),
+      ...Array.from({ length: input?.responses ?? 8 }, () =>
+        structuredClone(usableOkxFixtureValidation),
       ),
     ),
   });
