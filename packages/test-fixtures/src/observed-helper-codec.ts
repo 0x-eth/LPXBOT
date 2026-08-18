@@ -45,7 +45,7 @@ export const OBSERVED_HELPER_PATHS = {
   },
 } as const satisfies Record<ObservedHelperPathName, ObservedHelperPathDefinition>;
 
-const pathBySelector = new Map(
+const pathBySelector = new Map<string, ObservedHelperPathDefinition>(
   Object.values(OBSERVED_HELPER_PATHS).map((definition) => [
     definition.selector,
     definition,
@@ -112,7 +112,7 @@ export class ObservedHelperCodec {
     }
 
     const platformId = toSafeNumber(opaqueHeadWords[0] ?? "", "platform ID");
-    if (!definition.allowedPlatformIds.includes(platformId)) {
+    if (!(definition.allowedPlatformIds as readonly number[]).includes(platformId)) {
       invalid(`${definition.name} rejects platform ID ${platformId}`);
     }
     const dynamicLengthWord = argumentsHex.slice(dynamicOffsetHex, dynamicOffsetHex + 64);
@@ -147,7 +147,10 @@ export class ObservedHelperCodec {
       invalid("ABI head contains a malformed word");
     }
     const platformId = toSafeNumber(decoded.opaqueHeadWords[0] ?? "", "platform ID");
-    if (platformId !== decoded.platformId || !definition.allowedPlatformIds.includes(platformId)) {
+    if (
+      platformId !== decoded.platformId ||
+      !(definition.allowedPlatformIds as readonly number[]).includes(platformId)
+    ) {
       invalid("platform ID changed or is not allowed for the observed generation");
     }
     const dynamicOffset = toSafeNumber(

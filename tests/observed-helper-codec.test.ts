@@ -90,7 +90,7 @@ describe("P05-01 test-only ObservedHelperCodec", () => {
         expect(fixture.helper.runtimeCodeBytes).toBeGreaterThan(0);
         expect(fixture.helper.runtimeCodeHash).toMatch(/^0x[0-9a-f]{64}$/u);
         expect(fixture.helper.ownerCallResult.slice(-40)).toBe(fixture.helper.owner.slice(2));
-        expect(new Set(fixture.sources.map(({ kind }) => kind)).toEqual(
+        expect(new Set(fixture.sources.map(({ kind }) => kind))).toEqual(
           new Set([
             "bscscan-transaction-index",
             "bscscan-transaction",
