@@ -62,7 +62,11 @@ export class RemoteWalletSignerClient implements WalletSignerClient {
   readonly #url: string;
 
   constructor(input: { apiToken: string; fetcher?: typeof fetch; url: string }) {
-    if (input.apiToken.length < 32 || input.apiToken.length > 4096 || /[\r\n]/u.test(input.apiToken)) {
+    if (
+      input.apiToken.length < 32 ||
+      input.apiToken.length > 4096 ||
+      /[\r\n]/u.test(input.apiToken)
+    ) {
       throw new WalletApiError("SIGNER_UNAVAILABLE");
     }
     this.#apiToken = input.apiToken;
@@ -86,7 +90,7 @@ export class RemoteWalletSignerClient implements WalletSignerClient {
   async #request(
     path: string,
     owner: { tenantId: string; userId: string },
-    body: BodyInit,
+    body: NonNullable<RequestInit["body"]>,
     contentType = "application/json",
   ): Promise<CustodyWallet> {
     if (!identityPattern.test(owner.tenantId) || !uuidPattern.test(owner.userId)) {

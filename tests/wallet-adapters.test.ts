@@ -102,7 +102,9 @@ describe("P04-02 API wallet adapters", () => {
     for (const [sql, parameters] of query.mock.calls as Array<[string, unknown[]]>) {
       expect(sql).toContain("FROM custody_wallets");
       expect(sql).toContain("user_id = $1");
-      expect(sql).not.toMatch(/custody_wallet_envelopes|ciphertext|wrapped_dek|kek_id|kek_version/iu);
+      expect(sql).not.toMatch(
+        /custody_wallet_envelopes|ciphertext|wrapped_dek|kek_id|kek_version/iu,
+      );
       expect(parameters[0]).toBe(userId);
     }
   });

@@ -18,7 +18,7 @@ const userA = "43000000-0000-4000-8000-000000000001";
 const userB = "43000000-0000-4000-8000-000000000002";
 const address = "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf";
 
-function draft(walletId: string, userId: string) {
+function draft(walletId: string, userId: string, walletAddress = address) {
   const createdAt = new Date("2026-08-18T05:00:00.000Z");
   return {
     auditAction: "wallet.import" as const,
@@ -35,8 +35,8 @@ function draft(walletId: string, userId: string) {
       wrappedDek: Buffer.alloc(60, 4),
     },
     wallet: {
-      address: "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf" as `0x${string}`,
-      addressLower: address as `0x${string}`,
+      address: walletAddress as `0x${string}`,
+      addressLower: walletAddress.toLowerCase() as `0x${string}`,
       createdAt,
       envelopeVersion: 1,
       lockStatus: "ready" as const,
@@ -102,7 +102,9 @@ describe("P04-02 PostgreSQL custody wallet store", () => {
   it("rolls back wallet, envelope, pointer, and audit after a transaction fault", async () => {
     const store = new PostgresCustodyWalletStore(pool, { failAt: "before-commit" });
     const walletId = "43000000-0000-4000-8000-000000000099";
-    await expect(store.create(draft(walletId, userA))).rejects.toThrow("CUSTODY_STORE_FAULT");
+    await expect(
+      store.create(draft(walletId, userA, "0x1111111111111111111111111111111111111111")),
+    ).rejects.toThrow("CUSTODY_STORE_FAULT");
     for (const table of [
       "custody_wallets",
       "custody_wallet_envelopes",
