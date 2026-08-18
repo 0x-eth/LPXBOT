@@ -22,11 +22,13 @@ class FixtureOkxConnector implements OkxKeyApplication {
 
   async status(input: OkxKeyConnectorContext): Promise<OkxKeyStatus> {
     this.users.push(input.userId);
-    return this.#statuses.get(input.userId) ?? {
-      configured: false,
-      status: "unconfigured",
-      version: 0,
-    };
+    return (
+      this.#statuses.get(input.userId) ?? {
+        configured: false,
+        status: "unconfigured",
+        version: 0,
+      }
+    );
   }
 
   async save(input: OkxKeyConnectorContext & { ingress: Buffer }): Promise<OkxKeyStatus> {
@@ -143,8 +145,16 @@ describe("P04-07 OKX key API", () => {
     for (const request of [
       { method: "POST", payload: credential(), url: "/api/settings/okx-key" },
       { method: "PUT", payload: credential(1), url: "/api/settings/okx-key" },
-      { method: "POST", payload: JSON.stringify({ expectedVersion: 1 }), url: "/api/settings/okx-key/test" },
-      { method: "DELETE", payload: JSON.stringify({ expectedVersion: 1 }), url: "/api/settings/okx-key" },
+      {
+        method: "POST",
+        payload: JSON.stringify({ expectedVersion: 1 }),
+        url: "/api/settings/okx-key/test",
+      },
+      {
+        method: "DELETE",
+        payload: JSON.stringify({ expectedVersion: 1 }),
+        url: "/api/settings/okx-key",
+      },
     ] as const) {
       const response = await app.inject({
         headers: { ...headers(tokenA), "content-type": mediaType },

@@ -30,7 +30,12 @@ describe("P04-07 OKX envelope cryptography", () => {
     const kms = new LocalOkxKmsFixture({ key: Buffer.alloc(32, 0x41) });
     const firstCredentials = parseCredentialIngress(ingress());
     const secondCredentials = parseCredentialIngress(ingress());
-    const first = await encryptOkxCredentials({ credentials: firstCredentials, identity, kms, now });
+    const first = await encryptOkxCredentials({
+      credentials: firstCredentials,
+      identity,
+      kms,
+      now,
+    });
     const second = await encryptOkxCredentials({
       credentials: secondCredentials,
       identity: { ...identity, version: 2 },

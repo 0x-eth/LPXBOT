@@ -1113,13 +1113,14 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         isSecurityPasswordSecretRequest(request.method, requestPath) ||
         isAddressBookSecretRequest(request.method, requestPath) ||
         isWalletTransferSecretRequest(request.method, requestPath) ||
+        isOkxKeySecretRequest(request.method, requestPath) ||
         (request.method === "POST" && requestPath === "/api/wallets/transfers/preview"))
     ) {
       reply.header("Cache-Control", "no-store");
       return reply.code(413).send(
         createErrorEnvelope({
           code: "REQUEST_TOO_LARGE",
-          message: "The wallet secret or transfer request is too large",
+          message: "The secret or transfer request is too large",
           requestId: request.id,
           retryable: false,
         }),

@@ -86,7 +86,9 @@ describe("P04-07 fixed OKX egress", () => {
     expect(
       JSON.stringify(
         parseOkxAccountConfiguration(
-          Buffer.from(JSON.stringify({ code: "0", data: [{ ip: "fixture-ip", perm: "read_only" }] })),
+          Buffer.from(
+            JSON.stringify({ code: "0", data: [{ ip: "fixture-ip", perm: "read_only" }] }),
+          ),
         ),
       ),
     ).not.toContain("fixture-ip");

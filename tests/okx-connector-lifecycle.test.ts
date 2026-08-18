@@ -75,15 +75,19 @@ describe("P04-07 OKX credential lifecycle", () => {
     const versions = repository.versionRecords(userId);
     expect(versions).toHaveLength(2);
     expect(versions.filter(({ active }) => active)).toHaveLength(1);
-    expect(versions.find(({ envelope }) => envelope.version === 1)?.envelope.wrappedDek).toHaveLength(0);
+    expect(
+      versions.find(({ envelope }) => envelope.version === 1)?.envelope.wrappedDek,
+    ).toHaveLength(0);
 
     await expect(
       service.test({ ...context("test-stale"), expectedVersion: 1 }),
     ).rejects.toMatchObject({ code: "VERSION_CONFLICT" });
-    await expect(service.test({ ...context("test-2"), expectedVersion: 2 })).resolves.toMatchObject({
-      status: "usable",
-      version: 2,
-    });
+    await expect(service.test({ ...context("test-2"), expectedVersion: 2 })).resolves.toMatchObject(
+      {
+        status: "usable",
+        version: 2,
+      },
+    );
     await expect(
       service.delete({ ...context("delete-stale"), expectedVersion: 1 }),
     ).rejects.toMatchObject({ code: "VERSION_CONFLICT" });
@@ -92,7 +96,9 @@ describe("P04-07 OKX credential lifecycle", () => {
       status: "unconfigured",
       version: 2,
     });
-    await expect(service.delete({ ...context("delete-again"), expectedVersion: 2 })).resolves.toEqual({
+    await expect(
+      service.delete({ ...context("delete-again"), expectedVersion: 2 }),
+    ).resolves.toEqual({
       configured: false,
       status: "unconfigured",
       version: 2,
@@ -160,7 +166,11 @@ describe("P04-07 OKX credential lifecycle", () => {
       kms,
       now: new Date(now.getTime() - 600_000),
     });
-    await repository.createStaged({ context: context("stage-crash"), envelope, expectedActiveVersion: 0 });
+    await repository.createStaged({
+      context: context("stage-crash"),
+      envelope,
+      expectedActiveVersion: 0,
+    });
     await expect(service.recover({ now, stagedTtlMilliseconds: 300_000 })).resolves.toBe(1);
     await expect(service.status(userId)).resolves.toMatchObject({ status: "unconfigured" });
 
@@ -173,7 +183,10 @@ describe("P04-07 OKX credential lifecycle", () => {
       transport: laterTransport,
     });
     await service.save({ ...context("save-before-restart"), ingress: body("active") });
-    await expect(restarted.status(userId)).resolves.toMatchObject({ status: "revoked", version: 1 });
+    await expect(restarted.status(userId)).resolves.toMatchObject({
+      status: "revoked",
+      version: 1,
+    });
     await expect(
       restarted.test({ ...context("expired-test"), now: later, expectedVersion: 1 }),
     ).rejects.toMatchObject({ code: "CREDENTIAL_REVOKED" });
