@@ -25,8 +25,31 @@ const tenantId = "tenant-fixture-01";
 const userA = "user-fixture-01";
 const userB = "user-fixture-02";
 
-async function jsonFixture(name: string): Promise<any> {
-  return JSON.parse(await readFile(new URL(name, fixtureRoot), "utf8"));
+interface CryptoKnownAnswerFixture {
+  expected: {
+    aes256Gcm: { ciphertextHex: string; tagHex: string };
+    checksumAddress: string;
+    lowercaseAddress: string;
+  };
+  input: {
+    aes256Gcm: { aadUtf8: string; keyHex: string; nonceHex: string; plaintextHex: string };
+    syntheticPrivateKeyHex: string;
+  };
+}
+
+interface AadTamperFixture {
+  expected: {
+    original: { ciphertextHex: string; tagHex: string };
+    tamperedCiphertextHex: string;
+  };
+  input: {
+    original: { aadUtf8: string; keyHex: string; nonceHex: string };
+    tamperedAadUtf8: string;
+  };
+}
+
+async function jsonFixture<T>(name: string): Promise<T> {
+  return JSON.parse(await readFile(new URL(name, fixtureRoot), "utf8")) as T;
 }
 
 function ingress(name: string, privateKey = privateKeyOne): Uint8Array {
@@ -86,7 +109,7 @@ describe("P04-02 isolated signer cryptography", () => {
   });
 
   it("derives the frozen EVM address and EIP-55 known answer", async () => {
-    const fixture = await jsonFixture("crypto-known-answer.json");
+    const fixture = await jsonFixture<CryptoKnownAnswerFixture>("crypto-known-answer.json");
     const key = parsePrivateKey(fixture.input.syntheticPrivateKeyHex);
     try {
       expect(deriveEvmAddress(key)).toEqual({
@@ -113,7 +136,7 @@ describe("P04-02 isolated signer cryptography", () => {
   });
 
   it("replays the P04-01 AES-GCM and LF-separated AAD fixture", async () => {
-    const fixture = await jsonFixture("crypto-known-answer.json");
+    const fixture = await jsonFixture<CryptoKnownAnswerFixture>("crypto-known-answer.json");
     const aad = Buffer.from(fixture.input.aes256Gcm.aadUtf8, "utf8");
     expect(
       buildWalletAad({
@@ -144,7 +167,7 @@ describe("P04-02 isolated signer cryptography", () => {
   });
 
   it("rejects AAD, ciphertext, tag, and nonce tampering without fallback", async () => {
-    const fixture = await jsonFixture("aad-tamper.json");
+    const fixture = await jsonFixture<AadTamperFixture>("aad-tamper.json");
     const original = fixture.input.original;
     const sealed = {
       ciphertext: Buffer.from(fixture.expected.original.ciphertextHex, "hex"),
