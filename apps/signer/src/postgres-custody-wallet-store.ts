@@ -1257,6 +1257,45 @@ export class PostgresCustodyWalletStore
     );
   }
 
+  async #insertSecurityPasswordVersion(
+    client: PoolClient,
+    password: StoredSecurityPassword,
+  ): Promise<void> {
+    await client.query(
+      `INSERT INTO user_security_password_versions (
+         user_id, version, kdf_algorithm, kdf_domain, parameter_version, argon_version,
+         memory_kib, iterations, parallelism, output_bytes, salt, verifier, created_at
+       ) VALUES ($1, $2, 'Argon2id', 'lpbot-security-password-kdf/v1', $3, 19,
+                 65536, 3, 1, 32, $4, $5, $6)`,
+      [
+        password.userId,
+        password.current.version,
+        password.current.parameterVersion,
+        password.current.salt,
+        password.current.verifier,
+        password.current.createdAt,
+      ],
+    );
+  }
+
+  async #insertSecurityPasswordAudit(
+    client: PoolClient,
+    input: {
+      action: "security-password.change" | "security-password.create" | "security-password.verify";
+      now: Date;
+      outcome: "allowed" | "denied";
+      userId: string;
+      version: number;
+    },
+  ): Promise<void> {
+    await client.query(
+      `INSERT INTO security_password_audit_events (
+         user_id, action, outcome, password_version, created_at
+       ) VALUES ($1, $2, $3, $4, $5)`,
+      [input.userId, input.action, input.outcome, input.version, input.now],
+    );
+  }
+
   async #insertAudit(
     client: PoolClient,
     input: {
@@ -1295,9 +1334,31 @@ export class PostgresCustodyWalletStore
     return result.rows[0] ?? null;
   }
 
+  async #lockedSecurityPassword(
+    client: PoolClient,
+    userId: string,
+  ): Promise<SecurityPasswordRow | null> {
+    const result = await client.query<SecurityPasswordRow>(
+      `SELECT ${securityPasswordColumns}
+         FROM user_security_passwords p
+         JOIN user_security_password_versions v
+           ON v.user_id = p.user_id AND v.version = p.current_version
+        WHERE p.user_id = $1
+        FOR UPDATE OF p`,
+      [userId],
+    );
+    return result.rows[0] ?? null;
+  }
+
   async #lockUser(client: PoolClient, userId: string): Promise<void> {
     await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
       `keystore:${userId}`,
+    ]);
+  }
+
+  async #lockSecurityPasswordUser(client: PoolClient, userId: string): Promise<void> {
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+      `security-password:${userId}`,
     ]);
   }
 
