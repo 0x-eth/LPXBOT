@@ -298,6 +298,7 @@ export function OkxKeySettings() {
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
+      if (signal?.aborted) return;
       setError(null);
       setViewState("loading");
       try {
@@ -313,7 +314,9 @@ export function OkxKeySettings() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) void load(controller.signal);
+    });
     return () => controller.abort();
   }, [load]);
 
