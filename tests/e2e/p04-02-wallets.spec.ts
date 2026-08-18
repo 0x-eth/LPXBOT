@@ -83,6 +83,17 @@ async function install(
       }),
     }),
   );
+  await page.route("**/api/address-book**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      json: envelope({
+        chainId: 56,
+        classification: null,
+        entries: [],
+        ownWallets: state.items.map(({ address, name, walletId }) => ({ address, name, walletId })),
+      }),
+    }),
+  );
   await page.route("**/api/wallets**", async (route) => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
@@ -102,6 +113,57 @@ async function install(
       await route.fulfill({
         contentType: "application/json",
         json: envelope({ items: state.items }),
+      });
+      return;
+    }
+    if (request.method() === "GET" && pathname.endsWith("/balances")) {
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({
+          address,
+          blockNumberDecimal: "48000000",
+          chainId: 56,
+          items: [
+            {
+              assetType: "native",
+              balanceBaseUnit: "0",
+              balanceDecimal: "0",
+              decimals: 18,
+              default: true,
+              name: "BNB",
+              priceStatus: "missing",
+              symbol: "BNB",
+              tokenAddress: null,
+              usdPriceDecimal: null,
+              usdValueDecimal: null,
+            },
+          ],
+          readAt: "2026-08-18T05:00:00.000Z",
+          totalUsdValueDecimal: null,
+          walletId,
+        }),
+      });
+      return;
+    }
+    if (request.method() === "GET" && pathname.endsWith("/tokens")) {
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({ chainId: 56, items: [], walletId }),
+      });
+      return;
+    }
+    if (request.method() === "GET" && pathname.endsWith("/receive")) {
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({
+          address,
+          amountBaseUnit: null,
+          amountDecimal: null,
+          chainId: 56,
+          eip681: `ethereum:${address}@56`,
+          tokenAddress: null,
+          walletId,
+        }),
       });
       return;
     }
@@ -170,7 +232,10 @@ test("wallets renders loading, empty, ready, desktop/mobile, and axe states", as
   await expect(page.getByText(address)).toBeVisible();
   await expect(page.getByText("服务器密钥")).toBeVisible();
   await expect(page.getByText("已托管")).toBeVisible();
-  await expect(page.getByText(/余额|Token|地址簿|删除|转账/u)).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "资产" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "收款" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "地址簿" })).toBeVisible();
+  await expect(page.getByText("转账", { exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(
     false,
   );
