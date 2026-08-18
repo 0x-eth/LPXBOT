@@ -54,6 +54,7 @@ export type {
   WalletTransferSignerGateway,
   WalletTransferSignerResult,
   WalletTransferTransactionHead,
+  WalletTransferTransactionReference,
   WalletTransferWorkClaim,
   WalletTransferWorkOperation,
   WalletTransferWorkRepository,

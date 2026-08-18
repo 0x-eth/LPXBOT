@@ -70,6 +70,18 @@ interface OperationRow extends QueryResultRow {
   wallet_id: string;
 }
 
+interface TransactionLineageRow extends QueryResultRow {
+  generation: number;
+  operation_id: string;
+  transaction_hash: `0x${string}`;
+  transaction_id: string;
+  updated_at: Date;
+}
+
+interface ObservedTransactionRow extends QueryResultRow {
+  transaction_hash: `0x${string}`;
+}
+
 interface AuthorizationRow extends QueryResultRow {
   authorization_id: string;
   created_at: Date;
@@ -169,7 +181,10 @@ function activeTransaction(row: OperationRow): WalletTransferTransactionHead | n
   };
 }
 
-function workOperation(row: OperationRow): WalletTransferWorkOperation {
+function workOperation(
+  row: OperationRow,
+  transactionLineage: readonly TransactionLineageRow[],
+): WalletTransferWorkOperation {
   if (row.state === "ready-for-approval" || row.state === "replaced") {
     throw new WalletTransferWorkerError("TRANSFER_RECOVERY_STATE_INVALID");
   }
@@ -182,6 +197,12 @@ function workOperation(row: OperationRow): WalletTransferWorkOperation {
     reauthenticatedSessionId: row.reauthenticated_session_id,
     state: row.state,
     tenantId: row.tenant_id,
+    transactionLineage: transactionLineage.map((transaction) => ({
+      generation: transaction.generation,
+      transactionHash: transaction.transaction_hash,
+      transactionId: transaction.transaction_id,
+      updatedAt: transaction.updated_at.toISOString(),
+    })),
     userId: row.user_id,
   };
 }
@@ -318,6 +339,21 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
           WHERE o.operation_id = ANY($1::uuid[])`,
         [events.rows.map(({ aggregate_id }) => aggregate_id)],
       );
+      const lineage = await client.query<TransactionLineageRow>(
+        `SELECT operation_id::text, transaction_id::text, generation,
+                transaction_hash, updated_at
+           FROM wallet_transfer_transactions
+          WHERE operation_id = ANY($1::uuid[])
+            AND transaction_hash IS NOT NULL
+          ORDER BY operation_id, generation`,
+        [events.rows.map(({ aggregate_id }) => aggregate_id)],
+      );
+      const lineageByOperation = new Map<string, TransactionLineageRow[]>();
+      for (const transaction of lineage.rows) {
+        const transactions = lineageByOperation.get(transaction.operation_id) ?? [];
+        transactions.push(transaction);
+        lineageByOperation.set(transaction.operation_id, transactions);
+      }
       const byId = new Map(operations.rows.map((row) => [row.operation_id, row]));
       const claims = events.rows.map((event) => {
         const row = byId.get(event.aggregate_id);
@@ -325,7 +361,7 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
         return {
           eventId: event.event_id,
           leaseToken: event.lease_token,
-          operation: workOperation(row),
+          operation: workOperation(row, lineageByOperation.get(row.operation_id) ?? []),
         };
       });
       await client.query("COMMIT");
@@ -425,12 +461,33 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
       const currentState = operation.state;
       const targetState = input.decision.state;
       assertWalletTransferTransition({ from: currentState, to: targetState });
-      const transactionId = operation.active_transaction_id;
-      if (!transactionId) {
+      const activeTransactionId = operation.active_transaction_id;
+      if (!activeTransactionId) {
         throw new WalletTransferWorkerError("ACTIVE_TRANSACTION_MISSING");
       }
+      let observedTransactionId = activeTransactionId;
+      let observedTransactionHash = operation.active_transaction_hash;
       if (input.decision.kind === "receipt") {
         const receipt = input.decision.receipt;
+        const observedTransaction = await client.query<ObservedTransactionRow>(
+          `SELECT transaction_hash
+             FROM wallet_transfer_transactions
+            WHERE transaction_id = $1 AND operation_id = $2
+            FOR UPDATE`,
+          [input.decision.transactionId, operation.operation_id],
+        );
+        if (
+          observedTransaction.rows[0]?.transaction_hash !== receipt.transactionHash ||
+          !input.claim.operation.transactionLineage.some(
+            ({ transactionHash, transactionId }) =>
+              transactionId === input.decision.transactionId &&
+              transactionHash === receipt.transactionHash,
+          )
+        ) {
+          throw new WalletTransferWorkerError("TRANSFER_RECOVERY_LINEAGE_INVALID");
+        }
+        observedTransactionId = input.decision.transactionId;
+        observedTransactionHash = receipt.transactionHash;
         const evidenceDigest = sha256(
           JSON.stringify([
             receipt.transactionHash,
@@ -452,7 +509,7 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
            ON CONFLICT (transaction_id, block_hash, evidence_digest) DO NOTHING`,
           [
             this.#uuid().toLowerCase(),
-            transactionId,
+            observedTransactionId,
             receipt.transactionHash,
             receipt.blockHash,
             receipt.blockNumber,
@@ -467,27 +524,51 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
       }
       if (input.decision.kind !== "defer") {
         const reason = input.decision.reason;
+        const settlesHistoricalReceipt =
+          input.decision.kind === "receipt" &&
+          observedTransactionId !== activeTransactionId &&
+          (targetState === "confirmed" || targetState === "failed");
+        if (settlesHistoricalReceipt) {
+          await client.query(
+            `UPDATE wallet_transfer_transactions
+                SET state = 'dropped', active = false, updated_at = $2
+              WHERE transaction_id = $1 AND active`,
+            [activeTransactionId, input.observedAt],
+          );
+          await client.query(
+            `UPDATE wallet_transfer_transactions
+                SET active = true, updated_at = $2
+              WHERE transaction_id = $1`,
+            [observedTransactionId, input.observedAt],
+          );
+        }
         await client.query(
           `UPDATE wallet_transfer_operations
               SET state = $2, failure_code = CASE WHEN $2 = 'failed' THEN COALESCE($3, 'REVERTED') ELSE NULL END,
                   reconciliation_reason = CASE WHEN $2 = 'reconciling' THEN $3 ELSE NULL END,
-                  updated_at = $4
+                  active_transaction_id = $5, updated_at = $4
             WHERE operation_id = $1`,
-          [operation.operation_id, targetState, reason, input.observedAt],
+          [
+            operation.operation_id,
+            targetState,
+            reason,
+            input.observedAt,
+            settlesHistoricalReceipt ? observedTransactionId : activeTransactionId,
+          ],
         );
         if (targetState === "pending") {
           await client.query(
             `UPDATE wallet_transfer_transactions
                 SET state = 'pending', confirmed_at = NULL, updated_at = $2
               WHERE transaction_id = $1`,
-            [transactionId, input.observedAt],
+            [activeTransactionId, input.observedAt],
           );
         } else if (targetState === "confirmed") {
           await client.query(
             `UPDATE wallet_transfer_transactions
                 SET state = 'confirmed', confirmed_at = $2, updated_at = $2
               WHERE transaction_id = $1`,
-            [transactionId, input.observedAt],
+            [observedTransactionId, input.observedAt],
           );
           await client.query(
             `UPDATE wallet_nonce_ledgers
@@ -501,14 +582,14 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
             `UPDATE wallet_transfer_transactions
                 SET state = $2, updated_at = $3
               WHERE transaction_id = $1`,
-            [transactionId, targetState, input.observedAt],
+            [observedTransactionId, targetState, input.observedAt],
           );
         } else if (targetState === "reconciling" && currentState === "confirmed") {
           await client.query(
             `UPDATE wallet_transfer_transactions
                 SET state = 'pending', confirmed_at = NULL, updated_at = $2
               WHERE transaction_id = $1`,
-            [transactionId, input.observedAt],
+            [activeTransactionId, input.observedAt],
           );
         }
         if (targetState === "reconciling") {
@@ -527,7 +608,7 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
           code: reason ?? targetState.toUpperCase(),
           operation,
           state: targetState,
-          transactionHash: operation.active_transaction_hash,
+          transactionHash: observedTransactionHash,
           when: input.observedAt,
         });
       }

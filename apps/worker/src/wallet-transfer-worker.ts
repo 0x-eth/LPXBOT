@@ -20,6 +20,13 @@ export interface WalletTransferTransactionHead {
   updatedAt: string;
 }
 
+export interface WalletTransferTransactionReference {
+  generation: number;
+  transactionHash: `0x${string}`;
+  transactionId: string;
+  updatedAt: string;
+}
+
 export interface WalletTransferWorkOperation {
   activeTransaction: WalletTransferTransactionHead | null;
   assetKind: "erc20" | "native";
@@ -29,6 +36,7 @@ export interface WalletTransferWorkOperation {
   reauthenticatedSessionId?: string;
   state: Exclude<WalletTransferState, "ready-for-approval" | "replaced">;
   tenantId: string;
+  transactionLineage: readonly WalletTransferTransactionReference[];
   userId: string;
 }
 
@@ -66,6 +74,7 @@ export type WalletTransferObservationDecision =
       reason: string | null;
       receipt: WalletTransferReceiptObservation;
       state: "confirmed" | "failed" | "reconciling";
+      transactionId: string;
     }
   | {
       kind: "transition";
@@ -234,6 +243,7 @@ export function decideWalletTransferObservation(input: {
   now: Date;
   observation: WalletTransferObservation;
   operation: WalletTransferWorkOperation;
+  transaction?: WalletTransferTransactionReference;
 }): WalletTransferObservationDecision {
   if (!Number.isSafeInteger(input.dropAfterMilliseconds) || input.dropAfterMilliseconds < 1_000) {
     throw new RangeError("dropAfterMilliseconds must be at least one second");
@@ -256,7 +266,7 @@ export function decideWalletTransferObservation(input: {
       ? { kind: "transition", reason: "REORG_PROVIDER_UNAVAILABLE", state: "reconciling" }
       : { kind: "defer", reason: "AWAITING_PROVIDER", state: "pending" };
   }
-  const head = input.operation.activeTransaction;
+  const head = input.transaction ?? input.operation.activeTransaction;
   if (!head) {
     return { kind: "transition", reason: "ACTIVE_TRANSACTION_MISSING", state: "reconciling" };
   }
@@ -270,7 +280,12 @@ export function decideWalletTransferObservation(input: {
     if (input.operation.state === "confirmed" && reconciled.state === "confirmed") {
       return { kind: "defer", reason: "CONFIRMED_STABLE", state: "confirmed" };
     }
-    return { kind: "receipt", receipt: provider.receipt, ...reconciled };
+    return {
+      kind: "receipt",
+      receipt: provider.receipt,
+      transactionId: head.transactionId,
+      ...reconciled,
+    };
   }
   if (input.operation.state === "confirmed") {
     return { kind: "transition", reason: "REORG_RECEIPT_REMOVED", state: "reconciling" };
@@ -294,6 +309,49 @@ export function decideWalletTransferObservation(input: {
     reason: latest > nonce || pending > nonce ? "NONCE_CONSUMED_BY_OTHER_TRANSACTION" : null,
     state: "dropped",
   };
+}
+
+function decideWalletTransferLineageObservation(input: {
+  dropAfterMilliseconds: number;
+  now: Date;
+  observations: ReadonlyArray<{
+    observation: WalletTransferObservation;
+    transaction: WalletTransferTransactionReference;
+  }>;
+  operation: WalletTransferWorkOperation;
+}): WalletTransferObservationDecision {
+  const decisions = input.observations.map(({ observation, transaction }) =>
+    decideWalletTransferObservation({
+      dropAfterMilliseconds: input.dropAfterMilliseconds,
+      now: input.now,
+      observation,
+      operation: input.operation,
+      transaction,
+    }),
+  );
+  const receipts = decisions.filter(
+    (decision): decision is Extract<WalletTransferObservationDecision, { kind: "receipt" }> =>
+      decision.kind === "receipt",
+  );
+  if (receipts.length > 1) {
+    return {
+      kind: "transition",
+      reason: "LINEAGE_RECEIPT_DIVERGENCE",
+      state: "reconciling",
+    };
+  }
+  if (receipts[0]) return receipts[0];
+  const reconciliation = decisions.find(({ state }) => state === "reconciling");
+  if (reconciliation) return reconciliation;
+  const pending = decisions.find(
+    (decision) => decision.kind === "transition" && decision.state === "pending",
+  );
+  if (pending) return pending;
+  const activeIndex = input.observations.findIndex(
+    ({ transaction }) =>
+      transaction.transactionId === input.operation.activeTransaction?.transactionId,
+  );
+  return decisions[activeIndex] ?? decisions[0]!;
 }
 
 export function replacementTransferPlan(input: {
@@ -432,14 +490,23 @@ export class WalletTransferRecoveryWorker {
         if (!active) {
           throw new WalletTransferWorkerError("ACTIVE_TRANSACTION_MISSING");
         }
-        const observation = await this.#observer.observe({
-          plan: claim.operation.plan,
-          transactionHash: active.transactionHash,
-        });
-        const decision = decideWalletTransferObservation({
+        const transactionLineage =
+          claim.operation.state === "confirmed"
+            ? [active]
+            : claim.operation.transactionLineage;
+        const observations = await Promise.all(
+          transactionLineage.map(async (transaction) => ({
+            observation: await this.#observer.observe({
+              plan: claim.operation.plan,
+              transactionHash: transaction.transactionHash,
+            }),
+            transaction,
+          })),
+        );
+        const decision = decideWalletTransferLineageObservation({
           dropAfterMilliseconds: this.#dropAfterMilliseconds,
           now: this.#now(),
-          observation,
+          observations,
           operation: claim.operation,
         });
         await this.#repository.applyObservation({ claim, decision, observedAt: this.#now() });
@@ -498,10 +565,34 @@ export class WalletTransferRecoveryWorker {
 
   #assertClaim(claim: WalletTransferWorkClaim): void {
     validateWalletTransferPlan(claim.operation.plan, new Date(0));
+    const lineageIds = new Set<string>();
+    const lineageHashes = new Set<string>();
+    const lineageGenerations = new Set<number>();
+    for (const transaction of claim.operation.transactionLineage) {
+      canonicalInstant(transaction.updatedAt);
+      if (
+        !Number.isSafeInteger(transaction.generation) ||
+        transaction.generation < 0 ||
+        !transferHashPattern.test(transaction.transactionHash) ||
+        transaction.transactionId.length === 0 ||
+        lineageIds.has(transaction.transactionId) ||
+        lineageHashes.has(transaction.transactionHash) ||
+        lineageGenerations.has(transaction.generation)
+      ) {
+        throw new WalletTransferWorkerError("TRANSFER_RECOVERY_LINEAGE_INVALID");
+      }
+      lineageIds.add(transaction.transactionId);
+      lineageHashes.add(transaction.transactionHash);
+      lineageGenerations.add(transaction.generation);
+    }
     if (
       !transferDigestPattern.test(claim.operation.planDigest) ||
       walletTransferPlanDigest(claim.operation.plan) !== claim.operation.planDigest ||
-      claim.operation.plan.operationId !== claim.operation.operationId
+      claim.operation.plan.operationId !== claim.operation.operationId ||
+      (claim.operation.state === "queued"
+        ? claim.operation.activeTransaction !== null || claim.operation.transactionLineage.length > 0
+        : claim.operation.activeTransaction === null ||
+          !lineageIds.has(claim.operation.activeTransaction.transactionId))
     ) {
       throw new WalletTransferWorkerError("TRANSFER_RECOVERY_PLAN_INVALID");
     }
