@@ -50,6 +50,8 @@ const readyTables = {
   securityPasswordVersions: "user_security_password_versions",
   securityPasswords: "user_security_passwords",
   tombstones: "custody_wallet_tombstones",
+  transferNonceLedgers: "wallet_nonce_ledgers",
+  transferOperations: "wallet_transfer_operations",
   wallets: "custody_wallets",
 };
 
