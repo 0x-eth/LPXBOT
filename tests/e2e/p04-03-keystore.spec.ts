@@ -431,7 +431,8 @@ test("wallets selects password mode, shows lock state, and switches modes with s
   const generatePassword = page.getByLabel("Keystore 密码");
   await generatePassword.fill(passwordOne);
   await page.getByRole("button", { name: "确认生成" }).click();
-  await expect(page.getByText("Generated password wallet")).toBeVisible();
+  const custodyWallets = page.getByLabel("托管钱包");
+  await expect(custodyWallets.getByText("Generated password wallet")).toBeVisible();
 
   const importTrigger = page.getByRole("button", { name: "导入钱包" });
   await importTrigger.click();
@@ -440,7 +441,7 @@ test("wallets selects password mode, shows lock state, and switches modes with s
   await page.getByLabel("私钥").fill(privateKey);
   await page.getByLabel("Keystore 密码").fill(passwordOne);
   await page.getByRole("button", { name: "确认导入" }).click();
-  await expect(page.getByText("Imported password wallet")).toBeVisible();
+  await expect(custodyWallets.getByText("Imported password wallet")).toBeVisible();
   await expect(page.locator("body")).not.toContainText(passwordOne);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await axe(page);

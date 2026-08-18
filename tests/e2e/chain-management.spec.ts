@@ -349,7 +349,7 @@ test("AUTH-10 admin dialog covers loading, error, retry and empty states", async
   await page.getByRole("button", { name: "关闭链管理" }).click();
   await expect(trigger).toBeFocused();
   await trigger.click();
-  await expect(page.getByText("BNB Smart Chain", { exact: true })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "BNB Smart Chain", exact: true })).toBeVisible();
   await expectNoSeriousAxeViolations(page);
 });
 

@@ -311,7 +311,7 @@ test("wallet rename is keyboard reachable, revision aware, and restores focus", 
   await trigger.click();
   await page.getByLabel("钱包名称").fill("Renamed signer");
   await page.getByRole("button", { name: "保存名称" }).click();
-  await expect(page.getByText("Renamed signer")).toBeVisible();
+  await expect(page.getByLabel("托管钱包").getByText("Renamed signer")).toBeVisible();
   await expect(page.locator("main.wallets-workspace")).toHaveAttribute("data-state", "ready");
 
   state.nextWalletError = "REVISION_CONFLICT";
@@ -342,7 +342,7 @@ test("normal deletion shows zero-risk preview, deleting, and deleted states", as
   await expect(page.locator("main.wallets-workspace")).toHaveAttribute("data-state", "deleting");
   await expect(page.getByRole("button", { name: "正在删除" })).toBeDisabled();
   await expect(page.locator("main.wallets-workspace")).toHaveAttribute("data-state", "deleted");
-  await expect(page.getByText("Main signer")).toHaveCount(0);
+  await expect(page.getByLabel("托管钱包").getByText("Main signer")).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: "钱包已彻底删除" })).toBeVisible();
 });
 
@@ -484,7 +484,7 @@ test("wallet lifecycle remains responsive and axe clean on desktop and mobile", 
   const state = fixture();
   await install(page, state);
   await page.goto("/wallets");
-  await expect(page.getByText("Main signer")).toBeVisible();
+  await expect(page.getByLabel("托管钱包").getByText("Main signer")).toBeVisible();
   await page.getByRole("button", { name: "删除 Automation wallet" }).click();
   await expect(page.getByRole("dialog", { name: "删除钱包预览" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
