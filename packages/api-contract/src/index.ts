@@ -1033,6 +1033,79 @@ export interface GenerateCustodyWalletRequest {
   name: string;
 }
 
+export const keystoreAutoLockMinutes = [1, 5, 15, 30, 60] as const;
+export type KeystoreAutoLockMinutes = (typeof keystoreAutoLockMinutes)[number];
+export const keystoreResetConfirmationPhrase = "I_LOSE_ALL_PASSWORD_WALLETS" as const;
+export const keystoreSecretMediaType = "application/vnd.lpbot.keystore-secret+json" as const;
+
+export type KeystoreState = "locked" | "locked-out" | "unconfigured" | "unlocked";
+
+export interface KeystoreStatus {
+  configured: boolean;
+  status: KeystoreState;
+  version: number;
+}
+
+export interface KeystoreResetPreview {
+  confirmationPhrase: typeof keystoreResetConfirmationPhrase;
+  expiresAt: string;
+  policyCount: number;
+  previewToken: string;
+  secretVersion: number;
+  strategyCount: number;
+  taskCount: number;
+  walletCount: number;
+  walletsWithNonzeroAssets: number;
+  walletsWithPositions: number;
+}
+
+export interface CreateKeystorePasswordRequest {
+  newPassword: string;
+}
+
+export interface ChangeKeystorePasswordRequest {
+  expectedVersion: number;
+  newPassword: string;
+  oldPassword: string;
+}
+
+export interface UnlockKeystoreRequest {
+  password: string;
+}
+
+export interface UpdateKeystoreAutoLockRequest {
+  expectedVersion: number;
+  minutes: KeystoreAutoLockMinutes;
+}
+
+export interface KeystoreResetRequest {
+  confirmationPhrase: typeof keystoreResetConfirmationPhrase;
+  expectedVersion: number;
+  previewToken: string;
+}
+
+export interface ChangeWalletEncryptionModeRequest {
+  expectedRevision: number;
+  expectedSecretVersion: number;
+  mode: WalletEncryptionMode;
+  password: string;
+}
+
+export const keystoreContracts = {
+  autoLock: { method: "PATCH", path: "/api/keystore/auto-lock" },
+  createPassword: { method: "POST", path: "/api/keystore/password" },
+  lock: { method: "POST", path: "/api/keystore/lock" },
+  reset: { method: "POST", path: "/api/keystore/reset" },
+  resetPreview: { method: "GET", path: "/api/keystore/reset-preview" },
+  status: { method: "GET", path: "/api/keystore/status" },
+  switchWalletMode: {
+    method: "POST",
+    path: "/api/wallets/{walletId}/encryption-mode",
+  },
+  unlock: { method: "POST", path: "/api/keystore/unlock" },
+  updatePassword: { method: "PUT", path: "/api/keystore/password" },
+} as const;
+
 export const loginWalletAuthContracts = {
   link: { method: "POST", path: "/api/auth/wallet/link" },
   linkNonce: { method: "POST", path: "/api/auth/wallet/link-nonce" },

@@ -19,6 +19,10 @@ import { SignerError } from "./signer-error.js";
 interface CustodyTablesRow extends QueryResultRow {
   auditEvents: string | null;
   envelopes: string | null;
+  failures: string | null;
+  keystoreVersions: string | null;
+  keystores: string | null;
+  resetPreviews: string | null;
   wallets: string | null;
 }
 
@@ -55,13 +59,25 @@ async function assertStoreReady(pool: Pool): Promise<void> {
       `SELECT
          to_regclass('public.custody_wallet_audit_events')::text AS "auditEvents",
          to_regclass('public.custody_wallet_envelopes')::text AS envelopes,
+         to_regclass('public.user_keystore_failures')::text AS failures,
+         to_regclass('public.user_keystore_versions')::text AS "keystoreVersions",
+         to_regclass('public.user_keystores')::text AS keystores,
+         to_regclass('public.user_keystore_reset_previews')::text AS "resetPreviews",
          to_regclass('public.custody_wallets')::text AS wallets`,
     );
     row = result.rows[0];
   } catch {
     throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
   }
-  if (!row?.auditEvents || !row.envelopes || !row.wallets) {
+  if (
+    !row?.auditEvents ||
+    !row.envelopes ||
+    !row.failures ||
+    !row.keystoreVersions ||
+    !row.keystores ||
+    !row.resetPreviews ||
+    !row.wallets
+  ) {
     throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
   }
 }
@@ -107,8 +123,15 @@ export async function startSignerRuntime(
       async close() {
         if (closed) return;
         closed = true;
-        await closeServer(server!);
-        await pool.end();
+        try {
+          await service.shutdown();
+        } finally {
+          try {
+            await closeServer(server!);
+          } finally {
+            await pool.end();
+          }
+        }
       },
       url: `http://${host}:${address.port}`,
     };

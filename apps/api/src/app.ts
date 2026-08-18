@@ -3878,20 +3878,20 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     app.post("/api/wallets/generate", { bodyLimit: 16_384 }, async (request, reply) => {
       reply.header("Cache-Control", "no-store");
       const ingress = Buffer.isBuffer(request.body) ? request.body : null;
-      const session = await authenticateSessionRequest(request, reply);
-      if (!session) return reply;
-      if (!(await requireFreshReauthentication(request, reply, session))) return reply;
-      if (!options.walletSigner || !options.tenantId) {
-        return reply.code(503).send(
-          createErrorEnvelope({
-            code: "SIGNER_UNAVAILABLE",
-            message: "The wallet signer is unavailable",
-            requestId: request.id,
-            retryable: true,
-          }),
-        );
-      }
       try {
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+        if (!options.walletSigner || !options.tenantId) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "SIGNER_UNAVAILABLE",
+              message: "The wallet signer is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
         const input = ingress
           ? { ingress, mode: "user-password" as const, name: "secret-ingress" }
           : parseGenerateCustodyWalletRequest(request.body);

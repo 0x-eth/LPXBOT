@@ -119,6 +119,8 @@ export function createSignerHttpServer(input: {
             "seal",
             "open-verify",
             "password-reseal",
+            "keystore-unlock",
+            "keystore-auto-lock",
           ],
           ready: true,
         },
