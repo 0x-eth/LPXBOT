@@ -166,7 +166,11 @@ test("P00 through P04-04 acceptance files remain byte-identical to the requested
     .trim()
     .split("\n")
     .filter(Boolean)
-    .filter((file) => !file.startsWith("artifacts/acceptance/P04-05/"));
+    .filter(
+      (file) =>
+        !file.startsWith("artifacts/acceptance/P04-05/") &&
+        !file.startsWith("artifacts/acceptance/P04-06/"),
+    );
   assert.deepEqual(changed, []);
 });
 
