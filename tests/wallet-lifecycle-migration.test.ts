@@ -30,6 +30,11 @@ describe("P04-04 wallet lifecycle and security password migration", () => {
     expect(up).toContain("wallet.rename");
     expect(up).toContain("DROP CONSTRAINT custody_wallet_audit_events_wallet_id_fkey");
     expect(up).toContain("DROP CONSTRAINT custody_wallet_audit_events_user_id_fkey");
+    const previewTable = /CREATE TABLE custody_wallet_delete_previews \(([\s\S]*?)\n\);/u.exec(
+      up!,
+    )?.[1];
+    expect(previewTable).toBeDefined();
+    expect(previewTable).not.toContain("REFERENCES custody_wallets");
     expect(down).toContain("DROP TABLE custody_wallet_tombstones");
     expect(down).toContain("DROP TABLE custody_wallet_delete_previews");
     expect(down).toContain("ADD CONSTRAINT custody_wallet_audit_events_wallet_id_fkey");
