@@ -7,7 +7,53 @@ import type {
 import type { StoredSession } from "@lpbot/security";
 
 export const walletSecretMediaType = "application/vnd.lpbot.wallet-secret+json";
+export const keystoreSecretMediaType = "application/vnd.lpbot.keystore-secret+json";
 export const walletSecretBodyLimit = 16_384;
+export const keystoreSecretBodyLimit = 16_384;
+
+export interface KeystoreStatusDto {
+  configured: boolean;
+  status: "locked" | "locked-out" | "unconfigured" | "unlocked";
+  version: number;
+}
+
+export interface KeystoreResetPreviewDto {
+  confirmationPhrase: "I_LOSE_ALL_PASSWORD_WALLETS";
+  expiresAt: string;
+  policyCount: number;
+  previewToken: string;
+  secretVersion: number;
+  strategyCount: number;
+  taskCount: number;
+  walletCount: number;
+  walletsWithNonzeroAssets: number;
+  walletsWithPositions: number;
+}
+
+export interface KeystoreApplication {
+  changeKeystorePassword(input: { ingress: Uint8Array; userId: string }): Promise<KeystoreStatusDto>;
+  changeWalletEncryptionMode(input: {
+    ingress: Uint8Array;
+    tenantId: string;
+    userId: string;
+    walletId: string;
+  }): Promise<CustodyWallet>;
+  createKeystorePassword(input: { ingress: Uint8Array; userId: string }): Promise<KeystoreStatusDto>;
+  createKeystoreResetPreview(userId: string): Promise<KeystoreResetPreviewDto>;
+  keystoreStatus(userId: string, reauthenticatedSessionId?: string): Promise<KeystoreStatusDto>;
+  lockKeystore(userId: string): Promise<KeystoreStatusDto>;
+  resetKeystore(input: { ingress: Uint8Array; userId: string }): Promise<KeystoreStatusDto>;
+  unlockKeystore(input: {
+    ingress: Uint8Array;
+    reauthenticatedSessionId: string;
+    userId: string;
+  }): Promise<KeystoreStatusDto>;
+  updateKeystoreAutoLock(input: {
+    expectedVersion: number;
+    minutes: number;
+    userId: string;
+  }): Promise<KeystoreStatusDto>;
+}
 
 export interface WalletDirectory {
   getWallet(userId: string, walletId: string): Promise<CustodyWallet | null>;
@@ -16,6 +62,7 @@ export interface WalletDirectory {
 
 export interface WalletSignerClient {
   generateWallet(input: {
+    ingress?: Uint8Array;
     mode: WalletEncryptionMode;
     name: string;
     tenantId: string;
@@ -38,12 +85,22 @@ export interface FreshReauthenticationVerifier {
 
 export type WalletApiErrorCode =
   | "INVALID_MODE"
+  | "INVALID_AUTO_LOCK"
+  | "INVALID_CREDENTIALS"
   | "INVALID_PRIVATE_KEY"
   | "INVALID_QUERY"
   | "INVALID_WALLET"
   | "REAUTH_REQUIRED"
+  | "REVISION_CONFLICT"
   | "REQUEST_TOO_LARGE"
   | "SIGNER_UNAVAILABLE"
+  | "SECRET_VERSION_CONFLICT"
+  | "LOCKED_OUT"
+  | "PASSWORD_ALREADY_CONFIGURED"
+  | "PASSWORD_POLICY_FAILED"
+  | "PREVIEW_CHANGED"
+  | "PREVIEW_EXPIRED"
+  | "CONFIRMATION_MISMATCH"
   | "UNSUPPORTED_MEDIA_TYPE"
   | "WALLET_ADDRESS_EXISTS"
   | "WALLET_NOT_FOUND";
@@ -73,7 +130,9 @@ export function parseGenerateCustodyWalletRequest(value: unknown): GenerateCusto
   if (Object.keys(input).some((key) => key !== "mode" && key !== "name")) {
     throw new WalletApiError("INVALID_WALLET");
   }
-  if (input.mode !== "server-kek") throw new WalletApiError("INVALID_MODE");
+  if (input.mode !== "server-kek" && input.mode !== "user-password") {
+    throw new WalletApiError("INVALID_MODE");
+  }
   if (
     typeof input.name !== "string" ||
     input.name.length < 1 ||
@@ -103,7 +162,7 @@ export function publicWalletDto(value: unknown): CustodyWallet {
     wallet.name.length > 80 ||
     typeof wallet.address !== "string" ||
     !addressPattern.test(wallet.address) ||
-    wallet.mode !== "server-kek" ||
+    (wallet.mode !== "server-kek" && wallet.mode !== "user-password") ||
     (wallet.lockStatus !== "ready" &&
       wallet.lockStatus !== "locked" &&
       wallet.lockStatus !== "quarantined") ||
@@ -129,4 +188,56 @@ export function publicWalletDto(value: unknown): CustodyWallet {
     updatedAt: wallet.updatedAt,
     walletId: wallet.walletId.toLowerCase(),
   };
+}
+
+export function publicKeystoreStatus(value: unknown): KeystoreStatusDto {
+  const status = record(value);
+  const keys = Object.keys(status).sort();
+  if (
+    keys.join(",") !== "configured,status,version" ||
+    typeof status.configured !== "boolean" ||
+    !Number.isSafeInteger(status.version) ||
+    Number(status.version) < 0 ||
+    (status.status !== "unconfigured" &&
+      status.status !== "locked" &&
+      status.status !== "unlocked" &&
+      status.status !== "locked-out") ||
+    (status.configured === false && (status.version !== 0 || status.status !== "unconfigured")) ||
+    (status.configured === true && Number(status.version) < 1)
+  ) {
+    throw new WalletApiError("SIGNER_UNAVAILABLE");
+  }
+  return status as unknown as KeystoreStatusDto;
+}
+
+export function publicKeystoreResetPreview(value: unknown): KeystoreResetPreviewDto {
+  const preview = record(value);
+  const keys = [
+    "confirmationPhrase",
+    "expiresAt",
+    "policyCount",
+    "previewToken",
+    "secretVersion",
+    "strategyCount",
+    "taskCount",
+    "walletCount",
+    "walletsWithNonzeroAssets",
+    "walletsWithPositions",
+  ].sort();
+  if (
+    Object.keys(preview).sort().join(",") !== keys.join(",") ||
+    preview.confirmationPhrase !== "I_LOSE_ALL_PASSWORD_WALLETS" ||
+    typeof preview.previewToken !== "string" ||
+    preview.previewToken.length < 32 ||
+    typeof preview.expiresAt !== "string" ||
+    new Date(preview.expiresAt).toISOString() !== preview.expiresAt ||
+    !["policyCount", "strategyCount", "taskCount", "walletCount", "walletsWithNonzeroAssets", "walletsWithPositions"].every(
+      (key) => Number.isSafeInteger(preview[key]) && Number(preview[key]) >= 0,
+    ) ||
+    !Number.isSafeInteger(preview.secretVersion) ||
+    Number(preview.secretVersion) < 1
+  ) {
+    throw new WalletApiError("SIGNER_UNAVAILABLE");
+  }
+  return preview as unknown as KeystoreResetPreviewDto;
 }
