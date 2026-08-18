@@ -10,4 +10,4 @@ Raw transaction bytes are returned only to the dedicated delivery port, never to
 
 The API local-chain allowlist is explicit and defaults empty. A chain must also pass the current account policy. Every other chain stops at `ready-for-approval`; it is not allocated for signing, signed, or broadcast. All acceptance wallets and keys are synthetic local fixtures.
 
-Full-history Gitleaks 8.30.1 scanned 1,178 commits / 24.18 MB and found no leaks. Its only P04-06 allowance is the exact loopback Anvil integration path plus Anvil's documented account-zero development-key prefix. `pnpm audit:dependencies` reported no known vulnerabilities. Public RPC, testnet, mainnet, and real-fund actions: 0.
+Full-history Gitleaks 8.30.1 scanned 1,192 commits / 24.23 MB and found no leaks. Its only P04-06 allowance is the exact loopback Anvil integration path plus Anvil's documented account-zero development-key prefix. `pnpm audit:dependencies` reported no known vulnerabilities. Public RPC, testnet, mainnet, and real-fund actions: 0.
