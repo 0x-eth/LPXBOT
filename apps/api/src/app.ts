@@ -130,6 +130,7 @@ import {
   keystoreSecretBodyLimit,
   keystoreSecretMediaType,
   parseGenerateCustodyWalletRequest,
+  parseRenameCustodyWalletRequest,
   parseWalletId,
   publicKeystoreResetPreview,
   publicKeystoreStatus,
@@ -3844,6 +3845,38 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         );
       }
     });
+
+    app.patch<{ Params: { walletId: string } }>(
+      "/api/wallets/:walletId",
+      { bodyLimit: 16_384 },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletDirectory?.renameWallet) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "SIGNER_UNAVAILABLE",
+              message: "Wallet metadata is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const input = parseRenameCustodyWalletRequest(request.body);
+          const wallet = await options.walletDirectory.renameWallet({
+            ...input,
+            updatedAt: now(),
+            userId: session.userId,
+            walletId: parseWalletId(request.params.walletId),
+          });
+          return createSuccessEnvelope(publicWalletDto(wallet), request.id);
+        } catch (error) {
+          return walletFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
 
     app.post(
       "/api/wallets/import",

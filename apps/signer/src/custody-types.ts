@@ -50,6 +50,13 @@ export interface CustodyWalletStore {
   get(userId: string, walletId: string): Promise<StoredCustodyWallet | null>;
   getCurrentEnvelope(walletId: string, envelopeVersion: number): Promise<CustodyEnvelope | null>;
   list(userId: string): Promise<CustodyWalletPage>;
+  rename(input: {
+    expectedRevision: number;
+    name: string;
+    updatedAt: Date;
+    userId: string;
+    walletId: string;
+  }): Promise<CustodyWallet>;
   setLockStatus(
     userId: string,
     walletId: string,
@@ -165,6 +172,13 @@ export interface WalletEnvelopeReplacement extends WalletEnvelopeMaterial {
 export interface WalletDirectory {
   getWallet(userId: string, walletId: string): Promise<CustodyWallet | null>;
   listWallets(userId: string): Promise<CustodyWalletPage>;
+  renameWallet(input: {
+    expectedRevision: number;
+    name: string;
+    updatedAt: Date;
+    userId: string;
+    walletId: string;
+  }): Promise<CustodyWallet>;
 }
 
 export interface WalletSignerClient {

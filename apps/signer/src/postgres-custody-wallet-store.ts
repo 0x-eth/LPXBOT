@@ -247,6 +247,62 @@ export class PostgresCustodyWalletStore implements CustodyWalletStore, KeystoreS
     return { items: result.rows.map((row) => publicWallet(storedWallet(row))) };
   }
 
+  async rename(input: {
+    expectedRevision: number;
+    name: string;
+    updatedAt: Date;
+    userId: string;
+    walletId: string;
+  }): Promise<CustodyWallet> {
+    const client = await this.#pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+        `custody-wallet:${input.userId}:${input.walletId}`,
+      ]);
+      const current = await client.query<WalletRow>(
+        `SELECT ${walletColumns} FROM custody_wallets
+          WHERE user_id = $1 AND wallet_id = $2
+            AND lifecycle_status IN ('active', 'recoverable')
+          FOR UPDATE`,
+        [input.userId, input.walletId],
+      );
+      const row = current.rows[0];
+      if (!row) throw new SignerError("WALLET_NOT_FOUND");
+      if (integer(row.revision, "wallet revision") !== input.expectedRevision) {
+        throw new SignerError("REVISION_CONFLICT");
+      }
+      if (row.name === input.name) {
+        await client.query("COMMIT");
+        return publicWallet(storedWallet(row));
+      }
+      const renamed = await client.query<WalletRow>(
+        `UPDATE custody_wallets
+            SET name = $3, revision = revision + 1, updated_at = $4
+          WHERE user_id = $1 AND wallet_id = $2 AND revision = $5
+          RETURNING ${walletColumns}`,
+        [input.userId, input.walletId, input.name, input.updatedAt, input.expectedRevision],
+      );
+      const updated = renamed.rows[0];
+      if (!updated) throw new SignerError("REVISION_CONFLICT");
+      await this.#insertAudit(client, {
+        action: "wallet.rename",
+        envelopeVersion: integer(updated.current_envelope_version, "envelope version"),
+        revision: integer(updated.revision, "wallet revision"),
+        updatedAt: input.updatedAt,
+        userId: input.userId,
+        walletId: input.walletId,
+      });
+      await client.query("COMMIT");
+      return publicWallet(storedWallet(updated));
+    } catch (error) {
+      await this.#rollback(client);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async setLockStatus(
     userId: string,
     walletId: string,

@@ -65,6 +65,13 @@ export interface KeystoreApplication {
 export interface WalletDirectory {
   getWallet(userId: string, walletId: string): Promise<CustodyWallet | null>;
   listWallets(userId: string): Promise<CustodyWalletPage>;
+  renameWallet?(input: {
+    expectedRevision: number;
+    name: string;
+    updatedAt: Date;
+    userId: string;
+    walletId: string;
+  }): Promise<CustodyWallet>;
 }
 
 export interface WalletSignerClient {
@@ -150,6 +157,29 @@ export function parseGenerateCustodyWalletRequest(value: unknown): GenerateCusto
     throw new WalletApiError("INVALID_WALLET");
   }
   return { mode: input.mode, name: input.name };
+}
+
+export function parseRenameCustodyWalletRequest(value: unknown): {
+  expectedRevision: number;
+  name: string;
+} {
+  const input = record(value);
+  if (Object.keys(input).sort().join(",") !== "expectedRevision,name") {
+    throw new WalletApiError("INVALID_WALLET");
+  }
+  if (!Number.isSafeInteger(input.expectedRevision) || Number(input.expectedRevision) < 1) {
+    throw new WalletApiError("REVISION_CONFLICT");
+  }
+  if (
+    typeof input.name !== "string" ||
+    input.name.length < 1 ||
+    input.name.length > 80 ||
+    input.name.trim() !== input.name ||
+    /\p{Cc}/u.test(input.name)
+  ) {
+    throw new WalletApiError("INVALID_WALLET");
+  }
+  return { expectedRevision: Number(input.expectedRevision), name: input.name };
 }
 
 export function parseWalletId(value: unknown): string {

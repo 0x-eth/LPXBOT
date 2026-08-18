@@ -23,6 +23,7 @@ export {
   keystoreSecretBodyLimit,
   keystoreSecretMediaType,
   parseGenerateCustodyWalletRequest,
+  parseRenameCustodyWalletRequest,
   parseWalletId,
   publicKeystoreResetPreview,
   publicKeystoreStatus,

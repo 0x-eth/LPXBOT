@@ -133,6 +133,24 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
     };
   }
 
+  async rename(input: {
+    expectedRevision: number;
+    name: string;
+    updatedAt: Date;
+    userId: string;
+    walletId: string;
+  }): Promise<CustodyWallet> {
+    const wallet = this.#wallets.get(input.walletId);
+    if (!wallet || wallet.userId !== input.userId) throw new SignerError("WALLET_NOT_FOUND");
+    if (wallet.revision !== input.expectedRevision) throw new SignerError("REVISION_CONFLICT");
+    if (wallet.name === input.name) return publicWallet(wallet);
+    wallet.name = input.name;
+    wallet.revision += 1;
+    wallet.updatedAt = new Date(input.updatedAt);
+    this.#audits.push({ action: "wallet.rename", walletId: wallet.walletId });
+    return publicWallet(wallet);
+  }
+
   async setLockStatus(
     userId: string,
     walletId: string,

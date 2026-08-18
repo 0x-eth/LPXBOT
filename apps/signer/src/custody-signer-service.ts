@@ -593,6 +593,16 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     return wallet ? publicWallet(wallet) : null;
   }
 
+  async renameWallet(input: {
+    expectedRevision: number;
+    name: string;
+    updatedAt: Date;
+    userId: string;
+    walletId: string;
+  }): Promise<CustodyWallet> {
+    return this.#store.rename(input);
+  }
+
   async recoverWallet(input: {
     reauthenticatedSessionId?: string;
     tenantId: string;
