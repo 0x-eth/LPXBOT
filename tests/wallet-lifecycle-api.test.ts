@@ -56,6 +56,63 @@ async function fixture() {
   return { app, otherToken, store, token, wallet };
 }
 
+async function lifecycleFixture() {
+  const sessionStore = new SessionFixtureStore();
+  const token = await issueFixtureSession(sessionStore, userId, now);
+  const store = new InMemoryCustodyWalletStore();
+  const inventory = {
+    snapshot: {
+      assetIds: ["asset:8453:USDC"],
+      assetRiskDigest: "sha256:wallet-risk-fixture-v1",
+      complete: true,
+      policyIds: ["policy:rebalance"],
+      positionIds: ["position:8453:7"],
+      taskIds: ["task:rebalance:7"],
+    },
+    async inspect() {
+      return this.snapshot;
+    },
+  };
+  const taskCoordinator = {
+    async deactivate() {
+      return { async restore() {} };
+    },
+  };
+  const serviceOptions = {
+    now: () => now,
+    signer: new IsolatedWalletSigner({
+      kms: new LocalKmsFixture({
+        activeVersion: "kek-fixture-v1",
+        keys: { "kek-fixture-v1": Buffer.alloc(32, 0x53) },
+      }),
+    }),
+    store,
+    taskCoordinator,
+    walletDependencyInventory: inventory,
+  };
+  const custody = new CustodySignerService(serviceOptions);
+  const app = buildApiApp({
+    freshReauthentication: { verify: async () => true },
+    maintenance: { enabled: false, message: null, until: null },
+    now: () => now,
+    regionPolicy: () => ({ blocked: false, code: null, message: null }),
+    sessionStore,
+    tenantId,
+    walletDirectory: custody,
+    walletSigner: custody,
+  });
+  apps.push(app);
+  const wallet = await custody.importWallet({
+    ingress: Buffer.from(
+      JSON.stringify({ mode: "server-kek", name: "Risk wallet", privateKey }),
+      "utf8",
+    ),
+    tenantId,
+    userId,
+  });
+  return { app, custody, inventory, store, taskCoordinator, token, wallet };
+}
+
 function auth(token: string) {
   return { cookie: `lpbot_session=${token}` };
 }
@@ -133,5 +190,39 @@ describe("P04-04 wallet metadata API", () => {
     expect(crossUser.statusCode).toBe(404);
     expect(crossUser.json().error.code).toBe("WALLET_NOT_FOUND");
     expect(crossUser.body).not.toContain(userId);
+  });
+});
+
+describe("P04-04 wallet delete preview API", () => {
+  it("freezes a complete dependency and asset-risk snapshot for exactly 300 seconds", async () => {
+    const { app, token, wallet } = await lifecycleFixture();
+    const response = await app.inject({
+      headers: auth(token),
+      method: "POST",
+      payload: {},
+      url: `/api/wallets/${wallet.walletId}/delete-preview`,
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.headers["cache-control"]).toBe("no-store");
+    expect(response.json().data).toMatchObject({
+      assetCount: 1,
+      assetRiskDigest: "sha256:wallet-risk-fixture-v1",
+      dependencies: {
+        assetIds: ["asset:8453:USDC"],
+        policyIds: ["policy:rebalance"],
+        positionIds: ["position:8453:7"],
+        taskIds: ["task:rebalance:7"],
+      },
+      expiresAt: "2026-08-18T08:05:00.000Z",
+      forceEligible: true,
+      policyCount: 1,
+      positionCount: 1,
+      revision: wallet.revision,
+      taskCount: 1,
+      walletId: wallet.walletId,
+    });
+    expect(response.json().data.previewToken).toMatch(/^[A-Za-z0-9_-]{43}$/u);
+    expect(response.json().data.confirmationPhrase).toMatch(/^DELETE WALLET [A-F0-9]{8}$/u);
   });
 });
