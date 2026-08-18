@@ -4,7 +4,7 @@ import {
   OBSERVED_HELPER_PATHS,
   ObservedHelperCodec,
   type ObservedHelperPathName,
-} from "../packages/test-fixtures/src/index.js";
+} from "../packages/test-fixtures/src/observed-helper-codec.js";
 import { describe, expect, it } from "vitest";
 
 const fixtureRoot = path.resolve("artifacts/acceptance/P05-01/fixtures/observed-helper");
