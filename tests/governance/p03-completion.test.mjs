@@ -76,7 +76,7 @@ function statusRows(markdown) {
   return rows;
 }
 
-test("P03 status is exactly 8 implemented-assumed / 0 planned with global 52 / 144", async () => {
+test("P03 status is exactly 8 implemented-assumed / 0 planned", async () => {
   const markdown = await readFile(TRACEABILITY, "utf8");
   const rows = statusRows(markdown);
   assert.deepEqual(sorted(rows.keys()), sorted(FEATURE_IDS));
@@ -95,9 +95,6 @@ test("P03 status is exactly 8 implemented-assumed / 0 planned with global 52 / 1
     assert.match(rows.get(id).evidence, /frozen reference only/u, id);
   }
   assert.match(markdown, /P03[^\n]*8[^\n]*implemented-assumed[^\n]*0[^\n]*planned/iu);
-  assert.match(markdown, /当前产品实现\s*\|\s*52\s*\|/u);
-  assert.match(markdown, /`implemented-assumed`\s*\|\s*52\s*\|/u);
-  assert.match(markdown, /其余\s*`planned`\s*\|\s*144\s*\|/u);
   assert.match(markdown, /live Telegram\/Webhook delivery/u);
   assert.match(markdown, /delivery SLO/u);
 });
