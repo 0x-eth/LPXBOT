@@ -178,6 +178,7 @@ test("wallets renders loading, empty, ready, desktop/mobile, and axe states", as
     false,
   );
   if (captureEvidence) {
+    await page.mouse.move(0, 0);
     const screenshot = await page.screenshot({
       animations: "disabled",
       caret: "hide",
