@@ -24,6 +24,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-router-dom": "7.18.2",
+    "qr": "0.6.0",
     "viem": "2.55.16"
   },
   "devDependencies": {
