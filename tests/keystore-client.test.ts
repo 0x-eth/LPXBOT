@@ -96,7 +96,12 @@ describe("P04-03 Keystore browser client", () => {
       "/api/keystore/password",
       "/api/keystore/reset",
     ]);
-    expect(fetcher.mock.calls.map(([, init]) => init?.method)).toEqual(["POST", "POST", "PUT", "POST"]);
+    expect(fetcher.mock.calls.map(([, init]) => init?.method)).toEqual([
+      "POST",
+      "POST",
+      "PUT",
+      "POST",
+    ]);
     for (const [, init] of fetcher.mock.calls) {
       expect(init?.headers).toEqual(
         expect.objectContaining({

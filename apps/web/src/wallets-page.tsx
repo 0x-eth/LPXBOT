@@ -64,7 +64,8 @@ function WalletState({ status }: { status: WalletPageStatus }) {
 }
 
 function walletRequestLabel(error: unknown, action: "generate" | "import" | "switch"): string {
-  if (!(error instanceof WalletRequestError)) return `${action === "generate" ? "生成" : action === "import" ? "导入" : "切换"}失败`;
+  if (!(error instanceof WalletRequestError))
+    return `${action === "generate" ? "生成" : action === "import" ? "导入" : "切换"}失败`;
   switch (error.code) {
     case "WALLET_ADDRESS_EXISTS":
       return "该地址已由当前账户托管";
@@ -307,11 +308,7 @@ function ImportWalletDialog({
                 value={privateKey}
               />
             </label>
-            <WalletModeControl
-              configured={keystoreConfigured}
-              mode={mode}
-              onChange={setMode}
-            />
+            <WalletModeControl configured={keystoreConfigured} mode={mode} onChange={setMode} />
             {mode === "user-password" ? (
               <label htmlFor="wallet-import-password">
                 <span>Keystore 密码</span>
@@ -454,11 +451,7 @@ function GenerateWalletDialog({
                 value={name}
               />
             </label>
-            <WalletModeControl
-              configured={keystoreConfigured}
-              mode={mode}
-              onChange={setMode}
-            />
+            <WalletModeControl configured={keystoreConfigured} mode={mode} onChange={setMode} />
             {mode === "user-password" ? (
               <label htmlFor="wallet-generate-password">
                 <span>Keystore 密码</span>
@@ -671,7 +664,9 @@ export function WalletsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void loadKeystore(controller.signal);
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) void loadKeystore(controller.signal);
+    });
     void client.list(controller.signal).then(
       (page) => {
         setWallets(page.items);

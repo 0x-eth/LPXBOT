@@ -16,8 +16,7 @@ export type ImportCustodyWalletRequest =
   | { mode: "user-password"; name: string; password: string; privateKey: string };
 
 export type GenerateCustodyWalletInput =
-  | { mode: "server-kek"; name: string }
-  | { mode: "user-password"; name: string; password: string };
+  { mode: "server-kek"; name: string } | { mode: "user-password"; name: string; password: string };
 
 const walletKeys = [
   "address",
@@ -167,7 +166,8 @@ export class WalletClient {
 
   async #secretWalletMutation(
     path: string,
-    input: ChangeWalletEncryptionModeRequest | GenerateCustodyWalletInput | ImportCustodyWalletRequest,
+    input:
+      ChangeWalletEncryptionModeRequest | GenerateCustodyWalletInput | ImportCustodyWalletRequest,
     contentType: string,
   ): Promise<CustodyWallet> {
     const bytes = new TextEncoder().encode(JSON.stringify(input));

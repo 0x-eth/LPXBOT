@@ -85,8 +85,6 @@ function PasswordDialog({
     setSubmitting(false);
   }, []);
 
-  useEffect(() => reset(), [action, reset]);
-
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!action) return;
@@ -133,7 +131,11 @@ function PasswordDialog({
   };
 
   const title =
-    action === "create" ? "创建 Keystore 密码" : action === "change" ? "修改 Keystore 密码" : "解锁 Keystore";
+    action === "create"
+      ? "创建 Keystore 密码"
+      : action === "change"
+        ? "修改 Keystore 密码"
+        : "解锁 Keystore";
   const confirmLabel =
     action === "create" ? "确认创建" : action === "change" ? "确认修改" : "确认解锁";
 
@@ -331,7 +333,10 @@ function ResetDialog({
             </Dialog.Close>
           </div>
           {preview ? (
-            <form className="wallet-form keystore-reset-form" onSubmit={(event) => void submit(event)}>
+            <form
+              className="wallet-form keystore-reset-form"
+              onSubmit={(event) => void submit(event)}
+            >
               <div className="reset-risk-summary" role="status">
                 <strong>{preview.walletCount} 个密码钱包</strong>
                 <span>{preview.taskCount} 个任务</span>
@@ -413,7 +418,9 @@ export function KeystoreSettings() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) void load(controller.signal);
+    });
     return () => controller.abort();
   }, [load]);
 

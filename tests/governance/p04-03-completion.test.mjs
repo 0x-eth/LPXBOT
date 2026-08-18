@@ -82,7 +82,8 @@ async function filesBelow(directory, prefix = "") {
   const files = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const relative = path.posix.join(prefix, entry.name);
-    if (entry.isDirectory()) files.push(...(await filesBelow(path.join(directory, entry.name), relative)));
+    if (entry.isDirectory())
+      files.push(...(await filesBelow(path.join(directory, entry.name), relative)));
     else if (entry.isFile()) files.push(relative);
     else assert.fail(`unsupported acceptance entry ${relative}`);
   }
@@ -105,7 +106,10 @@ test("P04 status is exactly 5 implemented-assumed / 7 planned with global 54 / 1
   for (const id of ["WALLET-05", "WALLET-06"]) {
     assert.match(rows.get(id).evidence, /P04-03/u, id);
     assert.match(rows.get(id).evidence, /local-fixture-verified/u, id);
-    assert.match(functionMatrix, new RegExp(`\\| ${id} \\|[^\\n]*implemented-assumed[^\\n]*P04-03`, "u"));
+    assert.match(
+      functionMatrix,
+      new RegExp(`\\| ${id} \\|[^\\n]*implemented-assumed[^\\n]*P04-03`, "u"),
+    );
   }
   assert.match(traceability, /P04[^\n]*5[^\n]*implemented-assumed[^\n]*7[^\n]*planned/iu);
   assert.match(traceability, /\| 当前产品实现 \| 54 \|/u);
@@ -151,7 +155,10 @@ test("P04-03 required evidence and sha256 inventory are complete", async () => {
   const files = await filesBelow(ACCEPTANCE);
   for (const required of REQUIRED_FILES) assert.ok(files.includes(required), required);
   const rows = parseChecksums(await readFile(path.join(ACCEPTANCE, "sha256sums.txt"), "utf8"));
-  assert.deepEqual(rows.map(({ path: value }) => value), files.filter((file) => file !== "sha256sums.txt"));
+  assert.deepEqual(
+    rows.map(({ path: value }) => value),
+    files.filter((file) => file !== "sha256sums.txt"),
+  );
   assert.equal(new Set(rows.map(({ path: value }) => value)).size, rows.length);
   for (const row of rows) {
     assert.equal(digest(await readFile(path.join(ACCEPTANCE, row.path))), row.sha256, row.path);
@@ -160,7 +167,9 @@ test("P04-03 required evidence and sha256 inventory are complete", async () => {
 
 test("P04-03 evidence records zero signing, raw transactions, broadcast, and external RPC", async () => {
   const evidence = await Promise.all(
-    ["E-API.md", "E-OPS.md", "E-SEC.md"].map((file) => readFile(path.join(ACCEPTANCE, file), "utf8")),
+    ["E-API.md", "E-OPS.md", "E-SEC.md"].map((file) =>
+      readFile(path.join(ACCEPTANCE, file), "utf8"),
+    ),
   ).then((parts) => parts.join("\n"));
   assert.match(evidence, /signing[^\n]*0/iu);
   assert.match(evidence, /raw transaction[^\n]*0/iu);

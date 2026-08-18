@@ -74,7 +74,8 @@ export function parseKeystoreStatus(value: unknown, status = 0): KeystoreStatus 
       value.status !== "unconfigured" &&
       value.status !== "unlocked") ||
     (value.configured === false && (value.status !== "unconfigured" || value.version !== 0)) ||
-    (value.configured === true && (value.status === "unconfigured" || (value.version as number) < 1))
+    (value.configured === true &&
+      (value.status === "unconfigured" || (value.version as number) < 1))
   ) {
     throw new KeystoreRequestError("KEYSTORE_RESPONSE_INVALID", true, status);
   }
@@ -206,9 +207,7 @@ export class KeystoreClient {
     if (!response.ok) {
       const envelope = isRecord(body) ? (body as ErrorEnvelope) : null;
       const code =
-        typeof envelope?.error?.code === "string"
-          ? envelope.error.code
-          : "KEYSTORE_REQUEST_FAILED";
+        typeof envelope?.error?.code === "string" ? envelope.error.code : "KEYSTORE_REQUEST_FAILED";
       throw new KeystoreRequestError(code, envelope?.error?.retryable === true, response.status);
     }
     if (!isRecord(body) || body.success !== true || !Object.hasOwn(body, "data")) {

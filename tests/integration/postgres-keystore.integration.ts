@@ -94,9 +94,7 @@ describe("P04-03 PostgreSQL Keystore lifecycle", () => {
     expect(creates.filter(({ status }) => status === "rejected")).toHaveLength(1);
 
     const configuredPassword =
-      creates[0]?.status === "fulfilled"
-        ? "synthetic-password-one"
-        : "synthetic-password-two";
+      creates[0]?.status === "fulfilled" ? "synthetic-password-one" : "synthetic-password-two";
     for (let attempt = 0; attempt < 5; attempt += 1) {
       await pool.query(
         `UPDATE user_keystore_failures SET backoff_until = window_started_at
@@ -196,9 +194,11 @@ describe("P04-03 PostgreSQL Keystore lifecycle", () => {
         userId,
       }),
     ).rejects.toMatchObject({ code: "CUSTODY_STORE_UNAVAILABLE" });
-    expect(await new PostgresCustodyWalletStore(pool).get(userId, password.walletId)).toMatchObject({
-      envelopeVersion: 1,
-    });
+    expect(await new PostgresCustodyWalletStore(pool).get(userId, password.walletId)).toMatchObject(
+      {
+        envelopeVersion: 1,
+      },
+    );
 
     const preview = await service.createKeystoreResetPreview(userId);
     await service.resetKeystore({
