@@ -106,9 +106,13 @@ export function createSignerHttpServer(input: {
       return;
     }
     let body: Buffer | null = null;
+    let importAcquired = false;
     try {
       if (request.method === "POST" && request.url === "/v1/wallets/import") {
-        if (request.headers["content-type"]?.split(";", 1)[0] !== "application/vnd.lpbot.wallet-secret+json") {
+        if (
+          request.headers["content-type"]?.split(";", 1)[0] !==
+          "application/vnd.lpbot.wallet-secret+json"
+        ) {
           send(response, 415, {
             error: { code: "UNSUPPORTED_MEDIA_TYPE", retryable: false },
             success: false,
@@ -116,10 +120,14 @@ export function createSignerHttpServer(input: {
           return;
         }
         if (activeImports.has(ownership.userId)) {
-          send(response, 409, { error: { code: "IMPORT_IN_PROGRESS", retryable: false }, success: false });
+          send(response, 409, {
+            error: { code: "IMPORT_IN_PROGRESS", retryable: false },
+            success: false,
+          });
           return;
         }
         activeImports.add(ownership.userId);
+        importAcquired = true;
         body = await readBody(request);
         const wallet = await input.service.importWallet({ ingress: body, ...ownership });
         send(response, 201, { data: wallet, success: true });
@@ -157,7 +165,7 @@ export function createSignerHttpServer(input: {
       failure(response, error);
     } finally {
       body?.fill(0);
-      activeImports.delete(ownership.userId);
+      if (importAcquired) activeImports.delete(ownership.userId);
     }
   });
   server.headersTimeout = 5_000;

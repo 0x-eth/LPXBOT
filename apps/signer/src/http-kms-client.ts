@@ -1,7 +1,7 @@
 import type { KmsClient, KmsKeyDescriptor, WrappedDek } from "./kms.js";
 import { SignerError } from "./signer-error.js";
 
-type KmsFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+type KmsFetch = typeof fetch;
 
 function record(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -14,7 +14,10 @@ function decode(value: unknown, expectedBytes: number | null): Buffer {
     throw new SignerError("SIGNER_UNAVAILABLE", true);
   }
   const bytes = Buffer.from(value, "base64");
-  if ((expectedBytes !== null && bytes.length !== expectedBytes) || bytes.toString("base64") !== value) {
+  if (
+    (expectedBytes !== null && bytes.length !== expectedBytes) ||
+    bytes.toString("base64") !== value
+  ) {
     bytes.fill(0);
     throw new SignerError("SIGNER_UNAVAILABLE", true);
   }
@@ -108,10 +111,10 @@ export class HttpKmsClient implements KmsClient {
     try {
       response = await this.#fetcher(`${this.#url}${path}`, {
         ...init,
-        cache: "no-store",
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${this.#identityToken}`,
+          "Cache-Control": "no-store",
           "X-LPBOT-Signer-Identity": this.#identity,
           ...init.headers,
         },
@@ -121,7 +124,10 @@ export class HttpKmsClient implements KmsClient {
       throw new SignerError("SIGNER_UNAVAILABLE", true);
     }
     if (!response.ok) {
-      throw new SignerError(response.status === 404 ? "KEK_VERSION_UNAVAILABLE" : "SIGNER_UNAVAILABLE", true);
+      throw new SignerError(
+        response.status === 404 ? "KEK_VERSION_UNAVAILABLE" : "SIGNER_UNAVAILABLE",
+        true,
+      );
     }
     try {
       const body = record(await response.json());
