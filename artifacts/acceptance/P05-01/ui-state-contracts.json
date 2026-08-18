@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P05-01",
+  "implementationStatus": "planned",
+  "surfaces": [
+    {
+      "id": "wallet-swap",
+      "featureIds": ["SWAP-01", "SWAP-02"],
+      "location": "/wallets",
+      "states": ["idle", "quoting", "quoted", "expired", "ready-for-approval", "error"],
+      "requiredDisplay": ["base-unit-derived amounts", "route", "minOut", "price impact", "gas", "expiry", "quote digest status"],
+      "primaryCommand": "review-and-approve",
+      "broadcastCommandPresent": false
+    },
+    {
+      "id": "wallet-positions",
+      "featureIds": ["POS-01", "POS-02", "POS-03"],
+      "location": "/wallets",
+      "states": ["loading", "empty", "ready", "partial", "stale", "quarantined", "error"],
+      "requiredDisplay": ["owner", "tokenId", "pool", "ticks", "liquidity", "fees", "approval", "snapshot"],
+      "commands": ["refresh", "collect-preview", "decrease-preview"]
+    },
+    {
+      "id": "position-ledger",
+      "featureIds": ["POS-04"],
+      "location": "/wallets",
+      "states": ["loading", "empty", "ready", "reconnecting", "stale", "error"],
+      "requiredDisplay": ["imported position", "cost basis", "fee history", "withdrawn marker", "snapshot freshness"]
+    },
+    {
+      "id": "helper-status",
+      "featureIds": ["HELPER-01", "HELPER-02", "HELPER-03"],
+      "location": "/wallets",
+      "states": ["undeployed", "deploying", "active", "degraded", "superseded", "residual"],
+      "requiredDisplay": ["chain", "address", "owner", "version", "registry version", "runtime code status", "last verified block"],
+      "versionComparisonAcrossChains": false
+    },
+    {
+      "id": "helper-residuals",
+      "featureIds": ["HELPER-05", "HELPER-06"],
+      "location": "/wallets",
+      "states": ["loading", "empty", "ready", "scanning", "partial", "ready-for-approval", "error"],
+      "requiredDisplay": ["wallet", "chain", "Helper", "asset", "base-unit balance", "gas estimate", "snapshot"],
+      "batchSemantics": "one-wallet-one-transaction-with-per-asset-result"
+    }
+  ],
+  "approvalView": {
+    "requiredFields": [
+      "operation kind",
+      "wallet",
+      "chainId",
+      "platformId",
+      "registryVersion",
+      "token and NFT deltas",
+      "router and spender identities",
+      "minOut and deadline",
+      "fee recipient and bps",
+      "gas ceiling",
+      "refund and dust expectations",
+      "plan digest"
+    ],
+    "sensitiveCalldataRendered": false,
+    "arbitraryTargetEditable": false,
+    "arbitrarySpenderEditable": false,
+    "feePolicyEditable": false,
+    "quoteExpiredDisablesApproval": true,
+    "codeHashMismatchDisablesApproval": true
+  },
+  "failurePresentation": {
+    "degradedHelperBlocksNewFunding": true,
+    "staleSnapshotRequiresRefresh": true,
+    "reconciliationShowsAssetLocation": true,
+    "partialSagaShowsConfirmedAndRemainingSteps": true,
+    "unknownNftIsQuarantined": true,
+    "feePolicyUnknownBlocksExecution": true,
+    "rawProviderErrorExposed": false
+  },
+  "accessibility": {
+    "colorOnlyStatusAllowed": false,
+    "keyboardApprovalReviewRequired": true,
+    "focusReturnsToTrigger": true,
+    "liveRegionForOperationState": true
+  },
+  "implementationCreated": false
+}

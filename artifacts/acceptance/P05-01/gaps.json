@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-01",
+  "status": "contract-frozen-with-unresolved-gaps",
+  "items": [
+    {
+      "id": "GAP-P05-HELPER-VERIFIED-SOURCE",
+      "subject": "verified Helper source, original ABI names, and exact business subtypes",
+      "classification": "UNKNOWN",
+      "status": "unresolved",
+      "blocksExecution": true,
+      "blocksParity": true,
+      "reason": "The observed production Helpers are unverified and four selectors only support opaque observed-v3/v4-path-a/b names.",
+      "requiredFollowUp": "Obtain verified source or independently reproduce all fields with traces and at least ten samples per semantic subtype before enabling a production codec."
+    },
+    {
+      "id": "GAP-P05-HELPER-UPGRADE",
+      "subject": "Helper upgrade trigger, compatibility, ownership, and reported 93-byte runtime delta",
+      "classification": "UNKNOWN",
+      "status": "unresolved",
+      "blocksExecution": true,
+      "blocksParity": true,
+      "reason": "Historical evidence mentions a newer runtime size but does not prove its behavior, upgrade selection, old-position compatibility, or rollback policy.",
+      "requiredFollowUp": "Capture both runtime versions, creation transactions, owner calls, selectors, traces, code diff, registry history, and rollback behavior before freezing a supersession transition."
+    },
+    {
+      "id": "GAP-P05-FEE-OWNERSHIP",
+      "subject": "fee ownership, fee recipient selection, bps bounds, and accounting basis",
+      "classification": "UNKNOWN",
+      "status": "unresolved",
+      "blocksExecution": true,
+      "blocksParity": true,
+      "reason": "Observed calldata and receipts show several fee recipients and bps values, but the provided fee wallets are not hard-coded and global ownership or policy is unproven.",
+      "requiredFollowUp": "Obtain the authoritative fee policy and version history, then reconcile recipient token flows and exact fee basis across every enabled operation."
+    },
+    {
+      "id": "GAP-P05-EXIT-ATOMICITY",
+      "subject": "collect, decrease, exit-to-one-token, rebalance, and migration atomicity",
+      "classification": "UNKNOWN",
+      "status": "unresolved",
+      "blocksExecution": true,
+      "blocksParity": true,
+      "reason": "Historical evidence contains direct PositionManager calls and multi-transaction sagas; it does not prove that exits or migrations are one Helper transaction.",
+      "requiredFollowUp": "Capture successful and failed transaction sequences for each operation and Helper version, including receipts, logs, balances, NFT state, and recovery cursor."
+    },
+    {
+      "id": "GAP-P05-ROUTER-ABI-ALLOWLIST",
+      "subject": "router ABI, selector allowlist, spender behavior, and route validation",
+      "classification": "UNKNOWN",
+      "status": "unresolved",
+      "blocksExecution": true,
+      "blocksParity": true,
+      "reason": "The router and spender are observed, but a complete authoritative ABI and reviewed selector/token/recipient policy are not frozen; the registry allowlist is intentionally empty.",
+      "requiredFollowUp": "Freeze authoritative router and spender interfaces, decode every allowed route shape, review code hashes, and pass malicious calldata plus provider-change tests."
+    },
+    {
+      "id": "GAP-P05-TOKEN-POLICY",
+      "subject": "production token allowlist and non-standard token behavior",
+      "classification": "UNKNOWN",
+      "status": "unresolved",
+      "blocksExecution": true,
+      "blocksParity": true,
+      "reason": "No production policy classifies fee-on-transfer, rebasing, callback, false-return, USDT-style approval, or malicious tokens.",
+      "requiredFollowUp": "Publish a versioned token policy with code hashes and test every supported behavior in Foundry and fork fixtures."
+    },
+    {
+      "id": "GAP-P05-HELPER-DEPLOYMENT",
+      "subject": "creation bytecode, deployment gas, address prediction, and deployment idempotency",
+      "classification": "UNKNOWN",
+      "status": "unresolved",
+      "blocksExecution": true,
+      "blocksParity": true,
+      "reason": "Observed Helpers were owner-EOA direct deployments, but creation code and a reviewed deployer are not part of this reference freeze.",
+      "requiredFollowUp": "Freeze creation bytecode and hash, verify immutable owner patching, deploy on testnet, exercise duplicate and dropped deployment recovery, and complete security review."
+    },
+    {
+      "id": "GAP-P05-FORK-AND-TESTNET",
+      "subject": "Anvil fork and BSC testnet execution evidence",
+      "classification": "UNKNOWN",
+      "status": "unresolved",
+      "blocksExecution": true,
+      "blocksParity": true,
+      "reason": "P05-01 performs only mainnet reads and offline replay; it does not execute approve, Permit2, swap, mint, increase, collect, decrease, refund, or sweep.",
+      "requiredFollowUp": "After review, save successful and failed fork plus testnet fixtures for all four platforms and every required security case."
+    },
+    {
+      "id": "GAP-P05-INDEPENDENT-SECURITY-REVIEW",
+      "subject": "independent Helper, adapter, operation, and registry security review",
+      "classification": "UNKNOWN",
+      "status": "unresolved",
+      "blocksExecution": true,
+      "blocksParity": true,
+      "reason": "A contract freeze and offline codec regression are not an implementation audit or custody approval.",
+      "requiredFollowUp": "Complete architecture, Solidity, signer-boundary, route-validation, and incident-recovery reviews and close all findings before testnet writes."
+    },
+    {
+      "id": "GAP-P05-TARGET-UI-API",
+      "subject": "authenticated target API responses and complete desktop/mobile operation states",
+      "classification": "UNKNOWN",
+      "status": "unresolved",
+      "blocksExecution": false,
+      "blocksParity": true,
+      "reason": "Public and bundle paths exist, but authenticated redacted responses and visual states for every quote, position, Helper, recovery, and approval case are absent.",
+      "requiredFollowUp": "Capture approved authenticated response fixtures and desktop/mobile states, then compare them without promoting bundle candidates to official facts."
+    }
+  ]
+}

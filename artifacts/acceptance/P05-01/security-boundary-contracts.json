@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P05-01",
+  "implementationStatus": "planned",
+  "defaultDecision": "deny",
+  "arbitraryExecution": {
+    "targetAllowed": false,
+    "routerAllowed": false,
+    "spenderAllowed": false,
+    "selectorAllowed": false,
+    "calldataAllowed": false,
+    "delegateCallAllowed": false,
+    "userSuppliedNativeValueAllowed": false
+  },
+  "mandatoryValidation": {
+    "token": [
+      "chain and address are registry-approved",
+      "runtime code hash matches the token policy snapshot",
+      "token0 and token1 identities match pool or position state",
+      "fee-on-transfer, rebasing, callback, and non-standard approve behavior are explicitly classified"
+    ],
+    "recipient": [
+      "swap and refund recipient equals wallet owner",
+      "minted NFT recipient equals wallet owner",
+      "collect and sweep recipient equals wallet owner"
+    ],
+    "deadline": [
+      "deadline is positive, bounded, digest-bound, and later than execution time",
+      "quote max block has not passed"
+    ],
+    "minOut": [
+      "positive base-unit integer",
+      "no greater than quoted output",
+      "bound to route, amount, slippage, expiry, and digest",
+      "reconciled against recipient output delta"
+    ],
+    "fee": [
+      "recipient is present in the exact registry fee policy",
+      "bps is within the exact versioned maximum and bound to digest",
+      "receipt transfers reconcile to recipient and bps",
+      "empty fee allowlist fails closed"
+    ],
+    "codeHash": [
+      "Helper, factory or poolManager, positionManager, Permit2, router, spender, wrapped native, and governed tokens match registry hashes",
+      "verification occurs at the planned execution block",
+      "proxy implementation and admin slots are included when a registered component is a proxy",
+      "any read failure or mismatch degrades the capability"
+    ]
+  },
+  "threatCases": [
+    {
+      "id": "NON_OWNER",
+      "coverage": "non owner",
+      "attack": "caller differs from immutable Helper owner or wallet operation owner",
+      "requiredControl": "owner equality before asset pull, approval, combination call, refund, or sweep",
+      "expected": "revert or reject with no state or balance change"
+    },
+    {
+      "id": "MALICIOUS_TOKEN",
+      "coverage": "malicious token",
+      "attack": "callback reentry, false return, fee-on-transfer, rebase, approve race, oversized return data, or gas griefing",
+      "requiredControl": "token policy, safe return handling, balance-delta accounting, bounded gas, reentrancy guard, and explicit unsupported-token rejection",
+      "expected": "atomic revert or quarantined reconciliation; no unbounded allowance or stranded NFT"
+    },
+    {
+      "id": "MALICIOUS_ROUTER",
+      "coverage": "malicious router",
+      "attack": "unknown target, spender, selector, code hash, token transfer injection, recipient rewrite, or arbitrary calldata",
+      "requiredControl": "exact registry identity, non-empty selector allowlist, decoded token and recipient checks, calldata digest, and simulation",
+      "expected": "fail closed before approval"
+    },
+    {
+      "id": "REENTRANCY",
+      "coverage": "reentry",
+      "attack": "token, router, native recipient, or manager callback enters another asset-changing path",
+      "requiredControl": "single cross-function reentrancy lock plus checks-effects-interactions and no externally controlled callback target",
+      "expected": "reentrant call reverts and the outer transaction remains atomic"
+    },
+    {
+      "id": "NFT_APPROVAL",
+      "coverage": "NFT approval",
+      "attack": "increase, collect, or decrease an NFT not owned by or approved for the wallet and Helper",
+      "requiredControl": "ownerOf, getApproved, isApprovedForAll, tokenId, manager, and snapshot checks at execution",
+      "expected": "NOT_NFT_OWNER_OR_APPROVED with no transaction"
+    },
+    {
+      "id": "DUST",
+      "coverage": "dust",
+      "attack": "residual token or native balance is hidden, accumulated, or redirected",
+      "requiredControl": "per-asset pre/post balances, explicit thresholds, owner-only refund, residual state, and sweep reconciliation",
+      "expected": "success only below threshold; otherwise Helper becomes residual and blocks new funding"
+    },
+    {
+      "id": "ALLOWANCE",
+      "coverage": "allowance",
+      "attack": "unbounded, stale, wrong-spender, replayed, or unexpectedly persistent ERC-20 or Permit2 authority",
+      "requiredControl": "exact spender, bounded amount and expiration, zero-first compatibility, post-state read, and revoke recovery",
+      "expected": "mismatch enters reconciliation and prevents later asset steps"
+    },
+    {
+      "id": "NATIVE_WRAP_UNWRAP",
+      "coverage": "native wrap/unwrap",
+      "attack": "wrong msg.value, WBNB identity, unwrap amount, native recipient, or callback behavior",
+      "requiredControl": "registered wrapped-native address and hash, exact value accounting, owner recipient, and pre/post native plus WBNB deltas",
+      "expected": "atomic revert or exact owner credit with bounded Helper dust"
+    },
+    {
+      "id": "REFUND",
+      "coverage": "refund",
+      "attack": "refund omitted, duplicated, sent to another recipient, or reported without a balance delta",
+      "requiredControl": "immutable owner recipient, per-asset expected residual, canonical receipt, transfer events, and balance reconciliation",
+      "expected": "operation cannot succeed until refund and dust reconcile"
+    }
+  ],
+  "simulation": {
+    "requiredBeforeApproval": true,
+    "sameBlockInputsBoundToPlan": true,
+    "requiredAssertions": [
+      "no unexpected target or value",
+      "no unexpected token or NFT movement",
+      "minOut and deadline hold",
+      "fee recipient and bps hold",
+      "owner, allowance, refund, and dust bounds hold"
+    ],
+    "simulationSuccessAuthorizesBroadcast": false
+  },
+  "successDefinition": {
+    "canonicalReceipt": true,
+    "canonicalBalanceReconciliation": true,
+    "allowanceReconciliation": true,
+    "nftOwnerReconciliation": true,
+    "protocolEventReconciliation": true,
+    "feeAndRefundReconciliation": true,
+    "broadcastAlone": false,
+    "receiptStatusAlone": false
+  },
+  "releaseGates": [
+    "non-empty reviewed router selector allowlist",
+    "versioned fee recipient and bps policy",
+    "production token policy",
+    "Foundry unit, fuzz, and invariant suite",
+    "malicious token and router suite",
+    "Anvil fork success and failure fixtures",
+    "BSC testnet deployment evidence",
+    "independent contract and execution security review",
+    "rollback and allowance-revocation drill"
+  ],
+  "executionCounters": {
+    "transactionSignatures": 0,
+    "transactionBroadcasts": 0,
+    "chainWrites": 0,
+    "realFundOperations": 0
+  }
+}

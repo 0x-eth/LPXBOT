@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "workItemId": "P05-01",
+  "implementationStatus": "planned",
+  "authentication": "required-user-session",
+  "tenantIsolation": "tenantId+userId+walletId",
+  "requestBoundary": {
+    "accepted": "business-intent-only",
+    "forbiddenClientFields": [
+      "target",
+      "router",
+      "spender",
+      "selector",
+      "calldata",
+      "feeRecipient",
+      "feeBps",
+      "positionManager",
+      "poolManager",
+      "permit2",
+      "registryVersionOverride"
+    ],
+    "unknownFields": "reject",
+    "baseUnitStringsRequired": true,
+    "floatingPointAmountsAllowed": false
+  },
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/swap/quote",
+      "featureIds": ["SWAP-01"],
+      "classification": "OFFICIAL",
+      "implementationStatus": "planned",
+      "request": ["walletId", "chainId", "platformId", "tokenIn", "tokenOut", "amountInBaseUnit", "slippageBps"],
+      "response": "p05://swap-quote/v1",
+      "write": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/swap/execute",
+      "featureIds": ["SWAP-02"],
+      "classification": "OFFICIAL",
+      "implementationStatus": "planned",
+      "request": ["walletId", "quoteDigest", "idempotencyKey"],
+      "response": "p05://operation/v1",
+      "write": true,
+      "nonLocalResponseState": "READY_FOR_APPROVAL"
+    },
+    {
+      "method": "GET",
+      "path": "/api/wallets/:address/positions",
+      "featureIds": ["POS-01"],
+      "classification": "OFFICIAL",
+      "implementationStatus": "planned",
+      "query": ["chainId", "platformId", "cursor", "limit"],
+      "response": "p05://position-page/v1",
+      "write": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/positions/scan/:address",
+      "featureIds": ["POS-01"],
+      "classification": "OFFICIAL",
+      "implementationStatus": "planned",
+      "query": ["chainId", "cursor", "limit"],
+      "response": "p05://position-page/v1",
+      "write": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/positions/collect-fees",
+      "featureIds": ["POS-02"],
+      "classification": "OFFICIAL",
+      "implementationStatus": "planned",
+      "request": ["walletId", "chainId", "platformId", "tokenId", "snapshotDigest", "idempotencyKey"],
+      "response": "p05://operation/v1",
+      "write": true,
+      "nonLocalResponseState": "READY_FOR_APPROVAL"
+    },
+    {
+      "method": "POST",
+      "path": "/api/positions/remove-liquidity",
+      "featureIds": ["POS-03"],
+      "classification": "OFFICIAL",
+      "implementationStatus": "planned",
+      "request": ["walletId", "chainId", "platformId", "tokenId", "percent", "slippageBps", "snapshotDigest", "idempotencyKey"],
+      "response": "p05://operation/v1",
+      "write": true,
+      "nonLocalResponseState": "READY_FOR_APPROVAL"
+    },
+    {
+      "method": "GET",
+      "path": "/api/pricing-positions",
+      "featureIds": ["POS-04"],
+      "classification": "OBSERVED",
+      "implementationStatus": "planned",
+      "response": "p05://position-ledger/v1",
+      "write": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/pricing-positions/stream",
+      "featureIds": ["POS-04"],
+      "classification": "OBSERVED",
+      "implementationStatus": "planned",
+      "response": "text/event-stream:p05-position-ledger-v1",
+      "write": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/wallets/:address/helper",
+      "featureIds": ["HELPER-01", "HELPER-03"],
+      "classification": "LOCAL-DECISION",
+      "implementationStatus": "planned",
+      "query": ["chainId"],
+      "response": "p05://helper-status/v1",
+      "write": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/wallets/helper/deploy",
+      "featureIds": ["HELPER-02"],
+      "classification": "LOCAL-DECISION",
+      "implementationStatus": "planned",
+      "request": ["walletId", "chainId", "helperVersion", "idempotencyKey"],
+      "response": "p05://operation/v1",
+      "write": true,
+      "nonLocalResponseState": "READY_FOR_APPROVAL"
+    },
+    {
+      "method": "GET",
+      "path": "/api/wallets/helper-residuals",
+      "featureIds": ["HELPER-05"],
+      "classification": "OBSERVED",
+      "implementationStatus": "planned",
+      "query": ["walletId", "chainId", "cursor", "limit"],
+      "response": "p05://helper-residual-page/v1",
+      "write": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/wallets/helper-residuals/scan",
+      "featureIds": ["HELPER-05"],
+      "classification": "OBSERVED",
+      "implementationStatus": "planned",
+      "request": ["walletId", "chainId", "idempotencyKey"],
+      "response": "p05://helper-residual-scan/v1",
+      "write": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/wallets/helper-residuals/sweep",
+      "featureIds": ["HELPER-06"],
+      "classification": "OBSERVED",
+      "implementationStatus": "planned",
+      "request": ["walletId", "chainId", "assetIds", "snapshotDigest", "idempotencyKey"],
+      "response": "p05://operation-batch/v1",
+      "write": true,
+      "nonLocalResponseState": "READY_FOR_APPROVAL"
+    },
+    {
+      "method": "GET",
+      "path": "/api/chain-operations/:operationId",
+      "featureIds": ["SWAP-02", "POS-02", "POS-03", "HELPER-02", "HELPER-06"],
+      "classification": "LOCAL-DECISION",
+      "implementationStatus": "planned",
+      "response": "p05://operation/v1",
+      "write": false
+    }
+  ],
+  "writeEndpointRules": {
+    "idempotencyKeyRequired": true,
+    "payloadDigestConflict": "409 IDEMPOTENCY_CONFLICT",
+    "reauthenticationRequiredBeforeApproval": true,
+    "previewDigestRequired": true,
+    "nonLocalWriteBoundary": "READY_FOR_APPROVAL",
+    "serverMayAutoSign": false,
+    "serverMayAutoBroadcast": false
+  },
+  "errors": [
+    "UNSUPPORTED_CHAIN",
+    "PLATFORM_NOT_REGISTERED",
+    "REGISTRY_VERSION_MISMATCH",
+    "BLOCK_OUTSIDE_VALIDITY",
+    "RUNTIME_CODE_HASH_MISMATCH",
+    "QUOTE_EXPIRED",
+    "QUOTE_DIGEST_MISMATCH",
+    "MIN_OUT_INVALID",
+    "PRICE_IMPACT_LIMIT",
+    "TOKEN_NOT_ALLOWED",
+    "RECIPIENT_MISMATCH",
+    "ROUTER_NOT_ALLOWED",
+    "SPENDER_NOT_ALLOWED",
+    "SELECTOR_NOT_ALLOWED",
+    "FEE_POLICY_UNRESOLVED",
+    "NOT_NFT_OWNER_OR_APPROVED",
+    "HELPER_NOT_ACTIVE",
+    "RECONCILIATION_REQUIRED",
+    "IDEMPOTENCY_CONFLICT"
+  ],
+  "productionRoutesCreated": false
+}
