@@ -128,7 +128,7 @@ describe("P04-05 wallet asset read model", () => {
       balanceDecimal: "1.234567890123456789",
       priceStatus: "current",
       usdPriceDecimal: "300.12",
-      usdValueDecimal: "370.51851851851851851468",
+      usdValueDecimal: "370.51851518385185151468",
     });
     expect(snapshot.items.find(({ tokenAddress }) => tokenAddress === bscUsdt)).toMatchObject({
       priceStatus: "stale",

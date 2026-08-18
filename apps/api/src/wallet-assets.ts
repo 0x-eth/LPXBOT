@@ -7,7 +7,6 @@ import type {
   WalletTokenDefinition,
   WalletTokenPage,
 } from "@lpbot/api-contract";
-import { Decimal } from "decimal.js";
 import { decodeFunctionResult, encodeFunctionData, formatUnits, getAddress, type Hex } from "viem";
 
 export type WalletAssetErrorCode =
@@ -337,6 +336,32 @@ function parsePrice(value: WalletUsdPrice | null, currentTime: Date, maximumAgeM
   return { price: value.priceDecimal, status: "current" as const };
 }
 
+function scaledDecimal(value: bigint, scale: number): string {
+  const digits = value.toString().padStart(scale + 1, "0");
+  if (scale === 0) return digits;
+  const fraction = digits.slice(-scale).replace(/0+$/u, "");
+  return fraction === "" ? digits.slice(0, -scale) : `${digits.slice(0, -scale)}.${fraction}`;
+}
+
+function exactUsdValue(balance: bigint, decimals: number, priceDecimal: string): string {
+  const [whole, fraction = ""] = priceDecimal.split(".");
+  const coefficient = BigInt(`${whole}${fraction}`);
+  return scaledDecimal(balance * coefficient, decimals + fraction.length);
+}
+
+function exactDecimalSum(values: readonly string[]): string {
+  const parts = values.map((value) => {
+    const [whole, fraction = ""] = value.split(".");
+    return { coefficient: BigInt(`${whole}${fraction}`), scale: fraction.length };
+  });
+  const scale = Math.max(0, ...parts.map((part) => part.scale));
+  const total = parts.reduce(
+    (sum, part) => sum + part.coefficient * 10n ** BigInt(scale - part.scale),
+    0n,
+  );
+  return scaledDecimal(total, scale);
+}
+
 function valuedBalance(input: {
   assetType: "native" | "erc20";
   balance: bigint;
@@ -351,7 +376,7 @@ function valuedBalance(input: {
   const balanceDecimal = formatUnits(input.balance, input.decimals);
   const usdValueDecimal =
     input.price.status === "current" && input.price.price !== null
-      ? new Decimal(balanceDecimal).mul(input.price.price).toFixed()
+      ? exactUsdValue(input.balance, input.decimals, input.price.price)
       : null;
   return {
     assetType: input.assetType,
@@ -572,7 +597,7 @@ export class WalletAssetService implements WalletAssetApplication {
         ...tokenBalances,
       ];
       const totalUsdValueDecimal = items.every(({ usdValueDecimal }) => usdValueDecimal !== null)
-        ? items.reduce((total, item) => total.add(item.usdValueDecimal!), new Decimal(0)).toFixed()
+        ? exactDecimalSum(items.map((item) => item.usdValueDecimal!))
         : null;
       return {
         address: input.wallet.address,
