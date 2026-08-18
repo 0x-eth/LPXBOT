@@ -1,6 +1,8 @@
 import type { CustodyWallet } from "../packages/api-contract/src/index.js";
 import {
   parseCustodyWallet,
+  parseWalletDeletePreview,
+  parseWalletDeletionReceipt,
   WalletClient,
   WalletRequestError,
 } from "../apps/web/src/wallet-client.js";
@@ -16,6 +18,35 @@ const wallet: CustodyWallet = {
   revision: 1,
   updatedAt: "2026-08-18T05:00:00.000Z",
   walletId: "44000000-0000-4000-8000-000000000011",
+};
+
+const preview = {
+  assetCount: 1,
+  assetRiskDigest: "sha256:fixture",
+  confirmationPhrase: "DELETE WALLET 1234ABCD",
+  dependencies: {
+    assetIds: ["asset-1"],
+    policyIds: ["policy-1"],
+    positionIds: ["position-1"],
+    taskIds: ["task-1"],
+  },
+  expiresAt: "2026-08-18T05:05:00.000Z",
+  forceEligible: true,
+  policyCount: 1,
+  positionCount: 1,
+  previewToken: "A".repeat(43),
+  revision: 1,
+  taskCount: 1,
+  walletId: wallet.walletId,
+};
+
+const receipt = {
+  address: wallet.address,
+  auditId: "17",
+  deletedAt: "2026-08-18T05:01:00.000Z",
+  deletionType: "force" as const,
+  finalRevision: 2,
+  walletId: wallet.walletId,
 };
 
 function success(data: unknown, status = 200): Response {
@@ -174,5 +205,79 @@ describe("P04-02 wallet browser client", () => {
       }),
     ]);
     expect(bodies.every(({ after }) => after.every((byte) => byte === 0))).toBe(true);
+  });
+
+  it("strictly parses deletion previews and non-secret tombstone receipts", () => {
+    expect(parseWalletDeletePreview(preview)).toEqual(preview);
+    expect(parseWalletDeletionReceipt(receipt)).toEqual(receipt);
+    for (const malformed of [
+      { ...preview, salt: "forbidden" },
+      { ...preview, taskCount: 2 },
+      { ...preview, dependencies: { ...preview.dependencies, taskIds: ["task-1", "task-1"] } },
+      { ...receipt, wrappedDek: "forbidden" },
+      { ...receipt, finalRevision: 1 },
+    ]) {
+      expect(() =>
+        "previewToken" in malformed
+          ? parseWalletDeletePreview(malformed)
+          : parseWalletDeletionReceipt(malformed),
+      ).toThrowError(WalletRequestError);
+    }
+  });
+
+  it("renames, previews, and force deletes with optimistic revision and fresh reauthentication", async () => {
+    const renamed = { ...wallet, name: "Renamed", revision: 2 };
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(success(renamed))
+      .mockResolvedValueOnce(success(preview, 201))
+      .mockResolvedValueOnce(success(receipt));
+    const client = new WalletClient(fetcher, () => "fresh-proof");
+
+    await expect(
+      client.rename(wallet.walletId, { expectedRevision: 1, name: "Renamed" }),
+    ).resolves.toEqual(renamed);
+    await expect(client.deletePreview(wallet.walletId)).resolves.toEqual(preview);
+    await expect(
+      client.deleteWallet(wallet.walletId, {
+        confirmationPhrase: preview.confirmationPhrase,
+        dependencies: preview.dependencies,
+        expectedRevision: preview.revision,
+        force: true,
+        previewToken: preview.previewToken,
+      }),
+    ).resolves.toEqual(receipt);
+
+    expect(fetcher.mock.calls).toEqual([
+      [
+        `/api/wallets/${wallet.walletId}`,
+        expect.objectContaining({
+          body: JSON.stringify({ expectedRevision: 1, name: "Renamed" }),
+          headers: expect.objectContaining({ "Content-Type": "application/json" }),
+          method: "PATCH",
+        }),
+      ],
+      [
+        `/api/wallets/${wallet.walletId}/delete-preview`,
+        expect.objectContaining({ method: "POST" }),
+      ],
+      [
+        `/api/wallets/${wallet.walletId}`,
+        expect.objectContaining({
+          body: JSON.stringify({
+            confirmationPhrase: preview.confirmationPhrase,
+            dependencies: preview.dependencies,
+            expectedRevision: preview.revision,
+            force: true,
+            previewToken: preview.previewToken,
+          }),
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+            "X-LPBOT-Reauthentication": "fresh-proof",
+          }),
+          method: "DELETE",
+        }),
+      ],
+    ]);
   });
 });
