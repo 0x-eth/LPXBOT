@@ -142,7 +142,8 @@ test("P00 through P04-02 acceptance files are byte-identical to the requested ba
     .filter(
       (file) =>
         !file.startsWith("artifacts/acceptance/P04-03/") &&
-        !file.startsWith("artifacts/acceptance/P04-04/"),
+        !file.startsWith("artifacts/acceptance/P04-04/") &&
+        !file.startsWith("artifacts/acceptance/P04-05/"),
     );
   assert.deepEqual(changed, []);
 });

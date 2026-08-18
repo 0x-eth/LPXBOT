@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, readFile, readdir } from "node:fs/promises";
+import { access, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
-const BASELINE = "7814a13df07e179dd1b058b93a2a3dacce7fe42f";
-const ACCEPTANCE = path.join(ROOT, "artifacts/acceptance/P04-04");
+const BASELINE = "6437ed066dfc8b41281e2c2e836ceb68dc4a9580";
+const ACCEPTANCE = path.join(ROOT, "artifacts/acceptance/P04-05");
 const TRACEABILITY = path.join(ROOT, "docs/TRACEABILITY_MATRIX.md");
 const FUNCTION_MATRIX = path.join(ROOT, "docs/FUNCTION_MATRIX.md");
 const MANIFEST = path.join(ACCEPTANCE, "manifest.json");
@@ -34,9 +34,21 @@ const IMPLEMENTED = [
   "WALLET-05",
   "WALLET-06",
   "WALLET-07",
+  "WALLET-08",
+  "WALLET-09",
+  "SET-06",
 ];
-const REQUIRED_EVIDENCE = ["E-API", "E-DATA", "E-OPS", "E-RBAC", "E-REC", "E-SEC", "E-UI", "E-VIS"];
-const REQUIRED_TESTS = ["T-API", "T-MIG", "T-REC", "T-SEC", "T-UI", "T-UNIT", "T-VIS"];
+const REQUIRED_EVIDENCE = [
+  "E-API",
+  "E-CHAIN",
+  "E-DATA",
+  "E-OPS",
+  "E-RBAC",
+  "E-SEC",
+  "E-UI",
+  "E-VIS",
+];
+const REQUIRED_TESTS = ["T-API", "T-CHAIN", "T-MIG", "T-SEC", "T-UI", "T-UNIT", "T-VIS"];
 
 function digest(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -94,46 +106,58 @@ async function filesBelow(directory, prefix = "") {
   return sorted(files);
 }
 
-test("P04-04 implemented IDs remain attributed after later P04 work items", async () => {
+test("P04 status is exactly 10 implemented-assumed / 2 planned with global 59 / 137", async () => {
   const [traceability, functionMatrix] = await Promise.all([
     readFile(TRACEABILITY, "utf8"),
     readFile(FUNCTION_MATRIX, "utf8"),
   ]);
   const rows = statusRows(traceability);
   assert.deepEqual(sorted(rows.keys()), sorted(FEATURE_IDS));
-  for (const id of IMPLEMENTED) assert.equal(rows.get(id).status, "implemented-assumed", id);
-  for (const id of ["WALLET-03", "WALLET-07"]) {
-    assert.match(rows.get(id).evidence, /P04-04/u, id);
+  assert.deepEqual(
+    sorted([...rows].filter(([, row]) => row.status === "implemented-assumed").map(([id]) => id)),
+    sorted(IMPLEMENTED),
+  );
+  assert.deepEqual(
+    sorted([...rows].filter(([, row]) => row.status === "planned").map(([id]) => id)),
+    ["SET-07", "WALLET-10"],
+  );
+  for (const id of ["WALLET-08", "WALLET-09", "SET-06"]) {
+    assert.match(rows.get(id).evidence, /P04-05/u, id);
     assert.match(rows.get(id).evidence, /local-fixture-verified/u, id);
     assert.match(
       functionMatrix,
-      new RegExp(`\\| ${id} \\|[^\\n]*implemented-assumed[^\\n]*P04-04`, "u"),
+      new RegExp(`\\| ${id} \\|[^\\n]*implemented-assumed[^\\n]*P04-05`, "u"),
     );
   }
+  assert.match(traceability, /P04[^\n]*10[^\n]*implemented-assumed[^\n]*2[^\n]*planned/iu);
+  assert.match(traceability, /\| 当前产品实现 \| 59 \|/u);
+  assert.match(traceability, /\| `implemented-assumed` \| 59 \|/u);
+  assert.match(traceability, /\| 其余 `planned` \| 137 \|/u);
 });
 
-test("P04-04 manifest owns only WALLET-03 and WALLET-07 and remains accepted-with-gaps", async () => {
+test("P04-05 manifest owns WALLET-08, WALLET-09, and SET-06", async () => {
   const manifest = JSON.parse(await readFile(MANIFEST, "utf8"));
-  assert.equal(manifest.workItemId, "P04-04");
+  assert.equal(manifest.workItemId, "P04-05");
   assert.equal(manifest.phase, "P04");
-  assert.equal(manifest.risk, "R3");
+  assert.equal(manifest.risk, "R2");
   assert.equal(manifest.status, "accepted-with-gaps");
-  assert.deepEqual(manifest.featureIds, ["WALLET-03", "WALLET-07"]);
+  assert.deepEqual(manifest.featureIds, ["WALLET-08", "WALLET-09", "SET-06"]);
   assert.deepEqual(sorted(manifest.tests.map(({ id }) => id)), REQUIRED_TESTS);
   assert.deepEqual(sorted(manifest.evidence.map(({ id }) => id)), REQUIRED_EVIDENCE);
   assert.ok(manifest.tests.every(({ result }) => result === "passed"));
   assert.match(manifest.completedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u);
   const assumptions = manifest.assumptions.join("\n");
   assert.match(assumptions, /local-fixture-verified only/u);
-  assert.match(assumptions, /inventory.*coordinator.*fail/iu);
-  assert.match(assumptions, /WALLET-10.*planned/iu);
+  assert.match(assumptions, /controlled read provider/iu);
+  assert.match(assumptions, /public RPC calls.*zero/iu);
+  assert.match(assumptions, /WALLET-10.*SET-07.*planned/iu);
   assert.match(assumptions, /not custody-ready/iu);
   assert.match(assumptions, /not parity-verified/iu);
   assert.match(assumptions, /not released/iu);
   for (const evidence of manifest.evidence) await access(path.join(ROOT, evidence.path));
 });
 
-test("P00 through P04-03 acceptance files remain byte-identical to the requested baseline", () => {
+test("P00 through P04-04 acceptance files remain byte-identical to the requested baseline", () => {
   const changed = execFileSync(
     "git",
     ["diff", "--name-only", BASELINE, "--", "artifacts/acceptance"],
@@ -142,15 +166,11 @@ test("P00 through P04-03 acceptance files remain byte-identical to the requested
     .trim()
     .split("\n")
     .filter(Boolean)
-    .filter(
-      (file) =>
-        !file.startsWith("artifacts/acceptance/P04-04/") &&
-        !file.startsWith("artifacts/acceptance/P04-05/"),
-    );
+    .filter((file) => !file.startsWith("artifacts/acceptance/P04-05/"));
   assert.deepEqual(changed, []);
 });
 
-test("P04-04 required evidence and sha256 inventory are complete", async () => {
+test("P04-05 required evidence and sha256 inventory are complete", async () => {
   const files = await filesBelow(ACCEPTANCE);
   const rows = parseChecksums(await readFile(path.join(ACCEPTANCE, "sha256sums.txt"), "utf8"));
   assert.deepEqual(
@@ -163,15 +183,24 @@ test("P04-04 required evidence and sha256 inventory are complete", async () => {
   }
 });
 
-test("P04-04 evidence freezes zero private-key decrypt, signing, raw transaction, broadcast, and RPC", async () => {
+test("P04-05 screenshots are non-empty and evidence freezes zero write-chain/public-RPC activity", async () => {
+  for (const file of [
+    "custom-rpc-chromium-desktop.png",
+    "custom-rpc-chromium-mobile.png",
+    "wallet-assets-chromium-desktop.png",
+    "wallet-assets-chromium-mobile.png",
+  ]) {
+    assert.ok((await stat(path.join(ACCEPTANCE, "E-VIS", file))).size > 10_000, file);
+  }
   const evidence = await Promise.all(
-    ["E-API.md", "E-OPS.md", "E-SEC.md"].map((file) =>
+    ["E-API.md", "E-CHAIN.md", "E-OPS.md", "E-SEC.md"].map((file) =>
       readFile(path.join(ACCEPTANCE, file), "utf8"),
     ),
   ).then((parts) => parts.join("\n"));
   assert.match(evidence, /private-key decryptions[^\n]*0/iu);
-  assert.match(evidence, /signing operations[^\n]*0/iu);
-  assert.match(evidence, /raw transaction operations[^\n]*0/iu);
-  assert.match(evidence, /broadcast calls[^\n]*0/iu);
-  assert.match(evidence, /external RPC calls[^\n]*0/iu);
+  assert.match(evidence, /signing[^\n]*0/iu);
+  assert.match(evidence, /raw transaction[^\n]*0/iu);
+  assert.match(evidence, /broadcast[^\n]*0/iu);
+  assert.match(evidence, /public RPC calls[^\n]*0/iu);
+  assert.doesNotMatch(evidence, /SENSITIVE_RPC_VALUE/u);
 });
