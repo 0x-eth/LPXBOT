@@ -297,6 +297,30 @@ describe("P04-04 remote security password adapter", () => {
     expect([...transmitted!]).toEqual(new Array(transmitted!.length).fill(0));
     expect(ingress.equals(Buffer.alloc(ingress.length))).toBe(false);
   });
+
+  it("fails closed when signer verification returns fields outside the receipt contract", async () => {
+    const client = new RemoteWalletSignerClient({
+      apiToken,
+      fetcher: vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            data: { verified: true, verifier: "forbidden", version: 3 },
+            success: true,
+          }),
+          { headers: { "Content-Type": "application/json" }, status: 200 },
+        ),
+      ) as typeof fetch,
+      tenantId,
+      url: "http://127.0.0.1:19090",
+    });
+
+    await expect(
+      client.verifySecurityPassword({
+        ingress: Buffer.from('{"password":"synthetic-security-password"}'),
+        userId,
+      }),
+    ).rejects.toMatchObject({ code: "SIGNER_UNAVAILABLE" });
+  });
 });
 
 describe("P04-03 remote keystore adapter", () => {

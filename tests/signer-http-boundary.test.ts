@@ -121,4 +121,37 @@ describe("P04-04 signer security-password HTTP boundary", () => {
     expect(Object.keys(envelope.data).sort()).toEqual(["verified", "version"]);
     expect(seen && [...seen].every((byte) => byte === 0)).toBe(true);
   });
+
+  it("rejects the wrong media type and bodies above 16 KiB before verification", async () => {
+    let calls = 0;
+    const url = await start({
+      verifySecurityPassword: async () => {
+        calls += 1;
+        return { verified: true, version: 1 };
+      },
+    });
+    const commonHeaders = {
+      Authorization: `Bearer ${apiToken}`,
+      "X-LPBOT-Tenant-Id": tenantId,
+      "X-LPBOT-User-Id": userId,
+    };
+
+    const wrongMedia = await fetch(`${url}/v1/security-password/verify`, {
+      body: "{}",
+      headers: { ...commonHeaders, "Content-Type": "application/json" },
+      method: "POST",
+    });
+    expect(wrongMedia.status).toBe(415);
+
+    const tooLarge = await fetch(`${url}/v1/security-password/verify`, {
+      body: "x".repeat(16_385),
+      headers: {
+        ...commonHeaders,
+        "Content-Type": "application/vnd.lpbot.security-password-secret+json",
+      },
+      method: "POST",
+    });
+    expect(tooLarge.status).toBe(413);
+    expect(calls).toBe(0);
+  });
 });
