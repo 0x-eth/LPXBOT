@@ -1028,6 +1028,7 @@ function ForceDeleteDialog({
   const [confirmation, setConfirmation] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const confirmationInput = useRef<HTMLInputElement>(null);
 
   const reset = () => {
     setConfirmation("");
@@ -1081,6 +1082,10 @@ function ForceDeleteDialog({
             event.preventDefault();
             trigger.current?.focus();
           }}
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            requestAnimationFrame(() => confirmationInput.current?.focus());
+          }}
         >
           <div className="wallet-dialog-heading">
             <Dialog.Title>强制删除钱包</Dialog.Title>
@@ -1109,6 +1114,7 @@ function ForceDeleteDialog({
                   autoFocus
                   id="wallet-force-confirmation"
                   onChange={(event) => setConfirmation(event.target.value)}
+                  ref={confirmationInput}
                   spellCheck={false}
                   value={confirmation}
                 />

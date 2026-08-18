@@ -341,7 +341,7 @@ test("normal deletion shows zero-risk preview, deleting, and deleted states", as
   await expect(page.getByRole("button", { name: "正在删除" })).toBeDisabled();
   await expect(page.locator("main.wallets-workspace")).toHaveAttribute("data-state", "deleted");
   await expect(page.getByText("Main signer")).toHaveCount(0);
-  await expect(page.getByRole("status")).toContainText("钱包已彻底删除");
+  await expect(page.getByRole("status").filter({ hasText: "钱包已彻底删除" })).toBeVisible();
 });
 
 test("force deletion requires the exact phrase and full dependency inventory", async ({ page }) => {
