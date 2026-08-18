@@ -14,6 +14,6 @@ The browser custom RPC boundary conforms to the frozen `settings-contracts.json.
 
 Address-book password ingress uses the dedicated P04-04 signer verifier and clears buffers/state. Audit records exclude password, labels, notes, request headers, and provider payloads. Server balances cannot read or receive the browser custom URL.
 
-Focused browser-RPC and API security tests passed. Full-history Gitleaks and dependency audit results are recorded in `command-output.md` after the final gate run.
+Focused browser-RPC and API security tests passed. Full-history Gitleaks scanned 1,123 commits and 23.79 MB with no leaks found. `pnpm audit:dependencies` reported no known vulnerabilities. The complete repository gate results are recorded in `command-output.md`.
 
 Private-key decryptions: 0. Signing operations: 0. Raw transaction operations: 0. Broadcast calls: 0. Public RPC calls: 0.

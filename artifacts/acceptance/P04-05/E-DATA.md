@@ -11,3 +11,5 @@ Database checks constrain positive chain/revision values, lowercase canonical ad
 All balances and valuations remain exact strings at API and web boundaries. Base-unit conversion, price multiplication, and total aggregation use `BigInt` plus explicit decimal scale. No PostgreSQL floating amount column and no JavaScript floating amount calculation was added.
 
 `pnpm test:postgres` passed 23 files / 98 tests. The isolated migration-cycle database applied every migration, applied the repeatable seed, rolled every migration down in reverse order, reconnected, and applied every migration and seed again. The focused PostgreSQL suite also proved tenant isolation, canonical constraints, duplicate metadata handling, optimistic revisions, append-only audit enforcement, and zero rows written to `address_remarks`.
+
+The CI-equivalent infrastructure sequence also passed: migration twice, seed twice, all four services healthy, and `pnpm test:infra` 8/8. Its strict public-schema inventory includes all three P04-05 tables.
