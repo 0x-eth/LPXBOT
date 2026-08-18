@@ -85,6 +85,47 @@ afterAll(async () => {
 });
 
 describe("P04-03 Keystore API", () => {
+  it("clears password wallet generation ingress on authentication and reauthentication exits", async () => {
+    const { app, auth } = await fixture();
+    const parsedIngresses: Buffer[] = [];
+    app.addHook("preHandler", async (request) => {
+      if (request.url === "/api/wallets/generate" && Buffer.isBuffer(request.body)) {
+        parsedIngresses.push(request.body);
+      }
+    });
+    const unauthenticatedIngress = Buffer.from(
+      JSON.stringify({
+        mode: "user-password",
+        name: "Unauthenticated fixture",
+        password: "synthetic-password-unauthenticated",
+      }),
+    );
+    const unauthenticated = await app.inject({
+      headers: { "content-type": walletMediaType },
+      method: "POST",
+      payload: unauthenticatedIngress,
+      url: "/api/wallets/generate",
+    });
+    expect(unauthenticated.statusCode).toBe(401);
+    expect(parsedIngresses[0]?.every((byte) => byte === 0)).toBe(true);
+
+    const staleIngress = Buffer.from(
+      JSON.stringify({
+        mode: "user-password",
+        name: "Stale reauth fixture",
+        password: "synthetic-password-stale",
+      }),
+    );
+    const stale = await app.inject({
+      headers: { cookie: auth.cookie, "content-type": walletMediaType },
+      method: "POST",
+      payload: staleIngress,
+      url: "/api/wallets/generate",
+    });
+    expect(stale.statusCode).toBe(403);
+    expect(parsedIngresses[1]?.every((byte) => byte === 0)).toBe(true);
+  });
+
   it("uses dedicated no-capture ingress, no-store and exact status responses", async () => {
     const { app, auth, logs } = await fixture();
     expect((await app.inject({ method: "GET", url: "/api/keystore/status" })).statusCode).toBe(401);

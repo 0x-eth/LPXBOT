@@ -20,8 +20,12 @@ export { PostgresSessionStore } from "./postgres-session-store.js";
 export { PostgresWalletDirectory } from "./postgres-wallet-directory.js";
 export { RemoteWalletSignerClient } from "./remote-wallet-signer-client.js";
 export {
+  keystoreSecretBodyLimit,
+  keystoreSecretMediaType,
   parseGenerateCustodyWalletRequest,
   parseWalletId,
+  publicKeystoreResetPreview,
+  publicKeystoreStatus,
   publicWalletDto,
   WalletApiError,
   walletSecretBodyLimit,
@@ -29,6 +33,9 @@ export {
 } from "./wallets.js";
 export type {
   FreshReauthenticationVerifier,
+  KeystoreApplication,
+  KeystoreResetPreviewDto,
+  KeystoreStatusDto,
   WalletDirectory,
   WalletSignerClient,
 } from "./wallets.js";

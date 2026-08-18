@@ -6,7 +6,15 @@ export type {
   CustodyEnvelope,
   CustodyWalletCreate,
   CustodyWalletStore,
+  KeystoreStatus,
+  KeystoreStore,
+  StoredKeystore,
+  StoredKeystoreFailure,
+  StoredKeystoreResetPreview,
+  StoredKeystoreVersion,
   StoredCustodyWallet,
+  WalletEnvelopeMaterial,
+  WalletEnvelopeReplacement,
   WalletDirectory,
   WalletSignerClient,
 } from "./custody-types.js";
@@ -15,6 +23,15 @@ export type { KmsClient, KmsKeyDescriptor, WrappedDek } from "./kms.js";
 export { LocalKmsFixture } from "./kms.js";
 export { InMemoryCustodyWalletStore } from "./memory-custody-wallet-store.js";
 export { PostgresCustodyWalletStore } from "./postgres-custody-wallet-store.js";
+export {
+  buildPasswordDekWrapAad,
+  createPasswordVerifier,
+  deriveArgon2idKek,
+  openPasswordDekWrap,
+  passwordKdfV1,
+  sealPasswordDekWrap,
+} from "./password-crypto.js";
+export type { PasswordDekWrap, PasswordKdfParameters } from "./password-crypto.js";
 export { SignerError } from "./signer-error.js";
 export { SignerConfigurationError, loadSignerProductionConfig } from "./production-config.js";
 
