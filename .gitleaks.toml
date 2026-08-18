@@ -73,6 +73,13 @@ regexTarget = "match"
 regexes = ['''tokenAddress:\s*"0x[0-9a-f]{40}"''']
 
 [[rules.allowlists]]
+description = "P04-06 Anvil integration uses Anvil's documented account-zero development key on a loopback-only ephemeral chain."
+condition = "AND"
+paths = ['''^tests/integration/anvil-wallet-transfer\.integration\.ts$''']
+regexTarget = "match"
+regexes = ['''privateKey\s*=\s*"0xac0974''']
+
+[[rules.allowlists]]
 description = "P03-03 notification tests use these exact non-secret fixture values to verify write-only signing-key handling."
 condition = "AND"
 paths = ['''^tests/(?:notification-settings-api|notification-client)\.test\.ts$''']
