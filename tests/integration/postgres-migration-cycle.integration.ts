@@ -86,7 +86,9 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "chain_access_policies",
       "chain_access_policy_history",
       "custody_wallet_audit_events",
+      "custody_wallet_delete_previews",
       "custody_wallet_envelopes",
+      "custody_wallet_tombstones",
       "custody_wallets",
       "indexer_cursors",
       "integrity_quarantine",
@@ -116,6 +118,7 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "pool_creator_query_audit_events",
       "raw_chain_logs",
       "sessions",
+      "security_password_audit_events",
       "task_status_stats_conflicts",
       "task_status_stats_projection_state",
       "task_status_stats_query_audit_events",
@@ -131,6 +134,8 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "user_pool_blocklist_entries",
       "user_pool_blocklist_state",
       "user_preferences",
+      "user_security_password_versions",
+      "user_security_passwords",
       "users",
     ]);
 
@@ -161,7 +166,9 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "chain_access_policies",
       "chain_access_policy_history",
       "custody_wallet_audit_events",
+      "custody_wallet_delete_previews",
       "custody_wallet_envelopes",
+      "custody_wallet_tombstones",
       "custody_wallets",
       "indexer_cursors",
       "integrity_quarantine",
@@ -191,6 +198,7 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "pool_creator_query_audit_events",
       "raw_chain_logs",
       "sessions",
+      "security_password_audit_events",
       "task_status_stats_conflicts",
       "task_status_stats_projection_state",
       "task_status_stats_query_audit_events",
@@ -206,6 +214,8 @@ describe("P01 complete PostgreSQL migration cycle", () => {
       "user_pool_blocklist_entries",
       "user_pool_blocklist_state",
       "user_preferences",
+      "user_security_password_versions",
+      "user_security_passwords",
       "users",
     ]);
 

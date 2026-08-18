@@ -13,7 +13,7 @@ const otherUserId = randomUUID();
 const address = "0x1111111111111111111111111111111111111111" as const;
 const now = new Date("2026-08-18T10:00:00.000Z");
 
-function draft(walletId: string, walletAddress = address) {
+function draft(walletId: string, walletAddress = address, ownerId = userId) {
   return {
     auditAction: "wallet.import" as const,
     envelope: {
@@ -39,7 +39,7 @@ function draft(walletId: string, walletAddress = address) {
       revision: 1,
       tenantId: "tenant-fixture-01",
       updatedAt: now,
-      userId,
+      userId: ownerId,
       walletId,
     },
   };
@@ -190,5 +190,45 @@ describe("P04-04 PostgreSQL wallet lifecycle", () => {
         )
       ).rows[0],
     ).toEqual({ audits: 1, envelopes: 1, tombstones: 0 });
+  });
+
+  it("preserves the non-secret tombstone and deletion audit after its user is deleted", async () => {
+    const ownerId = randomUUID();
+    const walletId = randomUUID();
+    await pool.query(
+      `INSERT INTO users (id, role, tier, status, display_name, created_at, updated_at)
+       VALUES ($1, 'user', 'normal', 'active', 'Deleted owner', now(), now())`,
+      [ownerId],
+    );
+    const store = new PostgresCustodyWalletStore(pool);
+    await store.create(draft(walletId, "0x4444444444444444444444444444444444444444", ownerId));
+    const frozen = preview(ownerId, walletId);
+    await store.createWalletDeletePreview(frozen);
+    await store.deleteWallet({
+      assetIds: [],
+      assetRiskDigest: frozen.assetRiskDigest,
+      complete: true,
+      deletionType: "normal",
+      expectedRevision: 1,
+      now: new Date(now.getTime() + 1_000),
+      policyIds: [],
+      positionIds: [],
+      previewTokenDigest: frozen.previewTokenDigest,
+      taskIds: [],
+      userId: ownerId,
+      walletId,
+    });
+
+    await pool.query("DELETE FROM users WHERE id = $1", [ownerId]);
+    expect(
+      (
+        await pool.query(
+          `SELECT
+             (SELECT count(*)::int FROM custody_wallet_tombstones WHERE wallet_id = $1) AS tombstones,
+             (SELECT count(*)::int FROM custody_wallet_audit_events WHERE wallet_id = $1) AS audits`,
+          [walletId],
+        )
+      ).rows[0],
+    ).toEqual({ audits: 2, tombstones: 1 });
   });
 });

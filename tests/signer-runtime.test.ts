@@ -38,21 +38,28 @@ function poolFixture(tables: Record<string, string | null>) {
   return { end, pool: { end, query } as unknown as Pool, query };
 }
 
+const readyTables = {
+  auditEvents: "custody_wallet_audit_events",
+  deletePreviews: "custody_wallet_delete_previews",
+  envelopes: "custody_wallet_envelopes",
+  failures: "user_keystore_failures",
+  keystoreVersions: "user_keystore_versions",
+  keystores: "user_keystores",
+  resetPreviews: "user_keystore_reset_previews",
+  securityPasswordAudits: "security_password_audit_events",
+  securityPasswordVersions: "user_security_password_versions",
+  securityPasswords: "user_security_passwords",
+  tombstones: "custody_wallet_tombstones",
+  wallets: "custody_wallets",
+};
+
 afterEach(async () => {
   await Promise.all(runtimes.splice(0).map((runtime) => runtime.close()));
 });
 
 describe("P04-02 signer production runtime", () => {
   it("does not probe the store or bind when KMS is unavailable", async () => {
-    const store = poolFixture({
-      auditEvents: "custody_wallet_audit_events",
-      envelopes: "custody_wallet_envelopes",
-      failures: "user_keystore_failures",
-      keystoreVersions: "user_keystore_versions",
-      keystores: "user_keystores",
-      resetPreviews: "user_keystore_reset_previews",
-      wallets: "custody_wallets",
-    });
+    const store = poolFixture(readyTables);
     const kms = kmsFixture({
       activeKey: vi.fn(async () => {
         throw new SignerError("SIGNER_UNAVAILABLE", true);
@@ -67,15 +74,7 @@ describe("P04-02 signer production runtime", () => {
   });
 
   it("fails closed when the configured KEK version or ciphertext tables are unavailable", async () => {
-    const wrongKekStore = poolFixture({
-      auditEvents: "custody_wallet_audit_events",
-      envelopes: "custody_wallet_envelopes",
-      failures: "user_keystore_failures",
-      keystoreVersions: "user_keystore_versions",
-      keystores: "user_keystores",
-      resetPreviews: "user_keystore_reset_previews",
-      wallets: "custody_wallets",
-    });
+    const wrongKekStore = poolFixture(readyTables);
     await expect(
       startSignerRuntime(config, {
         kms: kmsFixture({
@@ -86,45 +85,27 @@ describe("P04-02 signer production runtime", () => {
     ).rejects.toMatchObject({ code: "KEK_VERSION_UNAVAILABLE" });
     expect(wrongKekStore.query).not.toHaveBeenCalled();
 
-    const missingStore = poolFixture({
-      auditEvents: "custody_wallet_audit_events",
-      envelopes: null,
-      failures: "user_keystore_failures",
-      keystoreVersions: "user_keystore_versions",
-      keystores: "user_keystores",
-      resetPreviews: "user_keystore_reset_previews",
-      wallets: "custody_wallets",
-    });
+    const missingStore = poolFixture({ ...readyTables, envelopes: null });
     await expect(
       startSignerRuntime(config, { kms: kmsFixture(), pool: missingStore.pool }),
     ).rejects.toMatchObject({ code: "CUSTODY_STORE_UNAVAILABLE" });
     expect(missingStore.end).toHaveBeenCalledOnce();
 
-    const missingKeystoreStore = poolFixture({
-      auditEvents: "custody_wallet_audit_events",
-      envelopes: "custody_wallet_envelopes",
-      failures: "user_keystore_failures",
-      keystoreVersions: null,
-      keystores: "user_keystores",
-      resetPreviews: "user_keystore_reset_previews",
-      wallets: "custody_wallets",
-    });
+    const missingKeystoreStore = poolFixture({ ...readyTables, keystoreVersions: null });
     await expect(
       startSignerRuntime(config, { kms: kmsFixture(), pool: missingKeystoreStore.pool }),
     ).rejects.toMatchObject({ code: "CUSTODY_STORE_UNAVAILABLE" });
     expect(missingKeystoreStore.end).toHaveBeenCalledOnce();
+
+    const missingLifecycleStore = poolFixture({ ...readyTables, tombstones: null });
+    await expect(
+      startSignerRuntime(config, { kms: kmsFixture(), pool: missingLifecycleStore.pool }),
+    ).rejects.toMatchObject({ code: "CUSTODY_STORE_UNAVAILABLE" });
+    expect(missingLifecycleStore.end).toHaveBeenCalledOnce();
   });
 
   it("binds only after readiness probes and closes the dedicated pool", async () => {
-    const store = poolFixture({
-      auditEvents: "custody_wallet_audit_events",
-      envelopes: "custody_wallet_envelopes",
-      failures: "user_keystore_failures",
-      keystoreVersions: "user_keystore_versions",
-      keystores: "user_keystores",
-      resetPreviews: "user_keystore_reset_previews",
-      wallets: "custody_wallets",
-    });
+    const store = poolFixture(readyTables);
     const shutdown = vi.spyOn(CustodySignerService.prototype, "shutdown");
     const runtime = await startSignerRuntime(config, { kms: kmsFixture(), pool: store.pool });
     runtimes.push(runtime);
