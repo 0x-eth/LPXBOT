@@ -284,6 +284,13 @@ describe("P04-07 PostgreSQL OKX credential store", () => {
       [target],
     );
     expect(afterReplacementRecovery.rows).toEqual([{ active_count: 1, staged_count: 0 }]);
+    const replacementRecoveryAudit = await pool.query<{ status: string; version: string }>(
+      `SELECT status, version::text
+         FROM okx_credential_audit_events
+        WHERE user_id = $1 AND request_id = 'recover:2'`,
+      [target],
+    );
+    expect(replacementRecoveryAudit.rows).toEqual([{ status: "usable", version: "2" }]);
 
     const testing = await repository.setStatus({
       context: context(target, "interruption-testing"),

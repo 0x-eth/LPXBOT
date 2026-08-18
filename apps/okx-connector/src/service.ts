@@ -205,7 +205,17 @@ export class OkxCredentialService implements OkxConnectorApplication {
       };
       if (head.status === "staged") {
         await this.#repository.destroyStaged({ context, version: head.version });
-        await this.#audit("status-change", context, head, true, "unconfigured");
+        const retained = await this.#repository.getHead(head.userId);
+        await this.#repository.appendAudit({
+          action: "status-change",
+          actor: context.actor,
+          changed: true,
+          createdAt: context.now,
+          requestId: context.requestId,
+          status: retained?.status ?? "unconfigured",
+          userId: context.userId,
+          version: head.version,
+        });
         changed += 1;
       } else if (head.status === "deleting") {
         const deleted = await this.#repository.completeDelete({
