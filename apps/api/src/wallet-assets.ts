@@ -76,6 +76,38 @@ export interface WalletTokenStore {
   list(input: { chainId: number; userId: string; walletId: string }): Promise<StoredWalletToken[]>;
 }
 
+export interface WalletAssetApplication {
+  balances(input: {
+    chainId: number;
+    userId: string;
+    wallet: CustodyWallet;
+  }): Promise<WalletBalanceSnapshot>;
+  deleteToken(input: {
+    chainId: number;
+    tokenAddress: unknown;
+    userId: string;
+    walletId: string;
+  }): Promise<boolean>;
+  importToken(input: {
+    chainId: number;
+    tokenAddress: unknown;
+    userId: string;
+    walletId: string;
+  }): Promise<WalletTokenDefinition>;
+  listTokens(input: {
+    chainId: number;
+    userId: string;
+    walletId: string;
+  }): Promise<WalletTokenPage>;
+  receive(input: {
+    amountDecimal?: unknown;
+    chainId: number;
+    tokenAddress?: unknown;
+    userId: string;
+    wallet: CustodyWallet;
+  }): Promise<WalletReceiveContent>;
+}
+
 const erc20MetadataAbi = [
   {
     inputs: [],
@@ -388,7 +420,7 @@ export class MemoryWalletTokenStore implements WalletTokenStore {
   }
 }
 
-export class WalletAssetService {
+export class WalletAssetService implements WalletAssetApplication {
   readonly #now: () => Date;
   readonly #priceMaximumAgeMs: number;
   readonly #providers: ControlledWalletReadProviderRegistry;

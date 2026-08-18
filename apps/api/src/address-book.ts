@@ -76,6 +76,7 @@ export interface AddressBookDeleteInput {
 export interface AddressBookStore {
   create(input: AddressBookCreateInput): Promise<AddressBookEntry>;
   delete(input: AddressBookDeleteInput): Promise<boolean>;
+  get(input: { entryId: string; userId: string }): Promise<AddressBookEntry | null>;
   list(input: { chainId: number; userId: string }): Promise<AddressBookEntry[]>;
   patch(input: AddressBookPatchInput): Promise<AddressBookEntry>;
   recordDenied(input: AddressBookAuditInput): Promise<void>;
@@ -250,6 +251,11 @@ export class MemoryAddressBookStore implements AddressBookStore {
       resultCode: deleted ? "DELETED" : "ALREADY_ABSENT",
     });
     return Boolean(deleted);
+  }
+
+  async get(input: { entryId: string; userId: string }): Promise<AddressBookEntry | null> {
+    const value = this.#entries.get(input.entryId);
+    return value?.userId === input.userId ? this.#public(value) : null;
   }
 
   async list(input: { chainId: number; userId: string }): Promise<AddressBookEntry[]> {

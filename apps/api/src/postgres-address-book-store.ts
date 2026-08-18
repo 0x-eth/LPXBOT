@@ -131,6 +131,16 @@ export class PostgresAddressBookStore implements AddressBookStore {
     }
   }
 
+  async get(input: { entryId: string; userId: string }): Promise<AddressBookEntry | null> {
+    const result = await this.#pool.query<AddressBookRow>(
+      `SELECT ${columns}
+         FROM wallet_address_book_entries
+        WHERE user_id = $1 AND entry_id = $2`,
+      [input.userId, input.entryId],
+    );
+    return result.rows[0] ? entry(result.rows[0]) : null;
+  }
+
   async list(input: { chainId: number; userId: string }): Promise<AddressBookEntry[]> {
     const result = await this.#pool.query<AddressBookRow>(
       `SELECT ${columns}

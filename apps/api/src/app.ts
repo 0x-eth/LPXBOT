@@ -1,6 +1,7 @@
 import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
 import {
+  addressBookSecretMediaType,
   createErrorEnvelope,
   createSuccessEnvelope,
   marketCandleBars,
@@ -18,6 +19,7 @@ import {
   type SessionView,
   type ShellStatsSnapshot,
 } from "@lpbot/api-contract";
+import { findRegisteredChain } from "@lpbot/chain-registry";
 import {
   authorizeAccount,
   authorizeChainOperation,
@@ -43,6 +45,16 @@ import {
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 
 import { sessionCookieName, setBrowserSessionCookie } from "./browser-session-cookie.js";
+import {
+  AddressBookError,
+  classifyAddress,
+  parseAddressBookCreateIngress,
+  parseAddressBookEntryId,
+  parseAddressBookPatch,
+  type AddressBookAllowedAudit,
+  type AddressBookAuditAction,
+  type AddressBookStore,
+} from "./address-book.js";
 import {
   addressRemarkChainId,
   AddressRemarkValidationError,
@@ -127,6 +139,11 @@ import {
   type UserPreferencesStore,
 } from "./user-preferences.js";
 import {
+  canonicalWalletAddress,
+  WalletAssetError,
+  type WalletAssetApplication,
+} from "./wallet-assets.js";
+import {
   keystoreSecretBodyLimit,
   keystoreSecretMediaType,
   parseDeleteCustodyWalletRequest,
@@ -163,6 +180,7 @@ export interface RegionPolicyResult {
 }
 
 export interface ApiAppOptions {
+  addressBookStore?: AddressBookStore;
   addressRemarkRateLimit?: ChainManagementRateLimit;
   addressRemarkStore?: AddressRemarkStore;
   authRateLimits?: AuthRateLimits;
@@ -201,6 +219,7 @@ export interface ApiAppOptions {
   tenantId?: string;
   testRoutes?: boolean;
   walletAuth?: LoginWalletAuthenticationApplication;
+  walletAssets?: WalletAssetApplication;
   walletDirectory?: WalletDirectory;
   walletSigner?: WalletSignerClient;
   keystore?: KeystoreApplication;
@@ -889,6 +908,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   const isSecurityPasswordSecretRequest = (method: string, path: string): boolean =>
     method === "PUT" && path === "/api/security-password";
 
+  const isAddressBookSecretRequest = (method: string, path: string): boolean =>
+    method === "POST" && path === "/api/address-book";
+
   app.addHook("onRequest", (request, reply, done) => {
     const path = request.url.split("?", 1)[0]!;
     const mediaType = request.headers["content-type"]?.split(";", 1)[0]?.trim().toLowerCase();
@@ -899,7 +921,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           ? keystoreSecretMediaType
           : isSecurityPasswordSecretRequest(request.method, path)
             ? securityPasswordSecretMediaType
-            : null;
+            : isAddressBookSecretRequest(request.method, path)
+              ? addressBookSecretMediaType
+              : null;
     if (requiredMediaType && mediaType !== requiredMediaType) {
       reply.header("Cache-Control", "no-store");
       void reply.code(415).send(
@@ -923,6 +947,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   );
   app.addContentTypeParser(
     securityPasswordSecretMediaType,
+    { parseAs: "buffer" },
+    (_request, body, done) => done(null, body),
+  );
+  app.addContentTypeParser(
+    addressBookSecretMediaType,
     { parseAs: "buffer" },
     (_request, body, done) => done(null, body),
   );
@@ -967,7 +996,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       ((request.method === "POST" &&
         (requestPath === "/api/wallets/import" || requestPath === "/api/wallets/generate")) ||
         isKeystoreSecretRequest(request.method, requestPath) ||
-        isSecurityPasswordSecretRequest(request.method, requestPath))
+        isSecurityPasswordSecretRequest(request.method, requestPath) ||
+        isAddressBookSecretRequest(request.method, requestPath))
     ) {
       reply.header("Cache-Control", "no-store");
       return reply.code(413).send(
