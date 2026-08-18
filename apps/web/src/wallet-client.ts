@@ -2,6 +2,11 @@ import type {
   ChangeWalletEncryptionModeRequest,
   CustodyWallet,
   CustodyWalletPage,
+  DeleteCustodyWalletRequest,
+  RenameCustodyWalletRequest,
+  WalletDeleteDependencies,
+  WalletDeletePreview,
+  WalletDeletionReceipt,
 } from "@lpbot/api-contract";
 import { keystoreSecretMediaType } from "@lpbot/api-contract";
 
@@ -31,6 +36,28 @@ const walletKeys = [
 ] as const;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const addressPattern = /^0x[0-9a-fA-F]{40}$/u;
+const previewKeys = [
+  "assetCount",
+  "assetRiskDigest",
+  "confirmationPhrase",
+  "dependencies",
+  "expiresAt",
+  "forceEligible",
+  "policyCount",
+  "positionCount",
+  "previewToken",
+  "revision",
+  "taskCount",
+  "walletId",
+] as const;
+const receiptKeys = [
+  "address",
+  "auditId",
+  "deletedAt",
+  "deletionType",
+  "finalRevision",
+  "walletId",
+] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -87,6 +114,87 @@ export function parseCustodyWalletPage(value: unknown, status = 0): CustodyWalle
     throw new WalletRequestError("WALLET_RESPONSE_INVALID", true, status);
   }
   return { items };
+}
+
+function dependencyList(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        typeof item === "string" &&
+        item.length > 0 &&
+        item.length <= 256 &&
+        !/\p{Cc}/u.test(item),
+    ) &&
+    new Set(value).size === value.length
+  );
+}
+
+function deleteDependencies(value: unknown): value is WalletDeleteDependencies {
+  return (
+    isRecord(value) &&
+    exactKeys(value, ["assetIds", "policyIds", "positionIds", "taskIds"]) &&
+    dependencyList(value.assetIds) &&
+    dependencyList(value.policyIds) &&
+    dependencyList(value.positionIds) &&
+    dependencyList(value.taskIds)
+  );
+}
+
+export function parseWalletDeletePreview(value: unknown, status = 0): WalletDeletePreview {
+  if (
+    !isRecord(value) ||
+    !exactKeys(value, previewKeys) ||
+    !deleteDependencies(value.dependencies) ||
+    !Number.isSafeInteger(value.assetCount) ||
+    value.assetCount !== value.dependencies.assetIds.length ||
+    !Number.isSafeInteger(value.policyCount) ||
+    value.policyCount !== value.dependencies.policyIds.length ||
+    !Number.isSafeInteger(value.positionCount) ||
+    value.positionCount !== value.dependencies.positionIds.length ||
+    !Number.isSafeInteger(value.taskCount) ||
+    value.taskCount !== value.dependencies.taskIds.length ||
+    typeof value.assetRiskDigest !== "string" ||
+    value.assetRiskDigest.length < 1 ||
+    value.assetRiskDigest.length > 256 ||
+    /\p{Cc}/u.test(value.assetRiskDigest) ||
+    typeof value.confirmationPhrase !== "string" ||
+    !/^DELETE WALLET [A-F0-9]{8}$/u.test(value.confirmationPhrase) ||
+    typeof value.expiresAt !== "string" ||
+    !timestamp(value.expiresAt) ||
+    typeof value.forceEligible !== "boolean" ||
+    typeof value.previewToken !== "string" ||
+    !/^[A-Za-z0-9_-]{43}$/u.test(value.previewToken) ||
+    !Number.isSafeInteger(value.revision) ||
+    (value.revision as number) < 1 ||
+    typeof value.walletId !== "string" ||
+    !uuidPattern.test(value.walletId)
+  ) {
+    throw new WalletRequestError("WALLET_RESPONSE_INVALID", true, status);
+  }
+  return structuredClone(value) as unknown as WalletDeletePreview;
+}
+
+export function parseWalletDeletionReceipt(value: unknown, status = 0): WalletDeletionReceipt {
+  if (
+    !isRecord(value) ||
+    !exactKeys(value, receiptKeys) ||
+    typeof value.address !== "string" ||
+    !addressPattern.test(value.address) ||
+    typeof value.auditId !== "string" ||
+    value.auditId.length < 1 ||
+    value.auditId.length > 64 ||
+    typeof value.deletedAt !== "string" ||
+    !timestamp(value.deletedAt) ||
+    (value.deletionType !== "normal" && value.deletionType !== "force") ||
+    !Number.isSafeInteger(value.finalRevision) ||
+    (value.finalRevision as number) < 2 ||
+    typeof value.walletId !== "string" ||
+    !uuidPattern.test(value.walletId)
+  ) {
+    throw new WalletRequestError("WALLET_RESPONSE_INVALID", true, status);
+  }
+  return { ...value } as unknown as WalletDeletionReceipt;
 }
 
 export class WalletRequestError extends Error {
@@ -164,6 +272,40 @@ export class WalletClient {
     );
   }
 
+  async rename(walletId: string, input: RenameCustodyWalletRequest): Promise<CustodyWallet> {
+    const normalized = this.#walletId(walletId);
+    const response = await this.#request(`/api/wallets/${normalized}`, {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "PATCH",
+    });
+    return parseCustodyWallet(response.data, response.status);
+  }
+
+  async deletePreview(walletId: string): Promise<WalletDeletePreview> {
+    const normalized = this.#walletId(walletId);
+    const response = await this.#request(`/api/wallets/${normalized}/delete-preview`, {
+      method: "POST",
+    });
+    return parseWalletDeletePreview(response.data, response.status);
+  }
+
+  async deleteWallet(
+    walletId: string,
+    input: DeleteCustodyWalletRequest,
+  ): Promise<WalletDeletionReceipt> {
+    const normalized = this.#walletId(walletId);
+    const response = await this.#request(`/api/wallets/${normalized}`, {
+      body: JSON.stringify(input),
+      headers: {
+        "Content-Type": "application/json",
+        ...this.#reauthenticationHeader(),
+      },
+      method: "DELETE",
+    });
+    return parseWalletDeletionReceipt(response.data, response.status);
+  }
+
   async #secretWalletMutation(
     path: string,
     input:
@@ -189,6 +331,13 @@ export class WalletClient {
   #reauthenticationHeader(): Record<string, string> {
     const proof = this.#reauthenticationProof();
     return proof ? { "X-LPBOT-Reauthentication": proof } : {};
+  }
+
+  #walletId(value: string): string {
+    if (!uuidPattern.test(value)) {
+      throw new WalletRequestError("WALLET_NOT_FOUND", false, 0);
+    }
+    return value.toLowerCase();
   }
 
   async #request(path: string, init: RequestInit): Promise<{ data: unknown; status: number }> {
