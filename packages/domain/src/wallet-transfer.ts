@@ -248,7 +248,7 @@ export function walletTransferPreviewDigest(input: WalletTransferPreviewFacts): 
 }
 
 export function walletTransferPlanDigest(plan: WalletTransferPlan): `sha256:${string}` {
-  validateWalletTransferPlan(plan);
+  validateWalletTransferPlan(plan, new Date(0));
   return sha256(
     [
       "wallet-transfer-plan/v1",
