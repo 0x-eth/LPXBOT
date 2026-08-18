@@ -2,11 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { CustodyWallet, CustodyWalletPage, WalletEncryptionMode } from "@lpbot/api-contract";
 
-import type {
-  CustodyWalletStore,
-  WalletDirectory,
-  WalletSignerClient,
-} from "./custody-types.js";
+import type { CustodyWalletStore, WalletDirectory, WalletSignerClient } from "./custody-types.js";
 import { publicWallet } from "./custody-types.js";
 import type { IsolatedWalletSigner, SealedWalletDraft } from "./isolated-wallet-signer.js";
 import { SignerError, asSignerError } from "./signer-error.js";

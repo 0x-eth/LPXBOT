@@ -134,7 +134,12 @@ export function openEnvelope(input: SealedBytes & { aad: Uint8Array; dek: Uint8A
 }
 
 export function privateKeyInputName(value: unknown): string {
-  if (typeof value !== "string" || value.length < 1 || value.length > 80 || value.trim() !== value) {
+  if (
+    typeof value !== "string" ||
+    value.length < 1 ||
+    value.length > 80 ||
+    value.trim() !== value
+  ) {
     throw new SignerError("INVALID_WALLET");
   }
   if (/\p{Cc}/u.test(value)) throw new SignerError("INVALID_WALLET");

@@ -23,11 +23,7 @@ export class LocalKmsFixture implements KmsClient {
   readonly #keys: Map<string, Buffer>;
   #available = true;
 
-  constructor(input: {
-    activeVersion: string;
-    kekId?: string;
-    keys: Record<string, Uint8Array>;
-  }) {
+  constructor(input: { activeVersion: string; kekId?: string; keys: Record<string, Uint8Array> }) {
     this.#activeVersion = input.activeVersion;
     this.#kekId = input.kekId ?? "local-fixture";
     this.#keys = new Map(

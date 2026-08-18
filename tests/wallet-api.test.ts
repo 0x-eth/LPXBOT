@@ -49,7 +49,9 @@ async function fixture(options: { available?: boolean } = {}) {
   });
   apps.push(app);
   const proofFor = (token: string) => {
-    const session = [...sessionStore.sessions.values()].find(({ tokenHash }) => tokenHash.length > 0 && sessionStore.sessions.get(tokenHash));
+    const session = [...sessionStore.sessions.values()].find(
+      ({ tokenHash }) => tokenHash.length > 0 && sessionStore.sessions.get(tokenHash),
+    );
     if (!session) throw new Error("missing fixture session");
     const own = [...sessionStore.sessions.values()].find(({ userId }) =>
       token === tokenA ? userId === userA : userId === userB,
@@ -215,7 +217,10 @@ describe("P04-02 custody wallet API", () => {
 
   it("keeps login wallets authentication-only", async () => {
     const { app, store, tokenA } = await fixture();
-    expect((await app.inject({ headers: auth(tokenA), method: "GET", url: "/api/wallets" })).json().data.items).toEqual([]);
+    expect(
+      (await app.inject({ headers: auth(tokenA), method: "GET", url: "/api/wallets" })).json().data
+        .items,
+    ).toEqual([]);
     expect(store.envelopeCount).toBe(0);
   });
 });

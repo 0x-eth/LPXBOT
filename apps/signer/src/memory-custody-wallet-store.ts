@@ -68,7 +68,10 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore {
     return wallet?.userId === userId ? cloneWallet(wallet) : null;
   }
 
-  async getCurrentEnvelope(walletId: string, envelopeVersion: number): Promise<CustodyEnvelope | null> {
+  async getCurrentEnvelope(
+    walletId: string,
+    envelopeVersion: number,
+  ): Promise<CustodyEnvelope | null> {
     this.openAttempts.push(envelopeVersion);
     const envelope = this.#envelopes.get(walletId)?.get(envelopeVersion);
     return envelope ? cloneEnvelope(envelope) : null;

@@ -14,6 +14,7 @@ export { signerCapabilities, IsolatedWalletSigner } from "./isolated-wallet-sign
 export type { KmsClient, KmsKeyDescriptor, WrappedDek } from "./kms.js";
 export { LocalKmsFixture } from "./kms.js";
 export { InMemoryCustodyWalletStore } from "./memory-custody-wallet-store.js";
+export { PostgresCustodyWalletStore } from "./postgres-custody-wallet-store.js";
 export { SignerError } from "./signer-error.js";
 export {
   SECP256K1_ORDER,

@@ -22,7 +22,5 @@ export class SignerError extends Error {
 }
 
 export function asSignerError(error: unknown): SignerError {
-  return error instanceof SignerError
-    ? error
-    : new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+  return error instanceof SignerError ? error : new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
 }

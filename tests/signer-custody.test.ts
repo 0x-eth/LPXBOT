@@ -31,11 +31,13 @@ function ingress(name: string, privateKey = privateKeyOne): Uint8Array {
   return Buffer.from(JSON.stringify({ mode: "server-kek", name, privateKey }), "utf8");
 }
 
-function service(options: {
-  candidates?: string[];
-  kms?: LocalKmsFixture;
-  store?: InMemoryCustodyWalletStore;
-} = {}) {
+function service(
+  options: {
+    candidates?: string[];
+    kms?: LocalKmsFixture;
+    store?: InMemoryCustodyWalletStore;
+  } = {},
+) {
   const candidates = [...(options.candidates ?? [])];
   const randomBytes = (length: number): Buffer => {
     if (length !== 32 || candidates.length === 0) throw new Error("fixture random exhausted");
@@ -130,7 +132,11 @@ describe("P04-02 isolated signer cryptography", () => {
     });
     expect(envelope.ciphertext.toString("hex")).toBe(fixture.expected.aes256Gcm.ciphertextHex);
     expect(envelope.tag.toString("hex")).toBe(fixture.expected.aes256Gcm.tagHex);
-    const opened = openEnvelope({ ...envelope, aad, dek: Buffer.from(fixture.input.aes256Gcm.keyHex, "hex") });
+    const opened = openEnvelope({
+      ...envelope,
+      aad,
+      dek: Buffer.from(fixture.input.aes256Gcm.keyHex, "hex"),
+    });
     expect(opened.toString("hex")).toBe(fixture.input.aes256Gcm.plaintextHex);
     opened.fill(0);
   });
@@ -211,18 +217,26 @@ describe("P04-02 isolated signer cryptography", () => {
 
   it("recovers after signer restart and fails closed for unavailable/wrong KEK versions", async () => {
     const { application, kms, store } = service();
-    const wallet = await application.importWallet({ ingress: ingress("Restart fixture"), tenantId, userId: userA });
+    const wallet = await application.importWallet({
+      ingress: ingress("Restart fixture"),
+      tenantId,
+      userId: userA,
+    });
     const restarted = new CustodySignerService({
       signer: new IsolatedWalletSigner({ kms }),
       store,
     });
-    await expect(restarted.recoverWallet({ tenantId, userId: userA, walletId: wallet.walletId })).resolves.toMatchObject({
+    await expect(
+      restarted.recoverWallet({ tenantId, userId: userA, walletId: wallet.walletId }),
+    ).resolves.toMatchObject({
       address: wallet.address,
       lockStatus: "ready",
     });
 
     kms.setAvailable(false);
-    await expect(restarted.recoverWallet({ tenantId, userId: userA, walletId: wallet.walletId })).rejects.toMatchObject({
+    await expect(
+      restarted.recoverWallet({ tenantId, userId: userA, walletId: wallet.walletId }),
+    ).rejects.toMatchObject({
       code: "SIGNER_UNAVAILABLE",
     });
     expect((await store.get(userA, wallet.walletId))?.lockStatus).toBe("locked");
@@ -232,7 +246,9 @@ describe("P04-02 isolated signer cryptography", () => {
       ...envelope,
       kekVersion: "kek-fixture-missing",
     }));
-    await expect(restarted.recoverWallet({ tenantId, userId: userA, walletId: wallet.walletId })).rejects.toMatchObject({
+    await expect(
+      restarted.recoverWallet({ tenantId, userId: userA, walletId: wallet.walletId }),
+    ).rejects.toMatchObject({
       code: "KEK_VERSION_UNAVAILABLE",
     });
     expect((await store.get(userA, wallet.walletId))?.lockStatus).toBe("locked");
@@ -240,13 +256,19 @@ describe("P04-02 isolated signer cryptography", () => {
 
   it("quarantines authentication failures and never opens an older envelope", async () => {
     const { application, store } = service();
-    const wallet = await application.importWallet({ ingress: ingress("Tamper fixture"), tenantId, userId: userA });
+    const wallet = await application.importWallet({
+      ingress: ingress("Tamper fixture"),
+      tenantId,
+      userId: userA,
+    });
     await store.mutateEnvelopeForTest(wallet.walletId, (envelope) => {
       const tag = Buffer.from(envelope.tag);
       tag[0] ^= 1;
       return { ...envelope, tag };
     });
-    await expect(application.recoverWallet({ tenantId, userId: userA, walletId: wallet.walletId })).rejects.toMatchObject({
+    await expect(
+      application.recoverWallet({ tenantId, userId: userA, walletId: wallet.walletId }),
+    ).rejects.toMatchObject({
       code: "KEYSTORE_CORRUPTED",
     });
     expect((await store.get(userA, wallet.walletId))?.lockStatus).toBe("quarantined");
@@ -269,7 +291,9 @@ describe("P04-02 custody creation invariants", () => {
   });
 
   it("resamples generated same-user collisions and commits one envelope per wallet", async () => {
-    const { application, store } = service({ candidates: [privateKeyOne, privateKeyOne, privateKeyTwo] });
+    const { application, store } = service({
+      candidates: [privateKeyOne, privateKeyOne, privateKeyTwo],
+    });
     const [first, second] = await Promise.all([
       application.generateWallet({ mode: "server-kek", name: "One", tenantId, userId: userA }),
       application.generateWallet({ mode: "server-kek", name: "Two", tenantId, userId: userA }),
