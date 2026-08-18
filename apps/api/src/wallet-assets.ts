@@ -234,9 +234,12 @@ function validMetadataText(value: unknown, maximum: number): value is string {
   );
 }
 
-function validateRpcData(value: unknown): asserts value is Hex {
+function validateRpcData(
+  value: unknown,
+  errorCode: WalletAssetErrorCode = "TOKEN_METADATA_INVALID",
+): asserts value is Hex {
   if (typeof value !== "string" || value.length > 131_074 || !hexDataPattern.test(value)) {
-    throw new WalletAssetError("TOKEN_METADATA_INVALID");
+    throw new WalletAssetError(errorCode);
   }
 }
 
@@ -255,6 +258,7 @@ async function readFunction(
   tokenAddress: EvmAddress,
   functionName: "balanceOf" | "decimals" | "name" | "symbol",
   args?: readonly [EvmAddress],
+  errorCode: WalletAssetErrorCode = "TOKEN_METADATA_INVALID",
 ): Promise<unknown> {
   try {
     const data = encodeFunctionData({
@@ -263,7 +267,7 @@ async function readFunction(
       functionName,
     } as never);
     const response = await provider.call({ data, to: tokenAddress });
-    validateRpcData(response);
+    validateRpcData(response, errorCode);
     return decodeFunctionResult({
       abi: erc20MetadataAbi,
       data: response,
@@ -271,7 +275,7 @@ async function readFunction(
     } as never);
   } catch (error) {
     if (error instanceof WalletAssetError) throw error;
-    throw new WalletAssetError("TOKEN_METADATA_INVALID", { cause: error });
+    throw new WalletAssetError(errorCode, { cause: error });
   }
 }
 
@@ -529,7 +533,13 @@ export class WalletAssetService implements WalletAssetApplication {
         Promise.all(
           page.items.map(async (token) => {
             const [rawBalance, price] = await Promise.all([
-              readFunction(provider, token.tokenAddress, "balanceOf", [input.wallet.address]),
+              readFunction(
+                provider,
+                token.tokenAddress,
+                "balanceOf",
+                [input.wallet.address],
+                "CHAIN_READ_UNAVAILABLE",
+              ),
               provider.getUsdPrice(token.tokenAddress),
             ]);
             if (typeof rawBalance !== "bigint") {
