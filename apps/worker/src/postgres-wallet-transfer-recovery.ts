@@ -58,6 +58,7 @@ interface OperationRow extends QueryResultRow {
   plan_digest: `sha256:${string}`;
   policy_digest: `sha256:${string}`;
   recipient: `0x${string}`;
+  reauthenticated_session_id: string;
   state: WalletTransferState;
   tenant_id: string;
   token_address: `0x${string}` | null;
@@ -92,7 +93,8 @@ const operationColumns = `
   o.transaction_target, o.transaction_value_base_unit::text, o.transaction_data,
   o.gas_limit::text, o.max_fee_per_gas_base_unit::text,
   o.max_priority_fee_per_gas_base_unit::text, o.fee_cap_base_unit::text,
-  o.plan_digest, o.policy_digest, o.plan_deadline, w.tenant_id,
+  o.plan_digest, o.policy_digest, o.plan_deadline,
+  o.reauthenticated_session_id::text, w.tenant_id,
   t.transaction_id::text AS active_transaction_id,
   t.generation AS active_generation, t.state AS active_state,
   t.transaction_hash AS active_transaction_hash,
@@ -177,6 +179,7 @@ function workOperation(row: OperationRow): WalletTransferWorkOperation {
     operationId: row.operation_id,
     plan: operationPlan(row),
     planDigest: row.plan_digest,
+    reauthenticatedSessionId: row.reauthenticated_session_id,
     state: row.state,
     tenantId: row.tenant_id,
     userId: row.user_id,
@@ -841,6 +844,7 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
       operationId: operation.operation_id,
       plan,
       planDigest: row.plan_digest,
+      reauthenticatedSessionId: operation.reauthenticated_session_id,
       replacedTransactionId: row.replaced_transaction_id,
       tenantId: operation.tenant_id,
       userId: operation.user_id,

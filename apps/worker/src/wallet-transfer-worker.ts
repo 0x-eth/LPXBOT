@@ -26,6 +26,7 @@ export interface WalletTransferWorkOperation {
   operationId: string;
   plan: WalletTransferPlan;
   planDigest: `sha256:${string}`;
+  reauthenticatedSessionId?: string;
   state: Exclude<WalletTransferState, "ready-for-approval" | "replaced">;
   tenantId: string;
   userId: string;
@@ -83,6 +84,7 @@ export interface WalletTransferSignerGateway {
   signAndDeliver(input: {
     plan: WalletTransferPlan;
     planDigest: `sha256:${string}`;
+    reauthenticatedSessionId?: string;
     tenantId: string;
     userId: string;
   }): Promise<WalletTransferSignerResult>;
@@ -100,6 +102,7 @@ export interface WalletTransferReplacementAuthorization {
   operationId: string;
   plan: WalletTransferPlan;
   planDigest: `sha256:${string}`;
+  reauthenticatedSessionId?: string;
   replacedTransactionId: string;
   tenantId: string;
   userId: string;
@@ -411,6 +414,9 @@ export class WalletTransferRecoveryWorker {
           const signed = await this.#signer.signAndDeliver({
             plan: claim.operation.plan,
             planDigest: claim.operation.planDigest,
+            ...(claim.operation.reauthenticatedSessionId
+              ? { reauthenticatedSessionId: claim.operation.reauthenticatedSessionId }
+              : {}),
             tenantId: claim.operation.tenantId,
             userId: claim.operation.userId,
           });
@@ -467,6 +473,9 @@ export class WalletTransferRecoveryWorker {
       const signed = await this.#signer.signAndDeliver({
         plan: authorization.plan,
         planDigest: authorization.planDigest,
+        ...(authorization.reauthenticatedSessionId
+          ? { reauthenticatedSessionId: authorization.reauthenticatedSessionId }
+          : {}),
         tenantId: authorization.tenantId,
         userId: authorization.userId,
       });
