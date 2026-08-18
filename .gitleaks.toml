@@ -66,6 +66,13 @@ regexTarget = "secret"
 regexes = ['''^[0-9a-f]{64}$''']
 
 [[rules.allowlists]]
+description = "P04-05 wallet registry constants are public ERC-20 contract addresses, not authentication tokens."
+condition = "AND"
+paths = ['''^apps/api/src/wallet-assets\.ts$''']
+regexTarget = "match"
+regexes = ['''tokenAddress:\s*"0x[0-9a-f]{40}"''']
+
+[[rules.allowlists]]
 description = "P03-03 notification tests use these exact non-secret fixture values to verify write-only signing-key handling."
 condition = "AND"
 paths = ['''^tests/(?:notification-settings-api|notification-client)\.test\.ts$''']
