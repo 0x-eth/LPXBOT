@@ -2,6 +2,7 @@ import type {
   CustodyWallet,
   CustodyWalletPage,
   DeleteCustodyWalletRequest,
+  SecurityPasswordStatus,
   WalletEncryptionMode,
   WalletDeletePreview,
   WalletDeletionReceipt,
@@ -118,6 +119,51 @@ export interface WalletDeleteCommit extends WalletDependencySnapshot {
   previewTokenDigest: Buffer;
   userId: string;
   walletId: string;
+}
+
+export interface StoredSecurityPasswordVersion {
+  createdAt: Date;
+  parameterVersion: 1;
+  salt: Buffer;
+  verifier: Buffer;
+  version: number;
+}
+
+export interface StoredSecurityPassword {
+  current: StoredSecurityPasswordVersion;
+  failureCount: number;
+  lockedUntil: Date | null;
+  updatedAt: Date;
+  userId: string;
+}
+
+export interface SecurityPasswordStore {
+  clearSecurityPasswordFailures(input: {
+    now: Date;
+    userId: string;
+    version: number;
+  }): Promise<void>;
+  createSecurityPassword(password: StoredSecurityPassword): Promise<void>;
+  getSecurityPassword(userId: string): Promise<StoredSecurityPassword | null>;
+  recordSecurityPasswordFailure(input: {
+    maxAttempts: number;
+    now: Date;
+    userId: string;
+    version: number;
+  }): Promise<StoredSecurityPassword>;
+  rotateSecurityPassword(input: {
+    expectedVersion: number;
+    next: StoredSecurityPassword;
+  }): Promise<void>;
+}
+
+export interface SecurityPasswordApplication {
+  putSecurityPassword(input: { ingress: Uint8Array; userId: string }): Promise<SecurityPasswordStatus>;
+  securityPasswordStatus(userId: string): Promise<SecurityPasswordStatus>;
+  verifySecurityPassword(input: {
+    ingress: Uint8Array;
+    userId: string;
+  }): Promise<{ verified: true; version: number }>;
 }
 
 export type KeystoreState = "locked" | "locked-out" | "unconfigured" | "unlocked";

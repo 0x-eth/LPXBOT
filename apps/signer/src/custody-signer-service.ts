@@ -9,6 +9,7 @@ import type {
   CustodyWallet,
   CustodyWalletPage,
   DeleteCustodyWalletRequest,
+  SecurityPasswordStatus,
   WalletDeletePreview,
   WalletDeletionReceipt,
   WalletEncryptionMode,
@@ -18,8 +19,10 @@ import type {
   CustodyWalletStore,
   KeystoreStatus,
   KeystoreStore,
+  SecurityPasswordStore,
   StoredKeystore,
   StoredKeystoreFailure,
+  StoredSecurityPassword,
   WalletDirectory,
   WalletDependencyInventory,
   WalletSignerClient,
@@ -28,6 +31,10 @@ import type {
 import { publicWallet } from "./custody-types.js";
 import type { IsolatedWalletSigner, SealedWalletDraft } from "./isolated-wallet-signer.js";
 import { createPasswordVerifier, deriveArgon2idKek } from "./password-crypto.js";
+import {
+  createSecurityPasswordVerifier,
+  deriveSecurityPasswordKey,
+} from "./security-password-crypto.js";
 import { SignerError, asSignerError } from "./signer-error.js";
 import { privateKeyInputName } from "./wallet-crypto.js";
 
@@ -37,6 +44,7 @@ const maximumFailures = 5;
 
 type ZeroizeLabel = "derived-kek" | "password" | "secret-ingress";
 type DerivePasswordKek = (password: Uint8Array, salt: Uint8Array) => Buffer;
+type DeriveSecurityPasswordKey = (password: Uint8Array, salt: Uint8Array) => Buffer;
 
 export interface KeystoreDependencySnapshot {
   assetRiskDigest: string;
@@ -84,6 +92,17 @@ function supportsKeystore(value: CustodyWalletStore): value is CustodyWalletStor
   );
 }
 
+function supportsSecurityPassword(
+  value: CustodyWalletStore,
+): value is CustodyWalletStore & SecurityPasswordStore {
+  const candidate = value as Partial<SecurityPasswordStore>;
+  return (
+    typeof candidate.getSecurityPassword === "function" &&
+    typeof candidate.createSecurityPassword === "function" &&
+    typeof candidate.rotateSecurityPassword === "function"
+  );
+}
+
 function passwordBytes(value: unknown): Buffer {
   if (typeof value !== "string") throw new SignerError("PASSWORD_POLICY_FAILED");
   const bytes = Buffer.from(value, "utf8");
@@ -121,11 +140,13 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
   readonly #now: () => Date;
   readonly #backoffJitter: (maximumExclusive: number) => number;
   readonly #derivePasswordKek: DerivePasswordKek;
+  readonly #deriveSecurityPasswordKey: DeriveSecurityPasswordKey;
   readonly #dependencyInventory: KeystoreDependencyInventory | null;
   readonly #keystoreStore: KeystoreStore | null;
   readonly #monotonicNow: () => number;
   readonly #onZeroize: (label: ZeroizeLabel, bytes: Uint8Array) => void;
   readonly #randomBytes: (length: number) => Uint8Array;
+  readonly #securityPasswordStore: SecurityPasswordStore | null;
   readonly #signer: IsolatedWalletSigner;
   readonly #signerInstance: string;
   readonly #store: CustodyWalletStore;
@@ -140,11 +161,13 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     backoffJitter?: (maximumExclusive: number) => number;
     dependencyInventory?: KeystoreDependencyInventory | undefined;
     derivePasswordKek?: DerivePasswordKek;
+    deriveSecurityPasswordKey?: DeriveSecurityPasswordKey;
     keystoreStore?: KeystoreStore;
     monotonicNow?: () => number;
     now?: () => Date;
     onZeroize?: (label: ZeroizeLabel, bytes: Uint8Array) => void;
     randomBytes?: (length: number) => Uint8Array;
+    securityPasswordStore?: SecurityPasswordStore;
     signer: IsolatedWalletSigner;
     signerInstance?: string;
     store: CustodyWalletStore;
@@ -157,6 +180,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
       ((maximumExclusive) =>
         maximumExclusive <= 1 ? 0 : systemRandomBytes(4).readUInt32BE(0) % maximumExclusive);
     this.#derivePasswordKek = input.derivePasswordKek ?? deriveArgon2idKek;
+    this.#deriveSecurityPasswordKey = input.deriveSecurityPasswordKey ?? deriveSecurityPasswordKey;
     this.#dependencyInventory = input.dependencyInventory ?? null;
     this.#keystoreStore =
       input.keystoreStore ?? (supportsKeystore(input.store) ? input.store : null);
@@ -164,6 +188,9 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     this.#now = input.now ?? (() => new Date());
     this.#onZeroize = input.onZeroize ?? (() => undefined);
     this.#randomBytes = input.randomBytes ?? systemRandomBytes;
+    this.#securityPasswordStore =
+      input.securityPasswordStore ??
+      (supportsSecurityPassword(input.store) ? input.store : null);
     this.#signer = input.signer;
     this.#signerInstance = input.signerInstance ?? randomUUID();
     this.#store = input.store;
@@ -187,6 +214,138 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
       }
     }
     return { configured: true, status: "locked", version: keystore.current.secretVersion };
+  }
+
+  async securityPasswordStatus(userId: string): Promise<SecurityPasswordStatus> {
+    const password = await this.#requireSecurityPasswordStore().getSecurityPassword(userId);
+    if (!password) return { configured: false, status: "unconfigured", version: 0 };
+    return {
+      configured: true,
+      status: password.lockedUntil && password.lockedUntil > this.#now() ? "locked-out" : "ready",
+      version: password.current.version,
+    };
+  }
+
+  async putSecurityPassword(input: {
+    ingress: Uint8Array;
+    userId: string;
+  }): Promise<SecurityPasswordStatus> {
+    const store = this.#requireSecurityPasswordStore();
+    let oldPassword: Buffer | null = null;
+    let newPassword: Buffer | null = null;
+    let oldKey: Buffer | null = null;
+    let newKey: Buffer | null = null;
+    let verifier: Buffer | null = null;
+    let salt: Buffer | null = null;
+    try {
+      const body = secretRecord(input.ingress, ["expectedVersion", "newPassword", "oldPassword"]);
+      if (!Number.isSafeInteger(body.expectedVersion) || Number(body.expectedVersion) < 0) {
+        throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
+      }
+      newPassword = passwordBytes(body.newPassword);
+      body.newPassword = "";
+      const expectedVersion = Number(body.expectedVersion);
+      const current = await store.getSecurityPassword(input.userId);
+      if (expectedVersion === 0) {
+        if (body.oldPassword !== null || current) {
+          throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
+        }
+      } else {
+        if (!current || current.current.version !== expectedVersion) {
+          throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
+        }
+        if (current.lockedUntil && current.lockedUntil > this.#now()) {
+          throw new SignerError("LOCKED_OUT");
+        }
+        oldPassword = passwordBytes(body.oldPassword);
+        body.oldPassword = "";
+        try {
+          oldKey = this.#verifySecurityPassword(current, oldPassword);
+        } catch {
+          await store.recordSecurityPasswordFailure({
+            maxAttempts: maximumFailures,
+            now: this.#now(),
+            userId: input.userId,
+            version: current.current.version,
+          });
+          throw new SignerError("INVALID_CREDENTIALS");
+        }
+      }
+      salt = await this.#newSecurityPasswordSalt(input.userId);
+      const nextVersion = expectedVersion + 1;
+      newKey = this.#deriveSecurityPasswordKey(newPassword, salt);
+      verifier = createSecurityPasswordVerifier(newKey, {
+        userId: input.userId,
+        version: nextVersion,
+      });
+      const now = this.#now();
+      const next: StoredSecurityPassword = {
+        current: {
+          createdAt: now,
+          parameterVersion: 1,
+          salt,
+          verifier,
+          version: nextVersion,
+        },
+        failureCount: 0,
+        lockedUntil: null,
+        updatedAt: now,
+        userId: input.userId,
+      };
+      if (expectedVersion === 0) {
+        await store.createSecurityPassword(next);
+      } else {
+        await store.rotateSecurityPassword({ expectedVersion, next });
+      }
+      return { configured: true, status: "ready", version: nextVersion };
+    } finally {
+      if (oldPassword) this.#zeroize("password", oldPassword);
+      if (newPassword) this.#zeroize("password", newPassword);
+      if (oldKey) this.#zeroize("derived-kek", oldKey);
+      if (newKey) this.#zeroize("derived-kek", newKey);
+      salt?.fill(0);
+      verifier?.fill(0);
+      this.#zeroize("secret-ingress", input.ingress);
+    }
+  }
+
+  async verifySecurityPassword(input: {
+    ingress: Uint8Array;
+    userId: string;
+  }): Promise<{ verified: true; version: number }> {
+    const store = this.#requireSecurityPasswordStore();
+    let password: Buffer | null = null;
+    let key: Buffer | null = null;
+    try {
+      const body = secretRecord(input.ingress, ["password"]);
+      password = passwordBytes(body.password);
+      body.password = "";
+      const current = await store.getSecurityPassword(input.userId);
+      if (!current || (current.lockedUntil && current.lockedUntil > this.#now())) {
+        throw new SignerError(current ? "LOCKED_OUT" : "INVALID_CREDENTIALS");
+      }
+      try {
+        key = this.#verifySecurityPassword(current, password);
+      } catch {
+        await store.recordSecurityPasswordFailure({
+          maxAttempts: maximumFailures,
+          now: this.#now(),
+          userId: input.userId,
+          version: current.current.version,
+        });
+        throw new SignerError("INVALID_CREDENTIALS");
+      }
+      await store.clearSecurityPasswordFailures({
+        now: this.#now(),
+        userId: input.userId,
+        version: current.current.version,
+      });
+      return { verified: true, version: current.current.version };
+    } finally {
+      if (password) this.#zeroize("password", password);
+      if (key) this.#zeroize("derived-kek", key);
+      this.#zeroize("secret-ingress", input.ingress);
+    }
   }
 
   async createKeystorePassword(input: {

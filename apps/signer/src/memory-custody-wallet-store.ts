@@ -10,9 +10,11 @@ import type {
   CustodyWalletCreate,
   CustodyWalletStore,
   KeystoreStore,
+  SecurityPasswordStore,
   StoredKeystore,
   StoredKeystoreFailure,
   StoredKeystoreResetPreview,
+  StoredSecurityPassword,
   StoredCustodyWallet,
   StoredWalletDeletePreview,
   WalletEnvelopeMaterial,
@@ -85,7 +87,23 @@ function cloneWalletDeletePreview(preview: StoredWalletDeletePreview): StoredWal
   };
 }
 
-export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreStore {
+function cloneSecurityPassword(password: StoredSecurityPassword): StoredSecurityPassword {
+  return {
+    ...password,
+    current: {
+      ...password.current,
+      createdAt: new Date(password.current.createdAt),
+      salt: Buffer.from(password.current.salt),
+      verifier: Buffer.from(password.current.verifier),
+    },
+    lockedUntil: password.lockedUntil ? new Date(password.lockedUntil) : null,
+    updatedAt: new Date(password.updatedAt),
+  };
+}
+
+export class InMemoryCustodyWalletStore
+  implements CustodyWalletStore, KeystoreStore, SecurityPasswordStore
+{
   readonly #audits: Array<{ action: string; walletId: string }> = [];
   readonly #envelopes = new Map<string, Map<number, CustodyEnvelope>>();
   readonly #failBeforeCommit: boolean;
@@ -93,6 +111,8 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
   readonly #keystoreFailures = new Map<string, StoredKeystoreFailure>();
   readonly #keystores = new Map<string, StoredKeystore>();
   readonly #resetPreviews = new Map<string, StoredKeystoreResetPreview>();
+  readonly #securityPasswordAudits: Array<{ action: string; outcome: string; userId: string }> = [];
+  readonly #securityPasswords = new Map<string, StoredSecurityPassword>();
   readonly #wallets = new Map<string, StoredCustodyWallet>();
   readonly #walletDeletePreviews = new Map<string, StoredWalletDeletePreview>();
   readonly #walletTombstones = new Map<string, WalletDeletionReceipt>();
@@ -109,6 +129,92 @@ export class InMemoryCustodyWalletStore implements CustodyWalletStore, KeystoreS
 
   get envelopeCount(): number {
     return [...this.#envelopes.values()].reduce((count, versions) => count + versions.size, 0);
+  }
+
+  get securityPasswordAuditCount(): number {
+    return this.#securityPasswordAudits.length;
+  }
+
+  async getSecurityPassword(userId: string): Promise<StoredSecurityPassword | null> {
+    const password = this.#securityPasswords.get(userId);
+    return password ? cloneSecurityPassword(password) : null;
+  }
+
+  async createSecurityPassword(password: StoredSecurityPassword): Promise<void> {
+    if (this.#securityPasswords.has(password.userId)) {
+      throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
+    }
+    if (this.#failLifecycleAt === "before-commit") {
+      throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+    }
+    this.#securityPasswords.set(password.userId, cloneSecurityPassword(password));
+    this.#securityPasswordAudits.push({
+      action: "security-password.create",
+      outcome: "allowed",
+      userId: password.userId,
+    });
+  }
+
+  async rotateSecurityPassword(input: {
+    expectedVersion: number;
+    next: StoredSecurityPassword;
+  }): Promise<void> {
+    const current = this.#securityPasswords.get(input.next.userId);
+    if (!current || current.current.version !== input.expectedVersion) {
+      throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
+    }
+    if (this.#failLifecycleAt === "before-commit") {
+      throw new SignerError("CUSTODY_STORE_UNAVAILABLE", true);
+    }
+    this.#securityPasswords.set(input.next.userId, cloneSecurityPassword(input.next));
+    this.#securityPasswordAudits.push({
+      action: "security-password.change",
+      outcome: "allowed",
+      userId: input.next.userId,
+    });
+  }
+
+  async recordSecurityPasswordFailure(input: {
+    maxAttempts: number;
+    now: Date;
+    userId: string;
+    version: number;
+  }): Promise<StoredSecurityPassword> {
+    const current = this.#securityPasswords.get(input.userId);
+    if (!current || current.current.version !== input.version) {
+      throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
+    }
+    current.failureCount += 1;
+    current.lockedUntil =
+      current.failureCount >= input.maxAttempts
+        ? new Date(input.now.getTime() + 15 * 60_000)
+        : null;
+    current.updatedAt = new Date(input.now);
+    this.#securityPasswordAudits.push({
+      action: "security-password.verify",
+      outcome: "denied",
+      userId: input.userId,
+    });
+    return cloneSecurityPassword(current);
+  }
+
+  async clearSecurityPasswordFailures(input: {
+    now: Date;
+    userId: string;
+    version: number;
+  }): Promise<void> {
+    const current = this.#securityPasswords.get(input.userId);
+    if (!current || current.current.version !== input.version) {
+      throw new SignerError("SECURITY_PASSWORD_VERSION_CONFLICT");
+    }
+    current.failureCount = 0;
+    current.lockedUntil = null;
+    current.updatedAt = new Date(input.now);
+    this.#securityPasswordAudits.push({
+      action: "security-password.verify",
+      outcome: "allowed",
+      userId: input.userId,
+    });
   }
 
   async create(input: CustodyWalletCreate): Promise<CustodyWallet> {

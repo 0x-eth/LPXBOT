@@ -1080,6 +1080,28 @@ export interface RenameCustodyWalletRequest {
   name: string;
 }
 
+export const securityPasswordSecretMediaType =
+  "application/vnd.lpbot.security-password-secret+json" as const;
+
+export type SecurityPasswordState = "locked-out" | "ready" | "unconfigured";
+
+export interface SecurityPasswordStatus {
+  configured: boolean;
+  status: SecurityPasswordState;
+  version: number;
+}
+
+export interface UpdateSecurityPasswordRequest {
+  expectedVersion: number;
+  newPassword: string;
+  oldPassword: string | null;
+}
+
+export const securityPasswordContracts = {
+  status: { method: "GET", path: "/api/security-password/status" },
+  update: { method: "PUT", path: "/api/security-password" },
+} as const;
+
 export interface GenerateCustodyWalletRequest {
   mode: WalletEncryptionMode;
   name: string;
