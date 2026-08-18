@@ -1085,6 +1085,132 @@ export interface WalletReceiveContent {
   walletId: string;
 }
 
+export const walletTransferAmountPresets = ["25", "50", "75", "MAX"] as const;
+export type WalletTransferAmountPreset = (typeof walletTransferAmountPresets)[number];
+export type WalletTransferAsset =
+  | { kind: "native" }
+  | { kind: "erc20"; tokenAddress: EvmAddress };
+export type WalletTransferAmount =
+  | { amountBaseUnit: string; kind: "exact" }
+  | { kind: "preset"; preset: WalletTransferAmountPreset };
+
+export interface WalletTransferPreviewRequest {
+  amount: WalletTransferAmount;
+  asset: WalletTransferAsset;
+  chainId: number;
+  recipient: EvmAddress;
+  walletId: string;
+}
+
+export type WalletTransferAddressClassification =
+  | "known-external"
+  | "new-external"
+  | "own-wallet";
+
+export interface WalletTransferBalanceChange {
+  assetAfterBaseUnit: string;
+  assetBeforeBaseUnit: string;
+  assetDeltaBaseUnit: string;
+  nativeAfterMinimumBaseUnit: string;
+  nativeBeforeBaseUnit: string;
+  nativeDeltaMaximumBaseUnit: string;
+  recipientAssetDeltaBaseUnit: string;
+}
+
+export interface WalletTransferFeeLimit {
+  feeCapBaseUnit: string;
+  gasLimit: string;
+  maxFeePerGasBaseUnit: string;
+  maxPriorityFeePerGasBaseUnit: string;
+}
+
+export interface WalletTransferPreview {
+  addressClassification: WalletTransferAddressClassification;
+  amountBaseUnit: string;
+  asset: WalletTransferAsset & {
+    decimals: number;
+    name: string;
+    symbol: string;
+  };
+  balanceChange: WalletTransferBalanceChange;
+  chainId: number;
+  expiresAt: string;
+  feeLimit: WalletTransferFeeLimit;
+  policyDigest: `sha256:${string}`;
+  policyVersion: string;
+  previewDigest: `sha256:${string}`;
+  previewToken: string;
+  recipient: EvmAddress;
+  registryVersion: string;
+  requiresSecurityPassword: boolean;
+  walletId: string;
+}
+
+export interface WalletTransferSubmitRequest {
+  previewDigest: `sha256:${string}`;
+  previewToken: string;
+  securityPassword?: string;
+  walletId: string;
+}
+
+export const walletTransferStates = [
+  "ready-for-approval",
+  "queued",
+  "signed",
+  "broadcast",
+  "pending",
+  "confirmed",
+  "failed",
+  "dropped",
+  "replaced",
+  "reconciling",
+] as const;
+export type WalletTransferState = (typeof walletTransferStates)[number];
+
+export interface WalletTransferTransactionView {
+  active: boolean;
+  createdAt: string;
+  generation: number;
+  maxFeePerGasBaseUnit: string;
+  maxPriorityFeePerGasBaseUnit: string;
+  nonce: string;
+  replacedByTransactionId: string | null;
+  replacesTransactionId: string | null;
+  state: Exclude<WalletTransferState, "ready-for-approval" | "queued" | "reconciling">;
+  transactionHash: `0x${string}` | null;
+  transactionId: string;
+}
+
+export interface WalletTransferOperation {
+  activeTransactionId: string | null;
+  addressClassification: WalletTransferAddressClassification;
+  amountBaseUnit: string;
+  asset: WalletTransferAsset;
+  chainId: number;
+  createdAt: string;
+  failureCode: string | null;
+  feeLimit: WalletTransferFeeLimit;
+  nonce: string | null;
+  operationId: string;
+  planDigest: `sha256:${string}`;
+  policyDigest: `sha256:${string}`;
+  recipient: EvmAddress;
+  reconciliationReason: string | null;
+  state: WalletTransferState;
+  transactions: WalletTransferTransactionView[];
+  updatedAt: string;
+  walletId: string;
+}
+
+export const walletTransferSecretMediaType =
+  "application/vnd.lpbot.wallet-transfer-secret+json" as const;
+
+export const walletTransferContracts = {
+  get: "GET /api/wallets/transfers/:operationId",
+  preview: "POST /api/wallets/transfers/preview",
+  submit: "POST /api/wallets/transfers",
+} as const;
+
 export const walletAssetContracts = {
   balances: { method: "GET", path: "/api/wallets/{walletId}/balances" },
   deleteToken: { method: "DELETE", path: "/api/wallets/{walletId}/tokens/{tokenAddress}" },
