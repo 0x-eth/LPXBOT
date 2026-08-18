@@ -3996,6 +3996,101 @@ html[data-theme="dark"] .online-state[data-online="true"] {
   margin-top: 38px;
 }
 
+.security-password-settings {
+  margin-top: 38px;
+}
+
+.security-password-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+
+.security-password-status-row {
+  display: grid;
+  min-height: 78px;
+  grid-template-columns: minmax(150px, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 16px;
+}
+
+.security-password-status-copy {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.security-password-status-copy small {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.security-password-status-badge {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  padding: 3px 8px;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--muted);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.security-password-status-badge[data-status="ready"] {
+  color: #087f5b;
+  border-color: #8acbb7;
+  background: #eefaf6;
+}
+
+.security-password-status-badge[data-status="locked-out"] {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  background: var(--danger-surface);
+}
+
+html[data-theme="dark"] .security-password-status-badge[data-status="ready"] {
+  color: #76d9bb;
+  border-color: #356b5d;
+  background: #183029;
+}
+
+.security-password-actions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.security-password-actions .primary-button,
+.security-password-actions .secondary-button {
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+}
+
+.security-password-inline-error {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  color: var(--danger);
+  border-top: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
+  background: var(--danger-surface);
+  font-size: 0.75rem;
+}
+
 .keystore-settings-panel {
   overflow: hidden;
   border: 1px solid var(--border);
@@ -4155,6 +4250,20 @@ html[data-theme="dark"] .keystore-status-badge[data-status="locked"] {
 }
 
 @media (max-width: 640px) {
+  .security-password-status-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .security-password-actions {
+    justify-content: flex-start;
+  }
+
+  .security-password-actions .primary-button,
+  .security-password-actions .secondary-button {
+    flex: 1 1 150px;
+  }
+
   .keystore-status-row {
     grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
