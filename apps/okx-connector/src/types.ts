@@ -48,12 +48,7 @@ export interface OkxCredentialHead {
 }
 
 export type OkxCredentialAuditAction =
-  | "save"
-  | "replace"
-  | "delete"
-  | "test"
-  | "status-change"
-  | "egress-denied";
+  "save" | "replace" | "delete" | "test" | "status-change" | "egress-denied";
 
 export interface OkxCredentialAuditEvent {
   action: OkxCredentialAuditAction;
@@ -94,10 +89,7 @@ export interface OkxCredentialRepository {
     envelope: OkxCredentialEnvelope;
     expectedActiveVersion: number;
   }): Promise<OkxCredentialHead>;
-  destroyStaged(input: {
-    context: OkxCredentialMutationContext;
-    version: number;
-  }): Promise<void>;
+  destroyStaged(input: { context: OkxCredentialMutationContext; version: number }): Promise<void>;
   getActiveEnvelope(userId: string, expectedVersion: number): Promise<OkxCredentialEnvelope | null>;
   getHead(userId: string): Promise<OkxCredentialHead | null>;
   listRecoverable(now: Date, stagedBefore: Date): Promise<OkxCredentialHead[]>;
@@ -136,7 +128,9 @@ export interface OkxKmsClient {
 
 export interface OkxConnectorApplication {
   delete(input: OkxCredentialMutationContext & { expectedVersion: number }): Promise<OkxKeyStatus>;
-  replace(input: OkxCredentialMutationContext & { expectedVersion: number; ingress: Buffer }): Promise<OkxKeyStatus>;
+  replace(
+    input: OkxCredentialMutationContext & { expectedVersion: number; ingress: Buffer },
+  ): Promise<OkxKeyStatus>;
   save(input: OkxCredentialMutationContext & { ingress: Buffer }): Promise<OkxKeyStatus>;
   status(userId: string): Promise<OkxKeyStatus>;
   test(input: OkxCredentialMutationContext & { expectedVersion: number }): Promise<OkxKeyStatus>;

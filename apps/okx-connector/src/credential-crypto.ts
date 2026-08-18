@@ -226,7 +226,10 @@ export class LocalOkxKmsFixture implements OkxKmsClient {
       const wrapped = Buffer.from(input.wrappedDek);
       const decipher = createDecipheriv("aes-256-gcm", this.#key, wrapped.subarray(0, nonceBytes));
       decipher.setAuthTag(wrapped.subarray(nonceBytes, nonceBytes + tagBytes));
-      return Buffer.concat([decipher.update(wrapped.subarray(nonceBytes + tagBytes)), decipher.final()]);
+      return Buffer.concat([
+        decipher.update(wrapped.subarray(nonceBytes + tagBytes)),
+        decipher.final(),
+      ]);
     } catch {
       throw new OkxConnectorError("KMS_UNAVAILABLE", true);
     }

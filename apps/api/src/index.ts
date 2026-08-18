@@ -23,16 +23,8 @@ export { PostgresWalletTransferOperationStore } from "./postgres-wallet-transfer
 export { ViemLocalWalletTransferChainReader } from "./viem-local-wallet-transfer-chain-reader.js";
 export type { ViemLocalWalletTransferChainReaderOptions } from "./viem-local-wallet-transfer-chain-reader.js";
 export { PostgresAddressBookStore } from "./postgres-address-book-store.js";
-export {
-  OkxKeyError,
-  publicOkxKeyStatus,
-  RemoteOkxKeyConnectorClient,
-} from "./okx-key.js";
-export type {
-  OkxKeyApplication,
-  OkxKeyConnectorContext,
-  OkxKeyErrorCode,
-} from "./okx-key.js";
+export { OkxKeyError, publicOkxKeyStatus, RemoteOkxKeyConnectorClient } from "./okx-key.js";
+export type { OkxKeyApplication, OkxKeyConnectorContext, OkxKeyErrorCode } from "./okx-key.js";
 export { RemoteWalletSignerClient } from "./remote-wallet-signer-client.js";
 export {
   AddressBookError,

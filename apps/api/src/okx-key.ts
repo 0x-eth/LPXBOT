@@ -141,9 +141,7 @@ export class RemoteOkxKeyConnectorClient implements OkxKeyApplication {
         ...(body ? { body } : {}),
         headers: {
           Authorization: `Bearer ${this.#apiToken}`,
-          ...(body
-            ? { "Content-Type": "application/vnd.lpbot.okx-key-secret+json" }
-            : {}),
+          ...(body ? { "Content-Type": "application/vnd.lpbot.okx-key-secret+json" } : {}),
           "X-LPBOT-Actor": input.actor,
           "X-LPBOT-Request-Id": input.requestId,
           "X-LPBOT-User-Id": input.userId,

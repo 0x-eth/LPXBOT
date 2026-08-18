@@ -180,6 +180,25 @@ export class PostgresOkxCredentialRepository implements OkxCredentialRepository 
         );
         head = inserted.rows[0]!;
       } else if (
+        !head.configured &&
+        head.status === "unconfigured" &&
+        input.expectedActiveVersion === 0 &&
+        input.envelope.version === 1
+      ) {
+        await client.query("DELETE FROM okx_credential_versions WHERE user_id = $1", [
+          input.context.userId,
+        ]);
+        const reset = await client.query<HeadRow>(
+          `UPDATE okx_credential_heads
+              SET credential_id = $2, active_version = 1, status = 'staged',
+                  capability_epoch = capability_epoch + 1, updated_at = $3
+            WHERE user_id = $1
+            RETURNING user_id, credential_id, active_version, configured, status,
+                      capability_epoch, rotation_due_at, updated_at`,
+          [input.context.userId, input.envelope.credentialId, input.context.now],
+        );
+        head = reset.rows[0]!;
+      } else if (
         !head.configured ||
         head.status === "deleting" ||
         Number(head.active_version) !== input.expectedActiveVersion ||
@@ -362,7 +381,8 @@ export class PostgresOkxCredentialRepository implements OkxCredentialRepository 
         [input.context.userId],
       );
       const head = selected.rows[0];
-      if (!head || !head.configured) return head ? headFromRow(head) : unconfigured(input.context.userId, input.context.now);
+      if (!head || !head.configured)
+        return head ? headFromRow(head) : unconfigured(input.context.userId, input.context.now);
       if (Number(head.active_version) !== input.expectedVersion) {
         throw new OkxConnectorError("VERSION_CONFLICT");
       }
@@ -396,7 +416,8 @@ export class PostgresOkxCredentialRepository implements OkxCredentialRepository 
         [input.context.userId],
       );
       const head = selected.rows[0];
-      if (!head || !head.configured) return head ? headFromRow(head) : unconfigured(input.context.userId, input.context.now);
+      if (!head || !head.configured)
+        return head ? headFromRow(head) : unconfigured(input.context.userId, input.context.now);
       if (Number(head.active_version) !== input.expectedVersion || head.status !== "deleting") {
         throw new OkxConnectorError("VERSION_CONFLICT");
       }

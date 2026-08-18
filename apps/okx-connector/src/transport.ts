@@ -4,11 +4,7 @@ import { isIP } from "node:net";
 import { request as httpsRequest } from "node:https";
 
 import { OkxConnectorError } from "./errors.js";
-import type {
-  OkxCredentialBytes,
-  OkxProviderValidation,
-  OkxReadOnlyTransport,
-} from "./types.js";
+import type { OkxCredentialBytes, OkxProviderValidation, OkxReadOnlyTransport } from "./types.js";
 
 export const okxProductionEgress = {
   host: "www.okx.com",
@@ -40,7 +36,10 @@ export type OkxPinnedRequester = (request: OkxPinnedRequest) => Promise<OkxPinne
 
 function ipv4Public(address: string): boolean {
   const parts = address.split(".").map(Number);
-  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+  if (
+    parts.length !== 4 ||
+    parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
+  ) {
     return false;
   }
   const [a, b] = parts as [number, number, number, number];
@@ -203,7 +202,9 @@ export class OkxHttpsReadOnlyTransport implements OkxReadOnlyTransport {
     );
     let response: OkxPinnedResponse | null = null;
     try {
-      const signature = createHmac("sha256", credentials.secretKey).update(prehash).digest("base64");
+      const signature = createHmac("sha256", credentials.secretKey)
+        .update(prehash)
+        .digest("base64");
       response = await this.#request({
         address: addresses[0]!,
         headers: {

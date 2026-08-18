@@ -121,6 +121,34 @@ export class MemoryOkxCredentialRepository implements OkxCredentialRepository {
       return cloneHead(head);
     }
     if (
+      !existing.head.configured &&
+      existing.head.status === "unconfigured" &&
+      input.expectedActiveVersion === 0 &&
+      input.envelope.version === 1
+    ) {
+      const head: OkxCredentialHead = {
+        ...existing.head,
+        capabilityEpoch: existing.head.capabilityEpoch + 1,
+        credentialId: input.envelope.credentialId,
+        status: "staged",
+        updatedAt: input.context.now,
+        version: 1,
+      };
+      existing.head = head;
+      existing.versions = new Map([
+        [
+          1,
+          {
+            active: false,
+            destroyedAt: null,
+            envelope: cloneEnvelope(input.envelope),
+            status: "staged",
+          },
+        ],
+      ]);
+      return cloneHead(head);
+    }
+    if (
       !existing.head.configured ||
       existing.head.status === "deleting" ||
       existing.head.version !== input.expectedActiveVersion ||
@@ -216,9 +244,7 @@ export class MemoryOkxCredentialRepository implements OkxCredentialRepository {
       throw new OkxConnectorError("VERSION_CONFLICT");
     }
     const nextEpoch =
-      input.status === "testing"
-        ? state.head.capabilityEpoch + 1
-        : state.head.capabilityEpoch;
+      input.status === "testing" ? state.head.capabilityEpoch + 1 : state.head.capabilityEpoch;
     state.head = {
       ...state.head,
       capabilityEpoch: nextEpoch,
@@ -236,7 +262,9 @@ export class MemoryOkxCredentialRepository implements OkxCredentialRepository {
   }): Promise<OkxCredentialHead> {
     const state = this.#states.get(input.context.userId);
     if (!state || !state.head.configured) {
-      return state ? cloneHead(state.head) : unconfiguredHead(input.context.userId, input.context.now);
+      return state
+        ? cloneHead(state.head)
+        : unconfiguredHead(input.context.userId, input.context.now);
     }
     if (state.head.version !== input.expectedVersion) {
       throw new OkxConnectorError("VERSION_CONFLICT");
@@ -258,7 +286,9 @@ export class MemoryOkxCredentialRepository implements OkxCredentialRepository {
   }): Promise<OkxCredentialHead> {
     const state = this.#states.get(input.context.userId);
     if (!state || !state.head.configured) {
-      return state ? cloneHead(state.head) : unconfiguredHead(input.context.userId, input.context.now);
+      return state
+        ? cloneHead(state.head)
+        : unconfiguredHead(input.context.userId, input.context.now);
     }
     if (state.head.version !== input.expectedVersion || state.head.status !== "deleting") {
       throw new OkxConnectorError("VERSION_CONFLICT");

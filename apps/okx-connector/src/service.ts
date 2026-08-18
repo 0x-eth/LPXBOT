@@ -36,17 +36,10 @@ function validationStatus(result: OkxProviderValidation): OkxKeyStatusName {
   if (trade === true || withdraw === true || read === false || result.ipAllowlisted === false) {
     return "insufficient-permission";
   }
-  if (
-    read === null ||
-    trade === null ||
-    withdraw === null ||
-    result.ipAllowlisted === null
-  ) {
+  if (read === null || trade === null || withdraw === null || result.ipAllowlisted === null) {
     return "unknown";
   }
-  return read && !trade && !withdraw && result.ipAllowlisted
-    ? "usable"
-    : "insufficient-permission";
+  return read && !trade && !withdraw && result.ipAllowlisted ? "usable" : "insufficient-permission";
 }
 
 function validationError(status: OkxKeyStatusName): OkxConnectorError {
@@ -103,9 +96,7 @@ export class OkxCredentialService implements OkxConnectorApplication {
     return publicStatus(head);
   }
 
-  async save(
-    input: OkxCredentialMutationContext & { ingress: Buffer },
-  ): Promise<OkxKeyStatus> {
+  async save(input: OkxCredentialMutationContext & { ingress: Buffer }): Promise<OkxKeyStatus> {
     return this.#stageAndActivate({ ...input, expectedVersion: 0, operation: "save" });
   }
 
@@ -119,6 +110,15 @@ export class OkxCredentialService implements OkxConnectorApplication {
   async test(
     input: OkxCredentialMutationContext & { expectedVersion: number },
   ): Promise<OkxKeyStatus> {
+    const current = await this.#repository.getHead(input.userId);
+    if (!current?.configured) throw new OkxConnectorError("CREDENTIAL_NOT_CONFIGURED");
+    if (current.version !== input.expectedVersion) throw new OkxConnectorError("VERSION_CONFLICT");
+    if (
+      current.status === "revoked" ||
+      (current.rotationDueAt && current.rotationDueAt.getTime() <= input.now.getTime())
+    ) {
+      throw new OkxConnectorError("CREDENTIAL_REVOKED");
+    }
     const started = await this.#repository.setStatus({
       context: input,
       expectedVersion: input.expectedVersion,
@@ -131,7 +131,9 @@ export class OkxCredentialService implements OkxConnectorApplication {
     let nextStatus: OkxKeyStatusName = "unknown";
     try {
       credentials = await decryptOkxCredentials(envelope, this.#kms);
-      nextStatus = validationStatus(await this.#validate(credentials));
+      nextStatus = validationStatus(
+        await this.#validate(credentials, input, input.expectedVersion),
+      );
     } catch (error) {
       if (error instanceof OkxConnectorError && error.code === "CREDENTIAL_INTEGRITY_FAILED") {
         nextStatus = "revoked";
@@ -231,11 +233,13 @@ export class OkxCredentialService implements OkxConnectorApplication {
     return changed;
   }
 
-  async #stageAndActivate(input: OkxCredentialMutationContext & {
-    expectedVersion: number;
-    ingress: Buffer;
-    operation: "replace" | "save";
-  }): Promise<OkxKeyStatus> {
+  async #stageAndActivate(
+    input: OkxCredentialMutationContext & {
+      expectedVersion: number;
+      ingress: Buffer;
+      operation: "replace" | "save";
+    },
+  ): Promise<OkxKeyStatus> {
     let credentials: OkxCredentialBytes | null = null;
     let stagedVersion = input.expectedVersion + 1;
     let staged = false;
@@ -251,7 +255,7 @@ export class OkxCredentialService implements OkxConnectorApplication {
         throw new OkxConnectorError("VERSION_CONFLICT");
       }
       credentials = parseCredentialIngress(input.ingress);
-      const credentialId = current?.credentialId ?? randomUUID();
+      const credentialId = current?.configured ? current.credentialId : randomUUID();
       stagedVersion = input.expectedVersion + 1;
       const envelope = await encryptOkxCredentials({
         credentials,
@@ -270,7 +274,7 @@ export class OkxCredentialService implements OkxConnectorApplication {
         expectedActiveVersion: input.expectedVersion,
       });
       staged = true;
-      const status = validationStatus(await this.#validate(credentials));
+      const status = validationStatus(await this.#validate(credentials, input, stagedVersion));
       if (status !== "usable") {
         await this.#repository.destroyStaged({
           context: { ...input, now: this.#now() },
@@ -313,10 +317,26 @@ export class OkxCredentialService implements OkxConnectorApplication {
     }
   }
 
-  async #validate(credentials: OkxCredentialBytes): Promise<OkxProviderValidation> {
+  async #validate(
+    credentials: OkxCredentialBytes,
+    context: OkxCredentialMutationContext,
+    version: number,
+  ): Promise<OkxProviderValidation> {
     try {
       return await this.#transport.validate(credentials);
-    } catch {
+    } catch (error) {
+      if (error instanceof OkxConnectorError && error.code === "EGRESS_DENIED") {
+        await this.#repository.appendAudit({
+          action: "egress-denied",
+          actor: context.actor,
+          changed: false,
+          createdAt: this.#now(),
+          requestId: context.requestId,
+          status: "unknown",
+          userId: context.userId,
+          version,
+        });
+      }
       return {
         authentication: "unknown",
         ipAllowlisted: null,

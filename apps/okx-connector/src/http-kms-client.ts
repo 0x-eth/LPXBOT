@@ -31,8 +31,11 @@ export class HttpOkxKmsClient implements OkxKmsClient {
 
   async wrapDek(input: { dek: Uint8Array; key: OkxKmsKeyDescriptor }): Promise<Buffer> {
     this.#assertKey(input.key);
-    const response = await this.#call("encrypt", { plaintext: Buffer.from(input.dek).toString("base64") });
-    if (typeof response.ciphertext !== "string") throw new OkxConnectorError("KMS_UNAVAILABLE", true);
+    const response = await this.#call("encrypt", {
+      plaintext: Buffer.from(input.dek).toString("base64"),
+    });
+    if (typeof response.ciphertext !== "string")
+      throw new OkxConnectorError("KMS_UNAVAILABLE", true);
     return Buffer.from(response.ciphertext, "base64");
   }
 
@@ -41,11 +44,15 @@ export class HttpOkxKmsClient implements OkxKmsClient {
     const response = await this.#call("decrypt", {
       ciphertext: Buffer.from(input.wrappedDek).toString("base64"),
     });
-    if (typeof response.plaintext !== "string") throw new OkxConnectorError("KMS_UNAVAILABLE", true);
+    if (typeof response.plaintext !== "string")
+      throw new OkxConnectorError("KMS_UNAVAILABLE", true);
     return Buffer.from(response.plaintext, "base64");
   }
 
-  async #call(operation: "decrypt" | "encrypt", body: Record<string, string>): Promise<KmsResponse> {
+  async #call(
+    operation: "decrypt" | "encrypt",
+    body: Record<string, string>,
+  ): Promise<KmsResponse> {
     try {
       const response = await this.#fetch(
         `${this.#url}/v1/keys/${encodeURIComponent(this.#key.kekId)}/versions/${encodeURIComponent(this.#key.kekVersion)}:${operation}`,

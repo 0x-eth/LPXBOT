@@ -113,11 +113,7 @@ import {
   type NotificationConfigurationStore,
   type NotificationDestinationMutationResult,
 } from "./notifications.js";
-import {
-  OkxKeyError,
-  publicOkxKeyStatus,
-  type OkxKeyApplication,
-} from "./okx-key.js";
+import { OkxKeyError, publicOkxKeyStatus, type OkxKeyApplication } from "./okx-key.js";
 import {
   parsePoolBlocklistPatch,
   PoolBlocklistValidationError,
@@ -1070,10 +1066,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     { parseAs: "buffer" },
     (_request, body, done) => done(null, body),
   );
-  app.addContentTypeParser(
-    okxKeySecretMediaType,
-    { parseAs: "buffer" },
-    (_request, body, done) => done(null, body),
+  app.addContentTypeParser(okxKeySecretMediaType, { parseAs: "buffer" }, (_request, body, done) =>
+    done(null, body),
   );
 
   void app.register(cookie);
@@ -3974,8 +3968,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
                 error.code === "CAPABILITY_EXPIRED" ||
                 error.code === "CREDENTIAL_REVOKED"
               ? 409
-              : error.code === "CREDENTIAL_INVALID" ||
-                  error.code === "INSUFFICIENT_PERMISSION"
+              : error.code === "CREDENTIAL_INVALID" || error.code === "INSUFFICIENT_PERMISSION"
                 ? 422
                 : 503;
       const messages: Record<OkxKeyError["code"], string> = {
@@ -4063,25 +4056,17 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       }
     };
 
-    app.post(
-      "/api/settings/okx-key",
-      { bodyLimit: okxKeySecretBodyLimit },
-      (request, reply) => mutateOkxKey("save", request, reply),
+    app.post("/api/settings/okx-key", { bodyLimit: okxKeySecretBodyLimit }, (request, reply) =>
+      mutateOkxKey("save", request, reply),
     );
-    app.put(
-      "/api/settings/okx-key",
-      { bodyLimit: okxKeySecretBodyLimit },
-      (request, reply) => mutateOkxKey("replace", request, reply),
+    app.put("/api/settings/okx-key", { bodyLimit: okxKeySecretBodyLimit }, (request, reply) =>
+      mutateOkxKey("replace", request, reply),
     );
-    app.delete(
-      "/api/settings/okx-key",
-      { bodyLimit: okxKeySecretBodyLimit },
-      (request, reply) => mutateOkxKey("delete", request, reply),
+    app.delete("/api/settings/okx-key", { bodyLimit: okxKeySecretBodyLimit }, (request, reply) =>
+      mutateOkxKey("delete", request, reply),
     );
-    app.post(
-      "/api/settings/okx-key/test",
-      { bodyLimit: okxKeySecretBodyLimit },
-      (request, reply) => mutateOkxKey("test", request, reply),
+    app.post("/api/settings/okx-key/test", { bodyLimit: okxKeySecretBodyLimit }, (request, reply) =>
+      mutateOkxKey("test", request, reply),
     );
 
     app.get("/api/security-password/status", async (request, reply) => {

@@ -40,10 +40,7 @@ export function loadOkxConnectorProductionConfig(
   if (!Number.isSafeInteger(port) || port < 1 || port > 65_535) {
     throw new OkxConnectorConfigurationError("OKX connector port is invalid");
   }
-  const ciphertextDatabaseUrl = required(
-    environment,
-    "OKX_CONNECTOR_CIPHERTEXT_DATABASE_URL",
-  );
+  const ciphertextDatabaseUrl = required(environment, "OKX_CONNECTOR_CIPHERTEXT_DATABASE_URL");
   if (!ciphertextDatabaseUrl.startsWith("postgresql://")) {
     throw new OkxConnectorConfigurationError("OKX connector requires PostgreSQL");
   }
