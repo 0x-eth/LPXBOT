@@ -469,24 +469,24 @@ export class PostgresWalletTransferRecoveryRepository implements WalletTransferW
       let observedTransactionHash = operation.active_transaction_hash;
       if (input.decision.kind === "receipt") {
         const receipt = input.decision.receipt;
+        const receiptTransactionId = input.decision.transactionId;
         const observedTransaction = await client.query<ObservedTransactionRow>(
           `SELECT transaction_hash
              FROM wallet_transfer_transactions
             WHERE transaction_id = $1 AND operation_id = $2
             FOR UPDATE`,
-          [input.decision.transactionId, operation.operation_id],
+          [receiptTransactionId, operation.operation_id],
         );
         if (
           observedTransaction.rows[0]?.transaction_hash !== receipt.transactionHash ||
           !input.claim.operation.transactionLineage.some(
             ({ transactionHash, transactionId }) =>
-              transactionId === input.decision.transactionId &&
-              transactionHash === receipt.transactionHash,
+              transactionId === receiptTransactionId && transactionHash === receipt.transactionHash,
           )
         ) {
           throw new WalletTransferWorkerError("TRANSFER_RECOVERY_LINEAGE_INVALID");
         }
-        observedTransactionId = input.decision.transactionId;
+        observedTransactionId = receiptTransactionId;
         observedTransactionHash = receipt.transactionHash;
         const evidenceDigest = sha256(
           JSON.stringify([
