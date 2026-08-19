@@ -741,6 +741,12 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
           WHERE operation_id = $1`,
         [operation.operation_id, input.deliveredAt],
       );
+      await client.query(
+        `UPDATE local_swap_operation_outbox
+            SET state = 'delivered', delivered_at = $3
+          WHERE aggregate_id = $1 AND step_id = $2 AND state = 'pending'`,
+        [operation.operation_id, step.step_id, input.deliveredAt],
+      );
       const planStep = stepFromPlan(operation.plan_payload, step.step_id);
       await this.#audit(
         client,
