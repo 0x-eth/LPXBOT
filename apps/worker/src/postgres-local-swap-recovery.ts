@@ -916,6 +916,7 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
       );
     } else if (decision.next === "complete-success") {
       await this.#recordConfirmedNonce(client, operation.wallet_id, planStep.nonce, observedAt);
+      await this.#releaseSkippedCleanupNonce(client, operation, observedAt);
       await client.query(
         `UPDATE local_swap_operation_steps SET state = 'skipped', updated_at = $2
           WHERE operation_id = $1 AND step_kind = 'cleanup' AND state = 'blocked'`,
@@ -1142,6 +1143,27 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
         WHERE chain_id = 31337 AND wallet_id = $1 AND next_nonce = $4`,
       [operation.wallet_id, firstNonce.toString(), when, reservedEnd.toString()],
     );
+  }
+
+  async #releaseSkippedCleanupNonce(
+    client: PoolClient,
+    operation: LockedOperationRow,
+    when: Date,
+  ): Promise<void> {
+    const cleanup = operation.plan_payload.steps.at(-1);
+    if (!cleanup || cleanup.kind !== "cleanup") {
+      throw new LocalSwapWorkerError("LOCAL_SWAP_RECOVERY_PLAN_INVALID");
+    }
+    const result = await client.query(
+      `UPDATE wallet_nonce_ledgers
+          SET next_nonce = $2, fencing_token = fencing_token + 1, updated_at = $3
+        WHERE chain_id = 31337 AND wallet_id = $1
+          AND next_nonce = $2::numeric + 1`,
+      [operation.wallet_id, cleanup.nonce, when],
+    );
+    if (result.rowCount !== 1) {
+      throw new LocalSwapWorkerError("NONCE_RECONCILIATION_REQUIRED", true);
+    }
   }
 
   async #openReconciliation(
