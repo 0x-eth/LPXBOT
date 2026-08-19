@@ -11,9 +11,9 @@ All commands ran from `/Users/alpha/Projects/LPXBOT`. The local host uses Node 2
 | `pnpm format:check` | passed |
 | `pnpm lint` | passed |
 | `pnpm typecheck` | passed |
-| `pnpm test` | passed |
+| `pnpm test` | passed; 152 Vitest files / 865 tests and 159/159 governance tests |
 | `pnpm build` | passed |
-| `pnpm check:all`, `pnpm check:p01-reference` | passed |
+| `pnpm check:all`, `pnpm check:p01-reference` | passed; 34 acceptance manifests, 196/196 feature IDs, and all frozen references valid |
 | `pnpm test:e2e` | passed; 221 passed / 23 skipped |
 | `pnpm test:pwa` | passed; 4/4 |
 | `pnpm test:infra` | passed; 8/8 |
