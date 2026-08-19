@@ -160,15 +160,21 @@ describe.skipIf(!enabled)("P05-05 local Anvil Helper deployment closure", () => 
       chain: localChain,
       transport: http(rpcUrl),
     });
-    const [tokenArtifact, wbnbArtifact, permit2Artifact, routerArtifact, positionArtifact, adapterArtifact] =
-      await Promise.all([
-        artifact("contracts/out/TestOnlyERC20.sol/TestOnlyERC20.json"),
-        artifact("contracts/out/TestOnlyWBNB.sol/TestOnlyWBNB.json"),
-        artifact("contracts/out/TestOnlyPermit2.sol/TestOnlyPermit2.json"),
-        artifact("contracts/out/TestOnlySwapRouter.sol/TestOnlySwapRouter.json"),
-        artifact("contracts/out/TestOnlyPositionManager.sol/TestOnlyPositionManager.json"),
-        artifact("contracts/out/LocalExecutionAdapter.sol/LocalExecutionAdapter.json"),
-      ]);
+    const [
+      tokenArtifact,
+      wbnbArtifact,
+      permit2Artifact,
+      routerArtifact,
+      positionArtifact,
+      adapterArtifact,
+    ] = await Promise.all([
+      artifact("contracts/out/TestOnlyERC20.sol/TestOnlyERC20.json"),
+      artifact("contracts/out/TestOnlyWBNB.sol/TestOnlyWBNB.json"),
+      artifact("contracts/out/TestOnlyPermit2.sol/TestOnlyPermit2.json"),
+      artifact("contracts/out/TestOnlySwapRouter.sol/TestOnlySwapRouter.json"),
+      artifact("contracts/out/TestOnlyPositionManager.sol/TestOnlyPositionManager.json"),
+      artifact("contracts/out/LocalExecutionAdapter.sol/LocalExecutionAdapter.json"),
+    ]);
     const deploy = async (input: { abi: Abi; args?: readonly unknown[]; bytecode: Hex }) => {
       const hash = await walletClient.deployContract({
         abi: input.abi,
@@ -186,7 +192,10 @@ describe.skipIf(!enabled)("P05-05 local Anvil Helper deployment closure", () => 
       args: [1_000_000_000n],
       bytecode: tokenArtifact.bytecode.object,
     });
-    const wbnbAddress = await deploy({ abi: wbnbArtifact.abi, bytecode: wbnbArtifact.bytecode.object });
+    const wbnbAddress = await deploy({
+      abi: wbnbArtifact.abi,
+      bytecode: wbnbArtifact.bytecode.object,
+    });
     const permit2Address = await deploy({
       abi: permit2Artifact.abi,
       bytecode: permit2Artifact.bytecode.object,
@@ -229,10 +238,7 @@ describe.skipIf(!enabled)("P05-05 local Anvil Helper deployment closure", () => 
       walletId: string,
       name: string,
     ): Promise<CustodyWallet> => {
-      const ingress = Buffer.from(
-        JSON.stringify({ mode: "server-kek", name, privateKey }),
-        "utf8",
-      );
+      const ingress = Buffer.from(JSON.stringify({ mode: "server-kek", name, privateKey }), "utf8");
       const sealed = await isolatedSigner.importAndSeal({
         envelopeVersion: 1,
         ingress,
@@ -391,9 +397,10 @@ describe.skipIf(!enabled)("P05-05 local Anvil Helper deployment closure", () => 
     expect(successful.preview).toMatchObject({
       chainId,
       nonce: "6",
-      owner: ownerAccount.address.toLowerCase(),
     });
+    expect(successful.stored.plan.deployment.owner).toBe(ownerAccount.address.toLowerCase());
     expect(successful.stored.plan.transaction).toMatchObject({ to: null, valueBaseUnit: "0" });
+    clock = new Date(Date.now() + 1_000);
     expect(await worker("helper-before-restart").processBatch()).toMatchObject({
       broadcast: 1,
       claimed: 1,
@@ -487,7 +494,9 @@ describe.skipIf(!enabled)("P05-05 local Anvil Helper deployment closure", () => 
       failureCode: "HELPER_DEPLOYMENT_REVERTED",
       state: "failed",
     });
-    expect(await publicClient.getCode({ address: reverted.stored.expectedAddress })).toBeUndefined();
+    expect(
+      await publicClient.getCode({ address: reverted.stored.expectedAddress }),
+    ).toBeUndefined();
     const failedBinding = await pool.query<{
       failure_code: string;
       last_confirmed_nonce: string;
