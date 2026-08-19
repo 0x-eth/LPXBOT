@@ -238,7 +238,11 @@ export class HelperDeploymentClient {
 
   async preview(request: HelperDeploymentPreviewRequest, signal?: AbortSignal) {
     const response = await this.#request("/api/wallets/helper/deploy/preview", {
-      body: JSON.stringify(request),
+      body: JSON.stringify({
+        chainId: request.chainId,
+        helperVersion: request.helperVersion,
+        walletId: request.walletId,
+      } satisfies HelperDeploymentPreviewRequest),
       headers: { "Content-Type": "application/json" },
       method: "POST",
       ...(signal ? { signal } : {}),
@@ -251,7 +255,13 @@ export class HelperDeploymentClient {
       throw new HelperDeploymentRequestError("IDEMPOTENCY_KEY_REQUIRED", false, 0);
     }
     const response = await this.#request("/api/wallets/helper/deploy", {
-      body: JSON.stringify(request),
+      body: JSON.stringify({
+        chainId: request.chainId,
+        helperVersion: request.helperVersion,
+        previewDigest: request.previewDigest,
+        previewToken: request.previewToken,
+        walletId: request.walletId,
+      } satisfies HelperDeploymentSubmitRequest),
       headers: {
         "Content-Type": "application/json",
         "Idempotency-Key": idempotencyKey,

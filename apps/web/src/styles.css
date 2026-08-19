@@ -7565,19 +7565,31 @@ html[data-theme="dark"] .chain-operation-success {
 }
 
 .read-state-badge[data-state="active"],
+.read-state-badge[data-state="confirmed"],
 .read-state-badge[data-state="live"],
 .read-state-badge[data-state="quoted"],
-.read-state-badge[data-state="ready"] {
+.read-state-badge[data-state="ready"],
+.read-state-badge[data-state="succeeded"] {
   color: #087f5b;
 }
 
 .read-state-badge[data-state="degraded"],
+.read-state-badge[data-state="dropped"],
 .read-state-badge[data-state="error"],
+.read-state-badge[data-state="failed"],
 .read-state-badge[data-state="quarantined"],
 .read-state-badge[data-state="residual"] {
   color: var(--danger);
 }
 
+.read-state-badge[data-state="broadcast"],
+.read-state-badge[data-state="pending"],
+.read-state-badge[data-state="preview-ready"],
+.read-state-badge[data-state="previewing"],
+.read-state-badge[data-state="queued"],
+.read-state-badge[data-state="reconciling"],
+.read-state-badge[data-state="signed"],
+.read-state-badge[data-state="submitting"],
 .read-state-badge[data-state="partial"],
 .read-state-badge[data-state="expired"],
 .read-state-badge[data-state="hidden"],
@@ -7587,12 +7599,22 @@ html[data-theme="dark"] .chain-operation-success {
 }
 
 html[data-theme="dark"] .read-state-badge[data-state="active"],
+html[data-theme="dark"] .read-state-badge[data-state="confirmed"],
 html[data-theme="dark"] .read-state-badge[data-state="live"],
 html[data-theme="dark"] .read-state-badge[data-state="quoted"],
-html[data-theme="dark"] .read-state-badge[data-state="ready"] {
+html[data-theme="dark"] .read-state-badge[data-state="ready"],
+html[data-theme="dark"] .read-state-badge[data-state="succeeded"] {
   color: #64d4bc;
 }
 
+html[data-theme="dark"] .read-state-badge[data-state="broadcast"],
+html[data-theme="dark"] .read-state-badge[data-state="pending"],
+html[data-theme="dark"] .read-state-badge[data-state="preview-ready"],
+html[data-theme="dark"] .read-state-badge[data-state="previewing"],
+html[data-theme="dark"] .read-state-badge[data-state="queued"],
+html[data-theme="dark"] .read-state-badge[data-state="reconciling"],
+html[data-theme="dark"] .read-state-badge[data-state="signed"],
+html[data-theme="dark"] .read-state-badge[data-state="submitting"],
 html[data-theme="dark"] .read-state-badge[data-state="partial"],
 html[data-theme="dark"] .read-state-badge[data-state="expired"],
 html[data-theme="dark"] .read-state-badge[data-state="hidden"],
@@ -7932,6 +7954,154 @@ html[data-theme="dark"] .read-state-badge[data-state="superseded"] {
 .helper-read-facts {
   padding: 14px 8px;
   border-block: 1px solid var(--border);
+}
+
+.helper-deploy-trigger {
+  min-height: 36px;
+  padding-block: 6px;
+}
+
+.helper-deployment-empty {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 8px;
+  color: var(--muted-foreground);
+  border-block: 1px solid var(--border);
+  font-size: 0.76rem;
+  text-align: center;
+}
+
+.helper-deployment-empty p,
+.helper-deployment-success,
+.helper-deployment-error,
+.helper-deploy-expiry {
+  margin: 0;
+}
+
+.helper-deployment-facts {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  border-top: 1px solid var(--border);
+}
+
+.helper-deployment-facts > div {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 5px;
+  padding: 11px 10px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.helper-deployment-facts > div:nth-child(3n) {
+  border-right: 0;
+}
+
+.helper-deployment-facts dt {
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.helper-deployment-facts dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.helper-deployment-facts code {
+  color: inherit;
+  background: transparent;
+  font-size: 0.68rem;
+  overflow-wrap: anywhere;
+}
+
+.helper-deployment-facts .helper-deployment-failure {
+  grid-column: 1 / -1;
+  color: var(--danger);
+  border-right: 0;
+}
+
+.helper-deployment-success,
+.helper-deployment-error {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 10px 8px;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.helper-deployment-success {
+  color: #087f5b;
+}
+
+.helper-deployment-error svg,
+.helper-deployment-success svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+html[data-theme="dark"] .helper-deployment-success {
+  color: #64d4bc;
+}
+
+.helper-deploy-dialog {
+  width: min(680px, calc(100vw - 32px));
+}
+
+.helper-deploy-preview {
+  display: grid;
+  min-width: 0;
+  gap: 14px;
+  padding-top: 18px;
+}
+
+.helper-deploy-network {
+  display: flex;
+  min-width: 0;
+  min-height: 38px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--muted);
+  font-size: 0.72rem;
+}
+
+.helper-deploy-network code,
+.helper-deploy-network span {
+  color: var(--muted-foreground);
+  background: transparent;
+  font-size: 0.68rem;
+}
+
+.helper-deploy-expiry {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  color: #8a5a00;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.helper-deploy-dialog .wallet-dialog-actions {
+  padding-top: 16px;
 }
 
 .read-snapshot-line,
@@ -8603,6 +8773,7 @@ html[data-theme="dark"] .read-state-badge[data-state="superseded"] {
   }
 
   .position-read-facts,
+  .helper-deployment-facts,
   .helper-read-facts,
   .pricing-position-facts,
   .swap-quote-facts {
@@ -8687,6 +8858,7 @@ html[data-theme="dark"] .read-state-badge[data-state="superseded"] {
   }
 
   .position-read-facts,
+  .helper-deployment-facts,
   .helper-read-facts,
   .pricing-position-facts,
   .swap-quote-facts {
@@ -8718,6 +8890,17 @@ html[data-theme="dark"] .read-state-badge[data-state="superseded"] {
     width: calc(100vw - 20px);
     max-height: calc(100dvh - 20px);
     padding: 14px;
+  }
+
+  .helper-deploy-dialog {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+    padding: 14px;
+  }
+
+  .helper-deploy-dialog .wallet-dialog-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .transfer-wallet-summary,

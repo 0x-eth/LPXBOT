@@ -122,6 +122,7 @@ function PreviewDialog({
   onOpenChange,
   open,
   preview,
+  restoreFocus,
   secondsLeft,
 }: {
   busy: boolean;
@@ -129,13 +130,21 @@ function PreviewDialog({
   onOpenChange(open: boolean): void;
   open: boolean;
   preview: HelperDeploymentPreview | null;
+  restoreFocus(): void;
   secondsLeft: number;
 }) {
   return (
     <Dialog.Root onOpenChange={onOpenChange} open={open}>
       <Dialog.Portal>
         <Dialog.Overlay className="dialog-overlay" />
-        <Dialog.Content aria-describedby={undefined} className="wallet-dialog helper-deploy-dialog">
+        <Dialog.Content
+          aria-describedby={undefined}
+          className="wallet-dialog helper-deploy-dialog"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            restoreFocus();
+          }}
+        >
           <div className="wallet-dialog-heading">
             <Dialog.Title>部署本地 Helper</Dialog.Title>
             <Dialog.Close asChild>
@@ -405,6 +414,7 @@ export function HelperDeploymentPanel({ wallet }: { wallet: CustodyWallet }) {
         }}
         open={dialogOpen}
         preview={preview}
+        restoreFocus={() => trigger.current?.focus()}
         secondsLeft={secondsLeft}
       />
     </>
