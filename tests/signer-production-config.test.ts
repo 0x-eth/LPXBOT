@@ -30,6 +30,7 @@ describe("P04/P05 signer production boundary", () => {
       "plan-bound-helper-deployment-signing",
       "plan-bound-local-swap-step-signing",
       "plan-bound-local-permit2-signing",
+      "plan-bound-local-position-step-signing",
     ]);
     expect(signerCapabilities.join(" ")).not.toMatch(/digest|message|broadcast|rpc/u);
     expect(
