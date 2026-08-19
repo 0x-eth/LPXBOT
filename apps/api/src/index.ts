@@ -89,6 +89,37 @@ export type {
   StoredLocalSwapOperation,
   StoredLocalSwapPreview,
 } from "./local-swap-executions.js";
+export {
+  buildLocalPositionSnapshot,
+  LocalPositionExecutionError,
+  LocalPositionExecutionService,
+  MemoryLocalPositionOperationStore,
+  MemoryLocalPositionPreviewStore,
+  MemoryLocalPositionSnapshotStore,
+  localPositionExecutionBodyLimit,
+  localPositionIdempotencyRetentionHours,
+  localPositionPreviewTtlMilliseconds,
+  parseLocalPositionCollectFees,
+  parseLocalPositionCollectFeesPreview,
+  parseLocalPositionIdempotencyKey,
+  parseLocalPositionOperationId,
+  parseLocalPositionRemoveLiquidity,
+  parseLocalPositionRemoveLiquidityPreview,
+} from "./local-position-executions.js";
+export type {
+  LocalPositionChainInspection,
+  LocalPositionExecutionApplication,
+  LocalPositionExecutionChainReader,
+  LocalPositionExecutionErrorCode,
+  LocalPositionIdempotencyRecord,
+  LocalPositionNonceView,
+  LocalPositionOperationStore,
+  LocalPositionPreviewStore,
+  LocalPositionSnapshotStore,
+  LocalPositionStepReservation,
+  StoredLocalPositionOperation,
+  StoredLocalPositionPreview,
+} from "./local-position-executions.js";
 export type {
   HelperDeploymentApplication,
   HelperDeploymentChainReader,
