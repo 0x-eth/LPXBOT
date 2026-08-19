@@ -49,6 +49,27 @@ export {
   replacementHelperDeploymentPlan,
   validateHelperDeploymentWorkPlan,
 } from "./helper-deployment-worker.js";
+export {
+  decideLocalSwapObservation,
+  LocalSwapRecoveryWorker,
+  LocalSwapWorkerError,
+  validateLocalSwapWorkPlan,
+} from "./local-swap-worker.js";
+export type {
+  LocalSwapBatchResult,
+  LocalSwapObservation,
+  LocalSwapObservationDecision,
+  LocalSwapObserver,
+  LocalSwapProviderObservation,
+  LocalSwapReceiptObservation,
+  LocalSwapReplacementAuthorization,
+  LocalSwapStepSignerGateway,
+  LocalSwapStepSignerResult,
+  LocalSwapStepWorkOperation,
+  LocalSwapTransactionReference,
+  LocalSwapWorkClaim,
+  LocalSwapWorkRepository,
+} from "./local-swap-worker.js";
 export { PostgresHelperDeploymentRecoveryRepository } from "./postgres-helper-deployment-recovery.js";
 export { ViemLocalHelperDeploymentObserver } from "./viem-local-helper-deployment-observer.js";
 export type { ViemLocalHelperDeploymentObserverOptions } from "./viem-local-helper-deployment-observer.js";
