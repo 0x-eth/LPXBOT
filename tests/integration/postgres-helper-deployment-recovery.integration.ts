@@ -5,6 +5,7 @@ import {
   PostgresHelperDeploymentOperationStore,
   PostgresHelperDeploymentPreviewStore,
   type HelperDeploymentChainReader,
+  type StoredHelperDeploymentOperation,
 } from "../../apps/api/src/index.js";
 import { PostgresCustodyWalletStore } from "../../apps/signer/src/postgres-custody-wallet-store.js";
 import {
@@ -12,11 +13,7 @@ import {
   type HelperDeploymentReceiptObservation,
   type HelperDeploymentWorkClaim,
 } from "../../apps/worker/src/index.js";
-import {
-  helperDeploymentComponent,
-  P05_HELPER_DEPLOYMENT_REGISTRY,
-} from "../../packages/chain-registry/src/index.js";
-import type { StoredHelperDeploymentOperation } from "../../packages/domain/src/helper-deployment.js";
+import { P05_HELPER_DEPLOYMENT_REGISTRY } from "../../packages/chain-registry/src/index.js";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 

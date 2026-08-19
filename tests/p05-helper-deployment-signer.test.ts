@@ -142,8 +142,13 @@ describe("P05-05 isolated Helper deployment signer", () => {
 
   it("rejects any target or constructor mutation before private-key use", async () => {
     const { sealed, signer, wallet } = await fixture();
-    const targeted = structuredClone(plan()) as HelperDeploymentPlan & {
-      transaction: HelperDeploymentPlan["transaction"] & { to: `0x${string}` | null };
+    const targeted = structuredClone(plan()) as unknown as Omit<
+      HelperDeploymentPlan,
+      "transaction"
+    > & {
+      transaction: Omit<HelperDeploymentPlan["transaction"], "to"> & {
+        to: `0x${string}` | null;
+      };
     };
     targeted.transaction.to = `0x${"11".repeat(20)}`;
     targeted.planDigest = helperDeploymentPlanDigest(targeted as HelperDeploymentPlan);
