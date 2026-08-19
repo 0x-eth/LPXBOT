@@ -30,13 +30,7 @@ const feeLimit = {
 };
 
 type OperationPhase =
-  | "broadcast"
-  | "failed"
-  | "pending"
-  | "queued"
-  | "reconciling"
-  | "signing"
-  | "succeeded";
+  "broadcast" | "failed" | "pending" | "queued" | "reconciling" | "signing" | "succeeded";
 
 interface FixtureState {
   authorizationMode: "direct" | "permit2";
@@ -75,7 +69,9 @@ function quoteResponse(body: Record<string, unknown>, expiresMs: number | null) 
   const expiresAt =
     expiresMs === null ? stableQuoteExpiry : new Date(now + expiresMs).toISOString();
   const deadline =
-    expiresMs === null ? stableDeadline : new Date(now + Math.max(expiresMs + 3_000, 4_000)).toISOString();
+    expiresMs === null
+      ? stableDeadline
+      : new Date(now + Math.max(expiresMs + 3_000, 4_000)).toISOString();
   return {
     amountInBaseUnit: body.amountInBaseUnit,
     amountOutBaseUnit: "2000",
@@ -178,7 +174,13 @@ function steps(phase: OperationPhase) {
             transaction(0, "replaced", transactionHash, false),
             transaction(1, phase === "succeeded" ? "succeeded" : "pending", replacementHash),
           ];
-  const cleanupState = reverted ? (phase === "failed" ? "succeeded" : "pending") : "skipped";
+  const cleanupState = reverted
+    ? phase === "failed"
+      ? "succeeded"
+      : "pending"
+    : phase === "succeeded"
+      ? "skipped"
+      : "blocked";
   const cleanupTransactions = reverted
     ? [transaction(0, phase === "failed" ? "succeeded" : "pending", cleanupHash)]
     : [];
@@ -393,7 +395,10 @@ async function install(page: Page, state: FixtureState) {
       return;
     }
     if (path === "/api/wallets" && method === "GET") {
-      await route.fulfill({ contentType: "application/json", json: envelope({ items: [wallet()] }) });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({ items: [wallet()] }),
+      });
       return;
     }
     if (path.endsWith("/balances")) {
@@ -543,11 +548,13 @@ test("executes an exact-approval quote once and renders every replacement step",
   await expect(panel).toHaveAttribute("data-state", "broadcast", { timeout: 3_000 });
   await expect(panel).toHaveAttribute("data-state", "pending", { timeout: 3_000 });
   await expect(panel).toHaveAttribute("data-state", "succeeded", { timeout: 4_000 });
-  await expect(panel.getByRole("list", { name: "本地 Swap operation steps" }).locator("> li")).toHaveCount(
-    3,
-  );
+  await expect(
+    panel.getByRole("list", { name: "本地 Swap operation steps" }).locator(":scope > li"),
+  ).toHaveCount(3);
   await expect(panel).toContainText("第 2 代");
-  await expect(panel).toContainText("余额、minOut、Helper 事件、allowance 与 canonical receipt 已核对");
+  await expect(panel).toContainText(
+    "余额、minOut、Helper 事件、allowance 与 canonical receipt 已核对",
+  );
 
   expect(state.quotePayloads).toEqual([
     {
@@ -565,10 +572,12 @@ test("executes an exact-approval quote once and renders every replacement step",
   ]);
   expect(state.idempotencyKeys).toHaveLength(1);
   expect(state.idempotencyKeys[0]).toMatch(/^local-swap-[0-9a-f-]{36}$/u);
-  expect(JSON.stringify([...state.quotePayloads, ...state.previewPayloads, ...state.executePayloads])).not.toMatch(
-    /target|router|spender|selector|calldata/iu,
+  expect(
+    JSON.stringify([...state.quotePayloads, ...state.previewPayloads, ...state.executePayloads]),
+  ).not.toMatch(/target|router|spender|selector|calldata/iu);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(
+    false,
   );
-  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
   await axe(page);
   await expect(panel).toHaveScreenshot("p05-06-local-swap-direct-succeeded.png", {
     animations: "disabled",
