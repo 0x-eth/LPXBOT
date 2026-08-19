@@ -213,7 +213,8 @@ CREATE TABLE local_swap_operation_steps (
     ON DELETE CASCADE,
   CONSTRAINT local_swap_steps_wallet_fk
     FOREIGN KEY (tenant_id, user_id, wallet_id)
-    REFERENCES custody_wallets(tenant_id, user_id, wallet_id),
+    REFERENCES custody_wallets(tenant_id, user_id, wallet_id)
+    ON DELETE CASCADE,
   UNIQUE (operation_id, ordinal),
   UNIQUE (chain_id, wallet_id, nonce),
   CHECK (max_priority_fee_per_gas_base_unit <= max_fee_per_gas_base_unit),

@@ -870,7 +870,8 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
           : "pending";
     await client.query(
       `UPDATE local_swap_step_transactions
-          SET state = $2, confirmed_at = CASE WHEN $2 = 'confirmed' THEN $3 ELSE NULL END,
+          SET state = $2,
+              confirmed_at = CASE WHEN $2 = 'confirmed' THEN $3::timestamptz ELSE NULL END,
               updated_at = $3 WHERE transaction_id = $1`,
       [transactionId, txState, observedAt],
     );

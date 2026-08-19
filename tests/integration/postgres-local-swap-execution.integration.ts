@@ -266,7 +266,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await pool.query("DELETE FROM users WHERE id = $1", [userId]).catch(() => undefined);
+  await pool.query("DELETE FROM users WHERE id = $1", [userId]);
   await pool.end();
 });
 
