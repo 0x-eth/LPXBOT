@@ -42,6 +42,33 @@ export {
 export { PostgresWalletTransferRecoveryRepository } from "./postgres-wallet-transfer-recovery.js";
 export { ViemLocalWalletTransferObserver } from "./viem-local-wallet-transfer-observer.js";
 export { LoopbackWalletTransferSignerGateway } from "./loopback-wallet-transfer-signer-gateway.js";
+export {
+  HelperDeploymentRecoveryWorker,
+  HelperDeploymentWorkerError,
+  decideHelperDeploymentObservation,
+  replacementHelperDeploymentPlan,
+  validateHelperDeploymentWorkPlan,
+} from "./helper-deployment-worker.js";
+export { PostgresHelperDeploymentRecoveryRepository } from "./postgres-helper-deployment-recovery.js";
+export { ViemLocalHelperDeploymentObserver } from "./viem-local-helper-deployment-observer.js";
+export type { ViemLocalHelperDeploymentObserverOptions } from "./viem-local-helper-deployment-observer.js";
+export { LoopbackHelperDeploymentSignerGateway } from "./loopback-helper-deployment-signer-gateway.js";
+export type {
+  HelperDeploymentBatchResult,
+  HelperDeploymentObservation,
+  HelperDeploymentObservationDecision,
+  HelperDeploymentObserver,
+  HelperDeploymentProviderObservation,
+  HelperDeploymentReceiptObservation,
+  HelperDeploymentReplacementAuthorization,
+  HelperDeploymentSignerGateway,
+  HelperDeploymentSignerResult,
+  HelperDeploymentTransactionHead,
+  HelperDeploymentTransactionReference,
+  HelperDeploymentWorkClaim,
+  HelperDeploymentWorkOperation,
+  HelperDeploymentWorkRepository,
+} from "./helper-deployment-worker.js";
 export type { ViemLocalWalletTransferObserverOptions } from "./viem-local-wallet-transfer-observer.js";
 export type {
   WalletTransferBatchResult,
