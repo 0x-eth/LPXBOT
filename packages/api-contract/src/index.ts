@@ -1085,6 +1085,119 @@ export interface WalletReceiveContent {
   walletId: string;
 }
 
+export type PositionPlatformId = 1 | 2 | 4 | 5;
+
+export const positionReadStates = Object.freeze([
+  "empty",
+  "ready",
+  "partial",
+  "stale",
+  "quarantined",
+] as const);
+export type PositionReadState = (typeof positionReadStates)[number];
+
+export const positionReadUiStates = Object.freeze([
+  "loading",
+  ...positionReadStates,
+  "error",
+] as const);
+export type PositionReadUiState = (typeof positionReadUiStates)[number];
+
+export interface PositionSnapshot {
+  blockHash: `0x${string}`;
+  blockNumber: string;
+  blockTimestamp: string;
+  digest: `0x${string}`;
+  positionManager: EvmAddress;
+  positionManagerCodeHash: `0x${string}`;
+  registryVersion: string;
+}
+
+export interface WalletPosition {
+  approval: {
+    approvedAddress: EvmAddress | null;
+    approvedForAll: boolean;
+    helperAuthorized: boolean;
+    nftOwner: EvmAddress;
+    observedAtBlock: string;
+  };
+  chainId: 56;
+  fees: {
+    estimated0BaseUnit: string | null;
+    estimated1BaseUnit: string | null;
+    owed0BaseUnit: string;
+    owed1BaseUnit: string;
+  };
+  liquidity: {
+    amount0BaseUnit: string;
+    amount1BaseUnit: string;
+    raw: string;
+  };
+  owner: EvmAddress;
+  platformId: PositionPlatformId;
+  pool: {
+    feePips: string;
+    hooks: EvmAddress | null;
+    poolAddress: EvmAddress | null;
+    poolId: `0x${string}` | null;
+    tickSpacing: string;
+    token0: EvmAddress;
+    token1: EvmAddress;
+  };
+  snapshot: PositionSnapshot;
+  ticks: {
+    current: string;
+    inRange: boolean;
+    lower: string;
+    upper: string;
+  };
+  tokenId: string;
+}
+
+export type PositionQuarantineReason =
+  | "abi-decode-failed"
+  | "invalid-transfer-log"
+  | "owner-mismatch"
+  | "position-manager-code-hash-mismatch"
+  | "provider-read-failed"
+  | "unknown-position-manager";
+
+export interface QuarantinedPositionRead {
+  managerAddress: EvmAddress;
+  platformId: PositionPlatformId | null;
+  reason: PositionQuarantineReason;
+  tokenId: string | null;
+}
+
+export interface PositionPageSnapshot {
+  blockHash: `0x${string}`;
+  blockNumber: string;
+  blockTimestamp: string;
+  digest: `0x${string}`;
+}
+
+export interface WalletPositionPage {
+  address: EvmAddress;
+  chainId: 56;
+  coverage: {
+    complete: boolean;
+    failedPlatformIds: PositionPlatformId[];
+    scannedPlatformIds: PositionPlatformId[];
+  };
+  cursor: string | null;
+  items: WalletPosition[];
+  quarantined: QuarantinedPositionRead[];
+  registryVersion: string;
+  snapshot: PositionPageSnapshot;
+  status: PositionReadState;
+  walletId: string;
+}
+
+export const positionReadContracts = Object.freeze({
+  list: Object.freeze({ method: "GET", path: "/api/wallets/{address}/positions" }),
+  scan: Object.freeze({ method: "GET", path: "/api/positions/scan/{address}" }),
+} as const);
+
 export const walletTransferAmountPresets = ["25", "50", "75", "MAX"] as const;
 export type WalletTransferAmountPreset = (typeof walletTransferAmountPresets)[number];
 export type WalletTransferAsset = { kind: "native" } | { kind: "erc20"; tokenAddress: EvmAddress };
