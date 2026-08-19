@@ -55,6 +55,17 @@ export {
   UNIV4_POOL_MANAGER_READ_ABI,
   UNIV4_POSITION_MANAGER_READ_ABI,
 } from "./position-read-adapters.js";
+export {
+  BscPositionReadRpcClient,
+  createBscPositionReadRpcFromEnv,
+  POSITION_READ_RPC_METHODS,
+} from "./position-read-rpc.js";
+export type {
+  BscPositionReadRpcClientOptions,
+  BscPositionReadRpcEnvironment,
+  BscPositionReadRpcEnvironmentOptions,
+  PositionReadRpcMethod,
+} from "./position-read-rpc.js";
 export type {
   PositionReadAdapter,
   PositionReadAdapterErrorReason,

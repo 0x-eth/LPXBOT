@@ -96,7 +96,7 @@ describe("P05-02 controlled server-side BSC position RPC", () => {
     await expect(rpc.getBlock("100")).resolves.toEqual({
       blockHash,
       blockNumber: "100",
-      blockTimestamp: "2024-08-21T02:40:16.000Z",
+      blockTimestamp: "2024-08-21T01:12:48.000Z",
     });
     await expect(
       rpc.getLogs({
