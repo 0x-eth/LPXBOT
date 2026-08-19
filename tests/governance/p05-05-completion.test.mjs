@@ -24,8 +24,10 @@ const FEATURE_IDS = [
   "HELPER-05",
   "HELPER-06",
 ];
-const IMPLEMENTED = ["SWAP-01", "POS-01", "POS-04", "HELPER-01", "HELPER-02", "HELPER-05"];
-const PLANNED = ["SWAP-02", "POS-02", "POS-03", "HELPER-03", "HELPER-04", "HELPER-06"];
+const P05_05_IMPLEMENTED = ["SWAP-01", "POS-01", "POS-04", "HELPER-01", "HELPER-02", "HELPER-05"];
+const P05_05_NON_GOALS = ["SWAP-02", "POS-02", "POS-03", "HELPER-03", "HELPER-04", "HELPER-06"];
+const CURRENT_IMPLEMENTED = ["SWAP-02", ...P05_05_IMPLEMENTED];
+const CURRENT_PLANNED = P05_05_NON_GOALS.filter((id) => id !== "SWAP-02");
 const EVIDENCE = [
   "E-API",
   "E-CHAIN",
@@ -103,7 +105,7 @@ function checksums(source) {
     });
 }
 
-test("P05-05 owns HELPER-02 and advances P05 to 6 / 6 with global 67 / 129", async () => {
+test("P05-05 owns HELPER-02 while P05-06 advances P05 to 7 / 5 and global 68 / 128", async () => {
   const [functionMatrix, traceability, roadmap] = await Promise.all([
     readFile(path.join(ROOT, "docs/FUNCTION_MATRIX.md"), "utf8"),
     readFile(path.join(ROOT, "docs/TRACEABILITY_MATRIX.md"), "utf8"),
@@ -113,11 +115,11 @@ test("P05-05 owns HELPER-02 and advances P05 to 6 / 6 with global 67 / 129", asy
   assert.deepEqual(sorted(rows.keys()), sorted(FEATURE_IDS));
   assert.deepEqual(
     sorted([...rows].filter(([, row]) => row.status === "implemented-assumed").map(([id]) => id)),
-    sorted(IMPLEMENTED),
+    sorted(CURRENT_IMPLEMENTED),
   );
   assert.deepEqual(
     sorted([...rows].filter(([, row]) => row.status === "planned").map(([id]) => id)),
-    sorted(PLANNED),
+    sorted(CURRENT_PLANNED),
   );
   const helper = rows.get("HELPER-02");
   assert.match(helper.implementation, /helper-deployment|Helper deployment/u);
@@ -125,8 +127,8 @@ test("P05-05 owns HELPER-02 and advances P05 to 6 / 6 with global 67 / 129", asy
   assert.match(helper.evidence, /P05-05/u);
   assert.match(functionMatrix, /\| HELPER-02 \|[^\n]*implemented-assumed[^\n]*P05-05/u);
   for (const document of [traceability, roadmap]) {
-    assert.match(document, /P05[^\n]*6[^\n]*implemented-assumed[^\n]*6[^\n]*planned/iu);
-    assert.match(document, /67[^\n]*implemented-assumed[^\n]*129[^\n]*planned/iu);
+    assert.match(document, /P05[^\n]*7[^\n]*implemented-assumed[^\n]*5[^\n]*planned/iu);
+    assert.match(document, /68[^\n]*implemented-assumed[^\n]*128[^\n]*planned/iu);
     assert.match(
       document,
       /testnet\/production[^\n]*CLOSED|testnet\/production gates[^\n]*`CLOSED`/iu,
@@ -180,7 +182,7 @@ test("deployment contract and execution gates freeze the local-only CREATE bound
   assert.equal(contract.transaction.type, "CREATE");
   assert.equal(contract.transaction.to, null);
   assert.equal(contract.transaction.valueBaseUnit, "0");
-  assert.deepEqual(contract.nonGoals, PLANNED);
+  assert.deepEqual(contract.nonGoals, P05_05_NON_GOALS);
   for (const key of ["target", "selector", "calldata", "bytecode"])
     assert.ok(contract.api.clientControlledFieldsDenied.includes(key));
   assert.equal(contract.executionCounters.testnetSignatures, 0);
