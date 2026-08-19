@@ -121,10 +121,11 @@ async function submitOperation(input: {
     updatedAt: input.now.toISOString(),
     walletId: input.walletId,
   };
+  const operations = new PostgresHelperDeploymentOperationStore(pool, { now: () => input.now });
   const service = new HelperDeploymentService({
     chain,
     now: () => input.now,
-    operations: new PostgresHelperDeploymentOperationStore(pool, { now: () => input.now }),
+    operations,
     previews: new PostgresHelperDeploymentPreviewStore(pool),
   });
   const request = {
@@ -147,7 +148,13 @@ async function submitOperation(input: {
     wallet,
   });
   expect(submitted.created).toBe(true);
-  return submitted.operation;
+  const stored = await operations.get({
+    operationId: submitted.operation.operationId,
+    tenantId,
+    userId,
+  });
+  if (!stored) throw new Error(`Operation ${submitted.operation.operationId} was not stored`);
+  return stored;
 }
 
 async function claimOperation(
@@ -338,7 +345,7 @@ describe("P05-05 PostgreSQL Helper deployment recovery", () => {
     );
     expect(closure.rows).toEqual([
       {
-        audit_count: "7",
+        audit_count: "8",
         binding_state: "active",
         evidence_count: "1",
         open_reconciliations: "0",

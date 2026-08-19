@@ -205,6 +205,11 @@ function instant(value: string): number {
   return parsed.getTime();
 }
 
+function historicalPlanValidationTime(plan: HelperDeploymentPlan): Date {
+  const deadline = instant(plan.deadline);
+  return new Date(deadline - 1);
+}
+
 export function validateHelperDeploymentWorkPlan(
   plan: HelperDeploymentPlan,
   now: Date = new Date(),
@@ -646,7 +651,10 @@ export class HelperDeploymentRecoveryWorker {
   }
 
   #assertClaim(claim: HelperDeploymentWorkClaim): void {
-    validateHelperDeploymentWorkPlan(claim.operation.plan, new Date(0));
+    validateHelperDeploymentWorkPlan(
+      claim.operation.plan,
+      historicalPlanValidationTime(claim.operation.plan),
+    );
     if (
       !digestPattern.test(claim.operation.planDigest) ||
       helperDeploymentPlanDigest(claim.operation.plan) !== claim.operation.planDigest ||

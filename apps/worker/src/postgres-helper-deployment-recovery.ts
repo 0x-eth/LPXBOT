@@ -101,10 +101,18 @@ function digest(value: unknown): `sha256:${string}` {
   return `sha256:${createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex")}`;
 }
 
+function historicalPlanValidationTime(plan: HelperDeploymentPlan): Date {
+  const deadline = new Date(plan.deadline);
+  if (!Number.isFinite(deadline.getTime()) || deadline.toISOString() !== plan.deadline) {
+    throw new HelperDeploymentWorkerError("HELPER_RECOVERY_PLAN_INVALID");
+  }
+  return new Date(deadline.getTime() - 1);
+}
+
 function basePlan(row: OperationRow): HelperDeploymentPlan {
   const plan = row.plan_payload as HelperDeploymentPlan;
   try {
-    validateHelperDeploymentWorkPlan(plan, new Date(0));
+    validateHelperDeploymentWorkPlan(plan, historicalPlanValidationTime(plan));
   } catch (error) {
     throw new HelperDeploymentWorkerError("HELPER_RECOVERY_PLAN_INVALID", false, {
       cause: error,
@@ -147,7 +155,7 @@ function activePlan(row: OperationRow): HelperDeploymentPlan {
   if (plan.planDigest !== row.active_plan_digest) {
     throw new HelperDeploymentWorkerError("ACTIVE_TRANSACTION_INVALID");
   }
-  validateHelperDeploymentWorkPlan(plan, new Date(0));
+  validateHelperDeploymentWorkPlan(plan, historicalPlanValidationTime(plan));
   return plan;
 }
 
