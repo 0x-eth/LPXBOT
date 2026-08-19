@@ -191,7 +191,7 @@ export class LoopbackHelperDeploymentSignerGateway implements HelperDeploymentSi
       if (!response.ok) throw signerFailure(body);
       if (
         response.status !== 202 ||
-        response.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() !==
+        (response.headers.get("content-type") ?? "").split(";", 1)[0]?.trim().toLowerCase() !==
           "application/json" ||
         !(response.headers.get("cache-control") ?? "")
           .split(",")

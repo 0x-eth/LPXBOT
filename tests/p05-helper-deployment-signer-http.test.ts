@@ -43,8 +43,14 @@ function plan(): HelperDeploymentPlan {
       helperVersion: "WalletHelperV1",
       owner,
       permit2: helperDeploymentComponent("permit2").address,
-      tokenA: registry.tokens[0],
-      tokenB: registry.tokens[1],
+      tokenA: {
+        address: registry.tokens[0].address,
+        runtimeCodeHash: registry.tokens[0].runtimeCodeHash,
+      },
+      tokenB: {
+        address: registry.tokens[1].address,
+        runtimeCodeHash: registry.tokens[1].runtimeCodeHash,
+      },
     },
     feeLimit: {
       feeCapBaseUnit: "2400000",
