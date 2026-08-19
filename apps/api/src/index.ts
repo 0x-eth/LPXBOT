@@ -22,6 +22,8 @@ export { PostgresWalletTokenStore } from "./postgres-wallet-token-store.js";
 export { PostgresWalletTransferOperationStore } from "./postgres-wallet-transfer-store.js";
 export { ViemLocalWalletTransferChainReader } from "./viem-local-wallet-transfer-chain-reader.js";
 export type { ViemLocalWalletTransferChainReaderOptions } from "./viem-local-wallet-transfer-chain-reader.js";
+export { ViemLocalHelperDeploymentChainReader } from "./viem-local-helper-deployment-chain-reader.js";
+export type { ViemLocalHelperDeploymentChainReaderOptions } from "./viem-local-helper-deployment-chain-reader.js";
 export {
   buildHelperDeploymentMaterial,
   HelperDeploymentError,
