@@ -74,6 +74,31 @@ export type {
   LocalSwapWorkClaim,
   LocalSwapWorkRepository,
 } from "./local-swap-worker.js";
+export {
+  decideLocalPositionObservation,
+  LocalPositionRecoveryWorker,
+  LocalPositionWorkerError,
+  validateLocalPositionWorkPlan,
+} from "./local-position-worker.js";
+export { LoopbackLocalPositionSignerGateway } from "./loopback-local-position-signer-gateway.js";
+export { ViemLocalPositionObserver } from "./viem-local-position-observer.js";
+export type { ViemLocalPositionObserverOptions } from "./viem-local-position-observer.js";
+export { PostgresLocalPositionRecoveryRepository } from "./postgres-local-position-recovery.js";
+export type {
+  LocalPositionBatchResult,
+  LocalPositionObservation,
+  LocalPositionObservationDecision,
+  LocalPositionObserver,
+  LocalPositionProviderObservation,
+  LocalPositionReceiptObservation,
+  LocalPositionReplacementAuthorization,
+  LocalPositionStepSignerGateway,
+  LocalPositionStepSignerResult,
+  LocalPositionStepWorkOperation,
+  LocalPositionTransactionReference,
+  LocalPositionWorkClaim,
+  LocalPositionWorkRepository,
+} from "./local-position-worker.js";
 export { PostgresHelperDeploymentRecoveryRepository } from "./postgres-helper-deployment-recovery.js";
 export { ViemLocalHelperDeploymentObserver } from "./viem-local-helper-deployment-observer.js";
 export type { ViemLocalHelperDeploymentObserverOptions } from "./viem-local-helper-deployment-observer.js";

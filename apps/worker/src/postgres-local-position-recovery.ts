@@ -970,7 +970,7 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
     transactionId: string,
     observedAt: Date,
     claim: LocalPositionWorkClaim,
-  ): Promise<void> {
+  ): Promise<string> {
     const transaction = claim.operation.transactionLineage.find(
       (candidate) =>
         candidate.transactionId === transactionId &&
@@ -978,90 +978,218 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
     );
     if (!transaction) throw new LocalPositionWorkerError("LOCAL_POSITION_RECOVERY_LINEAGE_INVALID");
     const evidenceDigest = sha256(receipt);
-    const delta =
-      receipt.ownerOutputBefore !== null && receipt.ownerOutputAfter !== null
-        ? (BigInt(receipt.ownerOutputAfter) - BigInt(receipt.ownerOutputBefore)).toString()
-        : null;
-    await client.query(
+    const evidenceId = this.#uuid().toLowerCase();
+    const inserted = await client.query<{ evidence_id: string }>(
       `INSERT INTO local_position_receipt_evidence (
-         evidence_id, transaction_id, operation_id, step_id, transaction_hash,
-         block_hash, block_number, canonical, receipt_status,
-         owner_output_before, owner_output_after, owner_output_delta, min_out_base_unit,
-         plan_executed_event, swap_executed_event, helper_plan_replay_state,
-         owner_to_spender_allowance, helper_to_adapter_allowance,
-         adapter_to_router_allowance, helper_input_dust, helper_output_dust,
-         evidence_digest, observed_at
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-                 $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
-       ON CONFLICT (transaction_id, block_hash, evidence_digest) DO NOTHING`,
+         evidence_id, transaction_id, operation_id, step_id, step_kind,
+         transaction_hash, block_hash, block_number, canonical, receipt_status,
+         owner_before, owner_after, liquidity_before, liquidity_after,
+         tokens_owed0_before, tokens_owed0_after, tokens_owed1_before, tokens_owed1_after,
+         wallet_token0_before, wallet_token0_after, wallet_token0_delta,
+         wallet_token1_before, wallet_token1_after, wallet_token1_delta,
+         decrease_liquidity_delta, decrease_amount0, decrease_amount1,
+         collect_recipient, collect_amount0, collect_amount1, burn_event,
+         manager_runtime_code_hash, evidence_digest, observed_at
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8::numeric, $9, $10,
+         $11, $12, $13::numeric, $14::numeric, $15::numeric, $16::numeric,
+         $17::numeric, $18::numeric, $19::numeric, $20::numeric, $21::numeric,
+         $22::numeric, $23::numeric, $24::numeric, $25::numeric, $26::numeric,
+         $27::numeric, $28, $29::numeric, $30::numeric, $31, $32, $33, $34
+       ) ON CONFLICT (transaction_id, block_hash, evidence_digest) DO NOTHING
+       RETURNING evidence_id::text`,
       [
-        this.#uuid().toLowerCase(),
+        evidenceId,
         transactionId,
         operation.operation_id,
         step.step_id,
+        step.step_kind,
         receipt.transactionHash,
         receipt.blockHash,
         receipt.blockNumber,
         receipt.blockCanonical,
         receipt.receiptStatus,
-        receipt.ownerOutputBefore,
-        receipt.ownerOutputAfter,
-        delta,
-        receipt.minOutBaseUnit,
-        receipt.planExecutedEvent,
-        receipt.swapExecutedEvent,
-        receipt.planReplayRecorded,
-        receipt.ownerToSpenderAllowance,
-        receipt.helperToAdapterAllowance,
-        receipt.adapterToRouterAllowance,
-        receipt.helperInputDust,
-        receipt.helperOutputDust,
+        receipt.ownerBefore,
+        receipt.ownerAfter,
+        receipt.liquidityBefore,
+        receipt.liquidityAfter,
+        receipt.tokensOwed0Before,
+        receipt.tokensOwed0After,
+        receipt.tokensOwed1Before,
+        receipt.tokensOwed1After,
+        receipt.walletToken0Before,
+        receipt.walletToken0After,
+        receipt.walletToken0Delta,
+        receipt.walletToken1Before,
+        receipt.walletToken1After,
+        receipt.walletToken1Delta,
+        receipt.decreaseLiquidityDelta,
+        receipt.decreaseAmount0,
+        receipt.decreaseAmount1,
+        receipt.collectRecipient,
+        receipt.collectAmount0,
+        receipt.collectAmount1,
+        receipt.burnEvent,
+        receipt.managerRuntimeCodeHash,
         evidenceDigest,
         observedAt,
       ],
     );
+    if (inserted.rows[0]) return inserted.rows[0].evidence_id;
+    const existing = await client.query<{ evidence_id: string }>(
+      `SELECT evidence_id::text FROM local_position_receipt_evidence
+        WHERE transaction_id = $1 AND block_hash = $2 AND evidence_digest = $3`,
+      [transactionId, receipt.blockHash, evidenceDigest],
+    );
+    if (!existing.rows[0]) {
+      throw new LocalPositionWorkerError("LOCAL_POSITION_RECOVERY_EVIDENCE_INVALID");
+    }
+    return existing.rows[0].evidence_id;
   }
 
-  async #queueCleanup(
+  async #recordProceeds(
     client: PoolClient,
     operation: LockedOperationRow,
-    failedStep: LockedStepRow,
-    failureCode: string,
+    step: LocalPositionPlanStep,
+    evidenceId: string,
     when: Date,
   ): Promise<void> {
-    const cleanup = operation.plan_payload.steps.find(({ kind }) => kind === "cleanup");
-    if (!cleanup) throw new LocalPositionWorkerError("LOCAL_POSITION_RECOVERY_PLAN_INVALID");
-    await client.query(
-      `UPDATE local_position_operation_steps
-          SET state = 'failed', failure_code = $2, updated_at = $3 WHERE step_id = $1`,
-      [failedStep.step_id, failureCode.slice(0, 120), when],
+    const plan = operation.plan_payload;
+    const insert = async (
+      classification: "fee" | "principal",
+      availability: "available" | "pending-collect",
+      amounts: readonly [string, string],
+    ) => {
+      for (const tokenOrdinal of [0, 1] as const) {
+        await client.query(
+          `INSERT INTO local_position_proceeds_events (
+             proceeds_event_id, operation_id, step_id, evidence_id,
+             classification, availability, token_ordinal, token_address,
+             amount_base_unit, created_at
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::numeric, $10)
+           ON CONFLICT (operation_id, step_id, classification, availability, token_ordinal)
+           DO NOTHING`,
+          [
+            this.#uuid().toLowerCase(),
+            operation.operation_id,
+            step.stepId,
+            evidenceId,
+            classification,
+            availability,
+            tokenOrdinal,
+            plan.snapshot.tokens[tokenOrdinal].address,
+            amounts[tokenOrdinal],
+            when,
+          ],
+        );
+      }
+    };
+    if (step.kind === "decrease") {
+      await insert("principal", "pending-collect", [
+        plan.accounting.principal0BaseUnit,
+        plan.accounting.principal1BaseUnit,
+      ]);
+    } else if (step.kind === "collect") {
+      await insert("fee", "available", [
+        plan.accounting.feeProceeds0BaseUnit,
+        plan.accounting.feeProceeds1BaseUnit,
+      ]);
+      if (plan.action.kind === "remove-liquidity") {
+        await insert("principal", "available", [
+          plan.accounting.principal0BaseUnit,
+          plan.accounting.principal1BaseUnit,
+        ]);
+      }
+    }
+  }
+
+  async #completePricingWithdrawal(
+    client: PoolClient,
+    operation: LockedOperationRow,
+    when: Date,
+  ): Promise<void> {
+    const plan = operation.plan_payload;
+    if (plan.action.kind !== "remove-liquidity" || plan.action.percent !== 100) return;
+    const snapshot = await client.query<{ pricing_id: string | null }>(
+      `SELECT pricing_id::text FROM local_position_snapshots
+        WHERE tenant_id = $1 AND user_id = $2 AND wallet_id = $3
+          AND snapshot_digest = $4`,
+      [operation.tenant_id, operation.user_id, operation.wallet_id, plan.snapshot.snapshotDigest],
     );
-    await client.query(
-      `UPDATE local_position_operation_steps
-          SET state = 'queued', failure_code = NULL, updated_at = $2
-        WHERE step_id = $1 AND state IN ('blocked', 'reconciling')`,
-      [cleanup.stepId, when],
+    const pricingId = snapshot.rows[0]?.pricing_id;
+    if (!pricingId) return;
+    const pricing = await client.query<{ pricing_id: string }>(
+      `SELECT pricing_id::text FROM pricing_positions
+        WHERE pricing_id = $1 AND tenant_id = $2 AND user_id = $3 FOR UPDATE`,
+      [pricingId, operation.tenant_id, operation.user_id],
     );
-    await client.query(
-      `UPDATE local_position_operations
-          SET state = 'reconciling', failure_code = $2,
-              reconciliation_reason = 'ALLOWANCE_CLEANUP_REQUIRED', updated_at = $3
-        WHERE operation_id = $1`,
-      [operation.operation_id, failureCode.slice(0, 120), when],
+    if (!pricing.rows[0]) {
+      throw new LocalPositionWorkerError("LOCAL_POSITION_PRICING_IDENTITY_INVALID");
+    }
+    const current = await client.query<{
+      revision: string;
+      state_event_id: string;
+      status: "active" | "hidden" | "withdrawn";
+    }>(
+      `SELECT state_event_id::text, revision::text, status
+         FROM pricing_position_state_events WHERE pricing_id = $1
+        ORDER BY revision DESC LIMIT 1 FOR UPDATE`,
+      [pricingId],
     );
-    await this.#openReconciliation(
-      client,
-      operation.operation_id,
-      cleanup.stepId,
-      "ALLOWANCE_CLEANUP_REQUIRED",
-      when,
+    const state = current.rows[0];
+    if (!state) throw new LocalPositionWorkerError("LOCAL_POSITION_PRICING_IDENTITY_INVALID");
+    let stateEventId = state.state_event_id;
+    let tombstoneId: string;
+    if (state.status === "withdrawn") {
+      const tombstone = await client.query<{ tombstone_id: string }>(
+        `SELECT tombstone_id::text FROM pricing_position_withdrawn_tombstones
+          WHERE pricing_id = $1`,
+        [pricingId],
+      );
+      if (!tombstone.rows[0]) {
+        throw new LocalPositionWorkerError("LOCAL_POSITION_PRICING_IDENTITY_INVALID");
+      }
+      tombstoneId = tombstone.rows[0].tombstone_id;
+    } else {
+      stateEventId = this.#uuid().toLowerCase();
+      tombstoneId = this.#uuid().toLowerCase();
+      const revision = (BigInt(state.revision) + 1n).toString();
+      await client.query(
+        `INSERT INTO pricing_position_state_events (
+           state_event_id, pricing_id, tenant_id, user_id, revision, status, created_at
+         ) VALUES ($1, $2, $3, $4, $5::bigint, 'withdrawn', $6)`,
+        [stateEventId, pricingId, operation.tenant_id, operation.user_id, revision, when],
+      );
+      await client.query(
+        `INSERT INTO pricing_position_withdrawn_tombstones (
+           tombstone_id, pricing_id, tenant_id, user_id, revision, status, created_at
+         ) VALUES ($1, $2, $3, $4, $5::bigint, 'withdrawn', $6)`,
+        [tombstoneId, pricingId, operation.tenant_id, operation.user_id, revision, when],
+      );
+    }
+    await client.query(
+      `INSERT INTO local_position_pricing_completions (
+         completion_id, operation_id, pricing_id, tenant_id, user_id,
+         withdrawn_state_event_id, withdrawn_tombstone_id, completed_at
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (operation_id) DO NOTHING`,
+      [
+        this.#uuid().toLowerCase(),
+        operation.operation_id,
+        pricingId,
+        operation.tenant_id,
+        operation.user_id,
+        stateEventId,
+        tombstoneId,
+        when,
+      ],
     );
     await this.#enqueue(
       client,
       operation,
-      cleanup.stepId,
-      "local-position.cleanup-required",
-      "reconciling",
+      plan.steps.at(-1)!.stepId,
+      "local-position.pricing-withdrawn",
+      "succeeded",
       when,
     );
   }
@@ -1103,45 +1231,26 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
   async #releaseUnusedNonces(
     client: PoolClient,
     operation: LockedOperationRow,
+    failedStep: LockedStepRow,
     when: Date,
   ): Promise<void> {
-    const firstNonce = BigInt(operation.plan_payload.steps[0]!.nonce);
-    const reservedEnd = firstNonce + BigInt(operation.plan_payload.steps.length);
+    const firstUnusedNonce = BigInt(failedStep.nonce);
+    const firstReservedNonce = BigInt(operation.plan_payload.steps[0]!.nonce);
+    const reservedEnd = firstReservedNonce + BigInt(operation.plan_payload.steps.length);
     await client.query(
       `UPDATE local_position_operation_steps s
           SET state = 'skipped', updated_at = $2
-        WHERE s.operation_id = $1 AND s.active_transaction_id IS NULL
+        WHERE s.operation_id = $1 AND s.ordinal >= $3 AND s.active_transaction_id IS NULL
           AND NOT EXISTS (
             SELECT 1 FROM local_position_step_transactions t WHERE t.step_id = s.step_id
           )`,
-      [operation.operation_id, when],
+      [operation.operation_id, when, failedStep.ordinal],
     );
     const result = await client.query(
       `UPDATE wallet_nonce_ledgers
           SET next_nonce = $2, fencing_token = fencing_token + 1, updated_at = $3
         WHERE chain_id = 31337 AND wallet_id = $1 AND next_nonce = $4`,
-      [operation.wallet_id, firstNonce.toString(), when, reservedEnd.toString()],
-    );
-    if (result.rowCount !== 1) {
-      throw new LocalPositionWorkerError("NONCE_RECONCILIATION_REQUIRED", true);
-    }
-  }
-
-  async #releaseSkippedCleanupNonce(
-    client: PoolClient,
-    operation: LockedOperationRow,
-    when: Date,
-  ): Promise<void> {
-    const cleanup = operation.plan_payload.steps.at(-1);
-    if (!cleanup || cleanup.kind !== "cleanup") {
-      throw new LocalPositionWorkerError("LOCAL_POSITION_RECOVERY_PLAN_INVALID");
-    }
-    const result = await client.query(
-      `UPDATE wallet_nonce_ledgers
-          SET next_nonce = $2, fencing_token = fencing_token + 1, updated_at = $3
-        WHERE chain_id = 31337 AND wallet_id = $1
-          AND next_nonce = $2::numeric + 1`,
-      [operation.wallet_id, cleanup.nonce, when],
+      [operation.wallet_id, firstUnusedNonce.toString(), when, reservedEnd.toString()],
     );
     if (result.rowCount !== 1) {
       throw new LocalPositionWorkerError("NONCE_RECONCILIATION_REQUIRED", true);
@@ -1180,7 +1289,7 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
     operation: LockedOperationRow,
     stepId: string,
     eventType:
-      | "local-position.cleanup-required"
+      | "local-position.pricing-withdrawn"
       | "local-position.reconciling"
       | "local-position.state-changed"
       | "local-position.step-ready",
