@@ -5,6 +5,7 @@ import { Pool, type QueryResultRow } from "pg";
 
 import { CustodySignerService } from "./custody-signer-service.js";
 import type {
+  HelperDeploymentPlanAuthorizer,
   RawTransactionDelivery,
   WalletDependencyInventory,
   WalletTaskCoordinator,
@@ -47,6 +48,7 @@ export interface SignerRuntime {
 }
 
 export interface SignerRuntimeDependencies {
+  helperDeploymentPlanAuthorizer?: HelperDeploymentPlanAuthorizer;
   kms?: KmsClient;
   pool?: Pool;
   rawTransactionDelivery?: RawTransactionDelivery;
@@ -152,6 +154,9 @@ export async function startSignerRuntime(
       dependencies.transferPlanAuthorizer ??
       new PostgresWalletTransferPlanAuthorizer({ localChainIds: [31_337], pool });
     const service = new CustodySignerService({
+      ...(dependencies.helperDeploymentPlanAuthorizer
+        ? { helperDeploymentPlanAuthorizer: dependencies.helperDeploymentPlanAuthorizer }
+        : {}),
       ...(dependencies.rawTransactionDelivery
         ? { rawTransactionDelivery: dependencies.rawTransactionDelivery }
         : {}),

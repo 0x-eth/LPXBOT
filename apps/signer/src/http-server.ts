@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 
 import type { DeleteCustodyWalletRequest, WalletDeleteDependencies } from "@lpbot/api-contract";
+import type { HelperDeploymentPlan } from "@lpbot/domain/helper-deployment";
 import {
   transferDigestPattern,
   validateWalletTransferPlan,
@@ -14,6 +15,13 @@ import { SignerError, asSignerError } from "./signer-error.js";
 const bodyLimit = 16_384;
 const identityPattern = /^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const digestPattern = /^sha256:[0-9a-f]{64}$/u;
+
+function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
+  const actual = Object.keys(value).sort();
+  const expected = [...keys].sort();
+  return actual.length === expected.length && actual.every((key, index) => key === expected[index]);
+}
 
 function tokenDigest(value: string): Buffer {
   return createHash("sha256").update(value, "utf8").digest();
@@ -181,6 +189,95 @@ function transferSigningRequest(value: unknown): {
   return { plan: candidate, planDigest: request.planDigest as `sha256:${string}` };
 }
 
+function helperDeploymentSigningRequest(value: unknown): {
+  plan: HelperDeploymentPlan;
+  planDigest: `sha256:${string}`;
+} {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new SignerError("HELPER_PLAN_REJECTED");
+  }
+  const request = value as Record<string, unknown>;
+  if (
+    !exactKeys(request, ["plan", "planDigest"]) ||
+    typeof request.planDigest !== "string" ||
+    !digestPattern.test(request.planDigest) ||
+    typeof request.plan !== "object" ||
+    request.plan === null ||
+    Array.isArray(request.plan)
+  ) {
+    throw new SignerError("HELPER_PLAN_REJECTED");
+  }
+  const plan = request.plan as Record<string, unknown>;
+  if (
+    !exactKeys(plan, [
+      "chainId",
+      "deadline",
+      "deployment",
+      "feeLimit",
+      "fencingToken",
+      "nonce",
+      "operationId",
+      "planDigest",
+      "planVersion",
+      "registry",
+      "schemaVersion",
+      "snapshotDigest",
+      "transaction",
+      "wallet",
+    ])
+  ) {
+    throw new SignerError("HELPER_PLAN_REJECTED");
+  }
+  const nested = (key: string, keys: readonly string[]): Record<string, unknown> => {
+    const candidate = plan[key];
+    if (
+      typeof candidate !== "object" ||
+      candidate === null ||
+      Array.isArray(candidate) ||
+      !exactKeys(candidate as Record<string, unknown>, keys)
+    ) {
+      throw new SignerError("HELPER_PLAN_REJECTED");
+    }
+    return candidate as Record<string, unknown>;
+  };
+  const deployment = nested("deployment", [
+    "adapter",
+    "constructorArgumentsHash",
+    "creationCodeHash",
+    "expectedAddress",
+    "expectedRuntimeCodeHash",
+    "helperVersion",
+    "owner",
+    "permit2",
+    "tokenA",
+    "tokenB",
+  ]);
+  nested("feeLimit", [
+    "feeCapBaseUnit",
+    "gasLimit",
+    "maxFeePerGasBaseUnit",
+    "maxPriorityFeePerGasBaseUnit",
+  ]);
+  nested("registry", ["blockNumber", "digest", "rollbackVersion", "version"]);
+  nested("transaction", ["data", "dataHash", "to", "valueBaseUnit"]);
+  nested("wallet", ["address", "walletId"]);
+  for (const key of ["tokenA", "tokenB"] as const) {
+    const token = deployment[key];
+    if (
+      typeof token !== "object" ||
+      token === null ||
+      Array.isArray(token) ||
+      !exactKeys(token as Record<string, unknown>, ["address", "runtimeCodeHash"])
+    ) {
+      throw new SignerError("HELPER_PLAN_REJECTED");
+    }
+  }
+  return {
+    plan: plan as unknown as HelperDeploymentPlan,
+    planDigest: request.planDigest as `sha256:${string}`,
+  };
+}
+
 async function readBody(request: IncomingMessage): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let size = 0;
@@ -275,6 +372,9 @@ export function createSignerHttpServer(input: {
             ...(input.service.transferSigningConfigured()
               ? ["plan-bound-transaction-signing"]
               : []),
+            ...(input.service.helperDeploymentSigningConfigured()
+              ? ["plan-bound-helper-deployment-signing"]
+              : []),
           ],
           ready: true,
         },
@@ -291,6 +391,30 @@ export function createSignerHttpServer(input: {
     let importAcquired = false;
     try {
       const sessionId = reauthenticatedSessionId(request);
+      if (request.method === "POST" && request.url === "/v1/helper-deployments/sign-and-deliver") {
+        if (request.headers["content-type"]?.split(";", 1)[0] !== "application/json") {
+          send(response, 415, {
+            error: { code: "UNSUPPORTED_MEDIA_TYPE", retryable: false },
+            success: false,
+          });
+          return;
+        }
+        body = await readBody(request);
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(body.toString("utf8"));
+        } catch {
+          throw new SignerError("HELPER_PLAN_REJECTED");
+        }
+        const deployment = helperDeploymentSigningRequest(parsed);
+        const signed = await input.service.signHelperDeployment({
+          ...ownership,
+          ...(sessionId ? { reauthenticatedSessionId: sessionId } : {}),
+          ...deployment,
+        });
+        send(response, 202, { data: signed, success: true });
+        return;
+      }
       if (request.method === "POST" && request.url === "/v1/wallet-transfers/sign-and-deliver") {
         if (request.headers["content-type"]?.split(";", 1)[0] !== "application/json") {
           send(response, 415, {

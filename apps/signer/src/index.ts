@@ -8,6 +8,8 @@ export type {
   CustodyWalletStore,
   RawTransactionDelivery,
   RawTransactionDeliveryResult,
+  HelperDeploymentPlanAuthorizer,
+  HelperDeploymentSigningResult,
   KeystoreStatus,
   KeystoreStore,
   SecurityPasswordApplication,
@@ -38,6 +40,15 @@ export { LocalKmsFixture } from "./kms.js";
 export { InMemoryCustodyWalletStore } from "./memory-custody-wallet-store.js";
 export { PostgresCustodyWalletStore } from "./postgres-custody-wallet-store.js";
 export { PostgresWalletTransferPlanAuthorizer } from "./postgres-transfer-plan-authorizer.js";
+export {
+  PostgresHelperDeploymentPlanAuthorizer,
+  ViemLocalHelperDeploymentPlanVerifier,
+} from "./postgres-helper-deployment-plan-authorizer.js";
+export type {
+  HelperDeploymentPlanChainVerification,
+  HelperDeploymentPlanChainVerifier,
+  ViemLocalHelperDeploymentPlanVerifierOptions,
+} from "./postgres-helper-deployment-plan-authorizer.js";
 export { ResilientRawTransactionDelivery } from "./resilient-raw-transaction-delivery.js";
 export type { RawTransactionBroadcastPort } from "./resilient-raw-transaction-delivery.js";
 export {
