@@ -134,6 +134,45 @@ function addressBook() {
   };
 }
 
+function emptyPositions() {
+  const blockHash = `0x${"42".repeat(32)}`;
+  return {
+    address: walletAddress,
+    chainId: 56,
+    coverage: {
+      complete: true,
+      failedPlatformIds: [],
+      scannedPlatformIds: [1, 2, 4, 5],
+    },
+    cursor: null,
+    items: [],
+    quarantined: [],
+    registryVersion: "p05-bsc-execution-v1",
+    snapshot: {
+      blockHash,
+      blockNumber: "42",
+      blockTimestamp: "2026-08-18T14:00:00.000Z",
+      digest: `0x${"24".repeat(32)}`,
+    },
+    status: "empty",
+    walletId,
+  };
+}
+
+function undeployedHelper() {
+  return {
+    address: null,
+    chainId: 56,
+    failures: [],
+    helperVersion: null,
+    owner: walletAddress,
+    registryVersion: "p05-bsc-execution-v1",
+    state: "undeployed",
+    verification: null,
+    walletId,
+  };
+}
+
 function resolvedAmount(request: TransferPreviewRequest): string {
   if (request.amount.kind === "exact") return request.amount.amountBaseUnit;
   if (request.asset.kind === "erc20") {
@@ -398,6 +437,18 @@ async function installApi(page: Page, fixture: TransferFixture): Promise<void> {
     }
     if (pathname === "/api/address-book") {
       await route.fulfill({ contentType: "application/json", json: envelope(addressBook()) });
+      return;
+    }
+    if (pathname.endsWith("/positions") && request.method() === "GET") {
+      await route.fulfill({ contentType: "application/json", json: envelope(emptyPositions()) });
+      return;
+    }
+    if (pathname.endsWith("/helper") && request.method() === "GET") {
+      await route.fulfill({ contentType: "application/json", json: envelope(undeployedHelper()) });
+      return;
+    }
+    if (pathname === "/api/wallets/helper-residuals" && request.method() === "GET") {
+      await route.fulfill({ contentType: "application/json", json: envelope(null) });
       return;
     }
     if (pathname === "/api/wallets/transfers/preview" && request.method() === "POST") {
