@@ -20,6 +20,11 @@
       "import": "./dist/execution-plans.js",
       "default": "./dist/execution-plans.js"
     },
+    "./helper-deployment": {
+      "types": "./dist/helper-deployment.d.ts",
+      "import": "./dist/helper-deployment.js",
+      "default": "./dist/helper-deployment.js"
+    },
     "./wallet-transfer": {
       "types": "./dist/wallet-transfer.d.ts",
       "import": "./dist/wallet-transfer.js",

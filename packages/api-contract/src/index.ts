@@ -1490,6 +1490,94 @@ export const helperReadContracts = Object.freeze({
   status: Object.freeze({ method: "GET", path: "/api/wallets/{address}/helper" }),
 } as const);
 
+export const helperDeploymentStates = Object.freeze([
+  "queued",
+  "signed",
+  "broadcast",
+  "pending",
+  "confirmed",
+  "succeeded",
+  "failed",
+  "dropped",
+  "reconciling",
+] as const);
+export type HelperDeploymentState = (typeof helperDeploymentStates)[number];
+
+export interface HelperDeploymentPreviewRequest {
+  chainId: 31_337;
+  helperVersion: "WalletHelperV1";
+  walletId: string;
+}
+
+export interface HelperDeploymentFeeLimit {
+  feeCapBaseUnit: string;
+  gasLimit: string;
+  maxFeePerGasBaseUnit: string;
+  maxPriorityFeePerGasBaseUnit: string;
+}
+
+export interface HelperDeploymentPreview {
+  chainId: 31_337;
+  constructor: {
+    adapter: EvmAddress;
+    owner: EvmAddress;
+    permit2: EvmAddress;
+  };
+  expectedAddress: EvmAddress;
+  expectedRuntimeCodeHash: `0x${string}`;
+  expiresAt: string;
+  feeLimit: HelperDeploymentFeeLimit;
+  helperVersion: "WalletHelperV1";
+  nonce: string;
+  previewDigest: `sha256:${string}`;
+  previewToken: string;
+  registryVersion: string;
+  walletId: string;
+}
+
+export interface HelperDeploymentSubmitRequest extends HelperDeploymentPreviewRequest {
+  previewDigest: `sha256:${string}`;
+  previewToken: string;
+}
+
+export interface HelperDeploymentTransactionView {
+  active: boolean;
+  generation: number;
+  state:
+    | "signed"
+    | "broadcast"
+    | "pending"
+    | "confirmed"
+    | "failed"
+    | "dropped"
+    | "replaced";
+  transactionHash: `0x${string}` | null;
+}
+
+export interface HelperDeploymentOperation {
+  chainId: 31_337;
+  createdAt: string;
+  expectedAddress: EvmAddress;
+  failureCode: string | null;
+  feeLimit: HelperDeploymentFeeLimit;
+  helperVersion: "WalletHelperV1";
+  nonce: string;
+  operationId: string;
+  planDigest: `sha256:${string}`;
+  reconciliationReason: string | null;
+  registryVersion: string;
+  state: HelperDeploymentState;
+  transactions: HelperDeploymentTransactionView[];
+  updatedAt: string;
+  walletId: string;
+}
+
+export const helperDeploymentContracts = Object.freeze({
+  get: Object.freeze({ method: "GET", path: "/api/chain-operations/{operationId}" }),
+  preview: Object.freeze({ method: "POST", path: "/api/wallets/helper/deploy/preview" }),
+  submit: Object.freeze({ method: "POST", path: "/api/wallets/helper/deploy" }),
+} as const);
+
 export const walletTransferAmountPresets = ["25", "50", "75", "MAX"] as const;
 export type WalletTransferAmountPreset = (typeof walletTransferAmountPresets)[number];
 export type WalletTransferAsset = { kind: "native" } | { kind: "erc20"; tokenAddress: EvmAddress };
