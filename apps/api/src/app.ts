@@ -5599,6 +5599,38 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         reply.header("Cache-Control", "no-store");
         const session = await authenticateSessionRequest(request, reply);
         if (!session) return reply;
+        if (isPlainRecord(request.body) && request.body.chainId === 31_337) {
+          try {
+            const parsed = parseLocalSwapQuoteRequest(request.body);
+            if (
+              !(await requireAllowedWalletChain(
+                31_337,
+                request,
+                reply,
+                session,
+                localSwapExecutionChainIds,
+              ))
+            ) {
+              return reply;
+            }
+            if (!options.walletDirectory || !options.localSwapQuotes || !options.tenantId) {
+              return localSwapQuoteFailure(new Error("unconfigured"), request, reply);
+            }
+            const wallet = await options.walletDirectory.getWallet(session.userId, parsed.walletId);
+            if (!wallet || wallet.lockStatus === "quarantined") {
+              throw new LocalSwapQuoteValidationError("WALLET_NOT_FOUND");
+            }
+            const quote = await options.localSwapQuotes.quote({
+              ...parsed,
+              tenantId: options.tenantId,
+              userId: session.userId,
+              walletAddress: wallet.address,
+            });
+            return createSuccessEnvelope(quote, request.id);
+          } catch (error) {
+            return localSwapQuoteFailure(error, request, reply);
+          }
+        }
         let parsed;
         try {
           parsed = parseSwapQuoteRequest(request.body);
