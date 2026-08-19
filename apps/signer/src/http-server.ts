@@ -450,7 +450,10 @@ function failure(response: ServerResponse, error: unknown): void {
                 signerError.code === "TRANSFER_PLAN_EXPIRED" ||
                 signerError.code === "TRANSFER_PLAN_REJECTED" ||
                 signerError.code === "HELPER_PLAN_EXPIRED" ||
-                signerError.code === "HELPER_PLAN_REJECTED"
+                signerError.code === "HELPER_PLAN_REJECTED" ||
+                signerError.code === "LOCAL_SWAP_PLAN_EXPIRED" ||
+                signerError.code === "LOCAL_SWAP_PLAN_REJECTED" ||
+                signerError.code === "PERMIT2_AUTHORIZATION_REJECTED"
               ? 409
               : signerError.code === "WALLET_ADDRESS_EXISTS"
                 ? 409
