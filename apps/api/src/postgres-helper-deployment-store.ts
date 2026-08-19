@@ -78,17 +78,17 @@ interface LedgerRow {
 }
 
 const operationColumns = `
-  operation_id::text, tenant_id, user_id::text, wallet_id::text, wallet_address,
-  chain_id::text, state, helper_version, registry_version, registry_digest,
-  registry_block_number::text, expected_address, expected_runtime_code_hash,
-  creation_code_hash, constructor_arguments_hash, adapter_address, permit2_address,
-  nonce::text, fencing_token::text, transaction_to,
-  transaction_value_base_unit::text, transaction_data, transaction_data_hash,
-  gas_limit::text, max_fee_per_gas_base_unit::text,
-  max_priority_fee_per_gas_base_unit::text, fee_cap_base_unit::text,
-  preview_digest, request_hash, plan_digest, snapshot_digest, plan_deadline,
-  plan_payload, reauthenticated_session_id::text, active_transaction_id::text,
-  failure_code, reconciliation_reason, created_at, updated_at`;
+  o.operation_id::text, o.tenant_id, o.user_id::text, o.wallet_id::text, o.wallet_address,
+  o.chain_id::text, o.state, o.helper_version, o.registry_version, o.registry_digest,
+  o.registry_block_number::text, o.expected_address, o.expected_runtime_code_hash,
+  o.creation_code_hash, o.constructor_arguments_hash, o.adapter_address, o.permit2_address,
+  o.nonce::text, o.fencing_token::text, o.transaction_to,
+  o.transaction_value_base_unit::text, o.transaction_data, o.transaction_data_hash,
+  o.gas_limit::text, o.max_fee_per_gas_base_unit::text,
+  o.max_priority_fee_per_gas_base_unit::text, o.fee_cap_base_unit::text,
+  o.preview_digest, o.request_hash, o.plan_digest, o.snapshot_digest, o.plan_deadline,
+  o.plan_payload, o.reauthenticated_session_id::text, o.active_transaction_id::text,
+  o.failure_code, o.reconciliation_reason, o.created_at, o.updated_at`;
 
 function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
@@ -336,7 +336,7 @@ export class PostgresHelperDeploymentOperationStore implements HelperDeploymentO
   }): Promise<StoredHelperDeploymentOperation | null> {
     const result = await this.#pool.query<OperationRow>(
       `SELECT ${operationColumns}
-         FROM chain_operations
+         FROM chain_operations o
         WHERE operation_id = $1 AND tenant_id = $2 AND user_id = $3`,
       [input.operationId, input.tenantId, input.userId],
     );
@@ -624,7 +624,7 @@ export class PostgresHelperDeploymentOperationStore implements HelperDeploymentO
   ): Promise<StoredHelperDeploymentOperation | null> {
     const result = await client.query<OperationRow>(
       `SELECT ${operationColumns}
-         FROM chain_operations
+         FROM chain_operations o
         WHERE operation_id = $1 AND tenant_id = $2 AND user_id = $3`,
       [operationId, owner.tenantId, owner.userId],
     );
