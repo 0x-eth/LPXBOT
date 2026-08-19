@@ -21,6 +21,7 @@ import {
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 
 import { PositionHelperClient, PositionHelperRequestError } from "./position-helper-client";
+import { LocalSwapExecutionPanel } from "./local-swap-execution-panel";
 import {
   initialPricingPositionStreamState,
   parsePricingPositionStreamEvent,
@@ -702,6 +703,7 @@ export function SwapPricingPanels({ wallet }: { wallet: CustodyWallet }) {
   return (
     <div className="swap-pricing-read-model">
       <SwapQuotePanel client={client} wallet={wallet} />
+      <LocalSwapExecutionPanel wallet={wallet} />
       <PricingPositionPanel client={client} sourceClient={sourceClient} wallet={wallet} />
     </div>
   );
