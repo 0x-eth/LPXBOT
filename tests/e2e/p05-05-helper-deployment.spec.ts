@@ -361,7 +361,7 @@ function fixture(overrides: Partial<FixtureState> = {}): FixtureState {
     operationSequence: ["broadcast", "pending", "succeeded"],
     previewExpiresMs: 60_000,
     previewPayloads: [],
-    submitDelayMs: 150,
+    submitDelayMs: 600,
     submitError: null,
     submitPayloads: [],
     ...overrides,
@@ -403,9 +403,11 @@ test("previews, confirms once, and follows the local deployment operation to suc
   }
 
   const confirm = page.getByRole("button", { name: "确认部署" });
+  const confirmButton = dialog.locator("button.primary-button");
   await confirm.focus();
   await page.keyboard.press("Enter");
-  await expect(confirm).toBeDisabled();
+  await expect(confirmButton).toBeDisabled();
+  await expect(confirmButton).toHaveAccessibleName("正在提交");
   await page.keyboard.press("Enter");
   await expect(dialog).toBeHidden();
   await expect(panel).toHaveAttribute("data-state", "queued");
