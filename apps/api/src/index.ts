@@ -282,6 +282,17 @@ export {
   ERC721_TRANSFER_TOPIC,
   PositionCursorError,
 } from "./position-read-model.js";
+export {
+  ControlledSwapQuoteService,
+  parseSwapQuoteRequest,
+  SwapQuoteValidationError,
+} from "./swap-quotes.js";
+export type {
+  ParsedSwapQuoteRequest,
+  SwapQuoteApplication,
+  SwapQuoteApplicationInput,
+  SwapQuoteSnapshotStore,
+} from "./swap-quotes.js";
 export type {
   BscPositionReadServiceOptions,
   PositionReadApplication,

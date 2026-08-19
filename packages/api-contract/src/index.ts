@@ -1198,6 +1198,64 @@ export const positionReadContracts = Object.freeze({
   scan: Object.freeze({ method: "GET", path: "/api/positions/scan/{address}" }),
 } as const);
 
+export const swapQuoteStates = Object.freeze([
+  "idle",
+  "quoting",
+  "quoted",
+  "expired",
+  "stale",
+  "error",
+] as const);
+export type SwapQuoteState = (typeof swapQuoteStates)[number];
+
+export interface SwapQuoteRequest {
+  amountInBaseUnit: string;
+  chainId: 56;
+  platformId: PositionPlatformId;
+  slippageBps: number;
+  tokenIn: EvmAddress;
+  tokenOut: EvmAddress;
+  walletId: string;
+}
+
+export interface SwapQuoteGas {
+  estimatedFeeWei: string;
+  gasLimit: string;
+  gasPriceWei: string;
+}
+
+export interface SwapQuoteRoute {
+  poolPath: `0x${string}`[];
+  tokens: EvmAddress[];
+}
+
+export interface SwapQuoteView extends SwapQuoteRequest {
+  amountOutBaseUnit: string;
+  calldataDigest: `0x${string}`;
+  deadline: string;
+  digest: `0x${string}`;
+  digestDomain: "LPXBOT_SWAP_QUOTE";
+  digestVersion: 1;
+  executionEnabled: false;
+  expiresAt: string;
+  gas: SwapQuoteGas;
+  maxBlockNumber: string;
+  minOutBaseUnit: string;
+  priceImpactBps: number;
+  providerSnapshotId: string;
+  quotedAt: string;
+  registryVersion: string;
+  route: SwapQuoteRoute;
+  router: EvmAddress;
+  selector: `0x${string}`;
+  spender: EvmAddress;
+  walletAddress: EvmAddress;
+}
+
+export const swapQuoteContracts = Object.freeze({
+  quote: Object.freeze({ method: "POST", path: "/api/swap/quote" }),
+} as const);
+
 export const helperReadStates = Object.freeze([
   "undeployed",
   "active",

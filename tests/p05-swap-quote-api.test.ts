@@ -84,7 +84,7 @@ class Quotes implements SwapQuoteApplication {
 
 const apps: Array<ReturnType<typeof buildApiApp>> = [];
 
-async function fixture(rateLimit = { max: 10, timeWindowMs: 60_000 }) {
+async function fixture(rateLimit = { max: 100, timeWindowMs: 60_000 }) {
   const sessions = new SessionFixtureStore();
   const [tokenA, tokenB] = await Promise.all([
     issueFixtureSession(sessions, userA, now),

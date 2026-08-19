@@ -46,6 +46,7 @@ import {
   type TelegramMiniAppAuthenticator,
 } from "@lpbot/security";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
+import { SwapQuoteAdapterError } from "@lpbot/chain-adapters";
 
 import { sessionCookieName, setBrowserSessionCookie } from "./browser-session-cookie.js";
 import {
@@ -136,6 +137,11 @@ import {
   type RecommendedPoolsStreamEvent,
 } from "./recommended-pools.js";
 import { PositionCursorError, type PositionReadApplication } from "./position-read-model.js";
+import {
+  parseSwapQuoteRequest,
+  SwapQuoteValidationError,
+  type SwapQuoteApplication,
+} from "./swap-quotes.js";
 import type { WalletHelperReadApplication } from "./helper-read-model.js";
 import {
   HelperResidualCursorError,
@@ -237,6 +243,8 @@ export interface ApiAppOptions {
   statsProvider?: ShellStatsProvider;
   statsRateLimit?: PublicReadRateLimit;
   statsStreamScheduler?: RecommendedPoolsScheduler;
+  swapQuoteRateLimit?: PublicReadRateLimit;
+  swapQuotes?: SwapQuoteApplication;
   telegramBot?: TelegramBotLoginApplication;
   telegramBotUsername?: string;
   telegramMiniApp?: TelegramMiniAppAuthenticator;
@@ -976,6 +984,19 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     throw new RangeError("Wallet transfer local chain IDs must be unique positive integers");
   }
   const now = options.now ?? (() => new Date());
+  const swapQuoteRateLimit: PublicReadRateLimit = {
+    max: 20,
+    timeWindowMs: 60_000,
+    ...options.swapQuoteRateLimit,
+  };
+  if (
+    !Number.isSafeInteger(swapQuoteRateLimit.max) ||
+    swapQuoteRateLimit.max <= 0 ||
+    !Number.isSafeInteger(swapQuoteRateLimit.timeWindowMs) ||
+    swapQuoteRateLimit.timeWindowMs <= 0
+  ) {
+    throw new RangeError("Swap quote rate limits must be positive integers");
+  }
   const addressRemarkRateLimit: ChainManagementRateLimit = {
     max: 30,
     timeWindowMs: 60_000,
@@ -1231,6 +1252,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         isAddressBookSecretRequest(request.method, requestPath) ||
         isWalletTransferSecretRequest(request.method, requestPath) ||
         isOkxKeySecretRequest(request.method, requestPath) ||
+        (request.method === "POST" && requestPath === "/api/swap/quote") ||
         (request.method === "POST" && requestPath === "/api/wallets/transfers/preview"))
     ) {
       reply.header("Cache-Control", "no-store");
@@ -3952,6 +3974,30 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       );
     };
 
+    const swapQuoteFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply => {
+      const stale =
+        error instanceof SwapQuoteAdapterError &&
+        [
+          "provider-snapshot-expired",
+          "registry-code-hash-mismatch",
+          "registry-mismatch",
+        ].includes(error.reason);
+      return reply.code(stale ? 409 : 503).send(
+        createErrorEnvelope({
+          code: stale ? "SWAP_QUOTE_STALE" : "SWAP_QUOTE_UNAVAILABLE",
+          message: stale
+            ? "The controlled quote snapshot is stale"
+            : "The controlled quote provider is unavailable",
+          requestId: request.id,
+          retryable: !stale,
+        }),
+      );
+    };
+
     const helperReadFailure = (
       error: unknown,
       request: FastifyRequest,
@@ -5009,6 +5055,86 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
 
     app.get<{ Params: { address: string } }>("/api/positions/scan/:address", (request, reply) =>
       readPositions(request, reply, false),
+    );
+
+    app.post(
+      "/api/swap/quote",
+      {
+        bodyLimit: 8_192,
+        config: {
+          rateLimit: {
+            max: swapQuoteRateLimit.max,
+            timeWindow: swapQuoteRateLimit.timeWindowMs,
+          },
+        },
+      },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        let parsed;
+        try {
+          parsed = parseSwapQuoteRequest(request.body);
+        } catch (error) {
+          if (error instanceof SwapQuoteValidationError) {
+            const walletMissing = error.code === "WALLET_NOT_FOUND";
+            return reply.code(walletMissing ? 404 : 400).send(
+              createErrorEnvelope({
+                code: error.code,
+                message: walletMissing
+                  ? "The custody wallet was not found"
+                  : "The swap quote request is invalid",
+                requestId: request.id,
+                retryable: false,
+              }),
+            );
+          }
+          throw error;
+        }
+        if (!(await requireAllowedWalletChain(parsed.chainId, request, reply, session))) return reply;
+        if (parsed.chainId !== 56) {
+          return reply.code(403).send(
+            createErrorEnvelope({
+              code: "CHAIN_NOT_ALLOWED",
+              message: "Swap quotes are enabled only for BNB Smart Chain",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.walletDirectory || !options.swapQuotes || !options.tenantId) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "SWAP_QUOTE_UNAVAILABLE",
+              message: "The controlled quote provider is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const wallet = await options.walletDirectory.getWallet(session.userId, parsed.walletId);
+          if (!wallet || wallet.lockStatus === "quarantined") {
+            return reply.code(404).send(
+              createErrorEnvelope({
+                code: "WALLET_NOT_FOUND",
+                message: "The custody wallet was not found",
+                requestId: request.id,
+                retryable: false,
+              }),
+            );
+          }
+          const quote = await options.swapQuotes.quote({
+            ...parsed,
+            chainId: 56,
+            userId: session.userId,
+            walletAddress: wallet.address,
+          });
+          return createSuccessEnvelope(quote, request.id);
+        } catch (error) {
+          return swapQuoteFailure(error, request, reply);
+        }
+      },
     );
 
     app.get<{ Params: { address: string } }>(
