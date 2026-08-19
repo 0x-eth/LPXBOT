@@ -27,6 +27,8 @@ const permit2 = registry.components.find(({ role }) => role === "permit2")!;
 const tokenIn = registry.tokenPolicy.tokens[0]!;
 const tokenOut = registry.tokenPolicy.tokens[1]!;
 const digestA = `sha256:${"a".repeat(64)}` as const;
+const creationCodeHash =
+  "0x24f17096a9e25eed57688f0766b2b48398a6b3c752f32a7c3f15e504518c1336" as const;
 const walletAddress = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266" as const;
 
 function asset(token: typeof tokenIn | typeof tokenOut): ExecutionAssetBinding {
@@ -87,7 +89,7 @@ function base(
       valueBaseUnit: "0",
     },
     chainId: registry.chainId,
-    deadline: "2000000",
+    deadline: "1060000",
     feeTerms: structuredClone(fees),
     nonce: "7",
     operationId: `p05-04-${planType}`,
@@ -173,7 +175,7 @@ function deploymentPlan(): HelperDeploymentPlan {
     deployment: {
       adapter: adapter.address,
       constructorArgumentsHash: digestA,
-      creationCodeHash: helper.runtimeCodeHash,
+      creationCodeHash,
       expectedHelper: helper.address,
       expectedRuntimeCodeHash: helper.runtimeCodeHash,
       owner: walletAddress,
@@ -186,8 +188,11 @@ function deploymentPlan(): HelperDeploymentPlan {
 
 function context(): ExecutionPlanValidationContext {
   return {
+    adapterAddress: adapter.address,
     chainId: registry.chainId,
-    creationCodeHash: helper.runtimeCodeHash,
+    constructorArgumentsHash: digestA,
+    creationCodeHash,
+    dustLimitBaseUnit: registry.tokenPolicy.dustLimitBaseUnit,
     feePolicyDigest: registry.feePolicy.policyDigest,
     feePolicyVersion: registry.feePolicy.policyVersion,
     helperAddress: helper.address,
@@ -199,8 +204,11 @@ function context(): ExecutionPlanValidationContext {
       "sweep-token": registry.helperSelectorAllowlist[2]!,
     },
     maxAmountBaseUnit: registry.tokenPolicy.maxAmountBaseUnit,
+    maxDeadlineWindowSeconds: 86_400,
     maxPermit2ExpirationSeconds: registry.tokenPolicy.permit2MaxExpirationSeconds,
+    permit2Address: permit2.address,
     registryDigest: registry.registryDigest,
+    registryRollbackVersion: registry.rollbackVersion,
     registryValidFromBlock: registry.validFromBlock,
     registryValidToBlock: registry.validToBlock,
     registryVersion: registry.registryVersion,
@@ -325,6 +333,45 @@ describe("P05-04 isolated local execution safety baseline", () => {
     nonZeroFee.feeTerms.serviceFee.authorizationPlanDigest = nonZeroFee.planDigest;
     expect(() => validateExecutionPlan(nonZeroFee, validation, 1_000_000n)).toThrow(
       "EXECUTION_FEE_POLICY_MISMATCH",
+    );
+  });
+
+  it("rejects deployment dependency, rollback, deadline, amount, and dust policy drift", () => {
+    const validation = context();
+
+    const foreignAdapter = deploymentPlan();
+    foreignAdapter.deployment.adapter = "0x0000000000000000000000000000000000000001";
+    foreignAdapter.planDigest = executionPlanDigest(foreignAdapter);
+    expect(() => validateExecutionPlan(foreignAdapter, validation, 1_000_000n)).toThrow(
+      "HELPER_DEPLOYMENT_PLAN_INVALID",
+    );
+
+    const rollbackDrift = swapPlan();
+    rollbackDrift.registry.rollbackVersion = "foreign-rollback";
+    rollbackDrift.planDigest = executionPlanDigest(rollbackDrift);
+    expect(() => validateExecutionPlan(rollbackDrift, validation, 1_000_000n)).toThrow(
+      "EXECUTION_POLICY_BINDING_MISMATCH",
+    );
+
+    const distantDeadline = swapPlan();
+    distantDeadline.deadline = "1086401";
+    distantDeadline.planDigest = executionPlanDigest(distantDeadline);
+    expect(() => validateExecutionPlan(distantDeadline, validation, 1_000_000n)).toThrow(
+      "EXECUTION_PLAN_EXPIRED",
+    );
+
+    const excessiveMinOut = swapPlan();
+    excessiveMinOut.swap.minOutBaseUnit = (BigInt(validation.maxAmountBaseUnit) + 1n).toString();
+    excessiveMinOut.planDigest = executionPlanDigest(excessiveMinOut);
+    expect(() => validateExecutionPlan(excessiveMinOut, validation, 1_000_000n)).toThrow(
+      "SWAP_MIN_OUT_INVALID",
+    );
+
+    const dustDrift = sweepPlan();
+    dustDrift.sweep.dustLimitBaseUnit = "0";
+    dustDrift.planDigest = executionPlanDigest(dustDrift);
+    expect(() => validateExecutionPlan(dustDrift, validation, 1_000_000n)).toThrow(
+      "SWEEP_AMOUNT_INVALID",
     );
   });
 });

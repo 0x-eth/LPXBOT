@@ -130,8 +130,11 @@ export interface SweepPlan extends ExecutionPlanBase {
 export type ExecutionPlan = HelperDeploymentPlan | PositionPlan | SwapPlan | SweepPlan;
 
 export interface ExecutionPlanValidationContext {
+  adapterAddress: `0x${string}`;
   chainId: number;
+  constructorArgumentsHash: `sha256:${string}`;
   creationCodeHash: `0x${string}`;
+  dustLimitBaseUnit: string;
   feePolicyDigest: `sha256:${string}`;
   feePolicyVersion: string;
   helperAddress: `0x${string}`;
@@ -140,8 +143,11 @@ export interface ExecutionPlanValidationContext {
     Record<"position" | "swap" | "sweep-native" | "sweep-token", `0x${string}`>
   >;
   maxAmountBaseUnit: string;
+  maxDeadlineWindowSeconds: number;
   maxPermit2ExpirationSeconds: number;
+  permit2Address: `0x${string}`;
   registryDigest: `sha256:${string}`;
+  registryRollbackVersion: string;
   registryValidFromBlock: string;
   registryValidToBlock: string;
   registryVersion: string;
@@ -299,12 +305,18 @@ export function validateExecutionPlan(
   decimal(plan.nonce, "EXECUTION_NONCE_INVALID");
   decimal(plan.call.valueBaseUnit, "EXECUTION_VALUE_INVALID");
   const deadline = decimal(plan.deadline, "EXECUTION_DEADLINE_INVALID", true);
-  if (deadline <= atEpochSeconds) throw new RangeError("EXECUTION_PLAN_EXPIRED");
+  if (
+    deadline <= atEpochSeconds ||
+    deadline > atEpochSeconds + BigInt(context.maxDeadlineWindowSeconds)
+  ) {
+    throw new RangeError("EXECUTION_PLAN_EXPIRED");
+  }
   digest(plan.snapshotDigest, "EXECUTION_SNAPSHOT_INVALID");
   if (plan.quoteDigest !== null) digest(plan.quoteDigest, "EXECUTION_QUOTE_INVALID");
   if (
     plan.registry.version !== context.registryVersion ||
     plan.registry.digest !== context.registryDigest ||
+    plan.registry.rollbackVersion !== context.registryRollbackVersion ||
     plan.tokenPolicy.version !== context.tokenPolicyVersion ||
     plan.tokenPolicy.digest !== context.tokenPolicyDigest
   ) {
@@ -328,7 +340,10 @@ export function validateExecutionPlan(
       plan.call.targetRuntimeCodeHash !== plan.deployment.expectedRuntimeCodeHash ||
       plan.deployment.expectedRuntimeCodeHash !== context.helperRuntimeCodeHash ||
       plan.deployment.creationCodeHash !== context.creationCodeHash ||
+      plan.deployment.constructorArgumentsHash !== context.constructorArgumentsHash ||
       plan.deployment.expectedHelper !== context.helperAddress ||
+      plan.deployment.adapter !== context.adapterAddress ||
+      plan.deployment.permit2 !== context.permit2Address ||
       plan.deployment.owner !== plan.wallet.address ||
       plan.call.valueBaseUnit !== "0" ||
       plan.quoteDigest !== null
@@ -354,8 +369,14 @@ export function validateExecutionPlan(
       validateAsset(plan.swap.tokenIn, context);
       validateAsset(plan.swap.tokenOut, context);
       const amount = decimal(plan.swap.amountInBaseUnit, "SWAP_AMOUNT_INVALID", true);
-      decimal(plan.swap.minOutBaseUnit, "SWAP_MIN_OUT_INVALID", true);
-      if (amount > BigInt(context.maxAmountBaseUnit)) throw new RangeError("SWAP_AMOUNT_INVALID");
+      const minOut = decimal(plan.swap.minOutBaseUnit, "SWAP_MIN_OUT_INVALID", true);
+      if (
+        plan.swap.tokenIn.address === plan.swap.tokenOut.address ||
+        amount > BigInt(context.maxAmountBaseUnit)
+      ) {
+        throw new RangeError("SWAP_AMOUNT_INVALID");
+      }
+      if (minOut > BigInt(context.maxAmountBaseUnit)) throw new RangeError("SWAP_MIN_OUT_INVALID");
       if (
         plan.swap.recipient !== plan.wallet.address ||
         plan.swap.refundRecipient !== plan.wallet.address
@@ -409,7 +430,11 @@ export function validateExecutionPlan(
       if (plan.sweep.asset !== null) validateAsset(plan.sweep.asset, context);
       const amount = decimal(plan.sweep.amountBaseUnit, "SWEEP_AMOUNT_INVALID", true);
       const dust = decimal(plan.sweep.dustLimitBaseUnit, "SWEEP_DUST_INVALID");
-      if (amount > BigInt(context.maxAmountBaseUnit) || dust > amount) {
+      if (
+        amount > BigInt(context.maxAmountBaseUnit) ||
+        dust > amount ||
+        plan.sweep.dustLimitBaseUnit !== context.dustLimitBaseUnit
+      ) {
         throw new RangeError("SWEEP_AMOUNT_INVALID");
       }
     }
