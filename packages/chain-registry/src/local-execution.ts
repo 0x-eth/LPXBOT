@@ -83,27 +83,58 @@ export interface LocalExecutionRegistry {
 const component = (
   role: LocalExecutionComponentRole,
   address: `0x${string}`,
+  abiHash: `sha256:${string}`,
+  runtimeCodeHash: `0x${string}`,
 ): LocalExecutionCodeIdentity =>
   Object.freeze({
-    abiHash: `sha256:${role === "spender" ? "f" : "0".repeat(64)}` as `sha256:${string}`,
+    abiHash,
     address,
     proxyImplementation: null,
     proxyImplementationRuntimeCodeHash: null,
     role,
-    runtimeCodeHash: `0x${(role === "spender" ? "f" : "0").repeat(64)}` as `0x${string}`,
+    runtimeCodeHash,
   });
 
 // Addresses are the deterministic CREATE sequence of Anvil's first fixture account.
-// Hashes are replaced by the P05-04 finalizer after a pinned Foundry build and deployment.
 export const P05_BSC_LOCAL_EXECUTION_REGISTRY: LocalExecutionRegistry = Object.freeze({
   chainId: 31_337,
   components: Object.freeze([
-    component("permit2", "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0"),
-    component("router", "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9"),
-    component("position-manager", "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9"),
-    component("adapter", "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707"),
-    component("spender", "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707"),
-    component("helper", "0x0165878a594ca255338adfa4d48449f69242eb8f"),
+    component(
+      "permit2",
+      "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+      "sha256:a2c742af5f41acc9c0bc882304ebb6c9d091961c2e10c87060efb9a15dcd942c",
+      "0x85f295c14e6e29cd939674c5f0ec10bc1606a00330ffd059e604bd231e35b7ad",
+    ),
+    component(
+      "router",
+      "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+      "sha256:2c895580a965e8c7980697363427c55332dade71a9fb317d4c336f385b28e7fd",
+      "0x3c6483edb8b5d43ef28f4cbc66c181a3b3dcb40a445cfd80af52f8590a419216",
+    ),
+    component(
+      "position-manager",
+      "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+      "sha256:af341683324264cab5946e14ba7e103c99b2bef4cebbdc744a3955a7a07e262f",
+      "0x04f41e615446ecf7641d35bedf05bfe90d5fd7491773c4c7e2aa7bea22473a82",
+    ),
+    component(
+      "adapter",
+      "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+      "sha256:6760e5a05af57bfb69eb6fe7385f672e5f9068ae661caa30b4786eba16461e73",
+      "0xb4b2ae4ee6025275948cb04c4ab0ad52cf5e6bb016def1a2050568b812bb30f8",
+    ),
+    component(
+      "spender",
+      "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+      "sha256:6760e5a05af57bfb69eb6fe7385f672e5f9068ae661caa30b4786eba16461e73",
+      "0xb4b2ae4ee6025275948cb04c4ab0ad52cf5e6bb016def1a2050568b812bb30f8",
+    ),
+    component(
+      "helper",
+      "0x0165878a594ca255338adfa4d48449f69242eb8f",
+      "sha256:cee4bfd152232ce4f86ba4580385b699cad889dcb413b2d9b866e34e69bdc6c9",
+      "0xea674401191387ab14d8ecb4f1eb4fe815a5cd3661d4de4f0d0fc8be4d03ec42",
+    ),
   ]),
   environment: "foundry-anvil-only",
   executionEnabled: true,
@@ -112,7 +143,7 @@ export const P05_BSC_LOCAL_EXECUTION_REGISTRY: LocalExecutionRegistry = Object.f
     gas: "quoted-separately",
     lpFee: "quoted-separately",
     nonZeroServiceFee: "deny",
-    policyDigest: `sha256:${"0".repeat(64)}`,
+    policyDigest: "sha256:12308276acc5e5575b3b7117ed8a66f314fa793f1038ce6b4e3080435eb3850d",
     policyVersion: P05_LOCAL_FEE_POLICY_VERSION,
     serviceFeeBasis: "none",
     serviceFeeBps: 0,
@@ -126,7 +157,7 @@ export const P05_BSC_LOCAL_EXECUTION_REGISTRY: LocalExecutionRegistry = Object.f
     "0x6971b189",
   ] as const),
   productionInheritance: false,
-  registryDigest: `sha256:${"0".repeat(64)}`,
+  registryDigest: "sha256:51f45a550187b8ed03c39adc85de6a10fca3fe51ba5be53cc414595f09067751",
   registryVersion: P05_BSC_LOCAL_EXECUTION_REGISTRY_VERSION,
   rollbackVersion: "p05-bsc-local-execution-disabled-v0",
   routerSelectorAllowlist: Object.freeze(["0xbb05e388"] as const),
@@ -137,7 +168,7 @@ export const P05_BSC_LOCAL_EXECUTION_REGISTRY: LocalExecutionRegistry = Object.f
     executionUnknownToken: "deny",
     maxAmountBaseUnit: "340282366920938463463374607431768211455",
     permit2MaxExpirationSeconds: 1800,
-    policyDigest: `sha256:${"0".repeat(64)}`,
+    policyDigest: "sha256:2f4629c4939f680f8391aa0e9d4febac08d0144773471f4617e179542924bf5e",
     policyVersion: P05_LOCAL_TOKEN_POLICY_VERSION,
     productionUnknownToken: "read-only",
     resetAllowanceToZero: true,
@@ -149,7 +180,7 @@ export const P05_BSC_LOCAL_EXECUTION_REGISTRY: LocalExecutionRegistry = Object.f
         fixture: "TestOnlyERC20",
         implementationAddress: null,
         implementationRuntimeCodeHash: null,
-        runtimeCodeHash: `0x${"0".repeat(64)}`,
+        runtimeCodeHash: "0x438d7e29bb977ff7241816f8388a6cc0be9c4cbe4e356f177b77d71d9b7d4354",
         symbol: "FIX",
       }),
       Object.freeze({
@@ -159,7 +190,7 @@ export const P05_BSC_LOCAL_EXECUTION_REGISTRY: LocalExecutionRegistry = Object.f
         fixture: "TestOnlyWBNB",
         implementationAddress: null,
         implementationRuntimeCodeHash: null,
-        runtimeCodeHash: `0x${"0".repeat(64)}`,
+        runtimeCodeHash: "0x4bd73dd3f768a57356137078198f3637e40f39b8339c36803672e3d4eae453f8",
         symbol: "WBNB",
       }),
     ]),
