@@ -1221,7 +1221,7 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
             permit2: binding.permit2Address,
             sigDeadline: permit.sigDeadline,
             signature: input.signature!,
-            signatureDigest: digest(Buffer.from(input.signature!.slice(2), "hex")),
+            signatureDigest: `sha256:${sha256(Buffer.from(input.signature!.slice(2), "hex"))}`,
             spender: binding.helperAddress,
             token: quote.tokenIn,
           },
