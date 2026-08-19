@@ -25,6 +25,7 @@ import encodeQR from "qr";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { WalletReadClient, WalletReadRequestError } from "./wallet-read-client";
+import { PositionHelperPanels } from "./position-helper-panels";
 import { WalletTransferClient } from "./wallet-transfer-client";
 import { WalletTransferPanel } from "./wallet-transfer-panel";
 
@@ -674,6 +675,7 @@ export function WalletReadPanels({ wallets }: { wallets: CustodyWallet[] }) {
           </p>
         ) : null}
       </section>
+      <PositionHelperPanels key={wallet.walletId} wallet={wallet} />
       <ReceivePanel key={wallet.walletId} client={client} tokens={tokens} wallet={wallet} />
       <AddressBookPanel client={client} />
     </div>
