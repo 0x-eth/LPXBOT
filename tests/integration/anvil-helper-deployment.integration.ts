@@ -449,18 +449,22 @@ describe.skipIf(!enabled)("P05-05 local Anvil Helper deployment closure", () => 
       ).toLowerCase(),
     ).toBe(ownerAccount.address.toLowerCase());
     expect(
-      await publicClient.readContract({
-        abi: helperIdentityAbi,
-        address: helperAddress,
-        functionName: "adapter",
-      }),
+      (
+        await publicClient.readContract({
+          abi: helperIdentityAbi,
+          address: helperAddress,
+          functionName: "adapter",
+        })
+      ).toLowerCase(),
     ).toBe(adapterAddress);
     expect(
-      await publicClient.readContract({
-        abi: helperIdentityAbi,
-        address: helperAddress,
-        functionName: "permit2",
-      }),
+      (
+        await publicClient.readContract({
+          abi: helperIdentityAbi,
+          address: helperAddress,
+          functionName: "permit2",
+        })
+      ).toLowerCase(),
     ).toBe(permit2Address);
 
     const reverted = await submit(revertWallet, "anvil-helper-revert-0001");
