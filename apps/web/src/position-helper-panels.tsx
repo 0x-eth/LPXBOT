@@ -52,10 +52,10 @@ const residualStateLabels: Record<HelperResidualUiState, string> = {
   scanning: "扫描中",
 };
 const platformLabels = {
-  1: "PancakeSwap V3",
-  2: "Uniswap V3",
-  4: "PancakeSwap V4",
-  5: "Uniswap V4",
+  1: "Uniswap V3",
+  2: "PancakeSwap V3",
+  4: "Uniswap V4",
+  5: "PancakeSwap V4",
 } as const;
 
 function readError(error: unknown): string {

@@ -382,6 +382,7 @@ test("renders ready position, active Helper, and residual data without execution
     "ready",
   );
   await expect(page.getByText("Token #9")).toBeVisible();
+  await expect(page.getByText("Uniswap V3", { exact: true })).toBeVisible();
   await expect(
     page.locator("[data-testid='position-read-panel']").getByText("1000000000000000001 base units"),
   ).toBeVisible();
@@ -416,11 +417,21 @@ test("renders ready position, active Helper, and residual data without execution
   await axe(page);
 
   if (captureEvidence) {
+    const bounds = await page.locator(".position-helper-read-model").boundingBox();
+    const viewport = page.viewportSize();
+    expect(bounds).not.toBeNull();
+    expect(viewport).not.toBeNull();
     const screenshot = await page.screenshot({
       animations: "disabled",
       caret: "hide",
-      fullPage: true,
+      clip: {
+        height: bounds!.height,
+        width: viewport!.width,
+        x: 0,
+        y: bounds!.y,
+      },
       path: `artifacts/acceptance/P05-02/E-VIS/position-helper-ready-${testInfo.project.name}.png`,
+      style: ".app-header, .mobile-navigation-shell, .shell-status-bar { display: none !important; }",
     });
     expect(screenshot.byteLength).toBeGreaterThan(10_000);
   }
