@@ -58,6 +58,38 @@ export type ProtocolId = 1 | 2 | 4 | 5;
 export type ProtocolPlatformId = "univ3" | "pcsv3" | "univ4" | "pcsv4";
 export type ProtocolGeneration = "v3" | "v4";
 
+export const P05_BSC_EXECUTION_REGISTRY_VERSION = "p05-bsc-execution-v1" as const;
+
+export interface BscReadContractIdentity {
+  address: `0x${string}`;
+  runtimeCodeHash: Hex;
+}
+
+export interface BscPositionReadDeployment {
+  abiHash: `sha256:${string}`;
+  chainId: 56;
+  factory: BscReadContractIdentity | null;
+  generation: ProtocolGeneration;
+  platformId: ProtocolId;
+  platformKey: ProtocolPlatformId;
+  poolIdentity: "poolAddress" | "poolId";
+  poolManager: BscReadContractIdentity | null;
+  positionManager: BscReadContractIdentity;
+  registryVersion: typeof P05_BSC_EXECUTION_REGISTRY_VERSION;
+  stateView: BscReadContractIdentity | null;
+  validFromBlock: string;
+  validToBlock: string | null;
+}
+
+export interface BscPositionReadRegistry {
+  chainId: 56;
+  deployments: readonly BscPositionReadDeployment[];
+  effectiveBlock: string;
+  executionEnabled: false;
+  registryVersion: typeof P05_BSC_EXECUTION_REGISTRY_VERSION;
+  supportedChainIds: readonly [56];
+}
+
 export interface ProtocolDeployment {
   abiHash: `sha256:${string}`;
   chainId: 56;
