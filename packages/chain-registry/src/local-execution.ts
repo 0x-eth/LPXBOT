@@ -157,7 +157,7 @@ export const P05_BSC_LOCAL_EXECUTION_REGISTRY: LocalExecutionRegistry = Object.f
     "0x6971b189",
   ] as const),
   productionInheritance: false,
-  registryDigest: "sha256:51f45a550187b8ed03c39adc85de6a10fca3fe51ba5be53cc414595f09067751",
+  registryDigest: "sha256:a17fdacc4e6ff13fc6135ba090d7d280c80864ddc4b9c2530e248b249883eed4",
   registryVersion: P05_BSC_LOCAL_EXECUTION_REGISTRY_VERSION,
   rollbackVersion: "p05-bsc-local-execution-disabled-v0",
   routerSelectorAllowlist: Object.freeze(["0xbb05e388"] as const),

@@ -28,7 +28,9 @@ const tokenIn = registry.tokenPolicy.tokens[0]!;
 const tokenOut = registry.tokenPolicy.tokens[1]!;
 const digestA = `sha256:${"a".repeat(64)}` as const;
 const creationCodeHash =
-  "0x24f17096a9e25eed57688f0766b2b48398a6b3c752f32a7c3f15e504518c1336" as const;
+  "0x03d49afeaae7c230fe898e1843a3d292b3d422cf22d7ec00f3bac3ca8377e5e7" as const;
+const constructorArgumentsHash =
+  "sha256:145c51662ed6d3e586b35654542edf7379c2475a1c3865a9a24c46056a40c604" as const;
 const walletAddress = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266" as const;
 
 function asset(token: typeof tokenIn | typeof tokenOut): ExecutionAssetBinding {
@@ -174,7 +176,7 @@ function deploymentPlan(): HelperDeploymentPlan {
     ...base("helper-deployment", "0x00000000"),
     deployment: {
       adapter: adapter.address,
-      constructorArgumentsHash: digestA,
+      constructorArgumentsHash,
       creationCodeHash,
       expectedHelper: helper.address,
       expectedRuntimeCodeHash: helper.runtimeCodeHash,
@@ -190,7 +192,7 @@ function context(): ExecutionPlanValidationContext {
   return {
     adapterAddress: adapter.address,
     chainId: registry.chainId,
-    constructorArgumentsHash: digestA,
+    constructorArgumentsHash,
     creationCodeHash,
     dustLimitBaseUnit: registry.tokenPolicy.dustLimitBaseUnit,
     feePolicyDigest: registry.feePolicy.policyDigest,
