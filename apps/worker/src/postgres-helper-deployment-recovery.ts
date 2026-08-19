@@ -133,7 +133,7 @@ function basePlan(row: OperationRow): HelperDeploymentPlan {
   ) {
     throw new HelperDeploymentWorkerError("HELPER_RECOVERY_PLAN_INVALID");
   }
-  return plan;
+  return structuredClone(plan);
 }
 
 function activePlan(row: OperationRow): HelperDeploymentPlan {
