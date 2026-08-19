@@ -18,8 +18,8 @@ const validEnvironment = {
   SIGNER_PORT: "43210",
 } as const;
 
-describe("P04 signer production boundary", () => {
-  it("exports only plan-bound transaction signing and no arbitrary digest, broadcast, or RPC capability", () => {
+describe("P04/P05 signer production boundary", () => {
+  it("exports only plan-bound signing and no arbitrary digest, broadcast, or RPC capability", () => {
     expect(signerCapabilities).toEqual([
       "import",
       "generate",
@@ -27,6 +27,7 @@ describe("P04 signer production boundary", () => {
       "open-verify",
       "password-reseal",
       "plan-bound-transaction-signing",
+      "plan-bound-helper-deployment-signing",
     ]);
     expect(signerCapabilities.join(" ")).not.toMatch(/digest|message|broadcast|rpc/u);
   });
