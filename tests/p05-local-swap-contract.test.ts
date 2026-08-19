@@ -37,6 +37,7 @@ const helper = {
   helperVersion: "WalletHelperV1",
   owner: wallet.address,
   permit2: localSwapComponent("permit2").address,
+  registryVersion: "p05-local-helper-deployment-v2",
   runtimeCodeHash: `0x${"91".repeat(32)}`,
   verifiedBlockNumber: "7",
 } as const;
