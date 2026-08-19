@@ -8,7 +8,8 @@ import {
   type LocalSwapPermit2SignatureProvider,
 } from "./local-swap-executions.js";
 
-const loopbackEndpointPattern = /^http:\/\/(?:127\.0\.0\.1|\[::1\]):[1-9][0-9]{0,4}\/v1\/local-swap\/permit2\/sign$/u;
+const loopbackEndpointPattern =
+  /^http:\/\/(?:127\.0\.0\.1|\[::1\]):[1-9][0-9]{0,4}\/v1\/local-swap\/permit2\/sign$/u;
 const identityPattern = /^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
@@ -61,9 +62,10 @@ export class RemoteLocalSwapPermit2Client implements LocalSwapPermit2SignaturePr
     try {
       response = await this.#fetch(this.#endpoint, {
         body: JSON.stringify({ payload }),
-        cache: "no-store",
         headers: {
+          Accept: "application/json",
           Authorization: this.#authorization,
+          "Cache-Control": "no-store",
           "Content-Type": "application/json",
           "X-LPBOT-Reauthenticated-Session-Id": input.reauthenticatedSessionId,
           "X-LPBOT-Tenant-Id": input.tenantId,
@@ -88,13 +90,22 @@ export class RemoteLocalSwapPermit2Client implements LocalSwapPermit2SignaturePr
       throw new LocalSwapExecutionError("PERMIT2_AUTHORIZATION_INVALID");
     }
     let value: unknown;
-    try { value = JSON.parse(raw); } catch { throw new LocalSwapExecutionError("PERMIT2_AUTHORIZATION_INVALID"); }
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      throw new LocalSwapExecutionError("PERMIT2_AUTHORIZATION_INVALID");
+    }
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
       throw new LocalSwapExecutionError("PERMIT2_AUTHORIZATION_INVALID");
     }
     const envelope = value as Record<string, unknown>;
-    if (Object.keys(envelope).sort().join(",") !== "data,success" || envelope.success !== true ||
-      typeof envelope.data !== "object" || envelope.data === null || Array.isArray(envelope.data)) {
+    if (
+      Object.keys(envelope).sort().join(",") !== "data,success" ||
+      envelope.success !== true ||
+      typeof envelope.data !== "object" ||
+      envelope.data === null ||
+      Array.isArray(envelope.data)
+    ) {
       throw new LocalSwapExecutionError("PERMIT2_AUTHORIZATION_INVALID");
     }
     const data = envelope.data as Record<string, unknown>;

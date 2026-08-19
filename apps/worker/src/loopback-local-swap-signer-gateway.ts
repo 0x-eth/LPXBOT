@@ -6,7 +6,8 @@ import {
   type LocalSwapStepSignerResult,
 } from "./local-swap-worker.js";
 
-const endpointPattern = /^http:\/\/(?:127\.0\.0\.1|\[::1\]):[1-9][0-9]{0,4}\/v1\/local-swap\/steps\/sign-and-deliver$/u;
+const endpointPattern =
+  /^http:\/\/(?:127\.0\.0\.1|\[::1\]):[1-9][0-9]{0,4}\/v1\/local-swap\/steps\/sign-and-deliver$/u;
 const identityPattern = /^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const digestPattern = /^sha256:[0-9a-f]{64}$/u;
@@ -113,9 +114,10 @@ export class LoopbackLocalSwapSignerGateway implements LocalSwapStepSignerGatewa
           planDigest: input.planDigest,
           stepId: input.stepId,
         }),
-        cache: "no-store",
         headers: {
+          Accept: "application/json",
           Authorization: this.#authorization,
+          "Cache-Control": "no-store",
           "Content-Type": "application/json",
           ...(input.reauthenticatedSessionId
             ? { "X-LPBOT-Reauthenticated-Session-Id": input.reauthenticatedSessionId }
@@ -135,18 +137,24 @@ export class LoopbackLocalSwapSignerGateway implements LocalSwapStepSignerGatewa
       throw new LocalSwapWorkerError("LOCAL_SWAP_SIGNER_RESPONSE_INVALID", true);
     }
     let value: unknown;
-    try { value = JSON.parse(raw); } catch { throw new LocalSwapWorkerError("LOCAL_SWAP_SIGNER_RESPONSE_INVALID", true); }
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      throw new LocalSwapWorkerError("LOCAL_SWAP_SIGNER_RESPONSE_INVALID", true);
+    }
     if (
       response.headers.get("content-type")?.split(";", 1)[0] !== "application/json" ||
       response.headers.get("cache-control") !== "no-store"
-    ) throw new LocalSwapWorkerError("LOCAL_SWAP_SIGNER_RESPONSE_INVALID", true);
+    )
+      throw new LocalSwapWorkerError("LOCAL_SWAP_SIGNER_RESPONSE_INVALID", true);
     if (response.status !== 202) throw signerFailure(value);
     const result = signingResult(value);
     if (
       result.planDigest !== input.planDigest ||
       result.stepId !== input.stepId ||
       result.generation !== input.generation
-    ) throw new LocalSwapWorkerError("LOCAL_SWAP_SIGNER_RESPONSE_INVALID", true);
+    )
+      throw new LocalSwapWorkerError("LOCAL_SWAP_SIGNER_RESPONSE_INVALID", true);
     return result;
   }
 }

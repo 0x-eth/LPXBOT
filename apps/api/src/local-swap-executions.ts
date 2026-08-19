@@ -88,14 +88,19 @@ export class LocalSwapQuoteValidationError extends Error {
 }
 
 export interface LocalSwapQuoteApplication {
-  quote(input: LocalSwapQuoteRequest & { tenantId: string; userId: string; walletAddress: Address }): Promise<Readonly<LocalSwapQuoteView>>;
+  quote(
+    input: LocalSwapQuoteRequest & { tenantId: string; userId: string; walletAddress: Address },
+  ): Promise<Readonly<LocalSwapQuoteView>>;
 }
 
 export interface LocalSwapQuoteStore {
-  append(input: { quote: Readonly<LocalSwapQuote>; tenantId: string; userId: string }): Promise<void>;
+  append(input: {
+    quote: Readonly<LocalSwapQuote>;
+    tenantId: string;
+    userId: string;
+  }): Promise<void>;
   get(input: {
     quoteDigest: `sha256:${string}`;
-    reauthenticatedSessionId: string;
     tenantId: string;
     userId: string;
     walletId: string;
@@ -105,8 +110,16 @@ export interface LocalSwapQuoteStore {
 export class MemoryLocalSwapQuoteStore implements LocalSwapQuoteStore {
   readonly #quotes = new Map<string, LocalSwapQuote>();
 
-  async append(input: { quote: Readonly<LocalSwapQuote>; tenantId: string; userId: string }): Promise<void> {
-    const key = this.#key({ ...input, quoteDigest: input.quote.quoteDigest, walletId: input.quote.walletId });
+  async append(input: {
+    quote: Readonly<LocalSwapQuote>;
+    tenantId: string;
+    userId: string;
+  }): Promise<void> {
+    const key = this.#key({
+      ...input,
+      quoteDigest: input.quote.quoteDigest,
+      walletId: input.quote.walletId,
+    });
     if (!this.#quotes.has(key)) this.#quotes.set(key, structuredClone(input.quote));
   }
 
@@ -154,12 +167,17 @@ export class ControlledLocalSwapQuoteService implements LocalSwapQuoteApplicatio
   readonly #adapter: Pick<LocalSwapQuoteAdapter, "quote">;
   readonly #store: LocalSwapQuoteStore;
 
-  constructor(input: { adapter: Pick<LocalSwapQuoteAdapter, "quote">; store: LocalSwapQuoteStore }) {
+  constructor(input: {
+    adapter: Pick<LocalSwapQuoteAdapter, "quote">;
+    store: LocalSwapQuoteStore;
+  }) {
     this.#adapter = input.adapter;
     this.#store = input.store;
   }
 
-  async quote(input: LocalSwapQuoteRequest & { tenantId: string; userId: string; walletAddress: Address }) {
+  async quote(
+    input: LocalSwapQuoteRequest & { tenantId: string; userId: string; walletAddress: Address },
+  ) {
     const quote = await this.#adapter.quote(input);
     await this.#store.append({ quote, tenantId: input.tenantId, userId: input.userId });
     return publicQuote(quote as LocalSwapQuote);
@@ -192,7 +210,9 @@ export interface LocalSwapHelperBindingStore {
 export class MemoryLocalSwapHelperBindingStore implements LocalSwapHelperBindingStore {
   readonly #bindings = new Map<string, LocalSwapHelperBinding>();
 
-  constructor(bindings: readonly (LocalSwapHelperBinding & { tenantId: string; userId: string })[] = []) {
+  constructor(
+    bindings: readonly (LocalSwapHelperBinding & { tenantId: string; userId: string })[] = [],
+  ) {
     for (const binding of bindings) this.put(binding);
   }
 
@@ -220,7 +240,11 @@ export interface LocalSwapChainInspection {
   blockHash: Hex;
   blockNumber: string;
   blockTimestamp: string;
-  componentCode: readonly { address: Address; role: "adapter" | "permit2" | "router"; runtimeCodeHash: Hex | null }[];
+  componentCode: readonly {
+    address: Address;
+    role: "adapter" | "permit2" | "router";
+    runtimeCodeHash: Hex | null;
+  }[];
   helper: {
     adapter: Address;
     codeHash: Hex | null;
@@ -251,6 +275,7 @@ export interface LocalSwapPermit2SignatureProvider {
     nonce: string;
     permit2: Address;
     quoteDigest: `sha256:${string}`;
+    reauthenticatedSessionId: string;
     sigDeadline: string;
     spender: Address;
     tenantId: string;
@@ -332,7 +357,10 @@ export interface LocalSwapIdempotencyRecord {
 
 export interface LocalSwapOperationStore {
   create(input: {
-    buildPlan(input: { operationId: string; reservations: readonly LocalSwapStepReservation[] }): LocalSwapExecutionPlan;
+    buildPlan(input: {
+      operationId: string;
+      reservations: readonly LocalSwapStepReservation[];
+    }): LocalSwapExecutionPlan;
     expectedNonce: string;
     idempotencyKey: string;
     nonceViews: readonly LocalSwapNonceView[];
@@ -353,11 +381,18 @@ export interface LocalSwapOperationStore {
     userId: string;
     walletId: string;
   }): Promise<LocalSwapIdempotencyRecord | null>;
-  get(input: { operationId: string; tenantId: string; userId: string }): Promise<StoredLocalSwapOperation | null>;
+  get(input: {
+    operationId: string;
+    tenantId: string;
+    userId: string;
+  }): Promise<StoredLocalSwapOperation | null>;
 }
 
 export class MemoryLocalSwapOperationStore implements LocalSwapOperationStore {
-  readonly #idempotency = new Map<string, { operationId: string; requestHash: `sha256:${string}` }>();
+  readonly #idempotency = new Map<
+    string,
+    { operationId: string; requestHash: `sha256:${string}` }
+  >();
   readonly #ledgers = new Map<string, { fencingToken: bigint; nextNonce: bigint | null }>();
   readonly #operations = new Map<string, StoredLocalSwapOperation>();
   readonly #uuid: () => string;
@@ -369,7 +404,12 @@ export class MemoryLocalSwapOperationStore implements LocalSwapOperationStore {
     this.#uuid = input.uuid ?? randomUUID;
   }
 
-  async findIdempotency(input: { idempotencyKey: string; tenantId: string; userId: string; walletId: string }) {
+  async findIdempotency(input: {
+    idempotencyKey: string;
+    tenantId: string;
+    userId: string;
+    walletId: string;
+  }) {
     const value = this.#idempotency.get(this.#scope(input));
     const operation = value ? this.#operations.get(value.operationId) : null;
     return value && operation
@@ -388,8 +428,12 @@ export class MemoryLocalSwapOperationStore implements LocalSwapOperationStore {
     const scope = this.#scope(input);
     const existing = this.#idempotency.get(scope);
     if (existing) {
-      if (existing.requestHash !== input.requestHash) throw new LocalSwapExecutionError("IDEMPOTENCY_CONFLICT");
-      return { kind: "duplicate" as const, operation: structuredClone(this.#operations.get(existing.operationId)!) };
+      if (existing.requestHash !== input.requestHash)
+        throw new LocalSwapExecutionError("IDEMPOTENCY_CONFLICT");
+      return {
+        kind: "duplicate" as const,
+        operation: structuredClone(this.#operations.get(existing.operationId)!),
+      };
     }
     const nonce = consensusNonce(input.nonceViews);
     const ledgerScope = `31337:${input.walletId}`;
@@ -453,13 +497,22 @@ export class MemoryLocalSwapOperationStore implements LocalSwapOperationStore {
     return { kind: "created" as const, operation: structuredClone(operation) };
   }
 
-  #scope(input: { idempotencyKey: string; tenantId: string; userId: string; walletId: string }): string {
+  #scope(input: {
+    idempotencyKey: string;
+    tenantId: string;
+    userId: string;
+    walletId: string;
+  }): string {
     return `${input.tenantId}:${input.userId}:${input.walletId}:${input.idempotencyKey}`;
   }
 }
 
 export interface LocalSwapExecutionApplication {
-  get(input: { operationId: string; tenantId: string; userId: string }): Promise<LocalSwapExecutionOperation>;
+  get(input: {
+    operationId: string;
+    tenantId: string;
+    userId: string;
+  }): Promise<LocalSwapExecutionOperation>;
   preview(input: {
     request: LocalSwapExecutePreviewRequest;
     tenantId: string;
@@ -516,7 +569,10 @@ function exactKeys(value: Record<string, unknown>, expected: readonly string[]):
   return keys.length === wanted.length && keys.every((key, index) => key === wanted[index]);
 }
 
-function walletId(value: unknown, ErrorType: typeof LocalSwapExecutionError | typeof LocalSwapQuoteValidationError): string {
+function walletId(
+  value: unknown,
+  ErrorType: typeof LocalSwapExecutionError | typeof LocalSwapQuoteValidationError,
+): string {
   if (typeof value !== "string" || !uuidPattern.test(value)) {
     throw ErrorType === LocalSwapExecutionError
       ? new LocalSwapExecutionError("WALLET_NOT_FOUND")
@@ -537,7 +593,14 @@ function canonicalAddress(value: unknown): Address | null {
 export function parseLocalSwapQuoteRequest(value: unknown): LocalSwapQuoteRequest {
   const input = record(value);
   if (
-    !exactKeys(input, ["amountInBaseUnit", "chainId", "slippageBps", "tokenIn", "tokenOut", "walletId"])
+    !exactKeys(input, [
+      "amountInBaseUnit",
+      "chainId",
+      "slippageBps",
+      "tokenIn",
+      "tokenOut",
+      "walletId",
+    ])
   ) {
     throw new LocalSwapQuoteValidationError("LOCAL_SWAP_QUOTE_INVALID");
   }
@@ -586,7 +649,13 @@ export function parseLocalSwapExecutePreview(value: unknown): LocalSwapExecutePr
 export function parseLocalSwapExecute(value: unknown): LocalSwapExecuteRequest {
   const input = record(value);
   if (
-    !exactKeys(input, ["authorizationMode", "previewDigest", "previewToken", "quoteDigest", "walletId"]) ||
+    !exactKeys(input, [
+      "authorizationMode",
+      "previewDigest",
+      "previewToken",
+      "quoteDigest",
+      "walletId",
+    ]) ||
     typeof input.previewDigest !== "string" ||
     !digestPattern.test(input.previewDigest) ||
     typeof input.previewToken !== "string" ||
@@ -620,7 +689,8 @@ export function parseLocalSwapOperationId(value: unknown): string {
 }
 
 function decimal(value: string, code: LocalSwapExecutionErrorCode): bigint {
-  if (!decimalPattern.test(value) || value.length > 78) throw new LocalSwapExecutionError(code, true);
+  if (!decimalPattern.test(value) || value.length > 78)
+    throw new LocalSwapExecutionError(code, true);
   return BigInt(value);
 }
 
@@ -631,7 +701,10 @@ function consensusNonce(views: readonly LocalSwapNonceView[]): string {
   const providers = new Set<string>();
   const values = new Set<string>();
   for (const view of views) {
-    if (!/^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u.test(view.providerId) || providers.has(view.providerId)) {
+    if (
+      !/^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u.test(view.providerId) ||
+      providers.has(view.providerId)
+    ) {
       throw new LocalSwapExecutionError("NONCE_RECONCILIATION_REQUIRED", true);
     }
     providers.add(view.providerId);
@@ -680,7 +753,10 @@ function publicOperation(operation: StoredLocalSwapOperation): LocalSwapExecutio
 
 const erc20ApproveAbi = [
   {
-    inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }],
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
     name: "approve",
     outputs: [{ name: "", type: "bool" }],
     stateMutability: "nonpayable",
@@ -848,11 +924,13 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
       walletId: input.request.walletId,
     });
     if (existing) {
-      if (existing.requestHash !== requestHash) throw new LocalSwapExecutionError("IDEMPOTENCY_CONFLICT");
+      if (existing.requestHash !== requestHash)
+        throw new LocalSwapExecutionError("IDEMPOTENCY_CONFLICT");
       return { created: false, operation: publicOperation(existing.operation) };
     }
     const now = this.#now();
-    if (new Date(stored.facts.expiresAt) <= now) throw new LocalSwapExecutionError("PREVIEW_EXPIRED");
+    if (new Date(stored.facts.expiresAt) <= now)
+      throw new LocalSwapExecutionError("PREVIEW_EXPIRED");
     const quote = await this.#quote(input);
     const binding = await this.#binding(input, quote);
     const current = await this.#facts(
@@ -865,19 +943,29 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
     if (consensusNonce(currentNonceViews(current)) !== stored.facts.nonce) {
       throw new LocalSwapExecutionError("NONCE_DRIFT");
     }
-    if (digest({ facts: current, quoteDigest: quote.quoteDigest, request: stored.request }) !== stored.previewDigest) {
+    if (
+      digest({ facts: current, quoteDigest: quote.quoteDigest, request: stored.request }) !==
+      stored.previewDigest
+    ) {
       throw new LocalSwapExecutionError("PREVIEW_CHANGED");
     }
     const signature = await this.#permit2Signature(input, quote, current);
     const result = await this.#operations.create({
       buildPlan: ({ operationId, reservations }) =>
-        this.#buildPlan({ binding, facts: current, operationId, quote, reservations, signature, wallet: input.wallet }),
+        this.#buildPlan({
+          binding,
+          facts: current,
+          operationId,
+          quote,
+          reservations,
+          signature,
+          wallet: input.wallet,
+        }),
       expectedNonce: current.nonce,
       idempotencyKey,
       nonceViews: currentNonceViews(current),
       previewDigest: stored.previewDigest,
       quoteDigest: quote.quoteDigest,
-      reauthenticatedSessionId: input.sessionId,
       requestHash,
       requestId: input.requestId,
       sessionId: input.sessionId,
@@ -895,7 +983,12 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
     if (wallet.lockStatus !== "ready") throw new LocalSwapExecutionError("WALLET_LOCKED");
   }
 
-  async #quote(input: { request: { quoteDigest: `sha256:${string}`; walletId: string }; tenantId: string; userId: string; wallet: CustodyWallet }): Promise<LocalSwapQuote> {
+  async #quote(input: {
+    request: { quoteDigest: `sha256:${string}`; walletId: string };
+    tenantId: string;
+    userId: string;
+    wallet: CustodyWallet;
+  }): Promise<LocalSwapQuote> {
     const quote = await this.#quotes.get({
       quoteDigest: input.request.quoteDigest,
       tenantId: input.tenantId,
@@ -958,12 +1051,16 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
       walletAddress: quote.walletAddress,
     });
     this.#verifyInspection(inspection, binding, quote, now);
-    if (decimal(inspection.ownerInputBalanceBaseUnit, "LOCAL_SWAP_UNAVAILABLE") < BigInt(quote.amountInBaseUnit)) {
+    if (
+      decimal(inspection.ownerInputBalanceBaseUnit, "LOCAL_SWAP_UNAVAILABLE") <
+      BigInt(quote.amountInBaseUnit)
+    ) {
       throw new LocalSwapExecutionError("INSUFFICIENT_BALANCE");
     }
     const allowance = decimal(inspection.allowanceBaseUnit, "LOCAL_SWAP_UNAVAILABLE");
     const stepKinds: LocalSwapStepKind[] = [];
-    if (allowance !== 0n && allowance !== BigInt(quote.amountInBaseUnit)) stepKinds.push("allowance-reset");
+    if (allowance !== 0n && allowance !== BigInt(quote.amountInBaseUnit))
+      stepKinds.push("allowance-reset");
     stepKinds.push("approve", "swap", "cleanup");
     const quoteDeadline = Math.floor(Date.parse(quote.deadline) / 1_000);
     const permitExpiration = Math.min(
@@ -1028,7 +1125,11 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
     }
     for (const expected of this.#registry.components) {
       const actual = inspection.componentCode.find(({ role }) => role === expected.role);
-      if (!actual || actual.address !== expected.address || actual.runtimeCodeHash !== expected.runtimeCodeHash) {
+      if (
+        !actual ||
+        actual.address !== expected.address ||
+        actual.runtimeCodeHash !== expected.runtimeCodeHash
+      ) {
         throw new LocalSwapExecutionError("REGISTRY_MISMATCH");
       }
     }
@@ -1071,7 +1172,13 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
   }
 
   async #permit2Signature(
-    input: { tenantId: string; userId: string; wallet: CustodyWallet; request: LocalSwapExecuteRequest },
+    input: {
+      request: LocalSwapExecuteRequest;
+      sessionId: string;
+      tenantId: string;
+      userId: string;
+      wallet: CustodyWallet;
+    },
     quote: LocalSwapQuote,
     facts: PreviewFacts,
   ): Promise<Hex | null> {
@@ -1086,6 +1193,7 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
       nonce: facts.permit2.nonce,
       permit2: facts.binding.permit2Address,
       quoteDigest: quote.quoteDigest,
+      reauthenticatedSessionId: input.sessionId,
       sigDeadline: facts.permit2.sigDeadline,
       spender: facts.binding.helperAddress,
       tenantId: input.tenantId,
