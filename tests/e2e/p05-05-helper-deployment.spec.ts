@@ -470,14 +470,14 @@ test("expires stale previews, surfaces digest conflicts, and restores keyboard f
   await deploy.press("Enter");
   await expect(dialog).toBeVisible();
   await page.getByRole("button", { name: "确认部署" }).click();
-  await expect(panel.getByRole("alert")).toContainText("部署预览已过期");
+  await expect(dialog.getByRole("alert")).toContainText("部署预览已过期");
   await page.getByRole("button", { name: "取消" }).click();
   await expect(deploy).toBeFocused();
 
   state.submitError = "IDEMPOTENCY_CONFLICT";
   await deploy.click();
   await page.getByRole("button", { name: "确认部署" }).click();
-  await expect(panel.getByRole("alert")).toContainText("重复提交内容冲突");
+  await expect(dialog.getByRole("alert")).toContainText("重复提交内容冲突");
   await expect(panel).toHaveAttribute("data-state", "preview-ready");
   expect(state.submitPayloads).toHaveLength(2);
   expect(state.submitPayloads[0]).toEqual(state.submitPayloads[1]);

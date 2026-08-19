@@ -115,6 +115,7 @@ function OperationFacts({ operation }: { operation: HelperDeploymentOperation })
 
 function PreviewDialog({
   busy,
+  error,
   onConfirm,
   onOpenChange,
   open,
@@ -123,6 +124,7 @@ function PreviewDialog({
   secondsLeft,
 }: {
   busy: boolean;
+  error: string | null;
   onConfirm(): void;
   onOpenChange(open: boolean): void;
   open: boolean;
@@ -219,6 +221,12 @@ function PreviewDialog({
                 {secondsLeft > 0 ? `${secondsLeft} 秒后过期` : "预览已过期"}
               </p>
             </div>
+          ) : null}
+          {error ? (
+            <p className="wallet-read-error helper-deployment-error" role="alert">
+              <CircleAlert aria-hidden="true" size={16} />
+              {error}
+            </p>
           ) : null}
           <div className="wallet-dialog-actions">
             <Dialog.Close asChild>
@@ -392,7 +400,7 @@ export function HelperDeploymentPanel({ wallet }: { wallet: CustodyWallet }) {
             Helper runtime 与 constructor 身份已验证
           </p>
         ) : null}
-        {error ? (
+        {error && !dialogOpen ? (
           <p className="wallet-read-error helper-deployment-error" role="alert">
             <CircleAlert aria-hidden="true" size={16} />
             {error}
@@ -401,6 +409,7 @@ export function HelperDeploymentPanel({ wallet }: { wallet: CustodyWallet }) {
       </section>
       <PreviewDialog
         busy={state === "submitting"}
+        error={error}
         onConfirm={() => void submit()}
         onOpenChange={(open) => {
           if (!open && state !== "submitting") {
