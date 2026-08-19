@@ -209,7 +209,7 @@
 | WALLET-09 | 地址簿、备注和收款二维码 | UI+BUNDLE | USER | R1 | 独立地址簿域、自钱包/已知外部/新外部分类、安全密码分支、EIP-681 QR；`implemented-assumed`（P04-05，local fixture only） |
 | WALLET-10 | ERC-20/原生币转账 | UI+API | USER | R3/R4 | 25/50/75/MAX、幂等键、余额/gas/自转校验；`implemented-assumed`（P04-06，PostgreSQL nonce/recovery、local Anvil fixture only；非本地写入停在 `READY_FOR_APPROVAL`） |
 | SWAP-01 | Swap 报价 | UI+API | USER | R0 | 滑点、minOut、价格影响、gas、报价过期；`implemented-assumed`（P05-03，BSC local fixture only；quote-only） |
-| SWAP-02 | Swap 执行 | UI+API | USER | R3/R4 | approve、route、receipt、失败恢复、幂等；`planned`（P05-04 仅建立 local execution safety baseline） |
+| SWAP-02 | Swap 执行 | UI+API | USER | R3/R4 | approve、route、receipt、失败恢复、幂等；`implemented-assumed`（P05-06，仅非 fork Anvil chainId 31337、合成钱包与 TestOnlyERC20/WBNB 的 local 闭环；testnet/production closed） |
 | POS-01 | V3/V4 NFT 仓位扫描 | UI+API+BUNDLE | USER | R0 | Uniswap/Pancake、分页、链、未知 NFT；`implemented-assumed`（P05-02，BSC local fixture only） |
 | POS-02 | 收取仓位手续费 | UI+API | USER | R3/R4 | NFT owner/approval、V3/V4 receipt；`planned`（P05-04 仅建立 typed local plan baseline） |
 | POS-03 | 部分/全部撤出 LP | UI+API | USER | R3/R4 | 1-100%、slippage、collect、burn 可选；`planned`（P05-04 仅建立 typed local plan baseline） |

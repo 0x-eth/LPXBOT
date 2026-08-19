@@ -3,7 +3,7 @@
 > 基线日期：2026-08-13  
 > 范围源：[功能矩阵](./FUNCTION_MATRIX.md)  
 > 阶段源：[开发路线图](./DEVELOPMENT_ROADMAP.md)  
-> 当前状态：P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项及 P05 的 6 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 129 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
+> 当前状态：P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项及 P05 的 7 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 128 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
 
 ## 1. 使用规则
 
@@ -359,13 +359,13 @@ P04-07 在既有 custody、Keystore、安全密码、资产、地址簿、转账
 
 #### P05 当前实现与证据状态
 
-P05-05 将固定 `WalletHelperV1` 模板与 per-wallet 实例绑定分离，并用独立 Registry/plan v2 把首次部署接入认证 API、PostgreSQL nonce/operation/Outbox ledger、Worker recovery、loopback 隔离 Signer、本地 Anvil 和 Helper UI。CREATE 交易固定为 `to=null`、`value=0`，地址由钱包与保留 nonce 推导，init code 和 constructor 参数只由服务端生成；Signer 与回执闭环重验 Registry、digest、fencing、code hash、owner、adapter、Permit2 和 binding。local gate 仅对 chainId 31337 与合成资产为 `OPEN`，testnet/production gates 为 `CLOSED`，测试网/生产签名、广播和真实资金操作均为 0。P05 当前为 6 项 `implemented-assumed`、6 项 `planned`，全局为 67 项 `implemented-assumed`、129 项 `planned`，工作项保持 `accepted-with-gaps`。SWAP-02、POS-02、POS-03、HELPER-03、HELPER-04、HELPER-06 继续 planned，因此不标记 `parity-verified` 或 `released`。
+P05-06 在 P05-05 已验证的 per-wallet active Helper binding 上增加独立 local Swap Registry、quote v2 和 plan v2，将精确 approval/Permit2、逐 step nonce/fencing/fee 约束、隔离签名、广播、canonical receipt、余额/minOut/事件/allowance/dust 核对、replacement、cleanup 与 restart recovery 接成闭环。客户端不能提交 target/router/spender/selector/calldata；approve 已确认而 Swap 失败时，operation 在 allowance=0 cleanup 确认前保持 `reconciling`。local gate 只对非 fork Anvil chainId 31337、合成钱包、TestOnlyERC20/WBNB 和 SWAP-02 为 `OPEN`；BSC quote execution 仍关闭，testnet/production gates 为 `CLOSED`，测试网/生产签名、广播和真实资金操作均为 0。P05 当前为 7 项 `implemented-assumed`、5 项 `planned`，全局为 68 项 `implemented-assumed`、128 项 `planned`，工作项保持 `accepted-with-gaps`。POS-02、POS-03、HELPER-03、HELPER-04、HELPER-06 继续 planned，因此不标记 `parity-verified` 或 `released`。
 
 <!-- P05_STATUS_TABLE_START -->
 | ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
 |---|---|---|---|---|
 | SWAP-01 | `implemented-assumed` | [controlled quote Registry](../packages/chain-registry/src/index.ts), [BSC quote adapter and digest](../packages/chain-adapters/src/swap-quote.ts), [quote service](../apps/api/src/swap-quotes.ts), [API route](../apps/api/src/app.ts), [strict web client](../apps/web/src/swap-pricing-client.ts), [wallet quote UI](../apps/web/src/swap-pricing-panels.tsx) | [T-UNIT/T-CHAIN](../tests/p05-swap-quote-adapter.test.ts), [T-API/T-SEC](../tests/p05-swap-quote-api.test.ts), [T-UI](../tests/p05-swap-pricing-client.test.ts), [T-UI/T-VIS](../tests/e2e/p05-03-swap-pricing.spec.ts) | [P05-03](../artifacts/acceptance/P05-03/manifest.json); local-fixture-verified; quote-only; execution allowlist empty; production provider unconfigured |
-| SWAP-02 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs), [P05-04 safety baseline](../tests/governance/p05-04-completion.test.mjs) | [P05-04](../artifacts/acceptance/P05-04/manifest.json); reference-only; local gate only; testnet/production closed |
+| SWAP-02 | `implemented-assumed` | [local Registry](../packages/chain-registry/src/local-swap-execution.ts), [quote v2 adapter](../packages/chain-adapters/src/local-swap-quote.ts), [plan domain](../packages/domain/src/local-swap-execution.ts), [API service](../apps/api/src/local-swap-executions.ts), [PostgreSQL ledger](../apps/api/src/postgres-local-swap-execution-store.ts), [Signer authorizer](../apps/signer/src/postgres-local-swap-plan-authorizer.ts), [Worker recovery](../apps/worker/src/postgres-local-swap-recovery.ts), [strict web client](../apps/web/src/local-swap-execution-client.ts), [execution UI](../apps/web/src/local-swap-execution-panel.tsx), [migration](../infra/migrations/20260820000100_create_local_swap_execution.sql) | [T-UNIT/T-API/T-SEC](../tests/p05-local-swap-execution-api.test.ts), [T-API/T-RBAC](../tests/p05-local-swap-execution-http-api.test.ts), [T-SEC](../tests/p05-local-swap-permit2-signer.test.ts), [T-REC](../tests/p05-local-swap-recovery.test.ts), [T-MIG/T-REC](../tests/integration/postgres-local-swap-execution.integration.ts), [T-CHAIN](../tests/integration/anvil-local-swap-execution.integration.ts), [T-UI](../tests/p05-local-swap-execution-client.test.ts), [T-UI/T-VIS](../tests/e2e/p05-06-local-swap-execution.spec.ts) | [P05-06](../artifacts/acceptance/P05-06/manifest.json); local-fixture-verified; chainId 31337 and synthetic assets only; BSC/testnet/production execution closed |
 | POS-01 | `implemented-assumed` | [BSC Registry](../packages/chain-registry/src/index.ts), [four position adapters](../packages/chain-adapters/src/position-read-adapters.ts), [controlled RPC](../packages/chain-adapters/src/position-read-rpc.ts), [canonical scanner](../apps/api/src/position-read-model.ts), [API routes](../apps/api/src/app.ts), [strict web client](../apps/web/src/position-helper-client.ts), [wallet UI](../apps/web/src/position-helper-panels.tsx) | [T-UNIT/T-CHAIN](../tests/p05-position-read-adapters.test.ts), [T-API/T-SEC](../tests/p05-position-api.test.ts), [T-REC](../tests/p05-position-scanner.test.ts), [T-UI/T-VIS](../tests/e2e/p05-02-position-helper-read-model.spec.ts) | [P05-02](../artifacts/acceptance/P05-02/manifest.json); local-fixture-verified; chainId 56 read-only; live Registry verification unresolved |
 | POS-02 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs), [P05-04 safety baseline](../tests/governance/p05-04-completion.test.mjs) | [P05-04](../artifacts/acceptance/P05-04/manifest.json); reference-only; no production collect action |
 | POS-03 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs), [P05-04 safety baseline](../tests/governance/p05-04-completion.test.mjs) | [P05-04](../artifacts/acceptance/P05-04/manifest.json); reference-only; no production decrease action |
@@ -405,10 +405,10 @@ P05-05 将固定 `WalletHelperV1` 模板与 per-wallet 实例绑定分离，并�
 |---|---:|---|
 | 功能矩阵稳定 ID | 196 | 已全部映射 |
 | 追踪表稳定 ID | 196 | 必须由自动检查保持相等 |
-| 当前产品实现 | 67 | P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项和 P05 的 6 项完成阶段实现；P05 为 6 implemented-assumed / 6 planned |
-| `implemented-assumed` | 67 | 目标对照或 live 证据仍不完整 |
+| 当前产品实现 | 68 | P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项和 P05 的 7 项完成阶段实现；P05 为 7 implemented-assumed / 5 planned |
+| `implemented-assumed` | 68 | 目标对照或 live 证据仍不完整 |
 | `parity-verified` | 0 | 不由 accepted work item 自动提升 |
 | `released` | 0 | 尚无 staging、监控和回滚完整证明 |
-| 其余 `planned` | 129 | P02/P03/P04 已无 planned；P05 仍有 6 项 planned |
+| 其余 `planned` | 128 | P02/P03/P04 已无 planned；P05 仍有 5 项 planned |
 
 建议 CI 检查逻辑：从 `FUNCTION_MATRIX.md` 与本文件抽取 `^[A-Z]+-[0-9]{2}$`，比较去重集合；再检查每行非空的阶段、测试和证据列。任何新增功能 ID 必须先进入范围源和本表。
