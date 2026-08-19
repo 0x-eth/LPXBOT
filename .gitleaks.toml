@@ -106,3 +106,13 @@ regexes = [
   '''^residual-fixture-001$''',
   '''^fixture-residual-00[12]$''',
 ]
+
+[[rules.allowlists]]
+description = "P05-03 quote and pricing tests use exact public BSC ERC-20 contract addresses, not authentication tokens."
+condition = "AND"
+paths = ['''^tests/(?:e2e/p05-03-swap-pricing\.spec|integration/postgres-pricing-position-store\.integration|p05-pricing-position-(?:api|ledger|sse)|p05-swap-(?:pricing-client|quote-adapter|quote-api))\.test?\.ts$''']
+regexTarget = "secret"
+regexes = [
+  '''^0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c$''',
+  '''^0x55d398326f99059ff775485246999027b3197955$''',
+]
