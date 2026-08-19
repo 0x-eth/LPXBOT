@@ -80,6 +80,23 @@ regexTarget = "match"
 regexes = ['''privateKey\s*=\s*"0xac0974''']
 
 [[rules.allowlists]]
+description = "P05-04 local snapshot uses Anvil's documented account-zero development key and deterministic public fixture addresses on a loopback-only ephemeral chain."
+condition = "AND"
+paths = ['''^scripts/snapshot-p05-04-local-execution\.mjs$''']
+regexTarget = "match"
+regexes = [
+  '''PRIVATE_KEY\s*=\s*\n?\s*"0xac0974''',
+  '''token:\s*"0x[0-9a-f]{40}"''',
+]
+
+[[rules.allowlists]]
+description = "P05-04 evidence matrix records public ERC-20 contract addresses from immutable BSC receipt logs, not authentication tokens."
+condition = "AND"
+paths = ['''^artifacts/acceptance/P05-04/evidence-matrix\.json$''']
+regexTarget = "match"
+regexes = ['''token":\s*"0x[0-9a-f]{40}"''']
+
+[[rules.allowlists]]
 description = "P03-03 notification tests use these exact non-secret fixture values to verify write-only signing-key handling."
 condition = "AND"
 paths = ['''^tests/(?:notification-settings-api|notification-client)\.test\.ts$''']
