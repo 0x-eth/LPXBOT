@@ -508,7 +508,7 @@ export class SwapPricingClient {
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       method: "POST",
-      signal,
+      ...(signal ? { signal } : {}),
     });
     return parseSwapQuoteView(await responseData(response), response.status);
   }
@@ -517,7 +517,7 @@ export class SwapPricingClient {
     const response = await this.#fetch("/api/pricing-positions", {
       cache: "no-store",
       credentials: "include",
-      signal,
+      ...(signal ? { signal } : {}),
     });
     return parsePricingPositionPage(await responseData(response), response.status);
   }
@@ -532,7 +532,7 @@ export class SwapPricingClient {
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       method: "POST",
-      signal,
+      ...(signal ? { signal } : {}),
     });
     return parsePricingPosition(await responseData(response), response.status);
   }
@@ -548,7 +548,7 @@ export class SwapPricingClient {
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       method: "POST",
-      signal,
+      ...(signal ? { signal } : {}),
     });
     return parsePricingPosition(await responseData(response), response.status);
   }
