@@ -311,9 +311,14 @@ describe("P05-02 official BSC PositionManager read adapters", () => {
       [malformed.tokenId],
       1n,
     );
+    const liquiditySelector = encodeFunctionData({
+      abi: UNIV4_POSITION_MANAGER_READ_ABI,
+      args: [malformed.tokenId],
+      functionName: "getPositionLiquidity",
+    }).slice(0, 10);
     const originalCall = malformed.rpc.call.bind(malformed.rpc);
     malformed.rpc.call = async (input) =>
-      input.data.startsWith("0x8e4f2c2a") ? "0x01" : originalCall(input);
+      input.data.startsWith(liquiditySelector) ? "0x01" : originalCall(input);
     await expect(
       malformed.adapter.readPosition({
         helperAddress: helper,
