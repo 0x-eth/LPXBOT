@@ -42,7 +42,9 @@ contract WalletHelperV1 {
     event NativeDeposited(uint256 amount);
     event PlanExecuted(bytes32 indexed planDigest, bytes4 indexed selector);
     event PositionExecuted(bytes32 indexed planDigest, uint256 indexed tokenId);
-    event SwapExecuted(bytes32 indexed planDigest, address indexed tokenIn, address indexed tokenOut, uint256 amountOut);
+    event SwapExecuted(
+        bytes32 indexed planDigest, address indexed tokenIn, address indexed tokenOut, uint256 amountOut
+    );
     event Swept(bytes32 indexed planDigest, address indexed asset, uint256 amount);
 
     struct Permit2Authorization {
@@ -136,8 +138,9 @@ contract WalletHelperV1 {
         uint256 ownerOutputBefore = IERC20(plan.tokenOut).balanceOf(owner);
         _pullToken(plan.tokenIn, plan.amountIn, plan.deadline, authorization);
         IERC20(plan.tokenIn).forceApprove(adapter, plan.amountIn);
-        amountOut = ILocalExecutionAdapter(adapter).executeSwap(
-            ILocalExecutionAdapter.SwapRequest({
+        amountOut = ILocalExecutionAdapter(adapter)
+            .executeSwap(
+                ILocalExecutionAdapter.SwapRequest({
                 tokenIn: plan.tokenIn,
                 tokenOut: plan.tokenOut,
                 amountIn: plan.amountIn,
@@ -146,7 +149,7 @@ contract WalletHelperV1 {
                 recipient: owner,
                 refundRecipient: owner
             })
-        );
+            );
         IERC20(plan.tokenIn).forceApprove(adapter, 0);
         _refundToken(plan.tokenIn);
         uint256 ownerOutputDelta = IERC20(plan.tokenOut).balanceOf(owner) - ownerOutputBefore;
@@ -185,8 +188,9 @@ contract WalletHelperV1 {
                 IERC20(plan.token1).forceApprove(adapter, plan.amount1);
             }
         }
-        (tokenId, amount0, amount1) = ILocalExecutionAdapter(adapter).executePosition(
-            ILocalExecutionAdapter.PositionRequest({
+        (tokenId, amount0, amount1) = ILocalExecutionAdapter(adapter)
+            .executePosition(
+                ILocalExecutionAdapter.PositionRequest({
                 action: plan.action,
                 token0: plan.token0,
                 token1: plan.token1,
@@ -200,7 +204,7 @@ contract WalletHelperV1 {
                 outputRecipient: owner,
                 refundRecipient: owner
             })
-        );
+            );
         if (plan.amount0 > 0) IERC20(plan.token0).forceApprove(adapter, 0);
         if (plan.amount1 > 0) IERC20(plan.token1).forceApprove(adapter, 0);
         _refundToken(plan.token0);
@@ -228,12 +232,9 @@ contract WalletHelperV1 {
         emit PlanExecuted(planDigest, msg.sig);
     }
 
-    function _pullToken(
-        address token,
-        uint256 amount,
-        uint256 deadline,
-        Permit2Authorization calldata authorization
-    ) private {
+    function _pullToken(address token, uint256 amount, uint256 deadline, Permit2Authorization calldata authorization)
+        private
+    {
         if (!authorization.enabled) {
             if (authorization.signature.length != 0) revert InvalidPermit2Authorization();
             IERC20(token).safeTransferFrom(owner, address(this), amount);

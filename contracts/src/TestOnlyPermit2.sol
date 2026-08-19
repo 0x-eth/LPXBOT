@@ -10,8 +10,7 @@ contract TestOnlyPermit2 is IAllowanceTransfer {
 
     bytes32 public constant override DOMAIN_SEPARATOR = keccak256("LPBOT_TEST_ONLY_PERMIT2");
 
-    mapping(address owner => mapping(address token => mapping(address spender => PackedAllowance)))
-        private allowances;
+    mapping(address owner => mapping(address token => mapping(address spender => PackedAllowance))) private allowances;
 
     function allowance(address user, address token, address spender)
         external

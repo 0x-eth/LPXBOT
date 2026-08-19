@@ -31,8 +31,9 @@ contract LocalExecutionAdapter is ILocalExecutionAdapter {
         IERC20 tokenIn = IERC20(request.tokenIn);
         tokenIn.safeTransferFrom(msg.sender, address(this), request.amountIn);
         tokenIn.forceApprove(router, request.amountIn);
-        amountOut = ITestOnlySwapRouter(router).swapExactInput(
-            ITestOnlySwapRouter.ExactInput({
+        amountOut = ITestOnlySwapRouter(router)
+            .swapExactInput(
+                ITestOnlySwapRouter.ExactInput({
                 tokenIn: request.tokenIn,
                 tokenOut: request.tokenOut,
                 amountIn: request.amountIn,
@@ -40,7 +41,7 @@ contract LocalExecutionAdapter is ILocalExecutionAdapter {
                 deadline: request.deadline,
                 recipient: request.recipient
             })
-        );
+            );
         tokenIn.forceApprove(router, 0);
         uint256 refund = tokenIn.balanceOf(address(this));
         if (refund > 0) tokenIn.safeTransfer(request.refundRecipient, refund);
