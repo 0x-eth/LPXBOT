@@ -1543,14 +1543,7 @@ export interface HelperDeploymentSubmitRequest extends HelperDeploymentPreviewRe
 export interface HelperDeploymentTransactionView {
   active: boolean;
   generation: number;
-  state:
-    | "signed"
-    | "broadcast"
-    | "pending"
-    | "confirmed"
-    | "failed"
-    | "dropped"
-    | "replaced";
+  state: "signed" | "broadcast" | "pending" | "confirmed" | "failed" | "dropped" | "replaced";
   transactionHash: `0x${string}` | null;
 }
 

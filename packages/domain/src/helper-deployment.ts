@@ -75,8 +75,7 @@ const addressPattern = /^0x[0-9a-f]{40}$/u;
 const hashPattern = /^0x[0-9a-f]{64}$/u;
 const digestPattern = /^sha256:[0-9a-f]{64}$/u;
 const decimalPattern = /^(?:0|[1-9][0-9]*)$/u;
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 
 function canonical(value: unknown, key?: string): unknown {
   if (key === "planDigest") return undefined;
@@ -137,11 +136,7 @@ export function validateHelperDeploymentPlan(
   decimal(plan.nonce, "HELPER_DEPLOYMENT_NONCE_INVALID");
   decimal(plan.fencingToken, "HELPER_DEPLOYMENT_FENCING_INVALID", true);
   const gas = decimal(plan.feeLimit.gasLimit, "HELPER_DEPLOYMENT_GAS_INVALID", true);
-  const maxFee = decimal(
-    plan.feeLimit.maxFeePerGasBaseUnit,
-    "HELPER_DEPLOYMENT_GAS_INVALID",
-    true,
-  );
+  const maxFee = decimal(plan.feeLimit.maxFeePerGasBaseUnit, "HELPER_DEPLOYMENT_GAS_INVALID", true);
   const priority = decimal(
     plan.feeLimit.maxPriorityFeePerGasBaseUnit,
     "HELPER_DEPLOYMENT_GAS_INVALID",

@@ -7,8 +7,7 @@ import {
   WALLET_HELPER_V1_RUNTIME_TEMPLATE_HASH,
 } from "./wallet-helper-v1-artifact.js";
 
-export const P05_HELPER_DEPLOYMENT_REGISTRY_VERSION =
-  "p05-local-helper-deployment-v2" as const;
+export const P05_HELPER_DEPLOYMENT_REGISTRY_VERSION = "p05-local-helper-deployment-v2" as const;
 export const P05_HELPER_DEPLOYMENT_PLAN_VERSION = "p05-helper-deployment-plan-v2" as const;
 export const WALLET_HELPER_V1_VERSION = "WalletHelperV1" as const;
 
