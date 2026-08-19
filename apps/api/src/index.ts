@@ -25,6 +25,10 @@ export type { ViemLocalWalletTransferChainReaderOptions } from "./viem-local-wal
 export { ViemLocalHelperDeploymentChainReader } from "./viem-local-helper-deployment-chain-reader.js";
 export type { ViemLocalHelperDeploymentChainReaderOptions } from "./viem-local-helper-deployment-chain-reader.js";
 export {
+  PostgresHelperDeploymentOperationStore,
+  PostgresHelperDeploymentPreviewStore,
+} from "./postgres-helper-deployment-store.js";
+export {
   buildHelperDeploymentMaterial,
   HelperDeploymentError,
   HelperDeploymentService,
