@@ -1257,6 +1257,143 @@ export const swapQuoteContracts = Object.freeze({
   quote: Object.freeze({ method: "POST", path: "/api/swap/quote" }),
 } as const);
 
+export type LocalSwapAuthorizationMode = "direct" | "permit2";
+export type LocalSwapExecutionState =
+  | "queued"
+  | "signing"
+  | "broadcast"
+  | "pending"
+  | "reconciling"
+  | "succeeded"
+  | "failed";
+export type LocalSwapStepKind = "allowance-reset" | "approve" | "swap" | "cleanup";
+export type LocalSwapStepState =
+  | "blocked"
+  | "queued"
+  | "signed"
+  | "broadcast"
+  | "pending"
+  | "confirmed"
+  | "succeeded"
+  | "failed"
+  | "dropped"
+  | "replaced"
+  | "skipped"
+  | "reconciling";
+
+export interface LocalSwapQuoteRequest {
+  amountInBaseUnit: string;
+  chainId: 31_337;
+  slippageBps: number;
+  tokenIn: EvmAddress;
+  tokenOut: EvmAddress;
+  walletId: string;
+}
+
+export interface LocalSwapQuoteView extends LocalSwapQuoteRequest {
+  amountOutBaseUnit: string;
+  blockNumber: string;
+  deadline: string;
+  executionEnabled: true;
+  expiresAt: string;
+  gas: {
+    estimatedFeeBaseUnit: string;
+    gasLimit: string;
+    maxFeePerGasBaseUnit: string;
+    maxPriorityFeePerGasBaseUnit: string;
+  };
+  maxBlockNumber: string;
+  minOutBaseUnit: string;
+  quoteDigest: `sha256:${string}`;
+  quoteVersion: "p05-local-swap-quote-v2";
+  quotedAt: string;
+  registryVersion: "p05-local-swap-execution-v2";
+  serviceFeeBps: 0;
+  walletAddress: EvmAddress;
+}
+
+export interface LocalSwapExecutePreviewRequest {
+  authorizationMode: LocalSwapAuthorizationMode;
+  quoteDigest: `sha256:${string}`;
+  walletId: string;
+}
+
+export interface LocalSwapFeeLimit {
+  feeCapBaseUnit: string;
+  gasLimit: string;
+  maxFeePerGasBaseUnit: string;
+  maxPriorityFeePerGasBaseUnit: string;
+}
+
+export interface LocalSwapExecutePreview extends LocalSwapExecutePreviewRequest {
+  chainId: 31_337;
+  deadline: string;
+  expiresAt: string;
+  feeLimitTotalBaseUnit: string;
+  helperAddress: EvmAddress;
+  minOutBaseUnit: string;
+  previewDigest: `sha256:${string}`;
+  previewToken: string;
+  serviceFeeBps: 0;
+  steps: Array<{
+    amountBaseUnit: string;
+    feeLimit: LocalSwapFeeLimit;
+    kind: LocalSwapStepKind;
+    ordinal: number;
+  }>;
+}
+
+export interface LocalSwapExecuteRequest extends LocalSwapExecutePreviewRequest {
+  previewDigest: `sha256:${string}`;
+  previewToken: string;
+}
+
+export interface LocalSwapStepTransactionView {
+  active: boolean;
+  generation: number;
+  maxFeePerGasBaseUnit: string;
+  maxPriorityFeePerGasBaseUnit: string;
+  state: Exclude<LocalSwapStepState, "blocked" | "queued" | "skipped" | "reconciling">;
+  transactionHash: `0x${string}` | null;
+}
+
+export interface LocalSwapOperationStep {
+  failureCode: string | null;
+  feeLimit: LocalSwapFeeLimit;
+  kind: LocalSwapStepKind;
+  nonce: string;
+  ordinal: number;
+  state: LocalSwapStepState;
+  stepId: string;
+  transactions: LocalSwapStepTransactionView[];
+}
+
+export interface LocalSwapExecutionOperation {
+  authorizationMode: LocalSwapAuthorizationMode;
+  chainId: 31_337;
+  createdAt: string;
+  failureCode: string | null;
+  helperAddress: EvmAddress;
+  operationId: string;
+  operationKind: "local-swap";
+  planDigest: `sha256:${string}`;
+  quoteDigest: `sha256:${string}`;
+  reconciliationReason: string | null;
+  registryVersion: "p05-local-swap-execution-v2";
+  state: LocalSwapExecutionState;
+  steps: LocalSwapOperationStep[];
+  updatedAt: string;
+  walletId: string;
+}
+
+export type ChainOperationView = HelperDeploymentOperation | LocalSwapExecutionOperation;
+
+export const localSwapExecutionContracts = Object.freeze({
+  execute: Object.freeze({ method: "POST", path: "/api/swap/execute" }),
+  get: Object.freeze({ method: "GET", path: "/api/chain-operations/{operationId}" }),
+  preview: Object.freeze({ method: "POST", path: "/api/swap/execute/preview" }),
+} as const);
+
 export type PricingPositionPriceStatus = "current" | "missing" | "stale";
 export type PricingPositionStatus = "active" | "hidden" | "withdrawn";
 
