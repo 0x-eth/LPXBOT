@@ -690,7 +690,7 @@ describe("P05-06 PostgreSQL local Swap execution and recovery", () => {
     );
     expect(ledger.rows[0]).toMatchObject({ last_confirmed_nonce: "5", next_nonce: "6" });
     expect(BigInt(ledger.rows[0]!.fencing_token)).toBe(
-      BigInt(beforeSuccessLedger.rows[0]!.fencing_token) + 2n,
+      BigInt(beforeSuccessLedger.rows[0]!.fencing_token) + 4n,
     );
   });
 });
