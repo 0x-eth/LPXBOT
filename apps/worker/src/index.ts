@@ -58,6 +58,7 @@ export {
 export { LoopbackLocalSwapSignerGateway } from "./loopback-local-swap-signer-gateway.js";
 export { ViemLocalSwapObserver } from "./viem-local-swap-observer.js";
 export type { ViemLocalSwapObserverOptions } from "./viem-local-swap-observer.js";
+export { PostgresLocalSwapRecoveryRepository } from "./postgres-local-swap-recovery.js";
 export type {
   LocalSwapBatchResult,
   LocalSwapObservation,
