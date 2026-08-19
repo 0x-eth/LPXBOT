@@ -1,13 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 
-import type {
-  HelperDeploymentState,
-  HelperDeploymentTransactionView,
-} from "@lpbot/api-contract";
-import {
-  helperDeploymentComponent,
-  P05_HELPER_DEPLOYMENT_REGISTRY,
-} from "@lpbot/chain-registry";
+import type { HelperDeploymentState, HelperDeploymentTransactionView } from "@lpbot/api-contract";
+import { helperDeploymentComponent, P05_HELPER_DEPLOYMENT_REGISTRY } from "@lpbot/chain-registry";
 import {
   helperDeploymentPlanDigest,
   validateHelperDeploymentPlan,
@@ -452,7 +446,10 @@ export class PostgresHelperDeploymentOperationStore implements HelperDeploymentO
       if (!ledger) throw new HelperDeploymentError("HELPER_DEPLOYMENT_UNAVAILABLE", true);
       const providerNonce = consensusNonce(input.nonceViews);
       const nextNonce = ledger.next_nonce === null ? providerNonce : BigInt(ledger.next_nonce);
-      if (providerNonce !== BigInt(input.expectedNonce) || nextNonce !== BigInt(input.expectedNonce)) {
+      if (
+        providerNonce !== BigInt(input.expectedNonce) ||
+        nextNonce !== BigInt(input.expectedNonce)
+      ) {
         throw new HelperDeploymentError("NONCE_DRIFT");
       }
       const fencingToken = (BigInt(ledger.fencing_token) + 1n).toString();
