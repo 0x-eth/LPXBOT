@@ -154,6 +154,20 @@ describe("P05-06 local Swap recovery decisions", () => {
     });
   });
 
+  it("keeps an unconfirmed cleanup in reconciling", () => {
+    expect(
+      decide("cleanup", receipt({ confirmations: "0", ownerToSpenderAllowance: "0" })),
+    ).toMatchObject({
+      operationState: "reconciling",
+      reason: "ALLOWANCE_CLEANUP_REQUIRED",
+      stepState: "confirmed",
+    });
+    expect(decide("cleanup", null)).toMatchObject({
+      operationState: "reconciling",
+      reason: "ALLOWANCE_CLEANUP_REQUIRED",
+    });
+  });
+
   it.each([
     ["minOut", { ownerOutputAfter: "1989" }, "SWAP_MIN_OUT_MISMATCH"],
     ["event", { swapExecutedEvent: false }, "SWAP_EVENT_OR_REPLAY_MISMATCH"],

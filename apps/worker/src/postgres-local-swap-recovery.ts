@@ -377,12 +377,21 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
       );
       await client.query(
         `UPDATE local_swap_operations
-            SET state = 'broadcast', failure_code = NULL,
-                reconciliation_reason = NULL, updated_at = $2
+            SET state = $2,
+                failure_code = CASE WHEN $2 = 'reconciling' THEN failure_code ELSE NULL END,
+                reconciliation_reason = CASE WHEN $2 = 'reconciling'
+                  THEN 'ALLOWANCE_CLEANUP_REQUIRED' ELSE NULL END,
+                updated_at = $3
           WHERE operation_id = $1`,
-        [operation.operation_id, input.deliveredAt],
+        [
+          operation.operation_id,
+          step.step_kind === "cleanup" ? "reconciling" : "broadcast",
+          input.deliveredAt,
+        ],
       );
-      await this.#resolveReconciliation(client, operation.operation_id, input.deliveredAt);
+      if (step.step_kind !== "cleanup") {
+        await this.#resolveReconciliation(client, operation.operation_id, input.deliveredAt);
+      }
       await this.#audit(
         client,
         operation,
@@ -397,8 +406,10 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
         client,
         operation,
         step.step_id,
-        "local-swap.state-changed",
-        "broadcast",
+        step.step_kind === "cleanup"
+          ? "local-swap.reconciling"
+          : "local-swap.state-changed",
+        step.step_kind === "cleanup" ? "reconciling" : "broadcast",
         input.deliveredAt,
       );
     });
@@ -737,9 +748,16 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
       );
       await client.query(
         `UPDATE local_swap_operations
-            SET state = 'broadcast', reconciliation_reason = NULL, updated_at = $2
+            SET state = $2,
+                reconciliation_reason = CASE WHEN $2 = 'reconciling'
+                  THEN 'ALLOWANCE_CLEANUP_REQUIRED' ELSE NULL END,
+                updated_at = $3
           WHERE operation_id = $1`,
-        [operation.operation_id, input.deliveredAt],
+        [
+          operation.operation_id,
+          step.step_kind === "cleanup" ? "reconciling" : "broadcast",
+          input.deliveredAt,
+        ],
       );
       await client.query(
         `UPDATE local_swap_operation_outbox
@@ -761,8 +779,10 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
         client,
         operation,
         step.step_id,
-        "local-swap.state-changed",
-        "broadcast",
+        step.step_kind === "cleanup"
+          ? "local-swap.reconciling"
+          : "local-swap.state-changed",
+        step.step_kind === "cleanup" ? "reconciling" : "broadcast",
         input.deliveredAt,
       );
     });
@@ -883,8 +903,12 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
     );
     if (decision.stepState === "confirmed") {
       await client.query(
-        `UPDATE local_swap_operations SET state = 'pending', updated_at = $2 WHERE operation_id = $1`,
-        [operation.operation_id, observedAt],
+        `UPDATE local_swap_operations
+            SET state = $2,
+                reconciliation_reason = CASE WHEN $2 = 'reconciling'
+                  THEN 'ALLOWANCE_CLEANUP_REQUIRED' ELSE reconciliation_reason END,
+                updated_at = $3 WHERE operation_id = $1`,
+        [operation.operation_id, decision.operationState, observedAt],
       );
       await this.#finishAndRequeueCurrent(client, operation, step.step_id, observedAt, true);
       return;

@@ -72,7 +72,7 @@ export interface LocalSwapObservation {
 export type LocalSwapObservationDecision =
   | {
       kind: "defer";
-      operationState: "broadcast" | "pending";
+      operationState: "broadcast" | "pending" | "reconciling";
       reason: string;
       stepState: "broadcast" | "pending";
     }
@@ -327,6 +327,7 @@ export function decideLocalSwapObservation(input: {
   requiredConfirmations: number;
   transaction?: LocalSwapTransactionReference;
 }): LocalSwapObservationDecision {
+  const cleanupPending = input.operation.step.kind === "cleanup";
   let provider: LocalSwapProviderObservation | null;
   try {
     provider = consensus(input.observation);
@@ -348,8 +349,8 @@ export function decideLocalSwapObservation(input: {
         }
       : {
           kind: "defer",
-          operationState: "pending",
-          reason: "AWAITING_PROVIDER",
+          operationState: cleanupPending ? "reconciling" : "pending",
+          reason: cleanupPending ? "ALLOWANCE_CLEANUP_REQUIRED" : "AWAITING_PROVIDER",
           stepState: "pending",
         };
   }
@@ -397,8 +398,8 @@ export function decideLocalSwapObservation(input: {
         failureCode: null,
         kind: "receipt",
         next: "advance",
-        operationState: "pending",
-        reason: "CONFIRMATIONS_PENDING",
+        operationState: cleanupPending ? "reconciling" : "pending",
+        reason: cleanupPending ? "ALLOWANCE_CLEANUP_REQUIRED" : "CONFIRMATIONS_PENDING",
         receipt,
         stepState: "confirmed",
         transactionId: transaction.transactionId,
@@ -442,13 +443,22 @@ export function decideLocalSwapObservation(input: {
     };
   }
   if (provider.transactionFound) {
-    return { kind: "transition", operationState: "pending", reason: null, stepState: "pending" };
+    return {
+      kind: "transition",
+      operationState: cleanupPending ? "reconciling" : "pending",
+      reason: cleanupPending ? "ALLOWANCE_CLEANUP_REQUIRED" : null,
+      stepState: "pending",
+    };
   }
   if (input.now.getTime() - instant(transaction.updatedAt) < input.dropAfterMilliseconds) {
     return {
       kind: "defer",
-      operationState: input.operation.stepState === "broadcast" ? "broadcast" : "pending",
-      reason: "AWAITING_TRANSACTION",
+      operationState: cleanupPending
+        ? "reconciling"
+        : input.operation.stepState === "broadcast"
+          ? "broadcast"
+          : "pending",
+      reason: cleanupPending ? "ALLOWANCE_CLEANUP_REQUIRED" : "AWAITING_TRANSACTION",
       stepState: input.operation.stepState === "broadcast" ? "broadcast" : "pending",
     };
   }
@@ -463,7 +473,12 @@ export function decideLocalSwapObservation(input: {
       stepState: "reconciling",
     };
   }
-  return { kind: "transition", operationState: "pending", reason: null, stepState: "dropped" };
+  return {
+    kind: "transition",
+    operationState: cleanupPending ? "reconciling" : "pending",
+    reason: cleanupPending ? "ALLOWANCE_CLEANUP_REQUIRED" : null,
+    stepState: "dropped",
+  };
 }
 
 function failure(error: unknown): { code: string; retryable: boolean } {
