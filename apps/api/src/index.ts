@@ -106,6 +106,8 @@ export {
   parseLocalPositionRemoveLiquidity,
   parseLocalPositionRemoveLiquidityPreview,
 } from "./local-position-executions.js";
+export { ViemLocalPositionExecutionChainReader } from "./viem-local-position-execution-chain-reader.js";
+export type { ViemLocalPositionExecutionChainReaderOptions } from "./viem-local-position-execution-chain-reader.js";
 export type {
   LocalPositionChainInspection,
   LocalPositionExecutionApplication,
