@@ -1,0 +1,7 @@
+# P05-05 E-DATA
+
+Migration `20260819000400_create_helper_deployment_operations.sql` adds preview storage and an operation ledger around the existing P04 wallet nonce ledger. The durable model includes `chain_operations`, idempotency records, transaction generations, replacement authorizations, Outbox events, reconciliation cases, receipt evidence, per-wallet Helper bindings, and audit events.
+
+Database constraints enforce one live operation per wallet/chain/nonce, one active transaction head, unique transaction hashes, one pending replacement, one open reconciliation case, and one live binding for `chainId + walletId + helperVersion`. Failed pre-broadcast operations release the nonce for retry; a mined revert consumes the nonce but leaves a degraded binding that may be superseded by a deployment at the next nonce. Receipt evidence and audit events have update/delete rejection triggers and are append-only.
+
+`tests/integration/postgres-helper-deployment.integration.ts` covers atomic preview/submit/idempotency/ownership storage. `tests/integration/postgres-helper-deployment-recovery.integration.ts` covers successful closure, lease expiry and restart, nonce rollback, replacement lineage, reverted/degraded retry, reconciliation closure, and append-only evidence. The complete migration cycle applies all 28 migrations, rolls them down in reverse, reconnects, and reapplies them on a fresh database.

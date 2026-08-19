@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-05",
+  "featureId": "HELPER-02",
+  "registry": {
+    "chainId": 31337,
+    "environment": "non-forked-anvil-synthetic-only",
+    "executionEnabled": true,
+    "productionInheritance": false,
+    "registryVersion": "p05-local-helper-deployment-v2",
+    "registryDigest": "sha256:e68b2cf5a1871c8b757c2ef0574e0710af90a86cf4c22a580436c2685aa97bcd",
+    "rollbackVersion": "p05-local-helper-deployment-disabled-v1",
+    "serviceFeeBps": 0,
+    "instanceBinding": "chainId+walletId+helperVersion"
+  },
+  "template": {
+    "helperVersion": "WalletHelperV1",
+    "abiHash": "sha256:f5457f6a9755e133e1ae1870e7ddccb70ddac316883a7f431f02c00ccb5c2623",
+    "creationCodeHash": "0x03d49afeaae7c230fe898e1843a3d292b3d422cf22d7ec00f3bac3ca8377e5e7",
+    "runtimeTemplateHash": "0xb3d942814a116a39a12bdffb9df3a1eab804dbf57dda22ff4108c90e5c99e95c",
+    "runtimeBytes": 8244,
+    "bytecodeAcceptedFromClient": false
+  },
+  "api": {
+    "previewRequestFields": ["chainId", "helperVersion", "walletId"],
+    "submitRequestFields": [
+      "chainId",
+      "helperVersion",
+      "previewDigest",
+      "previewToken",
+      "walletId"
+    ],
+    "clientControlledFieldsDenied": [
+      "target",
+      "selector",
+      "calldata",
+      "bytecode",
+      "constructor",
+      "to",
+      "value"
+    ]
+  },
+  "transaction": {
+    "type": "CREATE",
+    "addressDerivation": "CREATE(walletAddress,reservedNonce)",
+    "to": null,
+    "valueBaseUnit": "0",
+    "dataSource": "fixed creation code plus server-generated constructor arguments",
+    "planVersion": "p05-helper-deployment-plan-v2",
+    "schemaVersion": 2
+  },
+  "constructor": {
+    "fields": [
+      "owner",
+      "adapter",
+      "permit2",
+      "tokenA.address",
+      "tokenA.runtimeCodeHash",
+      "tokenB.address",
+      "tokenB.runtimeCodeHash"
+    ],
+    "source": "server-registry-and-owned-wallet"
+  },
+  "signerRevalidation": [
+    "planDigest",
+    "planVersion",
+    "registryVersionDigestRangeRollback",
+    "nonceFencingToken",
+    "createAddress",
+    "toValueInitCodeHash",
+    "creationRuntimeHash",
+    "ownerWallet",
+    "adapter",
+    "permit2",
+    "syntheticTokenIdentities"
+  ],
+  "receiptClosure": [
+    "canonicalBlock",
+    "transactionHash",
+    "receiptStatus",
+    "contractAddress",
+    "runtimeCodeHash",
+    "owner",
+    "adapter",
+    "permit2",
+    "walletHelperBinding"
+  ],
+  "recovery": {
+    "nonceLedger": "P04 wallet_nonce_ledgers",
+    "idempotency": true,
+    "replacement": true,
+    "receiptRecovery": true,
+    "outbox": true,
+    "appendOnlyAuditAndReceipt": true,
+    "preBroadcastFailureReleasesNonce": true,
+    "minedRevertCreatesDegradedBinding": true
+  },
+  "executionCounters": {
+    "localFixtureContractDeployments": 6,
+    "localHelperSignatures": 2,
+    "localHelperBroadcasts": 2,
+    "localHelperSucceeded": 1,
+    "localHelperReverted": 1,
+    "testnetSignatures": 0,
+    "testnetBroadcasts": 0,
+    "productionSignatures": 0,
+    "productionBroadcasts": 0,
+    "realFundOperations": 0
+  },
+  "nonGoals": ["SWAP-02", "POS-02", "POS-03", "HELPER-03", "HELPER-04", "HELPER-06"]
+}

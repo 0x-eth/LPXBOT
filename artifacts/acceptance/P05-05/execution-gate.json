@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-05",
+  "evaluatedAt": "2026-08-19T17:20:00.000Z",
+  "featureImplementationClaimed": true,
+  "featureIds": ["HELPER-02"],
+  "gates": {
+    "local": {
+      "status": "OPEN",
+      "scope": "WalletHelperV1 CREATE on non-forked Anvil with synthetic wallet/assets only",
+      "chainIds": [31337],
+      "registryVersion": "p05-local-helper-deployment-v2",
+      "helperVersion": "WalletHelperV1",
+      "transaction": { "to": null, "valueBaseUnit": "0", "dataOwner": "server" },
+      "allowedAssets": ["TestOnlyERC20", "TestOnlyWBNB"],
+      "allowedOperations": ["HELPER-02:first-deployment"],
+      "evidence": [
+        "deployment-contract.json",
+        "E-CHAIN.md",
+        "E-REC.md",
+        "E-SEC.md",
+        "E-UI.md",
+        "E-VIS.md"
+      ]
+    },
+    "testnet": {
+      "status": "CLOSED",
+      "signatures": 0,
+      "broadcasts": 0,
+      "allowlistedChainIds": [],
+      "reasons": [
+        "no testnet Helper deployment Registry",
+        "no independent contract review",
+        "no testnet deployment and recovery evidence"
+      ]
+    },
+    "production": {
+      "status": "CLOSED",
+      "signatures": 0,
+      "broadcasts": 0,
+      "realFundOperations": 0,
+      "allowlistedChainIds": [],
+      "reasons": [
+        "local Registry has productionInheritance=false",
+        "no production Helper deployment Registry or signer route",
+        "production execution allowlists remain empty",
+        "real assets are denied",
+        "independent security review remains unresolved"
+      ]
+    }
+  },
+  "plannedOnly": ["SWAP-02", "POS-02", "POS-03", "HELPER-03", "HELPER-04", "HELPER-06"]
+}
