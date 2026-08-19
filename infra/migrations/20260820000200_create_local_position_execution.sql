@@ -190,6 +190,10 @@ CREATE TABLE local_position_operation_idempotency (
   CHECK (expires_at > created_at)
 );
 
+CREATE UNIQUE INDEX local_position_idempotency_scope_unique
+  ON local_position_operation_idempotency
+  (tenant_id, user_id, wallet_id, idempotency_key);
+
 CREATE TABLE local_position_operation_steps (
   step_id uuid PRIMARY KEY,
   operation_id uuid NOT NULL REFERENCES local_position_operations(operation_id) ON DELETE CASCADE,

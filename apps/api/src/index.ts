@@ -108,6 +108,11 @@ export {
 } from "./local-position-executions.js";
 export { ViemLocalPositionExecutionChainReader } from "./viem-local-position-execution-chain-reader.js";
 export type { ViemLocalPositionExecutionChainReaderOptions } from "./viem-local-position-execution-chain-reader.js";
+export {
+  PostgresLocalPositionOperationStore,
+  PostgresLocalPositionPreviewStore,
+  PostgresLocalPositionSnapshotStore,
+} from "./postgres-local-position-execution-store.js";
 export type {
   LocalPositionChainInspection,
   LocalPositionExecutionApplication,
