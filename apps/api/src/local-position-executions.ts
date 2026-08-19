@@ -103,6 +103,7 @@ export interface LocalPositionExecutionChainReader {
 
 export interface LocalPositionSnapshotStore {
   append(input: {
+    pricingId?: string | null;
     snapshot: Readonly<LocalPositionSnapshot>;
     tenantId: string;
     userId: string;
@@ -129,6 +130,7 @@ export class MemoryLocalPositionSnapshotStore implements LocalPositionSnapshotSt
   }
 
   async append(input: {
+    pricingId?: string | null;
     snapshot: Readonly<LocalPositionSnapshot>;
     tenantId: string;
     userId: string;

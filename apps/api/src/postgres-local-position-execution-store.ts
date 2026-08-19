@@ -69,6 +69,7 @@ export class PostgresLocalPositionSnapshotStore implements LocalPositionSnapshot
   constructor(readonly pool: Pool) {}
 
   async append(input: {
+    pricingId?: string | null;
     snapshot: Readonly<LocalPositionSnapshot>;
     tenantId: string;
     userId: string;
@@ -92,7 +93,7 @@ export class PostgresLocalPositionSnapshotStore implements LocalPositionSnapshot
          $11, $12, $13, $14, $15, $16, $17, $18::numeric, $19::numeric,
          $20::numeric, $21::numeric, $22::numeric, $23::numeric, $24::numeric,
          $25::numeric, $26::numeric, $27::numeric, $28, $29, $30, $31, $32,
-         $33, $34, NULL, $35::jsonb
+         $33, $34, $35, $36::jsonb
        ) ON CONFLICT (tenant_id, user_id, wallet_id, snapshot_digest) DO NOTHING`,
       [
         input.tenantId,
@@ -129,6 +130,7 @@ export class PostgresLocalPositionSnapshotStore implements LocalPositionSnapshot
         snapshot.snapshotDigest,
         snapshot.registry.version,
         snapshot.registry.digest,
+        input.pricingId ?? null,
         JSON.stringify(snapshot),
       ],
     );
