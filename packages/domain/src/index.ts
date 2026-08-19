@@ -311,5 +311,3 @@ export function canAccessOwnedResource(
 ): boolean {
   return subjectUserId === ownerUserId || (role === "admin" && adminScopeGranted);
 }
-
-export * from "./helper-deployment.js";
