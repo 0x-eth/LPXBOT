@@ -20,6 +20,7 @@ import type {
   LocalSwapExecutionPlan,
   LocalSwapPermit2SigningPayload,
 } from "@lpbot/domain/local-swap-execution";
+import type { LocalPositionExecutionPlan } from "@lpbot/domain/local-position-execution";
 
 import type {
   CustodyWalletStore,
@@ -31,6 +32,8 @@ import type {
   LocalSwapPermit2SigningResult,
   LocalSwapStepPlanAuthorizer,
   LocalSwapStepSigningResult,
+  LocalPositionStepPlanAuthorizer,
+  LocalPositionStepSigningResult,
   SecurityPasswordStore,
   RawTransactionDelivery,
   StoredKeystore,
@@ -161,6 +164,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
   readonly #helperDeploymentPlanAuthorizer: HelperDeploymentPlanAuthorizer | null;
   readonly #localSwapPermit2Authorizer: LocalSwapPermit2Authorizer | null;
   readonly #localSwapStepPlanAuthorizer: LocalSwapStepPlanAuthorizer | null;
+  readonly #localPositionStepPlanAuthorizer: LocalPositionStepPlanAuthorizer | null;
   readonly #monotonicNow: () => number;
   readonly #onZeroize: (label: ZeroizeLabel, bytes: Uint8Array) => void;
   readonly #randomBytes: (length: number) => Uint8Array;
@@ -186,6 +190,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     helperDeploymentPlanAuthorizer?: HelperDeploymentPlanAuthorizer;
     localSwapPermit2Authorizer?: LocalSwapPermit2Authorizer;
     localSwapStepPlanAuthorizer?: LocalSwapStepPlanAuthorizer;
+    localPositionStepPlanAuthorizer?: LocalPositionStepPlanAuthorizer;
     monotonicNow?: () => number;
     now?: () => Date;
     onZeroize?: (label: ZeroizeLabel, bytes: Uint8Array) => void;
@@ -212,6 +217,7 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
     this.#helperDeploymentPlanAuthorizer = input.helperDeploymentPlanAuthorizer ?? null;
     this.#localSwapPermit2Authorizer = input.localSwapPermit2Authorizer ?? null;
     this.#localSwapStepPlanAuthorizer = input.localSwapStepPlanAuthorizer ?? null;
+    this.#localPositionStepPlanAuthorizer = input.localPositionStepPlanAuthorizer ?? null;
     this.#monotonicNow = input.monotonicNow ?? (() => performance.now());
     this.#now = input.now ?? (() => new Date());
     this.#onZeroize = input.onZeroize ?? (() => undefined);
@@ -242,6 +248,10 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
 
   localSwapPermit2SigningConfigured(): boolean {
     return this.#localSwapPermit2Authorizer !== null;
+  }
+
+  localPositionStepSigningConfigured(): boolean {
+    return this.#localPositionStepPlanAuthorizer !== null && this.#rawTransactionDelivery !== null;
   }
 
   async keystoreStatus(userId: string, reauthenticatedSessionId?: string): Promise<KeystoreStatus> {
@@ -1232,6 +1242,82 @@ export class CustodySignerService implements WalletDirectory, WalletSignerClient
       throw new SignerError("LOCAL_SWAP_PLAN_REJECTED");
     }
     return this.#signer.signAndDeliverLocalSwapStep({
+      delivery,
+      envelope,
+      generation: input.generation,
+      maxFeePerGasBaseUnit: input.maxFeePerGasBaseUnit,
+      maxPriorityFeePerGasBaseUnit: input.maxPriorityFeePerGasBaseUnit,
+      now: this.#now(),
+      passwordKek,
+      plan: input.plan,
+      planDigest: input.planDigest,
+      stepId: input.stepId,
+      wallet,
+    });
+  }
+
+  async signLocalPositionStep(input: {
+    generation: number;
+    maxFeePerGasBaseUnit: string;
+    maxPriorityFeePerGasBaseUnit: string;
+    plan: LocalPositionExecutionPlan;
+    planDigest: `sha256:${string}`;
+    reauthenticatedSessionId?: string;
+    stepId: string;
+    tenantId: string;
+    userId: string;
+  }): Promise<LocalPositionStepSigningResult> {
+    const authorizer = this.#localPositionStepPlanAuthorizer;
+    const delivery = this.#rawTransactionDelivery;
+    if (!authorizer || !delivery) throw new SignerError("SIGNER_UNAVAILABLE", true);
+    const authorization = {
+      generation: input.generation,
+      maxFeePerGasBaseUnit: input.maxFeePerGasBaseUnit,
+      maxPriorityFeePerGasBaseUnit: input.maxPriorityFeePerGasBaseUnit,
+      plan: input.plan,
+      planDigest: input.planDigest,
+      stepId: input.stepId,
+      tenantId: input.tenantId,
+      userId: input.userId,
+    };
+    if (!(await authorizer.authorize(authorization))) {
+      throw new SignerError("LOCAL_POSITION_PLAN_REJECTED");
+    }
+    const wallet = await this.#store.get(input.userId, input.plan.wallet.walletId);
+    if (
+      !wallet ||
+      wallet.tenantId !== input.tenantId ||
+      wallet.addressLower !== input.plan.wallet.address ||
+      wallet.lockStatus !== "ready"
+    ) {
+      throw new SignerError("LOCAL_POSITION_PLAN_REJECTED");
+    }
+    let passwordKek: Buffer | undefined;
+    if (wallet.mode === "user-password") {
+      await this.#expireUnlockSessions(input.userId);
+      const session = input.reauthenticatedSessionId
+        ? this.#session(input.userId, input.reauthenticatedSessionId)
+        : null;
+      if (!session) throw new SignerError("INVALID_CREDENTIALS");
+      passwordKek = session.kek;
+    }
+    const envelope = await this.#store.getCurrentEnvelope(wallet.walletId, wallet.envelopeVersion);
+    if (!envelope) {
+      await this.#store.setLockStatus(
+        input.userId,
+        wallet.walletId,
+        wallet.mode === "user-password" ? "locked" : "quarantined",
+        this.#now(),
+      );
+      throw new SignerError(
+        wallet.mode === "user-password" ? "INVALID_CREDENTIALS" : "KEYSTORE_CORRUPTED",
+      );
+    }
+    // Re-authorize after envelope lookup so a revoked step never reaches key use.
+    if (!(await authorizer.authorize(authorization))) {
+      throw new SignerError("LOCAL_POSITION_PLAN_REJECTED");
+    }
+    return this.#signer.signAndDeliverLocalPositionStep({
       delivery,
       envelope,
       generation: input.generation,

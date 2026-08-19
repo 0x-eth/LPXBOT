@@ -7,6 +7,7 @@ import type {
   LocalSwapExecutionPlan,
   LocalSwapPermit2SigningPayload,
 } from "@lpbot/domain/local-swap-execution";
+import type { LocalPositionExecutionPlan } from "@lpbot/domain/local-position-execution";
 import {
   transferDigestPattern,
   validateWalletTransferPlan,
@@ -19,6 +20,7 @@ import { SignerError, asSignerError } from "./signer-error.js";
 const bodyLimit = 16_384;
 const helperDeploymentBodyLimit = 65_536;
 const localSwapPlanBodyLimit = 131_072;
+const localPositionPlanBodyLimit = 131_072;
 const identityPattern = /^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const digestPattern = /^sha256:[0-9a-f]{64}$/u;
@@ -396,6 +398,81 @@ function localSwapPermit2SigningRequest(value: unknown): LocalSwapPermit2Signing
   return payload as unknown as LocalSwapPermit2SigningPayload;
 }
 
+function localPositionStepSigningRequest(value: unknown): {
+  generation: number;
+  maxFeePerGasBaseUnit: string;
+  maxPriorityFeePerGasBaseUnit: string;
+  plan: LocalPositionExecutionPlan;
+  planDigest: `sha256:${string}`;
+  stepId: string;
+} {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new SignerError("LOCAL_POSITION_PLAN_REJECTED");
+  }
+  const request = value as Record<string, unknown>;
+  if (
+    !exactKeys(request, [
+      "generation",
+      "maxFeePerGasBaseUnit",
+      "maxPriorityFeePerGasBaseUnit",
+      "plan",
+      "planDigest",
+      "stepId",
+    ]) ||
+    !Number.isSafeInteger(request.generation) ||
+    Number(request.generation) < 0 ||
+    typeof request.maxFeePerGasBaseUnit !== "string" ||
+    !/^[1-9][0-9]*$/u.test(request.maxFeePerGasBaseUnit) ||
+    typeof request.maxPriorityFeePerGasBaseUnit !== "string" ||
+    !/^(?:0|[1-9][0-9]*)$/u.test(request.maxPriorityFeePerGasBaseUnit) ||
+    typeof request.planDigest !== "string" ||
+    !digestPattern.test(request.planDigest) ||
+    typeof request.stepId !== "string" ||
+    !uuidPattern.test(request.stepId) ||
+    typeof request.plan !== "object" ||
+    request.plan === null ||
+    Array.isArray(request.plan)
+  ) {
+    throw new SignerError("LOCAL_POSITION_PLAN_REJECTED");
+  }
+  const plan = request.plan as Record<string, unknown>;
+  if (
+    !exactKeys(plan, [
+      "accounting",
+      "action",
+      "chainId",
+      "deadline",
+      "manager",
+      "operationId",
+      "planDigest",
+      "planVersion",
+      "registry",
+      "schemaVersion",
+      "serviceFeeBps",
+      "snapshot",
+      "steps",
+      "wallet",
+    ]) ||
+    plan.chainId !== 31_337 ||
+    plan.schemaVersion !== 2 ||
+    plan.planVersion !== "p05-local-position-plan-v2" ||
+    plan.serviceFeeBps !== 0 ||
+    !Array.isArray(plan.steps) ||
+    plan.steps.length < 1 ||
+    plan.steps.length > 3
+  ) {
+    throw new SignerError("LOCAL_POSITION_PLAN_REJECTED");
+  }
+  return {
+    generation: Number(request.generation),
+    maxFeePerGasBaseUnit: request.maxFeePerGasBaseUnit,
+    maxPriorityFeePerGasBaseUnit: request.maxPriorityFeePerGasBaseUnit,
+    plan: plan as unknown as LocalPositionExecutionPlan,
+    planDigest: request.planDigest as `sha256:${string}`,
+    stepId: request.stepId.toLowerCase(),
+  };
+}
+
 async function readBody(request: IncomingMessage, limit = bodyLimit): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let size = 0;
@@ -453,6 +530,8 @@ function failure(response: ServerResponse, error: unknown): void {
                 signerError.code === "HELPER_PLAN_REJECTED" ||
                 signerError.code === "LOCAL_SWAP_PLAN_EXPIRED" ||
                 signerError.code === "LOCAL_SWAP_PLAN_REJECTED" ||
+                signerError.code === "LOCAL_POSITION_PLAN_EXPIRED" ||
+                signerError.code === "LOCAL_POSITION_PLAN_REJECTED" ||
                 signerError.code === "PERMIT2_AUTHORIZATION_REJECTED"
               ? 409
               : signerError.code === "WALLET_ADDRESS_EXISTS"
@@ -504,6 +583,9 @@ export function createSignerHttpServer(input: {
             ...(input.service.localSwapPermit2SigningConfigured()
               ? ["plan-bound-local-permit2-signing"]
               : []),
+            ...(input.service.localPositionStepSigningConfigured()
+              ? ["plan-bound-local-position-step-signing"]
+              : []),
           ],
           ready: true,
         },
@@ -520,6 +602,33 @@ export function createSignerHttpServer(input: {
     let importAcquired = false;
     try {
       const sessionId = reauthenticatedSessionId(request);
+      if (
+        request.method === "POST" &&
+        request.url === "/v1/local-position/steps/sign-and-deliver"
+      ) {
+        if (request.headers["content-type"]?.split(";", 1)[0] !== "application/json") {
+          send(response, 415, {
+            error: { code: "UNSUPPORTED_MEDIA_TYPE", retryable: false },
+            success: false,
+          });
+          return;
+        }
+        body = await readBody(request, localPositionPlanBodyLimit);
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(body.toString("utf8"));
+        } catch {
+          throw new SignerError("LOCAL_POSITION_PLAN_REJECTED");
+        }
+        const signing = localPositionStepSigningRequest(parsed);
+        const signed = await input.service.signLocalPositionStep({
+          ...ownership,
+          ...(sessionId ? { reauthenticatedSessionId: sessionId } : {}),
+          ...signing,
+        });
+        send(response, 202, { data: signed, success: true });
+        return;
+      }
       if (request.method === "POST" && request.url === "/v1/local-swap/steps/sign-and-deliver") {
         if (request.headers["content-type"]?.split(";", 1)[0] !== "application/json") {
           send(response, 415, {
