@@ -211,8 +211,8 @@
 | SWAP-01 | Swap 报价 | UI+API | USER | R0 | 滑点、minOut、价格影响、gas、报价过期；`implemented-assumed`（P05-03，BSC local fixture only；quote-only） |
 | SWAP-02 | Swap 执行 | UI+API | USER | R3/R4 | approve、route、receipt、失败恢复、幂等；`implemented-assumed`（P05-06，仅非 fork Anvil chainId 31337、合成钱包与 TestOnlyERC20/WBNB 的 local 闭环；testnet/production closed） |
 | POS-01 | V3/V4 NFT 仓位扫描 | UI+API+BUNDLE | USER | R0 | Uniswap/Pancake、分页、链、未知 NFT；`implemented-assumed`（P05-02，BSC local fixture only） |
-| POS-02 | 收取仓位手续费 | UI+API | USER | R3/R4 | NFT owner/approval、V3/V4 receipt；`planned`（P05-04 仅建立 typed local plan baseline） |
-| POS-03 | 部分/全部撤出 LP | UI+API | USER | R3/R4 | 1-100%、slippage、collect、burn 可选；`planned`（P05-04 仅建立 typed local plan baseline） |
+| POS-02 | 收取仓位手续费 | UI+API | USER | R3/R4 | NFT owner/approval、V3/V4 receipt；`implemented-assumed`（P05-07，仅非 fork Anvil chainId 31337、合成钱包/资产与 TestOnlyPositionManagerV2 的 local collect 闭环；BSC/testnet/production closed） |
+| POS-03 | 部分/全部撤出 LP | UI+API | USER | R3/R4 | 1-100%、slippage、collect、burn 可选；`implemented-assumed`（P05-07，仅非 fork Anvil chainId 31337 的 local decrease -> collect -> optional burn 闭环；BSC/testnet/production closed） |
 | POS-04 | 观察/定价仓位台账 | UI+BUNDLE | USER | R1 | 导入、SSE、成本、withdrawn 标记；`implemented-assumed`（P05-03，BSC local fixture only） |
 | HELPER-01 | 一钱包一链 Helper 展示 | UI+BUNDLE+CHAIN | USER | R0 | 地址、版本、部署状态；跨链版本号不可比较；`implemented-assumed`（P05-02，BSC local fixture only） |
 | HELPER-02 | 首次使用自动部署 Helper | UI+BUNDLE+CHAIN | USER | R3/R4 | owner EOA 直接部署是当前 BSC 样本事实；部署幂等；`implemented-assumed`（P05-05，仅 chainId 31337、合成资产与隔离 Signer 的 local Anvil 闭环） |
