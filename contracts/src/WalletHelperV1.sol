@@ -29,6 +29,7 @@ contract WalletHelperV1 {
     error DeadlineExpired();
     error DeadlineTooFar();
     error InvalidAmount();
+    error InvalidAllowance(uint256 actual, uint256 expected);
     error InvalidConfiguration();
     error InvalidPermit2Authorization();
     error InvalidPlanDigest();
@@ -179,12 +180,12 @@ contract WalletHelperV1 {
             if (plan.amount0 == 0 && plan.amount1 == 0) revert InvalidAmount();
             if (plan.amount0 > 0) {
                 _validateAmount(plan.amount0);
-                IERC20(plan.token0).safeTransferFrom(owner, address(this), plan.amount0);
+                _pullDirectToken(plan.token0, plan.amount0);
                 IERC20(plan.token0).forceApprove(adapter, plan.amount0);
             }
             if (plan.amount1 > 0) {
                 _validateAmount(plan.amount1);
-                IERC20(plan.token1).safeTransferFrom(owner, address(this), plan.amount1);
+                _pullDirectToken(plan.token1, plan.amount1);
                 IERC20(plan.token1).forceApprove(adapter, plan.amount1);
             }
         }
@@ -237,7 +238,7 @@ contract WalletHelperV1 {
     {
         if (!authorization.enabled) {
             if (authorization.signature.length != 0) revert InvalidPermit2Authorization();
-            IERC20(token).safeTransferFrom(owner, address(this), amount);
+            _pullDirectToken(token, amount);
             return;
         }
         IAllowanceTransfer.PermitSingle calldata permitSingle = authorization.permitSingle;
@@ -253,6 +254,12 @@ contract WalletHelperV1 {
         }
         IAllowanceTransfer(permit2).permit(owner, permitSingle, authorization.signature);
         IAllowanceTransfer(permit2).transferFrom(owner, address(this), uint160(amount), token);
+    }
+
+    function _pullDirectToken(address token, uint256 amount) private {
+        uint256 currentAllowance = IERC20(token).allowance(owner, address(this));
+        if (currentAllowance != amount) revert InvalidAllowance(currentAllowance, amount);
+        IERC20(token).safeTransferFrom(owner, address(this), amount);
     }
 
     function _refundToken(address token) private {
