@@ -2,6 +2,16 @@ import { randomBytes as systemRandomBytes } from "node:crypto";
 
 import type { WalletEncryptionMode } from "@lpbot/api-contract";
 import {
+  buildWalletHelperV1DeploymentMaterial,
+  helperDeploymentComponent,
+  P05_HELPER_DEPLOYMENT_REGISTRY,
+} from "@lpbot/chain-registry";
+import {
+  helperDeploymentPlanDigest,
+  validateHelperDeploymentPlan,
+  type HelperDeploymentPlan,
+} from "@lpbot/domain/helper-deployment";
+import {
   validateWalletTransferPlan,
   walletTransferPlanDigest,
   type WalletTransferPlan,
@@ -14,6 +24,7 @@ import type {
   RawTransactionDelivery,
   StoredCustodyWallet,
   WalletTransferSigningResult,
+  HelperDeploymentSigningResult,
 } from "./custody-types.js";
 import type { KmsClient } from "./kms.js";
 import {
@@ -39,6 +50,7 @@ export const signerCapabilities = [
   "open-verify",
   "password-reseal",
   "plan-bound-transaction-signing",
+  "plan-bound-helper-deployment-signing",
 ] as const;
 
 export interface SealedWalletDraft {
@@ -293,6 +305,113 @@ export class IsolatedWalletSigner {
       rawBytes?.fill(0);
       this.#zeroize("private-key", material.privateKey);
       this.#zeroize("dek", material.dek);
+    }
+  }
+
+  async signAndDeliverHelperDeployment(input: {
+    delivery: RawTransactionDelivery;
+    envelope: CustodyEnvelope;
+    now?: Date;
+    passwordKek?: Uint8Array | undefined;
+    plan: HelperDeploymentPlan;
+    planDigest: `sha256:${string}`;
+    wallet: StoredCustodyWallet;
+  }): Promise<HelperDeploymentSigningResult> {
+    const now = input.now ?? new Date();
+    const registry = P05_HELPER_DEPLOYMENT_REGISTRY;
+    const material = buildWalletHelperV1DeploymentMaterial(input.plan.wallet.address, registry);
+    try {
+      validateHelperDeploymentPlan(
+        input.plan,
+        {
+          adapter: helperDeploymentComponent("adapter", registry).address,
+          chainId: 31_337,
+          constructorArgumentsHash: material.constructorArgumentsHash,
+          creationCodeHash: registry.helperTemplate.creationCodeHash,
+          expectedAddress: input.plan.deployment.expectedAddress,
+          expectedRuntimeCodeHash: input.plan.deployment.expectedRuntimeCodeHash,
+          helperVersion: "WalletHelperV1",
+          initCode: material.initCode,
+          initCodeHash: material.initCodeHash,
+          owner: input.wallet.addressLower,
+          permit2: helperDeploymentComponent("permit2", registry).address,
+          registryDigest: registry.registryDigest,
+          registryRollbackVersion: registry.rollbackVersion,
+          registryValidFromBlock: registry.validFromBlock,
+          registryValidToBlock: registry.validToBlock,
+          registryVersion: registry.registryVersion,
+          tokenA: registry.tokens[0],
+          tokenB: registry.tokens[1],
+        },
+        now,
+      );
+    } catch (error) {
+      throw new SignerError(
+        input.plan.deadline <= now.toISOString()
+          ? "HELPER_PLAN_EXPIRED"
+          : "HELPER_PLAN_REJECTED",
+      );
+    }
+    if (
+      helperDeploymentPlanDigest(input.plan) !== input.planDigest ||
+      input.plan.planDigest !== input.planDigest ||
+      input.plan.wallet.walletId !== input.wallet.walletId ||
+      input.plan.wallet.address !== input.wallet.addressLower ||
+      input.plan.transaction.to !== null ||
+      input.plan.transaction.valueBaseUnit !== "0" ||
+      input.wallet.lockStatus !== "ready"
+    ) {
+      throw new SignerError("HELPER_PLAN_REJECTED");
+    }
+    const nonce = Number(input.plan.nonce);
+    if (!Number.isSafeInteger(nonce) || nonce < 0) {
+      throw new SignerError("HELPER_PLAN_REJECTED");
+    }
+    const opened = await this.#openMaterial({
+      envelope: input.envelope,
+      passwordKek: input.passwordKek,
+      wallet: input.wallet,
+    });
+    let rawBytes: Buffer | null = null;
+    try {
+      const account = privateKeyToAccount(
+        `0x${Buffer.from(opened.privateKey).toString("hex")}` as Hex,
+      );
+      const rawTransaction = await account.signTransaction({
+        chainId: 31_337,
+        data: input.plan.transaction.data,
+        gas: BigInt(input.plan.feeLimit.gasLimit),
+        maxFeePerGas: BigInt(input.plan.feeLimit.maxFeePerGasBaseUnit),
+        maxPriorityFeePerGas: BigInt(input.plan.feeLimit.maxPriorityFeePerGasBaseUnit),
+        nonce,
+        type: "eip1559",
+        value: 0n,
+      });
+      const transactionHash = keccak256(rawTransaction);
+      rawBytes = Buffer.from(rawTransaction.slice(2), "hex");
+      let delivered;
+      try {
+        delivered = await input.delivery.deliver({
+          chainId: 31_337,
+          operationId: input.plan.operationId,
+          rawTransaction: rawBytes,
+          transactionHash,
+        });
+      } catch {
+        throw new SignerError("HELPER_DELIVERY_UNAVAILABLE", true);
+      }
+      if (
+        (delivered.status !== "accepted" && delivered.status !== "already-known") ||
+        typeof delivered.deliveryId !== "string" ||
+        !/^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u.test(delivered.deliveryId)
+      ) {
+        throw new SignerError("HELPER_DELIVERY_UNAVAILABLE", true);
+      }
+      return { ...delivered, planDigest: input.planDigest, transactionHash };
+    } finally {
+      rawBytes?.fill(0);
+      this.#zeroize("private-key", opened.privateKey);
+      this.#zeroize("dek", opened.dek);
     }
   }
 

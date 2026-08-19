@@ -10,6 +10,7 @@ import type {
   WalletLockStatus,
 } from "@lpbot/api-contract";
 import type { WalletTransferPlan } from "@lpbot/domain/wallet-transfer";
+import type { HelperDeploymentPlan } from "@lpbot/domain/helper-deployment";
 
 export type CustodyAuditAction = "wallet.generate" | "wallet.import";
 
@@ -87,6 +88,15 @@ export interface WalletTransferPlanAuthorizer {
   }): Promise<boolean>;
 }
 
+export interface HelperDeploymentPlanAuthorizer {
+  authorize(input: {
+    plan: HelperDeploymentPlan;
+    planDigest: `sha256:${string}`;
+    tenantId: string;
+    userId: string;
+  }): Promise<boolean>;
+}
+
 export interface RawTransactionDeliveryResult {
   deliveryId: string;
   status: "accepted" | "already-known";
@@ -102,6 +112,11 @@ export interface RawTransactionDelivery {
 }
 
 export interface WalletTransferSigningResult extends RawTransactionDeliveryResult {
+  planDigest: `sha256:${string}`;
+  transactionHash: `0x${string}`;
+}
+
+export interface HelperDeploymentSigningResult extends RawTransactionDeliveryResult {
   planDigest: `sha256:${string}`;
   transactionHash: `0x${string}`;
 }
