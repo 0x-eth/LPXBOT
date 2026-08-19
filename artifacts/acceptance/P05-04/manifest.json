@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-04",
+  "phase": "P05",
+  "risk": "R2",
+  "status": "accepted-with-gaps",
+  "featureIds": [],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "typed Registry/plan Vitest and Foundry unit/fuzz/invariant",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-04/E-SEC.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "40-fixture evidence extraction, Helper creation recovery, and local Anvil success/revert closure",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-04/E-CHAIN.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "duplicate plan/raw transaction, nonce replacement, allowance recovery, and Anvil restart",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-04/E-REC.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "owner/reentrancy/token/router/fee boundaries, Gitleaks, and dependency audit",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-04/E-SEC.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-CHAIN", "path": "artifacts/acceptance/P05-04/E-CHAIN.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P05-04/E-SEC.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P05-04/E-REC.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P05-04/E-OPS.md" }
+  ],
+  "assumptions": [
+    "P05-04 is featureless execution-safety evidence and claims no production feature implementation; P05 remains 5 implemented-assumed / 7 planned and global counts remain 66 / 130.",
+    "Local execution is restricted to Foundry and non-forked Anvil chainId 31337 with synthetic wallets, allowlisted TestOnly assets, and 0 bps service fee.",
+    "P05-01 p05-bsc-execution-v1 remains byte-identical, executionEnabled=false, and does not inherit the local selector allowlist.",
+    "Observed Router ABI, recipient semantics, failed selector samples, fee ownership/basis, and production Token coverage remain insufficient or UNKNOWN.",
+    "Testnet and production execution gates remain closed with zero signatures, broadcasts, and real-fund operations.",
+    "This accepted-with-gaps work item is not parity-verified and not released."
+  ],
+  "completedAt": "2026-08-19T15:15:00.000Z",
+  "commit": null
+}
