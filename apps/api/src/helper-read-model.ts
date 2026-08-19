@@ -54,13 +54,23 @@ export interface StoredHelperVerification {
 }
 
 export interface WalletHelperReadStore {
-  appendResidualSnapshot(input: { page: HelperResidualPage; userId: string }): Promise<void>;
+  appendResidualSnapshot(input: {
+    idempotencyKey: string;
+    page: HelperResidualPage;
+    userId: string;
+  }): Promise<HelperResidualPage>;
   appendVerification(input: StoredHelperVerification): Promise<void>;
   findBinding(input: {
     chainId: 56;
     userId: string;
     walletId: string;
   }): Promise<WalletHelperBinding | null>;
+  findResidualSnapshotByIdempotency(input: {
+    chainId: 56;
+    idempotencyKey: string;
+    userId: string;
+    walletId: string;
+  }): Promise<HelperResidualPage | null>;
   latestResidualSnapshot(input: {
     chainId: 56;
     helperAddress: Address;
@@ -161,6 +171,7 @@ function helperDigest(input: {
 
 export class MemoryWalletHelperReadStore implements WalletHelperReadStore {
   readonly #bindings = new Map<string, WalletHelperBinding>();
+  readonly #residualIdempotency = new Map<string, HelperResidualPage>();
   readonly #residuals = new Map<string, HelperResidualPage[]>();
   readonly #verifications: StoredHelperVerification[] = [];
 
@@ -201,7 +212,18 @@ export class MemoryWalletHelperReadStore implements WalletHelperReadStore {
     return cloneBinding(stored);
   }
 
-  async appendResidualSnapshot(input: { page: HelperResidualPage; userId: string }): Promise<void> {
+  async appendResidualSnapshot(input: {
+    idempotencyKey: string;
+    page: HelperResidualPage;
+    userId: string;
+  }): Promise<HelperResidualPage> {
+    const idempotencyKey = `${bindingKey({
+      chainId: input.page.chainId,
+      userId: input.userId,
+      walletId: input.page.walletId,
+    })}:${input.idempotencyKey}`;
+    const existing = this.#residualIdempotency.get(idempotencyKey);
+    if (existing) return existing;
     const key = residualKey({
       chainId: input.page.chainId,
       helperAddress: input.page.helperAddress,
@@ -211,6 +233,8 @@ export class MemoryWalletHelperReadStore implements WalletHelperReadStore {
     const snapshots = this.#residuals.get(key) ?? [];
     if (!snapshots.some(({ scanId }) => scanId === input.page.scanId)) snapshots.push(input.page);
     this.#residuals.set(key, snapshots);
+    this.#residualIdempotency.set(idempotencyKey, input.page);
+    return input.page;
   }
 
   async appendVerification(input: StoredHelperVerification): Promise<void> {
@@ -231,6 +255,17 @@ export class MemoryWalletHelperReadStore implements WalletHelperReadStore {
   }): Promise<WalletHelperBinding | null> {
     const binding = this.#bindings.get(bindingKey(input));
     return binding ? cloneBinding(binding) : null;
+  }
+
+  async findResidualSnapshotByIdempotency(input: {
+    chainId: 56;
+    idempotencyKey: string;
+    userId: string;
+    walletId: string;
+  }): Promise<HelperResidualPage | null> {
+    return (
+      this.#residualIdempotency.get(`${bindingKey(input)}:${input.idempotencyKey}`) ?? null
+    );
   }
 
   async latestResidualSnapshot(input: {

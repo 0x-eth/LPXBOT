@@ -257,7 +257,11 @@ describe("P05-02 wallet Helper identity and health read model", () => {
     const rpc = new HelperRpc();
     const store = new MemoryWalletHelperReadStore();
     await store.recordTrustedBinding(binding());
-    await store.appendResidualSnapshot({ page: residualPage(), userId });
+    await store.appendResidualSnapshot({
+      idempotencyKey: "helper-status-residual-fixture",
+      page: residualPage(),
+      userId,
+    });
     const result = await new WalletHelperReadService({ registry, rpc, store }).status(statusInput());
     expect(result.state).toBe("residual");
   });
