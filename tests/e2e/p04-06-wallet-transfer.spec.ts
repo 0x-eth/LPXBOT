@@ -159,6 +159,17 @@ function emptyPositions() {
   };
 }
 
+function closedLocalPositionPage() {
+  return {
+    chainId: 31_337,
+    executionEnabled: false,
+    items: [],
+    registryVersion: "p05-local-position-execution-v2",
+    serviceFeeBps: 0,
+    walletId,
+  };
+}
+
 function undeployedHelper() {
   return {
     address: null,
@@ -470,6 +481,13 @@ async function installApi(page: Page, fixture: TransferFixture): Promise<void> {
           "Content-Type": "text/event-stream; charset=utf-8",
         },
         status: 200,
+      });
+      return;
+    }
+    if (pathname === "/api/positions/local-current" && request.method() === "GET") {
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope(closedLocalPositionPage()),
       });
       return;
     }

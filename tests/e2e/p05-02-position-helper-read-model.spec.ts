@@ -176,6 +176,17 @@ type PositionMode = "empty" | "error" | "partial" | "quarantined" | "ready" | "s
 type HelperMode = "active" | "degraded" | "residual" | "superseded" | "undeployed";
 type ResidualMode = "empty" | "error" | "partial" | "ready";
 
+function closedLocalPositionPage() {
+  return {
+    chainId: 31_337,
+    executionEnabled: false,
+    items: [],
+    registryVersion: "p05-local-position-execution-v2",
+    serviceFeeBps: 0,
+    walletId,
+  };
+}
+
 async function install(
   page: Page,
   state: {
@@ -243,6 +254,12 @@ async function install(
         entries: [],
         ownWallets: [{ address, name: "BSC read wallet", walletId }],
       }),
+    }),
+  );
+  await page.route("**/api/positions/local-current**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      json: envelope(closedLocalPositionPage()),
     }),
   );
   await page.route("**/api/wallets**", async (route: Route) => {
@@ -374,7 +391,7 @@ test("renders ready position, active Helper, and residual data without execution
   await install(page, state);
   await page.goto("/wallets");
 
-  await expect(page.getByRole("heading", { name: "仓位" })).toBeVisible();
+  await expect(page.getByRole("heading", { exact: true, name: "仓位" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Helper 状态" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "残留资产" })).toBeVisible();
   await expect(page.locator("[data-testid='position-read-panel']")).toHaveAttribute(

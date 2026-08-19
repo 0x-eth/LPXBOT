@@ -61,6 +61,17 @@ function preview(target: ReturnType<typeof wallet>) {
   };
 }
 
+function closedLocalPositionPage(walletId: string) {
+  return {
+    chainId: 31_337,
+    executionEnabled: false,
+    items: [],
+    registryVersion: "p05-local-position-execution-v2",
+    serviceFeeBps: 0,
+    walletId,
+  };
+}
+
 async function fail(route: Route, code: string): Promise<void> {
   await route.fulfill({
     contentType: "application/json",
@@ -162,6 +173,13 @@ async function installShell(page: Page): Promise<void> {
       json: envelope({ configured: true, status: "locked", version: 1 }),
     }),
   );
+  await page.route("**/api/positions/local-current**", (route) => {
+    const walletId = new URL(route.request().url()).searchParams.get("walletId") ?? safeWalletId;
+    return route.fulfill({
+      contentType: "application/json",
+      json: envelope(closedLocalPositionPage(walletId)),
+    });
+  });
 }
 
 async function install(page: Page, state: FixtureState): Promise<void> {

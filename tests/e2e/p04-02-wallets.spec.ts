@@ -49,6 +49,17 @@ function emptyPositions() {
   };
 }
 
+function closedLocalPositionPage(targetWalletId: string) {
+  return {
+    chainId: 31_337,
+    executionEnabled: false,
+    items: [],
+    registryVersion: "p05-local-position-execution-v2",
+    serviceFeeBps: 0,
+    walletId: targetWalletId,
+  };
+}
+
 async function auth(route: Route) {
   await route.fulfill({
     contentType: "application/json",
@@ -139,6 +150,13 @@ async function install(
         "Content-Type": "text/event-stream; charset=utf-8",
       },
       status: 200,
+    });
+  });
+  await page.route("**/api/positions/local-current**", (route) => {
+    const targetWalletId = new URL(route.request().url()).searchParams.get("walletId") ?? walletId;
+    return route.fulfill({
+      contentType: "application/json",
+      json: envelope(closedLocalPositionPage(targetWalletId)),
     });
   });
   await page.route("**/api/wallets**", async (route) => {
