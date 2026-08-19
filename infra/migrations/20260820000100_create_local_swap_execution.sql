@@ -216,13 +216,15 @@ CREATE TABLE local_swap_operation_steps (
     REFERENCES custody_wallets(tenant_id, user_id, wallet_id)
     ON DELETE CASCADE,
   UNIQUE (operation_id, ordinal),
-  UNIQUE (chain_id, wallet_id, nonce),
   CHECK (max_priority_fee_per_gas_base_unit <= max_fee_per_gas_base_unit),
   CHECK (fee_cap_base_unit = gas_limit * max_fee_per_gas_base_unit),
   CHECK ((step_kind = 'cleanup') = (run_condition = 'swap-failed-after-approval')),
   CHECK (updated_at >= created_at)
 );
 
+CREATE UNIQUE INDEX local_swap_steps_reserved_nonce_unique
+  ON local_swap_operation_steps (chain_id, wallet_id, nonce)
+  WHERE state <> 'skipped';
 CREATE INDEX local_swap_steps_recovery_idx
   ON local_swap_operation_steps (state, updated_at, step_id)
   WHERE state IN ('queued', 'signed', 'broadcast', 'pending', 'dropped', 'reconciling');

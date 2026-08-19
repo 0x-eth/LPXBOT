@@ -1138,11 +1138,23 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
     const firstNonce = BigInt(operation.plan_payload.steps[0]!.nonce);
     const reservedEnd = firstNonce + BigInt(operation.plan_payload.steps.length);
     await client.query(
+      `UPDATE local_swap_operation_steps s
+          SET state = 'skipped', updated_at = $2
+        WHERE s.operation_id = $1 AND s.active_transaction_id IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM local_swap_step_transactions t WHERE t.step_id = s.step_id
+          )`,
+      [operation.operation_id, when],
+    );
+    const result = await client.query(
       `UPDATE wallet_nonce_ledgers
           SET next_nonce = $2, fencing_token = fencing_token + 1, updated_at = $3
         WHERE chain_id = 31337 AND wallet_id = $1 AND next_nonce = $4`,
       [operation.wallet_id, firstNonce.toString(), when, reservedEnd.toString()],
     );
+    if (result.rowCount !== 1) {
+      throw new LocalSwapWorkerError("NONCE_RECONCILIATION_REQUIRED", true);
+    }
   }
 
   async #releaseSkippedCleanupNonce(
