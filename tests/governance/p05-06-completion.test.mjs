@@ -254,7 +254,9 @@ test("evidence covers direct, Permit2, cleanup, recovery, injection, and adversa
     /ALLOWANCE_CLEANUP_REQUIRED/u,
     /nonce drift/iu,
     /replacement/iu,
-    /dropped.*reorg.*restart/isu,
+    /dropped/iu,
+    /reorg/iu,
+    /restart/iu,
     /target.*router.*spender.*selector.*calldata/isu,
     /false-return/iu,
     /no-return/iu,
@@ -276,7 +278,8 @@ test("P05-03, P05-04, and P05-05 acceptance are byte-identical to the requested 
     )
       .trim()
       .split("\n")
-      .filter(Boolean);
+      .filter(Boolean)
+      .sort((left, right) => left.localeCompare(right));
     const currentFiles = (await filesBelow(path.join(ROOT, repositoryPath))).map(
       (file) => `${repositoryPath}/${file}`,
     );

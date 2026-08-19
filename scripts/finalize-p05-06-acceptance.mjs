@@ -56,7 +56,8 @@ for (const directory of FROZEN) {
   )
     .trim()
     .split("\n")
-    .filter(Boolean);
+    .filter(Boolean)
+    .sort((left, right) => left.localeCompare(right));
   const currentFiles = (await filesBelow(path.join(ROOT, repositoryPath))).map(
     (file) => `${repositoryPath}/${file}`,
   );
