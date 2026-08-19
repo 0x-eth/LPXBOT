@@ -29,6 +29,7 @@ const FEATURE_IDS = [
   "HELPER-06",
 ];
 const IMPLEMENTED = ["POS-01", "HELPER-01", "HELPER-05"];
+const CURRENT_IMPLEMENTED = ["SWAP-01", ...IMPLEMENTED, "POS-04"];
 const REQUIRED_EVIDENCE = [
   "E-API",
   "E-CHAIN",
@@ -102,7 +103,7 @@ function statusRows(markdown) {
   return rows;
 }
 
-test("P05 closes P05-02 at 3 implemented-assumed / 9 planned with global 64 / 132", async () => {
+test("P05-02 ownership remains frozen after P05-03 advances current status to 5 / 7", async () => {
   const [functionMatrix, traceability, roadmap] = await Promise.all([
     readFile(FUNCTION_MATRIX, "utf8"),
     readFile(TRACEABILITY, "utf8"),
@@ -112,11 +113,11 @@ test("P05 closes P05-02 at 3 implemented-assumed / 9 planned with global 64 / 13
   assert.deepEqual(sorted(rows.keys()), sorted(FEATURE_IDS));
   assert.deepEqual(
     sorted([...rows].filter(([, row]) => row.status === "implemented-assumed").map(([id]) => id)),
-    sorted(IMPLEMENTED),
+    sorted(CURRENT_IMPLEMENTED),
   );
   assert.deepEqual(
     sorted([...rows].filter(([, row]) => row.status === "planned").map(([id]) => id)),
-    sorted(FEATURE_IDS.filter((id) => !IMPLEMENTED.includes(id))),
+    sorted(FEATURE_IDS.filter((id) => !CURRENT_IMPLEMENTED.includes(id))),
   );
   for (const id of IMPLEMENTED) {
     const row = rows.get(id);
@@ -130,15 +131,15 @@ test("P05 closes P05-02 at 3 implemented-assumed / 9 planned with global 64 / 13
     );
   }
   for (const document of [traceability, roadmap]) {
-    assert.match(document, /P05[^\n]*3[^\n]*implemented-assumed[^\n]*9[^\n]*planned/iu);
+    assert.match(document, /P05[^\n]*5[^\n]*implemented-assumed[^\n]*7[^\n]*planned/iu);
     assert.match(document, /accepted-with-gaps/u);
     assert.match(document, /not parity-verified|不标记 `parity-verified`/iu);
     assert.match(document, /not released|不标记[^\n]*`released`/iu);
   }
-  assert.match(traceability, /\| 当前产品实现 \| 64 \|/u);
-  assert.match(traceability, /\| `implemented-assumed` \| 64 \|/u);
-  assert.match(traceability, /\| 其余 `planned` \| 132 \|/u);
-  assert.match(roadmap, /全局为 64 项 `implemented-assumed`、132 项 `planned`/u);
+  assert.match(traceability, /\| 当前产品实现 \| 66 \|/u);
+  assert.match(traceability, /\| `implemented-assumed` \| 66 \|/u);
+  assert.match(traceability, /\| 其余 `planned` \| 130 \|/u);
+  assert.match(roadmap, /全局为 66 项 `implemented-assumed`、130 项 `planned`/u);
 });
 
 test("P05-02 manifest owns only POS-01, HELPER-01, and HELPER-05", async () => {

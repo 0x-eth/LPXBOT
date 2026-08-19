@@ -3,7 +3,7 @@
 > 基线日期：2026-08-13  
 > 范围源：[功能矩阵](./FUNCTION_MATRIX.md)  
 > 阶段源：[开发路线图](./DEVELOPMENT_ROADMAP.md)  
-> 当前状态：P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项及 P05 的 3 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 132 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
+> 当前状态：P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项及 P05 的 5 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 130 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
 
 ## 1. 使用规则
 
@@ -359,17 +359,17 @@ P04-07 在既有 custody、Keystore、安全密码、资产、地址簿、转账
 
 #### P05 当前实现与证据状态
 
-P05-02 完成 BSC chainId 56 上四个平台的只读仓位扫描、Helper 同块身份/健康验证和受控残留资产扫描。P05 当前为 3 项 `implemented-assumed`、9 项 `planned`，工作项保持 `accepted-with-gaps`。验收仅使用冻结 fixture、local Anvil、PostgreSQL 和浏览器路由 fixture；signing、broadcast、deployment、upgrade、sweep、chain writes 和 real-fund operations 均为 0。生产 API runner/RPC 接线、Registry code hash 的 live 复核、版本化 allowlist 与受控 inventory 的生产覆盖完整性仍 unresolved，因此不标记 `parity-verified` 或 `released`。
+P05-03 在 BSC chainId 56 四个平台只读仓位/Helper 基础上完成受控不可执行 Swap 报价，以及观察仓位成本、费用 snapshot、hidden/withdrawn tombstone 和 PostgreSQL Outbox 可恢复 SSE。P05 当前为 5 项 `implemented-assumed`、7 项 `planned`，工作项保持 `accepted-with-gaps`。验收仅使用确定性 fixture、local Anvil、PostgreSQL 和浏览器路由 fixture；生产报价源未配置并 fail closed，router selector allowlist 为空，signing、broadcast、chain writes、real-fund operations 和 production calldata generation 均为 0。生产 API runner/报价源接线和 Registry code hash 的 live 复核仍 unresolved，因此不标记 `parity-verified` 或 `released`。
 
 <!-- P05_STATUS_TABLE_START -->
 | ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
 |---|---|---|---|---|
-| SWAP-01 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); reference-only |
+| SWAP-01 | `implemented-assumed` | [controlled quote Registry](../packages/chain-registry/src/index.ts), [BSC quote adapter and digest](../packages/chain-adapters/src/swap-quote.ts), [quote service](../apps/api/src/swap-quotes.ts), [API route](../apps/api/src/app.ts), [strict web client](../apps/web/src/swap-pricing-client.ts), [wallet quote UI](../apps/web/src/swap-pricing-panels.tsx) | [T-UNIT/T-CHAIN](../tests/p05-swap-quote-adapter.test.ts), [T-API/T-SEC](../tests/p05-swap-quote-api.test.ts), [T-UI](../tests/p05-swap-pricing-client.test.ts), [T-UI/T-VIS](../tests/e2e/p05-03-swap-pricing.spec.ts) | [P05-03](../artifacts/acceptance/P05-03/manifest.json); local-fixture-verified; quote-only; execution allowlist empty; production provider unconfigured |
 | SWAP-02 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); reference-only |
 | POS-01 | `implemented-assumed` | [BSC Registry](../packages/chain-registry/src/index.ts), [four position adapters](../packages/chain-adapters/src/position-read-adapters.ts), [controlled RPC](../packages/chain-adapters/src/position-read-rpc.ts), [canonical scanner](../apps/api/src/position-read-model.ts), [API routes](../apps/api/src/app.ts), [strict web client](../apps/web/src/position-helper-client.ts), [wallet UI](../apps/web/src/position-helper-panels.tsx) | [T-UNIT/T-CHAIN](../tests/p05-position-read-adapters.test.ts), [T-API/T-SEC](../tests/p05-position-api.test.ts), [T-REC](../tests/p05-position-scanner.test.ts), [T-UI/T-VIS](../tests/e2e/p05-02-position-helper-read-model.spec.ts) | [P05-02](../artifacts/acceptance/P05-02/manifest.json); local-fixture-verified; chainId 56 read-only; live Registry verification unresolved |
 | POS-02 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); no collect action |
 | POS-03 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); no decrease action |
-| POS-04 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); no position ledger/SSE |
+| POS-04 | `implemented-assumed` | [pricing ledger domain and SSE](../apps/api/src/pricing-positions.ts), [PostgreSQL store and Outbox](../apps/api/src/postgres-pricing-position-store.ts), [API routes](../apps/api/src/app.ts), [strict web reducer](../apps/web/src/swap-pricing-client.ts), [wallet ledger UI](../apps/web/src/swap-pricing-panels.tsx), [migration](../infra/migrations/20260819000300_create_swap_quotes_pricing_positions.sql) | [T-UNIT/T-REC](../tests/p05-pricing-position-ledger.test.ts), [T-API/T-SEC](../tests/p05-pricing-position-api.test.ts), [T-SSE/T-REC](../tests/p05-pricing-position-sse.test.ts), [T-MIG/T-REC](../tests/integration/postgres-pricing-position-store.integration.ts), [T-UI/T-VIS](../tests/e2e/p05-03-swap-pricing.spec.ts) | [P05-03](../artifacts/acceptance/P05-03/manifest.json); local-fixture-verified; P05-02 snapshots remain source of truth; tenant/user isolated |
 | HELPER-01 | `implemented-assumed` | [Helper Registry](../packages/chain-registry/src/index.ts), [identity verifier](../apps/api/src/helper-read-model.ts), [PostgreSQL snapshots](../apps/api/src/postgres-wallet-helper-read-store.ts), [API route](../apps/api/src/app.ts), [Helper UI](../apps/web/src/position-helper-panels.tsx) | [T-UNIT/T-CHAIN](../tests/p05-helper-read-model.test.ts), [T-API/T-SEC](../tests/p05-helper-api.test.ts), [T-MIG/T-REC](../tests/integration/postgres-helper-read-store.integration.ts), [T-UI/T-VIS](../tests/e2e/p05-02-position-helper-read-model.spec.ts) | [P05-02](../artifacts/acceptance/P05-02/manifest.json); local-fixture-verified; trusted bindings only; production runtime wiring unresolved |
 | HELPER-02 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); no deployment action |
 | HELPER-03 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); no upgrade action |
@@ -405,10 +405,10 @@ P05-02 完成 BSC chainId 56 上四个平台的只读仓位扫描、Helper 同�
 |---|---:|---|
 | 功能矩阵稳定 ID | 196 | 已全部映射 |
 | 追踪表稳定 ID | 196 | 必须由自动检查保持相等 |
-| 当前产品实现 | 64 | P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项和 P05 的 3 项完成阶段实现；P05 为 3 implemented-assumed / 9 planned |
-| `implemented-assumed` | 64 | 目标对照或 live 证据仍不完整 |
+| 当前产品实现 | 66 | P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项和 P05 的 5 项完成阶段实现；P05 为 5 implemented-assumed / 7 planned |
+| `implemented-assumed` | 66 | 目标对照或 live 证据仍不完整 |
 | `parity-verified` | 0 | 不由 accepted work item 自动提升 |
 | `released` | 0 | 尚无 staging、监控和回滚完整证明 |
-| 其余 `planned` | 132 | P02/P03/P04 已无 planned；P05 仍有 9 项 planned |
+| 其余 `planned` | 130 | P02/P03/P04 已无 planned；P05 仍有 7 项 planned |
 
 建议 CI 检查逻辑：从 `FUNCTION_MATRIX.md` 与本文件抽取 `^[A-Z]+-[0-9]{2}$`，比较去重集合；再检查每行非空的阶段、测试和证据列。任何新增功能 ID 必须先进入范围源和本表。

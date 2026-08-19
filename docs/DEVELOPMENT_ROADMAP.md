@@ -208,7 +208,7 @@ flowchart LR
 
 **门禁：** P04 安全门通过；合约独立审查；测试网部署前冻结 ABI/registry version。
 
-**当前状态：** P05-02 完成 BSC chainId 56 上 platformId 1/2/4/5 的独立只读 Position adapter、canonical block 仓位扫描、可信 Helper 绑定与同块身份/健康验证、版本化 allowlist 残留扫描、append-only PostgreSQL 快照，以及 `/wallets` desktop/mobile 只读 UI。P05 当前为 3 项 `implemented-assumed`、9 项 `planned`，继续 `accepted-with-gaps`；全局为 64 项 `implemented-assumed`、132 项 `planned`。验收只使用冻结 fixture、local Anvil、PostgreSQL 和浏览器路由 fixture，signing、broadcast、deployment、upgrade、sweep、chain writes 和 real-fund operations 均为 0。生产 API runner/RPC 接线、Registry code hash live 复核、版本化 allowlist 与受控 inventory 的生产覆盖完整性仍 unresolved，不标记 `parity-verified` 或 `released`。
+**当前状态：** P05-03 在 P05-02 的四个平台只读 Position adapter、可信 Helper 验证和残留扫描基础上，新增 chainId 56 的受控不可执行 Swap 报价、服务端解析 route/gas/期限/digest、观察仓位导入与冻结成本基准、链上费用观察、hidden/withdrawn tombstone，以及 PostgreSQL Outbox 支撑的可恢复 SSE 和 `/wallets` desktop/mobile UI。P05 当前为 5 项 `implemented-assumed`、7 项 `planned`，继续 `accepted-with-gaps`；全局为 66 项 `implemented-assumed`、130 项 `planned`。验收只使用确定性 fixture、local Anvil、PostgreSQL 和浏览器路由 fixture；生产报价源保持未配置并 fail closed，router selector allowlist 继续为空，signing、broadcast、chain writes、real-fund operations 和 production calldata generation 均为 0。生产 API runner/报价源接线、live Registry code hash 复核、版本化 allowlist 与受控 inventory 的生产覆盖完整性仍 unresolved，不标记 `parity-verified` 或 `released`。
 
 ### P06：任务产品面和配置
 
