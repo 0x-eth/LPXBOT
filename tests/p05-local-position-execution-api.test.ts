@@ -1,4 +1,7 @@
-import type { CustodyWallet } from "../packages/api-contract/src/index.js";
+import type {
+  CustodyWallet,
+  LocalPositionCollectFeesPreviewRequest,
+} from "../packages/api-contract/src/index.js";
 import { P05_LOCAL_POSITION_EXECUTION_REGISTRY } from "../packages/chain-registry/src/index.js";
 import type { LocalPositionSnapshot } from "../packages/domain/src/local-position-execution.js";
 import {
@@ -149,7 +152,10 @@ describe("P05-07 local position execution API service", () => {
       "amount1Max",
       "amount0Min",
       "amount1Min",
+      "deadline",
       "fee",
+      "feeLimit",
+      "serviceFeeBps",
     ]) {
       expect(() =>
         parseLocalPositionRemoveLiquidityPreview({ ...remove, [field]: "injected" }),
@@ -337,5 +343,69 @@ describe("P05-07 local position execution API service", () => {
         wallet,
       }),
     ).rejects.toMatchObject({ code: "NONCE_RECONCILIATION_REQUIRED" });
+  });
+
+  it("rejects stale or changed snapshots, wrong position identity, and malicious code identities", async () => {
+    const request = (
+      api: ReturnType<typeof fixture>,
+      overrides: Partial<LocalPositionCollectFeesPreviewRequest> = {},
+    ): LocalPositionCollectFeesPreviewRequest => ({
+      platformId: 1,
+      snapshotDigest: api.snapshot.snapshotDigest,
+      tokenId: "1",
+      walletId: wallet.walletId,
+      ...overrides,
+    });
+    const preview = (
+      api: ReturnType<typeof fixture>,
+      overrides: Partial<LocalPositionCollectFeesPreviewRequest> = {},
+    ) =>
+      api.service.previewCollectFees({
+        request: request(api, overrides),
+        tenantId,
+        userId,
+        wallet,
+      });
+
+    const stale = fixture({ headBlockNumber: "14" });
+    await expect(preview(stale)).rejects.toMatchObject({ code: "SNAPSHOT_STALE" });
+
+    const changedState = snapshot();
+    const changed = fixture({
+      position: { ...structuredClone(changedState.position), liquidity: "100" },
+    });
+    await expect(preview(changed)).rejects.toMatchObject({ code: "SNAPSHOT_CHANGED" });
+
+    const identity = fixture();
+    await expect(preview(identity, { platformId: 2 })).rejects.toMatchObject({
+      code: "SNAPSHOT_CHANGED",
+    });
+    await expect(preview(identity, { tokenId: "999999" })).rejects.toMatchObject({
+      code: "SNAPSHOT_CHANGED",
+    });
+
+    const maliciousManager = fixture({
+      manager: {
+        address: registry.manager.address,
+        runtimeCodeHash: `0x${"99".repeat(32)}`,
+      },
+    });
+    await expect(preview(maliciousManager)).rejects.toMatchObject({
+      code: "MANAGER_IDENTITY_MISMATCH",
+    });
+
+    const maliciousTokenState = snapshot();
+    const maliciousToken = fixture({
+      tokenCode: [
+        {
+          address: maliciousTokenState.tokens[0].address,
+          runtimeCodeHash: `0x${"88".repeat(32)}`,
+        },
+        structuredClone(maliciousTokenState.tokens[1]),
+      ],
+    });
+    await expect(preview(maliciousToken)).rejects.toMatchObject({
+      code: "TOKEN_IDENTITY_MISMATCH",
+    });
   });
 });

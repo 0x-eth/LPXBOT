@@ -330,7 +330,10 @@ describe("P05-07 local position HTTP API", () => {
       "amount1Max",
       "amount0Min",
       "amount1Min",
+      "deadline",
       "fee",
+      "feeLimit",
+      "serviceFeeBps",
     ]) {
       const response = await app.inject({
         headers: auth(tokenA),

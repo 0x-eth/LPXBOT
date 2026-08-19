@@ -139,6 +139,7 @@
       "amount1Max",
       "amount0Min",
       "amount1Min",
+      "deadline",
       "fee",
       "feeLimit",
       "serviceFeeBps"
