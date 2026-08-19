@@ -117,9 +117,9 @@ describe.skipIf(!enabled)("P05-04 deterministic local Anvil execution closure", 
       receiptStatus: "success",
       valueBaseUnit: "0",
     });
-    expect(snapshot.operationEvidence.swap.success.balanceAndAllowanceStateAfter.allowances).toEqual(
-      expect.objectContaining({ adapterToRouter: "0", helperToAdapter: "0" }),
-    );
+    expect(
+      snapshot.operationEvidence.swap.success.balanceAndAllowanceStateAfter.allowances,
+    ).toEqual(expect.objectContaining({ adapterToRouter: "0", helperToAdapter: "0" }));
     expect(snapshot.operationEvidence.swap.failure).toMatchObject({
       executedPlanRecorded: false,
       receiptStatus: "reverted",

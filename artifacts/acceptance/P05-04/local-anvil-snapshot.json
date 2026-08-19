@@ -1,0 +1,288 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-04",
+  "classification": "LOCAL-DECISION",
+  "environment": "foundry-anvil-only",
+  "compiler": {
+    "optimizer": true,
+    "optimizerRuns": 200,
+    "solcVersion": "0.8.26"
+  },
+  "dependencyPins": {
+    "openzeppelin": {
+      "commit": "c64a1edb67b6e3f4a15cca8909c9482ad33a02b0",
+      "version": "v5.4.0"
+    },
+    "permit2": {
+      "commit": "cc56ad0f3439c502c246fc5cfcc3db92bb8b7219"
+    }
+  },
+  "network": {
+    "chainId": 31337,
+    "forked": false,
+    "wallet": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+  },
+  "deploymentOrder": [
+    {
+      "contract": "TestOnlyERC20",
+      "abiHash": "sha256:42860ffec1787bb715b586c3c0e07d258da5d55ae2a42132c230fde95a643618",
+      "address": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+      "runtimeCodeBytes": 1462,
+      "runtimeCodeHash": "0x438d7e29bb977ff7241816f8388a6cc0be9c4cbe4e356f177b77d71d9b7d4354",
+      "transactionHash": "0xc55da7431aca816842bf3178b749ea256d135796339af3c5fd715eceb608d5f8"
+    },
+    {
+      "contract": "TestOnlyWBNB",
+      "abiHash": "sha256:bd776c3dda994cf3172602e8506f9e1b07cb9b829b4e69a10a1667570946a3bc",
+      "address": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+      "runtimeCodeBytes": 2231,
+      "runtimeCodeHash": "0x4bd73dd3f768a57356137078198f3637e40f39b8339c36803672e3d4eae453f8",
+      "transactionHash": "0x072a5fe74dd843fde45b6b408b14719b1aca39d28bcfd2d73c31cd3fa8d2a9c9"
+    },
+    {
+      "contract": "TestOnlyPermit2",
+      "abiHash": "sha256:a2c742af5f41acc9c0bc882304ebb6c9d091961c2e10c87060efb9a15dcd942c",
+      "address": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+      "runtimeCodeBytes": 4029,
+      "runtimeCodeHash": "0x85f295c14e6e29cd939674c5f0ec10bc1606a00330ffd059e604bd231e35b7ad",
+      "transactionHash": "0xc17a2c4f18fe6d889ba97657291ab561fa66c74c298d826eae0dd8f04ac5cbac"
+    },
+    {
+      "contract": "TestOnlySwapRouter",
+      "abiHash": "sha256:2c895580a965e8c7980697363427c55332dade71a9fb317d4c336f385b28e7fd",
+      "address": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+      "runtimeCodeBytes": 1100,
+      "runtimeCodeHash": "0x3c6483edb8b5d43ef28f4cbc66c181a3b3dcb40a445cfd80af52f8590a419216",
+      "transactionHash": "0x54459215dca0ee1049d8eefe76b59630101c46a53bd53af4e3b887e9ec6bdc5c"
+    },
+    {
+      "contract": "TestOnlyPositionManager",
+      "abiHash": "sha256:af341683324264cab5946e14ba7e103c99b2bef4cebbdc744a3955a7a07e262f",
+      "address": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+      "runtimeCodeBytes": 1894,
+      "runtimeCodeHash": "0x04f41e615446ecf7641d35bedf05bfe90d5fd7491773c4c7e2aa7bea22473a82",
+      "transactionHash": "0xd865980cd8aaefa132ea0e96a784c4e8e6498dda8a8f02f0be1f96c315b4cf21"
+    },
+    {
+      "contract": "LocalExecutionAdapter",
+      "abiHash": "sha256:6760e5a05af57bfb69eb6fe7385f672e5f9068ae661caa30b4786eba16461e73",
+      "address": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+      "runtimeCodeBytes": 3063,
+      "runtimeCodeHash": "0xb4b2ae4ee6025275948cb04c4ab0ad52cf5e6bb016def1a2050568b812bb30f8",
+      "transactionHash": "0xe0b6d91c856cd1ba7ddd03d9a9e8f234d72a77fc76a7002a0a724827df7a385d"
+    },
+    {
+      "contract": "WalletHelperV1",
+      "abiHash": "sha256:cee4bfd152232ce4f86ba4580385b699cad889dcb413b2d9b866e34e69bdc6c9",
+      "address": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+      "runtimeCodeBytes": 8120,
+      "runtimeCodeHash": "0xea674401191387ab14d8ecb4f1eb4fe815a5cd3661d4de4f0d0fc8be4d03ec42",
+      "transactionHash": "0xc514831ef70ae8548471443eb0c6233624bf1386a76971ee642af8ce36201495"
+    }
+  ],
+  "helperBaseline": {
+    "abiHash": "sha256:cee4bfd152232ce4f86ba4580385b699cad889dcb413b2d9b866e34e69bdc6c9",
+    "abiSelectors": [
+      "0x03eadcfc",
+      "0x111c6855",
+      "0x12261ee7",
+      "0x3609afa9",
+      "0x5a547e89",
+      "0x6971b189",
+      "0x7d13cb00",
+      "0x8da5cb5b",
+      "0xc2b86d60",
+      "0xc30868a0",
+      "0xd3fe1721",
+      "0xd40dc870",
+      "0xdb6b5246",
+      "0xf285ba97",
+      "0xf28c7ad0",
+      "0xfad0c1d2"
+    ],
+    "businessSelectors": {
+      "executePosition": "0xf285ba97",
+      "executeSwap": "0x5a547e89",
+      "sweepNative": "0x6971b189",
+      "sweepToken": "0x3609afa9"
+    },
+    "creationCodeBytes": 8839,
+    "creationCodeHash": "0x24f17096a9e25eed57688f0766b2b48398a6b3c752f32a7c3f15e504518c1336",
+    "creationInputBytes": 9063,
+    "creationInputHash": "0xd9b7707b7d4a9b9ba0dbc6bcd64f838a8e79816c55fc66d539b2d2acda85a188",
+    "runtimeCodeBytes": 8120,
+    "runtimeCodeHash": "0xea674401191387ab14d8ecb4f1eb4fe815a5cd3661d4de4f0d0fc8be4d03ec42"
+  },
+  "routerBaseline": {
+    "abiHash": "sha256:2c895580a965e8c7980697363427c55332dade71a9fb317d4c336f385b28e7fd",
+    "allowedSelectors": [
+      "0xbb05e388"
+    ],
+    "selectorSet": [
+      "0x04795661",
+      "0xbb05e388",
+      "0xdd01c422"
+    ]
+  },
+  "operationEvidence": {
+    "duplicatePlanRejected": true,
+    "duplicateRawTransaction": {
+      "firstHash": "0xae57c4108a363850ff56754a1fd13eacf4f65c3b1b9b4ce061d642a2099a776d",
+      "repeatedHash": "0xae57c4108a363850ff56754a1fd13eacf4f65c3b1b9b4ce061d642a2099a776d",
+      "secondSubmissionRejected": true
+    },
+    "nonceReplacement": {
+      "firstHash": "0xb8ea32e2f0d1bdde129543017b1fd35ee49b654949d49454a37c55e5f89b283a",
+      "firstReceiptState": "replaced",
+      "nonce": "14",
+      "replacementHash": "0xb3c0b1bf0e750b8df680308af3040929a4ac60c4f2a33236caa5fe27c06f1b7a",
+      "replacementReceiptStatus": "success"
+    },
+    "restartRecovery": {
+      "executedPlanRecovered": true,
+      "helperCodeHash": "0xea674401191387ab14d8ecb4f1eb4fe815a5cd3661d4de4f0d0fc8be4d03ec42",
+      "nonceBeforeRestart": "15",
+      "nonceRecovered": "15",
+      "owner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+    },
+    "swap": {
+      "failure": {
+        "amountInBaseUnit": "1000000000000000000",
+        "balanceAndAllowanceStateAfter": {
+          "allowances": {
+            "adapterToRouter": "0",
+            "helperToAdapter": "0",
+            "ownerToHelper": "1000000000000000000"
+          },
+          "balances": {
+            "owner": {
+              "tokenIn": "999999999999000000000000000000",
+              "tokenOut": "51000000000000000000"
+            },
+            "helper": {
+              "tokenIn": "0",
+              "tokenOut": "0"
+            },
+            "adapter": {
+              "tokenIn": "0",
+              "tokenOut": "0"
+            },
+            "router": {
+              "tokenIn": "1000000000000000000",
+              "tokenOut": "49000000000000000000"
+            }
+          }
+        },
+        "balanceAndAllowanceStateBefore": {
+          "allowances": {
+            "adapterToRouter": "0",
+            "helperToAdapter": "0",
+            "ownerToHelper": "1000000000000000000"
+          },
+          "balances": {
+            "owner": {
+              "tokenIn": "999999999999000000000000000000",
+              "tokenOut": "51000000000000000000"
+            },
+            "helper": {
+              "tokenIn": "0",
+              "tokenOut": "0"
+            },
+            "adapter": {
+              "tokenIn": "0",
+              "tokenOut": "0"
+            },
+            "router": {
+              "tokenIn": "1000000000000000000",
+              "tokenOut": "49000000000000000000"
+            }
+          }
+        },
+        "executedPlanRecorded": false,
+        "minAmountOutBaseUnit": "1000000000000000001",
+        "planDigest": "0x5d78377ca16a6e40dcbc6d369776ce010250cc9b9cf9c932ab8de5d3fd95340b",
+        "receiptStatus": "reverted",
+        "recipient": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+        "tokenPath": [
+          "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+          "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512"
+        ],
+        "transactionHash": "0xba7a7aa56f111f7f037235134b5dc6235dbd161f811dfaea484fbf404a25e6d4",
+        "valueBaseUnit": "0"
+      },
+      "success": {
+        "amountInBaseUnit": "1000000000000000000",
+        "balanceAndAllowanceStateAfter": {
+          "allowances": {
+            "adapterToRouter": "0",
+            "helperToAdapter": "0",
+            "ownerToHelper": "0"
+          },
+          "balances": {
+            "owner": {
+              "tokenIn": "999999999999000000000000000000",
+              "tokenOut": "51000000000000000000"
+            },
+            "helper": {
+              "tokenIn": "0",
+              "tokenOut": "0"
+            },
+            "adapter": {
+              "tokenIn": "0",
+              "tokenOut": "0"
+            },
+            "router": {
+              "tokenIn": "1000000000000000000",
+              "tokenOut": "49000000000000000000"
+            }
+          }
+        },
+        "balanceAndAllowanceStateBefore": {
+          "allowances": {
+            "adapterToRouter": "0",
+            "helperToAdapter": "0",
+            "ownerToHelper": "1000000000000000000"
+          },
+          "balances": {
+            "owner": {
+              "tokenIn": "1000000000000000000000000000000",
+              "tokenOut": "50000000000000000000"
+            },
+            "helper": {
+              "tokenIn": "0",
+              "tokenOut": "0"
+            },
+            "adapter": {
+              "tokenIn": "0",
+              "tokenOut": "0"
+            },
+            "router": {
+              "tokenIn": "0",
+              "tokenOut": "50000000000000000000"
+            }
+          }
+        },
+        "minAmountOutBaseUnit": "1000000000000000000",
+        "planDigest": "0x2cee655660cda004c5c7ac30a6c8c65501af64f7b8ec143be8cf6c78db034e9c",
+        "receiptStatus": "success",
+        "recipient": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+        "tokenPath": [
+          "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+          "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512"
+        ],
+        "transactionHash": "0xc429e3107fd1f8387e1c4d720ffb846291c45a2d10ef77275de298773b7c4ee3",
+        "valueBaseUnit": "0"
+      }
+    }
+  },
+  "executionCounters": {
+    "localChainWrites": 14,
+    "localRevertedTransactions": 1,
+    "localTransactionBroadcastsAccepted": 16,
+    "mainnetBroadcasts": 0,
+    "mainnetSignatures": 0,
+    "realFundOperations": 0,
+    "testnetBroadcasts": 0,
+    "testnetSignatures": 0
+  }
+}
