@@ -197,10 +197,7 @@ export function parseLocalSwapQuoteView(value: unknown, status = 0): LocalSwapQu
   return structuredClone(value) as unknown as LocalSwapQuoteView;
 }
 
-export function parseLocalSwapExecutePreview(
-  value: unknown,
-  status = 0,
-): LocalSwapExecutePreview {
+export function parseLocalSwapExecutePreview(value: unknown, status = 0): LocalSwapExecutePreview {
   if (
     !record(value) ||
     !exact(value, [
@@ -400,7 +397,9 @@ export function parseLocalSwapExecutionOperation(
     new Set(steps.map(({ stepId }) => stepId)).size !== steps.length ||
     new Set(steps.map(({ nonce }) => nonce)).size !== steps.length ||
     steps.some(({ kind }, index) => kind !== expectedKinds[index]) ||
-    steps.some(({ nonce }, index) => index > 0 && BigInt(nonce) !== BigInt(steps[index - 1]!.nonce) + 1n)
+    steps.some(
+      ({ nonce }, index) => index > 0 && BigInt(nonce) !== BigInt(steps[index - 1]!.nonce) + 1n,
+    )
   ) {
     invalid(status);
   }
