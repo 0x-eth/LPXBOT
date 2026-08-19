@@ -3,7 +3,7 @@
 > 基线日期：2026-08-13  
 > 范围源：[功能矩阵](./FUNCTION_MATRIX.md)  
 > 阶段源：[开发路线图](./DEVELOPMENT_ROADMAP.md)  
-> 当前状态：P01 的 18 项、P02 的 23 项、P03 的 8 项及 P04 的 12 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 135 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
+> 当前状态：P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项及 P05 的 3 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 132 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
 
 ## 1. 使用规则
 
@@ -357,6 +357,27 @@ P04-07 在既有 custody、Keystore、安全密码、资产、地址簿、转账
 | SET-07 | `implemented-assumed` | [OKX contract](../packages/api-contract/src/index.ts), [API facade and remote client](../apps/api/src/okx-key.ts), [connector lifecycle](../apps/okx-connector/src/service.ts), [envelope crypto](../apps/okx-connector/src/credential-crypto.ts), [fixed egress](../apps/okx-connector/src/transport.ts), [PostgreSQL store](../apps/okx-connector/src/postgres-store.ts), [migration](../infra/migrations/20260819000100_create_okx_credentials.sql), [settings UI](../apps/web/src/okx-key-settings.tsx) | [T-API/T-SEC](../tests/okx-key-api.test.ts), [T-UNIT/T-REC/T-SEC](../tests/okx-connector-lifecycle.test.ts), [T-UNIT/T-SEC](../tests/okx-connector-crypto.test.ts), [T-SEC](../tests/okx-egress.test.ts), [T-API/T-SEC](../tests/okx-connector-http.test.ts), [T-REC/T-MIG/T-SEC](../tests/integration/postgres-okx-credentials.integration.ts), [T-UI/T-VIS](../tests/e2e/p04-07-okx-key.spec.ts) | [P04-07](../artifacts/acceptance/P04-07/manifest.json); local-fixture-verified; real OKX calls 0; `GAP-P04-OKX-LIVE`, production KMS/IAM, independent security review, and real read-only sandbox validation unresolved |
 <!-- P04_STATUS_TABLE_END -->
 
+#### P05 当前实现与证据状态
+
+P05-02 完成 BSC chainId 56 上四个平台的只读仓位扫描、Helper 同块身份/健康验证和受控残留资产扫描。P05 当前为 3 项 `implemented-assumed`、9 项 `planned`，工作项保持 `accepted-with-gaps`。验收仅使用冻结 fixture、local Anvil、PostgreSQL 和浏览器路由 fixture；signing、broadcast、deployment、upgrade、sweep、chain writes 和 real-fund operations 均为 0。生产 API runner/RPC 接线、Registry code hash 的 live 复核、版本化 allowlist 与受控 inventory 的生产覆盖完整性仍 unresolved，因此不标记 `parity-verified` 或 `released`。
+
+<!-- P05_STATUS_TABLE_START -->
+| ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
+|---|---|---|---|---|
+| SWAP-01 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); reference-only |
+| SWAP-02 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); reference-only |
+| POS-01 | `implemented-assumed` | [BSC Registry](../packages/chain-registry/src/index.ts), [four position adapters](../packages/chain-adapters/src/position-read-adapters.ts), [controlled RPC](../packages/chain-adapters/src/position-read-rpc.ts), [canonical scanner](../apps/api/src/position-read-model.ts), [API routes](../apps/api/src/app.ts), [strict web client](../apps/web/src/position-helper-client.ts), [wallet UI](../apps/web/src/position-helper-panels.tsx) | [T-UNIT/T-CHAIN](../tests/p05-position-read-adapters.test.ts), [T-API/T-SEC](../tests/p05-position-api.test.ts), [T-REC](../tests/p05-position-scanner.test.ts), [T-UI/T-VIS](../tests/e2e/p05-02-position-helper-read-model.spec.ts) | [P05-02](../artifacts/acceptance/P05-02/manifest.json); local-fixture-verified; chainId 56 read-only; live Registry verification unresolved |
+| POS-02 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); no collect action |
+| POS-03 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); no decrease action |
+| POS-04 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); no position ledger/SSE |
+| HELPER-01 | `implemented-assumed` | [Helper Registry](../packages/chain-registry/src/index.ts), [identity verifier](../apps/api/src/helper-read-model.ts), [PostgreSQL snapshots](../apps/api/src/postgres-wallet-helper-read-store.ts), [API route](../apps/api/src/app.ts), [Helper UI](../apps/web/src/position-helper-panels.tsx) | [T-UNIT/T-CHAIN](../tests/p05-helper-read-model.test.ts), [T-API/T-SEC](../tests/p05-helper-api.test.ts), [T-MIG/T-REC](../tests/integration/postgres-helper-read-store.integration.ts), [T-UI/T-VIS](../tests/e2e/p05-02-position-helper-read-model.spec.ts) | [P05-02](../artifacts/acceptance/P05-02/manifest.json); local-fixture-verified; trusted bindings only; production runtime wiring unresolved |
+| HELPER-02 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); no deployment action |
+| HELPER-03 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); no upgrade action |
+| HELPER-04 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); no atomic execution action |
+| HELPER-05 | `implemented-assumed` | [bounded residual scanner](../apps/api/src/helper-residual-model.ts), [append-only store](../apps/api/src/postgres-wallet-helper-read-store.ts), [GET/POST read routes](../apps/api/src/app.ts), [strict web client](../apps/web/src/position-helper-client.ts), [residual UI](../apps/web/src/position-helper-panels.tsx) | [T-UNIT/T-CHAIN](../tests/p05-helper-residual-model.test.ts), [T-API/T-SEC](../tests/p05-helper-api.test.ts), [T-MIG/T-REC](../tests/integration/postgres-helper-read-store.integration.ts), [T-UI/T-VIS](../tests/e2e/p05-02-position-helper-read-model.spec.ts) | [P05-02](../artifacts/acceptance/P05-02/manifest.json); local-fixture-verified; incomplete allowlist/inventory returns partial; production coverage unresolved |
+| HELPER-06 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs) | [P05-01](../artifacts/acceptance/P05-01/coverage.json); no sweep/rescue action |
+<!-- P05_STATUS_TABLE_END -->
+
 ### 管理后台
 
 | ID | 阶段 | 最低测试 | 最低验收证据 |
@@ -384,10 +405,10 @@ P04-07 在既有 custody、Keystore、安全密码、资产、地址簿、转账
 |---|---:|---|
 | 功能矩阵稳定 ID | 196 | 已全部映射 |
 | 追踪表稳定 ID | 196 | 必须由自动检查保持相等 |
-| 当前产品实现 | 61 | P01 的 18 项、P02 的 23 项、P03 的 8 项和 P04 的 12 项完成阶段实现；P04 为 12 implemented-assumed / 0 planned，阶段实现收官 |
-| `implemented-assumed` | 61 | 目标对照或 live 证据仍不完整 |
+| 当前产品实现 | 64 | P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项和 P05 的 3 项完成阶段实现；P05 为 3 implemented-assumed / 9 planned |
+| `implemented-assumed` | 64 | 目标对照或 live 证据仍不完整 |
 | `parity-verified` | 0 | 不由 accepted work item 自动提升 |
 | `released` | 0 | 尚无 staging、监控和回滚完整证明 |
-| 其余 `planned` | 135 | P02/P03/P04 已无 planned |
+| 其余 `planned` | 132 | P02/P03/P04 已无 planned；P05 仍有 9 项 planned |
 
 建议 CI 检查逻辑：从 `FUNCTION_MATRIX.md` 与本文件抽取 `^[A-Z]+-[0-9]{2}$`，比较去重集合；再检查每行非空的阶段、测试和证据列。任何新增功能 ID 必须先进入范围源和本表。

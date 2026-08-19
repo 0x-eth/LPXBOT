@@ -208,6 +208,8 @@ flowchart LR
 
 **门禁：** P04 安全门通过；合约独立审查；测试网部署前冻结 ABI/registry version。
 
+**当前状态：** P05-02 完成 BSC chainId 56 上 platformId 1/2/4/5 的独立只读 Position adapter、canonical block 仓位扫描、可信 Helper 绑定与同块身份/健康验证、版本化 allowlist 残留扫描、append-only PostgreSQL 快照，以及 `/wallets` desktop/mobile 只读 UI。P05 当前为 3 项 `implemented-assumed`、9 项 `planned`，继续 `accepted-with-gaps`；全局为 64 项 `implemented-assumed`、132 项 `planned`。验收只使用冻结 fixture、local Anvil、PostgreSQL 和浏览器路由 fixture，signing、broadcast、deployment、upgrade、sweep、chain writes 和 real-fund operations 均为 0。生产 API runner/RPC 接线、Registry code hash live 复核、版本化 allowlist 与受控 inventory 的生产覆盖完整性仍 unresolved，不标记 `parity-verified` 或 `released`。
+
 ### P06：任务产品面和配置
 
 **依赖：** P01、P02、P04；链动作由 P05 mock 到真实 adapter。
