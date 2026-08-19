@@ -68,8 +68,7 @@ const chainPosition = {
     blockTimestamp: observedAt,
     digest: snapshotDigest,
     positionManager: manager,
-    positionManagerCodeHash:
-      "0xbc0177f23ffd65c41e41fb201e170cb253489d7d637f8f6a15743a1f861160f5",
+    positionManagerCodeHash: "0xbc0177f23ffd65c41e41fb201e170cb253489d7d637f8f6a15743a1f861160f5",
     registryVersion: "p05-bsc-execution-v1",
   },
   ticks: { current: "0", inRange: true, lower: "-10", upper: "10" },
@@ -250,7 +249,10 @@ async function install(page: Page, state: FixtureState) {
       return;
     }
     if (path === "/api/wallets" && method === "GET") {
-      await route.fulfill({ contentType: "application/json", json: envelope({ items: [wallet()] }) });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({ items: [wallet()] }),
+      });
       return;
     }
     if (path.endsWith("/balances")) {
@@ -447,7 +449,16 @@ test("quotes without execution and maintains the observed pricing ledger", async
   await expect(ledger.getByText("已隐藏", { exact: true })).toBeVisible();
   await expect(withdrawn).toBeFocused();
 
-  for (const name of [/approve/i, /sign/i, /broadcast/i, /execute/i, /批准/, /签名/, /广播/, /执行/]) {
+  for (const name of [
+    /approve/i,
+    /sign/i,
+    /broadcast/i,
+    /execute/i,
+    /批准/,
+    /签名/,
+    /广播/,
+    /执行/,
+  ]) {
     await expect(page.getByRole("button", { name })).toHaveCount(0);
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(

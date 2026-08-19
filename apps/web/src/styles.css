@@ -8574,6 +8574,17 @@ html[data-theme="dark"] .read-state-badge[data-state="superseded"] {
   font-size: 0.72rem;
 }
 
+@media (max-width: 900px) {
+  .swap-quote-form,
+  .pricing-import-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .swap-quote-refresh {
+    justify-self: start;
+  }
+}
+
 @media (max-width: 720px) {
   .wallet-read-heading {
     align-items: flex-start;
@@ -8585,8 +8596,20 @@ html[data-theme="dark"] .read-state-badge[data-state="superseded"] {
   }
 
   .position-read-facts,
-  .helper-read-facts {
+  .helper-read-facts,
+  .pricing-position-facts,
+  .swap-quote-facts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .swap-quote-form,
+  .pricing-import-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .swap-quote-route {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .position-quarantine-list li,
@@ -8657,7 +8680,9 @@ html[data-theme="dark"] .read-state-badge[data-state="superseded"] {
   }
 
   .position-read-facts,
-  .helper-read-facts {
+  .helper-read-facts,
+  .pricing-position-facts,
+  .swap-quote-facts {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -8666,13 +8691,19 @@ html[data-theme="dark"] .read-state-badge[data-state="superseded"] {
     flex-direction: column;
   }
 
+  .pricing-position-identity {
+    align-items: flex-start;
+  }
+
   .wallet-read-controls select {
     max-width: calc(100% - 42px);
   }
 
   .token-import-form,
   .receive-form,
-  .address-book-form {
+  .address-book-form,
+  .pricing-import-form,
+  .swap-quote-form {
     grid-template-columns: minmax(0, 1fr);
   }
 

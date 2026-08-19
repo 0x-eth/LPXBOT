@@ -18,14 +18,7 @@ import {
   LoaderCircle,
   RefreshCw,
 } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 
 import { PositionHelperClient, PositionHelperRequestError } from "./position-helper-client";
 import {
@@ -67,9 +60,10 @@ const quoteStateLabels: Record<SwapQuoteState, string> = {
   quoting: "报价中",
   stale: "已失效",
 };
-const platformLabels = Object.fromEntries(
-  platforms.map(({ id, label }) => [id, label]),
-) as Record<PositionPlatformId, string>;
+const platformLabels = Object.fromEntries(platforms.map(({ id, label }) => [id, label])) as Record<
+  PositionPlatformId,
+  string
+>;
 
 function quoteError(error: unknown): { message: string; state: "error" | "stale" } {
   if (!(error instanceof SwapPricingRequestError)) {
@@ -102,13 +96,7 @@ function pricingError(error: unknown): string {
   return labels[error.code] ?? "观察仓位服务暂时不可用";
 }
 
-function SwapQuotePanel({
-  client,
-  wallet,
-}: {
-  client: SwapPricingClient;
-  wallet: CustodyWallet;
-}) {
+function SwapQuotePanel({ client, wallet }: { client: SwapPricingClient; wallet: CustodyWallet }) {
   const [amountInBaseUnit, setAmountInBaseUnit] = useState("1000000000000000000");
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -119,9 +107,7 @@ function SwapQuotePanel({
   const [tokenIn, setTokenIn] = useState<EvmAddress>(tokens[0].address);
   const [tokenOut, setTokenOut] = useState<EvmAddress>(tokens[1].address);
 
-  const expireAt = quote
-    ? Math.min(Date.parse(quote.expiresAt), Date.parse(quote.deadline))
-    : null;
+  const expireAt = quote ? Math.min(Date.parse(quote.expiresAt), Date.parse(quote.deadline)) : null;
   const remainingSeconds = expireAt === null ? 0 : Math.max(0, Math.ceil((expireAt - now) / 1_000));
 
   useEffect(() => {
@@ -372,11 +358,7 @@ function PositionLedgerRecord({
 }) {
   const latest = position.observations.at(-1);
   const statusLabel =
-    position.status === "active"
-      ? "观察中"
-      : position.status === "hidden"
-        ? "已隐藏"
-        : "已撤出";
+    position.status === "active" ? "观察中" : position.status === "hidden" ? "已隐藏" : "已撤出";
   return (
     <li className="pricing-position-row">
       <div className="pricing-position-identity">
@@ -508,17 +490,20 @@ function PricingPositionPanel({
     for (const eventName of ["snapshot", "diff", "heartbeat", "tombstone"] as const) {
       source.addEventListener(eventName, receive as EventListener);
     }
-    source.onopen = () =>
-      setStream((current) => ({ ...current, connection: "live" }));
-    source.onerror = () =>
-      setStream((current) => ({ ...current, connection: "stale" }));
+    source.onopen = () => setStream((current) => ({ ...current, connection: "live" }));
+    source.onerror = () => setStream((current) => ({ ...current, connection: "stale" }));
     return () => source.close();
   }, []);
 
   const candidates = sourcePage?.items ?? [];
   const chosen = candidates.find((position) => sourceKey(position) === selectedSource) ?? null;
   const importPosition = async () => {
-    if (!chosen || !sourcePage || !/^(?:0|[1-9][0-9]*)$/u.test(amount0) || !/^(?:0|[1-9][0-9]*)$/u.test(amount1)) {
+    if (
+      !chosen ||
+      !sourcePage ||
+      !/^(?:0|[1-9][0-9]*)$/u.test(amount0) ||
+      !/^(?:0|[1-9][0-9]*)$/u.test(amount1)
+    ) {
       setError("请选择有效仓位并填写 base-unit 成本");
       return;
     }
