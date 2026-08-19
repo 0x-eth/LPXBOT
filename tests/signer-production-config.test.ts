@@ -28,8 +28,15 @@ describe("P04/P05 signer production boundary", () => {
       "password-reseal",
       "plan-bound-transaction-signing",
       "plan-bound-helper-deployment-signing",
+      "plan-bound-local-swap-step-signing",
+      "plan-bound-local-permit2-signing",
     ]);
     expect(signerCapabilities.join(" ")).not.toMatch(/digest|message|broadcast|rpc/u);
+    expect(
+      signerCapabilities.filter(
+        (capability) => capability.includes("swap") || capability.includes("permit2"),
+      ),
+    ).toEqual(["plan-bound-local-swap-step-signing", "plan-bound-local-permit2-signing"]);
   });
 
   it("fails closed when KMS, ciphertext store, or signer identity configuration is missing", () => {
