@@ -125,6 +125,7 @@ describe("P05-03 controlled BSC swap quote adapter", () => {
     const mutations = [
       { amountInBaseUnit: "2" },
       { amountOutBaseUnit: "2" },
+      { blockNumber: "116718499" },
       { minOutBaseUnit: "2" },
       { priceImpactBps: quote.priceImpactBps + 1 },
       { expiresAt: "2026-08-19T06:00:31.000Z" },

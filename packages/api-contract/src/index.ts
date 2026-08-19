@@ -1231,6 +1231,7 @@ export interface SwapQuoteRoute {
 
 export interface SwapQuoteView extends SwapQuoteRequest {
   amountOutBaseUnit: string;
+  blockNumber: string;
   calldataDigest: `0x${string}`;
   deadline: string;
   digest: `0x${string}`;

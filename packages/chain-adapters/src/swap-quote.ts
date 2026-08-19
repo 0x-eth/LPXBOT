@@ -52,6 +52,7 @@ export interface SwapQuoteProvider {
 export interface SwapQuote {
   amountInBaseUnit: string;
   amountOutBaseUnit: string;
+  blockNumber: string;
   calldataDigest: Hex;
   chainId: 56;
   deadline: string;
@@ -142,6 +143,7 @@ function quotePayload(quote: Omit<SwapQuote, "digest"> | SwapQuote): Record<stri
   return {
     amountInBaseUnit: quote.amountInBaseUnit,
     amountOutBaseUnit: quote.amountOutBaseUnit,
+    blockNumber: quote.blockNumber,
     calldataDigest: quote.calldataDigest,
     chainId: quote.chainId,
     deadline: quote.deadline,
@@ -277,6 +279,7 @@ export class BscSwapQuoteAdapter {
     const unsigned: Omit<SwapQuote, "digest"> = {
       ...normalized,
       amountOutBaseUnit: snapshot.amountOutBaseUnit,
+      blockNumber: snapshot.blockNumber,
       calldataDigest: snapshot.calldataDigest,
       chainId: 56,
       deadline: plusMilliseconds(now, 60_000),
