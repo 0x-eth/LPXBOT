@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-04",
+  "identityRule": "address + runtime code hash + implementation address/hash + policy version",
+  "symbolOnlyIdentityAllowed": false,
+  "local": {
+    "allowanceMode": "exact-amount-only",
+    "allowedFixturesOnly": true,
+    "dustLimitBaseUnit": "1",
+    "executionUnknownToken": "deny",
+    "maxAmountBaseUnit": "340282366920938463463374607431768211455",
+    "permit2MaxExpirationSeconds": 1800,
+    "policyDigest": "sha256:2f4629c4939f680f8391aa0e9d4febac08d0144773471f4617e179542924bf5e",
+    "policyVersion": "p05-local-token-policy-v1",
+    "productionUnknownToken": "read-only",
+    "resetAllowanceToZero": true,
+    "tokens": [
+      {
+        "address": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+        "behavior": "standard",
+        "executionAllowed": true,
+        "fixture": "TestOnlyERC20",
+        "implementationAddress": null,
+        "implementationRuntimeCodeHash": null,
+        "runtimeCodeHash": "0x438d7e29bb977ff7241816f8388a6cc0be9c4cbe4e356f177b77d71d9b7d4354",
+        "symbol": "FIX"
+      },
+      {
+        "address": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+        "behavior": "wrapped-native",
+        "executionAllowed": true,
+        "fixture": "TestOnlyWBNB",
+        "implementationAddress": null,
+        "implementationRuntimeCodeHash": null,
+        "runtimeCodeHash": "0x4bd73dd3f768a57356137078198f3637e40f39b8339c36803672e3d4eae453f8",
+        "symbol": "WBNB"
+      }
+    ]
+  },
+  "behaviorMatrix": [
+    {
+      "behavior": "standard",
+      "localEvidence": "TestOnlyERC20",
+      "registryAllowed": true
+    },
+    {
+      "behavior": "wrapped-native",
+      "localEvidence": "TestOnlyWBNB",
+      "registryAllowed": true
+    },
+    {
+      "behavior": "false-return",
+      "localEvidence": "AdversarialToken unit fixture",
+      "registryAllowed": false
+    },
+    {
+      "behavior": "no-return",
+      "localEvidence": "AdversarialToken SafeERC20 unit fixture",
+      "registryAllowed": false
+    },
+    {
+      "behavior": "usdt-style-approve",
+      "localEvidence": "AdversarialToken SafeERC20.forceApprove unit fixture",
+      "registryAllowed": false
+    },
+    {
+      "behavior": "fee-on-transfer",
+      "localEvidence": "AdversarialToken atomic revert unit fixture",
+      "registryAllowed": false
+    },
+    {
+      "behavior": "rebasing",
+      "localEvidence": null,
+      "registryAllowed": false
+    },
+    {
+      "behavior": "callback-reentrant",
+      "localEvidence": "AdversarialToken nonReentrant atomic revert unit fixture",
+      "registryAllowed": false
+    },
+    {
+      "behavior": "malformed-metadata",
+      "localEvidence": null,
+      "registryAllowed": false
+    }
+  ],
+  "allowanceAndAmountPolicy": {
+    "directAllowance": "must equal plan amount before pull",
+    "internalAllowance": "exact plan amount and reset to zero after call",
+    "failedCallRecovery": "pre-existing exact owner allowance is reset to zero by an explicit recovery transaction",
+    "permit2ExpirationMaximumSeconds": 1800,
+    "dustLimitBaseUnit": "1",
+    "maxAmountBaseUnit": "340282366920938463463374607431768211455"
+  },
+  "production": {
+    "unclassifiedTokenMode": "read-only",
+    "executionAllowed": false
+  }
+}

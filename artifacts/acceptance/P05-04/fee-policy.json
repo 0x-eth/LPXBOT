@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-04",
+  "categories": {
+    "dexProtocolFee": {
+      "accounting": "separate",
+      "localSource": "typed quote/plan",
+      "production": "UNKNOWN"
+    },
+    "lpFee": {
+      "accounting": "separate",
+      "localSource": "typed quote/plan",
+      "production": "UNKNOWN"
+    },
+    "productServiceFee": {
+      "accounting": "separate",
+      "observedRecipientIsProjectOwnershipFact": false,
+      "production": "UNKNOWN"
+    },
+    "gas": {
+      "accounting": "separate",
+      "basis": "gasLimit and EIP-1559 fee caps"
+    }
+  },
+  "observedCandidateMatrix": [
+    {
+      "observedPath": "observed-v3-path-a",
+      "samples": 10,
+      "recipientCandidates": {
+        "0x084b8d9ee731f948ec8eb3d87446aad33d93e107": 10
+      },
+      "bpsCandidates": {
+        "10": 6,
+        "15": 4
+      },
+      "basis": "UNKNOWN",
+      "feeType": "UNKNOWN",
+      "recipientOwnership": "UNKNOWN",
+      "productionUseAllowed": false
+    },
+    {
+      "observedPath": "observed-v3-path-b",
+      "samples": 10,
+      "recipientCandidates": {
+        "0x084b8d9ee731f948ec8eb3d87446aad33d93e107": 10
+      },
+      "bpsCandidates": {
+        "10": 5,
+        "15": 5
+      },
+      "basis": "UNKNOWN",
+      "feeType": "UNKNOWN",
+      "recipientOwnership": "UNKNOWN",
+      "productionUseAllowed": false
+    },
+    {
+      "observedPath": "observed-v4-path-a",
+      "samples": 10,
+      "recipientCandidates": {
+        "0x084b8d9ee731f948ec8eb3d87446aad33d93e107": 10
+      },
+      "bpsCandidates": {
+        "10": 3,
+        "15": 7
+      },
+      "basis": "UNKNOWN",
+      "feeType": "UNKNOWN",
+      "recipientOwnership": "UNKNOWN",
+      "productionUseAllowed": false
+    },
+    {
+      "observedPath": "observed-v4-path-b",
+      "samples": 10,
+      "recipientCandidates": {
+        "0x084b8d9ee731f948ec8eb3d87446aad33d93e107": 10
+      },
+      "bpsCandidates": {
+        "15": 4,
+        "20": 6
+      },
+      "basis": "UNKNOWN",
+      "feeType": "UNKNOWN",
+      "recipientOwnership": "UNKNOWN",
+      "productionUseAllowed": false
+    }
+  ],
+  "local": {
+    "dexProtocolFee": "quoted-separately",
+    "gas": "quoted-separately",
+    "lpFee": "quoted-separately",
+    "nonZeroServiceFee": "deny",
+    "policyDigest": "sha256:12308276acc5e5575b3b7117ed8a66f314fa793f1038ce6b4e3080435eb3850d",
+    "policyVersion": "p05-local-fee-policy-v1",
+    "serviceFeeBasis": "none",
+    "serviceFeeBps": 0,
+    "serviceFeeMaxBps": 0,
+    "serviceFeeRecipientAllowlist": []
+  },
+  "nonZeroServiceFeeRequirements": {
+    "currentlyAllowed": false,
+    "requiredBindings": [
+      "policyVersion",
+      "recipient allowlist",
+      "maximum bps",
+      "fee basis",
+      "authorization plan digest"
+    ]
+  },
+  "production": {
+    "nonZeroServiceFeeAllowed": false,
+    "fundsExecutionAllowed": false,
+    "reason": "authoritative fee policy and candidate fee semantics remain UNKNOWN"
+  }
+}

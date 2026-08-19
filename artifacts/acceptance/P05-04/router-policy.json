@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-04",
+  "production": {
+    "registryVersion": "p05-bsc-execution-v1",
+    "registrySource": "artifacts/acceptance/P05-01/registry-contracts.json",
+    "registrySha256": "sha256:836c6d226f0d8e059ef173157aa38c0261f2aac06d8b6e442b565241eab199b6",
+    "executionEnabled": false,
+    "inheritanceFromLocalRegistry": false,
+    "router": {
+      "id": "router",
+      "address": "0x62ccef0b4545166f721caa9fee13c1d3767e27dc",
+      "runtimeCodeBytes": 24571,
+      "runtimeCodeHash": "0xb535b72b5d56de100c08c58e8d1beedc739ccf2f842cc527285684c7ae0d29d1",
+      "abi": {
+        "authoritative": false,
+        "hash": null,
+        "status": "UNKNOWN"
+      },
+      "allowedSelectors": [],
+      "candidateSelectors": [
+        {
+          "selector": "0xf2c42696",
+          "name": null,
+          "namingRule": "four-byte collisions do not establish function identity",
+          "sampleCount": 36,
+          "successSamples": 36,
+          "failureSamples": 0,
+          "recipientSemantics": "UNKNOWN",
+          "decision": "DENY"
+        }
+      ]
+    },
+    "spender": {
+      "id": "spender",
+      "address": "0x2c34a2fb1d0b4f55de51e1d0bdefaddce6b7cdd6",
+      "runtimeCodeBytes": 2133,
+      "runtimeCodeHash": "0xe8711c5f0fe7f3c28078140bb97b65aa015a58c06c14bad5abffa44f00f1ddf5",
+      "abi": {
+        "authoritative": false,
+        "hash": null,
+        "status": "UNKNOWN"
+      }
+    }
+  },
+  "local": {
+    "registryVersion": "p05-bsc-local-execution-v1",
+    "environment": "foundry-anvil-only",
+    "chainId": 31337,
+    "router": {
+      "abiHash": "sha256:2c895580a965e8c7980697363427c55332dade71a9fb317d4c336f385b28e7fd",
+      "address": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+      "proxyImplementation": null,
+      "proxyImplementationRuntimeCodeHash": null,
+      "role": "router",
+      "runtimeCodeHash": "0x3c6483edb8b5d43ef28f4cbc66c181a3b3dcb40a445cfd80af52f8590a419216"
+    },
+    "spender": {
+      "abiHash": "sha256:6760e5a05af57bfb69eb6fe7385f672e5f9068ae661caa30b4786eba16461e73",
+      "address": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+      "proxyImplementation": null,
+      "proxyImplementationRuntimeCodeHash": null,
+      "role": "spender",
+      "runtimeCodeHash": "0xb4b2ae4ee6025275948cb04c4ab0ad52cf5e6bb016def1a2050568b812bb30f8"
+    },
+    "allowedSelectors": [
+      "0xbb05e388"
+    ],
+    "selectorEvidence": [
+      {
+        "selector": "0xbb05e388",
+        "typedFunction": "swapExactInput((address,address,uint256,uint256,uint256,address))",
+        "success": "local-anvil-snapshot.json#/operationEvidence/swap/success",
+        "failure": "local-anvil-snapshot.json#/operationEvidence/swap/failure",
+        "tokenPath": [
+          "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+          "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512"
+        ],
+        "recipient": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+        "valueBaseUnit": "0",
+        "balanceAndAllowanceSamplesPresent": true
+      }
+    ],
+    "rejectOnMismatch": [
+      "chainId",
+      "registry version",
+      "valid block range",
+      "address",
+      "ABI hash",
+      "runtime code hash",
+      "proxy implementation identity",
+      "selector allowlist"
+    ]
+  }
+}

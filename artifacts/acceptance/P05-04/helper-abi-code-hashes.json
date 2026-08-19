@@ -1,0 +1,809 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-04",
+  "classification": "LOCAL-DECISION",
+  "version": "WalletHelperV1",
+  "upgradeMode": "deploy-new-helper-no-proxy",
+  "compiler": {
+    "version": "0.8.26+commit.8a97fa7a",
+    "evmVersion": "cancun",
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "metadataBytecodeHash": "ipfs"
+  },
+  "dependencyPins": {
+    "openzeppelin": {
+      "commit": "c64a1edb67b6e3f4a15cca8909c9482ad33a02b0",
+      "version": "v5.4.0"
+    },
+    "permit2": {
+      "commit": "cc56ad0f3439c502c246fc5cfcc3db92bb8b7219"
+    }
+  },
+  "sourceFiles": [
+    {
+      "path": "contracts/src/WalletHelperV1.sol",
+      "sha256": "sha256:6cacb96763742453fc5c9403e444d69b669dec4b642751aa01496c2b39a3db16"
+    },
+    {
+      "path": "contracts/src/interfaces/ILocalExecutionAdapter.sol",
+      "sha256": "sha256:55cd75c1fd873a3302979f91e0397ef5913c1c921b3ba0c56f2c1d0805d5eb55"
+    },
+    {
+      "path": "contracts/vendor/openzeppelin-contracts-v5.4.0/token/ERC20/IERC20.sol",
+      "sha256": "sha256:d91cf52a127d6be5ba49d5641c1177ee8337a19584a87bbba9da27508cbf1bc5"
+    },
+    {
+      "path": "contracts/vendor/openzeppelin-contracts-v5.4.0/token/ERC20/utils/SafeERC20.sol",
+      "sha256": "sha256:c2799969bcdb96d5c3bdc27e165110f92337ad77610c3dc51ce72cb7b7d34ed8"
+    },
+    {
+      "path": "contracts/vendor/permit2-cc56ad0f/interfaces/IAllowanceTransfer.sol",
+      "sha256": "sha256:9238566443302bc448a04296263bc9ae5345bf560862527fa583994ca0e25d8a"
+    },
+    {
+      "path": "contracts/vendor/permit2-cc56ad0f/interfaces/IEIP712.sol",
+      "sha256": "sha256:e386407da496dbe874c10a81801c55744fb2922a51389a51c79001422e81e0cd"
+    }
+  ],
+  "aggregateSourceHash": "sha256:5f91f7aac63dce83ddbe5f17d00655c993d904904559007a047fbac250de7030",
+  "abi": [
+    {
+      "type": "constructor",
+      "inputs": [
+        {
+          "name": "owner_",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "adapter_",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "permit2_",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "allowedTokenA_",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "allowedTokenACodeHash_",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "allowedTokenB_",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "allowedTokenBCodeHash_",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "receive",
+      "stateMutability": "payable"
+    },
+    {
+      "type": "function",
+      "name": "MAX_AMOUNT",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "MAX_DEADLINE_WINDOW",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "MAX_PERMIT2_EXPIRATION",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "adapter",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "allowedTokenA",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "allowedTokenACodeHash",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "allowedTokenB",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "allowedTokenBCodeHash",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "depositNative",
+      "inputs": [],
+      "outputs": [],
+      "stateMutability": "payable"
+    },
+    {
+      "type": "function",
+      "name": "executePosition",
+      "inputs": [
+        {
+          "name": "planDigest",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "plan",
+          "type": "tuple",
+          "internalType": "struct WalletHelperV1.PositionPlan",
+          "components": [
+            {
+              "name": "action",
+              "type": "uint8",
+              "internalType": "enum ILocalExecutionAdapter.PositionAction"
+            },
+            {
+              "name": "token0",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "token1",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "tokenId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "amount0",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "amount1",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "minAmount0",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "minAmount1",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "serviceFeeBps",
+              "type": "uint16",
+              "internalType": "uint16"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "amount0",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "amount1",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "executeSwap",
+      "inputs": [
+        {
+          "name": "planDigest",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "plan",
+          "type": "tuple",
+          "internalType": "struct WalletHelperV1.SwapPlan",
+          "components": [
+            {
+              "name": "tokenIn",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "tokenOut",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amountIn",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "minAmountOut",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "deadline",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "serviceFeeBps",
+              "type": "uint16",
+              "internalType": "uint16"
+            }
+          ]
+        },
+        {
+          "name": "authorization",
+          "type": "tuple",
+          "internalType": "struct WalletHelperV1.Permit2Authorization",
+          "components": [
+            {
+              "name": "enabled",
+              "type": "bool",
+              "internalType": "bool"
+            },
+            {
+              "name": "permitSingle",
+              "type": "tuple",
+              "internalType": "struct IAllowanceTransfer.PermitSingle",
+              "components": [
+                {
+                  "name": "details",
+                  "type": "tuple",
+                  "internalType": "struct IAllowanceTransfer.PermitDetails",
+                  "components": [
+                    {
+                      "name": "token",
+                      "type": "address",
+                      "internalType": "address"
+                    },
+                    {
+                      "name": "amount",
+                      "type": "uint160",
+                      "internalType": "uint160"
+                    },
+                    {
+                      "name": "expiration",
+                      "type": "uint48",
+                      "internalType": "uint48"
+                    },
+                    {
+                      "name": "nonce",
+                      "type": "uint48",
+                      "internalType": "uint48"
+                    }
+                  ]
+                },
+                {
+                  "name": "spender",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "sigDeadline",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                }
+              ]
+            },
+            {
+              "name": "signature",
+              "type": "bytes",
+              "internalType": "bytes"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "amountOut",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "executedPlans",
+      "inputs": [
+        {
+          "name": "planDigest",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "executed",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "owner",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "permit2",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "sweepNative",
+      "inputs": [
+        {
+          "name": "planDigest",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "sweepToken",
+      "inputs": [
+        {
+          "name": "planDigest",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "token",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "event",
+      "name": "NativeDeposited",
+      "inputs": [
+        {
+          "name": "amount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "PlanExecuted",
+      "inputs": [
+        {
+          "name": "planDigest",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "selector",
+          "type": "bytes4",
+          "indexed": true,
+          "internalType": "bytes4"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "PositionExecuted",
+      "inputs": [
+        {
+          "name": "planDigest",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "SwapExecuted",
+      "inputs": [
+        {
+          "name": "planDigest",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "tokenIn",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "tokenOut",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "amountOut",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "Swept",
+      "inputs": [
+        {
+          "name": "planDigest",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "asset",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "error",
+      "name": "AmountOutTooLow",
+      "inputs": [
+        {
+          "name": "actual",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "minimum",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "error",
+      "name": "DeadlineExpired",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "DeadlineTooFar",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidAllowance",
+      "inputs": [
+        {
+          "name": "actual",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "expected",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "error",
+      "name": "InvalidAmount",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidConfiguration",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidPermit2Authorization",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidPlanDigest",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NativeTransferFailed",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NonZeroServiceFeeForbidden",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "PlanAlreadyExecuted",
+      "inputs": [
+        {
+          "name": "planDigest",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ]
+    },
+    {
+      "type": "error",
+      "name": "ReentrantCall",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "SafeERC20FailedOperation",
+      "inputs": [
+        {
+          "name": "token",
+          "type": "address",
+          "internalType": "address"
+        }
+      ]
+    },
+    {
+      "type": "error",
+      "name": "TokenNotAllowed",
+      "inputs": [
+        {
+          "name": "token",
+          "type": "address",
+          "internalType": "address"
+        }
+      ]
+    },
+    {
+      "type": "error",
+      "name": "Unauthorized",
+      "inputs": [
+        {
+          "name": "caller",
+          "type": "address",
+          "internalType": "address"
+        }
+      ]
+    }
+  ],
+  "abiHash": "sha256:f5457f6a9755e133e1ae1870e7ddccb70ddac316883a7f431f02c00ccb5c2623",
+  "creationCode": {
+    "bytes": 8956,
+    "hash": "0x03d49afeaae7c230fe898e1843a3d292b3d422cf22d7ec00f3bac3ca8377e5e7"
+  },
+  "deterministicDeployment": {
+    "address": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+    "constructorArgumentsHash": "sha256:145c51662ed6d3e586b35654542edf7379c2475a1c3865a9a24c46056a40c604",
+    "creationInputBytes": 9180,
+    "creationInputHash": "0x00e4b58da81d775c0d27c17c5ecd6e051ac2bdfc73b2619198849f66911b0f4e",
+    "owner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+    "runtimeCodeBytes": 8244,
+    "runtimeCodeHash": "0x873594e1c8eb305e0ab059edc77107588fab87562436ca95fcacf0ef76157e8b"
+  },
+  "selectorSet": [
+    "0x03eadcfc",
+    "0x111c6855",
+    "0x12261ee7",
+    "0x3609afa9",
+    "0x5a547e89",
+    "0x6971b189",
+    "0x7d13cb00",
+    "0x8da5cb5b",
+    "0xc2b86d60",
+    "0xc30868a0",
+    "0xd3fe1721",
+    "0xd40dc870",
+    "0xdb6b5246",
+    "0xf285ba97",
+    "0xf28c7ad0",
+    "0xfad0c1d2"
+  ],
+  "businessSelectorAllowlist": {
+    "executePosition": "0xf285ba97",
+    "executeSwap": "0x5a547e89",
+    "sweepNative": "0x6971b189",
+    "sweepToken": "0x3609afa9"
+  },
+  "observedSelectorsReusedAsBusinessNames": false,
+  "observedHelperComparison": {
+    "source": "observed-helper-creation.json",
+    "creationInputHash": "0xd3c67af8640b66e72ac6c0a0ad62add939676cbd2d5509ed6ba8f5a879dbba08",
+    "deployments": [
+      {
+        "helper": "0xaba69194bb40f3eeca3e27ce4f4fe526e6ef4139",
+        "owner": "0xfd6f4bdea39a8796dc120f1cc08b92dcc0290549",
+        "runtimeCodeHash": "0x42795bc1467d4c1aad4704c13255eb646768885f22886c486430b30a93caebd7",
+        "selectorSet": [
+          "0x1230fa51",
+          "0x3521ab9f",
+          "0x5dfd8e50",
+          "0x71fa74ed",
+          "0x8da5cb5b",
+          "0xadc3f25c",
+          "0xca51c05d",
+          "0xd9e70e41",
+          "0xfb691fd9"
+        ],
+        "transactionHash": "0x8bc83c1ce3bd484dd7efb5450aa8016714b45e8d52076ccf8b9734a58d34e68d"
+      },
+      {
+        "helper": "0x30df22a0afb4167bad5c1af4aa0b6bf81506e0a5",
+        "owner": "0xc623ab46fa6ff2f547e35f88679a9ebf0b823227",
+        "runtimeCodeHash": "0xaf866c449723b487e87ce38974433ea413a2e7826226865c678665d84c86cd85",
+        "selectorSet": [
+          "0x1230fa51",
+          "0x3521ab9f",
+          "0x5dfd8e50",
+          "0x71fa74ed",
+          "0x8da5cb5b",
+          "0xadc3f25c",
+          "0xca51c05d",
+          "0xd9e70e41",
+          "0xfb691fd9"
+        ],
+        "transactionHash": "0xf39ebe9e16dc2ef48fc8a39721c15426e72b2506d6097794fd1fbfba91c24923"
+      }
+    ],
+    "runtimeDifference": "owner and self-hash immutable patch sites produce owner-specific runtime hashes",
+    "sourceOrAuthoritativeAbiAvailable": false,
+    "productionExecutionAllowed": false
+  }
+}

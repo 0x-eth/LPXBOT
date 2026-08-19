@@ -127,22 +127,22 @@
   "operationEvidence": {
     "duplicatePlanRejected": true,
     "duplicateRawTransaction": {
-      "firstHash": "0xae57c4108a363850ff56754a1fd13eacf4f65c3b1b9b4ce061d642a2099a776d",
-      "repeatedHash": "0xae57c4108a363850ff56754a1fd13eacf4f65c3b1b9b4ce061d642a2099a776d",
+      "firstHash": "0xaf109505d542adf4abcfdb8c087c3e343c5500f9acfef958affd817564124548",
+      "repeatedHash": "0xaf109505d542adf4abcfdb8c087c3e343c5500f9acfef958affd817564124548",
       "secondSubmissionRejected": true
     },
     "nonceReplacement": {
-      "firstHash": "0xb8ea32e2f0d1bdde129543017b1fd35ee49b654949d49454a37c55e5f89b283a",
+      "firstHash": "0x90ebeba75eaadd695194a4ed70aed9e6793aed3859e06d4c11515f2f158e900d",
       "firstReceiptState": "replaced",
-      "nonce": "14",
-      "replacementHash": "0xb3c0b1bf0e750b8df680308af3040929a4ac60c4f2a33236caa5fe27c06f1b7a",
+      "nonce": "15",
+      "replacementHash": "0xd60d91dfdf4ab05e30b33402267d248e9495dd87e5813a5dc4af267cdbb2faab",
       "replacementReceiptStatus": "success"
     },
     "restartRecovery": {
       "executedPlanRecovered": true,
       "helperCodeHash": "0x873594e1c8eb305e0ab059edc77107588fab87562436ca95fcacf0ef76157e8b",
-      "nonceBeforeRestart": "15",
-      "nonceRecovered": "15",
+      "nonceBeforeRestart": "16",
+      "nonceRecovered": "16",
       "owner": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
     },
     "swap": {
@@ -203,11 +203,39 @@
         "planDigest": "0x5d78377ca16a6e40dcbc6d369776ce010250cc9b9cf9c932ab8de5d3fd95340b",
         "receiptStatus": "reverted",
         "recipient": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+        "recovery": {
+          "allowanceResetTransactionHash": "0x312f5dce255a580f81e964dbc5893f9121be04b331a15dccc9203d48a0378808",
+          "state": {
+            "allowances": {
+              "adapterToRouter": "0",
+              "helperToAdapter": "0",
+              "ownerToHelper": "0"
+            },
+            "balances": {
+              "owner": {
+                "tokenIn": "999999999999000000000000000000",
+                "tokenOut": "51000000000000000000"
+              },
+              "helper": {
+                "tokenIn": "0",
+                "tokenOut": "0"
+              },
+              "adapter": {
+                "tokenIn": "0",
+                "tokenOut": "0"
+              },
+              "router": {
+                "tokenIn": "1000000000000000000",
+                "tokenOut": "49000000000000000000"
+              }
+            }
+          }
+        },
         "tokenPath": [
           "0x5fbdb2315678afecb367f032d93f642f64180aa3",
           "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512"
         ],
-        "transactionHash": "0x4c5b5060c5a18ab65917068e98b5a85aa7475a7a2fe0edf52f1644cb0649f1dc",
+        "transactionHash": "0x1f45a60dd79173ad0213355b526ddee1edbdde9cd1345d9bbd9ddd5113fe514e",
         "valueBaseUnit": "0"
       },
       "success": {
@@ -270,15 +298,15 @@
           "0x5fbdb2315678afecb367f032d93f642f64180aa3",
           "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512"
         ],
-        "transactionHash": "0xfbc562799fcaff4bca67ce2229390448f35cfddf6f077fd25cff7dcbb9f9d001",
+        "transactionHash": "0x9d71a5c154cbf46762792255f66ed55e976dad55f534c4b9d1785d8ddd38345e",
         "valueBaseUnit": "0"
       }
     }
   },
   "executionCounters": {
-    "localChainWrites": 14,
+    "localChainWrites": 15,
     "localRevertedTransactions": 1,
-    "localTransactionBroadcastsAccepted": 16,
+    "localTransactionBroadcastsAccepted": 17,
     "mainnetBroadcasts": 0,
     "mainnetSignatures": 0,
     "realFundOperations": 0,

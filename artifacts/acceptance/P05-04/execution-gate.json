@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-04",
+  "evaluatedAt": "2026-08-19T15:15:00.000Z",
+  "featureImplementationClaimed": false,
+  "gates": {
+    "local": {
+      "status": "OPEN",
+      "scope": "Foundry and non-forked local Anvil with synthetic wallet/assets only",
+      "chainIds": [
+        31337
+      ],
+      "registryVersion": "p05-bsc-local-execution-v1",
+      "allowedHelperSelectors": [
+        "0x5a547e89",
+        "0xf285ba97",
+        "0x3609afa9",
+        "0x6971b189"
+      ],
+      "allowedRouterSelectors": [
+        "0xbb05e388"
+      ],
+      "serviceFeeBps": 0,
+      "evidence": [
+        "candidate-registry.json",
+        "router-policy.json",
+        "token-policy.json",
+        "fee-policy.json",
+        "helper-abi-code-hashes.json",
+        "operation-plan-contracts.json",
+        "local-anvil-snapshot.json"
+      ]
+    },
+    "testnet": {
+      "status": "CLOSED",
+      "signatures": 0,
+      "broadcasts": 0,
+      "reasons": [
+        "no testnet-specific Registry or deployment evidence",
+        "no independent contract review",
+        "production fee authority remains UNKNOWN"
+      ]
+    },
+    "production": {
+      "status": "CLOSED",
+      "signatures": 0,
+      "broadcasts": 0,
+      "realFundOperations": 0,
+      "reasons": [
+        "p05-bsc-execution-v1 executionEnabled is false",
+        "production router selector allowlists are empty",
+        "candidate router ABI/recipient semantics and failed samples are insufficient",
+        "authoritative non-zero fee policy is unavailable",
+        "unclassified production tokens are read-only",
+        "P05 funds features remain planned"
+      ]
+    }
+  }
+}

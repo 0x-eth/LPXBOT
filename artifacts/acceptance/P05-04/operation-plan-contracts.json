@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-04",
+  "classification": "LOCAL-DECISION",
+  "planVersion": "p05-operation-plan-v1",
+  "source": {
+    "path": "packages/domain/src/execution-plans.ts",
+    "sha256": "sha256:14f59f2b340332585bdc555077ba82356fd22b6e33e5e43b82567aa0a4a1b0e8"
+  },
+  "planTypes": [
+    "HelperDeploymentPlan",
+    "SwapPlan",
+    "PositionPlan",
+    "SweepPlan"
+  ],
+  "commonDigestBindings": [
+    "wallet address and walletId",
+    "chainId",
+    "nonce",
+    "registry version, digest, valid block, and rollback version",
+    "target address, selector, runtime code hash, and native value",
+    "deadline",
+    "fee policy and explicit DEX/LP/service/gas terms",
+    "quote digest when required",
+    "snapshot digest",
+    "token policy version/digest and token runtime/implementation identities"
+  ],
+  "typeSpecificBindings": {
+    "HelperDeploymentPlan": [
+      "owner",
+      "adapter",
+      "Permit2",
+      "constructor arguments hash",
+      "creation code hash",
+      "expected address and runtime code hash"
+    ],
+    "SwapPlan": [
+      "token path",
+      "amountIn",
+      "minOut",
+      "Permit2 expiration",
+      "owner recipients"
+    ],
+    "PositionPlan": [
+      "action",
+      "token identities",
+      "tokenId",
+      "amounts and minima",
+      "owner NFT/output/refund recipients"
+    ],
+    "SweepPlan": [
+      "asset identity",
+      "amount",
+      "exact dust policy",
+      "owner recipient"
+    ]
+  },
+  "digestAlgorithm": "SHA-256 over recursively key-sorted JSON after omitting planDigest and authorizationPlanDigest",
+  "localValidationContext": {
+    "adapterAddress": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+    "chainId": 31337,
+    "constructorArgumentsHash": "sha256:145c51662ed6d3e586b35654542edf7379c2475a1c3865a9a24c46056a40c604",
+    "creationCodeHash": "0x03d49afeaae7c230fe898e1843a3d292b3d422cf22d7ec00f3bac3ca8377e5e7",
+    "dustLimitBaseUnit": "1",
+    "feePolicyDigest": "sha256:12308276acc5e5575b3b7117ed8a66f314fa793f1038ce6b4e3080435eb3850d",
+    "feePolicyVersion": "p05-local-fee-policy-v1",
+    "helperAddress": "0x0165878a594ca255338adfa4d48449f69242eb8f",
+    "helperRuntimeCodeHash": "0x873594e1c8eb305e0ab059edc77107588fab87562436ca95fcacf0ef76157e8b",
+    "maxAmountBaseUnit": "340282366920938463463374607431768211455",
+    "maxDeadlineWindowSeconds": 86400,
+    "maxPermit2ExpirationSeconds": 1800,
+    "permit2Address": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "registryDigest": "sha256:a17fdacc4e6ff13fc6135ba090d7d280c80864ddc4b9c2530e248b249883eed4",
+    "registryRollbackVersion": "p05-bsc-local-execution-disabled-v0",
+    "registryValidity": [
+      "0",
+      "1000000"
+    ],
+    "tokenPolicyDigest": "sha256:2f4629c4939f680f8391aa0e9d4febac08d0144773471f4617e179542924bf5e",
+    "tokenPolicyVersion": "p05-local-token-policy-v1"
+  },
+  "publicExecutionIntegration": false
+}
