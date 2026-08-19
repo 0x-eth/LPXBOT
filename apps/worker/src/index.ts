@@ -55,6 +55,7 @@ export {
   LocalSwapWorkerError,
   validateLocalSwapWorkPlan,
 } from "./local-swap-worker.js";
+export { LoopbackLocalSwapSignerGateway } from "./loopback-local-swap-signer-gateway.js";
 export type {
   LocalSwapBatchResult,
   LocalSwapObservation,
