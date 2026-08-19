@@ -90,6 +90,112 @@ export interface BscPositionReadRegistry {
   supportedChainIds: readonly [56];
 }
 
+export interface BscSwapQuoteRoute {
+  chainId: 56;
+  platformId: ProtocolId;
+  registryVersion: typeof P05_BSC_EXECUTION_REGISTRY_VERSION;
+  router: BscReadContractIdentity;
+  selector: `0x${string}`;
+  spender: `0x${string}`;
+}
+
+export interface BscSwapQuoteToken {
+  address: `0x${string}`;
+  chainId: 56;
+  decimals: number;
+  symbol: string;
+}
+
+export interface BscSwapQuoteRegistry {
+  chainId: 56;
+  executionEnabled: false;
+  executionRouterSelectorAllowlist: readonly [];
+  registryVersion: typeof P05_BSC_EXECUTION_REGISTRY_VERSION;
+  routes: readonly BscSwapQuoteRoute[];
+  supportedChainIds: readonly [56];
+  tokens: readonly BscSwapQuoteToken[];
+}
+
+const bscSwapQuoteRoutes = [
+  {
+    chainId: 56,
+    platformId: 1,
+    registryVersion: P05_BSC_EXECUTION_REGISTRY_VERSION,
+    router: {
+      address: "0x1111111111111111111111111111111111110051",
+      runtimeCodeHash: "0x5151515151515151515151515151515151515151515151515151515151515151",
+    },
+    selector: "0x01000051",
+    spender: "0x1111111111111111111111111111111111110151",
+  },
+  {
+    chainId: 56,
+    platformId: 2,
+    registryVersion: P05_BSC_EXECUTION_REGISTRY_VERSION,
+    router: {
+      address: "0x2222222222222222222222222222222222220052",
+      runtimeCodeHash: "0x5252525252525252525252525252525252525252525252525252525252525252",
+    },
+    selector: "0x02000052",
+    spender: "0x2222222222222222222222222222222222220152",
+  },
+  {
+    chainId: 56,
+    platformId: 4,
+    registryVersion: P05_BSC_EXECUTION_REGISTRY_VERSION,
+    router: {
+      address: "0x4444444444444444444444444444444444440054",
+      runtimeCodeHash: "0x5454545454545454545454545454545454545454545454545454545454545454",
+    },
+    selector: "0x04000054",
+    spender: "0x4444444444444444444444444444444444440154",
+  },
+  {
+    chainId: 56,
+    platformId: 5,
+    registryVersion: P05_BSC_EXECUTION_REGISTRY_VERSION,
+    router: {
+      address: "0x5555555555555555555555555555555555550055",
+      runtimeCodeHash: "0x5555555555555555555555555555555555555555555555555555555555555555",
+    },
+    selector: "0x05000055",
+    spender: "0x5555555555555555555555555555555555550155",
+  },
+] as const satisfies readonly BscSwapQuoteRoute[];
+
+export const BSC_SWAP_QUOTE_REGISTRY: BscSwapQuoteRegistry = Object.freeze({
+  chainId: 56,
+  executionEnabled: false,
+  executionRouterSelectorAllowlist: Object.freeze([] as const),
+  registryVersion: P05_BSC_EXECUTION_REGISTRY_VERSION,
+  routes: Object.freeze(
+    bscSwapQuoteRoutes.map((route) =>
+      Object.freeze({ ...route, router: Object.freeze({ ...route.router }) }),
+    ),
+  ),
+  supportedChainIds: Object.freeze([56] as const),
+  tokens: Object.freeze([
+    Object.freeze({
+      address: "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+      chainId: 56 as const,
+      decimals: 18,
+      symbol: "WBNB",
+    }),
+    Object.freeze({
+      address: "0x55d398326f99059ff775485246999027b3197955",
+      chainId: 56 as const,
+      decimals: 18,
+      symbol: "USDT",
+    }),
+    Object.freeze({
+      address: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+      chainId: 56 as const,
+      decimals: 18,
+      symbol: "USDC",
+    }),
+  ]),
+});
+
 export interface ProtocolDeployment {
   abiHash: `sha256:${string}`;
   chainId: 56;

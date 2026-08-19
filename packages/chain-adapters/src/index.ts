@@ -56,6 +56,22 @@ export {
   UNIV4_POSITION_MANAGER_READ_ABI,
 } from "./position-read-adapters.js";
 export {
+  BscSwapQuoteAdapter,
+  computeSwapQuoteDigest,
+  DeterministicSwapQuoteProvider,
+  isSwapQuoteCurrent,
+  SwapQuoteAdapterError,
+  verifySwapQuoteDigest,
+} from "./swap-quote.js";
+export type {
+  BscSwapQuoteAdapterOptions,
+  SwapQuote,
+  SwapQuoteAdapterFailureReason,
+  SwapQuoteInput,
+  SwapQuoteProvider,
+  SwapQuoteProviderSnapshot,
+} from "./swap-quote.js";
+export {
   BscPositionReadRpcClient,
   createBscPositionReadRpcFromEnv,
   POSITION_READ_RPC_METHODS,
