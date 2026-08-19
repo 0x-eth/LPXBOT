@@ -107,14 +107,18 @@ function observation(value: LocalSwapReceiptObservation | null): LocalSwapObserv
   };
 }
 
-function decide(kind: LocalSwapPlanStep["kind"], value: LocalSwapReceiptObservation | null) {
+function decide(
+  kind: LocalSwapPlanStep["kind"],
+  value: LocalSwapReceiptObservation | null,
+  requiredConfirmations = 1,
+) {
   return decideLocalSwapObservation({
     approvalSucceeded: kind === "swap" || kind === "cleanup",
     dropAfterMilliseconds: 1_000,
     now,
     observation: observation(value),
     operation: operation(kind),
-    requiredConfirmations: 1,
+    requiredConfirmations,
   });
 }
 
@@ -156,7 +160,7 @@ describe("P05-06 local Swap recovery decisions", () => {
 
   it("keeps an unconfirmed cleanup in reconciling", () => {
     expect(
-      decide("cleanup", receipt({ confirmations: "0", ownerToSpenderAllowance: "0" })),
+      decide("cleanup", receipt({ confirmations: "1", ownerToSpenderAllowance: "0" }), 2),
     ).toMatchObject({
       operationState: "reconciling",
       reason: "ALLOWANCE_CLEANUP_REQUIRED",

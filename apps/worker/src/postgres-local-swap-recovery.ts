@@ -406,9 +406,7 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
         client,
         operation,
         step.step_id,
-        step.step_kind === "cleanup"
-          ? "local-swap.reconciling"
-          : "local-swap.state-changed",
+        step.step_kind === "cleanup" ? "local-swap.reconciling" : "local-swap.state-changed",
         step.step_kind === "cleanup" ? "reconciling" : "broadcast",
         input.deliveredAt,
       );
@@ -779,9 +777,7 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
         client,
         operation,
         step.step_id,
-        step.step_kind === "cleanup"
-          ? "local-swap.reconciling"
-          : "local-swap.state-changed",
+        step.step_kind === "cleanup" ? "local-swap.reconciling" : "local-swap.state-changed",
         step.step_kind === "cleanup" ? "reconciling" : "broadcast",
         input.deliveredAt,
       );
