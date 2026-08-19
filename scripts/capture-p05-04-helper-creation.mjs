@@ -76,7 +76,7 @@ async function capture(deployment) {
   ]);
   if (
     !transaction ||
-    transaction.to !== null ||
+    (transaction.to !== null && transaction.to !== "") ||
     transaction.from.toLowerCase() !== deployment.owner ||
     BigInt(transaction.nonce).toString() !== deployment.expectedCreateNonce ||
     receipt.status !== "0x1" ||
