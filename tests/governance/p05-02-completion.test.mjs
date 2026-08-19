@@ -172,7 +172,12 @@ test("P00 through P05-01 acceptance files remain byte-identical to the 645-file 
     .split("\n")
     .filter(Boolean);
   const currentPriorFiles = (await filesBelow(ACCEPTANCE_ROOT))
-    .filter((file) => !file.startsWith("P05-02/") && !file.startsWith("P05-03/"))
+    .filter(
+      (file) =>
+        !file.startsWith("P05-02/") &&
+        !file.startsWith("P05-03/") &&
+        !file.startsWith("P05-04/"),
+    )
     .map((file) => `artifacts/acceptance/${file}`);
   assert.equal(baselineFiles.length, 645);
   assert.deepEqual(currentPriorFiles, sorted(baselineFiles));
@@ -187,7 +192,8 @@ test("P00 through P05-01 acceptance files remain byte-identical to the 645-file 
     .filter(
       (file) =>
         !file.startsWith("artifacts/acceptance/P05-02/") &&
-        !file.startsWith("artifacts/acceptance/P05-03/"),
+        !file.startsWith("artifacts/acceptance/P05-03/") &&
+        !file.startsWith("artifacts/acceptance/P05-04/"),
     );
   assert.deepEqual(changed, []);
 });
