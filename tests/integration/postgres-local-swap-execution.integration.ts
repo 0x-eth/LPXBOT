@@ -550,5 +550,147 @@ describe("P05-06 PostgreSQL local Swap execution and recovery", () => {
         [operationId],
       ),
     ).rejects.toThrow(/append-only/u);
+
+    const beforeSuccessLedger = await pool.query<{
+      fencing_token: string;
+      last_confirmed_nonce: string;
+      next_nonce: string;
+    }>(
+      `SELECT next_nonce::text, last_confirmed_nonce::text, fencing_token::text
+         FROM wallet_nonce_ledgers WHERE chain_id = 31337 AND wallet_id = $1`,
+      [walletId],
+    );
+    expect(beforeSuccessLedger.rows[0]).toMatchObject({
+      last_confirmed_nonce: "3",
+      next_nonce: "4",
+    });
+
+    inspection.nonceViews = [
+      { latest: "4", pending: "4", providerId: "anvil-a" },
+      { latest: "4", pending: "4", providerId: "anvil-b" },
+    ];
+    const successfulQuote = await quotes.quote({
+      amountInBaseUnit: "1000",
+      chainId: 31_337,
+      slippageBps: 100,
+      tenantId,
+      tokenIn: P05_LOCAL_SWAP_EXECUTION_REGISTRY.tokens[0].address,
+      tokenOut: P05_LOCAL_SWAP_EXECUTION_REGISTRY.tokens[1].address,
+      userId,
+      walletAddress,
+      walletId,
+    });
+    const successfulRequest = {
+      authorizationMode: "direct" as const,
+      quoteDigest: successfulQuote.quoteDigest,
+      walletId,
+    };
+    const successfulPreview = await service.preview({
+      request: successfulRequest,
+      tenantId,
+      userId,
+      wallet,
+    });
+    const successfulSubmission = await service.submit({
+      idempotencyKey: "local-swap-recovery-success-0001",
+      request: {
+        ...successfulRequest,
+        previewDigest: successfulPreview.previewDigest,
+        previewToken: successfulPreview.previewToken,
+      },
+      requestId: "request-local-swap-recovery-success",
+      sessionId,
+      tenantId,
+      userId,
+      wallet,
+    });
+    const successfulOperationId = successfulSubmission.operation.operationId;
+
+    const successfulApproval = await claimSwap(repository, successfulOperationId);
+    expect(successfulApproval.operation.step).toMatchObject({ kind: "approve", nonce: "4" });
+    await repository.completeBroadcast({
+      claim: successfulApproval,
+      deliveredAt: new Date(clock.getTime() + 1),
+      result: {
+        deliveryId: "local-swap-success-approve",
+        generation: 0,
+        planDigest: successfulApproval.operation.planDigest,
+        status: "accepted",
+        stepId: successfulApproval.operation.step.stepId,
+        transactionHash: `0x${"31".repeat(32)}`,
+      },
+    });
+    clock = new Date(clock.getTime() + 1_000);
+    const successfulApprovalBroadcast = await claimSwap(repository, successfulOperationId);
+    await repository.applyObservation({
+      claim: successfulApprovalBroadcast,
+      decision: {
+        failureCode: null,
+        kind: "receipt",
+        next: "advance",
+        operationState: "pending",
+        reason: null,
+        receipt: receipt(successfulApprovalBroadcast, { allowance: "1000", block: 13 }),
+        stepState: "succeeded",
+        transactionId: successfulApprovalBroadcast.operation.activeTransaction!.transactionId,
+      },
+      observedAt: clock,
+    });
+
+    const successfulSwap = await claimSwap(repository, successfulOperationId);
+    expect(successfulSwap.operation.step).toMatchObject({ kind: "swap", nonce: "5" });
+    await repository.completeBroadcast({
+      claim: successfulSwap,
+      deliveredAt: new Date(clock.getTime() + 1),
+      result: {
+        deliveryId: "local-swap-success-swap",
+        generation: 0,
+        planDigest: successfulSwap.operation.planDigest,
+        status: "accepted",
+        stepId: successfulSwap.operation.step.stepId,
+        transactionHash: `0x${"32".repeat(32)}`,
+      },
+    });
+    clock = new Date(clock.getTime() + 1_000);
+    const successfulSwapBroadcast = await claimSwap(repository, successfulOperationId);
+    await repository.applyObservation({
+      claim: successfulSwapBroadcast,
+      decision: {
+        failureCode: null,
+        kind: "receipt",
+        next: "complete-success",
+        operationState: "succeeded",
+        reason: null,
+        receipt: receipt(successfulSwapBroadcast, { allowance: "0", block: 14 }),
+        stepState: "succeeded",
+        transactionId: successfulSwapBroadcast.operation.activeTransaction!.transactionId,
+      },
+      observedAt: clock,
+    });
+
+    const successful = await operationStore.get({
+      operationId: successfulOperationId,
+      tenantId,
+      userId,
+    });
+    expect(successful).toMatchObject({ state: "succeeded" });
+    expect(successful!.steps.map(({ kind, nonce, state }) => [kind, nonce, state])).toEqual([
+      ["approve", "4", "succeeded"],
+      ["swap", "5", "succeeded"],
+      ["cleanup", "6", "skipped"],
+    ]);
+    const ledger = await pool.query<{
+      fencing_token: string;
+      last_confirmed_nonce: string;
+      next_nonce: string;
+    }>(
+      `SELECT next_nonce::text, last_confirmed_nonce::text, fencing_token::text
+         FROM wallet_nonce_ledgers WHERE chain_id = 31337 AND wallet_id = $1`,
+      [walletId],
+    );
+    expect(ledger.rows[0]).toMatchObject({ last_confirmed_nonce: "5", next_nonce: "6" });
+    expect(BigInt(ledger.rows[0]!.fencing_token)).toBe(
+      BigInt(beforeSuccessLedger.rows[0]!.fencing_token) + 2n,
+    );
   });
 });
