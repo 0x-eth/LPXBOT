@@ -134,10 +134,10 @@ describe("P05-05 isolated Helper deployment signer", () => {
       chainId: 31_337,
       data: deploymentPlan.transaction.data,
       nonce: 0,
-      to: null,
       type: "eip1559",
-      value: 0n,
     });
+    expect(transaction).not.toHaveProperty("to");
+    expect(transaction.value ?? 0n).toBe(0n);
   });
 
   it("rejects any target or constructor mutation before private-key use", async () => {
