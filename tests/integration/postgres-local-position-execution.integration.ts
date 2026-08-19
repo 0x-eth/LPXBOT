@@ -303,6 +303,8 @@ describe("P05-07 PostgreSQL local position recovery", () => {
     });
     const snapshots = new PostgresLocalPositionSnapshotStore(pool);
     await snapshots.append({ pricingId, snapshot, tenantId, userId });
+    expect(await snapshots.listCurrent({ tenantId, userId, walletId })).toEqual([snapshot]);
+    expect(await snapshots.listCurrent({ tenantId, userId: randomUUID(), walletId })).toEqual([]);
     const inspection: LocalPositionChainInspection = {
       blockHash: snapshot.block.hash,
       blockNumber: snapshot.block.number,

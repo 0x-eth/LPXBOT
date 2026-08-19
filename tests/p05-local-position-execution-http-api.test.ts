@@ -170,6 +170,31 @@ describe("P05-07 local position HTTP API", () => {
       tokenId: "1",
       walletId: wallet.walletId,
     };
+    const currentUrl = `/api/positions/local-current?walletId=${wallet.walletId}`;
+    expect((await app.inject({ method: "GET", url: currentUrl })).statusCode).toBe(401);
+    const current = await app.inject({ headers: auth(tokenA), method: "GET", url: currentUrl });
+    expect(current.statusCode).toBe(200);
+    expect(current.headers["cache-control"]).toBe("no-store");
+    expect(current.json().data).toMatchObject({
+      chainId: 31_337,
+      executionEnabled: true,
+      registryVersion: "p05-local-position-execution-v2",
+      serviceFeeBps: 0,
+      walletId: wallet.walletId,
+    });
+    expect(current.json().data.items).toEqual([snapshot]);
+    expect(
+      (await app.inject({ headers: auth(tokenB), method: "GET", url: currentUrl })).statusCode,
+    ).toBe(404);
+    expect(
+      (
+        await app.inject({
+          headers: auth(tokenA),
+          method: "GET",
+          url: `${currentUrl}&manager=0x${"1".repeat(40)}`,
+        })
+      ).statusCode,
+    ).toBe(404);
     expect(
       (
         await app.inject({
@@ -319,6 +344,15 @@ describe("P05-07 local position HTTP API", () => {
       ).statusCode,
     ).toBe(404);
     const closed = await fixture(false);
+    expect(
+      (
+        await closed.app.inject({
+          headers: auth(closed.tokenA),
+          method: "GET",
+          url: `/api/positions/local-current?walletId=${wallet.walletId}`,
+        })
+      ).statusCode,
+    ).toBe(403);
     expect(
       (
         await closed.app.inject({
