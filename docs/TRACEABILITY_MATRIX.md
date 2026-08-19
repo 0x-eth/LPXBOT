@@ -359,7 +359,7 @@ P04-07 在既有 custody、Keystore、安全密码、资产、地址簿、转账
 
 #### P05 当前实现与证据状态
 
-P05-04 冻结 40 个历史 calldata/receipt 的内层 router 候选证据、observed Helper creation input、独立 local Registry、Token/Fee policy、typed operation plans 和 `WalletHelperV1` 本地 ABI/字节码；不新增生产 API/UI，也不认领任何功能实现。Foundry/非 fork 合成 Anvil 的 local execution gate 为 `OPEN`，testnet/production gates 为 `CLOSED`；P05-01 production Registry 逐字节不变、selector allowlist 为空，公网签名、广播和真实资金操作均为 0。P05 当前仍为 5 项 `implemented-assumed`、7 项 `planned`，工作项保持 `accepted-with-gaps`。权威 router ABI/失败样本、收费策略、生产 Token 分类、独立合约审查和 testnet 证据仍 unresolved，因此不标记 `parity-verified` 或 `released`。
+P05-04 冻结 40 个历史 calldata/receipt 的内层 router 候选证据、observed Helper creation input、独立 local Registry、Token/Fee policy、typed operation plans 和 `WalletHelperV1` 本地 ABI/字节码；不新增生产 API/UI，也不认领任何功能实现。Foundry/非 fork 合成 Anvil 的 local execution gate 为 `OPEN`，testnet/production gates 为 `CLOSED`；P05-01 production Registry 逐字节不变、selector allowlist 为空，公网签名、广播和真实资金操作均为 0。P05 当前仍为 5 项 `implemented-assumed`、7 项 `planned`，全局为 66 项 `implemented-assumed`、130 项 `planned`，工作项保持 `accepted-with-gaps`。权威 router ABI/失败样本、收费策略、生产 Token 分类、独立合约审查和 testnet 证据仍 unresolved，因此不标记 `parity-verified` 或 `released`。
 
 <!-- P05_STATUS_TABLE_START -->
 | ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
