@@ -55,6 +55,12 @@ function provider(): LocalSwapQuoteProvider {
         blockTimestamp: now.toISOString(),
         componentCode: registry.components.map((component) => ({ ...component })),
         gasLimit: "500000",
+        helper: {
+          adapter: helper.adapter,
+          codeHash: helper.runtimeCodeHash,
+          owner: helper.owner,
+          permit2: helper.permit2,
+        },
         maxFeePerGasBaseUnit: "20",
         maxPriorityFeePerGasBaseUnit: "2",
         providerSnapshotId: "a6000000-0000-4000-8000-000000000003",
@@ -198,6 +204,7 @@ describe("P05-06 local Swap quote and execution contracts", () => {
     const quote = await adapter.quote({
       amountInBaseUnit: "1000",
       chainId: 31_337,
+      helper,
       slippageBps: 100,
       tokenIn: registry.tokens[0].address,
       tokenOut: registry.tokens[1].address,

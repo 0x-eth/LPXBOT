@@ -46,29 +46,35 @@ const helperCodeHash = `0x${"91".repeat(32)}` as const;
 
 class Policies implements ChainAccessPolicyStore {
   async list(): Promise<ChainAccessPolicyView[]> {
-    return [{
-      access: "all",
-      chainId: 31_337,
-      configurationComplete: true,
-      displayName: "Local Anvil",
-      isDefault: true,
-      missingConfiguration: [],
-      previousAccess: null,
-      reason: "synthetic only",
-      revision: 1,
-      updatedAt: now.toISOString(),
-      updatedBy: userA,
-    }];
+    return [
+      {
+        access: "all",
+        chainId: 31_337,
+        configurationComplete: true,
+        displayName: "Local Anvil",
+        isDefault: true,
+        missingConfiguration: [],
+        previousAccess: null,
+        reason: "synthetic only",
+        revision: 1,
+        updatedAt: now.toISOString(),
+        updatedBy: userA,
+      },
+    ];
   }
   async recordManagementAudit(): Promise<void> {}
-  async update(): Promise<ChainAccessPolicyUpdateResult> { throw new Error("unused"); }
+  async update(): Promise<ChainAccessPolicyUpdateResult> {
+    throw new Error("unused");
+  }
 }
 
 class Directory implements WalletDirectory {
   async getWallet(userId: string, walletId: string) {
     return userId === userA && walletId === wallet.walletId ? wallet : null;
   }
-  async listWallets(userId: string) { return { items: userId === userA ? [wallet] : [] }; }
+  async listWallets(userId: string) {
+    return { items: userId === userA ? [wallet] : [] };
+  }
 }
 
 const quoteProvider: LocalSwapQuoteProvider = {
@@ -80,10 +86,19 @@ const quoteProvider: LocalSwapQuoteProvider = {
       blockTimestamp: now.toISOString(),
       componentCode: registry.components.map((component) => ({ ...component })),
       gasLimit: "500000",
+      helper: {
+        adapter: localSwapComponent("adapter").address,
+        codeHash: helperCodeHash,
+        owner: wallet.address,
+        permit2: localSwapComponent("permit2").address,
+      },
       maxFeePerGasBaseUnit: "20",
       maxPriorityFeePerGasBaseUnit: "2",
       providerSnapshotId: "a6200000-0000-4000-8000-000000000004",
-      tokenCode: registry.tokens.map(({ address, runtimeCodeHash }) => ({ address, runtimeCodeHash })),
+      tokenCode: registry.tokens.map(({ address, runtimeCodeHash }) => ({
+        address,
+        runtimeCodeHash,
+      })),
     };
   },
 };
@@ -106,7 +121,10 @@ const chain: LocalSwapExecutionChainReader = {
       ownerInputBalanceBaseUnit: "1000000",
       ownerOutputBalanceBaseUnit: "0",
       permit2: { domainSeparator: `0x${"33".repeat(32)}`, nonce: "4" },
-      tokenCode: registry.tokens.map(({ address, runtimeCodeHash }) => ({ address, runtimeCodeHash })),
+      tokenCode: registry.tokens.map(({ address, runtimeCodeHash }) => ({
+        address,
+        runtimeCodeHash,
+      })),
     };
   },
 };
@@ -120,9 +138,8 @@ async function fixture() {
     issueFixtureSession(sessions, userB, now),
   ]);
   const quoteStore = new MemoryLocalSwapQuoteStore();
-  let uuidSequence = 20;
-  const localSwapExecutions = new LocalSwapExecutionService({
-    bindings: new MemoryLocalSwapHelperBindingStore([{
+  const bindings = new MemoryLocalSwapHelperBindingStore([
+    {
       adapterAddress: localSwapComponent("adapter").address,
       bindingId: "a6200000-0000-4000-8000-000000000005",
       chainId: 31_337,
@@ -137,25 +154,38 @@ async function fixture() {
       userId: userA,
       verifiedBlockNumber: "7",
       walletId: wallet.walletId,
-    }]),
+    },
+  ]);
+  let uuidSequence = 20;
+  const localSwapExecutions = new LocalSwapExecutionService({
+    bindings,
     chain,
     now: () => now,
     operations: new MemoryLocalSwapOperationStore({
       now: () => now,
       uuid: () => `a6200000-0000-4000-8000-${String(uuidSequence++).padStart(12, "0")}`,
     }),
-    permit2Signatures: { async sign() { return { signature: `0x${"44".repeat(65)}` }; } },
+    permit2Signatures: {
+      async sign() {
+        return { signature: `0x${"44".repeat(65)}` };
+      },
+    },
     previews: new MemoryLocalSwapPreviewStore(),
     quotes: quoteStore,
     randomBytes: () => new Uint8Array(32).fill(9),
   });
   const app = buildApiApp({
     chainPolicyStore: new Policies(),
-    freshReauthentication: { async verify({ proof }) { return proof === "fresh-proof"; } },
+    freshReauthentication: {
+      async verify({ proof }) {
+        return proof === "fresh-proof";
+      },
+    },
     localSwapExecutionChainIds: [31_337],
     localSwapExecutions,
     localSwapQuotes: new ControlledLocalSwapQuoteService({
       adapter: new LocalSwapQuoteAdapter({ now: () => now, provider: quoteProvider }),
+      bindings,
       store: quoteStore,
     }),
     maintenance: { enabled: false, message: null, until: null },
@@ -169,7 +199,9 @@ async function fixture() {
   return { app, tokenA, tokenB };
 }
 
-function auth(token: string) { return { cookie: `lpbot_session=${token}` }; }
+function auth(token: string) {
+  return { cookie: `lpbot_session=${token}` };
+}
 
 afterAll(async () => Promise.all(apps.map((app) => app.close())));
 
@@ -201,28 +233,41 @@ describe("P05-06 local Swap HTTP API", () => {
       walletId: wallet.walletId,
     };
     const preview = await app.inject({
-      headers: auth(tokenA), method: "POST", payload: previewPayload, url: "/api/swap/execute/preview",
+      headers: auth(tokenA),
+      method: "POST",
+      payload: previewPayload,
+      url: "/api/swap/execute/preview",
     });
     expect(preview.statusCode).toBe(200);
     expect(preview.json().data.steps.map(({ kind }: { kind: string }) => kind)).toEqual([
-      "approve", "swap", "cleanup",
+      "approve",
+      "swap",
+      "cleanup",
     ]);
     const executePayload = {
       ...previewPayload,
       previewDigest: preview.json().data.previewDigest,
       previewToken: preview.json().data.previewToken,
     };
-    expect((await app.inject({
-      headers: { ...auth(tokenA), "idempotency-key": "local-swap-http-0001" },
-      method: "POST", payload: executePayload, url: "/api/swap/execute",
-    })).statusCode).toBe(403);
+    expect(
+      (
+        await app.inject({
+          headers: { ...auth(tokenA), "idempotency-key": "local-swap-http-0001" },
+          method: "POST",
+          payload: executePayload,
+          url: "/api/swap/execute",
+        })
+      ).statusCode,
+    ).toBe(403);
     const submitted = await app.inject({
       headers: {
         ...auth(tokenA),
         "idempotency-key": "local-swap-http-0001",
         "x-lpbot-reauthentication": "fresh-proof",
       },
-      method: "POST", payload: executePayload, url: "/api/swap/execute",
+      method: "POST",
+      payload: executePayload,
+      url: "/api/swap/execute",
     });
     expect(submitted.statusCode).toBe(202);
     expect(submitted.json().data.operationKind).toBe("local-swap");

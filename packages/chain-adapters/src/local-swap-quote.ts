@@ -41,7 +41,11 @@ export interface LocalSwapQuoteSnapshot {
   blockHash: Hex;
   blockNumber: string;
   blockTimestamp: string;
-  componentCode: readonly { address: Address; role: "adapter" | "permit2" | "router"; runtimeCodeHash: Hex | null }[];
+  componentCode: readonly {
+    address: Address;
+    role: "adapter" | "permit2" | "router";
+    runtimeCodeHash: Hex | null;
+  }[];
   gasLimit: string;
   helper: {
     adapter: Address;
@@ -95,10 +99,7 @@ export interface LocalSwapQuote {
 }
 
 export type LocalSwapQuoteFailure =
-  | "INVALID_INPUT"
-  | "MALFORMED_SNAPSHOT"
-  | "REGISTRY_MISMATCH"
-  | "SNAPSHOT_EXPIRED";
+  "INVALID_INPUT" | "MALFORMED_SNAPSHOT" | "REGISTRY_MISMATCH" | "SNAPSHOT_EXPIRED";
 
 export class LocalSwapQuoteError extends Error {
   constructor(readonly code: LocalSwapQuoteFailure) {
@@ -140,7 +141,8 @@ export function isLocalSwapQuoteCurrent(
   quote: Pick<LocalSwapQuote, "deadline" | "expiresAt" | "maxBlockNumber">,
   input: { blockNumber: string; now: Date },
 ): boolean {
-  if (!decimalPattern.test(input.blockNumber) || !decimalPattern.test(quote.maxBlockNumber)) return false;
+  if (!decimalPattern.test(input.blockNumber) || !decimalPattern.test(quote.maxBlockNumber))
+    return false;
   return (
     Number.isFinite(input.now.getTime()) &&
     input.now.getTime() < Date.parse(quote.expiresAt) &&
@@ -268,7 +270,9 @@ export class LocalSwapQuoteAdapter {
         maxPriorityFeePerGasBaseUnit: snapshot.maxPriorityFeePerGasBaseUnit,
       },
       helper,
-      maxBlockNumber: (BigInt(snapshot.blockNumber) + BigInt(this.#registry.maxBlockDrift)).toString(),
+      maxBlockNumber: (
+        BigInt(snapshot.blockNumber) + BigInt(this.#registry.maxBlockDrift)
+      ).toString(),
       minOutBaseUnit: minOut.toString(),
       providerSnapshotId: snapshot.providerSnapshotId,
       quoteVersion: this.#registry.quoteVersion,
@@ -287,13 +291,15 @@ export class LocalSwapQuoteAdapter {
       walletAddress,
       walletId: input.walletId,
     };
-    return Object.freeze({ ...unsigned, gas: Object.freeze(unsigned.gas), route: Object.freeze(unsigned.route), quoteDigest: localSwapQuoteDigest(unsigned) });
+    return Object.freeze({
+      ...unsigned,
+      gas: Object.freeze(unsigned.gas),
+      route: Object.freeze(unsigned.route),
+      quoteDigest: localSwapQuoteDigest(unsigned),
+    });
   }
 
-  #validateSnapshot(
-    snapshot: LocalSwapQuoteSnapshot,
-    helper: LocalSwapQuoteHelperBinding,
-  ): void {
+  #validateSnapshot(snapshot: LocalSwapQuoteSnapshot, helper: LocalSwapQuoteHelperBinding): void {
     if (
       !positiveDecimalPattern.test(snapshot.amountOutBaseUnit) ||
       !decimalPattern.test(snapshot.blockNumber) ||
@@ -312,7 +318,11 @@ export class LocalSwapQuoteAdapter {
     }
     for (const expected of this.#registry.components) {
       const actual = snapshot.componentCode.find(({ role }) => role === expected.role);
-      if (!actual || actual.address !== expected.address || actual.runtimeCodeHash !== expected.runtimeCodeHash) {
+      if (
+        !actual ||
+        actual.address !== expected.address ||
+        actual.runtimeCodeHash !== expected.runtimeCodeHash
+      ) {
         throw new LocalSwapQuoteError("REGISTRY_MISMATCH");
       }
     }

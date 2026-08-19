@@ -1259,13 +1259,7 @@ export const swapQuoteContracts = Object.freeze({
 
 export type LocalSwapAuthorizationMode = "direct" | "permit2";
 export type LocalSwapExecutionState =
-  | "queued"
-  | "signing"
-  | "broadcast"
-  | "pending"
-  | "reconciling"
-  | "succeeded"
-  | "failed";
+  "queued" | "signing" | "broadcast" | "pending" | "reconciling" | "succeeded" | "failed";
 export type LocalSwapStepKind = "allowance-reset" | "approve" | "swap" | "cleanup";
 export type LocalSwapStepState =
   | "blocked"

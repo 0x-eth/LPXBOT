@@ -1305,8 +1305,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         isOkxKeySecretRequest(request.method, requestPath) ||
         (request.method === "POST" && requestPath === "/api/swap/quote") ||
         (request.method === "POST" &&
-          (requestPath === "/api/swap/execute" ||
-            requestPath === "/api/swap/execute/preview")) ||
+          (requestPath === "/api/swap/execute" || requestPath === "/api/swap/execute/preview")) ||
         (request.method === "POST" &&
           (requestPath === "/api/pricing-positions/import" ||
             /^\/api\/pricing-positions\/[^/]+\/withdrawn$/u.test(requestPath))) ||
@@ -4063,6 +4062,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       const invalid =
         error instanceof LocalSwapQuoteValidationError ||
         (error instanceof LocalSwapQuoteError && error.code === "INVALID_INPUT");
+      const helperConflict =
+        error instanceof LocalSwapQuoteValidationError &&
+        (error.code === "HELPER_NOT_ACTIVE" || error.code === "HELPER_BINDING_MISMATCH");
       const stale =
         error instanceof LocalSwapQuoteError &&
         (error.code === "REGISTRY_MISMATCH" || error.code === "SNAPSHOT_EXPIRED");
@@ -4073,20 +4075,34 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         : stale
           ? "LOCAL_SWAP_QUOTE_STALE"
           : "LOCAL_SWAP_QUOTE_UNAVAILABLE";
-      return reply.code(invalid ? (code === "WALLET_NOT_FOUND" ? 404 : 400) : stale ? 409 : 503).send(
-        createErrorEnvelope({
-          code,
-          message: invalid
+      return reply
+        .code(
+          invalid
             ? code === "WALLET_NOT_FOUND"
-              ? "The custody wallet was not found"
-              : "The local Swap quote request is invalid"
+              ? 404
+              : helperConflict
+                ? 409
+                : 400
             : stale
-              ? "The local Swap quote snapshot is stale"
-              : "The local Swap quote provider is unavailable",
-          requestId: request.id,
-          retryable: !invalid && !stale,
-        }),
-      );
+              ? 409
+              : 503,
+        )
+        .send(
+          createErrorEnvelope({
+            code,
+            message: invalid
+              ? code === "WALLET_NOT_FOUND"
+                ? "The custody wallet was not found"
+                : helperConflict
+                  ? "An active verified WalletHelperV1 binding is required"
+                  : "The local Swap quote request is invalid"
+              : stale
+                ? "The local Swap quote snapshot is stale"
+                : "The local Swap quote provider is unavailable",
+            requestId: request.id,
+            retryable: !invalid && !stale,
+          }),
+        );
     };
 
     const pricingPositionFailure = (
@@ -5255,9 +5271,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           );
         }
         try {
-          const idempotencyKey = parseLocalSwapIdempotencyKey(
-            request.headers["idempotency-key"],
-          );
+          const idempotencyKey = parseLocalSwapIdempotencyKey(request.headers["idempotency-key"]);
           const input = parseLocalSwapExecute(request.body);
           if (
             !(await requireAllowedWalletChain(

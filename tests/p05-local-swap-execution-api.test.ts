@@ -62,10 +62,19 @@ function quoteProvider(): LocalSwapQuoteProvider {
         blockTimestamp: now.toISOString(),
         componentCode: registry.components.map((component) => ({ ...component })),
         gasLimit: "500000",
+        helper: {
+          adapter: binding.adapterAddress,
+          codeHash: binding.runtimeCodeHash,
+          owner: binding.ownerAddress,
+          permit2: binding.permit2Address,
+        },
         maxFeePerGasBaseUnit: "20",
         maxPriorityFeePerGasBaseUnit: "2",
         providerSnapshotId: "a6100000-0000-4000-8000-000000000004",
-        tokenCode: registry.tokens.map(({ address, runtimeCodeHash }) => ({ address, runtimeCodeHash })),
+        tokenCode: registry.tokens.map(({ address, runtimeCodeHash }) => ({
+          address,
+          runtimeCodeHash,
+        })),
       };
     },
   };
@@ -88,21 +97,32 @@ function inspection(overrides: Partial<LocalSwapChainInspection> = {}): LocalSwa
     ownerInputBalanceBaseUnit: "1000000",
     ownerOutputBalanceBaseUnit: "0",
     permit2: { domainSeparator: `0x${"33".repeat(32)}`, nonce: "4" },
-    tokenCode: registry.tokens.map(({ address, runtimeCodeHash }) => ({ address, runtimeCodeHash })),
+    tokenCode: registry.tokens.map(({ address, runtimeCodeHash }) => ({
+      address,
+      runtimeCodeHash,
+    })),
     ...overrides,
   };
 }
 
-function fixture(input: { mode?: "direct" | "permit2"; inspection?: LocalSwapChainInspection } = {}) {
+function fixture(
+  input: { mode?: "direct" | "permit2"; inspection?: LocalSwapChainInspection } = {},
+) {
   const quoteStore = new MemoryLocalSwapQuoteStore();
+  const bindings = new MemoryLocalSwapHelperBindingStore([{ ...binding, tenantId, userId }]);
   const quoteService = new ControlledLocalSwapQuoteService({
     adapter: new LocalSwapQuoteAdapter({ now: () => now, provider: quoteProvider() }),
+    bindings,
     store: quoteStore,
   });
   let uuidSequence = 10;
   const service = new LocalSwapExecutionService({
-    bindings: new MemoryLocalSwapHelperBindingStore([{ ...binding, tenantId, userId }]),
-    chain: { async inspect() { return structuredClone(input.inspection ?? inspection()); } },
+    bindings,
+    chain: {
+      async inspect() {
+        return structuredClone(input.inspection ?? inspection());
+      },
+    },
     now: () => now,
     operations: new MemoryLocalSwapOperationStore({
       now: () => now,
@@ -162,7 +182,11 @@ describe("P05-06 local Swap execution API service", () => {
     async (authorizationMode) => {
       const api = fixture({ mode: authorizationMode });
       const quote = await quoted(api.quoteService);
-      const request = { authorizationMode, quoteDigest: quote.quoteDigest, walletId: wallet.walletId };
+      const request = {
+        authorizationMode,
+        quoteDigest: quote.quoteDigest,
+        walletId: wallet.walletId,
+      };
       const preview = await api.service.preview({ request, tenantId, userId, wallet });
       expect(preview.steps.map(({ kind }) => kind)).toEqual([
         "allowance-reset",
@@ -173,7 +197,11 @@ describe("P05-06 local Swap execution API service", () => {
       expect(preview.serviceFeeBps).toBe(0);
       const submit = {
         idempotencyKey: "swap-execution-key-0001",
-        request: { ...request, previewDigest: preview.previewDigest, previewToken: preview.previewToken },
+        request: {
+          ...request,
+          previewDigest: preview.previewDigest,
+          previewToken: preview.previewToken,
+        },
         requestId: "request-1",
         sessionId: "a6100000-0000-4000-8000-000000000090",
         tenantId,
@@ -185,7 +213,9 @@ describe("P05-06 local Swap execution API service", () => {
       expect(first.created).toBe(true);
       expect(duplicate.created).toBe(false);
       expect(duplicate.operation.operationId).toBe(first.operation.operationId);
-      expect(first.operation.steps.map(({ kind }) => kind)).toEqual(preview.steps.map(({ kind }) => kind));
+      expect(first.operation.steps.map(({ kind }) => kind)).toEqual(
+        preview.steps.map(({ kind }) => kind),
+      );
       expect(first.operation.steps.map(({ nonce }) => nonce)).toEqual(["8", "9", "10", "11"]);
       expect(first.operation.steps[0]?.state).toBe("queued");
       expect(first.operation.steps.slice(1).every(({ state }) => state === "blocked")).toBe(true);
@@ -197,7 +227,11 @@ describe("P05-06 local Swap execution API service", () => {
     const quote = await quoted(stale.quoteService);
     await expect(
       stale.service.preview({
-        request: { authorizationMode: "direct", quoteDigest: quote.quoteDigest, walletId: wallet.walletId },
+        request: {
+          authorizationMode: "direct",
+          quoteDigest: quote.quoteDigest,
+          walletId: wallet.walletId,
+        },
         tenantId,
         userId,
         wallet,
@@ -208,7 +242,11 @@ describe("P05-06 local Swap execution API service", () => {
     const emptyQuote = await quoted(empty.quoteService);
     await expect(
       empty.service.preview({
-        request: { authorizationMode: "direct", quoteDigest: emptyQuote.quoteDigest, walletId: wallet.walletId },
+        request: {
+          authorizationMode: "direct",
+          quoteDigest: emptyQuote.quoteDigest,
+          walletId: wallet.walletId,
+        },
         tenantId,
         userId,
         wallet,
