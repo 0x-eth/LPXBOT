@@ -1,8 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
-const migrationPath =
-  "infra/migrations/20260819000300_create_swap_quotes_pricing_positions.sql";
+const migrationPath = "infra/migrations/20260819000300_create_swap_quotes_pricing_positions.sql";
 
 describe("P05-03 swap quote and pricing position migration", () => {
   it("creates tenant-scoped quote snapshots, immutable ledger history, and durable outbox", async () => {

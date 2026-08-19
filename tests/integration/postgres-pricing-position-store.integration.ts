@@ -100,8 +100,7 @@ function chainPosition(liquidity = "300"): WalletPosition {
       blockTimestamp: now.toISOString(),
       digest: `0x${liquidity.padStart(64, "0")}`,
       positionManager: "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613",
-      positionManagerCodeHash:
-        "0xbc0177f23ffd65c41e41fb201e170cb253489d7d637f8f6a15743a1f861160f5",
+      positionManagerCodeHash: "0xbc0177f23ffd65c41e41fb201e170cb253489d7d637f8f6a15743a1f861160f5",
       registryVersion: "p05-bsc-execution-v1",
     },
     ticks: { current: "0", inRange: true, lower: "-10", upper: "10" },
@@ -118,7 +117,11 @@ const costBasis: PricingPositionCostBasis = {
   usdValueDecimal: null,
 };
 
-function observation(id: string, digestByte: string, liquidity = "300"): PricingPositionObservation {
+function observation(
+  id: string,
+  digestByte: string,
+  liquidity = "300",
+): PricingPositionObservation {
   return {
     blockHash: `0x${"ab".repeat(32)}`,
     blockNumber: "116718500",

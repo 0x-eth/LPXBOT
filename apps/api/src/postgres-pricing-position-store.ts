@@ -303,9 +303,7 @@ export class PostgresPricingPositionStore
     }
   }
 
-  async transition(
-    input: PricingPositionStoreTransitionInput,
-  ): Promise<Readonly<PricingPosition>> {
+  async transition(input: PricingPositionStoreTransitionInput): Promise<Readonly<PricingPosition>> {
     const client = await this.#pool.connect();
     try {
       await client.query("BEGIN");
@@ -341,14 +339,7 @@ export class PostgresPricingPositionStore
           `INSERT INTO pricing_position_withdrawn_tombstones (
              tombstone_id, pricing_id, tenant_id, user_id, revision, status, created_at
            ) VALUES ($1, $2, $3, $4, $5, 'withdrawn', $6)`,
-          [
-            this.#idFactory(),
-            input.pricingId,
-            input.tenantId,
-            input.userId,
-            revision,
-            input.now,
-          ],
+          [this.#idFactory(), input.pricingId, input.tenantId, input.userId, revision, input.now],
         );
       }
       const next = await this.#get(client, input);
@@ -507,11 +498,7 @@ export class PostgresPricingPositionStore
     return result.rows[0] ? this.#positionFromRow(queryable, result.rows[0]) : null;
   }
 
-  async #hasObservation(
-    queryable: Queryable,
-    pricingId: string,
-    digest: string,
-  ): Promise<boolean> {
+  async #hasObservation(queryable: Queryable, pricingId: string, digest: string): Promise<boolean> {
     const result = await queryable.query(
       `SELECT 1 FROM pricing_position_observations
         WHERE pricing_id = $1 AND snapshot_digest = $2`,
@@ -567,15 +554,7 @@ export class PostgresPricingPositionStore
       `INSERT INTO pricing_position_state_events (
          state_event_id, pricing_id, tenant_id, user_id, revision, status, created_at
        ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [
-        this.#idFactory(),
-        pricingId,
-        input.tenantId,
-        input.userId,
-        revision,
-        status,
-        input.now,
-      ],
+      [this.#idFactory(), pricingId, input.tenantId, input.userId, revision, status, input.now],
     );
   }
 

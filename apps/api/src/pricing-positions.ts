@@ -66,14 +66,15 @@ function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boo
 export function parseImportPricingPositionRequest(value: unknown): ImportPricingPositionRequest {
   const input = record(value);
   const costBasis = input ? record(input.costBasis) : null;
-  if (!input || !exactKeys(input, importKeys) || !costBasis || !exactKeys(costBasis, costBasisKeys)) {
+  if (
+    !input ||
+    !exactKeys(input, importKeys) ||
+    !costBasis ||
+    !exactKeys(costBasis, costBasisKeys)
+  ) {
     throw new PricingPositionError("PRICING_POSITION_INVALID");
   }
-  const priceFields = [
-    costBasis.usdValueDecimal,
-    costBasis.priceObservedAt,
-    costBasis.priceSource,
-  ];
+  const priceFields = [costBasis.usdValueDecimal, costBasis.priceObservedAt, costBasis.priceSource];
   const priceMissing = priceFields.every((entry) => entry === null);
   const priceComplete = priceFields.every((entry) => typeof entry === "string");
   if (
@@ -199,7 +200,9 @@ export interface PricingPositionStoreTransitionInput extends PricingPositionScop
 }
 
 export interface PricingPositionStore {
-  get(input: PricingPositionScope & { pricingId: string }): Promise<Readonly<PricingPosition> | null>;
+  get(
+    input: PricingPositionScope & { pricingId: string },
+  ): Promise<Readonly<PricingPosition> | null>;
   importPosition(input: PricingPositionStoreImportInput): Promise<Readonly<PricingPosition>>;
   list(input: PricingPositionScope): Promise<Readonly<PricingPositionPage>>;
   transition(input: PricingPositionStoreTransitionInput): Promise<Readonly<PricingPosition>>;
@@ -213,10 +216,12 @@ export interface PricingPositionStreamSnapshot {
 }
 
 export interface PricingPositionEventStore {
-  readOutbox(input: PricingPositionScope & {
-    afterSequence: string;
-    limit: number;
-  }): Promise<Readonly<PricingPositionOutboxEvent[]>>;
+  readOutbox(
+    input: PricingPositionScope & {
+      afterSequence: string;
+      limit: number;
+    },
+  ): Promise<Readonly<PricingPositionOutboxEvent[]>>;
   readStreamSnapshot(input: PricingPositionScope): Promise<PricingPositionStreamSnapshot>;
 }
 
@@ -243,19 +248,19 @@ function scopeKey(input: PricingPositionScope): string {
   return `${input.tenantId}\u0000${input.userId}`;
 }
 
-function identityKey(input: PricingPositionScope & {
-  chainId: number;
-  platformId: number;
-  positionManager: string;
-  tokenId: string;
-  walletId: string;
-}): string {
+function identityKey(
+  input: PricingPositionScope & {
+    chainId: number;
+    platformId: number;
+    positionManager: string;
+    tokenId: string;
+    walletId: string;
+  },
+): string {
   return `${scopeKey(input)}\u0000${input.walletId}\u0000${input.chainId}\u0000${input.platformId}\u0000${input.positionManager}\u0000${input.tokenId}`;
 }
 
-export class MemoryPricingPositionStore
-  implements PricingPositionStore, PricingPositionEventStore
-{
+export class MemoryPricingPositionStore implements PricingPositionStore, PricingPositionEventStore {
   readonly #byIdentity = new Map<string, string>();
   readonly #byPricingId = new Map<string, StoredPricingPosition>();
   readonly #epoch: string;
@@ -351,9 +356,7 @@ export class MemoryPricingPositionStore
     return Object.freeze({ items: Object.freeze(items) as unknown as PricingPosition[] });
   }
 
-  async transition(
-    input: PricingPositionStoreTransitionInput,
-  ): Promise<Readonly<PricingPosition>> {
+  async transition(input: PricingPositionStoreTransitionInput): Promise<Readonly<PricingPosition>> {
     const stored = this.#byPricingId.get(input.pricingId);
     if (!stored || stored.tenantId !== input.tenantId || stored.userId !== input.userId) {
       throw new PricingPositionError("PRICING_POSITION_NOT_FOUND");
@@ -406,9 +409,7 @@ export class MemoryPricingPositionStore
       this.#outbox
         .filter(
           ({ sequence, tenantId, userId }) =>
-            tenantId === input.tenantId &&
-            userId === input.userId &&
-            BigInt(sequence) > after,
+            tenantId === input.tenantId && userId === input.userId && BigInt(sequence) > after,
         )
         .sort((left, right) => Number(BigInt(left.sequence) - BigInt(right.sequence)))
         .slice(0, input.limit)
@@ -500,13 +501,17 @@ export interface PricingPositionStreamOpen {
 }
 
 export interface PricingPositionStreamProvider {
-  open(input: PricingPositionScope & {
-    lastEventId: string | null;
-  }): Promise<PricingPositionStreamOpen>;
-  subscribe(input: PricingPositionScope &
-    Pick<PricingPositionStreamOpen, "afterSequence" | "epoch"> & {
-      signal: AbortSignal;
-    }): AsyncIterable<PricingPositionStreamEvent>;
+  open(
+    input: PricingPositionScope & {
+      lastEventId: string | null;
+    },
+  ): Promise<PricingPositionStreamOpen>;
+  subscribe(
+    input: PricingPositionScope &
+      Pick<PricingPositionStreamOpen, "afterSequence" | "epoch"> & {
+        signal: AbortSignal;
+      },
+  ): AsyncIterable<PricingPositionStreamEvent>;
 }
 
 function abortableDelay(milliseconds: number, signal: AbortSignal): Promise<void> {
@@ -729,9 +734,7 @@ export class PricingPositionStreamService implements PricingPositionStreamProvid
 
   #encodeCursor(payload: PricingCursorPayload): string {
     const encoded = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
-    const signature = createHmac("sha256", this.#cursorSecret)
-      .update(encoded)
-      .digest("base64url");
+    const signature = createHmac("sha256", this.#cursorSecret).update(encoded).digest("base64url");
     return `${encoded}.${signature}`;
   }
 }

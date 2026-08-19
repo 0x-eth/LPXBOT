@@ -56,8 +56,7 @@ function chainPosition(liquidity = "300"): WalletPosition {
       blockTimestamp: now.toISOString(),
       digest: `0x${liquidity.padStart(64, "0")}`,
       positionManager: "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613",
-      positionManagerCodeHash:
-        "0xbc0177f23ffd65c41e41fb201e170cb253489d7d637f8f6a15743a1f861160f5",
+      positionManagerCodeHash: "0xbc0177f23ffd65c41e41fb201e170cb253489d7d637f8f6a15743a1f861160f5",
       registryVersion: "p05-bsc-execution-v1",
     },
     ticks: { current: "0", inRange: true, lower: "-10", upper: "10" },
@@ -134,9 +133,21 @@ function parseSse(body: string) {
     .map((block) => {
       const lines = block.split("\n");
       return {
-        event: lines.find((line) => line.startsWith("event:"))!.slice(6).trim(),
-        id: lines.find((line) => line.startsWith("id:"))?.slice(3).trim() ?? null,
-        payload: JSON.parse(lines.find((line) => line.startsWith("data:"))!.slice(5).trim()),
+        event: lines
+          .find((line) => line.startsWith("event:"))!
+          .slice(6)
+          .trim(),
+        id:
+          lines
+            .find((line) => line.startsWith("id:"))
+            ?.slice(3)
+            .trim() ?? null,
+        payload: JSON.parse(
+          lines
+            .find((line) => line.startsWith("data:"))!
+            .slice(5)
+            .trim(),
+        ),
       };
     });
 }
@@ -181,7 +192,12 @@ describe("P05-03 durable pricing position SSE", () => {
     });
     expect(resumed.initialEvent).toBeNull();
     const events = await collect(
-      stream.subscribe({ ...resumed, signal: new AbortController().signal, tenantId, userId: userA }),
+      stream.subscribe({
+        ...resumed,
+        signal: new AbortController().signal,
+        tenantId,
+        userId: userA,
+      }),
     );
     expect(events.map(({ sequence, type }) => [type, sequence])).toEqual([
       ["diff", "2"],
@@ -200,14 +216,16 @@ describe("P05-03 durable pricing position SSE", () => {
       userId: userA,
     });
     expect(
-      (await collect(
-        stream.subscribe({
-          ...acknowledged,
-          signal: new AbortController().signal,
-          tenantId,
-          userId: userA,
-        }),
-      )).map(({ type }) => type),
+      (
+        await collect(
+          stream.subscribe({
+            ...acknowledged,
+            signal: new AbortController().signal,
+            tenantId,
+            userId: userA,
+          }),
+        )
+      ).map(({ type }) => type),
     ).toEqual(["heartbeat"]);
   });
 
@@ -284,7 +302,12 @@ describe("P05-03 durable pricing position SSE", () => {
       userId: userA,
     });
     const firstBackfill = await collect(
-      stream.subscribe({ ...resume, signal: new AbortController().signal, tenantId, userId: userA }),
+      stream.subscribe({
+        ...resume,
+        signal: new AbortController().signal,
+        tenantId,
+        userId: userA,
+      }),
     );
     expect(firstBackfill.map(({ type }) => type)).toEqual(["diff"]);
     const next = await stream.open({
@@ -293,9 +316,16 @@ describe("P05-03 durable pricing position SSE", () => {
       userId: userA,
     });
     expect(
-      (await collect(
-        stream.subscribe({ ...next, signal: new AbortController().signal, tenantId, userId: userA }),
-      )).map(({ type }) => type),
+      (
+        await collect(
+          stream.subscribe({
+            ...next,
+            signal: new AbortController().signal,
+            tenantId,
+            userId: userA,
+          }),
+        )
+      ).map(({ type }) => type),
     ).toEqual(["tombstone"]);
   });
 });

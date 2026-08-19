@@ -21,14 +21,16 @@ const positionManager = "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613" as const;
 const blockHash = `0x${"ab".repeat(32)}` as const;
 const pageDigest = `0x${"cd".repeat(32)}` as const;
 
-function position(options: {
-  blockNumber?: string;
-  digest?: `0x${string}`;
-  fee0?: string;
-  fee1?: string;
-  liquidity?: string;
-  tokenId?: string;
-} = {}): WalletPosition {
+function position(
+  options: {
+    blockNumber?: string;
+    digest?: `0x${string}`;
+    fee0?: string;
+    fee1?: string;
+    liquidity?: string;
+    tokenId?: string;
+  } = {},
+): WalletPosition {
   const tokenId = options.tokenId ?? "42";
   return {
     approval: {
@@ -67,8 +69,7 @@ function position(options: {
       blockTimestamp: now.toISOString(),
       digest: options.digest ?? (`0x${tokenId.padStart(64, "0")}` as const),
       positionManager,
-      positionManagerCodeHash:
-        "0xbc0177f23ffd65c41e41fb201e170cb253489d7d637f8f6a15743a1f861160f5",
+      positionManagerCodeHash: "0xbc0177f23ffd65c41e41fb201e170cb253489d7d637f8f6a15743a1f861160f5",
       registryVersion: "p05-bsc-execution-v1",
     },
     ticks: { current: "0", inRange: true, lower: "-10", upper: "10" },
@@ -120,7 +121,9 @@ class Source implements PricingPositionSource {
   }
 }
 
-function request(overrides: Partial<ImportPricingPositionRequest> = {}): ImportPricingPositionRequest {
+function request(
+  overrides: Partial<ImportPricingPositionRequest> = {},
+): ImportPricingPositionRequest {
   return {
     chainId: 56,
     costBasis: {

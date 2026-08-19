@@ -3995,11 +3995,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     ): FastifyReply => {
       const stale =
         error instanceof SwapQuoteAdapterError &&
-        [
-          "provider-snapshot-expired",
-          "registry-code-hash-mismatch",
-          "registry-mismatch",
-        ].includes(error.reason);
+        ["provider-snapshot-expired", "registry-code-hash-mismatch", "registry-mismatch"].includes(
+          error.reason,
+        );
       return reply.code(stale ? 409 : 503).send(
         createErrorEnvelope({
           code: stale ? "SWAP_QUOTE_STALE" : "SWAP_QUOTE_UNAVAILABLE",
@@ -5145,7 +5143,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           }
           throw error;
         }
-        if (!(await requireAllowedWalletChain(parsed.chainId, request, reply, session))) return reply;
+        if (!(await requireAllowedWalletChain(parsed.chainId, request, reply, session)))
+          return reply;
         if (parsed.chainId !== 56) {
           return reply.code(403).send(
             createErrorEnvelope({
@@ -5307,30 +5306,26 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       return reply;
     });
 
-    app.post(
-      "/api/pricing-positions/import",
-      { bodyLimit: 16_384 },
-      async (request, reply) => {
-        reply.header("Cache-Control", "no-store");
-        const session = await authenticateSessionRequest(request, reply);
-        if (!session) return reply;
-        if (!options.pricingPositions || !options.tenantId) {
-          return pricingPositionFailure(new Error("unconfigured"), request, reply);
-        }
-        try {
-          const parsed = parseImportPricingPositionRequest(request.body);
-          return createSuccessEnvelope(
-            await options.pricingPositions.importPosition({
-              request: parsed,
-              userId: session.userId,
-            }),
-            request.id,
-          );
-        } catch (error) {
-          return pricingPositionFailure(error, request, reply);
-        }
-      },
-    );
+    app.post("/api/pricing-positions/import", { bodyLimit: 16_384 }, async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (!options.pricingPositions || !options.tenantId) {
+        return pricingPositionFailure(new Error("unconfigured"), request, reply);
+      }
+      try {
+        const parsed = parseImportPricingPositionRequest(request.body);
+        return createSuccessEnvelope(
+          await options.pricingPositions.importPosition({
+            request: parsed,
+            userId: session.userId,
+          }),
+          request.id,
+        );
+      } catch (error) {
+        return pricingPositionFailure(error, request, reply);
+      }
+    });
 
     app.post<{ Params: { pricingId: string } }>(
       "/api/pricing-positions/:pricingId/withdrawn",

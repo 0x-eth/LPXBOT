@@ -332,7 +332,9 @@ function parsePricingPosition(value: unknown, status: number): PricingPosition {
     invalid(status);
   }
   const observations = value.observations.map((item) => parseObservation(item, status));
-  if (new Set(observations.map(({ snapshotDigest }) => snapshotDigest)).size !== observations.length) {
+  if (
+    new Set(observations.map(({ snapshotDigest }) => snapshotDigest)).size !== observations.length
+  ) {
     invalid(status);
   }
   return {
@@ -365,7 +367,10 @@ export function parsePricingPositionStreamEvent(
     invalid(status);
   }
   if (value.type === "snapshot") {
-    if (!exact(value, ["cursor", "epoch", "items", "sequence", "type"]) || !Array.isArray(value.items)) {
+    if (
+      !exact(value, ["cursor", "epoch", "items", "sequence", "type"]) ||
+      !Array.isArray(value.items)
+    ) {
       invalid(status);
     }
     return {

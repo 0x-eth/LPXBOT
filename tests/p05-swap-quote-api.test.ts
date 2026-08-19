@@ -129,7 +129,9 @@ afterAll(async () => {
 describe("P05-03 swap quote API", () => {
   it("requires a session and resolves wallet address and route fields on the server", async () => {
     const { app, quotes, tokenA } = await fixture();
-    expect((await app.inject({ method: "POST", payload: body(), url: "/api/swap/quote" })).statusCode).toBe(401);
+    expect(
+      (await app.inject({ method: "POST", payload: body(), url: "/api/swap/quote" })).statusCode,
+    ).toBe(401);
 
     const response = await app.inject({
       headers: auth(tokenA),

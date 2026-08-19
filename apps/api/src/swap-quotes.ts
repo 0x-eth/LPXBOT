@@ -70,8 +70,16 @@ export class ControlledSwapQuoteService implements SwapQuoteApplication {
   }
 
   async quote(input: SwapQuoteApplicationInput): Promise<Readonly<SwapQuoteView>> {
-    const { userId: _userId, ...adapterInput } = input;
-    const quote = (await this.#adapter.quote(adapterInput)) as Readonly<SwapQuoteView>;
+    const quote = (await this.#adapter.quote({
+      amountInBaseUnit: input.amountInBaseUnit,
+      chainId: input.chainId,
+      platformId: input.platformId,
+      slippageBps: input.slippageBps,
+      tokenIn: input.tokenIn,
+      tokenOut: input.tokenOut,
+      walletAddress: input.walletAddress,
+      walletId: input.walletId,
+    })) as Readonly<SwapQuoteView>;
     await this.#snapshotStore.append({ quote, tenantId: this.#tenantId, userId: input.userId });
     return quote;
   }
@@ -90,10 +98,7 @@ function canonicalToken(value: unknown): EvmAddress | null {
 
 export function parseSwapQuoteRequest(value: unknown): ParsedSwapQuoteRequest {
   const input = record(value);
-  if (
-    !input ||
-    Object.keys(input).sort().join(",") !== [...requestKeys].sort().join(",")
-  ) {
+  if (!input || Object.keys(input).sort().join(",") !== [...requestKeys].sort().join(",")) {
     throw new SwapQuoteValidationError("SWAP_QUOTE_INVALID");
   }
   if (typeof input.walletId !== "string" || !uuidPattern.test(input.walletId)) {

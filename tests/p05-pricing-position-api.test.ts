@@ -87,11 +87,7 @@ class Positions implements PricingPositionApplication {
     return { items: input.userId === userA ? [structuredClone(position)] : [] };
   }
 
-  async markWithdrawn(input: {
-    expectedRevision: number;
-    pricingId: string;
-    userId: string;
-  }) {
+  async markWithdrawn(input: { expectedRevision: number; pricingId: string; userId: string }) {
     this.withdrawnCalls.push(input);
     if (this.failure) throw this.failure;
     if (input.userId !== userA || input.pricingId !== pricingId) {
@@ -133,7 +129,9 @@ afterAll(async () => {
 describe("P05-03 pricing position API", () => {
   it("requires a session and lists only the current user's ledger", async () => {
     const { app, positions, tokenA, tokenB } = await fixture();
-    expect((await app.inject({ method: "GET", url: "/api/pricing-positions" })).statusCode).toBe(401);
+    expect((await app.inject({ method: "GET", url: "/api/pricing-positions" })).statusCode).toBe(
+      401,
+    );
     const first = await app.inject({
       headers: auth(tokenA),
       method: "GET",

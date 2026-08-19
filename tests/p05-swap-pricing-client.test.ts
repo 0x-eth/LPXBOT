@@ -19,7 +19,7 @@ const walletId = "73000000-0000-4000-8000-000000000011";
 const pricingId = "73000000-0000-4000-8000-000000000021";
 const tokenIn = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c";
 const tokenOut = "0x55d398326f99059ff775485246999027b3197955";
-const hash = `0x${"ab".repeat(32)}`;
+const hash: `0x${string}` = `0x${"ab".repeat(32)}`;
 
 const quote: SwapQuoteView = {
   amountInBaseUnit: "1001",
@@ -125,7 +125,11 @@ describe("P05-03 strict swap and pricing browser client", () => {
   it("sends exactly the seven allowed quote fields", async () => {
     const requests: Array<{ body: unknown; init?: RequestInit; path: string }> = [];
     const fetcher = vi.fn<typeof fetch>().mockImplementation(async (input, init) => {
-      requests.push({ body: JSON.parse(String(init?.body)), init, path: String(input) });
+      requests.push({
+        body: JSON.parse(String(init?.body)),
+        ...(init ? { init } : {}),
+        path: String(input),
+      });
       return new Response(JSON.stringify({ data: quote, requestId: "fixture", success: true }), {
         headers: { "Content-Type": "application/json" },
         status: 200,
@@ -160,9 +164,7 @@ describe("P05-03 strict swap and pricing browser client", () => {
       credentials: "include",
       method: "POST",
     });
-    expect(JSON.stringify(requests[0]!.body)).not.toMatch(
-      /router|spender|selector|calldata|okx/iu,
-    );
+    expect(JSON.stringify(requests[0]!.body)).not.toMatch(/router|spender|selector|calldata|okx/iu);
   });
 
   it("parses immutable cost and observed fees without collected-income semantics", () => {
