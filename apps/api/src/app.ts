@@ -139,6 +139,12 @@ import {
   PositionCursorError,
   type PositionReadApplication,
 } from "./position-read-model.js";
+import type { WalletHelperReadApplication } from "./helper-read-model.js";
+import {
+  HelperResidualCursorError,
+  HelperResidualReadError,
+  type WalletHelperResidualApplication,
+} from "./helper-residual-model.js";
 import type { ShellStatsProvider, ShellStatsScope } from "./shell-stats.js";
 import {
   defaultVersionedUserPreferences,
@@ -224,6 +230,8 @@ export interface ApiAppOptions {
   poolCreationProvenanceRateLimit?: PublicReadRateLimit;
   poolCreationProvenanceStore?: PoolCreationProvenanceReadStore;
   positionReads?: PositionReadApplication;
+  helperReads?: WalletHelperReadApplication;
+  helperResiduals?: WalletHelperResidualApplication;
   preferencesStore?: UserPreferencesStore;
   recommendedPoolsPollMilliseconds?: number;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
@@ -737,6 +745,72 @@ function parsePositionReadQuery(
     platformId = Number(value.platformId) as 1 | 2 | 4 | 5;
   }
   return { chainId, cursor, limit: Number(limitValue), platformId };
+}
+
+interface ParsedHelperResidualListQuery {
+  chainId: number;
+  cursor: string | null;
+  limit: number;
+  walletId: string;
+}
+
+function parseHelperStatusQuery(value: unknown): { chainId: number } | null {
+  if (!isPlainRecord(value) || Object.keys(value).some((key) => key !== "chainId")) return null;
+  const chainId = parsePositiveChainId(value.chainId);
+  return chainId ? { chainId } : null;
+}
+
+function parseHelperResidualListQuery(value: unknown): ParsedHelperResidualListQuery | null {
+  if (!isPlainRecord(value)) return null;
+  const allowed = new Set(["chainId", "cursor", "limit", "walletId"]);
+  if (Object.keys(value).some((key) => !allowed.has(key))) return null;
+  const chainId = parsePositiveChainId(value.chainId);
+  const cursor = value.cursor ?? null;
+  const limitValue = value.limit ?? "50";
+  if (
+    !chainId ||
+    typeof value.walletId !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+      value.walletId,
+    ) ||
+    typeof limitValue !== "string" ||
+    !/^(?:[1-9]|[1-9][0-9]|100)$/u.test(limitValue) ||
+    (cursor !== null &&
+      (typeof cursor !== "string" || cursor.length < 1 || cursor.length > 2_048))
+  ) {
+    return null;
+  }
+  return {
+    chainId,
+    cursor,
+    limit: Number(limitValue),
+    walletId: value.walletId.toLowerCase(),
+  };
+}
+
+function parseHelperResidualScanBody(value: unknown): {
+  chainId: number;
+  idempotencyKey: string;
+  walletId: string;
+} | null {
+  if (
+    !isPlainRecord(value) ||
+    Object.keys(value).sort().join(",") !== "chainId,idempotencyKey,walletId" ||
+    value.chainId !== 56 ||
+    typeof value.idempotencyKey !== "string" ||
+    !/^[A-Za-z0-9](?:[A-Za-z0-9._:-]{0,126}[A-Za-z0-9])?$/u.test(value.idempotencyKey) ||
+    typeof value.walletId !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+      value.walletId,
+    )
+  ) {
+    return null;
+  }
+  return {
+    chainId: 56,
+    idempotencyKey: value.idempotencyKey,
+    walletId: value.walletId.toLowerCase(),
+  };
 }
 
 function parseWalletTokenImport(value: unknown): { chainId: number; tokenAddress: unknown } | null {
@@ -3876,6 +3950,41 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
               : "The controlled position reader is unavailable",
           requestId: request.id,
           retryable: code === "CHAIN_READ_UNAVAILABLE",
+        }),
+      );
+    };
+
+    const helperReadFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply => {
+      const code =
+        error instanceof HelperResidualCursorError
+          ? "HELPER_RESIDUAL_CURSOR_INVALID"
+          : error instanceof HelperResidualReadError
+            ? error.code
+            : "CHAIN_READ_UNAVAILABLE";
+      const status =
+        code === "HELPER_RESIDUAL_CURSOR_INVALID" || code === "HELPER_RESIDUAL_INPUT_INVALID"
+          ? 400
+          : code === "HELPER_UNDEPLOYED"
+            ? 409
+            : 503;
+      const message =
+        code === "HELPER_RESIDUAL_CURSOR_INVALID"
+          ? "The Helper residual cursor is invalid or no longer belongs to this snapshot"
+          : code === "HELPER_RESIDUAL_INPUT_INVALID"
+            ? "The Helper residual request is invalid"
+            : code === "HELPER_UNDEPLOYED"
+              ? "The custody wallet has no trusted Helper binding"
+              : "The controlled Helper reader is unavailable";
+      return reply.code(status).send(
+        createErrorEnvelope({
+          code,
+          message,
+          requestId: request.id,
+          retryable: status === 503,
         }),
       );
     };

@@ -87,6 +87,11 @@ export interface WalletHelperStatusInput {
 }
 
 export interface WalletHelperReadApplication {
+  resolveTrustedAddress(input: {
+    chainId: 56;
+    userId: string;
+    walletId: string;
+  }): Promise<Address | null>;
   status(input: WalletHelperStatusInput): Promise<Readonly<WalletHelperStatus>>;
 }
 
@@ -294,6 +299,29 @@ export class WalletHelperReadService implements WalletHelperReadApplication {
     this.#now = options.now ?? (() => new Date());
     this.#rpc = options.rpc;
     this.#store = options.store;
+  }
+
+  async resolveTrustedAddress(input: {
+    chainId: 56;
+    userId: string;
+    walletId: string;
+  }): Promise<Address | null> {
+    if (
+      input.chainId !== 56 ||
+      !uuidPattern.test(input.userId) ||
+      !uuidPattern.test(input.walletId)
+    ) {
+      throw new Error("HELPER_STATUS_INPUT_INVALID");
+    }
+    const binding = await this.#store.findBinding(input);
+    if (!binding) return null;
+    if (
+      !addressPattern.test(binding.helperAddress) ||
+      binding.helperAddress !== binding.helperAddress.toLowerCase()
+    ) {
+      throw new Error("HELPER_BINDING_INVALID");
+    }
+    return binding.helperAddress;
   }
 
   async status(input: WalletHelperStatusInput): Promise<Readonly<WalletHelperStatus>> {
