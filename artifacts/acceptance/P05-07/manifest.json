@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-07",
+  "phase": "P05",
+  "risk": "R4",
+  "status": "accepted-with-gaps",
+  "featureIds": ["POS-02", "POS-03"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "Registry, snapshot, integer accounting, plan, replacement, API, recovery, strict client, and governance unit tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-07/E-REC.md"
+    },
+    {
+      "id": "T-API",
+      "command": "authenticated local-current, collect/remove preview and execute, idempotency, reauthentication, unified operation GET, and strict ingress tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-07/E-API.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "real non-forked Anvil V3/V4 collect, partial decrease, full exit, optional burn, receipt reconciliation, and Foundry contract tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-07/E-CHAIN.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "PostgreSQL fresh migration, reverse cycle, snapshot/operation/step/replacement/proceeds/pricing ledgers, and append-only evidence",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-07/E-DATA.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "collect and burn cursor restart, nonce drift, replacement, dropped/reorg/provider-divergence reconciliation, and canonical accounting closure",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-07/E-REC.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "RBAC, Registry/manager/token/owner/approval/fencing checks, arbitrary execution-field denial, recipient/min/deadline injection, and contract postconditions",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-07/E-SEC.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "desktop/mobile collect/remove controls, ordered status, replacement lineage, duplicate Enter, keyboard, Axe, overflow, and closed-gate tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-07/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile succeeded full-removal Playwright screenshot regression and accepted visual capture",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-07/E-VIS.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P05-07/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P05-07/E-DATA.md" },
+    { "id": "E-CHAIN", "path": "artifacts/acceptance/P05-07/E-CHAIN.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P05-07/E-REC.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P05-07/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P05-07/E-SEC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P05-07/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P05-07/E-VIS.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P05-07/E-OPS.md" }
+  ],
+  "assumptions": [
+    "POS-02 and POS-03 are implemented-assumed only for non-forked local Anvil chainId 31337 with synthetic custody wallets, allowlisted TestOnlyERC20/TestOnlyWBNB, and TestOnlyPositionManagerV2.",
+    "The local gate may remain OPEN; BSC chainId 56 stays read-only and BSC, testnet, and production execution gates remain CLOSED with zero non-local signatures, broadcasts, and real-fund operations.",
+    "HELPER-03, HELPER-04, and HELPER-06 remain planned; single-token exit Swap, rebalance, migrate, and production PositionManager execution remain outside P05-07.",
+    "P05-02 through P05-06 acceptance files remain byte-identical to baseline c71791936d6382879e4c8342c50852030de9ab18.",
+    "TestOnlyPositionManager, LocalExecutionAdapter, WalletHelperV1, and foundry.toml remain unchanged from the requested baseline; P05-07 adds only TestOnlyPositionManagerV2 and its tests under contracts.",
+    "Independent contract review, testnet evidence, production Registry, production signer/Worker routes, and production operational evidence remain unresolved.",
+    "This accepted-with-gaps work item is not parity-verified and not released."
+  ],
+  "completedAt": "2026-08-19T22:51:48.000Z",
+  "commit": null
+}

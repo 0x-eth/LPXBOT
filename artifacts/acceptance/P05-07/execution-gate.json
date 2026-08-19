@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-07",
+  "featureIds": ["POS-02", "POS-03"],
+  "serviceFeeBps": 0,
+  "gates": {
+    "local": {
+      "status": "OPEN",
+      "scope": "collect or decrease -> collect -> optional burn on non-forked Anvil with synthetic wallets/assets and TestOnlyPositionManagerV2 only",
+      "chainIds": [31337],
+      "registryVersion": "p05-local-position-execution-v2",
+      "snapshotVersion": "p05-local-position-snapshot-v2",
+      "planVersion": "p05-local-position-plan-v2",
+      "manager": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+      "platformIds": [1, 2, 4, 5],
+      "allowedOperations": [
+        "POS-02:local-position-collect-fees",
+        "POS-03:local-position-remove-liquidity"
+      ],
+      "evidence": [
+        "execution-contract.json",
+        "E-CHAIN.md",
+        "E-REC.md",
+        "E-SEC.md",
+        "E-UI.md",
+        "E-VIS.md"
+      ]
+    },
+    "bsc": {
+      "status": "CLOSED",
+      "chainIds": [56],
+      "readOnly": true,
+      "signatures": 0,
+      "broadcasts": 0,
+      "reasons": [
+        "P05-07 Registry accepts only chainId 31337",
+        "chainId 56 position page exposes no local signing or broadcast control",
+        "no BSC PositionManager execution allowlist"
+      ]
+    },
+    "testnet": {
+      "status": "CLOSED",
+      "signatures": 0,
+      "broadcasts": 0,
+      "allowlistedChainIds": [],
+      "reasons": [
+        "no testnet Position Registry",
+        "no independent contract review",
+        "no testnet collect/decrease/burn recovery evidence"
+      ]
+    },
+    "production": {
+      "status": "CLOSED",
+      "signatures": 0,
+      "broadcasts": 0,
+      "realFundOperations": 0,
+      "allowlistedChainIds": [],
+      "reasons": [
+        "local Registry has productionInheritance=false",
+        "production signer and Worker queues have no local Position route",
+        "production PositionManager and token allowlists remain empty",
+        "real assets are denied",
+        "independent security review remains unresolved"
+      ]
+    }
+  },
+  "plannedOnly": ["HELPER-03", "HELPER-04", "HELPER-06"]
+}

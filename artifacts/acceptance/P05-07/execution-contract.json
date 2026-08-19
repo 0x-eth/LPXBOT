@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-07",
+  "featureIds": ["POS-02", "POS-03"],
+  "registry": {
+    "chainId": 31337,
+    "environment": "non-forked-anvil-synthetic-only",
+    "executionEnabled": true,
+    "productionInheritance": false,
+    "registryVersion": "p05-local-position-execution-v2",
+    "registryDigest": "sha256:b14a256606d936afb23bec8c603ac7bc65c3cbf4aa385867b59f1c219f350c1f",
+    "rollbackVersion": "p05-local-position-execution-disabled-v1",
+    "snapshotVersion": "p05-local-position-snapshot-v2",
+    "planVersion": "p05-local-position-plan-v2",
+    "serviceFeeBps": 0,
+    "maxBlockDrift": 5,
+    "maxDeadlineSeconds": 900,
+    "maxSlippageBps": 500,
+    "manager": {
+      "address": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+      "abiHash": "sha256:3cba6ecedf67ddeeaca5efadd427bd749c462ce94ea7bb93ae161f9d52682cb9",
+      "runtimeCodeHash": "0x6218a887ec7babb0af09bf8e4c71880954fcfeb5872b055e2f858f146bb25106",
+      "selectors": {
+        "burn": "0x42966c68",
+        "collect": "0xfc6f7865",
+        "decreaseLiquidity": "0x0c49ccbe"
+      }
+    },
+    "platforms": [
+      { "generation": "v3", "platformId": 1 },
+      { "generation": "v3", "platformId": 2 },
+      { "generation": "v4", "platformId": 4 },
+      { "generation": "v4", "platformId": 5 }
+    ],
+    "tokenPolicy": {
+      "allowedFixturesOnly": true,
+      "executionUnknownToken": "deny",
+      "tokens": [
+        {
+          "address": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+          "fixture": "TestOnlyERC20",
+          "runtimeCodeHash": "0x438d7e29bb977ff7241816f8388a6cc0be9c4cbe4e356f177b77d71d9b7d4354"
+        },
+        {
+          "address": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+          "fixture": "TestOnlyWBNB",
+          "runtimeCodeHash": "0x4bd73dd3f768a57356137078198f3637e40f39b8339c36803672e3d4eae453f8"
+        }
+      ]
+    }
+  },
+  "snapshot": {
+    "identity": [
+      "tenantId",
+      "userId",
+      "walletId",
+      "walletAddress",
+      "owner",
+      "approval",
+      "platformId",
+      "tokenId",
+      "pool",
+      "ticks",
+      "liquidity",
+      "tokensOwed0",
+      "tokensOwed1",
+      "managerAddress",
+      "managerAbiHash",
+      "managerRuntimeCodeHash",
+      "tokenRuntimeCodeHashes",
+      "blockNumber",
+      "blockHash",
+      "registryDigest",
+      "snapshotDigest"
+    ],
+    "appendOnly": true,
+    "currentReadScope": "tenantId+userId+walletId+latest(platformId,tokenId)",
+    "liveRevalidation": [
+      "expiry",
+      "canonical block hash",
+      "owner and approval",
+      "manager ABI/runtime identity",
+      "token runtime identities",
+      "position liquidity and owed amounts"
+    ]
+  },
+  "api": {
+    "routes": [
+      "GET /api/positions/local-current",
+      "POST /api/positions/collect-fees/preview",
+      "POST /api/positions/collect-fees",
+      "POST /api/positions/remove-liquidity/preview",
+      "POST /api/positions/remove-liquidity",
+      "GET /api/chain-operations/:operationId"
+    ],
+    "collectPreviewRequestFields": [
+      "platformId",
+      "snapshotDigest",
+      "tokenId",
+      "walletId"
+    ],
+    "collectSubmitRequestFields": [
+      "platformId",
+      "previewDigest",
+      "previewToken",
+      "snapshotDigest",
+      "tokenId",
+      "walletId"
+    ],
+    "removePreviewRequestFields": [
+      "burnIfEmpty",
+      "percent",
+      "platformId",
+      "slippageBps",
+      "snapshotDigest",
+      "tokenId",
+      "walletId"
+    ],
+    "removeSubmitRequestFields": [
+      "burnIfEmpty",
+      "percent",
+      "platformId",
+      "previewDigest",
+      "previewToken",
+      "slippageBps",
+      "snapshotDigest",
+      "tokenId",
+      "walletId"
+    ],
+    "opaquePreviewFields": ["previewDigest", "previewToken"],
+    "clientControlledFieldsDenied": [
+      "manager",
+      "target",
+      "selector",
+      "calldata",
+      "recipient",
+      "liquidityDelta",
+      "amount0Max",
+      "amount1Max",
+      "amount0Min",
+      "amount1Min",
+      "fee",
+      "feeLimit",
+      "serviceFeeBps"
+    ],
+    "submitRequirements": ["authenticated owned wallet", "reauthentication", "idempotency key"]
+  },
+  "steps": {
+    "collectFees": ["collect"],
+    "partialRemove": ["decrease", "collect"],
+    "fullRemoveWithoutBurn": ["decrease", "collect"],
+    "fullRemoveWithBurn": ["decrease", "collect", "burn"],
+    "perStepBindings": [
+      "nonce",
+      "fencingToken",
+      "semanticDigest",
+      "dataDigest",
+      "target",
+      "value",
+      "gasLimit",
+      "maxFeePerGas",
+      "maxPriorityFeePerGas",
+      "feeCap"
+    ]
+  },
+  "collect": {
+    "recipient": "wallet owner fixed by plan",
+    "amountMaxima": "derived from canonical snapshot/accounting",
+    "postconditions": [
+      "liquidity unchanged for collect-only",
+      "NFT owner unchanged",
+      "tokens owed decrease equals receipt collect amounts",
+      "wallet token0/token1 deltas equal canonical receipt"
+    ],
+    "zeroOwed": "canonical success and idempotent duplicate submission",
+    "accountingClassification": "fee proceeds"
+  },
+  "remove": {
+    "percentRange": [1, 100],
+    "liquidityDelta": "percent=100 ? liquidity : floor(liquidity*percent/100)",
+    "zeroLiquidityDelta": "deny",
+    "partialBurn": "deny",
+    "fullExit": "exact remaining liquidity to zero",
+    "minimumAmounts": "floor(expectedPrincipal*(10000-slippageBps)/10000)",
+    "principalAvailability": "pending-collect until canonical collect receipt",
+    "pricingWithdrawn": "only after completed 100% operation"
+  },
+  "burn": {
+    "userSelected": true,
+    "preconditions": ["liquidity=0", "tokensOwed0=0", "tokensOwed1=0", "owner=wallet"],
+    "postcondition": "ownerOf(tokenId) absent with canonical burn event"
+  },
+  "replacement": {
+    "mutableFields": ["maxFeePerGas", "maxPriorityFeePerGas"],
+    "mustIncreaseFees": true,
+    "immutableFields": [
+      "operation",
+      "step",
+      "position",
+      "percent",
+      "recipient",
+      "nonce",
+      "planDigest",
+      "semanticDigest",
+      "target",
+      "calldataDigest"
+    ]
+  },
+  "recovery": {
+    "decreaseConfirmed": "decrease is never replayed; resume from collect or burn cursor",
+    "collectPending": "decrease principal remains unavailable and position is not withdrawn",
+    "collectConfirmedBurnFailure": "resume only burn cursor when burn was selected",
+    "uncertainEvidence": "dropped, reorged, underconfirmed, or provider-divergent evidence enters reconciliation"
+  },
+  "executionCounters": {
+    "localOrderedOperationClosures": 1,
+    "localCanonicalStepReceipts": 3,
+    "platformScenarioTransactions": 24,
+    "percentageRoundingTransactions": 5,
+    "bscSignatures": 0,
+    "bscBroadcasts": 0,
+    "testnetSignatures": 0,
+    "testnetBroadcasts": 0,
+    "productionSignatures": 0,
+    "productionBroadcasts": 0,
+    "realFundOperations": 0
+  },
+  "existingContractBoundary": {
+    "unchangedFromBaseline": [
+      "contracts/src/TestOnlyPositionManager.sol",
+      "contracts/src/LocalExecutionAdapter.sol",
+      "contracts/src/WalletHelperV1.sol",
+      "foundry.toml"
+    ],
+    "newOnly": [
+      "contracts/src/TestOnlyPositionManagerV2.sol",
+      "contracts/test/TestOnlyPositionManagerV2.t.sol"
+    ]
+  },
+  "nonGoals": ["HELPER-03", "HELPER-04", "HELPER-06"]
+}
