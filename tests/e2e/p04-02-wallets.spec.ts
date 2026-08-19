@@ -25,6 +25,30 @@ function wallet(name = "Main signer") {
   };
 }
 
+function emptyPositions() {
+  return {
+    address,
+    chainId: 56,
+    coverage: {
+      complete: true,
+      failedPlatformIds: [],
+      scannedPlatformIds: [1, 2, 4, 5],
+    },
+    cursor: null,
+    items: [],
+    quarantined: [],
+    registryVersion: "p05-bsc-execution-v1",
+    snapshot: {
+      blockHash: `0x${"42".repeat(32)}`,
+      blockNumber: "42",
+      blockTimestamp: "2026-08-18T05:00:00.000Z",
+      digest: `0x${"24".repeat(32)}`,
+    },
+    status: "empty",
+    walletId,
+  };
+}
+
 async function auth(route: Route) {
   await route.fulfill({
     contentType: "application/json",
@@ -94,6 +118,29 @@ async function install(
       }),
     }),
   );
+  await page.route("**/api/pricing-positions", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      json: envelope({ items: [] }),
+    }),
+  );
+  await page.route("**/api/pricing-positions/stream", (route) => {
+    const snapshot = {
+      cursor: "p04-02-empty-0",
+      epoch: "44000000-0000-4000-8000-000000000090",
+      items: [],
+      sequence: "0",
+      type: "snapshot",
+    };
+    return route.fulfill({
+      body: `retry: 60000\n\nid: ${snapshot.cursor}\nevent: snapshot\ndata: ${JSON.stringify(snapshot)}\n\n`,
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Content-Type": "text/event-stream; charset=utf-8",
+      },
+      status: 200,
+    });
+  });
   await page.route("**/api/wallets**", async (route) => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
@@ -114,6 +161,34 @@ async function install(
         contentType: "application/json",
         json: envelope({ items: state.items }),
       });
+      return;
+    }
+    if (request.method() === "GET" && pathname.endsWith("/positions")) {
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope(emptyPositions()),
+      });
+      return;
+    }
+    if (request.method() === "GET" && pathname.endsWith("/helper")) {
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({
+          address: null,
+          chainId: 56,
+          failures: [],
+          helperVersion: null,
+          owner: address,
+          registryVersion: "p05-bsc-execution-v1",
+          state: "undeployed",
+          verification: null,
+          walletId,
+        }),
+      });
+      return;
+    }
+    if (request.method() === "GET" && pathname === "/api/wallets/helper-residuals") {
+      await route.fulfill({ contentType: "application/json", json: envelope(null) });
       return;
     }
     if (request.method() === "GET" && pathname.endsWith("/balances")) {

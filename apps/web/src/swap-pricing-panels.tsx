@@ -577,7 +577,7 @@ function PricingPositionPanel({
       <div className="wallet-read-heading">
         <div>
           <Eye aria-hidden="true" size={18} />
-          <h2 id="pricing-position-title">观察仓位</h2>
+          <h2 id="pricing-position-title">观察台账</h2>
           <span className="read-state-badge" data-state={stream.connection}>
             {stream.connection === "live"
               ? "实时"

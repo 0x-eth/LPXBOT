@@ -451,6 +451,28 @@ async function installApi(page: Page, fixture: TransferFixture): Promise<void> {
       await route.fulfill({ contentType: "application/json", json: envelope(null) });
       return;
     }
+    if (pathname === "/api/pricing-positions" && request.method() === "GET") {
+      await route.fulfill({ contentType: "application/json", json: envelope({ items: [] }) });
+      return;
+    }
+    if (pathname === "/api/pricing-positions/stream" && request.method() === "GET") {
+      const snapshot = {
+        cursor: "p04-06-empty-0",
+        epoch: "5b000000-0000-4000-8000-000000000090",
+        items: [],
+        sequence: "0",
+        type: "snapshot",
+      };
+      await route.fulfill({
+        body: `retry: 60000\n\nid: ${snapshot.cursor}\nevent: snapshot\ndata: ${JSON.stringify(snapshot)}\n\n`,
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Content-Type": "text/event-stream; charset=utf-8",
+        },
+        status: 200,
+      });
+      return;
+    }
     if (pathname === "/api/wallets/transfers/preview" && request.method() === "POST") {
       const body = jsonBody(request) as unknown as TransferPreviewRequest;
       fixture.previewRequests.push(body);

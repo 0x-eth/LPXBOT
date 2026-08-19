@@ -437,7 +437,7 @@ test("quotes without execution and maintains the observed pricing ledger", async
   await expect(quotePanel).toHaveAttribute("data-state", "error");
 
   const ledger = page.locator("[data-testid='pricing-position-panel']");
-  await expect(page.getByRole("heading", { name: "观察仓位" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "观察台账" })).toBeVisible();
   const importButton = page.getByRole("button", { name: "导入观察仓位" });
   await importButton.focus();
   await page.keyboard.press("Enter");
