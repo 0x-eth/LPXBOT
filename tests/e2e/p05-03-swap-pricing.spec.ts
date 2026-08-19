@@ -441,7 +441,7 @@ test("quotes without execution and maintains the observed pricing ledger", async
   const importButton = page.getByRole("button", { name: "导入观察仓位" });
   await importButton.focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByText("Token #42", { exact: true })).toBeVisible();
+  await expect(ledger.getByText("Token #42", { exact: true })).toBeVisible();
   await expect(importButton).toBeFocused();
   const withdrawn = page.getByRole("button", { name: "标记 Token #42 已撤出" });
   await withdrawn.focus();
