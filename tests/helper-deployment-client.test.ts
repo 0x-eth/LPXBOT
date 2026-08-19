@@ -8,14 +8,14 @@ import { describe, expect, it, vi } from "vitest";
 
 const walletId = "75000000-0000-4000-8000-000000000011";
 const operationId = "75000000-0000-4000-8000-000000000021";
-const expectedAddress = `0x${"1".repeat(40)}`;
-const owner = `0x${"2".repeat(40)}`;
-const adapter = `0x${"3".repeat(40)}`;
-const permit2 = `0x${"4".repeat(40)}`;
-const runtimeHash = `0x${"5".repeat(64)}`;
-const previewDigest = `sha256:${"6".repeat(64)}`;
-const planDigest = `sha256:${"7".repeat(64)}`;
-const transactionHash = `0x${"8".repeat(64)}`;
+const expectedAddress = `0x${"1".repeat(40)}` as `0x${string}`;
+const owner = `0x${"2".repeat(40)}` as `0x${string}`;
+const adapter = `0x${"3".repeat(40)}` as `0x${string}`;
+const permit2 = `0x${"4".repeat(40)}` as `0x${string}`;
+const runtimeHash = `0x${"5".repeat(64)}` as `0x${string}`;
+const previewDigest = `sha256:${"6".repeat(64)}` as `sha256:${string}`;
+const planDigest = `sha256:${"7".repeat(64)}` as `sha256:${string}`;
+const transactionHash = `0x${"8".repeat(64)}` as `0x${string}`;
 const previewToken = "A".repeat(43);
 
 const feeLimit = {
@@ -89,7 +89,7 @@ describe("P05-05 helper deployment browser client", () => {
   });
 
   it("serializes only the fixed request allowlist and keeps duplicate submits identical", async () => {
-    const calls: { init?: RequestInit; path: string }[] = [];
+    const calls: { init: RequestInit | undefined; path: string }[] = [];
     const fetcher = vi.fn<typeof fetch>(async (input, init) => {
       const path = String(input);
       calls.push({ init, path });

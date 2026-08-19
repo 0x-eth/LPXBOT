@@ -235,7 +235,7 @@ export class IsolatedWalletSigner {
     const now = input.now ?? new Date();
     try {
       validateWalletTransferPlan(input.plan, now);
-    } catch (error) {
+    } catch {
       throw new SignerError(
         error instanceof Error && error.message === "TRANSFER_PLAN_EXPIRED"
           ? "TRANSFER_PLAN_EXPIRED"
