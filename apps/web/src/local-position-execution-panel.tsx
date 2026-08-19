@@ -536,7 +536,7 @@ export function LocalPositionExecutionPanel({ wallet }: { wallet: CustodyWallet 
   const executable =
     availability === "ready" &&
     selected !== null &&
-    Date.parse(selected.expiresAt) > Date.now() &&
+    state === "ready" &&
     wallet.lockStatus === "ready" &&
     !operation;
 
