@@ -287,6 +287,42 @@ export interface LocalSwapReplacementCandidate {
   target: `0x${string}`;
 }
 
+export interface LocalSwapPermit2SigningPayload {
+  amountBaseUnit: string;
+  domainSeparator: `0x${string}`;
+  expiration: string;
+  nonce: string;
+  permit2: `0x${string}`;
+  quoteDigest: `sha256:${string}`;
+  sigDeadline: string;
+  spender: `0x${string}`;
+  token: `0x${string}`;
+  walletId: string;
+}
+
+export function localSwapPermit2AuthorizationDigest(
+  payload: LocalSwapPermit2SigningPayload,
+): `0x${string}` {
+  if (
+    !addressPattern.test(payload.permit2) ||
+    !addressPattern.test(payload.spender) ||
+    !addressPattern.test(payload.token) ||
+    !hashPattern.test(payload.domainSeparator) ||
+    !digestPattern.test(payload.quoteDigest) ||
+    !uuidPattern.test(payload.walletId)
+  ) {
+    throw new RangeError("LOCAL_SWAP_PERMIT2_PAYLOAD_INVALID");
+  }
+  decimal(payload.amountBaseUnit, "LOCAL_SWAP_PERMIT2_PAYLOAD_INVALID", true);
+  decimal(payload.expiration, "LOCAL_SWAP_PERMIT2_PAYLOAD_INVALID", true);
+  decimal(payload.nonce, "LOCAL_SWAP_PERMIT2_PAYLOAD_INVALID");
+  decimal(payload.sigDeadline, "LOCAL_SWAP_PERMIT2_PAYLOAD_INVALID", true);
+  return `0x${createHash("sha256")
+    .update("LPXBOT_LOCAL_PERMIT2_AUTHORIZATION\0v2\0", "utf8")
+    .update(stable(payload), "utf8")
+    .digest("hex")}`;
+}
+
 export function validateLocalSwapReplacement(
   step: LocalSwapPlanStep,
   previous: LocalSwapReplacementCandidate,
