@@ -48,6 +48,16 @@ export {
   PostgresHelperDeploymentPlanAuthorizer,
   ViemLocalHelperDeploymentPlanVerifier,
 } from "./postgres-helper-deployment-plan-authorizer.js";
+export {
+  PostgresLocalSwapPermit2Authorizer,
+  PostgresLocalSwapStepPlanAuthorizer,
+  ViemLocalSwapPlanVerifier,
+} from "./postgres-local-swap-plan-authorizer.js";
+export type {
+  LocalSwapPermit2ChainVerification,
+  LocalSwapPlanChainVerifier,
+  LocalSwapStepChainVerification,
+} from "./postgres-local-swap-plan-authorizer.js";
 export type {
   HelperDeploymentPlanChainVerification,
   HelperDeploymentPlanChainVerifier,
