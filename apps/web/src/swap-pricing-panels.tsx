@@ -245,7 +245,7 @@ function SwapQuotePanel({ client, wallet }: { client: SwapPricingClient; wallet:
           >
             {platforms.map((platform) => (
               <option key={platform.id} value={platform.id}>
-                {platform.label}
+                {platform.id} · {platform.label}
               </option>
             ))}
           </select>

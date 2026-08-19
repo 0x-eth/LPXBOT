@@ -27,7 +27,7 @@ function wallet(name = "Main signer") {
 
 function emptyPositions() {
   return {
-    address,
+    address: address.toLowerCase(),
     chainId: 56,
     coverage: {
       complete: true,
@@ -178,7 +178,7 @@ async function install(
           chainId: 56,
           failures: [],
           helperVersion: null,
-          owner: address,
+          owner: address.toLowerCase(),
           registryVersion: "p05-bsc-execution-v1",
           state: "undeployed",
           verification: null,
