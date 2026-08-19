@@ -59,7 +59,8 @@ async function filesBelow(directory, prefix = "") {
   const result = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const relative = path.posix.join(prefix, entry.name);
-    if (entry.isDirectory()) result.push(...(await filesBelow(path.join(directory, entry.name), relative)));
+    if (entry.isDirectory())
+      result.push(...(await filesBelow(path.join(directory, entry.name), relative)));
     else if (entry.isFile()) result.push(relative);
   }
   return sorted(result);
@@ -106,12 +107,20 @@ test("P05-04 is featureless and preserves P05 5 / 7 plus global 66 / 130", async
   assert.equal(manifest.status, "accepted-with-gaps");
   assert.deepEqual(manifest.featureIds, []);
   assert.ok(manifest.tests.every(({ result }) => result === "passed"));
-  assert.deepEqual(sorted(manifest.evidence.map(({ id }) => id)), ["E-CHAIN", "E-OPS", "E-REC", "E-SEC"]);
-  for (const { path: evidencePath } of manifest.evidence) await access(path.join(ROOT, evidencePath));
+  assert.deepEqual(sorted(manifest.evidence.map(({ id }) => id)), [
+    "E-CHAIN",
+    "E-OPS",
+    "E-REC",
+    "E-SEC",
+  ]);
+  for (const { path: evidencePath } of manifest.evidence)
+    await access(path.join(ROOT, evidencePath));
 
   const statuses = p05Statuses(traceability);
   assert.deepEqual(
-    sorted([...statuses].filter(([, status]) => status === "implemented-assumed").map(([id]) => id)),
+    sorted(
+      [...statuses].filter(([, status]) => status === "implemented-assumed").map(([id]) => id),
+    ),
     sorted(IMPLEMENTED),
   );
   assert.deepEqual(
@@ -126,7 +135,10 @@ test("P05-04 is featureless and preserves P05 5 / 7 plus global 66 / 130", async
     assert.match(document, /P05-04/u);
     assert.match(document, /P05[^\n]*5[^\n]*implemented-assumed[^\n]*7[^\n]*planned/iu);
     assert.match(document, /66[^\n]*implemented-assumed[^\n]*130[^\n]*planned/iu);
-    assert.match(document, /testnet\/production[^\n]*CLOSED|testnet\/production gates[^\n]*`CLOSED`/iu);
+    assert.match(
+      document,
+      /testnet\/production[^\n]*CLOSED|testnet\/production gates[^\n]*`CLOSED`/iu,
+    );
   }
 });
 
@@ -156,7 +168,10 @@ test("P00 through P05-03 acceptance files remain byte-identical to baseline", as
 });
 
 test("all 40 observed fixtures are extracted without promoting candidate ABI semantics", async () => {
-  const [matrix, routerPolicy] = await Promise.all([json("evidence-matrix.json"), json("router-policy.json")]);
+  const [matrix, routerPolicy] = await Promise.all([
+    json("evidence-matrix.json"),
+    json("router-policy.json"),
+  ]);
   assert.deepEqual(matrix.referenceCoverage, REFERENCE_COVERAGE);
   assert.deepEqual(matrix.summary, {
     totalFixtures: 40,
@@ -170,7 +185,9 @@ test("all 40 observed fixtures are extracted without promoting candidate ABI sem
   });
   assert.equal(new Set(matrix.rows.map(({ id }) => id)).size, 40);
   assert.ok(matrix.rows.every(({ productionDecision }) => productionDecision.allowed === false));
-  assert.ok(matrix.rows.every(({ innerRouterCandidate }) => innerRouterCandidate.recipient === null));
+  assert.ok(
+    matrix.rows.every(({ innerRouterCandidate }) => innerRouterCandidate.recipient === null),
+  );
   for (const row of matrix.rows) {
     const fixtureBytes = await readFile(path.join(ROOT, row.source.fixturePath));
     assert.equal(digest(fixtureBytes), row.source.fixtureSha256, row.id);
@@ -210,7 +227,10 @@ test("candidate Registry, Token Policy, and Fee Policy are isolated and self-dig
   assert.equal(candidate.registry.environment, "foundry-anvil-only");
   assert.equal(candidate.registry.executionEnabled, true);
   assert.equal(candidate.registry.productionInheritance, false);
-  assert.equal(candidate.registry.components.every(({ proxyImplementation }) => proxyImplementation === null), true);
+  assert.equal(
+    candidate.registry.components.every(({ proxyImplementation }) => proxyImplementation === null),
+    true,
+  );
 
   const localTokenPolicy = structuredClone(tokenPolicy.local);
   const expectedTokenDigest = localTokenPolicy.policyDigest;
@@ -255,18 +275,34 @@ test("local Helper ABI/code and plan contracts are fully frozen", async () => {
   assert.equal(helper.compiler.optimizer.enabled, true);
   assert.equal(helper.abiHash, digest(JSON.stringify(helper.abi), true));
   for (const source of helper.sourceFiles) {
-    assert.equal(digest(await readFile(path.join(ROOT, source.path)), true), source.sha256, source.path);
+    assert.equal(
+      digest(await readFile(path.join(ROOT, source.path)), true),
+      source.sha256,
+      source.path,
+    );
   }
   assert.equal(helper.aggregateSourceHash, digest(JSON.stringify(helper.sourceFiles), true));
   assert.equal(helper.upgradeMode, "deploy-new-helper-no-proxy");
-  assert.ok(Object.values(helper.businessSelectorAllowlist).every((value) => !OBSERVED_SELECTORS.includes(value)));
+  assert.ok(
+    Object.values(helper.businessSelectorAllowlist).every(
+      (value) => !OBSERVED_SELECTORS.includes(value),
+    ),
+  );
   assert.equal(helper.observedSelectorsReusedAsBusinessNames, false);
   assert.equal(creation.creationBuild.creationInputBytes, 19377);
-  assert.equal(creation.creationBuild.creationInputHash, "0xd3c67af8640b66e72ac6c0a0ad62add939676cbd2d5509ed6ba8f5a879dbba08");
+  assert.equal(
+    creation.creationBuild.creationInputHash,
+    "0xd3c67af8640b66e72ac6c0a0ad62add939676cbd2d5509ed6ba8f5a879dbba08",
+  );
   assert.equal(creation.runtimeComparison.sameSelectorSet, true);
   assert.equal(creation.runtimeComparison.runtimeHashesEqual, false);
 
-  assert.deepEqual(plans.planTypes, ["HelperDeploymentPlan", "SwapPlan", "PositionPlan", "SweepPlan"]);
+  assert.deepEqual(plans.planTypes, [
+    "HelperDeploymentPlan",
+    "SwapPlan",
+    "PositionPlan",
+    "SweepPlan",
+  ]);
   for (const binding of [
     "wallet",
     "chainId",
@@ -286,7 +322,10 @@ test("local Helper ABI/code and plan contracts are fully frozen", async () => {
 });
 
 test("local success/revert/recovery evidence opens only the local gate", async () => {
-  const [snapshot, gate] = await Promise.all([json("local-anvil-snapshot.json"), json("execution-gate.json")]);
+  const [snapshot, gate] = await Promise.all([
+    json("local-anvil-snapshot.json"),
+    json("execution-gate.json"),
+  ]);
   assert.equal(snapshot.network.chainId, 31337);
   assert.equal(snapshot.network.forked, false);
   assert.equal(snapshot.operationEvidence.swap.success.receiptStatus, "success");
@@ -297,7 +336,10 @@ test("local success/revert/recovery evidence opens only the local gate", async (
     snapshot.operationEvidence.swap.failure.balanceAndAllowanceStateAfter,
     snapshot.operationEvidence.swap.failure.balanceAndAllowanceStateBefore,
   );
-  assert.equal(snapshot.operationEvidence.swap.failure.recovery.state.allowances.ownerToHelper, "0");
+  assert.equal(
+    snapshot.operationEvidence.swap.failure.recovery.state.allowances.ownerToHelper,
+    "0",
+  );
   assert.equal(snapshot.operationEvidence.duplicatePlanRejected, true);
   assert.equal(snapshot.operationEvidence.duplicateRawTransaction.secondSubmissionRejected, true);
   assert.equal(snapshot.operationEvidence.nonceReplacement.firstReceiptState, "replaced");

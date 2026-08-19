@@ -174,9 +174,7 @@ test("P00 through P05-01 acceptance files remain byte-identical to the 645-file 
   const currentPriorFiles = (await filesBelow(ACCEPTANCE_ROOT))
     .filter(
       (file) =>
-        !file.startsWith("P05-02/") &&
-        !file.startsWith("P05-03/") &&
-        !file.startsWith("P05-04/"),
+        !file.startsWith("P05-02/") && !file.startsWith("P05-03/") && !file.startsWith("P05-04/"),
     )
     .map((file) => `artifacts/acceptance/${file}`);
   assert.equal(baselineFiles.length, 645);
