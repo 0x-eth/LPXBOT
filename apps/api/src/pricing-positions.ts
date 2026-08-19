@@ -18,6 +18,21 @@ const decimalValuePattern = /^(?:0|[1-9][0-9]{0,37})(?:\.[0-9]{1,18})?$/u;
 const hashPattern = /^0x[0-9a-f]{64}$/u;
 const sourcePattern = /^[A-Za-z0-9](?:[A-Za-z0-9._:-]{0,126}[A-Za-z0-9])?$/u;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const importKeys = [
+  "chainId",
+  "costBasis",
+  "platformId",
+  "snapshotDigest",
+  "tokenId",
+  "walletId",
+] as const;
+const costBasisKeys = [
+  "amount0BaseUnit",
+  "amount1BaseUnit",
+  "priceObservedAt",
+  "priceSource",
+  "usdValueDecimal",
+] as const;
 
 export type PricingPositionErrorCode =
   | "PRICING_POSITION_INVALID"
@@ -35,6 +50,88 @@ export class PricingPositionError extends Error {
     this.name = "PricingPositionError";
     this.code = code;
   }
+}
+
+function record(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
+  return Object.keys(value).sort().join(",") === [...keys].sort().join(",");
+}
+
+export function parseImportPricingPositionRequest(value: unknown): ImportPricingPositionRequest {
+  const input = record(value);
+  const costBasis = input ? record(input.costBasis) : null;
+  if (!input || !exactKeys(input, importKeys) || !costBasis || !exactKeys(costBasis, costBasisKeys)) {
+    throw new PricingPositionError("PRICING_POSITION_INVALID");
+  }
+  const priceFields = [
+    costBasis.usdValueDecimal,
+    costBasis.priceObservedAt,
+    costBasis.priceSource,
+  ];
+  const priceMissing = priceFields.every((entry) => entry === null);
+  const priceComplete = priceFields.every((entry) => typeof entry === "string");
+  if (
+    input.chainId !== 56 ||
+    !([1, 2, 4, 5] as const).includes(input.platformId as 1 | 2 | 4 | 5) ||
+    typeof input.walletId !== "string" ||
+    !uuidPattern.test(input.walletId) ||
+    typeof input.snapshotDigest !== "string" ||
+    !hashPattern.test(input.snapshotDigest) ||
+    typeof input.tokenId !== "string" ||
+    !decimalPattern.test(input.tokenId) ||
+    typeof costBasis.amount0BaseUnit !== "string" ||
+    !decimalPattern.test(costBasis.amount0BaseUnit) ||
+    typeof costBasis.amount1BaseUnit !== "string" ||
+    !decimalPattern.test(costBasis.amount1BaseUnit) ||
+    (!priceMissing && !priceComplete) ||
+    (priceComplete &&
+      (!decimalValuePattern.test(costBasis.usdValueDecimal as string) ||
+        !sourcePattern.test(costBasis.priceSource as string) ||
+        !Number.isFinite(Date.parse(costBasis.priceObservedAt as string))))
+  ) {
+    throw new PricingPositionError("PRICING_POSITION_INVALID");
+  }
+  return {
+    chainId: 56,
+    costBasis: {
+      amount0BaseUnit: costBasis.amount0BaseUnit,
+      amount1BaseUnit: costBasis.amount1BaseUnit,
+      priceObservedAt: costBasis.priceObservedAt as string | null,
+      priceSource: costBasis.priceSource as string | null,
+      usdValueDecimal: costBasis.usdValueDecimal as string | null,
+    },
+    platformId: input.platformId as 1 | 2 | 4 | 5,
+    snapshotDigest: input.snapshotDigest as `0x${string}`,
+    tokenId: input.tokenId,
+    walletId: input.walletId.toLowerCase(),
+  };
+}
+
+export function parsePricingPositionId(value: unknown): string {
+  if (typeof value !== "string" || !uuidPattern.test(value)) {
+    throw new PricingPositionError("PRICING_POSITION_NOT_FOUND");
+  }
+  return value.toLowerCase();
+}
+
+export function parseMarkPricingPositionWithdrawnRequest(value: unknown): {
+  expectedRevision: number;
+} {
+  const input = record(value);
+  if (
+    !input ||
+    !exactKeys(input, ["expectedRevision"]) ||
+    !Number.isSafeInteger(input.expectedRevision) ||
+    Number(input.expectedRevision) < 1
+  ) {
+    throw new PricingPositionError("PRICING_POSITION_INVALID");
+  }
+  return { expectedRevision: Number(input.expectedRevision) };
 }
 
 export interface PricingPositionSourceSnapshot {

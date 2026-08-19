@@ -289,6 +289,9 @@ export {
 } from "./swap-quotes.js";
 export {
   MemoryPricingPositionStore,
+  parseImportPricingPositionRequest,
+  parseMarkPricingPositionWithdrawnRequest,
+  parsePricingPositionId,
   PricingPositionError,
   PricingPositionService,
 } from "./pricing-positions.js";

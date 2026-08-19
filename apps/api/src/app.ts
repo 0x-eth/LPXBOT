@@ -142,6 +142,13 @@ import {
   SwapQuoteValidationError,
   type SwapQuoteApplication,
 } from "./swap-quotes.js";
+import {
+  parseImportPricingPositionRequest,
+  parseMarkPricingPositionWithdrawnRequest,
+  parsePricingPositionId,
+  PricingPositionError,
+  type PricingPositionApplication,
+} from "./pricing-positions.js";
 import type { WalletHelperReadApplication } from "./helper-read-model.js";
 import {
   HelperResidualCursorError,
@@ -232,6 +239,7 @@ export interface ApiAppOptions {
   poolBlocklistStore?: PoolBlocklistStore;
   poolCreationProvenanceRateLimit?: PublicReadRateLimit;
   poolCreationProvenanceStore?: PoolCreationProvenanceReadStore;
+  pricingPositions?: PricingPositionApplication;
   positionReads?: PositionReadApplication;
   helperReads?: WalletHelperReadApplication;
   helperResiduals?: WalletHelperResidualApplication;
@@ -1253,6 +1261,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         isWalletTransferSecretRequest(request.method, requestPath) ||
         isOkxKeySecretRequest(request.method, requestPath) ||
         (request.method === "POST" && requestPath === "/api/swap/quote") ||
+        (request.method === "POST" &&
+          (requestPath === "/api/pricing-positions/import" ||
+            /^\/api\/pricing-positions\/[^/]+\/withdrawn$/u.test(requestPath))) ||
         (request.method === "POST" && requestPath === "/api/wallets/transfers/preview"))
     ) {
       reply.header("Cache-Control", "no-store");
@@ -3998,6 +4009,46 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       );
     };
 
+    const pricingPositionFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply => {
+      if (!(error instanceof PricingPositionError)) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "PRICING_POSITIONS_UNAVAILABLE",
+            message: "The pricing position ledger is unavailable",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      const status =
+        error.code === "PRICING_POSITION_INVALID"
+          ? 400
+          : error.code === "PRICING_POSITION_NOT_FOUND" ||
+              error.code === "PRICING_SNAPSHOT_NOT_FOUND"
+            ? 404
+            : 409;
+      const messages: Record<typeof error.code, string> = {
+        PRICING_POSITION_INVALID: "The pricing position request is invalid",
+        PRICING_POSITION_NOT_FOUND: "The pricing position was not found",
+        PRICING_POSITION_REVISION_CONFLICT: "The pricing position revision has changed",
+        PRICING_SNAPSHOT_NOT_FOUND: "The verified position snapshot was not found",
+        PRICING_SNAPSHOT_QUARANTINED: "The position snapshot is quarantined",
+        PRICING_SNAPSHOT_STALE: "The position snapshot is stale",
+      };
+      return reply.code(status).send(
+        createErrorEnvelope({
+          code: error.code,
+          message: messages[error.code],
+          requestId: request.id,
+          retryable: false,
+        }),
+      );
+    };
+
     const helperReadFailure = (
       error: unknown,
       request: FastifyRequest,
@@ -5133,6 +5184,82 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           return createSuccessEnvelope(quote, request.id);
         } catch (error) {
           return swapQuoteFailure(error, request, reply);
+        }
+      },
+    );
+
+    app.get("/api/pricing-positions", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (Object.keys(request.query as Record<string, unknown>).length !== 0) {
+        return pricingPositionFailure(
+          new PricingPositionError("PRICING_POSITION_INVALID"),
+          request,
+          reply,
+        );
+      }
+      if (!options.pricingPositions || !options.tenantId) {
+        return pricingPositionFailure(new Error("unconfigured"), request, reply);
+      }
+      try {
+        return createSuccessEnvelope(
+          await options.pricingPositions.list({ userId: session.userId }),
+          request.id,
+        );
+      } catch (error) {
+        return pricingPositionFailure(error, request, reply);
+      }
+    });
+
+    app.post(
+      "/api/pricing-positions/import",
+      { bodyLimit: 16_384 },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.pricingPositions || !options.tenantId) {
+          return pricingPositionFailure(new Error("unconfigured"), request, reply);
+        }
+        try {
+          const parsed = parseImportPricingPositionRequest(request.body);
+          return createSuccessEnvelope(
+            await options.pricingPositions.importPosition({
+              request: parsed,
+              userId: session.userId,
+            }),
+            request.id,
+          );
+        } catch (error) {
+          return pricingPositionFailure(error, request, reply);
+        }
+      },
+    );
+
+    app.post<{ Params: { pricingId: string } }>(
+      "/api/pricing-positions/:pricingId/withdrawn",
+      { bodyLimit: 2_048 },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.pricingPositions || !options.tenantId) {
+          return pricingPositionFailure(new Error("unconfigured"), request, reply);
+        }
+        try {
+          const pricingId = parsePricingPositionId(request.params.pricingId);
+          const input = parseMarkPricingPositionWithdrawnRequest(request.body);
+          return createSuccessEnvelope(
+            await options.pricingPositions.markWithdrawn({
+              expectedRevision: input.expectedRevision,
+              pricingId,
+              userId: session.userId,
+            }),
+            request.id,
+          );
+        } catch (error) {
+          return pricingPositionFailure(error, request, reply);
         }
       },
     );
