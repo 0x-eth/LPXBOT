@@ -1,6 +1,7 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
+const captureEvidence = process.env.LPBOT_CAPTURE_P05_02 === "1";
 const userId = "69000000-0000-4000-8000-000000000001";
 const walletId = "69000000-0000-4000-8000-000000000011";
 const address = "0x1111111111111111111111111111111111111111";
@@ -362,7 +363,7 @@ async function axe(page: Page) {
 
 test("renders ready position, active Helper, and residual data without execution controls", async ({
   page,
-}) => {
+}, testInfo) => {
   const state = {
     helper: "active" as const,
     position: "ready" as PositionMode,
@@ -413,6 +414,16 @@ test("renders ready position, active Helper, and residual data without execution
     false,
   );
   await axe(page);
+
+  if (captureEvidence) {
+    const screenshot = await page.screenshot({
+      animations: "disabled",
+      caret: "hide",
+      fullPage: true,
+      path: `artifacts/acceptance/P05-02/E-VIS/position-helper-ready-${testInfo.project.name}.png`,
+    });
+    expect(screenshot.byteLength).toBeGreaterThan(10_000);
+  }
 });
 
 test("exposes every read-only operational state", async ({ page }) => {
