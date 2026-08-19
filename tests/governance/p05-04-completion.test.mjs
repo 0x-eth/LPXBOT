@@ -19,7 +19,15 @@ const REFERENCE_COVERAGE = [
   "HELPER-04",
   "HELPER-06",
 ];
-const IMPLEMENTED = ["SWAP-01", "POS-01", "POS-04", "HELPER-01", "HELPER-05"];
+const CURRENT_IMPLEMENTED = [
+  "SWAP-01",
+  "POS-01",
+  "POS-04",
+  "HELPER-01",
+  "HELPER-02",
+  "HELPER-05",
+];
+const CURRENT_PLANNED = REFERENCE_COVERAGE.filter((id) => id !== "HELPER-02");
 const OBSERVED_SELECTORS = ["0xadc3f25c", "0xfb691fd9", "0x71fa74ed", "0x5dfd8e50"];
 const REQUIRED_FILES = [
   "E-CHAIN.md",
@@ -94,7 +102,7 @@ function p05Statuses(markdown) {
   return rows;
 }
 
-test("P05-04 is featureless and preserves P05 5 / 7 plus global 66 / 130", async () => {
+test("P05-04 stays featureless while P05-05 advances current status to 6 / 6 and 67 / 129", async () => {
   const [manifest, functionMatrix, traceability, roadmap] = await Promise.all([
     json("manifest.json"),
     readFile(path.join(ROOT, "docs/FUNCTION_MATRIX.md"), "utf8"),
@@ -121,20 +129,20 @@ test("P05-04 is featureless and preserves P05 5 / 7 plus global 66 / 130", async
     sorted(
       [...statuses].filter(([, status]) => status === "implemented-assumed").map(([id]) => id),
     ),
-    sorted(IMPLEMENTED),
+    sorted(CURRENT_IMPLEMENTED),
   );
   assert.deepEqual(
     sorted([...statuses].filter(([, status]) => status === "planned").map(([id]) => id)),
-    sorted(REFERENCE_COVERAGE),
+    sorted(CURRENT_PLANNED),
   );
-  for (const id of REFERENCE_COVERAGE) {
+  for (const id of CURRENT_PLANNED) {
     assert.match(functionMatrix, new RegExp(`\\| ${id} \\|[^\\n]*planned[^\\n]*P05-04`, "u"));
     assert.match(traceability, new RegExp(`\\| ${id} \\|[^\\n]*planned[^\\n]*P05-04`, "u"));
   }
   for (const document of [traceability, roadmap]) {
     assert.match(document, /P05-04/u);
-    assert.match(document, /P05[^\n]*5[^\n]*implemented-assumed[^\n]*7[^\n]*planned/iu);
-    assert.match(document, /66[^\n]*implemented-assumed[^\n]*130[^\n]*planned/iu);
+    assert.match(document, /P05[^\n]*6[^\n]*implemented-assumed[^\n]*6[^\n]*planned/iu);
+    assert.match(document, /67[^\n]*implemented-assumed[^\n]*129[^\n]*planned/iu);
     assert.match(
       document,
       /testnet\/production[^\n]*CLOSED|testnet\/production gates[^\n]*`CLOSED`/iu,
@@ -152,7 +160,7 @@ test("P00 through P05-03 acceptance files remain byte-identical to baseline", as
     .split("\n")
     .filter(Boolean);
   const currentPriorFiles = (await filesBelow(ACCEPTANCE_ROOT))
-    .filter((file) => !file.startsWith("P05-04/"))
+    .filter((file) => !file.startsWith("P05-04/") && !file.startsWith("P05-05/"))
     .map((file) => `artifacts/acceptance/${file}`);
   assert.deepEqual(currentPriorFiles, sorted(baselineFiles));
   const changedPrior = execFileSync(
@@ -163,7 +171,11 @@ test("P00 through P05-03 acceptance files remain byte-identical to baseline", as
     .trim()
     .split("\n")
     .filter(Boolean)
-    .filter((file) => !file.startsWith("artifacts/acceptance/P05-04/"));
+    .filter(
+      (file) =>
+        !file.startsWith("artifacts/acceptance/P05-04/") &&
+        !file.startsWith("artifacts/acceptance/P05-05/"),
+    );
   assert.deepEqual(changedPrior, []);
 });
 

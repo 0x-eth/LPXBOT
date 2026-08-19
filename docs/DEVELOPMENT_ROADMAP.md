@@ -208,7 +208,7 @@ flowchart LR
 
 **门禁：** P04 安全门通过；合约独立审查；测试网部署前冻结 ABI/registry version。
 
-**当前状态：** P05-04 在 P05-03 的只读仓位、Helper 和不可执行 Swap 报价基础上，冻结 40 个历史 calldata/receipt 的内层 router 候选证据、observed Helper creation input、独立 `p05-bsc-local-execution-v1` Registry、Token/Fee policy、typed operation plans，以及固定 Solidity/依赖构建的 `WalletHelperV1` 本地 ABI/字节码。Foundry 和非 fork 合成 Anvil 的 local execution gate 为 `OPEN`，只允许 chainId 31337、合成钱包、TestOnlyERC20/WBNB、0 bps 服务费和精确 allowlist；P05-01 的 `p05-bsc-execution-v1` 逐字节不变且 production allowlist 为空，testnet/production gates 均为 `CLOSED`，公网签名、广播和真实资金操作为 0。P05-04 不新增生产 API/UI、不认领功能实现，P05 仍为 5 项 `implemented-assumed`、7 项 `planned`，继续 `accepted-with-gaps`；全局为 66 项 `implemented-assumed`、130 项 `planned`。权威 router ABI/失败样本、收费策略、生产 Token 分类、独立合约审查与 testnet 证据仍 unresolved，不标记 `parity-verified` 或 `released`。
+**当前状态：** P05-05 在 P05-04 的固定 `WalletHelperV1` 模板和 local execution safety baseline 上，新增独立 `p05-local-helper-deployment-v2` Registry 与 plan v2，将首次部署接入认证 API、PostgreSQL nonce/operation/Outbox ledger、Worker recovery、loopback 隔离 Signer、非 fork 本地 Anvil 和 Helper UI。部署地址由钱包地址与保留 nonce 推导，交易固定为 `to=null`、`value=0`，init code 与 constructor 参数只由服务端生成；Signer 和回执闭环重验 Registry、plan digest、fencing token、creation/runtime hash、owner、adapter、Permit2 与实例绑定。local gate 仅对 chainId 31337、合成钱包和 TestOnlyERC20/WBNB 保持 `OPEN`；testnet/production gates 均为 `CLOSED`，测试网/生产签名和广播及真实资金操作均为 0。P05 当前为 6 项 `implemented-assumed`、6 项 `planned`，继续 `accepted-with-gaps`；全局为 67 项 `implemented-assumed`、129 项 `planned`。SWAP-02、POS-02、POS-03、HELPER-03、HELPER-04、HELPER-06 继续 planned；权威生产 Router/Helper 证据、独立合约审查与 testnet 证据仍 unresolved，不标记 `parity-verified` 或 `released`。
 
 ### P06：任务产品面和配置
 

@@ -215,7 +215,7 @@
 | POS-03 | 部分/全部撤出 LP | UI+API | USER | R3/R4 | 1-100%、slippage、collect、burn 可选；`planned`（P05-04 仅建立 typed local plan baseline） |
 | POS-04 | 观察/定价仓位台账 | UI+BUNDLE | USER | R1 | 导入、SSE、成本、withdrawn 标记；`implemented-assumed`（P05-03，BSC local fixture only） |
 | HELPER-01 | 一钱包一链 Helper 展示 | UI+BUNDLE+CHAIN | USER | R0 | 地址、版本、部署状态；跨链版本号不可比较；`implemented-assumed`（P05-02，BSC local fixture only） |
-| HELPER-02 | 首次使用自动部署 Helper | UI+BUNDLE+CHAIN | USER | R3/R4 | owner EOA 直接部署是当前 BSC 样本事实；部署幂等；`planned`（P05-04 仅建立 local deployment baseline） |
+| HELPER-02 | 首次使用自动部署 Helper | UI+BUNDLE+CHAIN | USER | R3/R4 | owner EOA 直接部署是当前 BSC 样本事实；部署幂等；`implemented-assumed`（P05-05，仅 chainId 31337、合成资产与隔离 Signer 的 local Anvil 闭环） |
 | HELPER-03 | 自动升级 Helper | UI+BUNDLE | USER | R3/R4 | 版本注册表、旧仓兼容、升级提示；具体升级策略待验证；`planned`（P05-04 仅冻结 deploy-new policy） |
 | HELPER-04 | 原子 Swap + Mint/Increase | UI+CHAIN | USER | R3/R4 | owner-only、Permit2/approve、NFT 给 owner、refund；`planned`（P05-04 仅建立 typed local adapter baseline） |
 | HELPER-05 | Helper 残留扫描 | UI+BUNDLE | USER | R0 | 多链/token/native、刷新和空态；`implemented-assumed`（P05-02 当前仅 chainId 56，local fixture only） |

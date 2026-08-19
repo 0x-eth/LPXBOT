@@ -49,7 +49,7 @@ async function filesBelow(directory, prefix = "") {
   return sorted(files);
 }
 
-test("P04 remains at 12 implemented-assumed / 0 planned with global 66 / 130", async () => {
+test("P04 remains at 12 implemented-assumed / 0 planned with global 67 / 129", async () => {
   const [functionMatrix, traceability, roadmap] = await Promise.all([
     readFile(FUNCTION_MATRIX, "utf8"),
     readFile(TRACEABILITY, "utf8"),
@@ -74,10 +74,10 @@ test("P04 remains at 12 implemented-assumed / 0 planned with global 66 / 130", a
     assert.match(document, /独立安全评审/u);
     assert.match(document, /真实只读 sandbox 验证/u);
   }
-  assert.match(traceability, /\| 当前产品实现 \| 66 \|/u);
-  assert.match(traceability, /\| `implemented-assumed` \| 66 \|/u);
-  assert.match(traceability, /\| 其余 `planned` \| 130 \|/u);
-  assert.match(roadmap, /全局为 66 项 `implemented-assumed`、130 项 `planned`/u);
+  assert.match(traceability, /\| 当前产品实现 \| 67 \|/u);
+  assert.match(traceability, /\| `implemented-assumed` \| 67 \|/u);
+  assert.match(traceability, /\| 其余 `planned` \| 129 \|/u);
+  assert.match(roadmap, /全局为 67 项 `implemented-assumed`、129 项 `planned`/u);
 });
 
 test("P04-07 manifest owns SET-07 and preserves all unresolved boundaries", async () => {

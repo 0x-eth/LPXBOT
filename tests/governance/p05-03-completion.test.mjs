@@ -28,7 +28,14 @@ const FEATURE_IDS = [
   "HELPER-05",
   "HELPER-06",
 ];
-const IMPLEMENTED = ["SWAP-01", "POS-01", "POS-04", "HELPER-01", "HELPER-05"];
+const IMPLEMENTED = [
+  "SWAP-01",
+  "POS-01",
+  "POS-04",
+  "HELPER-01",
+  "HELPER-02",
+  "HELPER-05",
+];
 const OWNED = ["SWAP-01", "POS-04"];
 const REQUIRED_EVIDENCE = [
   "E-API",
@@ -114,7 +121,7 @@ function statusRows(markdown) {
   return rows;
 }
 
-test("P05 closes P05-03 at 5 implemented-assumed / 7 planned with global 66 / 130", async () => {
+test("P05-03 ownership stays frozen at P05-05 current status 6 / 6 and global 67 / 129", async () => {
   const [functionMatrix, traceability, roadmap] = await Promise.all([
     readFile(FUNCTION_MATRIX, "utf8"),
     readFile(TRACEABILITY, "utf8"),
@@ -142,15 +149,15 @@ test("P05 closes P05-03 at 5 implemented-assumed / 7 planned with global 66 / 13
     );
   }
   for (const document of [traceability, roadmap]) {
-    assert.match(document, /P05[^\n]*5[^\n]*implemented-assumed[^\n]*7[^\n]*planned/iu);
+    assert.match(document, /P05[^\n]*6[^\n]*implemented-assumed[^\n]*6[^\n]*planned/iu);
     assert.match(document, /accepted-with-gaps/u);
     assert.match(document, /not parity-verified|不标记 `parity-verified`/iu);
     assert.match(document, /not released|不标记[^\n]*`released`/iu);
   }
-  assert.match(traceability, /\| 当前产品实现 \| 66 \|/u);
-  assert.match(traceability, /\| `implemented-assumed` \| 66 \|/u);
-  assert.match(traceability, /\| 其余 `planned` \| 130 \|/u);
-  assert.match(roadmap, /全局为 66 项 `implemented-assumed`、130 项 `planned`/u);
+  assert.match(traceability, /\| 当前产品实现 \| 67 \|/u);
+  assert.match(traceability, /\| `implemented-assumed` \| 67 \|/u);
+  assert.match(traceability, /\| 其余 `planned` \| 129 \|/u);
+  assert.match(roadmap, /全局为 67 项 `implemented-assumed`、129 项 `planned`/u);
 });
 
 test("P05-03 manifest owns only SWAP-01 and POS-04", async () => {
@@ -182,7 +189,12 @@ test("P00 through P05-02 acceptance files remain byte-identical to the 660-file 
     .split("\n")
     .filter(Boolean);
   const currentPriorFiles = (await filesBelow(ACCEPTANCE_ROOT))
-    .filter((file) => !file.startsWith("P05-03/") && !file.startsWith("P05-04/"))
+    .filter(
+      (file) =>
+        !file.startsWith("P05-03/") &&
+        !file.startsWith("P05-04/") &&
+        !file.startsWith("P05-05/"),
+    )
     .map((file) => `artifacts/acceptance/${file}`);
   assert.equal(baselineFiles.length, 660);
   assert.deepEqual(currentPriorFiles, sorted(baselineFiles));
@@ -197,7 +209,8 @@ test("P00 through P05-02 acceptance files remain byte-identical to the 660-file 
     .filter(
       (file) =>
         !file.startsWith("artifacts/acceptance/P05-03/") &&
-        !file.startsWith("artifacts/acceptance/P05-04/"),
+        !file.startsWith("artifacts/acceptance/P05-04/") &&
+        !file.startsWith("artifacts/acceptance/P05-05/"),
     );
   assert.deepEqual(changed, []);
 });
