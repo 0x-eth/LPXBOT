@@ -90,7 +90,13 @@ function verification(): StoredHelperVerification {
       blockHash,
       blockNumber: "116718500",
       blockTimestamp: now.toISOString(),
-      checks: { address: true, owner: true, runtimeCodeHash: true, selectorSet: true, version: true },
+      checks: {
+        address: true,
+        owner: true,
+        runtimeCodeHash: true,
+        selectorSet: true,
+        version: true,
+      },
       digest,
       observedOwner: walletAddressA,
       observedRuntimeCodeHash: `0x${"ef".repeat(32)}`,
@@ -179,6 +185,7 @@ describe("P05-02 PostgreSQL Helper read store", () => {
       store.recordTrustedBinding({
         ...binding(),
         bindingId: "67000000-0000-4000-8000-000000000023",
+        helperAddress: "0x4444444444444444444444444444444444444444",
         userId: userB,
       }),
     ).rejects.toMatchObject({ code: "23503" });
@@ -205,8 +212,16 @@ describe("P05-02 PostgreSQL Helper read store", () => {
     const first = residual("67000000-0000-4000-8000-000000000031", "7");
     const second = residual("67000000-0000-4000-8000-000000000032", "9");
     const results = await Promise.all([
-      store.appendResidualSnapshot({ idempotencyKey: "postgres-scan-001", page: first, userId: userA }),
-      store.appendResidualSnapshot({ idempotencyKey: "postgres-scan-001", page: second, userId: userA }),
+      store.appendResidualSnapshot({
+        idempotencyKey: "postgres-scan-001",
+        page: first,
+        userId: userA,
+      }),
+      store.appendResidualSnapshot({
+        idempotencyKey: "postgres-scan-001",
+        page: second,
+        userId: userA,
+      }),
     ]);
     expect(results[0]).toEqual(results[1]);
 

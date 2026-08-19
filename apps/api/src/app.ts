@@ -135,10 +135,7 @@ import {
   type RecommendedPoolsScheduler,
   type RecommendedPoolsStreamEvent,
 } from "./recommended-pools.js";
-import {
-  PositionCursorError,
-  type PositionReadApplication,
-} from "./position-read-model.js";
+import { PositionCursorError, type PositionReadApplication } from "./position-read-model.js";
 import type { WalletHelperReadApplication } from "./helper-read-model.js";
 import {
   HelperResidualCursorError,
@@ -729,16 +726,17 @@ function parsePositionReadQuery(
     return null;
   }
   const cursor = value.cursor ?? null;
-  if (cursor !== null && (typeof cursor !== "string" || cursor.length < 1 || cursor.length > 2_048)) {
+  if (
+    cursor !== null &&
+    (typeof cursor !== "string" || cursor.length < 1 || cursor.length > 2_048)
+  ) {
     return null;
   }
   let platformId: 1 | 2 | 4 | 5 | null = null;
   if (value.platformId !== undefined) {
     if (
       typeof value.platformId !== "string" ||
-      !(["1", "2", "4", "5"] as const).includes(
-        value.platformId as "1" | "2" | "4" | "5",
-      )
+      !(["1", "2", "4", "5"] as const).includes(value.platformId as "1" | "2" | "4" | "5")
     ) {
       return null;
     }
@@ -775,8 +773,7 @@ function parseHelperResidualListQuery(value: unknown): ParsedHelperResidualListQ
     ) ||
     typeof limitValue !== "string" ||
     !/^(?:[1-9]|[1-9][0-9]|100)$/u.test(limitValue) ||
-    (cursor !== null &&
-      (typeof cursor !== "string" || cursor.length < 1 || cursor.length > 2_048))
+    (cursor !== null && (typeof cursor !== "string" || cursor.length < 1 || cursor.length > 2_048))
   ) {
     return null;
   }
@@ -5006,14 +5003,12 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       }
     };
 
-    app.get<{ Params: { address: string } }>(
-      "/api/wallets/:address/positions",
-      (request, reply) => readPositions(request, reply, true),
+    app.get<{ Params: { address: string } }>("/api/wallets/:address/positions", (request, reply) =>
+      readPositions(request, reply, true),
     );
 
-    app.get<{ Params: { address: string } }>(
-      "/api/positions/scan/:address",
-      (request, reply) => readPositions(request, reply, false),
+    app.get<{ Params: { address: string } }>("/api/positions/scan/:address", (request, reply) =>
+      readPositions(request, reply, false),
     );
 
     app.get<{ Params: { address: string } }>(
@@ -5033,7 +5028,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             }),
           );
         }
-        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
+        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session)))
+          return reply;
         if (query.chainId !== 56) {
           return reply.code(403).send(
             createErrorEnvelope({

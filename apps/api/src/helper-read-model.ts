@@ -270,9 +270,7 @@ export class MemoryWalletHelperReadStore implements WalletHelperReadStore {
     userId: string;
     walletId: string;
   }): Promise<HelperResidualPage | null> {
-    return (
-      this.#residualIdempotency.get(`${bindingKey(input)}:${input.idempotencyKey}`) ?? null
-    );
+    return this.#residualIdempotency.get(`${bindingKey(input)}:${input.idempotencyKey}`) ?? null;
   }
 
   async latestResidualSnapshot(input: {
@@ -431,7 +429,11 @@ export class WalletHelperReadService implements WalletHelperReadApplication {
     } satisfies Omit<HelperVerificationSnapshot, "digest">;
     const verification = freezeVerification({
       ...verificationWithoutDigest,
-      digest: helperDigest({ binding, failures: failureList, verification: verificationWithoutDigest }),
+      digest: helperDigest({
+        binding,
+        failures: failureList,
+        verification: verificationWithoutDigest,
+      }),
     });
     await this.#store.appendVerification({
       bindingId: binding.bindingId,

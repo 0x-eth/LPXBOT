@@ -292,6 +292,7 @@ export {
   MemoryWalletHelperReadStore,
   WalletHelperReadService,
 } from "./helper-read-model.js";
+export { PostgresWalletHelperReadStore } from "./postgres-wallet-helper-read-store.js";
 export type {
   StoredHelperVerification,
   WalletHelperBinding,

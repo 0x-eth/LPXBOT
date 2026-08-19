@@ -97,7 +97,13 @@ function helperStatus(): WalletHelperStatus {
       blockHash: snapshot.blockHash,
       blockNumber: snapshot.blockNumber,
       blockTimestamp: snapshot.blockTimestamp,
-      checks: { address: true, owner: true, runtimeCodeHash: true, selectorSet: true, version: true },
+      checks: {
+        address: true,
+        owner: true,
+        runtimeCodeHash: true,
+        selectorSet: true,
+        version: true,
+      },
       digest: snapshot.digest,
       observedOwner: wallet.address,
       observedRuntimeCodeHash: `0x${"ef".repeat(32)}`,
@@ -399,7 +405,9 @@ describe("P05-02 Helper and residual API", () => {
       url: `/api/wallets/${wallet.address}/positions?chainId=56`,
     });
     expect(response.statusCode).toBe(200);
-    expect(helpers.addressCalls).toEqual([{ chainId: 56, userId: userA, walletId: wallet.walletId }]);
+    expect(helpers.addressCalls).toEqual([
+      { chainId: 56, userId: userA, walletId: wallet.walletId },
+    ]);
     expect(positions.calls[0]?.helperAddress).toBe(helperAddress);
   });
 });
