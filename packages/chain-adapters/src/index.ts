@@ -74,6 +74,7 @@ export {
 export type {
   LocalSwapQuote,
   LocalSwapQuoteFailure,
+  LocalSwapQuoteHelperBinding,
   LocalSwapQuoteInput,
   LocalSwapQuoteProvider,
   LocalSwapQuoteSnapshot,

@@ -13,9 +13,22 @@ const positiveDecimalPattern = /^[1-9][0-9]*$/u;
 const hashPattern = /^0x[0-9a-f]{64}$/u;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
+export interface LocalSwapQuoteHelperBinding {
+  adapter: Address;
+  address: Address;
+  bindingId: string;
+  helperVersion: "WalletHelperV1";
+  owner: Address;
+  permit2: Address;
+  registryVersion: "p05-local-helper-deployment-v2";
+  runtimeCodeHash: Hex;
+  verifiedBlockNumber: string;
+}
+
 export interface LocalSwapQuoteInput {
   amountInBaseUnit: string;
   chainId: number;
+  helper: LocalSwapQuoteHelperBinding;
   slippageBps: number;
   tokenIn: Address;
   tokenOut: Address;
@@ -30,6 +43,12 @@ export interface LocalSwapQuoteSnapshot {
   blockTimestamp: string;
   componentCode: readonly { address: Address; role: "adapter" | "permit2" | "router"; runtimeCodeHash: Hex | null }[];
   gasLimit: string;
+  helper: {
+    adapter: Address;
+    codeHash: Hex | null;
+    owner: Address;
+    permit2: Address;
+  };
   maxFeePerGasBaseUnit: string;
   maxPriorityFeePerGasBaseUnit: string;
   providerSnapshotId: string;
@@ -57,6 +76,7 @@ export interface LocalSwapQuote {
     maxFeePerGasBaseUnit: string;
     maxPriorityFeePerGasBaseUnit: string;
   };
+  helper: LocalSwapQuoteHelperBinding;
   maxBlockNumber: string;
   minOutBaseUnit: string;
   providerSnapshotId: string;
@@ -159,12 +179,20 @@ export class LocalSwapQuoteAdapter {
     const walletAddress = address(input.walletAddress);
     const tokenIn = address(input.tokenIn);
     const tokenOut = address(input.tokenOut);
+    const helperAddress = address(input.helper.address);
+    const helperOwner = address(input.helper.owner);
+    const helperAdapter = address(input.helper.adapter);
+    const helperPermit2 = address(input.helper.permit2);
     const maxAmount = BigInt(this.#registry.maxAmountBaseUnit);
     if (
       input.chainId !== 31_337 ||
       !walletAddress ||
       !tokenIn ||
       !tokenOut ||
+      !helperAddress ||
+      !helperOwner ||
+      !helperAdapter ||
+      !helperPermit2 ||
       tokenIn === tokenOut ||
       !uuidPattern.test(input.walletId) ||
       !positiveDecimalPattern.test(input.amountInBaseUnit) ||
@@ -173,13 +201,39 @@ export class LocalSwapQuoteAdapter {
       input.slippageBps < 1 ||
       input.slippageBps > 500 ||
       !this.#registry.tokens.some(({ address }) => address === tokenIn) ||
-      !this.#registry.tokens.some(({ address }) => address === tokenOut)
+      !this.#registry.tokens.some(({ address }) => address === tokenOut) ||
+      !uuidPattern.test(input.helper.bindingId) ||
+      input.helper.helperVersion !== "WalletHelperV1" ||
+      input.helper.registryVersion !== "p05-local-helper-deployment-v2" ||
+      !hashPattern.test(input.helper.runtimeCodeHash) ||
+      !decimalPattern.test(input.helper.verifiedBlockNumber) ||
+      helperOwner !== walletAddress ||
+      helperAdapter !== localSwapComponent("adapter", this.#registry).address ||
+      helperPermit2 !== localSwapComponent("permit2", this.#registry).address
     ) {
       throw new LocalSwapQuoteError("INVALID_INPUT");
     }
-    const normalized = { ...input, chainId: 31_337, tokenIn, tokenOut, walletAddress } as const;
+    const helper: LocalSwapQuoteHelperBinding = {
+      adapter: helperAdapter,
+      address: helperAddress,
+      bindingId: input.helper.bindingId.toLowerCase(),
+      helperVersion: "WalletHelperV1",
+      owner: helperOwner,
+      permit2: helperPermit2,
+      registryVersion: "p05-local-helper-deployment-v2",
+      runtimeCodeHash: input.helper.runtimeCodeHash,
+      verifiedBlockNumber: input.helper.verifiedBlockNumber,
+    };
+    const normalized = {
+      ...input,
+      chainId: 31_337,
+      helper,
+      tokenIn,
+      tokenOut,
+      walletAddress,
+    } as const;
     const snapshot = await this.#provider.inspect(normalized);
-    this.#validateSnapshot(snapshot);
+    this.#validateSnapshot(snapshot, helper);
     const now = this.#now();
     const observedAt = new Date(snapshot.blockTimestamp);
     if (
@@ -213,6 +267,7 @@ export class LocalSwapQuoteAdapter {
         maxFeePerGasBaseUnit: snapshot.maxFeePerGasBaseUnit,
         maxPriorityFeePerGasBaseUnit: snapshot.maxPriorityFeePerGasBaseUnit,
       },
+      helper,
       maxBlockNumber: (BigInt(snapshot.blockNumber) + BigInt(this.#registry.maxBlockDrift)).toString(),
       minOutBaseUnit: minOut.toString(),
       providerSnapshotId: snapshot.providerSnapshotId,
@@ -235,7 +290,10 @@ export class LocalSwapQuoteAdapter {
     return Object.freeze({ ...unsigned, gas: Object.freeze(unsigned.gas), route: Object.freeze(unsigned.route), quoteDigest: localSwapQuoteDigest(unsigned) });
   }
 
-  #validateSnapshot(snapshot: LocalSwapQuoteSnapshot): void {
+  #validateSnapshot(
+    snapshot: LocalSwapQuoteSnapshot,
+    helper: LocalSwapQuoteHelperBinding,
+  ): void {
     if (
       !positiveDecimalPattern.test(snapshot.amountOutBaseUnit) ||
       !decimalPattern.test(snapshot.blockNumber) ||
@@ -244,7 +302,11 @@ export class LocalSwapQuoteAdapter {
       !positiveDecimalPattern.test(snapshot.maxFeePerGasBaseUnit) ||
       !decimalPattern.test(snapshot.maxPriorityFeePerGasBaseUnit) ||
       BigInt(snapshot.maxPriorityFeePerGasBaseUnit) > BigInt(snapshot.maxFeePerGasBaseUnit) ||
-      !uuidPattern.test(snapshot.providerSnapshotId)
+      !uuidPattern.test(snapshot.providerSnapshotId) ||
+      snapshot.helper.codeHash !== helper.runtimeCodeHash ||
+      snapshot.helper.owner !== helper.owner ||
+      snapshot.helper.adapter !== helper.adapter ||
+      snapshot.helper.permit2 !== helper.permit2
     ) {
       throw new LocalSwapQuoteError("MALFORMED_SNAPSHOT");
     }

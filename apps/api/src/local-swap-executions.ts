@@ -81,7 +81,13 @@ export class LocalSwapExecutionError extends Error {
 }
 
 export class LocalSwapQuoteValidationError extends Error {
-  constructor(readonly code: "LOCAL_SWAP_QUOTE_INVALID" | "WALLET_NOT_FOUND") {
+  constructor(
+    readonly code:
+      | "HELPER_BINDING_MISMATCH"
+      | "HELPER_NOT_ACTIVE"
+      | "LOCAL_SWAP_QUOTE_INVALID"
+      | "WALLET_NOT_FOUND",
+  ) {
     super(code);
     this.name = "LocalSwapQuoteValidationError";
   }
@@ -148,6 +154,7 @@ function publicQuote(quote: LocalSwapQuote): LocalSwapQuoteView {
     executionEnabled: true,
     expiresAt: quote.expiresAt,
     gas: structuredClone(quote.gas),
+    helperAddress: quote.helper.address,
     maxBlockNumber: quote.maxBlockNumber,
     minOutBaseUnit: quote.minOutBaseUnit,
     quoteDigest: quote.quoteDigest,
@@ -165,20 +172,51 @@ function publicQuote(quote: LocalSwapQuote): LocalSwapQuoteView {
 
 export class ControlledLocalSwapQuoteService implements LocalSwapQuoteApplication {
   readonly #adapter: Pick<LocalSwapQuoteAdapter, "quote">;
+  readonly #bindings: LocalSwapHelperBindingStore;
   readonly #store: LocalSwapQuoteStore;
 
   constructor(input: {
     adapter: Pick<LocalSwapQuoteAdapter, "quote">;
+    bindings: LocalSwapHelperBindingStore;
     store: LocalSwapQuoteStore;
   }) {
     this.#adapter = input.adapter;
+    this.#bindings = input.bindings;
     this.#store = input.store;
   }
 
   async quote(
     input: LocalSwapQuoteRequest & { tenantId: string; userId: string; walletAddress: Address },
   ) {
-    const quote = await this.#adapter.quote(input);
+    const binding = await this.#bindings.getActive({
+      tenantId: input.tenantId,
+      userId: input.userId,
+      walletId: input.walletId,
+    });
+    if (!binding) throw new LocalSwapQuoteValidationError("HELPER_NOT_ACTIVE");
+    if (
+      binding.chainId !== 31_337 ||
+      binding.walletId !== input.walletId ||
+      binding.ownerAddress !== input.walletAddress.toLowerCase() ||
+      binding.helperVersion !== "WalletHelperV1" ||
+      binding.registryVersion !== "p05-local-helper-deployment-v2"
+    ) {
+      throw new LocalSwapQuoteValidationError("HELPER_BINDING_MISMATCH");
+    }
+    const quote = await this.#adapter.quote({
+      ...input,
+      helper: {
+        adapter: binding.adapterAddress,
+        address: binding.helperAddress,
+        bindingId: binding.bindingId,
+        helperVersion: binding.helperVersion,
+        owner: binding.ownerAddress,
+        permit2: binding.permit2Address,
+        registryVersion: binding.registryVersion,
+        runtimeCodeHash: binding.runtimeCodeHash,
+        verifiedBlockNumber: binding.verifiedBlockNumber,
+      },
+    });
     await this.#store.append({ quote, tenantId: input.tenantId, userId: input.userId });
     return publicQuote(quote as LocalSwapQuote);
   }
@@ -1029,7 +1067,14 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
       binding.helperVersion !== "WalletHelperV1" ||
       binding.registryVersion !== "p05-local-helper-deployment-v2" ||
       binding.adapterAddress !== localSwapComponent("adapter", this.#registry).address ||
-      binding.permit2Address !== localSwapComponent("permit2", this.#registry).address
+      binding.permit2Address !== localSwapComponent("permit2", this.#registry).address ||
+      binding.bindingId !== quote.helper.bindingId ||
+      binding.helperAddress !== quote.helper.address ||
+      binding.ownerAddress !== quote.helper.owner ||
+      binding.adapterAddress !== quote.helper.adapter ||
+      binding.permit2Address !== quote.helper.permit2 ||
+      binding.runtimeCodeHash !== quote.helper.runtimeCodeHash ||
+      binding.verifiedBlockNumber !== quote.helper.verifiedBlockNumber
     ) {
       throw new LocalSwapExecutionError("HELPER_BINDING_MISMATCH");
     }

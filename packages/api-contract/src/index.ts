@@ -1302,6 +1302,7 @@ export interface LocalSwapQuoteView extends LocalSwapQuoteRequest {
     maxFeePerGasBaseUnit: string;
     maxPriorityFeePerGasBaseUnit: string;
   };
+  helperAddress: EvmAddress;
   maxBlockNumber: string;
   minOutBaseUnit: string;
   quoteDigest: `sha256:${string}`;
