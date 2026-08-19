@@ -56,6 +56,8 @@ export {
   validateLocalSwapWorkPlan,
 } from "./local-swap-worker.js";
 export { LoopbackLocalSwapSignerGateway } from "./loopback-local-swap-signer-gateway.js";
+export { ViemLocalSwapObserver } from "./viem-local-swap-observer.js";
+export type { ViemLocalSwapObserverOptions } from "./viem-local-swap-observer.js";
 export type {
   LocalSwapBatchResult,
   LocalSwapObservation,

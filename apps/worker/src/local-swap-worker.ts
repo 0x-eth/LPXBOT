@@ -24,7 +24,8 @@ export interface LocalSwapStepWorkOperation {
   planDigest: `sha256:${string}`;
   reauthenticatedSessionId: string | null;
   step: LocalSwapPlanStep;
-  stepState: "queued" | "signed" | "broadcast" | "pending" | "confirmed" | "dropped" | "reconciling";
+  stepState:
+    "queued" | "signed" | "broadcast" | "pending" | "confirmed" | "dropped" | "reconciling";
   tenantId: string;
   transactionLineage: readonly LocalSwapTransactionReference[];
   userId: string;
@@ -69,7 +70,12 @@ export interface LocalSwapObservation {
 }
 
 export type LocalSwapObservationDecision =
-  | { kind: "defer"; operationState: "broadcast" | "pending"; reason: string; stepState: "broadcast" | "pending" }
+  | {
+      kind: "defer";
+      operationState: "broadcast" | "pending";
+      reason: string;
+      stepState: "broadcast" | "pending";
+    }
   | {
       kind: "transition";
       operationState: "pending" | "reconciling";
@@ -175,7 +181,11 @@ export interface LocalSwapWorkRepository {
 }
 
 export class LocalSwapWorkerError extends Error {
-  constructor(readonly code: string, readonly retryable = false, options?: ErrorOptions) {
+  constructor(
+    readonly code: string,
+    readonly retryable = false,
+    options?: ErrorOptions,
+  ) {
     super(code, options);
     this.name = "LocalSwapWorkerError";
   }
@@ -189,7 +199,8 @@ function decimal(value: string, positive = false): bigint {
     throw new LocalSwapWorkerError("LOCAL_SWAP_RECOVERY_EVIDENCE_INVALID");
   }
   const parsed = BigInt(value);
-  if (positive && parsed === 0n) throw new LocalSwapWorkerError("LOCAL_SWAP_RECOVERY_EVIDENCE_INVALID");
+  if (positive && parsed === 0n)
+    throw new LocalSwapWorkerError("LOCAL_SWAP_RECOVERY_EVIDENCE_INVALID");
   return parsed;
 }
 
@@ -216,8 +227,10 @@ export function validateLocalSwapWorkPlan(operation: LocalSwapStepWorkOperation)
     plan.serviceFeeBps !== 0 ||
     plan.helper.owner !== plan.wallet.address ||
     (step.kind === "swap"
-      ? step.transaction.to !== plan.helper.address || !step.transaction.data.startsWith("0x5a547e89")
-      : step.transaction.to !== plan.quote.tokenIn || !step.transaction.data.startsWith("0x095ea7b3"))
+      ? step.transaction.to !== plan.helper.address ||
+        !step.transaction.data.startsWith("0x5a547e89")
+      : step.transaction.to !== plan.quote.tokenIn ||
+        !step.transaction.data.startsWith("0x095ea7b3"))
   ) {
     throw new LocalSwapWorkerError("LOCAL_SWAP_RECOVERY_PLAN_INVALID");
   }
@@ -241,12 +254,20 @@ function consensus(observation: LocalSwapObservation): LocalSwapProviderObservat
     if (
       !/^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u.test(provider.providerId) ||
       providers.has(provider.providerId)
-    ) throw new LocalSwapWorkerError("LOCAL_SWAP_RECOVERY_EVIDENCE_INVALID");
+    )
+      throw new LocalSwapWorkerError("LOCAL_SWAP_RECOVERY_EVIDENCE_INVALID");
     providers.add(provider.providerId);
     const latest = decimal(provider.latestNonce);
     const pending = decimal(provider.pendingNonce);
     if (pending < latest) throw new LocalSwapWorkerError("NONCE_PENDING_BEHIND_LATEST");
-    identities.add(JSON.stringify([latest.toString(), pending.toString(), provider.transactionFound, receiptIdentity(provider.receipt)]));
+    identities.add(
+      JSON.stringify([
+        latest.toString(),
+        pending.toString(),
+        provider.transactionFound,
+        receiptIdentity(provider.receipt),
+      ]),
+    );
   }
   if (identities.size !== 1) throw new LocalSwapWorkerError("PROVIDER_DIVERGENCE");
   return observation.providers[0]!;
@@ -278,14 +299,19 @@ function postconditionFailure(
   if (values.some((value) => value === null)) return "SWAP_POSTCONDITION_INCOMPLETE";
   const delta = BigInt(receipt.ownerOutputAfter!) - BigInt(receipt.ownerOutputBefore!);
   if (delta < BigInt(receipt.minOutBaseUnit!)) return "SWAP_MIN_OUT_MISMATCH";
-  if (receipt.planExecutedEvent !== true || receipt.swapExecutedEvent !== true || receipt.planReplayRecorded !== true) {
+  if (
+    receipt.planExecutedEvent !== true ||
+    receipt.swapExecutedEvent !== true ||
+    receipt.planReplayRecorded !== true
+  ) {
     return "SWAP_EVENT_OR_REPLAY_MISMATCH";
   }
   if (
     receipt.ownerToSpenderAllowance !== "0" ||
     receipt.helperToAdapterAllowance !== "0" ||
     receipt.adapterToRouterAllowance !== "0"
-  ) return "SWAP_ALLOWANCE_NOT_ZERO";
+  )
+    return "SWAP_ALLOWANCE_NOT_ZERO";
   if (BigInt(receipt.helperInputDust!) > 1n || BigInt(receipt.helperOutputDust!) > 1n) {
     return "SWAP_HELPER_DUST_EXCEEDED";
   }
@@ -302,7 +328,9 @@ export function decideLocalSwapObservation(input: {
   transaction?: LocalSwapTransactionReference;
 }): LocalSwapObservationDecision {
   let provider: LocalSwapProviderObservation | null;
-  try { provider = consensus(input.observation); } catch (error) {
+  try {
+    provider = consensus(input.observation);
+  } catch (error) {
     return {
       kind: "transition",
       operationState: "reconciling",
@@ -312,12 +340,27 @@ export function decideLocalSwapObservation(input: {
   }
   if (!provider) {
     return input.operation.stepState === "confirmed"
-      ? { kind: "transition", operationState: "reconciling", reason: "REORG_PROVIDER_UNAVAILABLE", stepState: "reconciling" }
-      : { kind: "defer", operationState: "pending", reason: "AWAITING_PROVIDER", stepState: "pending" };
+      ? {
+          kind: "transition",
+          operationState: "reconciling",
+          reason: "REORG_PROVIDER_UNAVAILABLE",
+          stepState: "reconciling",
+        }
+      : {
+          kind: "defer",
+          operationState: "pending",
+          reason: "AWAITING_PROVIDER",
+          stepState: "pending",
+        };
   }
   const transaction = input.transaction ?? input.operation.activeTransaction;
   if (!transaction) {
-    return { kind: "transition", operationState: "reconciling", reason: "ACTIVE_TRANSACTION_MISSING", stepState: "reconciling" };
+    return {
+      kind: "transition",
+      operationState: "reconciling",
+      reason: "ACTIVE_TRANSACTION_MISSING",
+      stepState: "reconciling",
+    };
   }
   const receipt = provider.receipt;
   if (receipt) {
@@ -336,7 +379,10 @@ export function decideLocalSwapObservation(input: {
     if (receipt.receiptStatus === "reverted") {
       const cleanup = input.operation.step.kind === "swap" && input.approvalSucceeded;
       return {
-        failureCode: input.operation.step.kind === "swap" ? "SWAP_REVERTED" : `${input.operation.step.kind.toUpperCase().replaceAll("-", "_")}_REVERTED`,
+        failureCode:
+          input.operation.step.kind === "swap"
+            ? "SWAP_REVERTED"
+            : `${input.operation.step.kind.toUpperCase().replaceAll("-", "_")}_REVERTED`,
         kind: "receipt",
         next: cleanup ? "cleanup-required" : "complete-failed",
         operationState: cleanup ? "reconciling" : "failed",
@@ -363,7 +409,10 @@ export function decideLocalSwapObservation(input: {
       return {
         failureCode: failure,
         kind: "receipt",
-        next: input.operation.step.kind === "swap" && input.approvalSucceeded ? "cleanup-required" : "reconciling",
+        next:
+          input.operation.step.kind === "swap" && input.approvalSucceeded
+            ? "cleanup-required"
+            : "reconciling",
         operationState: "reconciling",
         reason: failure,
         receipt,
@@ -375,7 +424,8 @@ export function decideLocalSwapObservation(input: {
     return {
       failureCode: kind === "cleanup" ? "SWAP_REVERTED" : null,
       kind: "receipt",
-      next: kind === "swap" ? "complete-success" : kind === "cleanup" ? "complete-failed" : "advance",
+      next:
+        kind === "swap" ? "complete-success" : kind === "cleanup" ? "complete-failed" : "advance",
       operationState: kind === "swap" ? "succeeded" : kind === "cleanup" ? "failed" : "pending",
       reason: null,
       receipt,
@@ -384,28 +434,60 @@ export function decideLocalSwapObservation(input: {
     };
   }
   if (input.operation.stepState === "confirmed") {
-    return { kind: "transition", operationState: "reconciling", reason: "REORG_RECEIPT_REMOVED", stepState: "reconciling" };
+    return {
+      kind: "transition",
+      operationState: "reconciling",
+      reason: "REORG_RECEIPT_REMOVED",
+      stepState: "reconciling",
+    };
   }
   if (provider.transactionFound) {
     return { kind: "transition", operationState: "pending", reason: null, stepState: "pending" };
   }
   if (input.now.getTime() - instant(transaction.updatedAt) < input.dropAfterMilliseconds) {
-    return { kind: "defer", operationState: input.operation.stepState === "broadcast" ? "broadcast" : "pending", reason: "AWAITING_TRANSACTION", stepState: input.operation.stepState === "broadcast" ? "broadcast" : "pending" };
+    return {
+      kind: "defer",
+      operationState: input.operation.stepState === "broadcast" ? "broadcast" : "pending",
+      reason: "AWAITING_TRANSACTION",
+      stepState: input.operation.stepState === "broadcast" ? "broadcast" : "pending",
+    };
   }
-  if (decimal(provider.latestNonce) > BigInt(input.operation.step.nonce) || decimal(provider.pendingNonce) > BigInt(input.operation.step.nonce)) {
-    return { kind: "transition", operationState: "reconciling", reason: "NONCE_CONSUMED_BY_OTHER_TRANSACTION", stepState: "reconciling" };
+  if (
+    decimal(provider.latestNonce) > BigInt(input.operation.step.nonce) ||
+    decimal(provider.pendingNonce) > BigInt(input.operation.step.nonce)
+  ) {
+    return {
+      kind: "transition",
+      operationState: "reconciling",
+      reason: "NONCE_CONSUMED_BY_OTHER_TRANSACTION",
+      stepState: "reconciling",
+    };
   }
   return { kind: "transition", operationState: "pending", reason: null, stepState: "dropped" };
 }
 
 function failure(error: unknown): { code: string; retryable: boolean } {
-  if (typeof error === "object" && error !== null && "code" in error && typeof (error as { code: unknown }).code === "string") {
-    return { code: (error as { code: string }).code, retryable: "retryable" in error && (error as { retryable?: unknown }).retryable === true };
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof (error as { code: unknown }).code === "string"
+  ) {
+    return {
+      code: (error as { code: string }).code,
+      retryable: "retryable" in error && (error as { retryable?: unknown }).retryable === true,
+    };
   }
   return { code: "LOCAL_SWAP_WORKER_UNAVAILABLE", retryable: true };
 }
 
-export interface LocalSwapBatchResult { broadcast: number; claimed: number; failed: number; observed: number; retried: number }
+export interface LocalSwapBatchResult {
+  broadcast: number;
+  claimed: number;
+  failed: number;
+  observed: number;
+  retried: number;
+}
 
 export class LocalSwapRecoveryWorker {
   readonly #dropAfterMilliseconds: number;
@@ -434,10 +516,14 @@ export class LocalSwapRecoveryWorker {
     this.#limit = input.limit ?? 20;
     this.#requiredConfirmations = input.requiredConfirmations ?? 1;
     if (
-      this.#dropAfterMilliseconds < 1_000 || this.#leaseMilliseconds < 1_000 ||
-      this.#limit < 1 || this.#limit > 100 || this.#requiredConfirmations < 1 ||
+      this.#dropAfterMilliseconds < 1_000 ||
+      this.#leaseMilliseconds < 1_000 ||
+      this.#limit < 1 ||
+      this.#limit > 100 ||
+      this.#requiredConfirmations < 1 ||
       !/^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u.test(input.workerId)
-    ) throw new RangeError("Local Swap worker configuration is invalid");
+    )
+      throw new RangeError("Local Swap worker configuration is invalid");
     this.#now = input.now ?? (() => new Date());
     this.#observer = input.observer;
     this.#repository = input.repository;
@@ -446,7 +532,12 @@ export class LocalSwapRecoveryWorker {
   }
 
   async processBatch(): Promise<LocalSwapBatchResult> {
-    const claims = await this.#repository.claimDue({ leaseMilliseconds: this.#leaseMilliseconds, limit: this.#limit, now: this.#now(), workerId: this.#workerId });
+    const claims = await this.#repository.claimDue({
+      leaseMilliseconds: this.#leaseMilliseconds,
+      limit: this.#limit,
+      now: this.#now(),
+      workerId: this.#workerId,
+    });
     const result = { broadcast: 0, claimed: claims.length, failed: 0, observed: 0, retried: 0 };
     for (const claim of claims) {
       try {
@@ -458,41 +549,63 @@ export class LocalSwapRecoveryWorker {
             ...fee,
             plan: claim.operation.plan,
             planDigest: claim.operation.planDigest,
-            ...(claim.operation.reauthenticatedSessionId ? { reauthenticatedSessionId: claim.operation.reauthenticatedSessionId } : {}),
+            ...(claim.operation.reauthenticatedSessionId
+              ? { reauthenticatedSessionId: claim.operation.reauthenticatedSessionId }
+              : {}),
             stepId: claim.operation.step.stepId,
             tenantId: claim.operation.tenantId,
             userId: claim.operation.userId,
           });
           this.#assertSignerResult(claim.operation, signed);
-          await this.#repository.completeBroadcast({ claim, deliveredAt: this.#now(), result: signed });
+          await this.#repository.completeBroadcast({
+            claim,
+            deliveredAt: this.#now(),
+            result: signed,
+          });
           result.broadcast += 1;
           continue;
         }
         if (!claim.operation.activeTransaction || claim.operation.transactionLineage.length === 0) {
           throw new LocalSwapWorkerError("ACTIVE_TRANSACTION_MISSING");
         }
-        const observations = await Promise.all(claim.operation.transactionLineage.map(async (transaction) => ({
-          decision: decideLocalSwapObservation({
-            approvalSucceeded: claim.operation.approvalSucceeded,
-            dropAfterMilliseconds: this.#dropAfterMilliseconds,
-            now: this.#now(),
-            observation: await this.#observer.observe({ plan: claim.operation.plan, step: claim.operation.step, transactionHash: transaction.transactionHash }),
-            operation: claim.operation,
-            requiredConfirmations: this.#requiredConfirmations,
+        const observations = await Promise.all(
+          claim.operation.transactionLineage.map(async (transaction) => ({
+            decision: decideLocalSwapObservation({
+              approvalSucceeded: claim.operation.approvalSucceeded,
+              dropAfterMilliseconds: this.#dropAfterMilliseconds,
+              now: this.#now(),
+              observation: await this.#observer.observe({
+                plan: claim.operation.plan,
+                step: claim.operation.step,
+                transactionHash: transaction.transactionHash,
+              }),
+              operation: claim.operation,
+              requiredConfirmations: this.#requiredConfirmations,
+              transaction,
+            }),
             transaction,
-          }),
-          transaction,
-        })));
+          })),
+        );
         const receipts = observations.filter(({ decision }) => decision.kind === "receipt");
-        const decision = receipts.length > 1
-          ? { kind: "transition", operationState: "reconciling", reason: "LINEAGE_RECEIPT_DIVERGENCE", stepState: "reconciling" } as const
-          : receipts[0]?.decision ?? observations.find(({ decision }) => decision.operationState === "reconciling")?.decision ?? observations.at(-1)!.decision;
+        const decision =
+          receipts.length > 1
+            ? ({
+                kind: "transition",
+                operationState: "reconciling",
+                reason: "LINEAGE_RECEIPT_DIVERGENCE",
+                stepState: "reconciling",
+              } as const)
+            : (receipts[0]?.decision ??
+              observations.find(({ decision }) => decision.operationState === "reconciling")
+                ?.decision ??
+              observations.at(-1)!.decision);
         await this.#repository.applyObservation({ claim, decision, observedAt: this.#now() });
         result.observed += 1;
       } catch (error) {
         const failed = failure(error);
         await this.#repository.failClaim({ claim, failedAt: this.#now(), ...failed });
-        failed.retryable ? result.retried++ : result.failed++;
+        if (failed.retryable) result.retried += 1;
+        else result.failed += 1;
       }
     }
     return result;
@@ -508,14 +621,21 @@ export class LocalSwapRecoveryWorker {
     const step = authorization.plan.steps.find(({ stepId }) => stepId === authorization.stepId);
     if (!step) throw new LocalSwapWorkerError("LOCAL_SWAP_REPLACEMENT_INVALID");
     try {
-      validateLocalSwapReplacement(step, authorization.previous, authorization.next, authorization.plan.planDigest);
+      validateLocalSwapReplacement(
+        step,
+        authorization.previous,
+        authorization.next,
+        authorization.plan.planDigest,
+      );
       const signed = await this.#signer.signAndDeliver({
         generation: authorization.generation,
         maxFeePerGasBaseUnit: authorization.next.fee.maxFeePerGasBaseUnit,
         maxPriorityFeePerGasBaseUnit: authorization.next.fee.maxPriorityFeePerGasBaseUnit,
         plan: authorization.plan,
         planDigest: authorization.plan.planDigest,
-        ...(authorization.reauthenticatedSessionId ? { reauthenticatedSessionId: authorization.reauthenticatedSessionId } : {}),
+        ...(authorization.reauthenticatedSessionId
+          ? { reauthenticatedSessionId: authorization.reauthenticatedSessionId }
+          : {}),
         stepId: authorization.stepId,
         tenantId: authorization.tenantId,
         userId: authorization.userId,
@@ -528,7 +648,11 @@ export class LocalSwapRecoveryWorker {
       ) {
         throw new LocalSwapWorkerError("LOCAL_SWAP_SIGNER_RESPONSE_INVALID", true);
       }
-      await this.#repository.completeReplacement({ authorization, deliveredAt: this.#now(), result: signed });
+      await this.#repository.completeReplacement({
+        authorization,
+        deliveredAt: this.#now(),
+        result: signed,
+      });
       return signed;
     } catch (error) {
       const failed = failure(error);
@@ -544,24 +668,38 @@ export class LocalSwapRecoveryWorker {
     const generations = new Set<number>();
     for (const transaction of claim.operation.transactionLineage) {
       instant(transaction.updatedAt);
-      if (!hashPattern.test(transaction.transactionHash) || ids.has(transaction.transactionId) || hashes.has(transaction.transactionHash) || generations.has(transaction.generation)) {
+      if (
+        !hashPattern.test(transaction.transactionHash) ||
+        ids.has(transaction.transactionId) ||
+        hashes.has(transaction.transactionHash) ||
+        generations.has(transaction.generation)
+      ) {
         throw new LocalSwapWorkerError("LOCAL_SWAP_RECOVERY_LINEAGE_INVALID");
       }
-      ids.add(transaction.transactionId); hashes.add(transaction.transactionHash); generations.add(transaction.generation);
+      ids.add(transaction.transactionId);
+      hashes.add(transaction.transactionHash);
+      generations.add(transaction.generation);
     }
   }
 
-  #assertSignerResult(operation: Pick<LocalSwapStepWorkOperation, "planDigest" | "step">, signed: LocalSwapStepSignerResult): void {
+  #assertSignerResult(
+    operation: Pick<LocalSwapStepWorkOperation, "planDigest" | "step">,
+    signed: LocalSwapStepSignerResult,
+  ): void {
     if (
-      signed.planDigest !== operation.planDigest || signed.stepId !== operation.step.stepId ||
+      signed.planDigest !== operation.planDigest ||
+      signed.stepId !== operation.step.stepId ||
       !hashPattern.test(signed.transactionHash) ||
       (signed.status !== "accepted" && signed.status !== "already-known") ||
       !/^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u.test(signed.deliveryId)
-    ) throw new LocalSwapWorkerError("LOCAL_SWAP_SIGNER_RESPONSE_INVALID", true);
+    )
+      throw new LocalSwapWorkerError("LOCAL_SWAP_SIGNER_RESPONSE_INVALID", true);
   }
 }
 
-function initialFee(limit: LocalSwapFeeLimit): Pick<LocalSwapFeeLimit, "maxFeePerGasBaseUnit" | "maxPriorityFeePerGasBaseUnit"> {
+function initialFee(
+  limit: LocalSwapFeeLimit,
+): Pick<LocalSwapFeeLimit, "maxFeePerGasBaseUnit" | "maxPriorityFeePerGasBaseUnit"> {
   const max = BigInt(limit.maxFeePerGasBaseUnit);
   const priority = BigInt(limit.maxPriorityFeePerGasBaseUnit);
   return {
