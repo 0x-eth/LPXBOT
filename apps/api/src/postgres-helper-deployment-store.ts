@@ -416,8 +416,9 @@ export class PostgresHelperDeploymentOperationStore implements HelperDeploymentO
       const binding = await client.query<{ state: "active" | "degraded" | "deploying" }>(
         `SELECT state
            FROM wallet_helper_deployment_bindings
-          WHERE tenant_id = $1 AND user_id = $2 AND wallet_id = $3
+         WHERE tenant_id = $1 AND user_id = $2 AND wallet_id = $3
             AND chain_id = 31337 AND helper_version = 'WalletHelperV1'
+            AND state IN ('deploying', 'active')
           FOR UPDATE`,
         [input.tenantId, input.userId, input.walletId],
       );

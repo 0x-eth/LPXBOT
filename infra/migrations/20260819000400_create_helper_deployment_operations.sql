@@ -95,7 +95,6 @@ CREATE TABLE chain_operations (
     REFERENCES custody_wallets(tenant_id, user_id, wallet_id)
     ON DELETE CASCADE,
   CONSTRAINT chain_operations_owner_key UNIQUE (operation_id, tenant_id, user_id),
-  CONSTRAINT chain_operations_nonce_key UNIQUE (chain_id, wallet_id, nonce),
   CHECK (max_priority_fee_per_gas_base_unit <= max_fee_per_gas_base_unit),
   CHECK (fee_cap_base_unit = gas_limit * max_fee_per_gas_base_unit),
   CHECK (updated_at >= created_at)
@@ -103,6 +102,9 @@ CREATE TABLE chain_operations (
 
 CREATE INDEX chain_operations_owner_created_idx
   ON chain_operations (tenant_id, user_id, created_at DESC, operation_id DESC);
+CREATE UNIQUE INDEX chain_operations_live_nonce_unique
+  ON chain_operations (chain_id, wallet_id, nonce)
+  WHERE state <> 'failed';
 CREATE INDEX chain_operations_recovery_idx
   ON chain_operations (state, updated_at, operation_id)
   WHERE state IN ('queued', 'signed', 'broadcast', 'pending', 'confirmed', 'reconciling');
@@ -301,12 +303,17 @@ CREATE TABLE wallet_helper_deployment_bindings (
     FOREIGN KEY (tenant_id, user_id, wallet_id)
     REFERENCES custody_wallets(tenant_id, user_id, wallet_id)
     ON DELETE CASCADE,
-  UNIQUE (tenant_id, user_id, wallet_id, chain_id, helper_version),
   UNIQUE (chain_id, helper_address),
   CHECK ((state = 'active') = (deployment_transaction_hash IS NOT NULL
     AND verified_block_number IS NOT NULL AND failure_code IS NULL)),
   CHECK (updated_at >= created_at)
 );
+
+CREATE UNIQUE INDEX wallet_helper_deployment_bindings_live_unique
+  ON wallet_helper_deployment_bindings (
+    tenant_id, user_id, wallet_id, chain_id, helper_version
+  )
+  WHERE state <> 'degraded';
 
 CREATE TABLE chain_operation_audit_events (
   audit_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
