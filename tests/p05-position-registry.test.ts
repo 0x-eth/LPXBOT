@@ -3,6 +3,7 @@ import {
   getBscPositionReadDeployment,
   validateBscPositionReadRegistry,
   type BscPositionReadDeployment,
+  type BscPositionReadRegistry,
 } from "../packages/chain-registry/src/index.js";
 import { describe, expect, it } from "vitest";
 
@@ -121,7 +122,7 @@ describe("P05-02 BSC position read registry", () => {
       validateBscPositionReadRegistry({
         ...BSC_POSITION_READ_REGISTRY,
         executionEnabled: true,
-      }),
+      } as unknown as BscPositionReadRegistry),
     ).toThrowError(/POSITION_READ_REGISTRY_INVALID/u);
     expect(() =>
       validateBscPositionReadRegistry({

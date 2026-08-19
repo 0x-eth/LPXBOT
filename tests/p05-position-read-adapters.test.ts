@@ -6,7 +6,6 @@ import {
   PCSV3_POSITION_MANAGER_READ_ABI,
   PCSV4_POOL_MANAGER_READ_ABI,
   PCSV4_POSITION_MANAGER_READ_ABI,
-  PositionReadAdapterError,
   UniswapV3PositionReadAdapter,
   UniswapV4PositionReadAdapter,
   UNIV3_FACTORY_READ_ABI,
@@ -216,7 +215,10 @@ describe("P05-02 official BSC PositionManager read adapters", () => {
   it.each([1, 2, 4, 5] as const)(
     "reads platformId %s owner, ticks, liquidity, fees, and approval at one block",
     async (platformId) => {
-      const fixture = platformId < 4 ? v3Fixture(platformId) : v4Fixture(platformId);
+      const fixture =
+        platformId === 1 || platformId === 2
+          ? v3Fixture(platformId)
+          : v4Fixture(platformId);
       const position = await (fixture.adapter as PositionReadAdapter).readPosition({
         helperAddress: helper,
         owner,
@@ -281,7 +283,7 @@ describe("P05-02 official BSC PositionManager read adapters", () => {
         snapshot,
         tokenId: wrongCode.tokenId.toString(),
       }),
-    ).rejects.toMatchObject<Partial<PositionReadAdapterError>>({
+    ).rejects.toMatchObject({
       reason: "position-manager-code-hash-mismatch",
     });
 
@@ -301,7 +303,7 @@ describe("P05-02 official BSC PositionManager read adapters", () => {
         snapshot,
         tokenId: wrongOwner.tokenId.toString(),
       }),
-    ).rejects.toMatchObject<Partial<PositionReadAdapterError>>({ reason: "owner-mismatch" });
+    ).rejects.toMatchObject({ reason: "owner-mismatch" });
 
     const malformed = v4Fixture(4);
     malformed.rpc.add(
@@ -326,6 +328,6 @@ describe("P05-02 official BSC PositionManager read adapters", () => {
         snapshot,
         tokenId: malformed.tokenId.toString(),
       }),
-    ).rejects.toMatchObject<Partial<PositionReadAdapterError>>({ reason: "abi-decode-failed" });
+    ).rejects.toMatchObject({ reason: "abi-decode-failed" });
   });
 });
