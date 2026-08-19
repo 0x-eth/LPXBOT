@@ -64,6 +64,20 @@ export {
   SwapQuoteAdapterError,
   verifySwapQuoteDigest,
 } from "./swap-quote.js";
+export {
+  isLocalSwapQuoteCurrent,
+  LocalSwapQuoteAdapter,
+  LocalSwapQuoteError,
+  localSwapQuoteDigest,
+  verifyLocalSwapQuoteDigest,
+} from "./local-swap-quote.js";
+export type {
+  LocalSwapQuote,
+  LocalSwapQuoteFailure,
+  LocalSwapQuoteInput,
+  LocalSwapQuoteProvider,
+  LocalSwapQuoteSnapshot,
+} from "./local-swap-quote.js";
 export type {
   BscSwapQuoteAdapterOptions,
   SwapQuote,

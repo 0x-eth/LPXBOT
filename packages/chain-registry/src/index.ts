@@ -29,6 +29,21 @@ export {
   validateHelperDeploymentRegistry,
   WALLET_HELPER_V1_VERSION,
 } from "./helper-deployment.js";
+export {
+  localSwapComponent,
+  localSwapExecutionRegistryDigest,
+  P05_LOCAL_SWAP_EXECUTION_REGISTRY,
+  P05_LOCAL_SWAP_EXECUTION_REGISTRY_VERSION,
+  P05_LOCAL_SWAP_QUOTE_VERSION,
+  validateLocalSwapExecutionRegistry,
+} from "./local-swap-execution.js";
+export type {
+  LocalSwapCodeIdentity,
+  LocalSwapComponentRole,
+  LocalSwapEnvironment,
+  LocalSwapExecutionRegistry,
+  LocalSwapTokenIdentity,
+} from "./local-swap-execution.js";
 export type {
   HelperBytecodeTemplate,
   HelperDeploymentComponent,

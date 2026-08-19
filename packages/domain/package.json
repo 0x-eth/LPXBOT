@@ -25,6 +25,11 @@
       "import": "./dist/helper-deployment.js",
       "default": "./dist/helper-deployment.js"
     },
+    "./local-swap-execution": {
+      "types": "./dist/local-swap-execution.d.ts",
+      "import": "./dist/local-swap-execution.js",
+      "default": "./dist/local-swap-execution.js"
+    },
     "./wallet-transfer": {
       "types": "./dist/wallet-transfer.d.ts",
       "import": "./dist/wallet-transfer.js",
