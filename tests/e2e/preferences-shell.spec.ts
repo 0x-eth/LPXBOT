@@ -556,6 +556,8 @@ test("P01-06 settings visual contract matches the observed responsive interface"
   await page.goto("/settings");
   await expect(page.getByRole("heading", { level: 2, name: "界面" })).toBeVisible();
   await waitForWordmarkImage(page);
+  const statusBar = page.getByRole("contentinfo", { name: "实时状态" });
+  await expect(statusBar).toHaveAttribute("data-recommendation-state", "reconnecting");
   const masks = [
     page.locator("[data-visual-mask='account']"),
     page.locator("[data-visual-mask='stats']"),
@@ -585,6 +587,7 @@ test("P01-06 settings visual contract matches the observed responsive interface"
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await waitForWordmarkImage(page);
+  await expect(statusBar).toHaveAttribute("data-recommendation-state", "reconnecting");
   await expect(page).toHaveScreenshot("settings-dark.png", {
     animations: "disabled",
     caret: "hide",
