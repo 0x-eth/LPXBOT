@@ -213,7 +213,7 @@ test("P05-04 acceptance is byte-identical to the requested baseline", async () =
   const currentFiles = (await filesBelow(P05_04)).map(
     (file) => `artifacts/acceptance/P05-04/${file}`,
   );
-  assert.deepEqual(currentFiles, baselineFiles);
+  assert.deepEqual(sorted(currentFiles), sorted(baselineFiles));
   for (const file of baselineFiles) {
     const baselineBytes = execFileSync("git", ["show", `${BASELINE}:${file}`], {
       cwd: ROOT,
