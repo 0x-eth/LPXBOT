@@ -136,6 +136,53 @@ async function deploy(walletClient, publicClient, contractArtifact, args = []) {
   return { address: receipt.contractAddress.toLowerCase(), hash, receipt };
 }
 
+async function swapState(publicClient, artifacts, addresses) {
+  const balanceOf = (abi, tokenAddress, accountAddress) =>
+    publicClient.readContract({
+      abi,
+      address: tokenAddress,
+      args: [accountAddress],
+      functionName: "balanceOf",
+    });
+  const allowance = (owner, spender) =>
+    publicClient.readContract({
+      abi: artifacts.TestOnlyERC20.abi,
+      address: addresses.token,
+      args: [owner, spender],
+      functionName: "allowance",
+    });
+  const accounts = ["owner", "helper", "adapter", "router"];
+  const balanceEntries = await Promise.all(
+    accounts.map(async (label) => {
+      const accountAddress = addresses[label];
+      const [tokenIn, tokenOut] = await Promise.all([
+        balanceOf(artifacts.TestOnlyERC20.abi, addresses.token, accountAddress),
+        balanceOf(artifacts.TestOnlyWBNB.abi, addresses.wbnb, accountAddress),
+      ]);
+      return [label, { tokenIn: tokenIn.toString(), tokenOut: tokenOut.toString() }];
+    }),
+  );
+  const [ownerToHelper, helperToAdapter, adapterToRouter] = await Promise.all([
+    allowance(addresses.owner, addresses.helper),
+    allowance(addresses.helper, addresses.adapter),
+    allowance(addresses.adapter, addresses.router),
+  ]);
+  return {
+    allowances: {
+      adapterToRouter: adapterToRouter.toString(),
+      helperToAdapter: helperToAdapter.toString(),
+      ownerToHelper: ownerToHelper.toString(),
+    },
+    balances: Object.fromEntries(balanceEntries),
+  };
+}
+
+function assertStateEqual(actual, expected, label) {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`${label} state changed`);
+  }
+}
+
 function assertAddress(actual, expected, label) {
   if (actual !== expected) throw new Error(`${label} address ${actual} != ${expected}`);
 }
@@ -296,6 +343,15 @@ async function main() {
       },
       signature: "0x",
     };
+    const stateAddresses = {
+      adapter: adapter.address,
+      helper: helper.address,
+      owner: account.address,
+      router: router.address,
+      token: token.address,
+      wbnb: wbnb.address,
+    };
+    const swapStateBefore = await swapState(publicClient, artifacts, stateAddresses);
     const swapHash = await walletClient.writeContract({
       abi: artifacts.WalletHelperV1.abi,
       address: helper.address,
@@ -303,6 +359,54 @@ async function main() {
       functionName: "executeSwap",
     });
     const swapReceipt = await publicClient.waitForTransactionReceipt({ hash: swapHash });
+    const swapTransaction = await publicClient.getTransaction({ hash: swapHash });
+    const swapStateAfter = await swapState(publicClient, artifacts, stateAddresses);
+    if (
+      BigInt(swapStateBefore.balances.owner.tokenIn) - BigInt(swapStateAfter.balances.owner.tokenIn)
+        !== swapPlan.amountIn ||
+      BigInt(swapStateAfter.balances.owner.tokenOut)
+          - BigInt(swapStateBefore.balances.owner.tokenOut)
+        !== swapPlan.minAmountOut ||
+      swapStateAfter.allowances.helperToAdapter !== "0" ||
+      swapStateAfter.allowances.adapterToRouter !== "0" ||
+      swapStateAfter.balances.helper.tokenIn !== "0" ||
+      swapStateAfter.balances.adapter.tokenIn !== "0"
+    ) {
+      throw new Error("successful swap balance or allowance reconciliation mismatch");
+    }
+
+    const failedApprovalHash = await walletClient.writeContract({
+      abi: artifacts.TestOnlyERC20.abi,
+      address: token.address,
+      args: [helper.address, swapPlan.amountIn],
+      functionName: "approve",
+    });
+    await publicClient.waitForTransactionReceipt({ hash: failedApprovalHash });
+    const failedPlanDigest = keccak256(Buffer.from("p05-04-local-anvil-swap-revert-v1"));
+    const failedSwapPlan = { ...swapPlan, minAmountOut: swapPlan.amountIn + 1n };
+    const failedStateBefore = await swapState(publicClient, artifacts, stateAddresses);
+    const failedSwapHash = await walletClient.writeContract({
+      abi: artifacts.WalletHelperV1.abi,
+      address: helper.address,
+      args: [failedPlanDigest, failedSwapPlan, emptyPermit],
+      functionName: "executeSwap",
+      gas: 1_000_000n,
+    });
+    const failedSwapReceipt = await publicClient.waitForTransactionReceipt({
+      hash: failedSwapHash,
+    });
+    const failedSwapTransaction = await publicClient.getTransaction({ hash: failedSwapHash });
+    const failedStateAfter = await swapState(publicClient, artifacts, stateAddresses);
+    const failedPlanRecorded = await publicClient.readContract({
+      abi: artifacts.WalletHelperV1.abi,
+      address: helper.address,
+      args: [failedPlanDigest],
+      functionName: "executedPlans",
+    });
+    if (failedSwapReceipt.status !== "reverted" || failedPlanRecorded) {
+      throw new Error("failed swap did not preserve plan atomicity");
+    }
+    assertStateEqual(failedStateAfter, failedStateBefore, "failed swap");
     let duplicatePlanRejected = false;
     try {
       await publicClient.simulateContract({
@@ -499,13 +603,37 @@ async function main() {
           owner: recoveredOwner.toLowerCase(),
         },
         swap: {
-          planDigest,
-          receiptStatus: swapReceipt.status,
-          transactionHash: swapHash,
+          failure: {
+            amountInBaseUnit: failedSwapPlan.amountIn.toString(),
+            balanceAndAllowanceStateAfter: failedStateAfter,
+            balanceAndAllowanceStateBefore: failedStateBefore,
+            executedPlanRecorded: failedPlanRecorded,
+            minAmountOutBaseUnit: failedSwapPlan.minAmountOut.toString(),
+            planDigest: failedPlanDigest,
+            receiptStatus: failedSwapReceipt.status,
+            recipient: account.address.toLowerCase(),
+            tokenPath: [token.address, wbnb.address],
+            transactionHash: failedSwapHash,
+            valueBaseUnit: failedSwapTransaction.value.toString(),
+          },
+          success: {
+            amountInBaseUnit: swapPlan.amountIn.toString(),
+            balanceAndAllowanceStateAfter: swapStateAfter,
+            balanceAndAllowanceStateBefore: swapStateBefore,
+            minAmountOutBaseUnit: swapPlan.minAmountOut.toString(),
+            planDigest,
+            receiptStatus: swapReceipt.status,
+            recipient: account.address.toLowerCase(),
+            tokenPath: [token.address, wbnb.address],
+            transactionHash: swapHash,
+            valueBaseUnit: swapTransaction.value.toString(),
+          },
         },
       },
       executionCounters: {
         localChainWrites: 14,
+        localRevertedTransactions: 1,
+        localTransactionBroadcastsAccepted: 16,
         mainnetBroadcasts: 0,
         mainnetSignatures: 0,
         realFundOperations: 0,

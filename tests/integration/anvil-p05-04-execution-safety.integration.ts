@@ -45,7 +45,22 @@ interface LocalSnapshot {
       nonceRecovered: string;
       owner: string;
     };
-    swap: { receiptStatus: string };
+    swap: {
+      failure: {
+        balanceAndAllowanceStateAfter: unknown;
+        balanceAndAllowanceStateBefore: unknown;
+        executedPlanRecorded: boolean;
+        receiptStatus: string;
+        valueBaseUnit: string;
+      };
+      success: {
+        balanceAndAllowanceStateAfter: {
+          allowances: { adapterToRouter: string; helperToAdapter: string };
+        };
+        receiptStatus: string;
+        valueBaseUnit: string;
+      };
+    };
   };
   routerBaseline: { abiHash: string; allowedSelectors: string[] };
 }
@@ -98,7 +113,21 @@ describe.skipIf(!enabled)("P05-04 deterministic local Anvil execution closure", 
       abiHash: registry.components.find(({ role }) => role === "router")?.abiHash,
       allowedSelectors: registry.routerSelectorAllowlist,
     });
-    expect(snapshot.operationEvidence.swap.receiptStatus).toBe("success");
+    expect(snapshot.operationEvidence.swap.success).toMatchObject({
+      receiptStatus: "success",
+      valueBaseUnit: "0",
+    });
+    expect(snapshot.operationEvidence.swap.success.balanceAndAllowanceStateAfter.allowances).toEqual(
+      expect.objectContaining({ adapterToRouter: "0", helperToAdapter: "0" }),
+    );
+    expect(snapshot.operationEvidence.swap.failure).toMatchObject({
+      executedPlanRecorded: false,
+      receiptStatus: "reverted",
+      valueBaseUnit: "0",
+    });
+    expect(snapshot.operationEvidence.swap.failure.balanceAndAllowanceStateAfter).toEqual(
+      snapshot.operationEvidence.swap.failure.balanceAndAllowanceStateBefore,
+    );
     expect(snapshot.operationEvidence.duplicatePlanRejected).toBe(true);
     expect(snapshot.operationEvidence.duplicateRawTransaction).toMatchObject({
       secondSubmissionRejected: true,
