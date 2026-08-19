@@ -8,6 +8,10 @@ import {
 } from "../../apps/api/src/index.js";
 import { PostgresCustodyWalletStore } from "../../apps/signer/src/postgres-custody-wallet-store.js";
 import {
+  PostgresHelperDeploymentPlanAuthorizer,
+  type HelperDeploymentPlanChainVerifier,
+} from "../../apps/signer/src/index.js";
+import {
   helperDeploymentComponent,
   P05_HELPER_DEPLOYMENT_REGISTRY,
 } from "../../packages/chain-registry/src/index.js";
@@ -18,7 +22,7 @@ const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required for PostgreSQL integration tests");
 
 const pool = new Pool({ connectionString: databaseUrl, max: 12 });
-const now = new Date("2026-08-19T16:30:00.000Z");
+const now = new Date();
 const tenantId = "tenant-fixture-01";
 const userId = "9d000000-0000-4000-8000-000000000001";
 const walletId = "9d000000-0000-4000-8000-000000000011";
@@ -56,6 +60,28 @@ class ChainFixture implements HelperDeploymentChainReader {
         maxFeePerGasBaseUnit: "2",
         maxPriorityFeePerGasBaseUnit: "1",
       },
+      tokenCode: P05_HELPER_DEPLOYMENT_REGISTRY.tokens.map(({ address, runtimeCodeHash }) => ({
+        address,
+        runtimeCodeHash,
+      })),
+    };
+  }
+}
+
+class SignerChainFixture implements HelperDeploymentPlanChainVerifier {
+  adapterHash = helperDeploymentComponent("adapter").runtimeCodeHash;
+  expectedAddressCode: `0x${string}` = "0x";
+
+  async verify(plan: Parameters<HelperDeploymentPlanChainVerifier["verify"]>[0]) {
+    return {
+      blockNumber: "7",
+      componentCode: P05_HELPER_DEPLOYMENT_REGISTRY.components.map((component) => ({
+        ...component,
+        runtimeCodeHash:
+          component.role === "adapter" ? this.adapterHash : component.runtimeCodeHash,
+      })),
+      expectedAddressCode: this.expectedAddressCode,
+      expectedRuntimeCodeHash: plan.deployment.expectedRuntimeCodeHash,
       tokenCode: P05_HELPER_DEPLOYMENT_REGISTRY.tokens.map(({ address, runtimeCodeHash }) => ({
         address,
         runtimeCodeHash,
@@ -174,13 +200,12 @@ describe("P05-05 PostgreSQL Helper deployment persistence", () => {
       [walletId],
     );
     expect(ledger.rows).toEqual([{ fencing_token: "10", next_nonce: "8" }]);
-    expect(
-      await new PostgresHelperDeploymentOperationStore(pool).get({
-        operationId: submitted.operation.operationId,
-        tenantId,
-        userId,
-      }),
-    ).toMatchObject({ operationId: submitted.operation.operationId, state: "queued" });
+    const stored = await new PostgresHelperDeploymentOperationStore(pool).get({
+      operationId: submitted.operation.operationId,
+      tenantId,
+      userId,
+    });
+    expect(stored).toMatchObject({ operationId: submitted.operation.operationId, state: "queued" });
     expect(
       await new PostgresHelperDeploymentOperationStore(pool).get({
         operationId: submitted.operation.operationId,
@@ -188,6 +213,37 @@ describe("P05-05 PostgreSQL Helper deployment persistence", () => {
         userId,
       }),
     ).toBeNull();
+
+    const signerChain = new SignerChainFixture();
+    const authorizer = new PostgresHelperDeploymentPlanAuthorizer({
+      chain: signerChain,
+      now: () => now,
+      pool,
+    });
+    const authorization = {
+      plan: stored!.plan,
+      planDigest: stored!.planDigest,
+      tenantId,
+      userId,
+    };
+    expect(await authorizer.authorize(authorization)).toBe(true);
+    signerChain.adapterHash = `0x${"ff".repeat(32)}`;
+    expect(await authorizer.authorize(authorization)).toBe(false);
+    signerChain.adapterHash = helperDeploymentComponent("adapter").runtimeCodeHash;
+    signerChain.expectedAddressCode = "0x6000";
+    expect(await authorizer.authorize(authorization)).toBe(false);
+    signerChain.expectedAddressCode = "0x";
+    await pool.query(
+      `UPDATE wallet_nonce_ledgers SET reconciliation_reason = 'NONCE_DRIFT'
+        WHERE chain_id = 31337 AND wallet_id = $1`,
+      [walletId],
+    );
+    expect(await authorizer.authorize(authorization)).toBe(false);
+    await pool.query(
+      `UPDATE wallet_nonce_ledgers SET reconciliation_reason = NULL
+        WHERE chain_id = 31337 AND wallet_id = $1`,
+      [walletId],
+    );
     expect(
       await new PostgresHelperDeploymentOperationStore(pool).get({
         operationId: submitted.operation.operationId,
