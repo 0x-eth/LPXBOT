@@ -9,6 +9,7 @@ export default defineConfig({
       "tests/integration/anvil-wallet-transfer.integration.ts",
       "tests/integration/anvil-helper-deployment.integration.ts",
       "tests/integration/anvil-local-swap-execution.integration.ts",
+      "tests/integration/anvil-local-position-execution.integration.ts",
     ],
     testTimeout: 30_000,
   },
