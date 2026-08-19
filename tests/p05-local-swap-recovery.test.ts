@@ -57,7 +57,7 @@ function operation(kind: LocalSwapPlanStep["kind"]): LocalSwapStepWorkOperation 
     plan: {
       quote: { amountInBaseUnit: "1000", minOutBaseUnit: "990" },
       steps: [current],
-    } as LocalSwapStepWorkOperation["plan"],
+    } as unknown as LocalSwapStepWorkOperation["plan"],
     planDigest: transaction.planDigest,
     reauthenticatedSessionId: null,
     step: current,
@@ -68,7 +68,9 @@ function operation(kind: LocalSwapPlanStep["kind"]): LocalSwapStepWorkOperation 
   };
 }
 
-function receipt(overrides: Partial<LocalSwapReceiptObservation> = {}): LocalSwapReceiptObservation {
+function receipt(
+  overrides: Partial<LocalSwapReceiptObservation> = {},
+): LocalSwapReceiptObservation {
   return {
     adapterToRouterAllowance: "0",
     blockCanonical: true,
@@ -93,13 +95,15 @@ function receipt(overrides: Partial<LocalSwapReceiptObservation> = {}): LocalSwa
 
 function observation(value: LocalSwapReceiptObservation | null): LocalSwapObservation {
   return {
-    providers: [{
-      latestNonce: "9",
-      pendingNonce: "9",
-      providerId: "anvil-primary",
-      receipt: value,
-      transactionFound: value !== null,
-    }],
+    providers: [
+      {
+        latestNonce: "9",
+        pendingNonce: "9",
+        providerId: "anvil-primary",
+        receipt: value,
+        transactionFound: value !== null,
+      },
+    ],
   };
 }
 
@@ -155,13 +159,16 @@ describe("P05-06 local Swap recovery decisions", () => {
     ["event", { swapExecutedEvent: false }, "SWAP_EVENT_OR_REPLAY_MISMATCH"],
     ["allowance", { helperToAdapterAllowance: "1" }, "SWAP_ALLOWANCE_NOT_ZERO"],
     ["dust", { helperInputDust: "2" }, "SWAP_HELPER_DUST_EXCEEDED"],
-  ] as const)("reconciles %s postcondition mismatch and requests cleanup", (_name, changed, reason) => {
-    expect(decide("swap", receipt(changed))).toMatchObject({
-      next: "cleanup-required",
-      operationState: "reconciling",
-      reason,
-    });
-  });
+  ] as const)(
+    "reconciles %s postcondition mismatch and requests cleanup",
+    (_name, changed, reason) => {
+      expect(decide("swap", receipt(changed))).toMatchObject({
+        next: "cleanup-required",
+        operationState: "reconciling",
+        reason,
+      });
+    },
+  );
 
   it("moves reorged canonical evidence to reconciling", () => {
     expect(decide("swap", receipt({ blockCanonical: false }))).toMatchObject({
