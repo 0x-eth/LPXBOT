@@ -269,6 +269,7 @@ interface PreviewFacts {
   expiresAt: string;
   feeLimits: Record<LocalSwapStepKind, LocalSwapFeeLimit>;
   nonce: string;
+  nonceViews: readonly LocalSwapNonceView[];
   ownerInputBalanceBaseUnit: string;
   ownerOutputBalanceBaseUnit: string;
   permit2: { domainSeparator: Hex; expiration: string; nonce: string; sigDeadline: string } | null;
@@ -787,7 +788,7 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
     const quote = await this.#quote(input);
     const binding = await this.#binding(input, quote);
     const createdAt = this.#now();
-    const facts = await this.#facts(input.request.authorizationMode, input.wallet, quote, binding, createdAt);
+    const facts = await this.#facts(input.request.authorizationMode, quote, binding, createdAt);
     const previewDigest = digest({ facts, quoteDigest: quote.quoteDigest, request: input.request });
     const bytes = Buffer.from(this.#randomBytes(32));
     if (bytes.length !== 32) {
@@ -853,7 +854,13 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
     if (new Date(stored.facts.expiresAt) <= now) throw new LocalSwapExecutionError("PREVIEW_EXPIRED");
     const quote = await this.#quote(input);
     const binding = await this.#binding(input, quote);
-    const current = await this.#facts(input.request.authorizationMode, input.wallet, quote, binding, now);
+    const current = await this.#facts(
+      input.request.authorizationMode,
+      quote,
+      binding,
+      now,
+      stored.facts.expiresAt,
+    );
     if (consensusNonce(currentNonceViews(current)) !== stored.facts.nonce) {
       throw new LocalSwapExecutionError("NONCE_DRIFT");
     }
@@ -936,10 +943,10 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
 
   async #facts(
     mode: LocalSwapAuthorizationMode,
-    wallet: CustodyWallet,
     quote: LocalSwapQuote,
     binding: LocalSwapHelperBinding,
     now: Date,
+    fixedExpiresAt?: string,
   ): Promise<PreviewFacts> {
     const approvalSpender = mode === "direct" ? binding.helperAddress : binding.permit2Address;
     const inspection = await this.#chain.inspect({
@@ -961,9 +968,11 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
       quoteDeadline,
       Math.floor(now.getTime() / 1_000) + this.#registry.maxPermit2ExpirationSeconds,
     );
-    const expiresAt = new Date(
-      Math.min(Date.parse(quote.expiresAt), now.getTime() + localSwapPreviewTtlMilliseconds),
-    ).toISOString();
+    const expiresAt =
+      fixedExpiresAt ??
+      new Date(
+        Math.min(Date.parse(quote.expiresAt), now.getTime() + localSwapPreviewTtlMilliseconds),
+      ).toISOString();
     return {
       allowanceBaseUnit: inspection.allowanceBaseUnit,
       approvalSpender,
@@ -979,6 +988,7 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
         swap: feeLimit("swap", quote),
       },
       nonce: consensusNonce(inspection.nonceViews),
+      nonceViews: structuredClone(inspection.nonceViews),
       ownerInputBalanceBaseUnit: inspection.ownerInputBalanceBaseUnit,
       ownerOutputBalanceBaseUnit: inspection.ownerOutputBalanceBaseUnit,
       permit2:
@@ -1260,5 +1270,5 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
 
 // Preview facts intentionally store the provider nonce views only as a consensus identity.
 function currentNonceViews(facts: PreviewFacts): readonly LocalSwapNonceView[] {
-  return [{ latest: facts.nonce, pending: facts.nonce, providerId: "preview-consensus" }];
+  return structuredClone(facts.nonceViews);
 }
