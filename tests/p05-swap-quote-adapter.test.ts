@@ -6,6 +6,7 @@ import {
   verifySwapQuoteDigest,
   type SwapQuoteProvider,
   type SwapQuoteProviderSnapshot,
+  type SwapQuote,
 } from "../packages/chain-adapters/src/index.js";
 import {
   BSC_SWAP_QUOTE_REGISTRY,
@@ -140,7 +141,7 @@ describe("P05-03 controlled BSC swap quote adapter", () => {
       { gas: { ...quote.gas, gasLimit: (BigInt(quote.gas.gasLimit) + 1n).toString() } },
     ];
     for (const mutation of mutations) {
-      expect(verifySwapQuoteDigest({ ...quote, ...mutation })).toBe(false);
+      expect(verifySwapQuoteDigest({ ...quote, ...mutation } as SwapQuote)).toBe(false);
     }
   });
 

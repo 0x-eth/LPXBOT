@@ -1,6 +1,5 @@
 import type {
   ImportPricingPositionRequest,
-  PricingPosition,
   WalletPosition,
 } from "../packages/api-contract/src/index.js";
 import {
