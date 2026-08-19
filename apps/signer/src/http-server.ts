@@ -3,6 +3,10 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 
 import type { DeleteCustodyWalletRequest, WalletDeleteDependencies } from "@lpbot/api-contract";
 import type { HelperDeploymentPlan } from "@lpbot/domain/helper-deployment";
+import type {
+  LocalSwapExecutionPlan,
+  LocalSwapPermit2SigningPayload,
+} from "@lpbot/domain/local-swap-execution";
 import {
   transferDigestPattern,
   validateWalletTransferPlan,
@@ -14,6 +18,7 @@ import { SignerError, asSignerError } from "./signer-error.js";
 
 const bodyLimit = 16_384;
 const helperDeploymentBodyLimit = 65_536;
+const localSwapPlanBodyLimit = 131_072;
 const identityPattern = /^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const digestPattern = /^sha256:[0-9a-f]{64}$/u;
@@ -282,6 +287,115 @@ function helperDeploymentSigningRequest(value: unknown): {
   };
 }
 
+function localSwapStepSigningRequest(value: unknown): {
+  generation: number;
+  maxFeePerGasBaseUnit: string;
+  maxPriorityFeePerGasBaseUnit: string;
+  plan: LocalSwapExecutionPlan;
+  planDigest: `sha256:${string}`;
+  stepId: string;
+} {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new SignerError("LOCAL_SWAP_PLAN_REJECTED");
+  }
+  const request = value as Record<string, unknown>;
+  if (
+    !exactKeys(request, [
+      "generation",
+      "maxFeePerGasBaseUnit",
+      "maxPriorityFeePerGasBaseUnit",
+      "plan",
+      "planDigest",
+      "stepId",
+    ]) ||
+    !Number.isSafeInteger(request.generation) ||
+    Number(request.generation) < 0 ||
+    typeof request.maxFeePerGasBaseUnit !== "string" ||
+    !/^[1-9][0-9]*$/u.test(request.maxFeePerGasBaseUnit) ||
+    typeof request.maxPriorityFeePerGasBaseUnit !== "string" ||
+    !/^(?:0|[1-9][0-9]*)$/u.test(request.maxPriorityFeePerGasBaseUnit) ||
+    typeof request.planDigest !== "string" ||
+    !digestPattern.test(request.planDigest) ||
+    typeof request.stepId !== "string" ||
+    !uuidPattern.test(request.stepId) ||
+    typeof request.plan !== "object" ||
+    request.plan === null ||
+    Array.isArray(request.plan)
+  ) {
+    throw new SignerError("LOCAL_SWAP_PLAN_REJECTED");
+  }
+  const plan = request.plan as Record<string, unknown>;
+  if (
+    !exactKeys(plan, [
+      "authorization",
+      "chainId",
+      "deadline",
+      "helper",
+      "helperPlanDigest",
+      "operationId",
+      "planDigest",
+      "planVersion",
+      "quote",
+      "registry",
+      "schemaVersion",
+      "serviceFeeBps",
+      "steps",
+      "wallet",
+    ]) ||
+    plan.chainId !== 31_337 ||
+    plan.schemaVersion !== 2 ||
+    plan.planVersion !== "p05-local-swap-plan-v2" ||
+    plan.serviceFeeBps !== 0 ||
+    !Array.isArray(plan.steps) ||
+    plan.steps.length < 3 ||
+    plan.steps.length > 4
+  ) {
+    throw new SignerError("LOCAL_SWAP_PLAN_REJECTED");
+  }
+  return {
+    generation: Number(request.generation),
+    maxFeePerGasBaseUnit: request.maxFeePerGasBaseUnit,
+    maxPriorityFeePerGasBaseUnit: request.maxPriorityFeePerGasBaseUnit,
+    plan: plan as unknown as LocalSwapExecutionPlan,
+    planDigest: request.planDigest as `sha256:${string}`,
+    stepId: request.stepId.toLowerCase(),
+  };
+}
+
+function localSwapPermit2SigningRequest(value: unknown): LocalSwapPermit2SigningPayload {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new SignerError("PERMIT2_AUTHORIZATION_REJECTED");
+  }
+  const request = value as Record<string, unknown>;
+  if (
+    !exactKeys(request, ["payload"]) ||
+    typeof request.payload !== "object" ||
+    request.payload === null ||
+    Array.isArray(request.payload)
+  ) {
+    throw new SignerError("PERMIT2_AUTHORIZATION_REJECTED");
+  }
+  const payload = request.payload as Record<string, unknown>;
+  if (
+    !exactKeys(payload, [
+      "amountBaseUnit",
+      "domainSeparator",
+      "expiration",
+      "nonce",
+      "permit2",
+      "quoteDigest",
+      "sigDeadline",
+      "spender",
+      "token",
+      "walletId",
+    ]) ||
+    Object.values(payload).some((entry) => typeof entry !== "string")
+  ) {
+    throw new SignerError("PERMIT2_AUTHORIZATION_REJECTED");
+  }
+  return payload as unknown as LocalSwapPermit2SigningPayload;
+}
+
 async function readBody(request: IncomingMessage, limit = bodyLimit): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let size = 0;
@@ -381,6 +495,12 @@ export function createSignerHttpServer(input: {
             ...(input.service.helperDeploymentSigningConfigured()
               ? ["plan-bound-helper-deployment-signing"]
               : []),
+            ...(input.service.localSwapStepSigningConfigured()
+              ? ["plan-bound-local-swap-step-signing"]
+              : []),
+            ...(input.service.localSwapPermit2SigningConfigured()
+              ? ["plan-bound-local-permit2-signing"]
+              : []),
           ],
           ready: true,
         },
@@ -397,6 +517,54 @@ export function createSignerHttpServer(input: {
     let importAcquired = false;
     try {
       const sessionId = reauthenticatedSessionId(request);
+      if (request.method === "POST" && request.url === "/v1/local-swap/steps/sign-and-deliver") {
+        if (request.headers["content-type"]?.split(";", 1)[0] !== "application/json") {
+          send(response, 415, {
+            error: { code: "UNSUPPORTED_MEDIA_TYPE", retryable: false },
+            success: false,
+          });
+          return;
+        }
+        body = await readBody(request, localSwapPlanBodyLimit);
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(body.toString("utf8"));
+        } catch {
+          throw new SignerError("LOCAL_SWAP_PLAN_REJECTED");
+        }
+        const signing = localSwapStepSigningRequest(parsed);
+        const signed = await input.service.signLocalSwapStep({
+          ...ownership,
+          ...(sessionId ? { reauthenticatedSessionId: sessionId } : {}),
+          ...signing,
+        });
+        send(response, 202, { data: signed, success: true });
+        return;
+      }
+      if (request.method === "POST" && request.url === "/v1/local-swap/permit2/sign") {
+        if (request.headers["content-type"]?.split(";", 1)[0] !== "application/json") {
+          send(response, 415, {
+            error: { code: "UNSUPPORTED_MEDIA_TYPE", retryable: false },
+            success: false,
+          });
+          return;
+        }
+        body = await readBody(request, localSwapPlanBodyLimit);
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(body.toString("utf8"));
+        } catch {
+          throw new SignerError("PERMIT2_AUTHORIZATION_REJECTED");
+        }
+        const payload = localSwapPermit2SigningRequest(parsed);
+        const signed = await input.service.signLocalSwapPermit2({
+          ...ownership,
+          ...(sessionId ? { reauthenticatedSessionId: sessionId } : {}),
+          payload,
+        });
+        send(response, 200, { data: signed, success: true });
+        return;
+      }
       if (request.method === "POST" && request.url === "/v1/helper-deployments/sign-and-deliver") {
         if (request.headers["content-type"]?.split(";", 1)[0] !== "application/json") {
           send(response, 415, {
