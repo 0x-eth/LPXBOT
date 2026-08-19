@@ -683,10 +683,7 @@ export class HelperDeploymentRecoveryWorker {
     }
   }
 
-  #assertSignerResult(
-    planDigest: `sha256:${string}`,
-    result: HelperDeploymentSignerResult,
-  ): void {
+  #assertSignerResult(planDigest: `sha256:${string}`, result: HelperDeploymentSignerResult): void {
     if (
       result.planDigest !== planDigest ||
       !hashPattern.test(result.transactionHash) ||

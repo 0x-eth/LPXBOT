@@ -572,7 +572,7 @@ export class PostgresHelperDeploymentRecoveryRepository implements HelperDeploym
       await this.#audit(client, operation, {
         action: target === "succeeded" ? "helper.verified" : `helper.${target}`,
         code: input.decision.reason ?? target.toUpperCase(),
-        outcome: target === "reconciling" ? "reconciled" : undefined,
+        ...(target === "reconciling" ? { outcome: "reconciled" as const } : {}),
         state: target,
         transactionHash,
         when: input.observedAt,

@@ -93,7 +93,10 @@ export class ViemLocalHelperDeploymentObserver implements HelperDeploymentObserv
         this.#providers.map(async (provider) => {
           const [latestNonce, pendingNonce, transaction, receipt] = await Promise.all([
             provider.request<Hex>("eth_getTransactionCount", [input.plan.wallet.address, "latest"]),
-            provider.request<Hex>("eth_getTransactionCount", [input.plan.wallet.address, "pending"]),
+            provider.request<Hex>("eth_getTransactionCount", [
+              input.plan.wallet.address,
+              "pending",
+            ]),
             provider.request<RpcTransaction | null>("eth_getTransactionByHash", [
               input.transactionHash,
             ]),
@@ -106,7 +109,13 @@ export class ViemLocalHelperDeploymentObserver implements HelperDeploymentObserv
             pendingNonce: quantity(pendingNonce).toString(),
             providerId: provider.providerId,
             receipt: receipt
-              ? await this.#receipt(provider, input.plan, input.transactionHash, transaction, receipt)
+              ? await this.#receipt(
+                  provider,
+                  input.plan,
+                  input.transactionHash,
+                  transaction,
+                  receipt,
+                )
               : null,
             transactionFound: transaction !== null,
           };
