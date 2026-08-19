@@ -146,8 +146,10 @@ import {
   parseImportPricingPositionRequest,
   parseMarkPricingPositionWithdrawnRequest,
   parsePricingPositionId,
+  PricingPositionCursorError,
   PricingPositionError,
   type PricingPositionApplication,
+  type PricingPositionStreamProvider,
 } from "./pricing-positions.js";
 import type { WalletHelperReadApplication } from "./helper-read-model.js";
 import {
@@ -240,6 +242,7 @@ export interface ApiAppOptions {
   poolCreationProvenanceRateLimit?: PublicReadRateLimit;
   poolCreationProvenanceStore?: PoolCreationProvenanceReadStore;
   pricingPositions?: PricingPositionApplication;
+  pricingPositionStream?: PricingPositionStreamProvider;
   positionReads?: PositionReadApplication;
   helperReads?: WalletHelperReadApplication;
   helperResiduals?: WalletHelperResidualApplication;
@@ -5210,6 +5213,98 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       } catch (error) {
         return pricingPositionFailure(error, request, reply);
       }
+    });
+
+    app.get("/api/pricing-positions/stream", async (request, reply) => {
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      if (Object.keys(request.query as Record<string, unknown>).length !== 0) {
+        return pricingPositionFailure(
+          new PricingPositionError("PRICING_POSITION_INVALID"),
+          request,
+          reply,
+        );
+      }
+      if (!options.pricingPositionStream || !options.tenantId) {
+        return pricingPositionFailure(new Error("unconfigured"), request, reply);
+      }
+      const lastEventHeader = request.headers["last-event-id"];
+      if (lastEventHeader !== undefined && typeof lastEventHeader !== "string") {
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "PRICING_CURSOR_INVALID",
+            message: "The pricing position cursor is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      let opened;
+      try {
+        opened = await options.pricingPositionStream.open({
+          lastEventId: lastEventHeader ?? null,
+          tenantId: options.tenantId,
+          userId: session.userId,
+        });
+      } catch (error) {
+        if (error instanceof PricingPositionCursorError) {
+          return reply.code(error.code === "PRICING_CURSOR_EXPIRED" ? 409 : 400).send(
+            createErrorEnvelope({
+              code: error.code,
+              message:
+                error.code === "PRICING_CURSOR_EXPIRED"
+                  ? "The pricing position cursor is outside the retained epoch"
+                  : "The pricing position cursor is invalid",
+              requestId: request.id,
+              retryable: error.code === "PRICING_CURSOR_EXPIRED",
+            }),
+          );
+        }
+        return pricingPositionFailure(error, request, reply);
+      }
+
+      const controller = new AbortController();
+      const close = () => controller.abort();
+      reply.hijack();
+      reply.raw.writeHead(200, {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Connection: "keep-alive",
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "X-Accel-Buffering": "no",
+      });
+      reply.raw.flushHeaders?.();
+      reply.raw.once("close", close);
+      await writeSseChunk(reply, controller, "retry: 1000\n\n");
+      const writeEvent = (event: { cursor: string; type: string }) =>
+        writeSseChunk(
+          reply,
+          controller,
+          `id: ${event.cursor}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`,
+        );
+      try {
+        if (opened.initialEvent && !(await writeEvent(opened.initialEvent))) {
+          controller.abort();
+        }
+        if (!controller.signal.aborted) {
+          for await (const event of options.pricingPositionStream.subscribe({
+            afterSequence: opened.afterSequence,
+            epoch: opened.epoch,
+            signal: controller.signal,
+            tenantId: options.tenantId,
+            userId: session.userId,
+          })) {
+            if (controller.signal.aborted || event.epoch !== opened.epoch) break;
+            if (!(await writeEvent(event))) break;
+          }
+        }
+      } catch {
+        controller.abort();
+      } finally {
+        reply.raw.off("close", close);
+        controller.abort();
+        if (!reply.raw.destroyed) reply.raw.end();
+      }
+      return reply;
     });
 
     app.post(

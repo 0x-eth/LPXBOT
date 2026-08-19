@@ -1335,6 +1335,32 @@ export const pricingPositionContracts = Object.freeze({
   }),
 } as const);
 
+export interface PricingPositionStreamBase {
+  cursor: string;
+  epoch: string;
+  sequence: string;
+}
+
+export type PricingPositionStreamEvent =
+  | (PricingPositionStreamBase & {
+      items: PricingPosition[];
+      type: "snapshot";
+    })
+  | (PricingPositionStreamBase & {
+      position: PricingPosition;
+      type: "diff";
+    })
+  | (PricingPositionStreamBase & {
+      pricingId: string;
+      revision: number;
+      status: "withdrawn";
+      type: "tombstone";
+    })
+  | (PricingPositionStreamBase & {
+      observedAt: string;
+      type: "heartbeat";
+    });
+
 export const helperReadStates = Object.freeze([
   "undeployed",
   "active",

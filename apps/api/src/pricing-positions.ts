@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 
 import type {
   EvmAddress,
@@ -9,6 +9,7 @@ import type {
   PricingPositionObservation,
   PricingPositionPage,
   PricingPositionStatus,
+  PricingPositionStreamEvent,
   WalletPosition,
 } from "@lpbot/api-contract";
 import { getBscPositionReadDeployment } from "@lpbot/chain-registry";
@@ -204,6 +205,21 @@ export interface PricingPositionStore {
   transition(input: PricingPositionStoreTransitionInput): Promise<Readonly<PricingPosition>>;
 }
 
+export interface PricingPositionStreamSnapshot {
+  epoch: string;
+  items: Readonly<PricingPosition[]>;
+  latestSequence: string;
+  oldestSequence: string;
+}
+
+export interface PricingPositionEventStore {
+  readOutbox(input: PricingPositionScope & {
+    afterSequence: string;
+    limit: number;
+  }): Promise<Readonly<PricingPositionOutboxEvent[]>>;
+  readStreamSnapshot(input: PricingPositionScope): Promise<PricingPositionStreamSnapshot>;
+}
+
 interface StoredPricingPosition {
   position: PricingPosition;
   tenantId: string;
@@ -237,13 +253,16 @@ function identityKey(input: PricingPositionScope & {
   return `${scopeKey(input)}\u0000${input.walletId}\u0000${input.chainId}\u0000${input.platformId}\u0000${input.positionManager}\u0000${input.tokenId}`;
 }
 
-export class MemoryPricingPositionStore implements PricingPositionStore {
+export class MemoryPricingPositionStore
+  implements PricingPositionStore, PricingPositionEventStore
+{
   readonly #byIdentity = new Map<string, string>();
   readonly #byPricingId = new Map<string, StoredPricingPosition>();
   readonly #epoch: string;
   readonly #id: () => string;
   readonly #outbox: PricingPositionOutboxEvent[] = [];
-  #sequence = 0n;
+  readonly #retentionFloor = new Map<string, bigint>();
+  readonly #sequences = new Map<string, bigint>();
 
   constructor(options: { epoch?: string; id?: () => string } = {}) {
     this.#epoch = options.epoch ?? randomUUID();
@@ -371,12 +390,70 @@ export class MemoryPricingPositionStore implements PricingPositionStore {
     );
   }
 
+  async readOutbox(
+    input: PricingPositionScope & { afterSequence: string; limit: number },
+  ): Promise<Readonly<PricingPositionOutboxEvent[]>> {
+    if (
+      !decimalPattern.test(input.afterSequence) ||
+      !Number.isSafeInteger(input.limit) ||
+      input.limit < 1 ||
+      input.limit > 1_000
+    ) {
+      throw new RangeError("PRICING_OUTBOX_QUERY_INVALID");
+    }
+    const after = BigInt(input.afterSequence);
+    return Object.freeze(
+      this.#outbox
+        .filter(
+          ({ sequence, tenantId, userId }) =>
+            tenantId === input.tenantId &&
+            userId === input.userId &&
+            BigInt(sequence) > after,
+        )
+        .sort((left, right) => Number(BigInt(left.sequence) - BigInt(right.sequence)))
+        .slice(0, input.limit)
+        .map((event) => Object.freeze({ ...event, payload: publicClone(event.payload) })),
+    );
+  }
+
+  async readStreamSnapshot(input: PricingPositionScope): Promise<PricingPositionStreamSnapshot> {
+    const key = scopeKey(input);
+    const page = await this.list(input);
+    return Object.freeze({
+      epoch: this.#epoch,
+      items: page.items,
+      latestSequence: (this.#sequences.get(key) ?? 0n).toString(),
+      oldestSequence: (this.#retentionFloor.get(key) ?? 1n).toString(),
+    });
+  }
+
+  pruneOutboxBefore(input: PricingPositionScope & { sequence: string }): void {
+    if (!decimalPattern.test(input.sequence) || BigInt(input.sequence) < 1n) {
+      throw new RangeError("PRICING_OUTBOX_RETENTION_INVALID");
+    }
+    const floor = BigInt(input.sequence);
+    const key = scopeKey(input);
+    this.#retentionFloor.set(key, floor);
+    for (let index = this.#outbox.length - 1; index >= 0; index -= 1) {
+      const event = this.#outbox[index]!;
+      if (
+        event.tenantId === input.tenantId &&
+        event.userId === input.userId &&
+        BigInt(event.sequence) < floor
+      ) {
+        this.#outbox.splice(index, 1);
+      }
+    }
+  }
+
   #appendOutbox(
     stored: StoredPricingPosition,
     eventType: PricingPositionOutboxEvent["eventType"],
     now: Date,
   ): void {
-    this.#sequence += 1n;
+    const key = scopeKey(stored);
+    const sequence = (this.#sequences.get(key) ?? 0n) + 1n;
+    this.#sequences.set(key, sequence);
     this.#outbox.push({
       createdAt: now.toISOString(),
       epoch: this.#epoch,
@@ -385,7 +462,7 @@ export class MemoryPricingPositionStore implements PricingPositionStore {
       payload: publicClone(stored.position),
       pricingId: stored.position.pricingId,
       revision: stored.position.revision,
-      sequence: this.#sequence.toString(),
+      sequence: sequence.toString(),
       tenantId: stored.tenantId,
       userId: stored.userId,
     });
@@ -395,6 +472,267 @@ export class MemoryPricingPositionStore implements PricingPositionStore {
     const value = this.#id();
     if (!uuidPattern.test(value)) throw new RangeError("PRICING_ID_INVALID");
     return value.toLowerCase();
+  }
+}
+
+interface PricingCursorPayload {
+  epoch: string;
+  sequence: string;
+  tenantId: string;
+  userId: string;
+  version: 1;
+}
+
+export class PricingPositionCursorError extends Error {
+  readonly code: "PRICING_CURSOR_EXPIRED" | "PRICING_CURSOR_INVALID";
+
+  constructor(code: "PRICING_CURSOR_EXPIRED" | "PRICING_CURSOR_INVALID") {
+    super(code);
+    this.name = "PricingPositionCursorError";
+    this.code = code;
+  }
+}
+
+export interface PricingPositionStreamOpen {
+  afterSequence: string;
+  epoch: string;
+  initialEvent: PricingPositionStreamEvent | null;
+}
+
+export interface PricingPositionStreamProvider {
+  open(input: PricingPositionScope & {
+    lastEventId: string | null;
+  }): Promise<PricingPositionStreamOpen>;
+  subscribe(input: PricingPositionScope &
+    Pick<PricingPositionStreamOpen, "afterSequence" | "epoch"> & {
+      signal: AbortSignal;
+    }): AsyncIterable<PricingPositionStreamEvent>;
+}
+
+function abortableDelay(milliseconds: number, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.resolve();
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, milliseconds);
+    signal.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        resolve();
+      },
+      { once: true },
+    );
+  });
+}
+
+export class PricingPositionStreamService implements PricingPositionStreamProvider {
+  readonly #backfillLimit: number;
+  readonly #cursorSecret: Uint8Array;
+  readonly #finite: boolean;
+  readonly #heartbeatMilliseconds: number;
+  readonly #now: () => Date;
+  readonly #pollMilliseconds: number;
+  readonly #store: PricingPositionEventStore;
+
+  constructor(options: {
+    backfillLimit?: number;
+    cursorSecret: string | Uint8Array;
+    finite?: boolean;
+    heartbeatMilliseconds?: number;
+    now?: () => Date;
+    pollMilliseconds?: number;
+    store: PricingPositionEventStore;
+  }) {
+    this.#backfillLimit = options.backfillLimit ?? 200;
+    this.#cursorSecret =
+      typeof options.cursorSecret === "string"
+        ? new TextEncoder().encode(options.cursorSecret)
+        : new Uint8Array(options.cursorSecret);
+    this.#finite = options.finite ?? false;
+    this.#heartbeatMilliseconds = options.heartbeatMilliseconds ?? 15_000;
+    this.#now = options.now ?? (() => new Date());
+    this.#pollMilliseconds = options.pollMilliseconds ?? 1_000;
+    this.#store = options.store;
+    if (
+      !Number.isSafeInteger(this.#backfillLimit) ||
+      this.#backfillLimit < 1 ||
+      this.#backfillLimit > 1_000 ||
+      this.#cursorSecret.byteLength < 32 ||
+      !Number.isSafeInteger(this.#heartbeatMilliseconds) ||
+      this.#heartbeatMilliseconds < 1 ||
+      !Number.isSafeInteger(this.#pollMilliseconds) ||
+      this.#pollMilliseconds < 1 ||
+      this.#pollMilliseconds > this.#heartbeatMilliseconds
+    ) {
+      throw new RangeError("PRICING_STREAM_CONFIG_INVALID");
+    }
+  }
+
+  async open(
+    input: PricingPositionScope & { lastEventId: string | null },
+  ): Promise<PricingPositionStreamOpen> {
+    const snapshot = await this.#store.readStreamSnapshot(input);
+    if (input.lastEventId === null) {
+      const cursor = this.#encodeCursor({
+        epoch: snapshot.epoch,
+        sequence: snapshot.latestSequence,
+        tenantId: input.tenantId,
+        userId: input.userId,
+        version: 1,
+      });
+      return Object.freeze({
+        afterSequence: snapshot.latestSequence,
+        epoch: snapshot.epoch,
+        initialEvent: Object.freeze({
+          cursor,
+          epoch: snapshot.epoch,
+          items: [...snapshot.items],
+          sequence: snapshot.latestSequence,
+          type: "snapshot" as const,
+        }),
+      });
+    }
+    const cursor = this.#decodeCursor(input.lastEventId);
+    if (cursor.tenantId !== input.tenantId || cursor.userId !== input.userId) {
+      throw new PricingPositionCursorError("PRICING_CURSOR_INVALID");
+    }
+    if (cursor.epoch !== snapshot.epoch) {
+      throw new PricingPositionCursorError("PRICING_CURSOR_EXPIRED");
+    }
+    const sequence = BigInt(cursor.sequence);
+    const latest = BigInt(snapshot.latestSequence);
+    const oldest = BigInt(snapshot.oldestSequence);
+    if (sequence > latest) throw new PricingPositionCursorError("PRICING_CURSOR_INVALID");
+    if (sequence < oldest - 1n) {
+      throw new PricingPositionCursorError("PRICING_CURSOR_EXPIRED");
+    }
+    return Object.freeze({
+      afterSequence: cursor.sequence,
+      epoch: cursor.epoch,
+      initialEvent: null,
+    });
+  }
+
+  async *subscribe(
+    input: PricingPositionScope &
+      Pick<PricingPositionStreamOpen, "afterSequence" | "epoch"> & { signal: AbortSignal },
+  ): AsyncIterable<PricingPositionStreamEvent> {
+    let emitted = 0;
+    let sequence = input.afterSequence;
+    let lastHeartbeat = this.#now().getTime();
+    while (!input.signal.aborted) {
+      const snapshot = await this.#store.readStreamSnapshot(input);
+      if (snapshot.epoch !== input.epoch) {
+        throw new PricingPositionCursorError("PRICING_CURSOR_EXPIRED");
+      }
+      const remaining = this.#backfillLimit - emitted;
+      if (remaining <= 0) return;
+      const events = await this.#store.readOutbox({
+        afterSequence: sequence,
+        limit: remaining,
+        tenantId: input.tenantId,
+        userId: input.userId,
+      });
+      if (events.length > 0) {
+        for (const event of events) {
+          if (BigInt(event.sequence) <= BigInt(sequence)) continue;
+          sequence = event.sequence;
+          emitted += 1;
+          const cursor = this.#encodeCursor({
+            epoch: event.epoch,
+            sequence,
+            tenantId: input.tenantId,
+            userId: input.userId,
+            version: 1,
+          });
+          if (event.eventType === "tombstone") {
+            yield Object.freeze({
+              cursor,
+              epoch: event.epoch,
+              pricingId: event.pricingId,
+              revision: event.revision,
+              sequence,
+              status: "withdrawn" as const,
+              type: "tombstone" as const,
+            });
+          } else {
+            yield Object.freeze({
+              cursor,
+              epoch: event.epoch,
+              position: publicClone(event.payload),
+              sequence,
+              type: "diff" as const,
+            });
+          }
+        }
+        if (emitted >= this.#backfillLimit) return;
+        continue;
+      }
+      const currentTime = this.#now().getTime();
+      if (this.#finite || currentTime - lastHeartbeat >= this.#heartbeatMilliseconds) {
+        lastHeartbeat = currentTime;
+        yield Object.freeze({
+          cursor: this.#encodeCursor({
+            epoch: input.epoch,
+            sequence,
+            tenantId: input.tenantId,
+            userId: input.userId,
+            version: 1,
+          }),
+          epoch: input.epoch,
+          observedAt: new Date(currentTime).toISOString(),
+          sequence,
+          type: "heartbeat" as const,
+        });
+        if (this.#finite) return;
+      }
+      await abortableDelay(this.#pollMilliseconds, input.signal);
+    }
+  }
+
+  #decodeCursor(value: string): PricingCursorPayload {
+    if (value.length > 1_024 || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/u.test(value)) {
+      throw new PricingPositionCursorError("PRICING_CURSOR_INVALID");
+    }
+    const [encoded, signature] = value.split(".");
+    const expected = createHmac("sha256", this.#cursorSecret).update(encoded!).digest();
+    let provided: Buffer;
+    try {
+      provided = Buffer.from(signature!, "base64url");
+    } catch {
+      throw new PricingPositionCursorError("PRICING_CURSOR_INVALID");
+    }
+    if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
+      throw new PricingPositionCursorError("PRICING_CURSOR_INVALID");
+    }
+    try {
+      const payload = JSON.parse(Buffer.from(encoded!, "base64url").toString("utf8")) as unknown;
+      const valueRecord = record(payload);
+      if (
+        !valueRecord ||
+        !exactKeys(valueRecord, ["epoch", "sequence", "tenantId", "userId", "version"]) ||
+        valueRecord.version !== 1 ||
+        typeof valueRecord.epoch !== "string" ||
+        !uuidPattern.test(valueRecord.epoch) ||
+        typeof valueRecord.sequence !== "string" ||
+        !decimalPattern.test(valueRecord.sequence) ||
+        typeof valueRecord.tenantId !== "string" ||
+        typeof valueRecord.userId !== "string" ||
+        !uuidPattern.test(valueRecord.userId)
+      ) {
+        throw new Error("invalid");
+      }
+      return valueRecord as unknown as PricingCursorPayload;
+    } catch {
+      throw new PricingPositionCursorError("PRICING_CURSOR_INVALID");
+    }
+  }
+
+  #encodeCursor(payload: PricingCursorPayload): string {
+    const encoded = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+    const signature = createHmac("sha256", this.#cursorSecret)
+      .update(encoded)
+      .digest("base64url");
+    return `${encoded}.${signature}`;
   }
 }
 

@@ -292,16 +292,22 @@ export {
   parseImportPricingPositionRequest,
   parseMarkPricingPositionWithdrawnRequest,
   parsePricingPositionId,
+  PricingPositionCursorError,
   PricingPositionError,
   PricingPositionService,
+  PricingPositionStreamService,
 } from "./pricing-positions.js";
 export type {
   PricingPositionApplication,
   PricingPositionErrorCode,
+  PricingPositionEventStore,
   PricingPositionOutboxEvent,
   PricingPositionSource,
   PricingPositionSourceSnapshot,
   PricingPositionStore,
+  PricingPositionStreamOpen,
+  PricingPositionStreamProvider,
+  PricingPositionStreamSnapshot,
 } from "./pricing-positions.js";
 export type {
   ParsedSwapQuoteRequest,
