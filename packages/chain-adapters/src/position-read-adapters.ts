@@ -4,6 +4,7 @@ import {
   encodeAbiParameters,
   encodeFunctionData,
   keccak256,
+  stringToHex,
   type Abi,
   type Address,
   type Hex,
@@ -260,7 +261,7 @@ export interface PositionReadRpc {
 
 export interface PositionReadResult {
   approval: {
-    approvedAddress: Address;
+    approvedAddress: Address | null;
     approvedForAll: boolean;
     helperAuthorized: boolean;
     nftOwner: Address;
@@ -278,7 +279,6 @@ export interface PositionReadResult {
     amount1BaseUnit: string;
     raw: string;
   };
-  managerAddress: Address;
   owner: Address;
   platformId: ProtocolId;
   pool: {
@@ -286,13 +286,16 @@ export interface PositionReadResult {
     hooks: Address | null;
     poolAddress: Address | null;
     poolId: Hex | null;
-    poolManager: Address | null;
     tickSpacing: string;
     token0: Address;
     token1: Address;
   };
-  registryVersion: string;
-  snapshot: PositionReadSnapshot;
+  snapshot: PositionReadSnapshot & {
+    digest: Hex;
+    positionManager: Address;
+    positionManagerCodeHash: Hex;
+    registryVersion: string;
+  };
   ticks: { current: string; inRange: boolean; lower: string; upper: string };
   tokenId: string;
 }
@@ -467,6 +470,12 @@ function freezeResult(result: PositionReadResult): Readonly<PositionReadResult> 
   return Object.freeze(result);
 }
 
+function positionDigest(result: Omit<PositionReadResult, "snapshot"> & {
+  snapshot: Omit<PositionReadResult["snapshot"], "digest">;
+}): Hex {
+  return keccak256(stringToHex(JSON.stringify(result)));
+}
+
 abstract class BasePositionReadAdapter implements PositionReadAdapter {
   readonly deployment: BscPositionReadDeployment;
   readonly #managerAbi: Abi;
@@ -533,7 +542,7 @@ abstract class BasePositionReadAdapter implements PositionReadAdapter {
       await this.contractRead(this.#managerAbi, manager, "ownerOf", [tokenId], input.snapshot.blockNumber),
     );
     if (owner !== input.owner.toLowerCase()) throw new PositionReadAdapterError("owner-mismatch");
-    const approvedAddress = asAddress(
+    const observedApprovedAddress = asAddress(
       await this.contractRead(
         this.#managerAbi,
         manager,
@@ -561,12 +570,20 @@ abstract class BasePositionReadAdapter implements PositionReadAdapter {
       data.tickUpper,
     );
     const helper = input.helperAddress?.toLowerCase() ?? null;
-    return freezeResult({
+    const approvedAddress = observedApprovedAddress === ZERO_ADDRESS ? null : observedApprovedAddress;
+    const snapshot = {
+      ...input.snapshot,
+      positionManager: manager.toLowerCase() as Address,
+      positionManagerCodeHash: this.deployment.positionManager.runtimeCodeHash,
+      registryVersion: this.deployment.registryVersion,
+    };
+    const resultWithoutDigest = {
       approval: {
         approvedAddress,
         approvedForAll,
         helperAuthorized:
-          helper !== null && (approvedForAll || approvedAddress.toLowerCase() === helper),
+          helper !== null &&
+          (approvedForAll || observedApprovedAddress.toLowerCase() === helper),
         nftOwner: owner,
         observedAtBlock: input.snapshot.blockNumber,
       },
@@ -582,7 +599,6 @@ abstract class BasePositionReadAdapter implements PositionReadAdapter {
         amount1BaseUnit: amount1.toString(),
         raw: data.liquidity.toString(),
       },
-      managerAddress: manager.toLowerCase() as Address,
       owner,
       platformId: this.deployment.platformId,
       pool: {
@@ -590,13 +606,11 @@ abstract class BasePositionReadAdapter implements PositionReadAdapter {
         hooks: data.hooks,
         poolAddress: data.poolAddress,
         poolId: data.poolId,
-        poolManager: data.poolManager,
         tickSpacing: data.tickSpacing.toString(),
         token0: data.token0,
         token1: data.token1,
       },
-      registryVersion: this.deployment.registryVersion,
-      snapshot: { ...input.snapshot },
+      snapshot,
       ticks: {
         current: data.currentTick.toString(),
         inRange: data.currentTick >= data.tickLower && data.currentTick < data.tickUpper,
@@ -604,6 +618,12 @@ abstract class BasePositionReadAdapter implements PositionReadAdapter {
         upper: data.tickUpper.toString(),
       },
       tokenId: tokenId.toString(),
+    } satisfies Omit<PositionReadResult, "snapshot"> & {
+      snapshot: Omit<PositionReadResult["snapshot"], "digest">;
+    };
+    return freezeResult({
+      ...resultWithoutDigest,
+      snapshot: { ...snapshot, digest: positionDigest(resultWithoutDigest) },
     });
   }
 }
