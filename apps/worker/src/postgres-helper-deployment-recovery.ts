@@ -530,6 +530,24 @@ export class PostgresHelperDeploymentRecoveryRepository implements HelperDeploym
         }
       }
       const nextTransactionState = transactionState(target);
+      const settlesHistoricalReceipt =
+        input.decision.kind === "receipt" &&
+        evidenceTransactionId !== activeTransactionId &&
+        (target === "confirmed" || target === "succeeded" || target === "failed");
+      if (settlesHistoricalReceipt) {
+        await client.query(
+          `UPDATE chain_operation_transactions
+              SET state = 'dropped', active = false, updated_at = $2
+            WHERE transaction_id = $1 AND active`,
+          [activeTransactionId, input.observedAt],
+        );
+        await client.query(
+          `UPDATE chain_operation_transactions
+              SET active = true, updated_at = $2
+            WHERE transaction_id = $1`,
+          [evidenceTransactionId, input.observedAt],
+        );
+      }
       if (nextTransactionState) {
         await client.query(
           `UPDATE chain_operation_transactions
@@ -544,10 +562,28 @@ export class PostgresHelperDeploymentRecoveryRepository implements HelperDeploym
         target === "reconciling" ? (input.decision.reason ?? "RECONCILIATION_REQUIRED") : null;
       await client.query(
         `UPDATE chain_operations
-            SET state = $2, failure_code = $3, reconciliation_reason = $4, updated_at = $5
+            SET state = $2, failure_code = $3, reconciliation_reason = $4,
+                active_transaction_id = $6, updated_at = $5
           WHERE operation_id = $1`,
-        [operation.operation_id, target, failureCode, reconciliationReason, input.observedAt],
+        [
+          operation.operation_id,
+          target,
+          failureCode,
+          reconciliationReason,
+          input.observedAt,
+          settlesHistoricalReceipt ? evidenceTransactionId : activeTransactionId,
+        ],
       );
+      if (target === "reconciling") {
+        await this.#openReconciliation(
+          client,
+          operation,
+          reconciliationReason ?? "RECONCILIATION_REQUIRED",
+          input.observedAt,
+        );
+      } else {
+        await this.#resolveReconciliation(client, operation.operation_id, input.observedAt);
+      }
       if (target === "succeeded" && input.decision.kind === "receipt") {
         await client.query(
           `UPDATE wallet_helper_deployment_bindings
@@ -904,6 +940,43 @@ export class PostgresHelperDeploymentRecoveryRepository implements HelperDeploym
               lease_expires_at = NULL, delivered_at = $2, last_error_code = NULL
         WHERE event_id = $1`,
       [claim.eventId, when],
+    );
+  }
+
+  async #openReconciliation(
+    client: PoolClient,
+    operation: OperationRow,
+    reconciliationReason: string,
+    when: Date,
+  ): Promise<void> {
+    await client.query(
+      `INSERT INTO chain_operation_reconciliation_cases (
+         reconciliation_id, operation_id, reason, status,
+         provider_evidence_digest, opened_at, resolved_at
+       ) SELECT $1, $2, $3, 'open', NULL, $4, NULL
+        WHERE NOT EXISTS (
+          SELECT 1 FROM chain_operation_reconciliation_cases
+           WHERE operation_id = $2 AND status = 'open'
+        )`,
+      [
+        this.#uuid().toLowerCase(),
+        operation.operation_id,
+        reconciliationReason.slice(0, 120),
+        when,
+      ],
+    );
+  }
+
+  async #resolveReconciliation(
+    client: PoolClient,
+    operationId: string,
+    when: Date,
+  ): Promise<void> {
+    await client.query(
+      `UPDATE chain_operation_reconciliation_cases
+          SET status = 'resolved', resolved_at = $2
+        WHERE operation_id = $1 AND status = 'open'`,
+      [operationId, when],
     );
   }
 
