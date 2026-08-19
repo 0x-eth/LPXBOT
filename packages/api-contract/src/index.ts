@@ -1198,6 +1198,137 @@ export const positionReadContracts = Object.freeze({
   scan: Object.freeze({ method: "GET", path: "/api/positions/scan/{address}" }),
 } as const);
 
+export const helperReadStates = Object.freeze([
+  "undeployed",
+  "active",
+  "degraded",
+  "superseded",
+  "residual",
+] as const);
+export type HelperReadState = (typeof helperReadStates)[number];
+
+export type HelperVerificationFailure =
+  | "address-mismatch"
+  | "owner-mismatch"
+  | "provider-read-failed"
+  | "runtime-code-hash-mismatch"
+  | "selector-set-mismatch"
+  | "version-unregistered";
+
+export interface HelperVerificationSnapshot {
+  blockHash: `0x${string}`;
+  blockNumber: string;
+  blockTimestamp: string;
+  checks: {
+    address: boolean;
+    owner: boolean;
+    runtimeCodeHash: boolean;
+    selectorSet: boolean;
+    version: boolean;
+  };
+  digest: `0x${string}`;
+  observedOwner: EvmAddress | null;
+  observedRuntimeCodeHash: `0x${string}` | null;
+  observedSelectors: `0x${string}`[];
+  verifiedAt: string;
+}
+
+export interface WalletHelperStatus {
+  address: EvmAddress | null;
+  chainId: 56;
+  failures: HelperVerificationFailure[];
+  helperVersion: string | null;
+  owner: EvmAddress | null;
+  registryVersion: string;
+  state: HelperReadState;
+  verification: HelperVerificationSnapshot | null;
+  walletId: string;
+}
+
+export const helperResidualReadStates = Object.freeze(["empty", "ready", "partial"] as const);
+export type HelperResidualReadState = (typeof helperResidualReadStates)[number];
+
+export const helperResidualUiStates = Object.freeze([
+  "loading",
+  "empty",
+  "scanning",
+  "ready",
+  "partial",
+  "error",
+] as const);
+export type HelperResidualUiState = (typeof helperResidualUiStates)[number];
+
+interface HelperResidualAssetBase {
+  amountBaseUnit: string;
+  assetId: string;
+  chainId: 56;
+}
+
+export interface HelperNativeResidual extends HelperResidualAssetBase {
+  kind: "native";
+  tokenAddress: null;
+}
+
+export interface HelperTokenResidual extends HelperResidualAssetBase {
+  kind: "token";
+  tokenAddress: EvmAddress;
+}
+
+export interface HelperAllowanceResidual extends HelperResidualAssetBase {
+  kind: "allowance";
+  spenderAddress: EvmAddress;
+  tokenAddress: EvmAddress;
+}
+
+export interface HelperNftResidual extends HelperResidualAssetBase {
+  kind: "nft";
+  managerAddress: EvmAddress;
+  tokenAddress: null;
+  tokenId: string;
+}
+
+export type HelperResidualAsset =
+  | HelperNativeResidual
+  | HelperTokenResidual
+  | HelperAllowanceResidual
+  | HelperNftResidual;
+
+export interface HelperResidualPage {
+  allowlistVersion: string;
+  chainId: 56;
+  coverage: {
+    allowlistComplete: boolean;
+    complete: boolean;
+    missingSources: string[];
+    positionTokensComplete: boolean;
+    walletTokenRegistryComplete: boolean;
+  };
+  cursor: string | null;
+  helperAddress: EvmAddress;
+  items: HelperResidualAsset[];
+  registryVersion: string;
+  scanId: string;
+  scannedAt: string;
+  snapshot: PositionPageSnapshot;
+  state: HelperResidualReadState;
+  walletId: string;
+}
+
+export interface HelperResidualScanRequest {
+  chainId: 56;
+  idempotencyKey: string;
+  walletId: string;
+}
+
+export const helperReadContracts = Object.freeze({
+  residuals: Object.freeze({ method: "GET", path: "/api/wallets/helper-residuals" }),
+  scanResiduals: Object.freeze({
+    method: "POST",
+    path: "/api/wallets/helper-residuals/scan",
+  }),
+  status: Object.freeze({ method: "GET", path: "/api/wallets/{address}/helper" }),
+} as const);
+
 export const walletTransferAmountPresets = ["25", "50", "75", "MAX"] as const;
 export type WalletTransferAmountPreset = (typeof walletTransferAmountPresets)[number];
 export type WalletTransferAsset = { kind: "native" } | { kind: "erc20"; tokenAddress: EvmAddress };
