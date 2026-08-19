@@ -139,7 +139,14 @@ export class ViemLocalHelperDeploymentObserver implements HelperDeploymentObserv
     ]);
     const latest = quantity(latestBlock);
     if (latest < blockNumber) throw new Error("LOCAL_HELPER_OBSERVER_BLOCK_INVALID");
-    const receiptStatus = quantity(receipt.status) === 1n ? "success" : "reverted";
+    if (receipt.transactionHash.toLowerCase() !== transactionHash) {
+      throw new Error("LOCAL_HELPER_OBSERVER_RECEIPT_TRANSACTION_MISMATCH");
+    }
+    const status = quantity(receipt.status);
+    if (status !== 0n && status !== 1n) {
+      throw new Error("LOCAL_HELPER_OBSERVER_RECEIPT_STATUS_INVALID");
+    }
+    const receiptStatus = status === 1n ? "success" : "reverted";
     const contractAddress = receipt.contractAddress?.toLowerCase() as `0x${string}` | null;
     let runtimeCodeHash: `0x${string}` | null = null;
     let observedOwner: `0x${string}` | null = null;
@@ -190,7 +197,7 @@ export class ViemLocalHelperDeploymentObserver implements HelperDeploymentObserv
       receiptStatus,
       runtimeCodeHash,
       runtimeCodeReconciled: runtimeCodeHash === plan.deployment.expectedRuntimeCodeHash,
-      transactionHash,
+      transactionHash: receipt.transactionHash.toLowerCase() as `0x${string}`,
     };
   }
 }

@@ -34,7 +34,10 @@ function plan(): HelperDeploymentPlan {
       adapter: helperDeploymentComponent("adapter").address,
       constructorArgumentsHash: material.constructorArgumentsHash,
       creationCodeHash: registry.helperTemplate.creationCodeHash,
-      expectedAddress: getContractAddress({ from: owner, nonce: 6n }).toLowerCase() as `0x${string}`,
+      expectedAddress: getContractAddress({
+        from: owner,
+        nonce: 6n,
+      }).toLowerCase() as `0x${string}`,
       expectedRuntimeCodeHash: `0x${"91".repeat(32)}`,
       helperVersion: "WalletHelperV1",
       owner,
