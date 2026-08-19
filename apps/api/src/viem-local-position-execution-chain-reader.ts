@@ -125,9 +125,7 @@ function stable(value: unknown): string {
   return JSON.stringify(value);
 }
 
-export class ViemLocalPositionExecutionChainReader
-  implements LocalPositionExecutionChainReader
-{
+export class ViemLocalPositionExecutionChainReader implements LocalPositionExecutionChainReader {
   readonly #providers: readonly LocalEvmRpcClient[];
   readonly #registry: LocalPositionExecutionRegistry;
 
@@ -180,7 +178,9 @@ export class ViemLocalPositionExecutionChainReader
       position: observation.position,
       tokenCode: observation.tokenCode,
     });
-    if (observations.some((observation) => stable(identity(observation)) !== stable(identity(first)))) {
+    if (
+      observations.some((observation) => stable(identity(observation)) !== stable(identity(first)))
+    ) {
       throw new Error("LOCAL_POSITION_PROVIDER_DIVERGENCE");
     }
     return {
@@ -195,7 +195,10 @@ export class ViemLocalPositionExecutionChainReader
   ): Promise<ProviderInspection> {
     const manager = this.#registry.manager.address;
     const tokenId = BigInt(input.snapshot.position.tokenId);
-    const call = (functionName: "getApproved" | "ownerOf" | "positions", args: readonly unknown[]) =>
+    const call = (
+      functionName: "getApproved" | "ownerOf" | "positions",
+      args: readonly unknown[],
+    ) =>
       provider.request<Hex>("eth_call", [
         {
           data: encodeFunctionData({
@@ -249,7 +252,10 @@ export class ViemLocalPositionExecutionChainReader
       approvalForAll,
       call("positions", [tokenId]),
     ]);
-    if (!canonicalBlock || quantity(canonicalBlock.number, "BLOCK_NUMBER").toString() !== input.snapshot.block.number) {
+    if (
+      !canonicalBlock ||
+      quantity(canonicalBlock.number, "BLOCK_NUMBER").toString() !== input.snapshot.block.number
+    ) {
       throw new Error("LOCAL_POSITION_CANONICAL_BLOCK_MISSING");
     }
     const owner = decodeFunctionResult({

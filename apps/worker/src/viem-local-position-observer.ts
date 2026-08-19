@@ -246,10 +246,30 @@ export class ViemLocalPositionObserver implements LocalPositionObserver {
     const beforeTag = toHex(blockNumber - 1n);
     const [beforePosition, before0, before1, after0, after1, afterPosition] = await Promise.all([
       this.#position(provider, input, beforeTag),
-      this.#balance(provider, input.plan.snapshot.position.pool.token0, input.plan.wallet.address, beforeTag),
-      this.#balance(provider, input.plan.snapshot.position.pool.token1, input.plan.wallet.address, beforeTag),
-      this.#balance(provider, input.plan.snapshot.position.pool.token0, input.plan.wallet.address, blockTag),
-      this.#balance(provider, input.plan.snapshot.position.pool.token1, input.plan.wallet.address, blockTag),
+      this.#balance(
+        provider,
+        input.plan.snapshot.position.pool.token0,
+        input.plan.wallet.address,
+        beforeTag,
+      ),
+      this.#balance(
+        provider,
+        input.plan.snapshot.position.pool.token1,
+        input.plan.wallet.address,
+        beforeTag,
+      ),
+      this.#balance(
+        provider,
+        input.plan.snapshot.position.pool.token0,
+        input.plan.wallet.address,
+        blockTag,
+      ),
+      this.#balance(
+        provider,
+        input.plan.snapshot.position.pool.token1,
+        input.plan.wallet.address,
+        blockTag,
+      ),
       this.#positionAfter(provider, input, blockTag),
     ]);
     const events = this.#events(input, receipt.logs);

@@ -127,11 +127,10 @@ const registryPayload: RegistryPayload = {
   validToBlock: "1000000",
 };
 
-export const P05_LOCAL_POSITION_EXECUTION_REGISTRY: LocalPositionExecutionRegistry =
-  Object.freeze({
-    ...registryPayload,
-    registryDigest: localPositionExecutionRegistryDigest(registryPayload),
-  });
+export const P05_LOCAL_POSITION_EXECUTION_REGISTRY: LocalPositionExecutionRegistry = Object.freeze({
+  ...registryPayload,
+  registryDigest: localPositionExecutionRegistryDigest(registryPayload),
+});
 
 export function validateLocalPositionExecutionRegistry(
   registry: LocalPositionExecutionRegistry = P05_LOCAL_POSITION_EXECUTION_REGISTRY,
@@ -155,8 +154,9 @@ export function validateLocalPositionExecutionRegistry(
     registry.manager.selectors.collect !== "0xfc6f7865" ||
     registry.manager.selectors.decreaseLiquidity !== "0x0c49ccbe" ||
     registry.manager.selectors.burn !== "0x42966c68" ||
-    registry.platforms.map(({ generation, platformId }) => `${platformId}:${generation}`).join(",") !==
-      expectedPlatforms ||
+    registry.platforms
+      .map(({ generation, platformId }) => `${platformId}:${generation}`)
+      .join(",") !== expectedPlatforms ||
     registry.tokenPolicy.tokens.length !== 2 ||
     registry.tokenPolicy.tokens.some(
       (token, index) =>

@@ -1065,8 +1065,20 @@ export class LocalPositionExecutionService implements LocalPositionExecutionAppl
   #withoutOpaque(
     request: LocalPositionCollectFeesRequest | LocalPositionRemoveLiquidityRequest,
   ): LocalPositionCollectFeesPreviewRequest | LocalPositionRemoveLiquidityPreviewRequest {
-    const { previewDigest: _previewDigest, previewToken: _previewToken, ...result } = request;
-    return result;
+    const position = {
+      platformId: request.platformId,
+      snapshotDigest: request.snapshotDigest,
+      tokenId: request.tokenId,
+      walletId: request.walletId,
+    };
+    return "percent" in request
+      ? {
+          ...position,
+          burnIfEmpty: request.burnIfEmpty,
+          percent: request.percent,
+          slippageBps: request.slippageBps,
+        }
+      : position;
   }
 
   #assertWallet(walletId: string, wallet: CustodyWallet): void {

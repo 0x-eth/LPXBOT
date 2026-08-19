@@ -1437,7 +1437,8 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
       [operationId, stepId, generation],
     );
     const row = result.rows[0];
-    if (!row) throw new LocalPositionWorkerError("LOCAL_POSITION_REPLACEMENT_AUTHORIZATION_INVALID");
+    if (!row)
+      throw new LocalPositionWorkerError("LOCAL_POSITION_REPLACEMENT_AUTHORIZATION_INVALID");
     return row;
   }
 

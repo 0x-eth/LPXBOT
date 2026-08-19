@@ -25,13 +25,7 @@ export interface LocalPositionStepWorkOperation {
   reauthenticatedSessionId: string | null;
   step: LocalPositionPlanStep;
   stepState:
-    | "queued"
-    | "signed"
-    | "broadcast"
-    | "pending"
-    | "confirmed"
-    | "dropped"
-    | "reconciling";
+    "queued" | "signed" | "broadcast" | "pending" | "confirmed" | "dropped" | "reconciling";
   tenantId: string;
   transactionLineage: readonly LocalPositionTransactionReference[];
   userId: string;
@@ -371,8 +365,12 @@ function beforeState(plan: LocalPositionExecutionPlan, step: LocalPositionPlanSt
       liquidity: plan.accounting.remainingLiquidity,
       owed0: plan.accounting.collectTotal0BaseUnit,
       owed1: plan.accounting.collectTotal1BaseUnit,
-      reserve0: (BigInt(snapshot.reserve0BaseUnit) - BigInt(plan.accounting.principal0BaseUnit)).toString(),
-      reserve1: (BigInt(snapshot.reserve1BaseUnit) - BigInt(plan.accounting.principal1BaseUnit)).toString(),
+      reserve0: (
+        BigInt(snapshot.reserve0BaseUnit) - BigInt(plan.accounting.principal0BaseUnit)
+      ).toString(),
+      reserve1: (
+        BigInt(snapshot.reserve1BaseUnit) - BigInt(plan.accounting.principal1BaseUnit)
+      ).toString(),
     };
   }
   return {
@@ -398,7 +396,11 @@ function positionMatches(
   );
 }
 
-function walletDeltaMatches(receipt: LocalPositionReceiptObservation, amount0: string, amount1: string) {
+function walletDeltaMatches(
+  receipt: LocalPositionReceiptObservation,
+  amount0: string,
+  amount1: string,
+) {
   if (
     receipt.walletToken0Before === null ||
     receipt.walletToken0After === null ||
@@ -423,16 +425,29 @@ function postconditionFailure(
   if (receipt.managerRuntimeCodeHash !== plan.manager.runtimeCodeHash) {
     return "MANAGER_CODE_HASH_MISMATCH";
   }
-  if (receipt.ownerBefore !== plan.wallet.address || !positionMatches(receipt, "Before", beforeState(plan, step))) {
+  if (
+    receipt.ownerBefore !== plan.wallet.address ||
+    !positionMatches(receipt, "Before", beforeState(plan, step))
+  ) {
     return "POSITION_BEFORE_MISMATCH";
   }
   if (step.kind === "decrease") {
     const after: PositionState = {
       liquidity: plan.accounting.remainingLiquidity,
-      owed0: (BigInt(plan.snapshot.position.tokensOwed0BaseUnit) + BigInt(plan.accounting.principal0BaseUnit)).toString(),
-      owed1: (BigInt(plan.snapshot.position.tokensOwed1BaseUnit) + BigInt(plan.accounting.principal1BaseUnit)).toString(),
-      reserve0: (BigInt(plan.snapshot.position.reserve0BaseUnit) - BigInt(plan.accounting.principal0BaseUnit)).toString(),
-      reserve1: (BigInt(plan.snapshot.position.reserve1BaseUnit) - BigInt(plan.accounting.principal1BaseUnit)).toString(),
+      owed0: (
+        BigInt(plan.snapshot.position.tokensOwed0BaseUnit) +
+        BigInt(plan.accounting.principal0BaseUnit)
+      ).toString(),
+      owed1: (
+        BigInt(plan.snapshot.position.tokensOwed1BaseUnit) +
+        BigInt(plan.accounting.principal1BaseUnit)
+      ).toString(),
+      reserve0: (
+        BigInt(plan.snapshot.position.reserve0BaseUnit) - BigInt(plan.accounting.principal0BaseUnit)
+      ).toString(),
+      reserve1: (
+        BigInt(plan.snapshot.position.reserve1BaseUnit) - BigInt(plan.accounting.principal1BaseUnit)
+      ).toString(),
     };
     if (
       receipt.ownerAfter !== plan.wallet.address ||
@@ -720,7 +735,11 @@ export class LocalPositionRecoveryWorker {
             userId: claim.operation.userId,
           });
           this.#assertSignerResult(claim.operation, signed);
-          await this.#repository.completeBroadcast({ claim, deliveredAt: this.#now(), result: signed });
+          await this.#repository.completeBroadcast({
+            claim,
+            deliveredAt: this.#now(),
+            result: signed,
+          });
           result.broadcast += 1;
           continue;
         }

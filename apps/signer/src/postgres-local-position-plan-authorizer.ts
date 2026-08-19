@@ -205,11 +205,12 @@ export class ViemLocalPositionPlanVerifier implements LocalPositionPlanChainVeri
     });
   }
 
-  async verifyStep(
-    plan: LocalPositionExecutionPlan,
-  ): Promise<LocalPositionStepChainVerification> {
+  async verifyStep(plan: LocalPositionExecutionPlan): Promise<LocalPositionStepChainVerification> {
     const tokenId = BigInt(plan.snapshot.position.tokenId);
-    const call = (functionName: "getApproved" | "ownerOf" | "positions", args: readonly unknown[]) =>
+    const call = (
+      functionName: "getApproved" | "ownerOf" | "positions",
+      args: readonly unknown[],
+    ) =>
       this.#client.request<Hex>("eth_call", [
         {
           data: encodeFunctionData({
@@ -262,7 +263,11 @@ export class ViemLocalPositionPlanVerifier implements LocalPositionPlanChainVeri
       call("positions", [tokenId]),
     ]);
     if (!canonicalBlock) throw new Error("LOCAL_POSITION_SIGNER_BLOCK_MISSING");
-    const owner = decodeFunctionResult({ abi: managerAbi, data: ownerRaw, functionName: "ownerOf" });
+    const owner = decodeFunctionResult({
+      abi: managerAbi,
+      data: ownerRaw,
+      functionName: "ownerOf",
+    });
     const approved = decodeFunctionResult({
       abi: managerAbi,
       data: approvedRaw,
@@ -434,9 +439,7 @@ function expectedPosition(plan: LocalPositionExecutionPlan, step: LocalPositionP
   };
 }
 
-export class PostgresLocalPositionStepPlanAuthorizer
-  implements LocalPositionStepPlanAuthorizer
-{
+export class PostgresLocalPositionStepPlanAuthorizer implements LocalPositionStepPlanAuthorizer {
   readonly #now: () => Date;
   readonly #registry: LocalPositionExecutionRegistry;
 

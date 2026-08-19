@@ -224,9 +224,21 @@ export function localPositionAccounting(
   snapshot: LocalPositionSnapshot,
   action: LocalPositionExecutionPlan["action"],
 ): LocalPositionAccounting {
-  const liquidity = decimal(snapshot.position.liquidity, "LOCAL_POSITION_LIQUIDITY_INVALID", uint128Max);
-  const owed0 = decimal(snapshot.position.tokensOwed0BaseUnit, "LOCAL_POSITION_AMOUNT_INVALID", uint128Max);
-  const owed1 = decimal(snapshot.position.tokensOwed1BaseUnit, "LOCAL_POSITION_AMOUNT_INVALID", uint128Max);
+  const liquidity = decimal(
+    snapshot.position.liquidity,
+    "LOCAL_POSITION_LIQUIDITY_INVALID",
+    uint128Max,
+  );
+  const owed0 = decimal(
+    snapshot.position.tokensOwed0BaseUnit,
+    "LOCAL_POSITION_AMOUNT_INVALID",
+    uint128Max,
+  );
+  const owed1 = decimal(
+    snapshot.position.tokensOwed1BaseUnit,
+    "LOCAL_POSITION_AMOUNT_INVALID",
+    uint128Max,
+  );
   if (action.kind === "collect-fees") {
     return {
       collectTotal0BaseUnit: owed0.toString(),
@@ -243,8 +255,16 @@ export function localPositionAccounting(
     };
   }
   const delta = BigInt(localPositionLiquidityDelta(liquidity.toString(), action.percent));
-  const reserve0 = decimal(snapshot.position.reserve0BaseUnit, "LOCAL_POSITION_AMOUNT_INVALID", uint128Max);
-  const reserve1 = decimal(snapshot.position.reserve1BaseUnit, "LOCAL_POSITION_AMOUNT_INVALID", uint128Max);
+  const reserve0 = decimal(
+    snapshot.position.reserve0BaseUnit,
+    "LOCAL_POSITION_AMOUNT_INVALID",
+    uint128Max,
+  );
+  const reserve1 = decimal(
+    snapshot.position.reserve1BaseUnit,
+    "LOCAL_POSITION_AMOUNT_INVALID",
+    uint128Max,
+  );
   const principal0 = delta === liquidity ? reserve0 : (reserve0 * delta) / liquidity;
   const principal1 = delta === liquidity ? reserve1 : (reserve1 * delta) / liquidity;
   return {
@@ -456,7 +476,10 @@ export function validateLocalPositionReplacement(
   next: LocalPositionReplacementCandidate,
   planDigest: `sha256:${string}`,
 ): void {
-  const previousMax = decimal(previous.fee.maxFeePerGasBaseUnit, "LOCAL_POSITION_REPLACEMENT_INVALID");
+  const previousMax = decimal(
+    previous.fee.maxFeePerGasBaseUnit,
+    "LOCAL_POSITION_REPLACEMENT_INVALID",
+  );
   const previousPriority = decimal(
     previous.fee.maxPriorityFeePerGasBaseUnit,
     "LOCAL_POSITION_REPLACEMENT_INVALID",

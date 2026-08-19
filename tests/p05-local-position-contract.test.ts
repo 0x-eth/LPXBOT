@@ -178,9 +178,12 @@ describe("P05-07 local position Registry, snapshot and plan", () => {
     [50, "50"],
     [99, "99"],
     [100, "101"],
-  ] as const)("calculates %s%% liquidity with deterministic floor rounding", (percent, expected) => {
-    expect(localPositionLiquidityDelta("101", percent)).toBe(expected);
-  });
+  ] as const)(
+    "calculates %s%% liquidity with deterministic floor rounding",
+    (percent, expected) => {
+      expect(localPositionLiquidityDelta("101", percent)).toBe(expected);
+    },
+  );
 
   it("rejects a percentage that rounds to zero and derives principal/minimums", () => {
     expect(() => localPositionLiquidityDelta("50", 1)).toThrow(
