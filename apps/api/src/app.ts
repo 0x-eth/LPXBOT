@@ -8,6 +8,7 @@ import {
   type ChainAccessMode,
   type EvmAddress,
   type LiquidityFlowFilter,
+  type LocalPositionCurrentPage,
   type ManagedChainView,
   marketStreamKey,
   marketWindowMinutes,
@@ -181,6 +182,7 @@ import {
   parseLocalPositionOperationId,
   parseLocalPositionRemoveLiquidity,
   parseLocalPositionRemoveLiquidityPreview,
+  parseLocalPositionWalletId,
   type LocalPositionExecutionApplication,
 } from "./local-position-executions.js";
 import {
@@ -5394,6 +5396,59 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             .send(createSuccessEnvelope(result.operation, request.id));
         } catch (error) {
           return localSwapFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.get<{ Querystring: { walletId?: unknown } }>(
+      "/api/positions/local-current",
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletDirectory || !options.localPositionExecutions || !options.tenantId) {
+          return localPositionFailure(
+            new LocalPositionExecutionError("LOCAL_POSITION_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          if (
+            Object.keys(request.query as Record<string, unknown>).length !== 1 ||
+            !("walletId" in request.query)
+          ) {
+            throw new LocalPositionExecutionError("WALLET_NOT_FOUND");
+          }
+          const walletId = parseLocalPositionWalletId(request.query.walletId);
+          if (
+            !(await requireAllowedWalletChain(
+              31_337,
+              request,
+              reply,
+              session,
+              localPositionExecutionChainIds,
+            ))
+          ) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(session.userId, walletId);
+          if (!wallet) throw new LocalPositionExecutionError("WALLET_NOT_FOUND");
+          const page = {
+            chainId: 31_337,
+            executionEnabled: true,
+            items: await options.localPositionExecutions.current({
+              tenantId: options.tenantId,
+              userId: session.userId,
+              wallet,
+            }),
+            registryVersion: "p05-local-position-execution-v2",
+            serviceFeeBps: 0,
+            walletId,
+          } satisfies LocalPositionCurrentPage;
+          return createSuccessEnvelope(page, request.id);
+        } catch (error) {
+          return localPositionFailure(error, request, reply) ?? reply;
         }
       },
     );

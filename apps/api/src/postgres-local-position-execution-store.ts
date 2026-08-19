@@ -150,6 +150,21 @@ export class PostgresLocalPositionSnapshotStore implements LocalPositionSnapshot
     );
     return result.rows[0] ? structuredClone(result.rows[0].snapshot_payload) : null;
   }
+
+  async listCurrent(input: {
+    tenantId: string;
+    userId: string;
+    walletId: string;
+  }): Promise<readonly Readonly<LocalPositionSnapshot>[]> {
+    const result = await this.pool.query<{ snapshot_payload: LocalPositionSnapshot }>(
+      `SELECT DISTINCT ON (platform_id, token_id) snapshot_payload
+         FROM local_position_snapshots
+        WHERE tenant_id = $1 AND user_id = $2 AND wallet_id = $3
+        ORDER BY platform_id, token_id, observed_block_number DESC, observed_at DESC`,
+      [input.tenantId, input.userId, input.walletId],
+    );
+    return result.rows.map(({ snapshot_payload }) => structuredClone(snapshot_payload));
+  }
 }
 
 export class PostgresLocalPositionPreviewStore implements LocalPositionPreviewStore {
