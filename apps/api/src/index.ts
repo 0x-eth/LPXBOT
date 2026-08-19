@@ -66,6 +66,7 @@ export {
   PostgresLocalSwapPreviewStore,
   PostgresLocalSwapQuoteStore,
 } from "./postgres-local-swap-execution-store.js";
+export { RemoteLocalSwapPermit2Client } from "./remote-local-swap-permit2-client.js";
 export type {
   LocalSwapChainInspection,
   LocalSwapExecutionApplication,

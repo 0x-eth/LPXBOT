@@ -95,6 +95,7 @@ export interface LocalSwapQuoteStore {
   append(input: { quote: Readonly<LocalSwapQuote>; tenantId: string; userId: string }): Promise<void>;
   get(input: {
     quoteDigest: `sha256:${string}`;
+    reauthenticatedSessionId: string;
     tenantId: string;
     userId: string;
     walletId: string;
@@ -876,6 +877,7 @@ export class LocalSwapExecutionService implements LocalSwapExecutionApplication 
       nonceViews: currentNonceViews(current),
       previewDigest: stored.previewDigest,
       quoteDigest: quote.quoteDigest,
+      reauthenticatedSessionId: input.sessionId,
       requestHash,
       requestId: input.requestId,
       sessionId: input.sessionId,
