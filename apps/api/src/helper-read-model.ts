@@ -46,6 +46,7 @@ export interface WalletHelperBinding {
 export interface StoredHelperVerification {
   bindingId: string;
   chainId: 56;
+  failures: HelperVerificationFailure[];
   helperAddress: Address;
   helperVersion: string;
   userId: string;
@@ -245,6 +246,7 @@ export class MemoryWalletHelperReadStore implements WalletHelperReadStore {
   async appendVerification(input: StoredHelperVerification): Promise<void> {
     this.#verifications.push({
       ...input,
+      failures: Object.freeze([...input.failures]) as HelperVerificationFailure[],
       verification: freezeVerification({
         ...input.verification,
         checks: { ...input.verification.checks },
@@ -283,7 +285,7 @@ export class MemoryWalletHelperReadStore implements WalletHelperReadStore {
   }
 
   verifications(): readonly StoredHelperVerification[] {
-    return this.#verifications.map((entry) => ({ ...entry }));
+    return this.#verifications.map((entry) => ({ ...entry, failures: [...entry.failures] }));
   }
 }
 
@@ -434,6 +436,7 @@ export class WalletHelperReadService implements WalletHelperReadApplication {
     await this.#store.appendVerification({
       bindingId: binding.bindingId,
       chainId: 56,
+      failures: failureList,
       helperAddress: binding.helperAddress,
       helperVersion: binding.helperVersion,
       userId: input.userId,
