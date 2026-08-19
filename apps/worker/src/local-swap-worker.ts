@@ -17,6 +17,7 @@ export interface LocalSwapTransactionReference extends LocalSwapReplacementCandi
 
 export interface LocalSwapStepWorkOperation {
   activeTransaction: LocalSwapTransactionReference | null;
+  approvalSucceeded: boolean;
   operationId: string;
   operationState: "queued" | "signing" | "broadcast" | "pending" | "reconciling";
   plan: LocalSwapExecutionPlan;
@@ -119,6 +120,7 @@ export interface LocalSwapObserver {
 
 export interface LocalSwapReplacementAuthorization {
   expiresAt: string;
+  generation: number;
   next: LocalSwapReplacementCandidate;
   operationId: string;
   plan: LocalSwapExecutionPlan;
@@ -204,7 +206,7 @@ export function validateLocalSwapWorkPlan(operation: LocalSwapStepWorkOperation)
   const step = plan.steps.find(({ stepId }) => stepId === operation.step.stepId);
   if (
     !step ||
-    step !== operation.step ||
+    step.semanticDigest !== operation.step.semanticDigest ||
     !digestPattern.test(operation.planDigest) ||
     plan.planDigest !== operation.planDigest ||
     localSwapExecutionPlanDigest(plan) !== operation.planDigest ||
@@ -251,6 +253,7 @@ function consensus(observation: LocalSwapObservation): LocalSwapProviderObservat
 }
 
 function postconditionFailure(
+  plan: LocalSwapExecutionPlan,
   step: LocalSwapPlanStep,
   receipt: LocalSwapReceiptObservation,
 ): string | null {
@@ -258,10 +261,9 @@ function postconditionFailure(
     return receipt.ownerToSpenderAllowance === "0" ? null : "ALLOWANCE_NOT_ZERO";
   }
   if (step.kind === "approve") {
-    return receipt.ownerToSpenderAllowance === null ||
-      BigInt(receipt.ownerToSpenderAllowance) !== BigInt(step.kind === "approve" ? step.transaction.data.length >= 10 ? 0 : 0 : 0)
+    return receipt.ownerToSpenderAllowance === plan.quote.amountInBaseUnit
       ? null
-      : null;
+      : "APPROVAL_AMOUNT_MISMATCH";
   }
   const values = [
     receipt.ownerOutputBefore,
@@ -356,7 +358,7 @@ export function decideLocalSwapObservation(input: {
         transactionId: transaction.transactionId,
       };
     }
-    const failure = postconditionFailure(input.operation.step, receipt);
+    const failure = postconditionFailure(input.operation.plan, input.operation.step, receipt);
     if (failure) {
       return {
         failureCode: failure,
@@ -471,7 +473,7 @@ export class LocalSwapRecoveryWorker {
         }
         const observations = await Promise.all(claim.operation.transactionLineage.map(async (transaction) => ({
           decision: decideLocalSwapObservation({
-            approvalSucceeded: claim.operation.plan.steps.some(({ kind }, index) => kind === "approve" && index < claim.operation.step.ordinal),
+            approvalSucceeded: claim.operation.approvalSucceeded,
             dropAfterMilliseconds: this.#dropAfterMilliseconds,
             now: this.#now(),
             observation: await this.#observer.observe({ plan: claim.operation.plan, step: claim.operation.step, transactionHash: transaction.transactionHash }),
@@ -507,11 +509,8 @@ export class LocalSwapRecoveryWorker {
     if (!step) throw new LocalSwapWorkerError("LOCAL_SWAP_REPLACEMENT_INVALID");
     try {
       validateLocalSwapReplacement(step, authorization.previous, authorization.next, authorization.plan.planDigest);
-      const generation = authorization.plan.steps.length >= 0
-        ? Number((authorization as unknown as { generation?: number }).generation ?? 1)
-        : 1;
       const signed = await this.#signer.signAndDeliver({
-        generation,
+        generation: authorization.generation,
         maxFeePerGasBaseUnit: authorization.next.fee.maxFeePerGasBaseUnit,
         maxPriorityFeePerGasBaseUnit: authorization.next.fee.maxPriorityFeePerGasBaseUnit,
         plan: authorization.plan,
@@ -521,7 +520,14 @@ export class LocalSwapRecoveryWorker {
         tenantId: authorization.tenantId,
         userId: authorization.userId,
       });
-      this.#assertSignerResult({ ...authorization, step, planDigest: authorization.plan.planDigest } as never, signed);
+      if (
+        signed.planDigest !== authorization.plan.planDigest ||
+        signed.stepId !== authorization.stepId ||
+        signed.generation !== authorization.generation ||
+        !hashPattern.test(signed.transactionHash)
+      ) {
+        throw new LocalSwapWorkerError("LOCAL_SWAP_SIGNER_RESPONSE_INVALID", true);
+      }
       await this.#repository.completeReplacement({ authorization, deliveredAt: this.#now(), result: signed });
       return signed;
     } catch (error) {
