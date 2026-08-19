@@ -998,8 +998,7 @@ function telegramBotConfigured(options: ApiAppOptions): options is ApiAppOptions
 export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   const helperDeploymentLocalChainIds = new Set(options.helperDeploymentLocalChainIds ?? []);
   if (
-    helperDeploymentLocalChainIds.size !==
-      (options.helperDeploymentLocalChainIds?.length ?? 0) ||
+    helperDeploymentLocalChainIds.size !== (options.helperDeploymentLocalChainIds?.length ?? 0) ||
     [...helperDeploymentLocalChainIds].some((chainId) => chainId !== 31_337)
   ) {
     throw new RangeError("Helper deployment local chain IDs must contain only 31337");
@@ -1286,7 +1285,10 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         (request.method === "POST" &&
           (requestPath === "/api/pricing-positions/import" ||
             /^\/api\/pricing-positions\/[^/]+\/withdrawn$/u.test(requestPath))) ||
-        (request.method === "POST" && requestPath === "/api/wallets/transfers/preview"))
+        (request.method === "POST" && requestPath === "/api/wallets/transfers/preview") ||
+        (request.method === "POST" &&
+          (requestPath === "/api/wallets/helper/deploy" ||
+            requestPath === "/api/wallets/helper/deploy/preview")))
     ) {
       reply.header("Cache-Control", "no-store");
       return reply.code(413).send(
@@ -1660,8 +1662,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   ): Promise<boolean> => {
     const registered = findRegisteredChain(chainId);
     if (
-      (!registered?.configurationComplete &&
-        !(localChainIds?.has(chainId) ?? false)) ||
+      (!registered?.configurationComplete && !(localChainIds?.has(chainId) ?? false)) ||
       !options.chainPolicyStore
     ) {
       reply.code(403).send(
@@ -4160,6 +4161,61 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       );
     };
 
+    const helperDeploymentFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply | null => {
+      if (!(error instanceof HelperDeploymentError)) return null;
+      const status =
+        error.code === "CHAIN_NOT_ALLOWED"
+          ? 403
+          : error.code === "HELPER_DEPLOYMENT_NOT_FOUND" || error.code === "WALLET_NOT_FOUND"
+            ? 404
+            : error.code === "HELPER_DEPLOYMENT_UNAVAILABLE"
+              ? 503
+              : error.code === "HELPER_ADDRESS_OCCUPIED" ||
+                  error.code === "HELPER_ALREADY_ACTIVE" ||
+                  error.code === "HELPER_CODE_IDENTITY_MISMATCH" ||
+                  error.code === "HELPER_DEPLOYMENT_IN_PROGRESS" ||
+                  error.code === "IDEMPOTENCY_CONFLICT" ||
+                  error.code === "NONCE_DRIFT" ||
+                  error.code === "NONCE_RECONCILIATION_REQUIRED" ||
+                  error.code === "PREVIEW_CHANGED" ||
+                  error.code === "PREVIEW_EXPIRED" ||
+                  error.code === "REGISTRY_MISMATCH" ||
+                  error.code === "WALLET_LOCKED"
+                ? 409
+                : 400;
+      const messages: Record<HelperDeploymentError["code"], string> = {
+        CHAIN_NOT_ALLOWED: "The chain is not available for Helper deployment",
+        HELPER_ADDRESS_OCCUPIED: "The predicted Helper address is already occupied",
+        HELPER_ALREADY_ACTIVE: "This wallet already has an active Helper",
+        HELPER_CODE_IDENTITY_MISMATCH: "The local Helper deployment code identity changed",
+        HELPER_DEPLOYMENT_IN_PROGRESS: "A Helper deployment is already in progress",
+        HELPER_DEPLOYMENT_NOT_FOUND: "The chain operation was not found",
+        HELPER_DEPLOYMENT_UNAVAILABLE: "The Helper deployment service is unavailable",
+        IDEMPOTENCY_CONFLICT: "The idempotency key is already bound to another request",
+        IDEMPOTENCY_KEY_REQUIRED: "A valid Idempotency-Key header is required",
+        NONCE_DRIFT: "The wallet nonce changed after preview",
+        NONCE_RECONCILIATION_REQUIRED: "The wallet nonce requires reconciliation",
+        PREVIEW_CHANGED: "The Helper deployment preview no longer matches current state",
+        PREVIEW_EXPIRED: "The Helper deployment preview has expired",
+        PREVIEW_INVALID: "The Helper deployment preview is invalid",
+        REGISTRY_MISMATCH: "The Helper deployment Registry does not match the chain snapshot",
+        WALLET_LOCKED: "The wallet must be unlocked before Helper deployment",
+        WALLET_NOT_FOUND: "The wallet was not found",
+      };
+      return reply.code(status).send(
+        createErrorEnvelope({
+          code: error.code,
+          message: messages[error.code],
+          requestId: request.id,
+          retryable: error.retryable,
+        }),
+      );
+    };
+
     const addressBookFailure = (
       error: unknown,
       request: FastifyRequest,
@@ -4907,6 +4963,149 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           return walletFailure(error, request, reply) ?? keystoreUnavailable(request, reply);
         } finally {
           ingress?.fill(0);
+        }
+      },
+    );
+
+    app.post(
+      "/api/wallets/helper/deploy/preview",
+      { bodyLimit: helperDeploymentBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletDirectory || !options.helperDeployments || !options.tenantId) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "HELPER_DEPLOYMENT_UNAVAILABLE",
+              message: "The Helper deployment service is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const deployment = parseHelperDeploymentPreviewRequest(request.body);
+          if (
+            !(await requireAllowedWalletChain(
+              deployment.chainId,
+              request,
+              reply,
+              session,
+              helperDeploymentLocalChainIds,
+            ))
+          ) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(
+            session.userId,
+            deployment.walletId,
+          );
+          if (!wallet) throw new HelperDeploymentError("WALLET_NOT_FOUND");
+          const preview = await options.helperDeployments.preview({
+            request: deployment,
+            tenantId: options.tenantId,
+            userId: session.userId,
+            wallet,
+          });
+          return createSuccessEnvelope(preview, request.id);
+        } catch (error) {
+          return helperDeploymentFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.post(
+      "/api/wallets/helper/deploy",
+      { bodyLimit: helperDeploymentBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletDirectory || !options.helperDeployments || !options.tenantId) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "HELPER_DEPLOYMENT_UNAVAILABLE",
+              message: "The Helper deployment service is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const idempotencyKey = parseHelperDeploymentIdempotencyKey(
+            request.headers["idempotency-key"],
+          );
+          const deployment = parseHelperDeploymentSubmit(request.body);
+          if (
+            !(await requireAllowedWalletChain(
+              deployment.chainId,
+              request,
+              reply,
+              session,
+              helperDeploymentLocalChainIds,
+            ))
+          ) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(
+            session.userId,
+            deployment.walletId,
+          );
+          if (!wallet) throw new HelperDeploymentError("WALLET_NOT_FOUND");
+          const result = await options.helperDeployments.submit({
+            idempotencyKey,
+            request: deployment,
+            requestId: request.id,
+            sessionId: session.id,
+            tenantId: options.tenantId,
+            userId: session.userId,
+            wallet,
+          });
+          return reply
+            .code(result.created ? 202 : 200)
+            .send(createSuccessEnvelope(result.operation, request.id));
+        } catch (error) {
+          return helperDeploymentFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.get<{ Params: { operationId: string } }>(
+      "/api/chain-operations/:operationId",
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (Object.keys(request.query as Record<string, unknown>).length > 0) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "INVALID_QUERY",
+              message: "The chain operation query is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.helperDeployments || !options.tenantId) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "HELPER_DEPLOYMENT_UNAVAILABLE",
+              message: "The Helper deployment service is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        try {
+          const operation = await options.helperDeployments.get({
+            operationId: parseChainOperationId(request.params.operationId),
+            tenantId: options.tenantId,
+            userId: session.userId,
+          });
+          return createSuccessEnvelope(operation, request.id);
+        } catch (error) {
+          return helperDeploymentFailure(error, request, reply) ?? reply;
         }
       },
     );
