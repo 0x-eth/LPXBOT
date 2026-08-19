@@ -174,6 +174,17 @@ import {
   type LocalSwapQuoteApplication,
 } from "./local-swap-executions.js";
 import {
+  LocalPositionExecutionError,
+  localPositionExecutionBodyLimit,
+  parseLocalPositionCollectFees,
+  parseLocalPositionCollectFeesPreview,
+  parseLocalPositionIdempotencyKey,
+  parseLocalPositionOperationId,
+  parseLocalPositionRemoveLiquidity,
+  parseLocalPositionRemoveLiquidityPreview,
+  type LocalPositionExecutionApplication,
+} from "./local-position-executions.js";
+import {
   HelperResidualCursorError,
   HelperResidualReadError,
   type WalletHelperResidualApplication,
@@ -272,6 +283,8 @@ export interface ApiAppOptions {
   localSwapExecutionChainIds?: readonly number[];
   localSwapExecutions?: LocalSwapExecutionApplication;
   localSwapQuotes?: LocalSwapQuoteApplication;
+  localPositionExecutionChainIds?: readonly number[];
+  localPositionExecutions?: LocalPositionExecutionApplication;
   preferencesStore?: UserPreferencesStore;
   recommendedPoolsPollMilliseconds?: number;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
@@ -1025,6 +1038,14 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   ) {
     throw new RangeError("Local Swap execution chain IDs must contain only 31337");
   }
+  const localPositionExecutionChainIds = new Set(options.localPositionExecutionChainIds ?? []);
+  if (
+    localPositionExecutionChainIds.size !==
+      (options.localPositionExecutionChainIds?.length ?? 0) ||
+    [...localPositionExecutionChainIds].some((chainId) => chainId !== 31_337)
+  ) {
+    throw new RangeError("Local position execution chain IDs must contain only 31337");
+  }
   const walletTransferLocalChainIds = new Set(options.walletTransferLocalChainIds ?? []);
   if (
     walletTransferLocalChainIds.size !== (options.walletTransferLocalChainIds?.length ?? 0) ||
@@ -1306,6 +1327,11 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         (request.method === "POST" && requestPath === "/api/swap/quote") ||
         (request.method === "POST" &&
           (requestPath === "/api/swap/execute" || requestPath === "/api/swap/execute/preview")) ||
+        (request.method === "POST" &&
+          (requestPath === "/api/positions/collect-fees" ||
+            requestPath === "/api/positions/collect-fees/preview" ||
+            requestPath === "/api/positions/remove-liquidity" ||
+            requestPath === "/api/positions/remove-liquidity/preview")) ||
         (request.method === "POST" &&
           (requestPath === "/api/pricing-positions/import" ||
             /^\/api\/pricing-positions\/[^/]+\/withdrawn$/u.test(requestPath))) ||
@@ -4345,6 +4371,75 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         REGISTRY_MISMATCH: "The local Swap Registry does not match chain state",
         WALLET_LOCKED: "The wallet must be unlocked before Swap execution",
         WALLET_NOT_FOUND: "The wallet was not found",
+      };
+      return reply.code(status).send(
+        createErrorEnvelope({
+          code: error.code,
+          message: messages[error.code],
+          requestId: request.id,
+          retryable: error.retryable,
+        }),
+      );
+    };
+
+    const localPositionFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply | null => {
+      if (!(error instanceof LocalPositionExecutionError)) return null;
+      const status =
+        error.code === "CHAIN_NOT_ALLOWED"
+          ? 403
+          : error.code === "LOCAL_POSITION_NOT_FOUND" ||
+              error.code === "SNAPSHOT_NOT_FOUND" ||
+              error.code === "WALLET_NOT_FOUND"
+            ? 404
+            : error.code === "LOCAL_POSITION_UNAVAILABLE"
+              ? 503
+              : error.code === "ZERO_LIQUIDITY_DELTA"
+                ? 422
+                : error.code === "BURN_NOT_ALLOWED" ||
+                    error.code === "IDEMPOTENCY_CONFLICT" ||
+                    error.code === "MANAGER_IDENTITY_MISMATCH" ||
+                    error.code === "NONCE_DRIFT" ||
+                    error.code === "NONCE_RECONCILIATION_REQUIRED" ||
+                    error.code === "OWNER_APPROVAL_MISMATCH" ||
+                    error.code === "PREVIEW_CHANGED" ||
+                    error.code === "PREVIEW_EXPIRED" ||
+                    error.code === "REGISTRY_MISMATCH" ||
+                    error.code === "SNAPSHOT_CHANGED" ||
+                    error.code === "SNAPSHOT_EXPIRED" ||
+                    error.code === "SNAPSHOT_REORGED" ||
+                    error.code === "SNAPSHOT_STALE" ||
+                    error.code === "TOKEN_IDENTITY_MISMATCH" ||
+                    error.code === "WALLET_LOCKED"
+                  ? 409
+                  : 400;
+      const messages: Record<LocalPositionExecutionError["code"], string> = {
+        BURN_NOT_ALLOWED: "Burn is available only for an exact 100% exit",
+        CHAIN_NOT_ALLOWED: "The chain is not available for local position execution",
+        IDEMPOTENCY_CONFLICT: "The idempotency key is already bound to another request",
+        IDEMPOTENCY_KEY_REQUIRED: "A valid Idempotency-Key header is required",
+        LOCAL_POSITION_NOT_FOUND: "The chain operation was not found",
+        LOCAL_POSITION_UNAVAILABLE: "The local position execution service is unavailable",
+        MANAGER_IDENTITY_MISMATCH: "The position manager identity changed",
+        NONCE_DRIFT: "The wallet nonce changed after preview",
+        NONCE_RECONCILIATION_REQUIRED: "The wallet nonce requires reconciliation",
+        OWNER_APPROVAL_MISMATCH: "The position owner or approval changed",
+        PREVIEW_CHANGED: "The local position preview no longer matches current state",
+        PREVIEW_EXPIRED: "The local position preview has expired",
+        PREVIEW_INVALID: "The local position preview is invalid",
+        REGISTRY_MISMATCH: "The local position Registry does not match the snapshot",
+        SNAPSHOT_CHANGED: "The local position snapshot changed",
+        SNAPSHOT_EXPIRED: "The local position snapshot has expired",
+        SNAPSHOT_NOT_FOUND: "The local position snapshot was not found",
+        SNAPSHOT_REORGED: "The local position snapshot block was reorganized",
+        SNAPSHOT_STALE: "The local position snapshot is stale",
+        TOKEN_IDENTITY_MISMATCH: "A position token identity changed",
+        WALLET_LOCKED: "The wallet must be unlocked before position execution",
+        WALLET_NOT_FOUND: "The wallet was not found",
+        ZERO_LIQUIDITY_DELTA: "The selected percentage rounds to zero liquidity",
       };
       return reply.code(status).send(
         createErrorEnvelope({
