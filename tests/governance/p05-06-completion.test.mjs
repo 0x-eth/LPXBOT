@@ -27,12 +27,15 @@ const IMPLEMENTED = [
   "SWAP-01",
   "SWAP-02",
   "POS-01",
+  "POS-02",
+  "POS-03",
   "POS-04",
   "HELPER-01",
   "HELPER-02",
   "HELPER-05",
 ];
-const PLANNED = ["POS-02", "POS-03", "HELPER-03", "HELPER-04", "HELPER-06"];
+const P05_06_NON_GOALS = ["POS-02", "POS-03", "HELPER-03", "HELPER-04", "HELPER-06"];
+const CURRENT_PLANNED = ["HELPER-03", "HELPER-04", "HELPER-06"];
 const EVIDENCE = [
   "E-API",
   "E-CHAIN",
@@ -115,7 +118,7 @@ function checksums(source) {
   return rows;
 }
 
-test("P05-06 owns SWAP-02 and advances P05 to 7 / 5 with global 68 / 128", async () => {
+test("P05-06 owns SWAP-02 while P05-07 advances P05 to 9 / 3 with global 70 / 126", async () => {
   const [functionMatrix, traceability, roadmap] = await Promise.all([
     readFile(path.join(ROOT, "docs/FUNCTION_MATRIX.md"), "utf8"),
     readFile(path.join(ROOT, "docs/TRACEABILITY_MATRIX.md"), "utf8"),
@@ -129,7 +132,7 @@ test("P05-06 owns SWAP-02 and advances P05 to 7 / 5 with global 68 / 128", async
   );
   assert.deepEqual(
     sorted([...rows].filter(([, row]) => row.status === "planned").map(([id]) => id)),
-    sorted(PLANNED),
+    sorted(CURRENT_PLANNED),
   );
   const swap = rows.get("SWAP-02");
   assert.match(swap.implementation, /local-swap-execution|local Registry/u);
@@ -137,15 +140,15 @@ test("P05-06 owns SWAP-02 and advances P05 to 7 / 5 with global 68 / 128", async
   assert.match(swap.evidence, /P05-06/u);
   assert.match(functionMatrix, /\| SWAP-02 \|[^\n]*implemented-assumed[^\n]*P05-06/u);
   for (const document of [traceability, roadmap]) {
-    assert.match(document, /P05[^\n]*7[^\n]*implemented-assumed[^\n]*5[^\n]*planned/iu);
-    assert.match(document, /68[^\n]*implemented-assumed[^\n]*128[^\n]*planned/iu);
+    assert.match(document, /P05[^\n]*9[^\n]*implemented-assumed[^\n]*3[^\n]*planned/iu);
+    assert.match(document, /70[^\n]*implemented-assumed[^\n]*126[^\n]*planned/iu);
     assert.match(
       document,
       /testnet\/production[^\n]*CLOSED|testnet\/production gates[^\n]*`CLOSED`/iu,
     );
   }
-  assert.match(traceability, /\| 当前产品实现 \| 68 \|/u);
-  assert.match(traceability, /\| 其余 `planned` \| 128 \|/u);
+  assert.match(traceability, /\| 当前产品实现 \| 70 \|/u);
+  assert.match(traceability, /\| 其余 `planned` \| 126 \|/u);
 });
 
 test("P05-06 manifest, evidence inventory, visuals, and checksums are complete", async () => {
@@ -212,7 +215,7 @@ test("execution contract and gates freeze local-only quote, authorization, and r
   }
   assert.match(contract.authorization.direct.nonzeroMismatch, /reset-to-zero/u);
   assert.match(contract.recovery.approvalConfirmedSwapFailure, /reconciling/u);
-  assert.deepEqual(contract.nonGoals, PLANNED);
+  assert.deepEqual(contract.nonGoals, P05_06_NON_GOALS);
   assert.equal(contract.executionCounters.localOperations, 3);
   assert.equal(contract.executionCounters.localCanonicalStepReceipts, 7);
   assert.equal(contract.executionCounters.testnetSignatures, 0);

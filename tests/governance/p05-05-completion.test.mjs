@@ -26,8 +26,10 @@ const FEATURE_IDS = [
 ];
 const P05_05_IMPLEMENTED = ["SWAP-01", "POS-01", "POS-04", "HELPER-01", "HELPER-02", "HELPER-05"];
 const P05_05_NON_GOALS = ["SWAP-02", "POS-02", "POS-03", "HELPER-03", "HELPER-04", "HELPER-06"];
-const CURRENT_IMPLEMENTED = ["SWAP-02", ...P05_05_IMPLEMENTED];
-const CURRENT_PLANNED = P05_05_NON_GOALS.filter((id) => id !== "SWAP-02");
+const CURRENT_IMPLEMENTED = ["SWAP-02", "POS-02", "POS-03", ...P05_05_IMPLEMENTED];
+const CURRENT_PLANNED = P05_05_NON_GOALS.filter(
+  (id) => !["SWAP-02", "POS-02", "POS-03"].includes(id),
+);
 const EVIDENCE = [
   "E-API",
   "E-CHAIN",
@@ -105,7 +107,7 @@ function checksums(source) {
     });
 }
 
-test("P05-05 owns HELPER-02 while P05-06 advances P05 to 7 / 5 and global 68 / 128", async () => {
+test("P05-05 owns HELPER-02 while P05-07 advances P05 to 9 / 3 and global 70 / 126", async () => {
   const [functionMatrix, traceability, roadmap] = await Promise.all([
     readFile(path.join(ROOT, "docs/FUNCTION_MATRIX.md"), "utf8"),
     readFile(path.join(ROOT, "docs/TRACEABILITY_MATRIX.md"), "utf8"),
@@ -127,8 +129,8 @@ test("P05-05 owns HELPER-02 while P05-06 advances P05 to 7 / 5 and global 68 / 1
   assert.match(helper.evidence, /P05-05/u);
   assert.match(functionMatrix, /\| HELPER-02 \|[^\n]*implemented-assumed[^\n]*P05-05/u);
   for (const document of [traceability, roadmap]) {
-    assert.match(document, /P05[^\n]*7[^\n]*implemented-assumed[^\n]*5[^\n]*planned/iu);
-    assert.match(document, /68[^\n]*implemented-assumed[^\n]*128[^\n]*planned/iu);
+    assert.match(document, /P05[^\n]*9[^\n]*implemented-assumed[^\n]*3[^\n]*planned/iu);
+    assert.match(document, /70[^\n]*implemented-assumed[^\n]*126[^\n]*planned/iu);
     assert.match(
       document,
       /testnet\/production[^\n]*CLOSED|testnet\/production gates[^\n]*`CLOSED`/iu,
