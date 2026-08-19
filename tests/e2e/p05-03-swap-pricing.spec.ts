@@ -290,7 +290,7 @@ async function install(page: Page, state: FixtureState) {
       });
       return;
     }
-    if (path.endsWith("/positions")) {
+    if (path.startsWith("/api/wallets/") && path.endsWith("/positions")) {
       await route.fulfill({ contentType: "application/json", json: envelope(positionPage()) });
       return;
     }

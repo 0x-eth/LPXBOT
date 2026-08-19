@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 
 import { WalletReadClient, WalletReadRequestError } from "./wallet-read-client";
 import { PositionHelperPanels } from "./position-helper-panels";
+import { SwapPricingPanels } from "./swap-pricing-panels";
 import { WalletTransferClient } from "./wallet-transfer-client";
 import { WalletTransferPanel } from "./wallet-transfer-panel";
 
@@ -675,6 +676,7 @@ export function WalletReadPanels({ wallets }: { wallets: CustodyWallet[] }) {
           </p>
         ) : null}
       </section>
+      <SwapPricingPanels key={`swap-pricing:${wallet.walletId}`} wallet={wallet} />
       <PositionHelperPanels key={`position-helper:${wallet.walletId}`} wallet={wallet} />
       <ReceivePanel
         key={`receive:${wallet.walletId}`}

@@ -7546,6 +7546,10 @@ html[data-theme="dark"] .chain-operation-success {
   display: contents;
 }
 
+.swap-pricing-read-model {
+  display: contents;
+}
+
 .read-state-badge {
   display: inline-flex;
   min-height: 22px;
@@ -7561,6 +7565,8 @@ html[data-theme="dark"] .chain-operation-success {
 }
 
 .read-state-badge[data-state="active"],
+.read-state-badge[data-state="live"],
+.read-state-badge[data-state="quoted"],
 .read-state-badge[data-state="ready"] {
   color: #087f5b;
 }
@@ -7573,20 +7579,204 @@ html[data-theme="dark"] .chain-operation-success {
 }
 
 .read-state-badge[data-state="partial"],
+.read-state-badge[data-state="expired"],
+.read-state-badge[data-state="hidden"],
 .read-state-badge[data-state="stale"],
 .read-state-badge[data-state="superseded"] {
   color: #8a5a00;
 }
 
 html[data-theme="dark"] .read-state-badge[data-state="active"],
+html[data-theme="dark"] .read-state-badge[data-state="live"],
+html[data-theme="dark"] .read-state-badge[data-state="quoted"],
 html[data-theme="dark"] .read-state-badge[data-state="ready"] {
   color: #64d4bc;
 }
 
 html[data-theme="dark"] .read-state-badge[data-state="partial"],
+html[data-theme="dark"] .read-state-badge[data-state="expired"],
+html[data-theme="dark"] .read-state-badge[data-state="hidden"],
 html[data-theme="dark"] .read-state-badge[data-state="stale"],
 html[data-theme="dark"] .read-state-badge[data-state="superseded"] {
   color: #f2bf62;
+}
+
+.swap-quote-form {
+  grid-template-columns:
+    minmax(120px, 1fr) minmax(120px, 1fr) minmax(185px, 1.3fr) minmax(145px, 0.8fr)
+    minmax(105px, 0.55fr) 38px;
+}
+
+.swap-quote-refresh {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+}
+
+.swap-quote-result {
+  display: grid;
+  min-width: 0;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 16px 8px 0;
+  border-top: 1px solid var(--border);
+}
+
+.swap-quote-facts,
+.pricing-position-facts {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+}
+
+.swap-quote-facts > div,
+.pricing-position-facts > div {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 5px;
+}
+
+.swap-quote-facts dt,
+.pricing-position-facts dt {
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.swap-quote-facts dd,
+.pricing-position-facts dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.swap-quote-route {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.swap-quote-route > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.swap-quote-route span,
+.swap-quote-route p {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.swap-quote-route code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.67rem;
+}
+
+.swap-quote-route p {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pricing-import-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 14px 8px 18px;
+  border-block: 1px solid var(--border);
+}
+
+.pricing-import-command {
+  min-height: 38px;
+  padding-block: 6px;
+}
+
+.pricing-position-list {
+  padding: 0;
+  margin: 16px 0 0;
+  list-style: none;
+}
+
+.pricing-position-row {
+  min-width: 0;
+  padding: 14px 8px;
+  border-block: 1px solid var(--border);
+}
+
+.pricing-position-row + .pricing-position-row {
+  border-top: 0;
+}
+
+.pricing-position-identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.pricing-position-identity > div {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.pricing-position-identity strong {
+  font-size: 0.82rem;
+}
+
+.pricing-position-identity > div span {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+
+.pricing-position-facts code,
+.pricing-position-facts small {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.69rem;
+}
+
+.pricing-position-facts small {
+  margin-top: 3px;
+  color: var(--muted-foreground);
+  font-size: 0.64rem;
+}
+
+.pricing-position-action dd {
+  min-height: 42px;
+}
+
+.pricing-position-action .secondary-button {
+  min-height: 36px;
+  padding-block: 6px;
+}
+
+.pricing-position-section > .wallet-read-error {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-inline: 8px;
 }
 
 .position-helper-state {
