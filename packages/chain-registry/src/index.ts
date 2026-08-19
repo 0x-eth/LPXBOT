@@ -424,6 +424,137 @@ export function getBscPositionReadDeployment(input: {
   );
 }
 
+export interface BscHelperReadVersion {
+  chainId: 56;
+  helperVersion: string;
+  ownerSelector: `0x${string}`;
+  registryVersion: typeof P05_BSC_EXECUTION_REGISTRY_VERSION;
+  requiredSelectors: readonly `0x${string}`[];
+  runtimeCodeHash: Hex;
+}
+
+export interface BscHelperReadRegistry {
+  chainId: 56;
+  currentVersion: string;
+  executionEnabled: false;
+  registryVersion: typeof P05_BSC_EXECUTION_REGISTRY_VERSION;
+  versions: readonly BscHelperReadVersion[];
+  versionsComparableAcrossChains: false;
+}
+
+export interface BscHelperResidualAllowlist {
+  chainId: 56;
+  coverageComplete: boolean;
+  nftManagerAddresses: readonly `0x${string}`[];
+  registryVersion: typeof P05_BSC_EXECUTION_REGISTRY_VERSION;
+  spenderAddresses: readonly `0x${string}`[];
+  tokenAddresses: readonly `0x${string}`[];
+  version: string;
+}
+
+const observedHelperV1Selectors = Object.freeze([
+  "0x8da5cb5b",
+  "0xadc3f25c",
+  "0xfb691fd9",
+] as const);
+const observedHelperV2Selectors = Object.freeze([
+  "0x5dfd8e50",
+  "0x71fa74ed",
+  "0x8da5cb5b",
+] as const);
+
+export const BSC_HELPER_READ_REGISTRY = Object.freeze({
+  chainId: 56,
+  currentVersion: "observed-bsc-helper-v2",
+  executionEnabled: false,
+  registryVersion: P05_BSC_EXECUTION_REGISTRY_VERSION,
+  versions: Object.freeze([
+    Object.freeze({
+      chainId: 56,
+      helperVersion: "observed-bsc-helper-v1",
+      ownerSelector: "0x8da5cb5b",
+      registryVersion: P05_BSC_EXECUTION_REGISTRY_VERSION,
+      requiredSelectors: observedHelperV1Selectors,
+      runtimeCodeHash: "0x42795bc1467d4c1aad4704c13255eb646768885f22886c486430b30a93caebd7",
+    }),
+    Object.freeze({
+      chainId: 56,
+      helperVersion: "observed-bsc-helper-v2",
+      ownerSelector: "0x8da5cb5b",
+      registryVersion: P05_BSC_EXECUTION_REGISTRY_VERSION,
+      requiredSelectors: observedHelperV2Selectors,
+      runtimeCodeHash: "0xaf866c449723b487e87ce38974433ea413a2e7826226865c678665d84c86cd85",
+    }),
+  ]),
+  versionsComparableAcrossChains: false,
+} as const satisfies BscHelperReadRegistry);
+
+export const BSC_HELPER_RESIDUAL_ALLOWLIST = Object.freeze({
+  chainId: 56,
+  coverageComplete: false,
+  nftManagerAddresses: Object.freeze(
+    BSC_POSITION_READ_REGISTRY.deployments
+      .map(({ positionManager }) => positionManager.address)
+      .sort((left, right) => left.localeCompare(right)),
+  ),
+  registryVersion: P05_BSC_EXECUTION_REGISTRY_VERSION,
+  spenderAddresses: Object.freeze([
+    "0x000000000022d473030f116ddee9f6b43ac78ba3",
+    "0x2c34a2fb1d0b4f55de51e1d0bdefaddce6b7cdd6",
+    "0x31c2f6fcff4f8759b3bd5bf0e1084a055615c768",
+  ] as const),
+  tokenAddresses: Object.freeze([
+    "0x55d398326f99059ff775485246999027b3197955",
+    "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+  ] as const),
+  version: "p05-bsc-helper-residual-v1",
+} as const satisfies BscHelperResidualAllowlist);
+
+const selectorPattern = /^0x[0-9a-f]{8}$/u;
+const helperVersionPattern = /^[a-z0-9](?:[a-z0-9.-]{0,62}[a-z0-9])?$/u;
+
+export function validateBscHelperReadRegistry<T extends BscHelperReadRegistry>(registry: T): T {
+  if (
+    registry.chainId !== 56 ||
+    registry.registryVersion !== P05_BSC_EXECUTION_REGISTRY_VERSION ||
+    registry.executionEnabled !== false ||
+    registry.versionsComparableAcrossChains !== false ||
+    !helperVersionPattern.test(registry.currentVersion)
+  ) {
+    throw new Error("HELPER_READ_REGISTRY_INVALID: registry identity");
+  }
+  const versions = new Set<string>();
+  for (const version of registry.versions) {
+    if (
+      version.chainId !== 56 ||
+      version.registryVersion !== registry.registryVersion ||
+      !helperVersionPattern.test(version.helperVersion) ||
+      !codeHashPattern.test(version.runtimeCodeHash) ||
+      !selectorPattern.test(version.ownerSelector) ||
+      version.requiredSelectors.length === 0 ||
+      !version.requiredSelectors.includes(version.ownerSelector) ||
+      version.requiredSelectors.some((selector) => !selectorPattern.test(selector)) ||
+      new Set(version.requiredSelectors).size !== version.requiredSelectors.length ||
+      versions.has(version.helperVersion)
+    ) {
+      throw new Error(`HELPER_READ_REGISTRY_INVALID: version ${version.helperVersion}`);
+    }
+    versions.add(version.helperVersion);
+  }
+  if (!versions.has(registry.currentVersion)) {
+    throw new Error("HELPER_READ_REGISTRY_INVALID: current version");
+  }
+  return registry;
+}
+
+export function getBscHelperReadVersion(helperVersion: string): BscHelperReadVersion | null {
+  return (
+    BSC_HELPER_READ_REGISTRY.versions.find(
+      (candidate) => candidate.helperVersion === helperVersion,
+    ) ?? null
+  );
+}
+
 function deploymentAddress(deployment: ProtocolDeployment): `0x${string}` {
   const address = deployment.factory ?? deployment.poolManager;
   if (!address) throw new Error("PROTOCOL_DEPLOYMENT_INVALID: contract address is missing");
@@ -559,3 +690,4 @@ export async function verifyProtocolDeploymentCode(
 
 validateProtocolDeploymentRegistry(BSC_PROTOCOL_DEPLOYMENTS);
 validateBscPositionReadRegistry(BSC_POSITION_READ_REGISTRY);
+validateBscHelperReadRegistry(BSC_HELPER_READ_REGISTRY);
