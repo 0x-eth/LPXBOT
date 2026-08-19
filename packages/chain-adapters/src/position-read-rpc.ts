@@ -30,10 +30,7 @@ export type BscPositionReadRpcEnvironment = Readonly<
   Partial<Record<"BSC_POSITION_READ_RPC_URL", string | undefined>>
 >;
 
-export type BscPositionReadRpcEnvironmentOptions = Omit<
-  BscPositionReadRpcClientOptions,
-  "rpcUrl"
->;
+export type BscPositionReadRpcEnvironmentOptions = Omit<BscPositionReadRpcClientOptions, "rpcUrl">;
 
 interface RpcEnvelope {
   error?: unknown;
@@ -231,7 +228,9 @@ export class BscPositionReadRpcClient implements PositionReadRpc {
   async getCode(inputAddress: Address, inputBlockNumber: string): Promise<Hex> {
     const blockNumber = decimalBlock(inputBlockNumber, "BLOCK");
     if (!addressPattern.test(inputAddress)) throw new Error("POSITION_RPC_ADDRESS_INVALID");
-    return data(await this.request("eth_getCode", [inputAddress.toLowerCase(), toHex(blockNumber)]));
+    return data(
+      await this.request("eth_getCode", [inputAddress.toLowerCase(), toHex(blockNumber)]),
+    );
   }
 
   async getLogs(input: {
@@ -309,14 +308,17 @@ export class BscPositionReadRpcClient implements PositionReadRpc {
           signal: controller.signal,
         });
       } catch {
-        throw new Error(controller.signal.aborted ? "POSITION_RPC_TIMEOUT" : "POSITION_RPC_UNAVAILABLE");
+        throw new Error(
+          controller.signal.aborted ? "POSITION_RPC_TIMEOUT" : "POSITION_RPC_UNAVAILABLE",
+        );
       }
       if (!response.ok || response.redirected) throw new Error("POSITION_RPC_UNAVAILABLE");
       let envelope: RpcEnvelope;
       try {
         envelope = JSON.parse(await boundedResponseText(response)) as RpcEnvelope;
       } catch (error) {
-        if (error instanceof Error && error.message === "POSITION_RPC_INVALID_RESPONSE") throw error;
+        if (error instanceof Error && error.message === "POSITION_RPC_INVALID_RESPONSE")
+          throw error;
         throw new Error("POSITION_RPC_INVALID_RESPONSE", { cause: error });
       }
       if (

@@ -29,8 +29,7 @@ describe("P05-02 BSC position read registry", () => {
         poolIdentity: "poolAddress",
         positionManager: {
           address: "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613",
-          runtimeCodeHash:
-            "0xbc0177f23ffd65c41e41fb201e170cb253489d7d637f8f6a15743a1f861160f5",
+          runtimeCodeHash: "0xbc0177f23ffd65c41e41fb201e170cb253489d7d637f8f6a15743a1f861160f5",
         },
       },
       {
@@ -39,8 +38,7 @@ describe("P05-02 BSC position read registry", () => {
         poolIdentity: "poolAddress",
         positionManager: {
           address: "0x46a15b0b27311cedf172ab29e4f4766fbe7f4364",
-          runtimeCodeHash:
-            "0xf64dd82357e77afddcd6dd56f4ba161f44fe90a6f72da5433f8fc6901440197f",
+          runtimeCodeHash: "0xf64dd82357e77afddcd6dd56f4ba161f44fe90a6f72da5433f8fc6901440197f",
         },
       },
       {
@@ -49,8 +47,7 @@ describe("P05-02 BSC position read registry", () => {
         poolIdentity: "poolId",
         positionManager: {
           address: "0x7a4a5c919ae2541aed11041a1aeee68f1287f95b",
-          runtimeCodeHash:
-            "0x07867576e9a6a0fdcead21a487dce04eae6161fb350edc8c56954c09fa015ef0",
+          runtimeCodeHash: "0x07867576e9a6a0fdcead21a487dce04eae6161fb350edc8c56954c09fa015ef0",
         },
       },
       {
@@ -59,8 +56,7 @@ describe("P05-02 BSC position read registry", () => {
         poolIdentity: "poolId",
         positionManager: {
           address: "0x55f4c8aba71a1e923edc303eb4feff14608cc226",
-          runtimeCodeHash:
-            "0xe8fea1721cd1cb164280e02614b06d7d8033dcc81ed6fa97f5e7cc63341d34ed",
+          runtimeCodeHash: "0xe8fea1721cd1cb164280e02614b06d7d8033dcc81ed6fa97f5e7cc63341d34ed",
         },
       },
     ]);

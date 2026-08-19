@@ -71,9 +71,7 @@ const position = {
   tokenId: "9",
 };
 
-function positionPage(
-  state: "empty" | "partial" | "quarantined" | "ready" | "stale",
-) {
+function positionPage(state: "empty" | "partial" | "quarantined" | "ready" | "stale") {
   const hasItem = state === "ready" || state === "partial";
   const quarantined =
     state === "quarantined"
@@ -85,8 +83,7 @@ function positionPage(
     coverage: {
       complete: state === "ready" || state === "empty",
       failedPlatformIds: state === "partial" ? [2] : state === "quarantined" ? [1] : [],
-      scannedPlatformIds:
-        state === "stale" ? [] : state === "quarantined" ? [1] : [1, 2, 4, 5],
+      scannedPlatformIds: state === "stale" ? [] : state === "quarantined" ? [1] : [1, 2, 4, 5],
     },
     cursor: null,
     items: hasItem ? [position] : [],
@@ -98,9 +95,7 @@ function positionPage(
   };
 }
 
-function helperStatus(
-  state: "active" | "degraded" | "residual" | "superseded" | "undeployed",
-) {
+function helperStatus(state: "active" | "degraded" | "residual" | "superseded" | "undeployed") {
   if (state === "undeployed") {
     return {
       address: null,
@@ -253,7 +248,10 @@ async function install(
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (request.method() === "GET" && path === "/api/wallets") {
-      await route.fulfill({ contentType: "application/json", json: envelope({ items: [wallet()] }) });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({ items: [wallet()] }),
+      });
       return;
     }
     if (request.method() === "GET" && path.endsWith("/balances")) {
@@ -303,13 +301,19 @@ async function install(
           status: 503,
         });
       } else {
-        await route.fulfill({ contentType: "application/json", json: envelope(positionPage(state.position)) });
+        await route.fulfill({
+          contentType: "application/json",
+          json: envelope(positionPage(state.position)),
+        });
       }
       return;
     }
     if (path.endsWith("/helper")) {
       if (state.delayMs) await new Promise((resolve) => setTimeout(resolve, state.delayMs));
-      await route.fulfill({ contentType: "application/json", json: envelope(helperStatus(state.helper)) });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope(helperStatus(state.helper)),
+      });
       return;
     }
     if (path === "/api/wallets/helper-residuals" && request.method() === "GET") {
@@ -378,9 +382,7 @@ test("renders ready position, active Helper, and residual data without execution
   );
   await expect(page.getByText("Token #9")).toBeVisible();
   await expect(
-    page
-      .locator("[data-testid='position-read-panel']")
-      .getByText("1000000000000000001 base units"),
+    page.locator("[data-testid='position-read-panel']").getByText("1000000000000000001 base units"),
   ).toBeVisible();
   await expect(page.locator("[data-testid='helper-read-panel']")).toHaveAttribute(
     "data-state",

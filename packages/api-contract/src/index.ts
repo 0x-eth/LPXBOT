@@ -1288,10 +1288,7 @@ export interface HelperNftResidual extends HelperResidualAssetBase {
 }
 
 export type HelperResidualAsset =
-  | HelperNativeResidual
-  | HelperTokenResidual
-  | HelperAllowanceResidual
-  | HelperNftResidual;
+  HelperNativeResidual | HelperTokenResidual | HelperAllowanceResidual | HelperNftResidual;
 
 export interface HelperResidualPage {
   allowlistVersion: string;

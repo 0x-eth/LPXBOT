@@ -140,8 +140,12 @@ describe("P05-02 position read API", () => {
   it("serves both no-store read routes for the session-owned custody address", async () => {
     const { app, positions, tokenA } = await fixture();
     expect(
-      (await app.inject({ method: "GET", url: `/api/wallets/${wallet.address}/positions?chainId=56` }))
-        .statusCode,
+      (
+        await app.inject({
+          method: "GET",
+          url: `/api/wallets/${wallet.address}/positions?chainId=56`,
+        })
+      ).statusCode,
     ).toBe(401);
 
     const list = await app.inject({
@@ -169,7 +173,11 @@ describe("P05-02 position read API", () => {
       url: `/api/positions/scan/${wallet.address}?chainId=56&cursor=fixture-cursor&limit=10`,
     });
     expect(scan.statusCode).toBe(200);
-    expect(positions.calls[1]).toMatchObject({ cursor: "fixture-cursor", limit: 10, platformId: null });
+    expect(positions.calls[1]).toMatchObject({
+      cursor: "fixture-cursor",
+      limit: 10,
+      platformId: null,
+    });
   });
 
   it("hides unknown and cross-user wallets before starting chain reads", async () => {

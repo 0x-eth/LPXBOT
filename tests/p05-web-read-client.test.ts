@@ -280,7 +280,9 @@ describe("P05-02 strict position, Helper, and residual browser client", () => {
     ]);
     for (const [, init] of fetcher.mock.calls) {
       expect(init).toMatchObject({ cache: "no-store", credentials: "include" });
-      expect(JSON.stringify(init)).not.toMatch(/provider|target|calldata|helperAddress|tokenAddress/u);
+      expect(JSON.stringify(init)).not.toMatch(
+        /provider|target|calldata|helperAddress|tokenAddress/u,
+      );
     }
   });
 });

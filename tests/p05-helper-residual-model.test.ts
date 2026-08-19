@@ -13,13 +13,7 @@ import type {
   PositionReadSnapshot,
 } from "../packages/chain-adapters/src/index.js";
 import type { BscHelperResidualAllowlist } from "../packages/chain-registry/src/index.js";
-import {
-  encodeFunctionData,
-  encodeFunctionResult,
-  type Abi,
-  type Address,
-  type Hex,
-} from "viem";
+import { encodeFunctionData, encodeFunctionResult, type Abi, type Address, type Hex } from "viem";
 import { describe, expect, it } from "vitest";
 
 const userId = "65000000-0000-4000-8000-000000000001";
@@ -57,13 +51,7 @@ class ResidualRpc implements PositionReadRpc {
   nativeBalance = 5n;
   reorg = false;
 
-  add(
-    abi: Abi,
-    to: Address,
-    functionName: string,
-    args: readonly unknown[],
-    result: unknown,
-  ) {
+  add(abi: Abi, to: Address, functionName: string, args: readonly unknown[], result: unknown) {
     const data = encodeFunctionData({ abi, functionName, args } as never);
     this.responses.set(
       `${to}:${data}`,
@@ -334,7 +322,12 @@ describe("P05-02 bounded Helper residual read model", () => {
     await expect(residuals.scan(scanInput())).rejects.toMatchObject({
       code: "HELPER_UNDEPLOYED",
     });
-    expect(Object.keys(scanInput()).sort()).toEqual(["chainId", "idempotencyKey", "userId", "walletId"]);
+    expect(Object.keys(scanInput()).sort()).toEqual([
+      "chainId",
+      "idempotencyKey",
+      "userId",
+      "walletId",
+    ]);
     expect(rpc.blockReads).toEqual([]);
   });
 });

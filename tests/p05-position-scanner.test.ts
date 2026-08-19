@@ -58,7 +58,12 @@ function transferLog(
     blockNumber: snapshot.blockNumber,
     data: "0x",
     logIndex: Number(tokenId),
-    topics: [ERC721_TRANSFER_TOPIC, topicAddress(otherOwner), topicAddress(owner), topicTokenId(tokenId)],
+    topics: [
+      ERC721_TRANSFER_TOPIC,
+      topicAddress(otherOwner),
+      topicAddress(owner),
+      topicTokenId(tokenId),
+    ],
     transactionHash: `0x${tokenId.toString(16).padStart(64, "0")}` as Hex,
   };
 }
@@ -90,9 +95,7 @@ function position(
       feePips: "3000",
       hooks: null,
       poolAddress:
-        registered.generation === "v3"
-          ? "0x0000000000000000000000000000000000001000"
-          : null,
+        registered.generation === "v3" ? "0x0000000000000000000000000000000000001000" : null,
       poolId: registered.generation === "v4" ? (`0x${"12".repeat(32)}` as Hex) : null,
       tickSpacing: "60",
       token0,
@@ -174,9 +177,7 @@ function service(rpc: FakeRpc, adapters: readonly FakeAdapter[]) {
 describe("P05-02 canonical BSC position scanning", () => {
   it("deduplicates and paginates without changing the snapshot or repeating a position", async () => {
     const rpc = new FakeRpc();
-    const adapters = [1, 2, 4, 5].map(
-      (platformId) => new FakeAdapter(platformId as 1 | 2 | 4 | 5),
-    );
+    const adapters = [1, 2, 4, 5].map((platformId) => new FakeAdapter(platformId as 1 | 2 | 4 | 5));
     const manager = deployment(1).positionManager.address;
     rpc.logs.set(manager, [
       transferLog(manager, 3n),
@@ -226,8 +227,17 @@ describe("P05-02 canonical BSC position scanning", () => {
     expect(second.items.map(({ tokenId }) => tokenId)).toEqual(["3"]);
     expect(second.cursor).toBeNull();
     expect(new Set([...first.items, ...second.items].map(({ tokenId }) => tokenId)).size).toBe(3);
-    expect(adapters.flatMap(({ inputs }) => inputs).every((input) => input.snapshot.blockHash === snapshot.blockHash)).toBe(true);
-    expect(rpc.blockReads).toEqual(["latest", snapshot.blockNumber, snapshot.blockNumber, snapshot.blockNumber]);
+    expect(
+      adapters
+        .flatMap(({ inputs }) => inputs)
+        .every((input) => input.snapshot.blockHash === snapshot.blockHash),
+    ).toBe(true);
+    expect(rpc.blockReads).toEqual([
+      "latest",
+      snapshot.blockNumber,
+      snapshot.blockNumber,
+      snapshot.blockNumber,
+    ]);
   });
 
   it("binds cursor integrity to user, wallet, chain, platform, Registry, and snapshot", async () => {
@@ -247,10 +257,9 @@ describe("P05-02 canonical BSC position scanning", () => {
       walletId,
     });
     const cursor = first.cursor!;
-    const payload = JSON.parse(Buffer.from(cursor.split(".")[0]!, "base64url").toString()) as Record<
-      string,
-      unknown
-    >;
+    const payload = JSON.parse(
+      Buffer.from(cursor.split(".")[0]!, "base64url").toString(),
+    ) as Record<string, unknown>;
     expect(payload).toMatchObject({
       blockHash: snapshot.blockHash,
       blockNumber: snapshot.blockNumber,
@@ -287,14 +296,15 @@ describe("P05-02 canonical BSC position scanning", () => {
     const two = new FakeAdapter(2);
     const four = new FakeAdapter(4);
     const five = new FakeAdapter(5);
-    one.failures.set(
-      "1",
-      new PositionReadAdapterError("position-manager-code-hash-mismatch"),
-    );
+    one.failures.set("1", new PositionReadAdapterError("position-manager-code-hash-mismatch"));
     five.failures.set("11", new PositionReadAdapterError("abi-decode-failed"));
-    rpc.logs.set(one.deployment.positionManager.address, [transferLog(one.deployment.positionManager.address, 1n)]);
+    rpc.logs.set(one.deployment.positionManager.address, [
+      transferLog(one.deployment.positionManager.address, 1n),
+    ]);
     rpc.logFailures.add(two.deployment.positionManager.address);
-    rpc.logs.set(four.deployment.positionManager.address, [transferLog(four.deployment.positionManager.address, 9n)]);
+    rpc.logs.set(four.deployment.positionManager.address, [
+      transferLog(four.deployment.positionManager.address, 9n),
+    ]);
     rpc.logs.set(five.deployment.positionManager.address, [
       transferLog(five.deployment.positionManager.address, 10n, { observedAddress: otherOwner }),
       transferLog(five.deployment.positionManager.address, 11n),
@@ -319,9 +329,17 @@ describe("P05-02 canonical BSC position scanning", () => {
     });
     expect(page.quarantined).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ platformId: 1, reason: "position-manager-code-hash-mismatch", tokenId: "1" }),
+        expect.objectContaining({
+          platformId: 1,
+          reason: "position-manager-code-hash-mismatch",
+          tokenId: "1",
+        }),
         expect.objectContaining({ platformId: 2, reason: "provider-read-failed", tokenId: null }),
-        expect.objectContaining({ platformId: 5, reason: "unknown-position-manager", tokenId: "10" }),
+        expect.objectContaining({
+          platformId: 5,
+          reason: "unknown-position-manager",
+          tokenId: "10",
+        }),
         expect.objectContaining({ platformId: 5, reason: "abi-decode-failed", tokenId: "11" }),
       ]),
     );

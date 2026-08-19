@@ -114,7 +114,8 @@ function v3Fixture(platformId: 1 | 2) {
     platformId === 1 ? UNIV3_POSITION_MANAGER_READ_ABI : PCSV3_POSITION_MANAGER_READ_ABI;
   const factoryAbi = platformId === 1 ? UNIV3_FACTORY_READ_ABI : PCSV3_FACTORY_READ_ABI;
   const poolAbi = platformId === 1 ? UNIV3_POOL_READ_ABI : PCSV3_POOL_READ_ABI;
-  const pool = `0x00000000000000000000000000000000000010${String(platformId).padStart(2, "0")}` as Address;
+  const pool =
+    `0x00000000000000000000000000000000000010${String(platformId).padStart(2, "0")}` as Address;
   const tokenId = BigInt(100 + platformId);
   const rpc = new FixtureRpc();
   addErc721Reads(rpc, managerAbi, registered.positionManager.address, tokenId);
@@ -216,9 +217,7 @@ describe("P05-02 official BSC PositionManager read adapters", () => {
     "reads platformId %s owner, ticks, liquidity, fees, and approval at one block",
     async (platformId) => {
       const fixture =
-        platformId === 1 || platformId === 2
-          ? v3Fixture(platformId)
-          : v4Fixture(platformId);
+        platformId === 1 || platformId === 2 ? v3Fixture(platformId) : v4Fixture(platformId);
       const position = await (fixture.adapter as PositionReadAdapter).readPosition({
         helperAddress: helper,
         owner,
@@ -259,11 +258,15 @@ describe("P05-02 official BSC PositionManager read adapters", () => {
       });
       expect(Object.isFrozen(position)).toBe(true);
       expect(Object.isFrozen(position.pool)).toBe(true);
-      expect(fixture.rpc.calls.every((call) => call.blockNumber === snapshot.blockNumber)).toBe(true);
+      expect(fixture.rpc.calls.every((call) => call.blockNumber === snapshot.blockNumber)).toBe(
+        true,
+      );
       expect(fixture.rpc.codeReads).toEqual([
         {
-          address: BSC_POSITION_READ_REGISTRY.deployments[platformId === 1 ? 0 : platformId === 2 ? 1 : platformId === 4 ? 2 : 3]!
-            .positionManager.address,
+          address:
+            BSC_POSITION_READ_REGISTRY.deployments[
+              platformId === 1 ? 0 : platformId === 2 ? 1 : platformId === 4 ? 2 : 3
+            ]!.positionManager.address,
           blockNumber: snapshot.blockNumber,
         },
       ]);

@@ -10,13 +10,7 @@ import type {
   PositionReadSnapshot,
 } from "../packages/chain-adapters/src/index.js";
 import type { BscHelperReadRegistry } from "../packages/chain-registry/src/index.js";
-import {
-  encodeFunctionData,
-  encodeFunctionResult,
-  keccak256,
-  type Address,
-  type Hex,
-} from "viem";
+import { encodeFunctionData, encodeFunctionResult, keccak256, type Address, type Hex } from "viem";
 import { describe, expect, it } from "vitest";
 
 const userId = "64000000-0000-4000-8000-000000000001";
@@ -182,7 +176,9 @@ describe("P05-02 wallet Helper identity and health read model", () => {
     const rpc = new HelperRpc();
     const store = new MemoryWalletHelperReadStore();
     await store.recordTrustedBinding(binding());
-    const result = await new WalletHelperReadService({ registry, rpc, store }).status(statusInput());
+    const result = await new WalletHelperReadService({ registry, rpc, store }).status(
+      statusInput(),
+    );
     expect(result).toMatchObject({
       address: helperAddress,
       failures: [],
@@ -248,7 +244,9 @@ describe("P05-02 wallet Helper identity and health read model", () => {
     rpc.code = v1Code;
     const store = new MemoryWalletHelperReadStore();
     await store.recordTrustedBinding(binding("fixture-v1"));
-    const result = await new WalletHelperReadService({ registry, rpc, store }).status(statusInput());
+    const result = await new WalletHelperReadService({ registry, rpc, store }).status(
+      statusInput(),
+    );
     expect(result).toMatchObject({ helperVersion: "fixture-v1", state: "superseded" });
     expect(registry.versionsComparableAcrossChains).toBe(false);
   });
@@ -262,7 +260,9 @@ describe("P05-02 wallet Helper identity and health read model", () => {
       page: residualPage(),
       userId,
     });
-    const result = await new WalletHelperReadService({ registry, rpc, store }).status(statusInput());
+    const result = await new WalletHelperReadService({ registry, rpc, store }).status(
+      statusInput(),
+    );
     expect(result.state).toBe("residual");
   });
 

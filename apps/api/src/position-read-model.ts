@@ -121,12 +121,8 @@ function validPositionResult(
   const spacing = decimalPattern.test(value.pool.tickSpacing.replace(/^-/, ""))
     ? BigInt(value.pool.tickSpacing)
     : 0n;
-  const lower = /^-?(?:0|[1-9][0-9]*)$/u.test(value.ticks.lower)
-    ? BigInt(value.ticks.lower)
-    : 0n;
-  const upper = /^-?(?:0|[1-9][0-9]*)$/u.test(value.ticks.upper)
-    ? BigInt(value.ticks.upper)
-    : 0n;
+  const lower = /^-?(?:0|[1-9][0-9]*)$/u.test(value.ticks.lower) ? BigInt(value.ticks.lower) : 0n;
+  const upper = /^-?(?:0|[1-9][0-9]*)$/u.test(value.ticks.upper) ? BigInt(value.ticks.upper) : 0n;
   return (
     value.chainId === 56 &&
     value.platformId === deployment.platformId &&
@@ -140,7 +136,8 @@ function validPositionResult(
     upper % spacing === 0n &&
     value.snapshot.blockNumber === snapshot.blockNumber &&
     value.snapshot.blockHash.toLowerCase() === snapshot.blockHash.toLowerCase() &&
-    value.snapshot.positionManager.toLowerCase() === deployment.positionManager.address.toLowerCase() &&
+    value.snapshot.positionManager.toLowerCase() ===
+      deployment.positionManager.address.toLowerCase() &&
     value.snapshot.positionManagerCodeHash.toLowerCase() ===
       deployment.positionManager.runtimeCodeHash.toLowerCase() &&
     value.snapshot.registryVersion === deployment.registryVersion &&

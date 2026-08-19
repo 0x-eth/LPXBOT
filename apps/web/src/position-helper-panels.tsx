@@ -70,7 +70,11 @@ function readError(error: unknown): string {
 function StateLine({ icon = false, text }: { icon?: boolean; text: string }) {
   return (
     <div className="position-helper-state" role="status">
-      {icon ? <CircleAlert aria-hidden="true" size={17} /> : <CircleOff aria-hidden="true" size={17} />}
+      {icon ? (
+        <CircleAlert aria-hidden="true" size={17} />
+      ) : (
+        <CircleOff aria-hidden="true" size={17} />
+      )}
       <p>{text}</p>
     </div>
   );
@@ -128,7 +132,8 @@ function PositionRecord({ position }: { position: WalletPosition }) {
               {position.fees.owed0BaseUnit} / {position.fees.owed1BaseUnit} base units
             </code>
             <small>
-              {position.fees.estimated0BaseUnit ?? "--"} / {position.fees.estimated1BaseUnit ?? "--"}
+              {position.fees.estimated0BaseUnit ?? "--"} /{" "}
+              {position.fees.estimated1BaseUnit ?? "--"}
               {" base units"}
             </small>
           </dd>
@@ -148,7 +153,13 @@ function PositionRecord({ position }: { position: WalletPosition }) {
   );
 }
 
-function PositionPanel({ client, wallet }: { client: PositionHelperClient; wallet: CustodyWallet }) {
+function PositionPanel({
+  client,
+  wallet,
+}: {
+  client: PositionHelperClient;
+  wallet: CustodyWallet;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState<WalletPositionPage | null>(null);
   const [state, setState] = useState<PositionReadUiState>("loading");
@@ -371,7 +382,13 @@ function residualIdentity(item: HelperResidualAsset): string {
   return item.managerAddress;
 }
 
-function ResidualPanel({ client, wallet }: { client: PositionHelperClient; wallet: CustodyWallet }) {
+function ResidualPanel({
+  client,
+  wallet,
+}: {
+  client: PositionHelperClient;
+  wallet: CustodyWallet;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState<HelperResidualPage | null>(null);
   const [state, setState] = useState<HelperResidualUiState>("loading");
@@ -469,9 +486,7 @@ function ResidualPanel({ client, wallet }: { client: PositionHelperClient; walle
         </ul>
       ) : null}
       {page?.coverage.complete === false ? (
-        <p className="residual-coverage-line">
-          {page.coverage.missingSources.join(", ")}
-        </p>
+        <p className="residual-coverage-line">{page.coverage.missingSources.join(", ")}</p>
       ) : null}
       {page ? (
         <p className="read-snapshot-line">

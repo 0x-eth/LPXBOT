@@ -88,9 +88,9 @@ describe("P05-02 controlled server-side BSC position RPC", () => {
       rpcUrl: "http://localhost:8545",
     });
 
-    await expect(
-      rpc.call({ blockNumber: "100", data: "0x1234", to: manager }),
-    ).resolves.toBe("0x1234");
+    await expect(rpc.call({ blockNumber: "100", data: "0x1234", to: manager })).resolves.toBe(
+      "0x1234",
+    );
     await expect(rpc.getCode(manager, "100")).resolves.toBe("0x6000");
     await expect(rpc.getBalance(manager, "100")).resolves.toBe(42n);
     await expect(rpc.getBlock("100")).resolves.toEqual({
@@ -112,7 +112,10 @@ describe("P05-02 controlled server-side BSC position RPC", () => {
     const bodies = fetcher.mock.calls.map(([, init]) => JSON.parse(String(init?.body)));
     expect(bodies.filter(({ method }) => method !== "eth_chainId")).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ method: "eth_call", params: [{ data: "0x1234", to: manager }, "0x64"] }),
+        expect.objectContaining({
+          method: "eth_call",
+          params: [{ data: "0x1234", to: manager }, "0x64"],
+        }),
         expect.objectContaining({ method: "eth_getCode", params: [manager, "0x64"] }),
         expect.objectContaining({ method: "eth_getBalance", params: [manager, "0x64"] }),
         expect.objectContaining({ method: "eth_getBlockByNumber", params: ["0x64", false] }),
@@ -140,9 +143,9 @@ describe("P05-02 controlled server-side BSC position RPC", () => {
   });
 
   it("rejects malformed provider envelopes and oversized log ranges", async () => {
-    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(JSON.stringify({ id: 99, jsonrpc: "2.0", result: "0x38" })),
-    );
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(JSON.stringify({ id: 99, jsonrpc: "2.0", result: "0x38" })));
     const rpc = new BscPositionReadRpcClient({
       allowInsecureLoopback: true,
       fetch: fetcher,

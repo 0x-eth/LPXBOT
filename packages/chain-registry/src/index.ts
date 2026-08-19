@@ -337,7 +337,10 @@ function validateReadContractIdentity(
   label: string,
 ): void {
   if (identity === null) return;
-  if (!addressPattern.test(identity.address) || identity.address !== identity.address.toLowerCase()) {
+  if (
+    !addressPattern.test(identity.address) ||
+    identity.address !== identity.address.toLowerCase()
+  ) {
     throw new Error(`POSITION_READ_REGISTRY_INVALID: ${label} address`);
   }
   if (!codeHashPattern.test(identity.runtimeCodeHash)) {
@@ -375,7 +378,9 @@ export function validateBscPositionReadRegistry<T extends BscPositionReadRegistr
     const hasFactory = deployment.factory !== null;
     const hasPoolManager = deployment.poolManager !== null;
     if (hasFactory === hasPoolManager || hasFactory !== (deployment.generation === "v3")) {
-      throw new Error(`POSITION_READ_REGISTRY_INVALID: generation ${String(deployment.platformId)}`);
+      throw new Error(
+        `POSITION_READ_REGISTRY_INVALID: generation ${String(deployment.platformId)}`,
+      );
     }
     if (
       !abiHashPattern.test(deployment.abiHash) ||

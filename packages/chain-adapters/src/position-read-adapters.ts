@@ -470,9 +470,11 @@ function freezeResult(result: PositionReadResult): Readonly<PositionReadResult> 
   return Object.freeze(result);
 }
 
-function positionDigest(result: Omit<PositionReadResult, "snapshot"> & {
-  snapshot: Omit<PositionReadResult["snapshot"], "digest">;
-}): Hex {
+function positionDigest(
+  result: Omit<PositionReadResult, "snapshot"> & {
+    snapshot: Omit<PositionReadResult["snapshot"], "digest">;
+  },
+): Hex {
   return keccak256(stringToHex(JSON.stringify(result)));
 }
 
@@ -529,17 +531,29 @@ abstract class BasePositionReadAdapter implements PositionReadAdapter {
     const tokenId = decimalUint(input.tokenId);
     let code: Hex;
     try {
-      code = await this.#rpc.getCode(this.deployment.positionManager.address, input.snapshot.blockNumber);
+      code = await this.#rpc.getCode(
+        this.deployment.positionManager.address,
+        input.snapshot.blockNumber,
+      );
     } catch (error) {
       throw new PositionReadAdapterError("rpc-read-failed", error);
     }
-    if (keccak256(code).toLowerCase() !== this.deployment.positionManager.runtimeCodeHash.toLowerCase()) {
+    if (
+      keccak256(code).toLowerCase() !==
+      this.deployment.positionManager.runtimeCodeHash.toLowerCase()
+    ) {
       throw new PositionReadAdapterError("position-manager-code-hash-mismatch");
     }
 
     const manager = this.deployment.positionManager.address;
     const owner = asAddress(
-      await this.contractRead(this.#managerAbi, manager, "ownerOf", [tokenId], input.snapshot.blockNumber),
+      await this.contractRead(
+        this.#managerAbi,
+        manager,
+        "ownerOf",
+        [tokenId],
+        input.snapshot.blockNumber,
+      ),
     );
     if (owner !== input.owner.toLowerCase()) throw new PositionReadAdapterError("owner-mismatch");
     const observedApprovedAddress = asAddress(
@@ -570,7 +584,8 @@ abstract class BasePositionReadAdapter implements PositionReadAdapter {
       data.tickUpper,
     );
     const helper = input.helperAddress?.toLowerCase() ?? null;
-    const approvedAddress = observedApprovedAddress === ZERO_ADDRESS ? null : observedApprovedAddress;
+    const approvedAddress =
+      observedApprovedAddress === ZERO_ADDRESS ? null : observedApprovedAddress;
     const snapshot = {
       ...input.snapshot,
       positionManager: manager.toLowerCase() as Address,
@@ -582,8 +597,7 @@ abstract class BasePositionReadAdapter implements PositionReadAdapter {
         approvedAddress,
         approvedForAll,
         helperAuthorized:
-          helper !== null &&
-          (approvedForAll || observedApprovedAddress.toLowerCase() === helper),
+          helper !== null && (approvedForAll || observedApprovedAddress.toLowerCase() === helper),
         nftOwner: owner,
         observedAtBlock: input.snapshot.blockNumber,
       },
@@ -851,7 +865,9 @@ export class UniswapV4PositionReadAdapter extends V4PositionReadAdapter {
     const poolsSlot = keccak256(
       encodeAbiParameters([{ type: "bytes32" }, { type: "uint256" }], [poolId, 6n]),
     );
-    const packedSlot0 = BigInt(asHex32(await this.poolManagerRead("extsload", [poolsSlot], blockNumber)));
+    const packedSlot0 = BigInt(
+      asHex32(await this.poolManagerRead("extsload", [poolsSlot], blockNumber)),
+    );
     return {
       currentTick: signed24(packedSlot0 >> 160n),
       feePips,

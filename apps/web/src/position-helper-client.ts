@@ -234,8 +234,7 @@ function position(value: unknown, page: PositionPageSnapshot, owner: string, sta
     pool.token0 === pool.token1 ||
     ((platformId === 1 || platformId === 2) &&
       (pool.poolAddress === null || pool.poolId !== null)) ||
-    ((platformId === 4 || platformId === 5) &&
-      (pool.poolAddress !== null || pool.poolId === null))
+    ((platformId === 4 || platformId === 5) && (pool.poolAddress !== null || pool.poolId === null))
   ) {
     invalid(status);
   }
@@ -316,7 +315,9 @@ export function parseWalletPositionPage(value: unknown, status = 0): WalletPosit
     !address(value.address) ||
     value.chainId !== 56 ||
     (value.cursor !== null &&
-      (typeof value.cursor !== "string" || value.cursor.length < 1 || value.cursor.length > 2_048)) ||
+      (typeof value.cursor !== "string" ||
+        value.cursor.length < 1 ||
+        value.cursor.length > 2_048)) ||
     !Array.isArray(value.items) ||
     !Array.isArray(value.quarantined) ||
     value.registryVersion !== "p05-bsc-execution-v1" ||
@@ -338,14 +339,15 @@ export function parseWalletPositionPage(value: unknown, status = 0): WalletPosit
     !coverage.scannedPlatformIds.every((id) => platformIds.has(id as PositionPlatformId)) ||
     new Set(coverage.failedPlatformIds).size !== coverage.failedPlatformIds.length ||
     new Set(coverage.scannedPlatformIds).size !== coverage.scannedPlatformIds.length ||
-    (value.status !== "stale" &&
-      coverage.complete !== (coverage.failedPlatformIds.length === 0))
+    (value.status !== "stale" && coverage.complete !== (coverage.failedPlatformIds.length === 0))
   ) {
     invalid(status);
   }
   const failedPlatformIds = [...coverage.failedPlatformIds] as PositionPlatformId[];
   const scannedPlatformIds = [...coverage.scannedPlatformIds] as PositionPlatformId[];
-  const items = value.items.map((item) => position(item, pageSnapshot, value.address as string, status));
+  const items = value.items.map((item) =>
+    position(item, pageSnapshot, value.address as string, status),
+  );
   const quarantined = value.quarantined.map((item) => quarantine(item, status));
   if (
     new Set(items.map((item) => `${item.platformId}:${item.tokenId}`)).size !== items.length ||
@@ -359,9 +361,7 @@ export function parseWalletPositionPage(value: unknown, status = 0): WalletPosit
     (state === "empty" && coverage.complete && items.length === 0 && quarantined.length === 0) ||
     (state === "quarantined" && items.length === 0 && quarantined.length > 0) ||
     (state === "ready" && coverage.complete && items.length > 0 && quarantined.length === 0) ||
-    (state === "partial" &&
-      items.length > 0 &&
-      (!coverage.complete || quarantined.length > 0));
+    (state === "partial" && items.length > 0 && (!coverage.complete || quarantined.length > 0));
   if (!validState) invalid(status);
   return {
     address: value.address,
@@ -381,7 +381,10 @@ export function parseWalletPositionPage(value: unknown, status = 0): WalletPosit
   };
 }
 
-function helperVerification(value: unknown, status: number): NonNullable<WalletHelperStatus["verification"]> {
+function helperVerification(
+  value: unknown,
+  status: number,
+): NonNullable<WalletHelperStatus["verification"]> {
   if (
     !record(value) ||
     !exact(value, [
@@ -485,7 +488,7 @@ export function parseWalletHelperStatus(value: unknown, status = 0): WalletHelpe
   const verification = helperVerification(value.verification, status);
   const failures = value.failures as HelperVerificationFailure[];
   if (
-    (state === "degraded") !== (failures.length > 0) ||
+    (state === "degraded") !== failures.length > 0 ||
     (failures.includes("address-mismatch") && verification.checks.address) ||
     (failures.includes("owner-mismatch") && verification.checks.owner) ||
     (failures.includes("runtime-code-hash-mismatch") && verification.checks.runtimeCodeHash) ||
@@ -524,7 +527,10 @@ function residualCoverage(value: unknown, status: number): HelperResidualPage["c
     !Array.isArray(value.missingSources) ||
     !value.missingSources.every(
       (source) =>
-        typeof source === "string" && source.length >= 1 && source.length <= 256 && !/\p{Cc}/u.test(source),
+        typeof source === "string" &&
+        source.length >= 1 &&
+        source.length <= 256 &&
+        !/\p{Cc}/u.test(source),
     ) ||
     new Set(value.missingSources).size !== value.missingSources.length ||
     value.complete !== (value.missingSources.length === 0) ||
@@ -600,10 +606,7 @@ function residualAsset(value: unknown, status: number): HelperResidualAsset {
   invalid(status);
 }
 
-export function parseHelperResidualPage(
-  value: unknown,
-  status = 0,
-): HelperResidualPage | null {
+export function parseHelperResidualPage(value: unknown, status = 0): HelperResidualPage | null {
   if (value === null) return null;
   if (
     !record(value) ||
@@ -625,7 +628,9 @@ export function parseHelperResidualPage(
     !versionPattern.test(value.allowlistVersion) ||
     value.chainId !== 56 ||
     (value.cursor !== null &&
-      (typeof value.cursor !== "string" || value.cursor.length < 1 || value.cursor.length > 2_048)) ||
+      (typeof value.cursor !== "string" ||
+        value.cursor.length < 1 ||
+        value.cursor.length > 2_048)) ||
     !address(value.helperAddress) ||
     !Array.isArray(value.items) ||
     value.registryVersion !== "p05-bsc-execution-v1" ||

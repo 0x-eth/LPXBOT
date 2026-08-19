@@ -1,9 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 
-import type {
-  HelperResidualAsset,
-  HelperResidualPage,
-} from "@lpbot/api-contract";
+import type { HelperResidualAsset, HelperResidualPage } from "@lpbot/api-contract";
 import type { PositionReadRpc, PositionReadSnapshot } from "@lpbot/chain-adapters";
 import {
   BSC_HELPER_RESIDUAL_ALLOWLIST,
@@ -67,11 +64,7 @@ export interface HelperWalletTokenInventory {
 }
 
 export interface HelperPositionInventorySource {
-  list(input: {
-    chainId: 56;
-    userId: string;
-    walletId: string;
-  }): Promise<HelperPositionInventory>;
+  list(input: { chainId: 56; userId: string; walletId: string }): Promise<HelperPositionInventory>;
 }
 
 export interface HelperWalletTokenSource {
@@ -123,9 +116,7 @@ interface ResidualCursorPayload {
   walletId: string;
 }
 
-export type HelperResidualReadErrorCode =
-  | "HELPER_RESIDUAL_INPUT_INVALID"
-  | "HELPER_UNDEPLOYED";
+export type HelperResidualReadErrorCode = "HELPER_RESIDUAL_INPUT_INVALID" | "HELPER_UNDEPLOYED";
 
 export class HelperResidualReadError extends Error {
   readonly code: HelperResidualReadErrorCode;
@@ -216,7 +207,8 @@ export class WalletHelperResidualService implements WalletHelperResidualApplicat
       typeof options.cursorSecret === "string"
         ? new TextEncoder().encode(options.cursorSecret)
         : new Uint8Array(options.cursorSecret);
-    if (cursorSecret.byteLength < 32) throw new RangeError("HELPER_RESIDUAL_CURSOR_SECRET_TOO_SHORT");
+    if (cursorSecret.byteLength < 32)
+      throw new RangeError("HELPER_RESIDUAL_CURSOR_SECRET_TOO_SHORT");
     const allowlistAddresses = [
       ...this.#allowlist.tokenAddresses,
       ...this.#allowlist.spenderAddresses,
@@ -430,7 +422,9 @@ export class WalletHelperResidualService implements WalletHelperResidualApplicat
     }
     if (positionInventory.knownNfts.length > 1_000) missing.add("known-nft-custody");
     for (const nft of [...knownNfts.values()].sort((left, right) =>
-      `${left.managerAddress}:${left.tokenId}`.localeCompare(`${right.managerAddress}:${right.tokenId}`),
+      `${left.managerAddress}:${left.tokenId}`.localeCompare(
+        `${right.managerAddress}:${right.tokenId}`,
+      ),
     )) {
       try {
         const owner = await this.#readAddress(
