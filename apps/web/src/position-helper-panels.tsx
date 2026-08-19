@@ -22,6 +22,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PositionHelperClient, PositionHelperRequestError } from "./position-helper-client";
+import { HelperDeploymentPanel } from "./helper-deployment-panel";
 
 type HelperUiState = "error" | "loading" | HelperReadState;
 
@@ -501,6 +502,7 @@ export function PositionHelperPanels({ wallet }: { wallet: CustodyWallet }) {
   const client = useMemo(() => new PositionHelperClient(), []);
   return (
     <div className="position-helper-read-model">
+      <HelperDeploymentPanel wallet={wallet} />
       <PositionPanel client={client} wallet={wallet} />
       <HelperPanel client={client} wallet={wallet} />
       <ResidualPanel client={client} wallet={wallet} />
