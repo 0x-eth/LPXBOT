@@ -162,6 +162,18 @@ import {
   type HelperDeploymentApplication,
 } from "./helper-deployments.js";
 import {
+  LocalSwapExecutionError,
+  LocalSwapQuoteValidationError,
+  localSwapExecutionBodyLimit,
+  parseLocalSwapExecute,
+  parseLocalSwapExecutePreview,
+  parseLocalSwapIdempotencyKey,
+  parseLocalSwapOperationId,
+  parseLocalSwapQuoteRequest,
+  type LocalSwapExecutionApplication,
+  type LocalSwapQuoteApplication,
+} from "./local-swap-executions.js";
+import {
   HelperResidualCursorError,
   HelperResidualReadError,
   type WalletHelperResidualApplication,
@@ -257,6 +269,9 @@ export interface ApiAppOptions {
   helperResiduals?: WalletHelperResidualApplication;
   helperDeploymentLocalChainIds?: readonly number[];
   helperDeployments?: HelperDeploymentApplication;
+  localSwapExecutionChainIds?: readonly number[];
+  localSwapExecutions?: LocalSwapExecutionApplication;
+  localSwapQuotes?: LocalSwapQuoteApplication;
   preferencesStore?: UserPreferencesStore;
   recommendedPoolsPollMilliseconds?: number;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
@@ -1003,6 +1018,13 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   ) {
     throw new RangeError("Helper deployment local chain IDs must contain only 31337");
   }
+  const localSwapExecutionChainIds = new Set(options.localSwapExecutionChainIds ?? []);
+  if (
+    localSwapExecutionChainIds.size !== (options.localSwapExecutionChainIds?.length ?? 0) ||
+    [...localSwapExecutionChainIds].some((chainId) => chainId !== 31_337)
+  ) {
+    throw new RangeError("Local Swap execution chain IDs must contain only 31337");
+  }
   const walletTransferLocalChainIds = new Set(options.walletTransferLocalChainIds ?? []);
   if (
     walletTransferLocalChainIds.size !== (options.walletTransferLocalChainIds?.length ?? 0) ||
@@ -1282,6 +1304,9 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         isWalletTransferSecretRequest(request.method, requestPath) ||
         isOkxKeySecretRequest(request.method, requestPath) ||
         (request.method === "POST" && requestPath === "/api/swap/quote") ||
+        (request.method === "POST" &&
+          (requestPath === "/api/swap/execute" ||
+            requestPath === "/api/swap/execute/preview")) ||
         (request.method === "POST" &&
           (requestPath === "/api/pricing-positions/import" ||
             /^\/api\/pricing-positions\/[^/]+\/withdrawn$/u.test(requestPath))) ||
