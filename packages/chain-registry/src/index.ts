@@ -19,6 +19,21 @@ export type {
   LocalExecutionVerification,
   LocalTokenBehavior,
 } from "./local-execution.js";
+export {
+  helperDeploymentComponent,
+  helperDeploymentRegistryDigest,
+  P05_HELPER_DEPLOYMENT_PLAN_VERSION,
+  P05_HELPER_DEPLOYMENT_REGISTRY,
+  P05_HELPER_DEPLOYMENT_REGISTRY_VERSION,
+  validateHelperDeploymentRegistry,
+  WALLET_HELPER_V1_VERSION,
+} from "./helper-deployment.js";
+export type {
+  HelperBytecodeTemplate,
+  HelperDeploymentComponent,
+  HelperDeploymentRegistry,
+  HelperDeploymentToken,
+} from "./helper-deployment.js";
 
 export const chainRegistryPackage = {
   name: "@lpbot/chain-registry",
