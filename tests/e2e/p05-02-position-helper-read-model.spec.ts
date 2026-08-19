@@ -417,21 +417,26 @@ test("renders ready position, active Helper, and residual data without execution
   await axe(page);
 
   if (captureEvidence) {
-    const bounds = await page.locator(".position-helper-read-model").boundingBox();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const sections = page.locator(".position-helper-read-model > .wallet-read-section");
+    const first = await sections.first().boundingBox();
+    const last = await sections.last().boundingBox();
     const viewport = page.viewportSize();
-    expect(bounds).not.toBeNull();
+    expect(first).not.toBeNull();
+    expect(last).not.toBeNull();
     expect(viewport).not.toBeNull();
     const screenshot = await page.screenshot({
       animations: "disabled",
       caret: "hide",
       clip: {
-        height: bounds!.height,
+        height: last!.y + last!.height - first!.y,
         width: viewport!.width,
         x: 0,
-        y: bounds!.y,
+        y: first!.y,
       },
       path: `artifacts/acceptance/P05-02/E-VIS/position-helper-ready-${testInfo.project.name}.png`,
-      style: ".app-header, .mobile-navigation-shell, .shell-status-bar { display: none !important; }",
+      style:
+        ".app-header, .mobile-navigation-shell, .shell-status-bar { display: none !important; }",
     });
     expect(screenshot.byteLength).toBeGreaterThan(10_000);
   }
