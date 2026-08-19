@@ -132,8 +132,8 @@ export const P05_BSC_LOCAL_EXECUTION_REGISTRY: LocalExecutionRegistry = Object.f
     component(
       "helper",
       "0x0165878a594ca255338adfa4d48449f69242eb8f",
-      "sha256:cee4bfd152232ce4f86ba4580385b699cad889dcb413b2d9b866e34e69bdc6c9",
-      "0xea674401191387ab14d8ecb4f1eb4fe815a5cd3661d4de4f0d0fc8be4d03ec42",
+      "sha256:f5457f6a9755e133e1ae1870e7ddccb70ddac316883a7f431f02c00ccb5c2623",
+      "0x873594e1c8eb305e0ab059edc77107588fab87562436ca95fcacf0ef76157e8b",
     ),
   ]),
   environment: "foundry-anvil-only",

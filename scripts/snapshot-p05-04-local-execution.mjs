@@ -407,6 +407,17 @@ async function main() {
       throw new Error("failed swap did not preserve plan atomicity");
     }
     assertStateEqual(failedStateAfter, failedStateBefore, "failed swap");
+    const allowanceRecoveryHash = await walletClient.writeContract({
+      abi: artifacts.TestOnlyERC20.abi,
+      address: token.address,
+      args: [helper.address, 0n],
+      functionName: "approve",
+    });
+    await publicClient.waitForTransactionReceipt({ hash: allowanceRecoveryHash });
+    const recoveredFailedState = await swapState(publicClient, artifacts, stateAddresses);
+    if (recoveredFailedState.allowances.ownerToHelper !== "0") {
+      throw new Error("failed swap allowance recovery mismatch");
+    }
     let duplicatePlanRejected = false;
     try {
       await publicClient.simulateContract({
@@ -612,6 +623,10 @@ async function main() {
             planDigest: failedPlanDigest,
             receiptStatus: failedSwapReceipt.status,
             recipient: account.address.toLowerCase(),
+            recovery: {
+              allowanceResetTransactionHash: allowanceRecoveryHash,
+              state: recoveredFailedState,
+            },
             tokenPath: [token.address, wbnb.address],
             transactionHash: failedSwapHash,
             valueBaseUnit: failedSwapTransaction.value.toString(),
@@ -631,9 +646,9 @@ async function main() {
         },
       },
       executionCounters: {
-        localChainWrites: 14,
+        localChainWrites: 15,
         localRevertedTransactions: 1,
-        localTransactionBroadcastsAccepted: 16,
+        localTransactionBroadcastsAccepted: 17,
         mainnetBroadcasts: 0,
         mainnetSignatures: 0,
         realFundOperations: 0,

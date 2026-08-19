@@ -51,6 +51,7 @@ interface LocalSnapshot {
         balanceAndAllowanceStateBefore: unknown;
         executedPlanRecorded: boolean;
         receiptStatus: string;
+        recovery: { state: { allowances: { ownerToHelper: string } } };
         valueBaseUnit: string;
       };
       success: {
@@ -127,6 +128,9 @@ describe.skipIf(!enabled)("P05-04 deterministic local Anvil execution closure", 
     });
     expect(snapshot.operationEvidence.swap.failure.balanceAndAllowanceStateAfter).toEqual(
       snapshot.operationEvidence.swap.failure.balanceAndAllowanceStateBefore,
+    );
+    expect(snapshot.operationEvidence.swap.failure.recovery.state.allowances.ownerToHelper).toBe(
+      "0",
     );
     expect(snapshot.operationEvidence.duplicatePlanRejected).toBe(true);
     expect(snapshot.operationEvidence.duplicateRawTransaction).toMatchObject({
