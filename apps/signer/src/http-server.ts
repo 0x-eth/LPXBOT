@@ -13,6 +13,7 @@ import type { CustodySignerService } from "./custody-signer-service.js";
 import { SignerError, asSignerError } from "./signer-error.js";
 
 const bodyLimit = 16_384;
+const helperDeploymentBodyLimit = 65_536;
 const identityPattern = /^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const digestPattern = /^sha256:[0-9a-f]{64}$/u;
@@ -281,14 +282,14 @@ function helperDeploymentSigningRequest(value: unknown): {
   };
 }
 
-async function readBody(request: IncomingMessage): Promise<Buffer> {
+async function readBody(request: IncomingMessage, limit = bodyLimit): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let size = 0;
   try {
     for await (const chunk of request) {
       const bytes = Buffer.isBuffer(chunk) ? Buffer.from(chunk) : Buffer.from(chunk as Uint8Array);
       size += bytes.length;
-      if (size > bodyLimit) {
+      if (size > limit) {
         bytes.fill(0);
         throw new SignerError("REQUEST_TOO_LARGE");
       }
@@ -404,7 +405,7 @@ export function createSignerHttpServer(input: {
           });
           return;
         }
-        body = await readBody(request);
+        body = await readBody(request, helperDeploymentBodyLimit);
         let parsed: unknown;
         try {
           parsed = JSON.parse(body.toString("utf8"));

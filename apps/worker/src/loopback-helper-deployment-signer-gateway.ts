@@ -193,9 +193,8 @@ export class LoopbackHelperDeploymentSignerGateway implements HelperDeploymentSi
         response.status !== 202 ||
         response.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() !==
           "application/json" ||
-        !response.headers
-          .get("cache-control")
-          ?.split(",")
+        !(response.headers.get("cache-control") ?? "")
+          .split(",")
           .some((directive) => directive.trim().toLowerCase() === "no-store")
       ) {
         throw new HelperDeploymentWorkerError("HELPER_SIGNER_RESPONSE_INVALID", true);
