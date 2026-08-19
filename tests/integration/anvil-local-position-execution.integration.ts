@@ -216,9 +216,7 @@ describe.skipIf(!enabled)("P05-07 local Anvil position execution closure", () =>
               liquidity,
               owner: owner.address,
               platformId,
-              poolAddress: v3
-                ? "0x0000000000000000000000000000000000001234"
-                : zeroAddress,
+              poolAddress: v3 ? "0x0000000000000000000000000000000000001234" : zeroAddress,
               poolId: v3
                 ? (`0x${"00".repeat(32)}` as Hex)
                 : (`0x${platformId.toString(16).padStart(64, "0")}` as Hex),
@@ -238,19 +236,28 @@ describe.skipIf(!enabled)("P05-07 local Anvil position execution closure", () =>
       );
       return tokenId;
     };
-    const balances = async () =>
-      Promise.all(
-        [token0, token1].map((address) =>
-          publicClient.readContract({
-            abi: erc20Abi,
-            address,
-            args: [owner.address],
-            functionName: "balanceOf",
-          }),
-        ),
-      );
+    const balances = async (): Promise<readonly [bigint, bigint]> =>
+      Promise.all([
+        publicClient.readContract({
+          abi: erc20Abi,
+          address: token0,
+          args: [owner.address],
+          functionName: "balanceOf",
+        }),
+        publicClient.readContract({
+          abi: erc20Abi,
+          address: token1,
+          args: [owner.address],
+          functionName: "balanceOf",
+        }),
+      ]);
     const position = (tokenId: bigint) =>
-      publicClient.readContract({ abi: managerAbi, address: manager, args: [tokenId], functionName: "positions" });
+      publicClient.readContract({
+        abi: managerAbi,
+        address: manager,
+        args: [tokenId],
+        functionName: "positions",
+      });
     const deadline = BigInt(Math.floor(Date.now() / 1_000) + 3_600);
 
     for (const platformId of [1, 2, 4, 5] as const) {
@@ -260,7 +267,9 @@ describe.skipIf(!enabled)("P05-07 local Anvil position execution closure", () =>
         walletClient.writeContract({
           abi: managerAbi,
           address: manager,
-          args: [{ amount0Max: 11n, amount1Max: 13n, recipient: owner.address, tokenId: collectId }],
+          args: [
+            { amount0Max: 11n, amount1Max: 13n, recipient: owner.address, tokenId: collectId },
+          ],
           functionName: "collect",
         }),
       );
@@ -270,12 +279,14 @@ describe.skipIf(!enabled)("P05-07 local Anvil position execution closure", () =>
         13n,
       ]);
       expect((await position(collectId)).liquidity).toBe(101n);
-      expect(await publicClient.readContract({
-        abi: managerAbi,
-        address: manager,
-        args: [collectId],
-        functionName: "ownerOf",
-      })).toBe(owner.address);
+      expect(
+        await publicClient.readContract({
+          abi: managerAbi,
+          address: manager,
+          args: [collectId],
+          functionName: "ownerOf",
+        }),
+      ).toBe(owner.address);
 
       const partialId = await mint(platformId);
       const partialBefore = await balances();
@@ -283,7 +294,9 @@ describe.skipIf(!enabled)("P05-07 local Anvil position execution closure", () =>
         walletClient.writeContract({
           abi: managerAbi,
           address: manager,
-          args: [{ amount0Min: 244n, amount1Min: 490n, deadline, liquidity: 25n, tokenId: partialId }],
+          args: [
+            { amount0Min: 244n, amount1Min: 490n, deadline, liquidity: 25n, tokenId: partialId },
+          ],
           functionName: "decreaseLiquidity",
         }),
       );
@@ -294,7 +307,9 @@ describe.skipIf(!enabled)("P05-07 local Anvil position execution closure", () =>
         walletClient.writeContract({
           abi: managerAbi,
           address: manager,
-          args: [{ amount0Max: 258n, amount1Max: 508n, recipient: owner.address, tokenId: partialId }],
+          args: [
+            { amount0Max: 258n, amount1Max: 508n, recipient: owner.address, tokenId: partialId },
+          ],
           functionName: "collect",
         }),
       );
@@ -309,7 +324,9 @@ describe.skipIf(!enabled)("P05-07 local Anvil position execution closure", () =>
         walletClient.writeContract({
           abi: managerAbi,
           address: manager,
-          args: [{ amount0Min: 991n, amount1Min: 1982n, deadline, liquidity: 101n, tokenId: fullId }],
+          args: [
+            { amount0Min: 991n, amount1Min: 1982n, deadline, liquidity: 101n, tokenId: fullId },
+          ],
           functionName: "decreaseLiquidity",
         }),
       );
@@ -317,7 +334,9 @@ describe.skipIf(!enabled)("P05-07 local Anvil position execution closure", () =>
         walletClient.writeContract({
           abi: managerAbi,
           address: manager,
-          args: [{ amount0Max: 1012n, amount1Max: 2016n, recipient: owner.address, tokenId: fullId }],
+          args: [
+            { amount0Max: 1012n, amount1Max: 2016n, recipient: owner.address, tokenId: fullId },
+          ],
           functionName: "collect",
         }),
       );
@@ -365,7 +384,9 @@ describe.skipIf(!enabled)("P05-07 local Anvil position execution closure", () =>
         account: owner,
         abi: managerAbi,
         address: manager,
-        args: [{ amount0Max: 11n, amount1Max: 13n, recipient: admin.address, tokenId: injectionId }],
+        args: [
+          { amount0Max: 11n, amount1Max: 13n, recipient: admin.address, tokenId: injectionId },
+        ],
         functionName: "collect",
       }),
     ).rejects.toThrow();
@@ -374,7 +395,9 @@ describe.skipIf(!enabled)("P05-07 local Anvil position execution closure", () =>
         account: admin,
         abi: managerAbi,
         address: manager,
-        args: [{ amount0Max: 11n, amount1Max: 13n, recipient: owner.address, tokenId: injectionId }],
+        args: [
+          { amount0Max: 11n, amount1Max: 13n, recipient: owner.address, tokenId: injectionId },
+        ],
         functionName: "collect",
       }),
     ).rejects.toThrow();
@@ -383,7 +406,9 @@ describe.skipIf(!enabled)("P05-07 local Anvil position execution closure", () =>
         account: owner,
         abi: managerAbi,
         address: manager,
-        args: [{ amount0Min: 248n, amount1Min: 496n, deadline, liquidity: 25n, tokenId: injectionId }],
+        args: [
+          { amount0Min: 248n, amount1Min: 496n, deadline, liquidity: 25n, tokenId: injectionId },
+        ],
         functionName: "decreaseLiquidity",
       }),
     ).rejects.toThrow();
@@ -392,7 +417,9 @@ describe.skipIf(!enabled)("P05-07 local Anvil position execution closure", () =>
         account: owner,
         abi: managerAbi,
         address: manager,
-        args: [{ amount0Min: 0n, amount1Min: 0n, deadline: 1n, liquidity: 25n, tokenId: injectionId }],
+        args: [
+          { amount0Min: 0n, amount1Min: 0n, deadline: 1n, liquidity: 25n, tokenId: injectionId },
+        ],
         functionName: "decreaseLiquidity",
       }),
     ).rejects.toThrow();
@@ -446,10 +473,16 @@ describe.skipIf(!enabled)("P05-07 local Anvil position execution closure", () =>
         tokensOwed1BaseUnit: plannedPosition.tokensOwed1.toString(),
       },
       registry: { digest: registry.registryDigest, version: registry.registryVersion },
-      tokens: registry.tokenPolicy.tokens.map(({ address, runtimeCodeHash }) => ({
-        address,
-        runtimeCodeHash,
-      })) as typeof registry.tokenPolicy.tokens,
+      tokens: [
+        {
+          address: registry.tokenPolicy.tokens[0]!.address,
+          runtimeCodeHash: registry.tokenPolicy.tokens[0]!.runtimeCodeHash,
+        },
+        {
+          address: registry.tokenPolicy.tokens[1]!.address,
+          runtimeCodeHash: registry.tokenPolicy.tokens[1]!.runtimeCodeHash,
+        },
+      ],
       wallet: { address: wallet.address, walletId: wallet.walletId },
     });
     const providers = [

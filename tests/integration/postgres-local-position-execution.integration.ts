@@ -302,10 +302,16 @@ describe("P05-07 PostgreSQL local position recovery", () => {
         tokensOwed1BaseUnit: "13",
       },
       registry: { digest: registry.registryDigest, version: registry.registryVersion },
-      tokens: registry.tokenPolicy.tokens.map(({ address, runtimeCodeHash }) => ({
-        address,
-        runtimeCodeHash,
-      })) as typeof registry.tokenPolicy.tokens,
+      tokens: [
+        {
+          address: registry.tokenPolicy.tokens[0]!.address,
+          runtimeCodeHash: registry.tokenPolicy.tokens[0]!.runtimeCodeHash,
+        },
+        {
+          address: registry.tokenPolicy.tokens[1]!.address,
+          runtimeCodeHash: registry.tokenPolicy.tokens[1]!.runtimeCodeHash,
+        },
+      ],
       wallet: { address: walletAddress, walletId },
     });
     const snapshots = new PostgresLocalPositionSnapshotStore(pool);

@@ -66,10 +66,16 @@ function snapshot(): LocalPositionSnapshot {
     schemaVersion: 2,
     snapshotDigest: `sha256:${"00".repeat(32)}`,
     snapshotVersion: registry.snapshotVersion,
-    tokens: registry.tokenPolicy.tokens.map(({ address, runtimeCodeHash }) => ({
-      address,
-      runtimeCodeHash,
-    })) as LocalPositionSnapshot["tokens"],
+    tokens: [
+      {
+        address: registry.tokenPolicy.tokens[0]!.address,
+        runtimeCodeHash: registry.tokenPolicy.tokens[0]!.runtimeCodeHash,
+      },
+      {
+        address: registry.tokenPolicy.tokens[1]!.address,
+        runtimeCodeHash: registry.tokenPolicy.tokens[1]!.runtimeCodeHash,
+      },
+    ],
     wallet,
   };
   value.snapshotDigest = localPositionSnapshotDigest(value);
@@ -149,7 +155,9 @@ function transaction(value: LocalPositionExecutionPlan, ordinal: number) {
     planDigest: value.planDigest,
     semanticDigest: step.semanticDigest,
     target: step.transaction.to,
-    transactionHash: `0x${String(ordinal + 1).padStart(2, "0").repeat(32)}`,
+    transactionHash: `0x${String(ordinal + 1)
+      .padStart(2, "0")
+      .repeat(32)}`,
     transactionId: `a7200000-0000-4000-8000-00000000003${ordinal}`,
     updatedAt: new Date(now.getTime() - 2_000).toISOString(),
   } as LocalPositionTransactionReference;
@@ -276,7 +284,10 @@ function receipt(
   };
 }
 
-function observation(value: LocalPositionReceiptObservation | null, nonce: string): LocalPositionObservation {
+function observation(
+  value: LocalPositionReceiptObservation | null,
+  nonce: string,
+): LocalPositionObservation {
   return {
     providers: [
       {
@@ -290,7 +301,11 @@ function observation(value: LocalPositionReceiptObservation | null, nonce: strin
   };
 }
 
-function decide(value: LocalPositionExecutionPlan, ordinal: number, result: LocalPositionReceiptObservation | null) {
+function decide(
+  value: LocalPositionExecutionPlan,
+  ordinal: number,
+  result: LocalPositionReceiptObservation | null,
+) {
   const current = operation(value, ordinal);
   return decideLocalPositionObservation({
     dropAfterMilliseconds: 1_000,
@@ -374,63 +389,76 @@ describe("P05-07 local position recovery", () => {
   it.each([
     ["collect", 1],
     ["burn", 2],
-  ] as const)("restarts from the %s cursor after a transient signer failure", async (_name, ordinal) => {
-    const value = plan();
-    const claim: LocalPositionWorkClaim = {
-      leaseToken: "a7200000-0000-4000-8000-000000000050",
-      operation: operation(value, ordinal, "queued"),
-      outboxEventId: "a7200000-0000-4000-8000-000000000051",
-    };
-    const failClaim = vi.fn<LocalPositionWorkRepository["failClaim"]>();
-    const completeBroadcast = vi.fn<LocalPositionWorkRepository["completeBroadcast"]>();
-    const repository = {
-      applyObservation: vi.fn(),
-      claimDue: vi.fn(async () => [claim]),
-      completeBroadcast,
-      completeReplacement: vi.fn(),
-      failClaim,
-      prepareReplacement: vi.fn(),
-      rejectReplacement: vi.fn(),
-    } as unknown as LocalPositionWorkRepository;
-    const unavailable: LocalPositionStepSignerGateway = {
-      async signAndDeliver() {
-        throw new LocalPositionWorkerError("SIGNER_UNAVAILABLE", true);
-      },
-    };
-    const first = new LocalPositionRecoveryWorker({
-      now: () => now,
-      observer: { async observe() { return { providers: [] }; } },
-      repository,
-      signer: unavailable,
-      workerId: "position-worker-1",
-    });
-    await expect(first.processBatch()).resolves.toMatchObject({ retried: 1 });
-    expect(failClaim).toHaveBeenCalledWith(expect.objectContaining({ retryable: true }));
+  ] as const)(
+    "restarts from the %s cursor after a transient signer failure",
+    async (_name, ordinal) => {
+      const value = plan();
+      const claim: LocalPositionWorkClaim = {
+        leaseToken: "a7200000-0000-4000-8000-000000000050",
+        operation: operation(value, ordinal, "queued"),
+        outboxEventId: "a7200000-0000-4000-8000-000000000051",
+      };
+      const failClaim = vi.fn<LocalPositionWorkRepository["failClaim"]>();
+      const completeBroadcast = vi.fn<LocalPositionWorkRepository["completeBroadcast"]>();
+      const repository = {
+        applyObservation: vi.fn(),
+        claimDue: vi.fn(async () => [claim]),
+        completeBroadcast,
+        completeReplacement: vi.fn(),
+        failClaim,
+        prepareReplacement: vi.fn(),
+        rejectReplacement: vi.fn(),
+      } as unknown as LocalPositionWorkRepository;
+      const unavailable: LocalPositionStepSignerGateway = {
+        async signAndDeliver() {
+          throw new LocalPositionWorkerError("SIGNER_UNAVAILABLE", true);
+        },
+      };
+      const first = new LocalPositionRecoveryWorker({
+        now: () => now,
+        observer: {
+          async observe() {
+            return { providers: [] };
+          },
+        },
+        repository,
+        signer: unavailable,
+        workerId: "position-worker-1",
+      });
+      await expect(first.processBatch()).resolves.toMatchObject({ retried: 1 });
+      expect(failClaim).toHaveBeenCalledWith(expect.objectContaining({ retryable: true }));
 
-    const signer = { signAndDeliver: vi.fn(async () => ({
-      deliveryId: "anvil-delivery-1",
-      generation: 0,
-      planDigest: value.planDigest,
-      status: "accepted" as const,
-      stepId: value.steps[ordinal]!.stepId,
-      transactionHash: `0x${"77".repeat(32)}` as const,
-    })) };
-    const restarted = new LocalPositionRecoveryWorker({
-      now: () => now,
-      observer: { async observe() { return { providers: [] }; } },
-      repository,
-      signer,
-      workerId: "position-worker-2",
-    });
-    await expect(restarted.processBatch()).resolves.toMatchObject({ broadcast: 1 });
-    expect(signer.signAndDeliver).toHaveBeenCalledWith(
-      expect.objectContaining({ stepId: value.steps[ordinal]!.stepId }),
-    );
-    expect(signer.signAndDeliver).not.toHaveBeenCalledWith(
-      expect.objectContaining({ stepId: value.steps[0]!.stepId }),
-    );
-    expect(completeBroadcast).toHaveBeenCalledOnce();
-  });
+      const signer = {
+        signAndDeliver: vi.fn(async () => ({
+          deliveryId: "anvil-delivery-1",
+          generation: 0,
+          planDigest: value.planDigest,
+          status: "accepted" as const,
+          stepId: value.steps[ordinal]!.stepId,
+          transactionHash: `0x${"77".repeat(32)}` as const,
+        })),
+      };
+      const restarted = new LocalPositionRecoveryWorker({
+        now: () => now,
+        observer: {
+          async observe() {
+            return { providers: [] };
+          },
+        },
+        repository,
+        signer,
+        workerId: "position-worker-2",
+      });
+      await expect(restarted.processBatch()).resolves.toMatchObject({ broadcast: 1 });
+      expect(signer.signAndDeliver).toHaveBeenCalledWith(
+        expect.objectContaining({ stepId: value.steps[ordinal]!.stepId }),
+      );
+      expect(signer.signAndDeliver).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stepId: value.steps[0]!.stepId }),
+      );
+      expect(completeBroadcast).toHaveBeenCalledOnce();
+    },
+  );
 
   it("replaces only the active collect lineage with higher fees", async () => {
     const value = plan();
@@ -469,7 +497,11 @@ describe("P05-07 local position recovery", () => {
     };
     const worker = new LocalPositionRecoveryWorker({
       now: () => now,
-      observer: { async observe() { return { providers: [] }; } },
+      observer: {
+        async observe() {
+          return { providers: [] };
+        },
+      },
       repository,
       signer,
       workerId: "position-worker-1",

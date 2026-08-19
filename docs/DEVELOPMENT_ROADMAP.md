@@ -208,6 +208,8 @@ flowchart LR
 
 **门禁：** P04 安全门通过；合约独立审查；测试网部署前冻结 ABI/registry version。
 
+**阶段沿革：** P05-04 建立 local execution safety baseline，P05-05/P05-06 分别完成 Helper 与 Swap 的本地执行闭环，P05-07 在同一安全模型上扩展仓位执行。
+
 **当前状态：** P05-07 在 P05-06 ordered steps、`wallet_nonce_ledgers`、隔离 Signer、replacement、canonical receipt 与恢复模式上新增独立 `p05-local-position-execution-v2` Registry、`p05-local-position-snapshot-v2`、`p05-local-position-plan-v2` 和 TestOnlyPositionManagerV2，将 V3/V4 collect、1%-100% decrease、collect proceeds reconciliation、optional burn、费用/本金分类及 100% 完成后的 P05-03 withdrawn 更新接成闭环。客户端只提交 wallet/platform/token/snapshot/percent/slippage/burn 与 opaque preview 字段；每个 step 独立绑定 nonce、fencing token、semantic/data digest 和费用上限，replacement 只能加费且不能改变 calldata。decrease 确认后从 collect/burn 游标恢复，collect 确认前 principal 不可用，burn 仅在 liquidity/owed 均为 0 且 owner 匹配时执行。local gate 仅对非 fork Anvil chainId 31337、合成钱包/资产、TestOnlyPositionManagerV2 与 POS-02/POS-03 保持 `OPEN`；chainId 56 继续只读，BSC/testnet/production gates 均为 `CLOSED`，测试网/生产签名、广播和真实资金操作均为 0。P05 当前为 9 项 `implemented-assumed`、3 项 `planned`，继续 `accepted-with-gaps`；全局为 70 项 `implemented-assumed`、126 项 `planned`。HELPER-03、HELPER-04、HELPER-06 继续 planned；权威生产 PositionManager/Router/Helper 证据、独立合约审查与 testnet 证据仍 unresolved，不标记 `parity-verified` 或 `released`。
 
 ### P06：任务产品面和配置
