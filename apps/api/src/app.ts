@@ -135,6 +135,10 @@ import {
   type RecommendedPoolsScheduler,
   type RecommendedPoolsStreamEvent,
 } from "./recommended-pools.js";
+import {
+  PositionCursorError,
+  type PositionReadApplication,
+} from "./position-read-model.js";
 import type { ShellStatsProvider, ShellStatsScope } from "./shell-stats.js";
 import {
   defaultVersionedUserPreferences,
@@ -219,6 +223,7 @@ export interface ApiAppOptions {
   poolBlocklistStore?: PoolBlocklistStore;
   poolCreationProvenanceRateLimit?: PublicReadRateLimit;
   poolCreationProvenanceStore?: PoolCreationProvenanceReadStore;
+  positionReads?: PositionReadApplication;
   preferencesStore?: UserPreferencesStore;
   recommendedPoolsPollMilliseconds?: number;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
@@ -692,6 +697,46 @@ function parseWalletReadQuery(
     ...(value.tokenAddress === undefined ? {} : { tokenAddress: value.tokenAddress }),
     ...(value.amountDecimal === undefined ? {} : { amountDecimal: value.amountDecimal }),
   };
+}
+
+interface ParsedPositionReadQuery {
+  chainId: number;
+  cursor: string | null;
+  limit: number;
+  platformId: 1 | 2 | 4 | 5 | null;
+}
+
+function parsePositionReadQuery(
+  value: unknown,
+  platformFilterAllowed: boolean,
+): ParsedPositionReadQuery | null {
+  if (!isPlainRecord(value)) return null;
+  const allowed = new Set(["chainId", "cursor", "limit"]);
+  if (platformFilterAllowed) allowed.add("platformId");
+  if (Object.keys(value).some((key) => !allowed.has(key))) return null;
+  const chainId = parsePositiveChainId(value.chainId);
+  if (!chainId) return null;
+  const limitValue = value.limit ?? "50";
+  if (typeof limitValue !== "string" || !/^(?:[1-9]|[1-9][0-9]|100)$/u.test(limitValue)) {
+    return null;
+  }
+  const cursor = value.cursor ?? null;
+  if (cursor !== null && (typeof cursor !== "string" || cursor.length < 1 || cursor.length > 2_048)) {
+    return null;
+  }
+  let platformId: 1 | 2 | 4 | 5 | null = null;
+  if (value.platformId !== undefined) {
+    if (
+      typeof value.platformId !== "string" ||
+      !(["1", "2", "4", "5"] as const).includes(
+        value.platformId as "1" | "2" | "4" | "5",
+      )
+    ) {
+      return null;
+    }
+    platformId = Number(value.platformId) as 1 | 2 | 4 | 5;
+  }
+  return { chainId, cursor, limit: Number(limitValue), platformId };
 }
 
 function parseWalletTokenImport(value: unknown): { chainId: number; tokenAddress: unknown } | null {
