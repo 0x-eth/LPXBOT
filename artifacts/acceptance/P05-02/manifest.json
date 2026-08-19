@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-02",
+  "phase": "P05",
+  "risk": "R1",
+  "status": "accepted-with-gaps",
+  "featureIds": ["POS-01", "HELPER-01", "HELPER-05"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "P05-02 Registry, adapter, scanner, Helper, residual, contract, and browser-client Vitest",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-02/E-DATA.md"
+    },
+    {
+      "id": "T-API",
+      "command": "authenticated custody-bound position, Helper, and residual Fastify route tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-02/E-API.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "four frozen PositionManager adapters and local Anvil read-only RPC closure",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-02/E-CHAIN.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "all PostgreSQL migrations up, downs in reverse, fresh connection, and all ups again",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-02/E-DATA.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "cursor, reorg, provider partial failure, restart, concurrency, and idempotency recovery",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-02/E-REC.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "custody RBAC, controlled RPC, input rejection, Gitleaks, and dependency audit",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-02/E-SEC.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "desktop/mobile P05 state, keyboard, focus, Axe, overflow, and no-execution-control Playwright",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-02/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "deterministic desktop/mobile position, Helper, and residual screenshots",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-02/E-VIS.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P05-02/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P05-02/E-DATA.md" },
+    { "id": "E-CHAIN", "path": "artifacts/acceptance/P05-02/E-CHAIN.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P05-02/E-REC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P05-02/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P05-02/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P05-02/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P05-02/E-SEC.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P05-02/E-OPS.md" }
+  ],
+  "assumptions": [
+    "Evidence is BSC local-fixture-verified only; POS-01, HELPER-01, and HELPER-05 remain implemented-assumed.",
+    "Production RPC runner wiring remains unresolved.",
+    "Live Registry runtime-code-hash verification remains unresolved.",
+    "Versioned allowlist and controlled inventory coverage remain unresolved.",
+    "Signing, broadcast, deployment, upgrade, sweep, chain writes, and real-fund operations are all zero.",
+    "P00 through P05-01 acceptance files remain byte-identical to the 645-file baseline.",
+    "This accepted-with-gaps work item is not parity-verified and not released."
+  ],
+  "completedAt": "2026-08-19T03:31:08.000Z",
+  "commit": null
+}
