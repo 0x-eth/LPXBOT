@@ -173,7 +173,9 @@ function PositionPanel({ client, wallet }: { client: PositionHelperClient; walle
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) void load(controller.signal);
+    });
     return () => controller.abort();
   }, [load]);
 
@@ -271,7 +273,9 @@ function HelperPanel({ client, wallet }: { client: PositionHelperClient; wallet:
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) void load(controller.signal);
+    });
     return () => controller.abort();
   }, [load]);
 
@@ -392,7 +396,9 @@ function ResidualPanel({ client, wallet }: { client: PositionHelperClient; walle
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) void load(controller.signal);
+    });
     return () => controller.abort();
   }, [load]);
 

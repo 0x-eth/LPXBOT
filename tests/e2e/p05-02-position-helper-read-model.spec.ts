@@ -377,7 +377,11 @@ test("renders ready position, active Helper, and residual data without execution
     "ready",
   );
   await expect(page.getByText("Token #9")).toBeVisible();
-  await expect(page.getByText("1000000000000000001 base units")).toBeVisible();
+  await expect(
+    page
+      .locator("[data-testid='position-read-panel']")
+      .getByText("1000000000000000001 base units"),
+  ).toBeVisible();
   await expect(page.locator("[data-testid='helper-read-panel']")).toHaveAttribute(
     "data-state",
     "active",

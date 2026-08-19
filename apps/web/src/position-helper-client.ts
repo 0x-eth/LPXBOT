@@ -338,7 +338,8 @@ export function parseWalletPositionPage(value: unknown, status = 0): WalletPosit
     !coverage.scannedPlatformIds.every((id) => platformIds.has(id as PositionPlatformId)) ||
     new Set(coverage.failedPlatformIds).size !== coverage.failedPlatformIds.length ||
     new Set(coverage.scannedPlatformIds).size !== coverage.scannedPlatformIds.length ||
-    coverage.complete !== (coverage.failedPlatformIds.length === 0)
+    (value.status !== "stale" &&
+      coverage.complete !== (coverage.failedPlatformIds.length === 0))
   ) {
     invalid(status);
   }

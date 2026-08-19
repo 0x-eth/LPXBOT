@@ -675,8 +675,13 @@ export function WalletReadPanels({ wallets }: { wallets: CustodyWallet[] }) {
           </p>
         ) : null}
       </section>
-      <PositionHelperPanels key={wallet.walletId} wallet={wallet} />
-      <ReceivePanel key={wallet.walletId} client={client} tokens={tokens} wallet={wallet} />
+      <PositionHelperPanels key={`position-helper:${wallet.walletId}`} wallet={wallet} />
+      <ReceivePanel
+        key={`receive:${wallet.walletId}`}
+        client={client}
+        tokens={tokens}
+        wallet={wallet}
+      />
       <AddressBookPanel client={client} />
     </div>
   );
