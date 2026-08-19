@@ -153,6 +153,15 @@ import {
 } from "./pricing-positions.js";
 import type { WalletHelperReadApplication } from "./helper-read-model.js";
 import {
+  HelperDeploymentError,
+  helperDeploymentBodyLimit,
+  parseChainOperationId,
+  parseHelperDeploymentIdempotencyKey,
+  parseHelperDeploymentPreviewRequest,
+  parseHelperDeploymentSubmit,
+  type HelperDeploymentApplication,
+} from "./helper-deployments.js";
+import {
   HelperResidualCursorError,
   HelperResidualReadError,
   type WalletHelperResidualApplication,
@@ -246,6 +255,8 @@ export interface ApiAppOptions {
   positionReads?: PositionReadApplication;
   helperReads?: WalletHelperReadApplication;
   helperResiduals?: WalletHelperResidualApplication;
+  helperDeploymentLocalChainIds?: readonly number[];
+  helperDeployments?: HelperDeploymentApplication;
   preferencesStore?: UserPreferencesStore;
   recommendedPoolsPollMilliseconds?: number;
   regionPolicy(request: FastifyRequest): RegionPolicyResult;
@@ -985,6 +996,14 @@ function telegramBotConfigured(options: ApiAppOptions): options is ApiAppOptions
 }
 
 export function buildApiApp(options: ApiAppOptions): FastifyInstance {
+  const helperDeploymentLocalChainIds = new Set(options.helperDeploymentLocalChainIds ?? []);
+  if (
+    helperDeploymentLocalChainIds.size !==
+      (options.helperDeploymentLocalChainIds?.length ?? 0) ||
+    [...helperDeploymentLocalChainIds].some((chainId) => chainId !== 31_337)
+  ) {
+    throw new RangeError("Helper deployment local chain IDs must contain only 31337");
+  }
   const walletTransferLocalChainIds = new Set(options.walletTransferLocalChainIds ?? []);
   if (
     walletTransferLocalChainIds.size !== (options.walletTransferLocalChainIds?.length ?? 0) ||
@@ -1637,12 +1656,12 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     request: FastifyRequest,
     reply: FastifyReply,
     session: StoredSession,
-    allowLocalTransferChain = false,
+    localChainIds: ReadonlySet<number> | null = null,
   ): Promise<boolean> => {
     const registered = findRegisteredChain(chainId);
     if (
       (!registered?.configurationComplete &&
-        !(allowLocalTransferChain && walletTransferLocalChainIds.has(chainId))) ||
+        !(localChainIds?.has(chainId) ?? false)) ||
       !options.chainPolicyStore
     ) {
       reply.code(403).send(
@@ -4911,7 +4930,15 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         }
         try {
           const transfer = parseWalletTransferPreviewRequest(request.body);
-          if (!(await requireAllowedWalletChain(transfer.chainId, request, reply, session, true))) {
+          if (
+            !(await requireAllowedWalletChain(
+              transfer.chainId,
+              request,
+              reply,
+              session,
+              walletTransferLocalChainIds,
+            ))
+          ) {
             return reply;
           }
           const wallet = await options.walletDirectory.getWallet(session.userId, transfer.walletId);
