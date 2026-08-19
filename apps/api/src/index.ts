@@ -60,6 +60,12 @@ export {
   parseLocalSwapOperationId,
   parseLocalSwapQuoteRequest,
 } from "./local-swap-executions.js";
+export {
+  PostgresLocalSwapHelperBindingStore,
+  PostgresLocalSwapOperationStore,
+  PostgresLocalSwapPreviewStore,
+  PostgresLocalSwapQuoteStore,
+} from "./postgres-local-swap-execution-store.js";
 export type {
   LocalSwapChainInspection,
   LocalSwapExecutionApplication,
