@@ -181,7 +181,6 @@ contract WalletHelperInvariantHandler {
             address(tokenOut),
             address(tokenOut).codehash
         );
-        tokenIn.approve(address(helper), type(uint256).max);
         tokenOut.transfer(address(router), type(uint128).max / 2);
     }
 
@@ -199,6 +198,7 @@ contract WalletHelperInvariantHandler {
             serviceFeeBps: 0
         });
         WalletHelperV1.Permit2Authorization memory authorization;
+        tokenIn.approve(address(helper), amount);
         try helper.executeSwap(keccak256(abi.encode(sequence)), plan, authorization) {} catch {}
     }
 }
@@ -226,7 +226,6 @@ contract WalletHelperV1Test {
         manager = new TestOnlyPositionManager();
         adapter = new LocalExecutionAdapter(address(router), address(manager));
         helper = _helper(address(this), address(adapter), address(tokenIn), address(tokenOut));
-        tokenIn.approve(address(helper), type(uint256).max);
         tokenOut.transfer(address(router), 10 ** 29);
     }
 
@@ -249,11 +248,13 @@ contract WalletHelperV1Test {
 
     function testSwapUsesExactAllowanceAndPaysOwner() public {
         uint256 beforeOut = tokenOut.balanceOf(address(this));
+        tokenIn.approve(address(helper), 10_000);
         uint256 amountOut = helper.executeSwap(
             keccak256("swap-1"), _swapPlan(address(tokenIn), address(tokenOut), 10_000, 9_900), _emptyPermit()
         );
         require(amountOut == 10_000, "amount out mismatch");
         require(tokenOut.balanceOf(address(this)) - beforeOut == 10_000, "output recipient mismatch");
+        require(tokenIn.allowance(address(this), address(helper)) == 0, "owner allowance remains");
         require(tokenIn.allowance(address(helper), address(adapter)) == 0, "helper allowance remains");
         require(tokenIn.allowance(address(adapter), address(router)) == 0, "adapter allowance remains");
         require(tokenIn.balanceOf(address(helper)) == 0, "helper input dust");
@@ -263,6 +264,7 @@ contract WalletHelperV1Test {
     function testDuplicatePlanRevertsWithoutFurtherBalanceChange() public {
         bytes32 digest = keccak256("duplicate");
         WalletHelperV1.SwapPlan memory plan = _swapPlan(address(tokenIn), address(tokenOut), 1_000, 1_000);
+        tokenIn.approve(address(helper), 1_000);
         helper.executeSwap(digest, plan, _emptyPermit());
         uint256 inputAfter = tokenIn.balanceOf(address(this));
         (bool success, bytes memory data) =
@@ -270,6 +272,24 @@ contract WalletHelperV1Test {
         require(!success, "duplicate succeeded");
         require(_selector(data) == WalletHelperV1.PlanAlreadyExecuted.selector, "wrong duplicate error");
         require(tokenIn.balanceOf(address(this)) == inputAfter, "duplicate changed balance");
+    }
+
+    function testOversizedDirectAllowanceRevertsBeforeAssetMovement() public {
+        tokenIn.approve(address(helper), 101);
+        bytes32 digest = keccak256("oversized-allowance");
+        uint256 beforeBalance = tokenIn.balanceOf(address(this));
+        (bool success, bytes memory data) = address(helper)
+            .call(
+                abi.encodeCall(
+                    WalletHelperV1.executeSwap,
+                    (digest, _swapPlan(address(tokenIn), address(tokenOut), 100, 100), _emptyPermit())
+                )
+            );
+        require(!success, "oversized allowance succeeded");
+        require(_selector(data) == WalletHelperV1.InvalidAllowance.selector, "wrong allowance error");
+        require(tokenIn.balanceOf(address(this)) == beforeBalance, "allowance failure moved assets");
+        require(tokenIn.allowance(address(this), address(helper)) == 101, "allowance failure changed approval");
+        require(!helper.executedPlans(digest), "allowance failure persisted plan");
     }
 
     function testNonOwnerCannotEnterAnyAssetFunction() public {
@@ -307,7 +327,7 @@ contract WalletHelperV1Test {
     function testMaliciousAdapterFakeOutputRevertsAtomically() public {
         FakeOutputAdapter fake = new FakeOutputAdapter();
         WalletHelperV1 guarded = _helper(address(this), address(fake), address(tokenIn), address(tokenOut));
-        tokenIn.approve(address(guarded), type(uint256).max);
+        tokenIn.approve(address(guarded), 100);
         uint256 beforeIn = tokenIn.balanceOf(address(this));
         bytes32 digest = keccak256("fake-output");
         (bool success, bytes memory data) = address(guarded)
@@ -337,7 +357,7 @@ contract WalletHelperV1Test {
     function testCallbackTokenCannotReenterAndEverythingRollsBack() public {
         AdversarialToken callbackToken = new AdversarialToken(AdversarialToken.Mode.Callback, 1_000_000);
         WalletHelperV1 guarded = _helper(address(this), address(adapter), address(callbackToken), address(tokenOut));
-        callbackToken.approve(address(guarded), type(uint256).max);
+        callbackToken.approve(address(guarded), 100);
         callbackToken.configureCallback(
             address(guarded),
             abi.encodeCall(WalletHelperV1.sweepToken, (keccak256("callback"), address(callbackToken), 1))
@@ -387,7 +407,8 @@ contract WalletHelperV1Test {
     }
 
     function testPositionMintsNftToOwnerAndRefundsUnusedTokens() public {
-        tokenOut.approve(address(helper), type(uint256).max);
+        tokenIn.approve(address(helper), 1_000);
+        tokenOut.approve(address(helper), 2_000);
         uint256 before0 = tokenIn.balanceOf(address(this));
         uint256 before1 = tokenOut.balanceOf(address(this));
         (uint256 tokenId, uint256 used0, uint256 used1) = helper.executePosition(keccak256("position"), _positionPlan());
@@ -401,11 +422,15 @@ contract WalletHelperV1Test {
         require(tokenOut.balanceOf(address(adapter)) == 0, "adapter token1 dust");
         require(tokenIn.allowance(address(helper), address(adapter)) == 0, "token0 allowance remains");
         require(tokenOut.allowance(address(helper), address(adapter)) == 0, "token1 allowance remains");
+        require(tokenIn.allowance(address(this), address(helper)) == 0, "owner token0 allowance remains");
+        require(tokenOut.allowance(address(this), address(helper)) == 0, "owner token1 allowance remains");
     }
 
     function testMinOutDeadlineFeeAndUnknownTokenFailClosed() public {
         router.setAmountOutBps(9_000);
+        tokenIn.approve(address(helper), 1_000);
         _expectSwapError(_swapPlan(address(tokenIn), address(tokenOut), 1_000, 1_000), bytes4(0x08c379a0), "min-out");
+        tokenIn.approve(address(helper), 0);
         WalletHelperV1.SwapPlan memory expired = _swapPlan(address(tokenIn), address(tokenOut), 1, 1);
         expired.deadline = block.timestamp - 1;
         _expectSwapError(expired, WalletHelperV1.DeadlineExpired.selector, "deadline");
@@ -433,6 +458,7 @@ contract WalletHelperV1Test {
 
     function testFuzzSwapPreservesExactApprovalAndNoDust(uint96 rawAmount) public {
         uint256 amount = (uint256(rawAmount) % 10 ** 20) + 1;
+        tokenIn.approve(address(helper), amount);
         helper.executeSwap(
             keccak256(abi.encode("fuzz", amount)),
             _swapPlan(address(tokenIn), address(tokenOut), amount, amount),
@@ -442,6 +468,7 @@ contract WalletHelperV1Test {
         require(tokenIn.balanceOf(address(adapter)) == 0, "adapter dust");
         require(tokenIn.allowance(address(helper), address(adapter)) == 0, "helper approval");
         require(tokenIn.allowance(address(adapter), address(router)) == 0, "adapter approval");
+        require(tokenIn.allowance(address(this), address(helper)) == 0, "owner approval");
     }
 
     function _helper(address owner, address adapterAddress, address firstToken, address secondToken)
@@ -509,7 +536,7 @@ contract WalletHelperV1Test {
     function _assertAdversarialTokenReverts(AdversarialToken.Mode mode, string memory salt) private {
         AdversarialToken adversarial = new AdversarialToken(mode, 1_000_000);
         WalletHelperV1 guarded = _helper(address(this), address(adapter), address(adversarial), address(tokenOut));
-        adversarial.approve(address(guarded), type(uint256).max);
+        adversarial.approve(address(guarded), 100);
         uint256 beforeBalance = adversarial.balanceOf(address(this));
         bytes32 digest = keccak256(bytes(salt));
         (bool success,) = address(guarded)
@@ -527,7 +554,7 @@ contract WalletHelperV1Test {
     function _assertAdversarialTokenSucceeds(AdversarialToken.Mode mode, string memory salt) private {
         AdversarialToken adversarial = new AdversarialToken(mode, 1_000_000);
         WalletHelperV1 guarded = _helper(address(this), address(adapter), address(adversarial), address(tokenOut));
-        adversarial.approve(address(guarded), type(uint256).max);
+        adversarial.approve(address(guarded), 100);
         guarded.executeSwap(
             keccak256(bytes(salt)), _swapPlan(address(adversarial), address(tokenOut), 100, 100), _emptyPermit()
         );
