@@ -419,24 +419,30 @@ test("renders ready position, active Helper, and residual data without execution
   if (captureEvidence) {
     await page.evaluate(() => window.scrollTo(0, 0));
     const sections = page.locator(".position-helper-read-model > .wallet-read-section");
-    const first = await sections.first().boundingBox();
-    const last = await sections.last().boundingBox();
+    const bounds = await sections.evaluateAll((elements) => {
+      const rectangles = elements.map((element) => element.getBoundingClientRect());
+      const top = Math.min(...rectangles.map((rectangle) => rectangle.top)) + window.scrollY;
+      const bottom = Math.max(...rectangles.map((rectangle) => rectangle.bottom)) + window.scrollY;
+      return { height: bottom - top, y: top };
+    });
     const viewport = page.viewportSize();
-    expect(first).not.toBeNull();
-    expect(last).not.toBeNull();
+    expect(bounds.height).toBeGreaterThan(0);
     expect(viewport).not.toBeNull();
+    await page.setViewportSize({
+      height: Math.ceil(bounds.y + bounds.height),
+      width: viewport!.width,
+    });
     const screenshot = await page.screenshot({
       animations: "disabled",
       caret: "hide",
       clip: {
-        height: last!.y + last!.height - first!.y,
+        height: bounds.height,
         width: viewport!.width,
         x: 0,
-        y: first!.y,
+        y: bounds.y,
       },
       path: `artifacts/acceptance/P05-02/E-VIS/position-helper-ready-${testInfo.project.name}.png`,
-      style:
-        ".app-header, .mobile-navigation-shell, .shell-status-bar { display: none !important; }",
+      style: ".mobile-navigation-shell, .shell-status-bar { display: none !important; }",
     });
     expect(screenshot.byteLength).toBeGreaterThan(8_000);
   }
