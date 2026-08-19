@@ -19,14 +19,7 @@ const REFERENCE_COVERAGE = [
   "HELPER-04",
   "HELPER-06",
 ];
-const CURRENT_IMPLEMENTED = [
-  "SWAP-01",
-  "POS-01",
-  "POS-04",
-  "HELPER-01",
-  "HELPER-02",
-  "HELPER-05",
-];
+const CURRENT_IMPLEMENTED = ["SWAP-01", "POS-01", "POS-04", "HELPER-01", "HELPER-02", "HELPER-05"];
 const CURRENT_PLANNED = REFERENCE_COVERAGE.filter((id) => id !== "HELPER-02");
 const OBSERVED_SELECTORS = ["0xadc3f25c", "0xfb691fd9", "0x71fa74ed", "0x5dfd8e50"];
 const REQUIRED_FILES = [

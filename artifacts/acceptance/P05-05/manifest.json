@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-05",
+  "phase": "P05",
+  "risk": "R4",
+  "status": "accepted-with-gaps",
+  "featureIds": ["HELPER-02"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "Helper Registry, plan, recovery state machine, strict browser client, and worker unit tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-05/E-REC.md"
+    },
+    {
+      "id": "T-API",
+      "command": "authenticated preview, submit, idempotency, operation GET, and strict ingress tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-05/E-API.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "real non-forked Anvil API-to-Signer-to-receipt Helper deployment closure",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-05/E-CHAIN.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "PostgreSQL fresh migration, reverse down cycle, and Helper operation schema integration",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-05/E-DATA.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "nonce rollback/drift, replacement, dropped receipt recovery, lease restart, revert, and retry tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-05/E-REC.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "tenant/user/wallet authorization, Registry/code/owner/constructor/fencing checks, and injection denial",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-05/E-SEC.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "strict client plus desktop/mobile preview, operation, failure, recovery, keyboard, focus, and Axe tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-05/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile preview evidence and succeeded-state Playwright screenshot regression",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-05/E-VIS.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P05-05/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P05-05/E-DATA.md" },
+    { "id": "E-CHAIN", "path": "artifacts/acceptance/P05-05/E-CHAIN.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P05-05/E-REC.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P05-05/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P05-05/E-SEC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P05-05/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P05-05/E-VIS.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P05-05/E-OPS.md" }
+  ],
+  "assumptions": [
+    "HELPER-02 is implemented-assumed only for non-forked local Anvil chainId 31337 with synthetic wallets and TestOnly assets.",
+    "The local gate may remain OPEN; testnet and production gates remain CLOSED with zero signatures, broadcasts, and real-fund operations.",
+    "SWAP-02, POS-02, POS-03, HELPER-03, HELPER-04, and HELPER-06 remain planned.",
+    "No BSC testnet/mainnet deployment allowlist or production signer/broadcast route is introduced.",
+    "P05-04 acceptance files remain byte-identical to baseline ad695e0afbcbc84096a9b97ee48e6161031305cc.",
+    "Independent contract review, testnet evidence, production Registry, and production operational evidence remain unresolved.",
+    "This accepted-with-gaps work item is not parity-verified and not released."
+  ],
+  "completedAt": "2026-08-19T17:20:00.000Z",
+  "commit": null
+}

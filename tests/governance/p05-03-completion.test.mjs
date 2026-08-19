@@ -28,14 +28,7 @@ const FEATURE_IDS = [
   "HELPER-05",
   "HELPER-06",
 ];
-const IMPLEMENTED = [
-  "SWAP-01",
-  "POS-01",
-  "POS-04",
-  "HELPER-01",
-  "HELPER-02",
-  "HELPER-05",
-];
+const IMPLEMENTED = ["SWAP-01", "POS-01", "POS-04", "HELPER-01", "HELPER-02", "HELPER-05"];
 const OWNED = ["SWAP-01", "POS-04"];
 const REQUIRED_EVIDENCE = [
   "E-API",
@@ -191,9 +184,7 @@ test("P00 through P05-02 acceptance files remain byte-identical to the 660-file 
   const currentPriorFiles = (await filesBelow(ACCEPTANCE_ROOT))
     .filter(
       (file) =>
-        !file.startsWith("P05-03/") &&
-        !file.startsWith("P05-04/") &&
-        !file.startsWith("P05-05/"),
+        !file.startsWith("P05-03/") && !file.startsWith("P05-04/") && !file.startsWith("P05-05/"),
     )
     .map((file) => `artifacts/acceptance/${file}`);
   assert.equal(baselineFiles.length, 660);
