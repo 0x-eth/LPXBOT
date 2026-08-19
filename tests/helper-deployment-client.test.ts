@@ -56,9 +56,7 @@ function operation() {
     reconciliationReason: null,
     registryVersion: "p05-local-helper-v2",
     state: "broadcast",
-    transactions: [
-      { active: true, generation: 0, state: "broadcast", transactionHash },
-    ],
+    transactions: [{ active: true, generation: 0, state: "broadcast", transactionHash }],
     updatedAt: "2026-08-20T10:00:01.000Z",
     walletId,
   };
@@ -85,9 +83,7 @@ describe("P05-05 helper deployment browser client", () => {
     expect(() =>
       parseHelperDeploymentOperation({
         ...operation(),
-        transactions: [
-          { active: true, generation: 1, state: "broadcast", transactionHash },
-        ],
+        transactions: [{ active: true, generation: 1, state: "broadcast", transactionHash }],
       }),
     ).toThrowError("HELPER_DEPLOYMENT_RESPONSE_INVALID");
   });

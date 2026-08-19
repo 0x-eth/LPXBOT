@@ -101,10 +101,7 @@ function feeLimit(value: unknown): value is HelperDeploymentFeeLimit {
   );
 }
 
-export function parseHelperDeploymentPreview(
-  value: unknown,
-  status = 0,
-): HelperDeploymentPreview {
+export function parseHelperDeploymentPreview(value: unknown, status = 0): HelperDeploymentPreview {
   if (
     !record(value) ||
     !exact(value, [
@@ -145,7 +142,10 @@ export function parseHelperDeploymentPreview(
     invalid(status);
   }
   for (const key of ["adapter", "owner", "permit2"] as const) {
-    if (typeof value.constructor[key] !== "string" || !addressPattern.test(value.constructor[key])) {
+    if (
+      typeof value.constructor[key] !== "string" ||
+      !addressPattern.test(value.constructor[key])
+    ) {
       invalid(status);
     }
   }

@@ -17,10 +17,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  HelperDeploymentClient,
-  HelperDeploymentRequestError,
-} from "./helper-deployment-client";
+import { HelperDeploymentClient, HelperDeploymentRequestError } from "./helper-deployment-client";
 
 type PanelState = "idle" | "previewing" | "preview-ready" | "submitting" | HelperDeploymentState;
 
@@ -262,7 +259,9 @@ export function HelperDeploymentPanel({ wallet }: { wallet: CustodyWallet }) {
   useEffect(() => {
     if (!preview || !dialogOpen) return;
     const update = () =>
-      setSecondsLeft(Math.max(0, Math.ceil((new Date(preview.expiresAt).getTime() - Date.now()) / 1_000)));
+      setSecondsLeft(
+        Math.max(0, Math.ceil((new Date(preview.expiresAt).getTime() - Date.now()) / 1_000)),
+      );
     update();
     const timer = window.setInterval(update, 1_000);
     return () => window.clearInterval(timer);
@@ -291,7 +290,7 @@ export function HelperDeploymentPanel({ wallet }: { wallet: CustodyWallet }) {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [client, operation?.operationId, operation?.state]);
+  }, [client, operation]);
 
   const openPreview = useCallback(async () => {
     setError(null);
