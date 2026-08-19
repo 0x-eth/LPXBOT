@@ -96,9 +96,7 @@ function validationContext(
   };
 }
 
-export class ViemLocalHelperDeploymentPlanVerifier
-  implements HelperDeploymentPlanChainVerifier
-{
+export class ViemLocalHelperDeploymentPlanVerifier implements HelperDeploymentPlanChainVerifier {
   readonly #client: LocalEvmRpcClient;
   readonly #registry: HelperDeploymentRegistry;
 
@@ -111,9 +109,7 @@ export class ViemLocalHelperDeploymentPlanVerifier
       expectedChainId: 31_337,
       ...(options.fetch ? { fetch: options.fetch } : {}),
       ...options.provider,
-      ...(options.timeoutMilliseconds
-        ? { timeoutMilliseconds: options.timeoutMilliseconds }
-        : {}),
+      ...(options.timeoutMilliseconds ? { timeoutMilliseconds: options.timeoutMilliseconds } : {}),
     });
   }
 
@@ -156,9 +152,7 @@ export class ViemLocalHelperDeploymentPlanVerifier
   }
 }
 
-export class PostgresHelperDeploymentPlanAuthorizer
-  implements HelperDeploymentPlanAuthorizer
-{
+export class PostgresHelperDeploymentPlanAuthorizer implements HelperDeploymentPlanAuthorizer {
   readonly #chain: HelperDeploymentPlanChainVerifier;
   readonly #now: () => Date;
   readonly #pool: Pool;
@@ -190,7 +184,10 @@ export class PostgresHelperDeploymentPlanAuthorizer
     } catch {
       return false;
     }
-    if (helperDeploymentPlanDigest(plan) !== input.planDigest || plan.planDigest !== input.planDigest) {
+    if (
+      helperDeploymentPlanDigest(plan) !== input.planDigest ||
+      plan.planDigest !== input.planDigest
+    ) {
       return false;
     }
     const result = await this.#pool.query<AuthorizationRow>(

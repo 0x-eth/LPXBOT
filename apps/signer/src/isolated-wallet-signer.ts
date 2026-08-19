@@ -16,7 +16,7 @@ import {
   walletTransferPlanDigest,
   type WalletTransferPlan,
 } from "@lpbot/domain/wallet-transfer";
-import { keccak256, type Hex } from "viem";
+import { getContractAddress, keccak256, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
 import type {
@@ -328,7 +328,10 @@ export class IsolatedWalletSigner {
           chainId: 31_337,
           constructorArgumentsHash: material.constructorArgumentsHash,
           creationCodeHash: registry.helperTemplate.creationCodeHash,
-          expectedAddress: input.plan.deployment.expectedAddress,
+          expectedAddress: getContractAddress({
+            from: input.plan.wallet.address,
+            nonce: BigInt(input.plan.nonce),
+          }).toLowerCase() as `0x${string}`,
           expectedRuntimeCodeHash: input.plan.deployment.expectedRuntimeCodeHash,
           helperVersion: "WalletHelperV1",
           initCode: material.initCode,
@@ -347,9 +350,7 @@ export class IsolatedWalletSigner {
       );
     } catch (error) {
       throw new SignerError(
-        input.plan.deadline <= now.toISOString()
-          ? "HELPER_PLAN_EXPIRED"
-          : "HELPER_PLAN_REJECTED",
+        input.plan.deadline <= now.toISOString() ? "HELPER_PLAN_EXPIRED" : "HELPER_PLAN_REJECTED",
       );
     }
     if (

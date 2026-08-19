@@ -186,6 +186,12 @@ importers:
       '@lpbot/api-contract':
         specifier: workspace:*
         version: link:../../packages/api-contract
+      '@lpbot/chain-adapters':
+        specifier: workspace:*
+        version: link:../../packages/chain-adapters
+      '@lpbot/chain-registry':
+        specifier: workspace:*
+        version: link:../../packages/chain-registry
       '@lpbot/domain':
         specifier: workspace:*
         version: link:../../packages/domain
