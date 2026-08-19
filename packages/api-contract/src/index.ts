@@ -1385,6 +1385,67 @@ export type LocalPositionExecutionState = LocalSwapExecutionState;
 export type LocalPositionStepState = LocalSwapStepState;
 export type LocalPositionStepKind = "burn" | "collect" | "decrease";
 
+export interface LocalPositionCurrentSnapshot {
+  block: {
+    hash: `0x${string}`;
+    number: string;
+    timestamp: string;
+  };
+  chainId: 31_337;
+  expiresAt: string;
+  manager: {
+    abiHash: `sha256:${string}`;
+    address: EvmAddress;
+    runtimeCodeHash: `0x${string}`;
+  };
+  observedAt: string;
+  position: {
+    approval: {
+      approvedAddress: EvmAddress | null;
+      approvedForAll: boolean;
+      operator: EvmAddress | null;
+    };
+    liquidity: string;
+    owner: EvmAddress;
+    platformId: PositionPlatformId;
+    pool: {
+      feePips: string;
+      poolAddress: EvmAddress | null;
+      poolId: `0x${string}` | null;
+      tickSpacing: string;
+      token0: EvmAddress;
+      token1: EvmAddress;
+    };
+    reserve0BaseUnit: string;
+    reserve1BaseUnit: string;
+    ticks: { lower: string; upper: string };
+    tokenId: string;
+    tokensOwed0BaseUnit: string;
+    tokensOwed1BaseUnit: string;
+  };
+  registry: {
+    digest: `sha256:${string}`;
+    version: "p05-local-position-execution-v2";
+  };
+  schemaVersion: 2;
+  snapshotDigest: `sha256:${string}`;
+  snapshotVersion: "p05-local-position-snapshot-v2";
+  tokens: readonly [
+    { address: EvmAddress; runtimeCodeHash: `0x${string}` },
+    { address: EvmAddress; runtimeCodeHash: `0x${string}` },
+  ];
+  wallet: { address: EvmAddress; walletId: string };
+}
+
+export interface LocalPositionCurrentPage {
+  chainId: 31_337;
+  executionEnabled: boolean;
+  items: LocalPositionCurrentSnapshot[];
+  registryVersion: "p05-local-position-execution-v2";
+  serviceFeeBps: 0;
+  walletId: string;
+}
+
 export interface LocalPositionCollectFeesPreviewRequest {
   platformId: PositionPlatformId;
   snapshotDigest: `sha256:${string}`;
@@ -1523,6 +1584,7 @@ export const localPositionExecutionContracts = Object.freeze({
     path: "/api/positions/collect-fees/preview",
   }),
   get: Object.freeze({ method: "GET", path: "/api/chain-operations/{operationId}" }),
+  localCurrent: Object.freeze({ method: "GET", path: "/api/positions/local-current" }),
   removeLiquidity: Object.freeze({
     method: "POST",
     path: "/api/positions/remove-liquidity",

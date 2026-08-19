@@ -5,6 +5,7 @@ import type {
   LocalPositionCollectFeesPreview,
   LocalPositionCollectFeesPreviewRequest,
   LocalPositionCollectFeesRequest,
+  LocalPositionCurrentSnapshot,
   LocalPositionExecutionOperation,
   LocalPositionExecutionPreview,
   LocalPositionOperationStep,
@@ -114,6 +115,11 @@ export interface LocalPositionSnapshotStore {
     userId: string;
     walletId: string;
   }): Promise<Readonly<LocalPositionSnapshot> | null>;
+  listCurrent(input: {
+    tenantId: string;
+    userId: string;
+    walletId: string;
+  }): Promise<readonly Readonly<LocalPositionSnapshot>[]>;
 }
 
 export class MemoryLocalPositionSnapshotStore implements LocalPositionSnapshotStore {
@@ -152,6 +158,36 @@ export class MemoryLocalPositionSnapshotStore implements LocalPositionSnapshotSt
   }): Promise<Readonly<LocalPositionSnapshot> | null> {
     const value = this.#snapshots.get(this.#key(input));
     return value ? structuredClone(value) : null;
+  }
+
+  async listCurrent(input: {
+    tenantId: string;
+    userId: string;
+    walletId: string;
+  }): Promise<readonly Readonly<LocalPositionSnapshot>[]> {
+    const prefix = `${input.tenantId}:${input.userId}:${input.walletId}:`;
+    const latest = new Map<string, LocalPositionSnapshot>();
+    for (const [key, value] of this.#snapshots) {
+      if (!key.startsWith(prefix)) continue;
+      const identity = `${value.position.platformId}:${value.position.tokenId}`;
+      const previous = latest.get(identity);
+      if (
+        !previous ||
+        BigInt(value.block.number) > BigInt(previous.block.number) ||
+        (value.block.number === previous.block.number && value.observedAt > previous.observedAt)
+      ) {
+        latest.set(identity, value);
+      }
+    }
+    return [...latest.values()]
+      .sort((left, right) => {
+        const platformOrder = left.position.platformId - right.position.platformId;
+        if (platformOrder !== 0) return platformOrder;
+        const leftTokenId = BigInt(left.position.tokenId);
+        const rightTokenId = BigInt(right.position.tokenId);
+        return leftTokenId < rightTokenId ? -1 : leftTokenId > rightTokenId ? 1 : 0;
+      })
+      .map((value) => structuredClone(value));
   }
 
   #key(input: {
@@ -418,6 +454,11 @@ export interface LocalPositionExecutionApplication {
     userId: string;
     wallet: CustodyWallet;
   }): Promise<{ created: boolean; operation: LocalPositionExecutionOperation }>;
+  current(input: {
+    tenantId: string;
+    userId: string;
+    wallet: CustodyWallet;
+  }): Promise<LocalPositionCurrentSnapshot[]>;
   get(input: {
     operationId: string;
     tenantId: string;
@@ -656,6 +697,10 @@ export function parseLocalPositionOperationId(value: unknown): string {
   return value.toLowerCase();
 }
 
+export function parseLocalPositionWalletId(value: unknown): string {
+  return parseWalletId(value);
+}
+
 function decimal(value: string, code: LocalPositionExecutionErrorCode): bigint {
   if (!decimalPattern.test(value) || value.length > 78) {
     throw new LocalPositionExecutionError(code, true);
@@ -759,6 +804,44 @@ export class LocalPositionExecutionService implements LocalPositionExecutionAppl
     const operation = await this.#operations.get(input);
     if (!operation) throw new LocalPositionExecutionError("LOCAL_POSITION_NOT_FOUND");
     return publicOperation(operation);
+  }
+
+  async current(input: {
+    tenantId: string;
+    userId: string;
+    wallet: CustodyWallet;
+  }): Promise<LocalPositionCurrentSnapshot[]> {
+    const snapshots = await this.#snapshots.listCurrent({
+      tenantId: input.tenantId,
+      userId: input.userId,
+      walletId: input.wallet.walletId,
+    });
+    const current: LocalPositionCurrentSnapshot[] = [];
+    for (const candidate of snapshots) {
+      try {
+        const snapshot = await this.#snapshot(input, {
+          platformId: candidate.position.platformId,
+          snapshotDigest: candidate.snapshotDigest,
+          tokenId: candidate.position.tokenId,
+          walletId: input.wallet.walletId,
+        });
+        const inspection = await this.#chain.inspect({
+          snapshot,
+          walletAddress: getAddress(input.wallet.address),
+        });
+        this.#verifyInspection(snapshot, inspection);
+        current.push(structuredClone(snapshot));
+      } catch (error) {
+        if (
+          error instanceof LocalPositionExecutionError &&
+          error.code !== "LOCAL_POSITION_UNAVAILABLE"
+        ) {
+          continue;
+        }
+        throw error;
+      }
+    }
+    return current;
   }
 
   async previewCollectFees(input: {
