@@ -259,8 +259,11 @@ function helperDeploymentSigningRequest(value: unknown): {
     "maxPriorityFeePerGasBaseUnit",
   ]);
   nested("registry", ["blockNumber", "digest", "rollbackVersion", "version"]);
-  nested("transaction", ["data", "dataHash", "to", "valueBaseUnit"]);
+  const transaction = nested("transaction", ["data", "dataHash", "to", "valueBaseUnit"]);
   nested("wallet", ["address", "walletId"]);
+  if (plan.chainId !== 31_337 || transaction.to !== null || transaction.valueBaseUnit !== "0") {
+    throw new SignerError("HELPER_PLAN_REJECTED");
+  }
   for (const key of ["tokenA", "tokenB"] as const) {
     const token = deployment[key];
     if (
@@ -330,7 +333,9 @@ function failure(response: ServerResponse, error: unknown): void {
                 signerError.code === "PREVIEW_EXPIRED" ||
                 signerError.code === "PREVIEW_CHANGED" ||
                 signerError.code === "TRANSFER_PLAN_EXPIRED" ||
-                signerError.code === "TRANSFER_PLAN_REJECTED"
+                signerError.code === "TRANSFER_PLAN_REJECTED" ||
+                signerError.code === "HELPER_PLAN_EXPIRED" ||
+                signerError.code === "HELPER_PLAN_REJECTED"
               ? 409
               : signerError.code === "WALLET_ADDRESS_EXISTS"
                 ? 409
