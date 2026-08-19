@@ -1381,12 +1381,156 @@ export interface LocalSwapExecutionOperation {
   walletId: string;
 }
 
-export type ChainOperationView = HelperDeploymentOperation | LocalSwapExecutionOperation;
+export type LocalPositionExecutionState = LocalSwapExecutionState;
+export type LocalPositionStepState = LocalSwapStepState;
+export type LocalPositionStepKind = "burn" | "collect" | "decrease";
+
+export interface LocalPositionCollectFeesPreviewRequest {
+  platformId: PositionPlatformId;
+  snapshotDigest: `sha256:${string}`;
+  tokenId: string;
+  walletId: string;
+}
+
+export interface LocalPositionCollectFeesRequest extends LocalPositionCollectFeesPreviewRequest {
+  previewDigest: `sha256:${string}`;
+  previewToken: string;
+}
+
+export interface LocalPositionRemoveLiquidityPreviewRequest {
+  burnIfEmpty: boolean;
+  percent: number;
+  platformId: PositionPlatformId;
+  slippageBps: number;
+  snapshotDigest: `sha256:${string}`;
+  tokenId: string;
+  walletId: string;
+}
+
+export interface LocalPositionRemoveLiquidityRequest
+  extends LocalPositionRemoveLiquidityPreviewRequest {
+  previewDigest: `sha256:${string}`;
+  previewToken: string;
+}
+
+export interface LocalPositionExecutionPreviewStep {
+  feeLimit: LocalSwapFeeLimit;
+  kind: LocalPositionStepKind;
+  ordinal: number;
+}
+
+export interface LocalPositionExecutionPreviewBase {
+  chainId: 31_337;
+  deadline: string;
+  expectedToken0DeltaBaseUnit: string;
+  expectedToken1DeltaBaseUnit: string;
+  expiresAt: string;
+  feeLimitTotalBaseUnit: string;
+  feeProceeds0BaseUnit: string;
+  feeProceeds1BaseUnit: string;
+  liquidityDelta: string;
+  managerAddress: EvmAddress;
+  minPrincipal0BaseUnit: string;
+  minPrincipal1BaseUnit: string;
+  previewDigest: `sha256:${string}`;
+  previewToken: string;
+  principal0BaseUnit: string;
+  principal1BaseUnit: string;
+  remainingLiquidity: string;
+  serviceFeeBps: 0;
+  steps: LocalPositionExecutionPreviewStep[];
+}
+
+export interface LocalPositionCollectFeesPreview
+  extends LocalPositionCollectFeesPreviewRequest,
+    LocalPositionExecutionPreviewBase {
+  burnIfEmpty: false;
+  operationKind: "position-collect-fees";
+  percent: null;
+  slippageBps: null;
+}
+
+export interface LocalPositionRemoveLiquidityPreview
+  extends LocalPositionRemoveLiquidityPreviewRequest,
+    LocalPositionExecutionPreviewBase {
+  operationKind: "position-remove-liquidity";
+}
+
+export type LocalPositionExecutionPreview =
+  | LocalPositionCollectFeesPreview
+  | LocalPositionRemoveLiquidityPreview;
+
+export interface LocalPositionStepTransactionView {
+  active: boolean;
+  generation: number;
+  maxFeePerGasBaseUnit: string;
+  maxPriorityFeePerGasBaseUnit: string;
+  state: Exclude<
+    LocalPositionStepState,
+    "blocked" | "queued" | "skipped" | "reconciling"
+  >;
+  transactionHash: `0x${string}` | null;
+}
+
+export interface LocalPositionOperationStep {
+  failureCode: string | null;
+  feeLimit: LocalSwapFeeLimit;
+  kind: LocalPositionStepKind;
+  nonce: string;
+  ordinal: number;
+  state: LocalPositionStepState;
+  stepId: string;
+  transactions: LocalPositionStepTransactionView[];
+}
+
+export interface LocalPositionExecutionOperation {
+  burnIfEmpty: boolean;
+  chainId: 31_337;
+  createdAt: string;
+  failureCode: string | null;
+  managerAddress: EvmAddress;
+  operationId: string;
+  operationKind: "position-collect-fees" | "position-remove-liquidity";
+  percent: number | null;
+  planDigest: `sha256:${string}`;
+  platformId: PositionPlatformId;
+  reconciliationReason: string | null;
+  registryVersion: "p05-local-position-execution-v2";
+  slippageBps: number | null;
+  snapshotDigest: `sha256:${string}`;
+  state: LocalPositionExecutionState;
+  steps: LocalPositionOperationStep[];
+  tokenId: string;
+  updatedAt: string;
+  walletId: string;
+}
+
+export type ChainOperationView =
+  | HelperDeploymentOperation
+  | LocalPositionExecutionOperation
+  | LocalSwapExecutionOperation;
 
 export const localSwapExecutionContracts = Object.freeze({
   execute: Object.freeze({ method: "POST", path: "/api/swap/execute" }),
   get: Object.freeze({ method: "GET", path: "/api/chain-operations/{operationId}" }),
   preview: Object.freeze({ method: "POST", path: "/api/swap/execute/preview" }),
+} as const);
+
+export const localPositionExecutionContracts = Object.freeze({
+  collectFees: Object.freeze({ method: "POST", path: "/api/positions/collect-fees" }),
+  collectFeesPreview: Object.freeze({
+    method: "POST",
+    path: "/api/positions/collect-fees/preview",
+  }),
+  get: Object.freeze({ method: "GET", path: "/api/chain-operations/{operationId}" }),
+  removeLiquidity: Object.freeze({
+    method: "POST",
+    path: "/api/positions/remove-liquidity",
+  }),
+  removeLiquidityPreview: Object.freeze({
+    method: "POST",
+    path: "/api/positions/remove-liquidity/preview",
+  }),
 } as const);
 
 export type PricingPositionPriceStatus = "current" | "missing" | "stale";
