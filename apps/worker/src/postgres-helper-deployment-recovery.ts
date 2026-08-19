@@ -967,11 +967,7 @@ export class PostgresHelperDeploymentRecoveryRepository implements HelperDeploym
     );
   }
 
-  async #resolveReconciliation(
-    client: PoolClient,
-    operationId: string,
-    when: Date,
-  ): Promise<void> {
+  async #resolveReconciliation(client: PoolClient, operationId: string, when: Date): Promise<void> {
     await client.query(
       `UPDATE chain_operation_reconciliation_cases
           SET status = 'resolved', resolved_at = $2
