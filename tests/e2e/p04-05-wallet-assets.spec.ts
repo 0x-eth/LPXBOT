@@ -430,7 +430,7 @@ test("wallet assets, custom tokens, EIP-681 QR and address book work on desktop/
   await installWalletRoutes(page, state);
   await page.goto("/wallets");
 
-  await expect(page.getByRole("heading", { name: "资产" })).toBeVisible();
+  await expect(page.getByRole("heading", { exact: true, name: "资产" })).toBeVisible();
   await expect(page.getByText("$600", { exact: true })).toBeVisible();
   await expect(page.getByText("价格已过期")).toBeVisible();
   await expect(page.getByText("暂无价格")).toBeVisible();

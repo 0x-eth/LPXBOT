@@ -233,7 +233,7 @@ test("wallets renders loading, empty, ready, desktop/mobile, and axe states", as
   await expect(custodyWallets.getByText(address)).toBeVisible();
   await expect(custodyWallets.getByText("服务器密钥")).toBeVisible();
   await expect(custodyWallets.getByText("已托管")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "资产" })).toBeVisible();
+  await expect(page.getByRole("heading", { exact: true, name: "资产" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "收款" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "地址簿" })).toBeVisible();
   await expect(page.getByText("转账", { exact: true })).toHaveCount(0);
