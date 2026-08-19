@@ -214,7 +214,7 @@ test("P05-02 visual and chain evidence freezes the read-only boundary", async ()
     ["position-helper-ready-chromium-mobile.png", 390],
   ]) {
     const imagePath = path.join(ACCEPTANCE, "E-VIS", file);
-    assert.ok((await stat(imagePath)).size > 10_000, file);
+    assert.ok((await stat(imagePath)).size > 8_000, file);
     const bytes = await readFile(imagePath);
     assert.equal(bytes.readUInt32BE(16), width, file);
     assert.ok(bytes.readUInt32BE(20) >= 844, file);

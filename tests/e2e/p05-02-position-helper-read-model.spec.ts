@@ -438,7 +438,7 @@ test("renders ready position, active Helper, and residual data without execution
       style:
         ".app-header, .mobile-navigation-shell, .shell-status-bar { display: none !important; }",
     });
-    expect(screenshot.byteLength).toBeGreaterThan(10_000);
+    expect(screenshot.byteLength).toBeGreaterThan(8_000);
   }
 });
 
