@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-06",
+  "featureId": "SWAP-02",
+  "serviceFeeBps": 0,
+  "gates": {
+    "local": {
+      "status": "OPEN",
+      "scope": "quote -> exact approve or Permit2 -> WalletHelperV1 Swap -> receipt reconciliation on non-forked Anvil with synthetic wallets/assets only",
+      "chainIds": [31337],
+      "registryVersion": "p05-local-swap-execution-v2",
+      "quoteVersion": "p05-local-swap-quote-v2",
+      "planVersion": "p05-local-swap-plan-v2",
+      "helperVersion": "WalletHelperV1",
+      "allowedAssets": ["TestOnlyERC20", "TestOnlyWBNB"],
+      "allowedOperations": ["SWAP-02:local-swap"],
+      "evidence": [
+        "execution-contract.json",
+        "E-CHAIN.md",
+        "E-REC.md",
+        "E-SEC.md",
+        "E-UI.md",
+        "E-VIS.md"
+      ]
+    },
+    "bsc": {
+      "status": "CLOSED",
+      "registryVersion": "p05-bsc-execution-v1",
+      "quoteExecutionEnabled": false,
+      "signatures": 0,
+      "broadcasts": 0,
+      "reasons": [
+        "P05-06 local Registry is independent from the BSC quote Registry",
+        "BSC executionEnabled remains false",
+        "no BSC execution signer or Worker route"
+      ]
+    },
+    "testnet": {
+      "status": "CLOSED",
+      "signatures": 0,
+      "broadcasts": 0,
+      "allowlistedChainIds": [],
+      "reasons": [
+        "no testnet local Swap Registry",
+        "no independent contract review",
+        "no testnet Swap and cleanup recovery evidence"
+      ]
+    },
+    "production": {
+      "status": "CLOSED",
+      "signatures": 0,
+      "broadcasts": 0,
+      "realFundOperations": 0,
+      "allowlistedChainIds": [],
+      "reasons": [
+        "local Registry has productionInheritance=false",
+        "production signer and Worker queues have no local Swap route",
+        "production execution allowlists remain empty",
+        "real assets are denied",
+        "independent security review remains unresolved"
+      ]
+    }
+  },
+  "plannedOnly": ["POS-02", "POS-03", "HELPER-03", "HELPER-04", "HELPER-06"]
+}

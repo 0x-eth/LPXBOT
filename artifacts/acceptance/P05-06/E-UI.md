@@ -1,0 +1,7 @@
+# P05-06 E-UI
+
+The wallet page shows the local Swap execution panel only after the current chainId 31337 quote returns `executionEnabled=true` and an active verified Helper address. Changed, expired, rejected, or inactive-Helper quotes remove the execution entry. BSC quote and position panels retain their read-only behavior.
+
+The panel supports exact Approve and Permit2 as a keyboard-operable radio group. Quote state displays token pair, exact input/output/minOut, slippage, deadline, gas estimate, service fee 0 bps, Helper, quote expiry, and Registry version. Preview displays authorization mode, aggregate fee cap, minOut, deadline, and every ordered step before confirmation. The operation view renders queued, signing, broadcast, pending, reconciling, succeeded, and failed states plus each step nonce, fee cap, failure code, transaction generation, active/replaced lineage, and cleanup status.
+
+`tests/p05-local-swap-execution-client.test.ts` proves strict response parsing and exact request allowlists. `tests/e2e/p05-06-local-swap-execution.spec.ts` runs four scenarios on both desktop and mobile: direct success with replacement lineage, Permit2 selection and success, reverted Swap remaining reconciling through cleanup, and hidden execution for changed/expired/inactive-Helper quotes. The eight cases cover repeated Enter submit protection, keyboard radio selection, focus, serious/critical Axe violations, horizontal overflow, request-field inspection, and deterministic screenshot comparison.

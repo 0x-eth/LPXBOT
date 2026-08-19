@@ -1,0 +1,9 @@
+# P05-06 E-REC
+
+Every operation is a durable ordered saga: optional `allowance-reset` -> `approve` -> `swap` -> conditional `cleanup`. Each step owns a distinct nonce, fencing token, semantic digest, transaction-data digest, target, value, gas limit, fee cap, and transaction-generation lineage. A replacement must retain nonce, plan digest, semantic digest, target, calldata digest, amount, and step identity while strictly increasing both fee fields within the frozen cap.
+
+Direct mode uses an exact amount approval. A nonzero mismatched allowance inserts reset-to-zero before approve. Permit2 mode binds token, Helper spender, exact amount, expiration, signature deadline, Permit2 nonce, contract, domain separator, quote digest, wallet, and signature digest. Helper plan replay is rejected both by the plan digest and the on-chain replay ledger.
+
+`tests/p05-local-swap-recovery.test.ts` covers ordered advancement, canonical successful closure, Swap revert after approval, cleanup scheduling, unconfirmed cleanup remaining reconciling, cleanup completion, and reorged evidence returning to reconciliation. `tests/integration/postgres-local-swap-execution.integration.ts` covers lease expiry/restart, nonce drift, transaction replacement and original/replacement lineage, dropped operations, append-only receipts, and atomic state transitions. The Anvil test abandons a live claim before continuing with fresh Worker instances.
+
+An approval-confirmed Swap failure never becomes ordinary failed while spend authority may remain. Missing, noncanonical, underconfirmed, dropped, or reorged cleanup evidence retains `ALLOWANCE_CLEANUP_REQUIRED` and operation state `reconciling`. Only canonical cleanup evidence with allowance zero permits the terminal failed state. This prevents a failed label from hiding residual authorization.

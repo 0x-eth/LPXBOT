@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-06",
+  "phase": "P05",
+  "risk": "R4",
+  "status": "accepted-with-gaps",
+  "featureIds": ["SWAP-02"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "local Registry, quote v2, plan v2, replacement, recovery, strict client, and Worker unit tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-06/E-REC.md"
+    },
+    {
+      "id": "T-API",
+      "command": "authenticated quote, preview, execute, idempotency, reauthentication, unified operation GET, and strict ingress tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-06/E-API.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "real non-forked Anvil direct, Permit2, revert, cleanup, and restart closure",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-06/E-CHAIN.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "PostgreSQL fresh migration, reverse down cycle, local quote ledger, ordered operation steps, and append-only evidence",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-06/E-DATA.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "nonce drift, step replacement, dropped/reorg/restart recovery, replay, revert, and mandatory cleanup reconciliation",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-06/E-REC.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "RBAC, Registry/code/owner/fencing/Permit2 checks, arbitrary calldata denial, malicious contract tests, fuzz, and invariants",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-06/E-SEC.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "strict client plus desktop/mobile direct, Permit2, cleanup, stale quote, keyboard, Axe, and overflow tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-06/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile succeeded-operation Playwright screenshot regression and accepted visual capture",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-06/E-VIS.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P05-06/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P05-06/E-DATA.md" },
+    { "id": "E-CHAIN", "path": "artifacts/acceptance/P05-06/E-CHAIN.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P05-06/E-REC.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P05-06/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P05-06/E-SEC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P05-06/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P05-06/E-VIS.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P05-06/E-OPS.md" }
+  ],
+  "assumptions": [
+    "SWAP-02 is implemented-assumed only for non-forked local Anvil chainId 31337 with synthetic wallets, TestOnlyERC20/TestOnlyWBNB, and the P05-05 active WalletHelperV1 binding.",
+    "The local gate may remain OPEN; BSC, testnet, and production gates remain CLOSED with zero non-local signatures, broadcasts, and real-fund operations.",
+    "POS-02, POS-03, HELPER-03, HELPER-04, and HELPER-06 remain planned.",
+    "The BSC p05-bsc-execution-v1 quote remains executionEnabled=false and no BSC testnet/mainnet execution allowlist was introduced.",
+    "P05-03, P05-04, and P05-05 acceptance files remain byte-identical to baseline 1bf9a68dfba1bb42ff558dfe3df1c5097ef6969a.",
+    "Independent contract review, testnet evidence, production Registry, production signer/Worker routes, and production operational evidence remain unresolved.",
+    "This accepted-with-gaps work item is not parity-verified and not released."
+  ],
+  "completedAt": "2026-08-19T20:59:40.000Z",
+  "commit": null
+}

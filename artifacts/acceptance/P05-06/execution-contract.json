@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-06",
+  "featureId": "SWAP-02",
+  "registry": {
+    "chainId": 31337,
+    "environment": "non-forked-anvil-synthetic-only",
+    "executionEnabled": true,
+    "productionInheritance": false,
+    "registryVersion": "p05-local-swap-execution-v2",
+    "registryDigest": "sha256:ed3afcd9fa445de56f8f26212cc7f756663462c035f77dd07fa2a0436d2a4e13",
+    "rollbackVersion": "p05-local-swap-execution-disabled-v1",
+    "quoteVersion": "p05-local-swap-quote-v2",
+    "planVersion": "p05-local-swap-plan-v2",
+    "serviceFeeBps": 0,
+    "instanceBinding": "chainId+walletId+helperVersion",
+    "allowedAssets": ["TestOnlyERC20", "TestOnlyWBNB"]
+  },
+  "bscBoundary": {
+    "registryVersion": "p05-bsc-execution-v1",
+    "quoteExecutionEnabled": false,
+    "modifiedByP0506": false
+  },
+  "api": {
+    "previewRequestFields": ["authorizationMode", "quoteDigest", "walletId"],
+    "submitRequestFields": [
+      "authorizationMode",
+      "previewDigest",
+      "previewToken",
+      "quoteDigest",
+      "walletId"
+    ],
+    "clientControlledFieldsDenied": [
+      "target",
+      "router",
+      "spender",
+      "selector",
+      "calldata",
+      "to",
+      "value",
+      "amount",
+      "fee"
+    ],
+    "operationQuery": "GET /api/chain-operations/:operationId"
+  },
+  "helperBinding": {
+    "source": "P05-05 wallet_helper_deployment_bindings",
+    "requiredState": "active",
+    "requiredChecks": [
+      "tenant+user+wallet ownership",
+      "WalletHelperV1 version",
+      "owner equals custody wallet",
+      "runtime code hash equals Registry template",
+      "adapter and Permit2 identities match Registry",
+      "binding Registry digest matches current Registry"
+    ]
+  },
+  "steps": {
+    "order": ["allowance-reset?", "approve", "swap", "cleanup-on-failure?"],
+    "independentBindings": [
+      "nonce",
+      "fencingToken",
+      "semanticDigest",
+      "transactionDataDigest",
+      "target",
+      "value",
+      "gasLimit",
+      "maxFeePerGas",
+      "maxPriorityFeePerGas",
+      "feeCap"
+    ],
+    "replacementRule": "fees strictly increase; nonce, target, calldata, amount, semantic digest, and plan digest remain unchanged"
+  },
+  "authorization": {
+    "direct": {
+      "amount": "exact quote amountInBaseUnit",
+      "spender": "active Helper",
+      "nonzeroMismatch": "reset-to-zero before exact approve"
+    },
+    "permit2": {
+      "bindings": [
+        "token",
+        "active Helper spender",
+        "exact amount",
+        "expiration",
+        "signature deadline",
+        "Permit2 nonce",
+        "Permit2 contract",
+        "domain separator",
+        "quote digest",
+        "wallet",
+        "signature digest"
+      ]
+    }
+  },
+  "receiptClosure": [
+    "canonical block and transaction",
+    "successful receipt",
+    "owner tokenOut delta >= minOut",
+    "Helper PlanExecuted",
+    "Helper SwapExecuted",
+    "Helper plan replay recorded",
+    "owner-to-spender allowance = 0",
+    "Helper-to-adapter allowance = 0",
+    "adapter-to-router allowance = 0",
+    "Helper input/output dust bounded"
+  ],
+  "recovery": {
+    "idempotency": true,
+    "stepReplacement": true,
+    "droppedAndReorgRecovery": true,
+    "restartLeaseRecovery": true,
+    "appendOnlyReceiptEvidence": true,
+    "approvalConfirmedSwapFailure": "reconciling until canonical allowance=0 cleanup"
+  },
+  "executionCounters": {
+    "localOperations": 3,
+    "localStepSignatures": 7,
+    "localStepBroadcasts": 7,
+    "localPermit2AuthorizationSignatures": 1,
+    "localCanonicalStepReceipts": 7,
+    "localSucceeded": 2,
+    "localSwapRevertedAndCleaned": 1,
+    "testnetSignatures": 0,
+    "testnetBroadcasts": 0,
+    "productionSignatures": 0,
+    "productionBroadcasts": 0,
+    "realFundOperations": 0
+  },
+  "nonGoals": ["POS-02", "POS-03", "HELPER-03", "HELPER-04", "HELPER-06"]
+}
