@@ -188,7 +188,9 @@ export function parseLocalSwapQuoteView(value: unknown, status = 0): LocalSwapQu
     !unsigned(value.gas.gasLimit, true) ||
     !unsigned(value.gas.maxFeePerGasBaseUnit, true) ||
     !unsigned(value.gas.maxPriorityFeePerGasBaseUnit) ||
-    BigInt(value.gas.maxPriorityFeePerGasBaseUnit) > BigInt(value.gas.maxFeePerGasBaseUnit)
+    BigInt(value.gas.maxPriorityFeePerGasBaseUnit) > BigInt(value.gas.maxFeePerGasBaseUnit) ||
+    BigInt(value.gas.estimatedFeeBaseUnit) !==
+      BigInt(value.gas.gasLimit) * BigInt(value.gas.maxFeePerGasBaseUnit)
   ) {
     invalid(status);
   }
@@ -240,7 +242,7 @@ export function parseLocalSwapExecutePreview(
   ) {
     invalid(status);
   }
-  const steps = value.steps.map((entry, ordinal) => {
+  const steps: LocalSwapExecutePreview["steps"] = value.steps.map((entry, ordinal) => {
     if (
       !record(entry) ||
       !exact(entry, ["amountBaseUnit", "feeLimit", "kind", "ordinal"]) ||
@@ -251,12 +253,23 @@ export function parseLocalSwapExecutePreview(
     ) {
       invalid(status);
     }
-    return structuredClone(entry);
+    return structuredClone(entry) as unknown as LocalSwapExecutePreview["steps"][number];
   });
+  const expectedKinds =
+    steps.length === 4
+      ? (["allowance-reset", "approve", "swap", "cleanup"] as const)
+      : (["approve", "swap", "cleanup"] as const);
+  const approvedAmount = steps.find(({ kind }) => kind === "approve")?.amountBaseUnit;
   if (
-    new Set(steps.map(({ kind }) => kind)).size !== steps.length ||
-    steps.at(-1)?.kind !== "cleanup" ||
-    steps.at(-2)?.kind !== "swap"
+    steps.some(({ kind }, index) => kind !== expectedKinds[index]) ||
+    !approvedAmount ||
+    steps.find(({ kind }) => kind === "swap")?.amountBaseUnit !== approvedAmount ||
+    steps.some(
+      ({ amountBaseUnit, kind }) =>
+        (kind === "allowance-reset" || kind === "cleanup") && amountBaseUnit !== "0",
+    ) ||
+    BigInt(value.feeLimitTotalBaseUnit) !==
+      steps.reduce((total, step) => total + BigInt(step.feeLimit.feeCapBaseUnit), 0n)
   ) {
     invalid(status);
   }
@@ -317,7 +330,9 @@ function operationStep(value: unknown, status: number, ordinal: number): LocalSw
   const transactions = value.transactions.map((entry) => transaction(entry, status));
   if (
     new Set(transactions.map(({ generation }) => generation)).size !== transactions.length ||
-    transactions.filter(({ active }) => active).length > 1
+    transactions.filter(({ active }) => active).length > 1 ||
+    transactions.some(({ generation }, index) => generation !== index) ||
+    transactions.some(({ active }, index) => active && index !== transactions.length - 1)
   ) {
     invalid(status);
   }
@@ -377,11 +392,15 @@ export function parseLocalSwapExecutionOperation(
     invalid(status);
   }
   const steps = value.steps.map((entry, ordinal) => operationStep(entry, status, ordinal));
+  const expectedKinds =
+    steps.length === 4
+      ? (["allowance-reset", "approve", "swap", "cleanup"] as const)
+      : (["approve", "swap", "cleanup"] as const);
   if (
     new Set(steps.map(({ stepId }) => stepId)).size !== steps.length ||
     new Set(steps.map(({ nonce }) => nonce)).size !== steps.length ||
-    steps.at(-1)?.kind !== "cleanup" ||
-    steps.at(-2)?.kind !== "swap"
+    steps.some(({ kind }, index) => kind !== expectedKinds[index]) ||
+    steps.some(({ nonce }, index) => index > 0 && BigInt(nonce) !== BigInt(steps[index - 1]!.nonce) + 1n)
   ) {
     invalid(status);
   }
