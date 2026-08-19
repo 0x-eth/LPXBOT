@@ -287,6 +287,20 @@ export type {
   PositionReadApplication,
   PositionReadScanInput,
 } from "./position-read-model.js";
+export {
+  HELPER_OWNER_READ_ABI,
+  MemoryWalletHelperReadStore,
+  WalletHelperReadService,
+} from "./helper-read-model.js";
+export type {
+  StoredHelperVerification,
+  WalletHelperBinding,
+  WalletHelperBindingSource,
+  WalletHelperReadApplication,
+  WalletHelperReadServiceOptions,
+  WalletHelperReadStore,
+  WalletHelperStatusInput,
+} from "./helper-read-model.js";
 export { ChainPolicyStoreError } from "./chain-access-policies.js";
 export type {
   ChainAccessPolicyChange,
