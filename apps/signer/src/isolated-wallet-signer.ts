@@ -348,7 +348,7 @@ export class IsolatedWalletSigner {
         },
         now,
       );
-    } catch (error) {
+    } catch {
       throw new SignerError(
         input.plan.deadline <= now.toISOString() ? "HELPER_PLAN_EXPIRED" : "HELPER_PLAN_REJECTED",
       );
