@@ -84,6 +84,14 @@ describe("P05-03 controlled BSC swap quote adapter", () => {
     await expect(quoteAdapter.quote({ ...input(), slippageBps: 500 })).resolves.toBeDefined();
   });
 
+  it("canonicalizes a checksum custody-wallet address before provider resolution and digesting", async () => {
+    const checksumWallet = "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf" as const;
+    const quote = await adapter().quote({ ...input(), walletAddress: checksumWallet });
+
+    expect(quote.walletAddress).toBe(checksumWallet.toLowerCase());
+    expect(verifySwapQuoteDigest(quote)).toBe(true);
+  });
+
   it("quotes all four platforms with server-resolved routes, integer minOut, impact, and gas", async () => {
     for (const platformId of [1, 2, 4, 5] as const) {
       const quote = await adapter().quote(input(platformId));
