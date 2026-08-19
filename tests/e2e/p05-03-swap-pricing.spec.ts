@@ -467,6 +467,33 @@ test("quotes without execution and maintains the observed pricing ledger", async
   await axe(page);
 
   if (captureEvidence) {
+    await page.addStyleTag({
+      content: `
+        .app-header,
+        .shell-status-bar,
+        .mobile-navigation-shell,
+        .wallets-heading,
+        .wallet-list,
+        .asset-section,
+        .position-helper-read-model,
+        .receive-section,
+        .address-book-section {
+          display: none !important;
+        }
+        .app-frame {
+          display: block !important;
+          min-height: 0 !important;
+          padding-bottom: 0 !important;
+        }
+        .workspace.wallets-workspace {
+          padding-top: 20px !important;
+          padding-bottom: 20px !important;
+        }
+        .wallet-read-model {
+          margin-top: 0 !important;
+        }
+      `,
+    });
     await page.screenshot({
       fullPage: true,
       path: `artifacts/acceptance/P05-03/E-VIS/swap-pricing-${testInfo.project.name}.png`,
