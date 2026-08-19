@@ -68,7 +68,8 @@ function position(options: {
       blockTimestamp: now.toISOString(),
       digest: options.digest ?? (`0x${tokenId.padStart(64, "0")}` as const),
       positionManager,
-      positionManagerCodeHash: `0x${"ef".repeat(32)}`,
+      positionManagerCodeHash:
+        "0xbc0177f23ffd65c41e41fb201e170cb253489d7d637f8f6a15743a1f861160f5",
       registryVersion: "p05-bsc-execution-v1",
     },
     ticks: { current: "0", inRange: true, lower: "-10", upper: "10" },
