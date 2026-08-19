@@ -3854,6 +3854,32 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       );
     };
 
+    const positionReadFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply => {
+      const code =
+        error instanceof PositionCursorError ||
+        (typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          (error as { code?: unknown }).code === "POSITION_CURSOR_INVALID")
+          ? "POSITION_CURSOR_INVALID"
+          : "CHAIN_READ_UNAVAILABLE";
+      return reply.code(code === "POSITION_CURSOR_INVALID" ? 400 : 503).send(
+        createErrorEnvelope({
+          code,
+          message:
+            code === "POSITION_CURSOR_INVALID"
+              ? "The position cursor is invalid or no longer belongs to this snapshot"
+              : "The controlled position reader is unavailable",
+          requestId: request.id,
+          retryable: code === "CHAIN_READ_UNAVAILABLE",
+        }),
+      );
+    };
+
     const walletTransferFailure = (
       error: unknown,
       request: FastifyRequest,
@@ -4793,6 +4819,84 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           return walletTransferFailure(error, request, reply) ?? reply;
         }
       },
+    );
+
+    const readPositions = async (
+      request: FastifyRequest,
+      reply: FastifyReply,
+      platformFilterAllowed: boolean,
+    ): Promise<unknown> => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      const query = parsePositionReadQuery(request.query, platformFilterAllowed);
+      if (!query) {
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "POSITION_QUERY_INVALID",
+            message: "The position read query is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
+      if (query.chainId !== 56) {
+        return reply.code(403).send(
+          createErrorEnvelope({
+            code: "CHAIN_NOT_ALLOWED",
+            message: "Position reads are enabled only for BNB Smart Chain",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!options.walletDirectory || !options.positionReads) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "CHAIN_READ_UNAVAILABLE",
+            message: "The controlled position reader is unavailable",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      const parameters = request.params as { address?: unknown };
+      const requestedAddress =
+        typeof parameters.address === "string" && /^0x[0-9a-fA-F]{40}$/u.test(parameters.address)
+          ? parameters.address.toLowerCase()
+          : null;
+      try {
+        const wallets = await options.walletDirectory.listWallets(session.userId);
+        if (!Array.isArray(wallets.items)) throw new WalletApiError("SIGNER_UNAVAILABLE");
+        const wallet = requestedAddress
+          ? wallets.items.find(({ address }) => address.toLowerCase() === requestedAddress)
+          : null;
+        if (!wallet) throw new WalletApiError("WALLET_NOT_FOUND");
+        const page = await options.positionReads.scan({
+          address: requestedAddress as `0x${string}`,
+          chainId: 56,
+          cursor: query.cursor,
+          helperAddress: null,
+          limit: query.limit,
+          platformId: query.platformId,
+          userId: session.userId,
+          walletId: wallet.walletId,
+        });
+        return createSuccessEnvelope(page, request.id);
+      } catch (error) {
+        return walletFailure(error, request, reply) ?? positionReadFailure(error, request, reply);
+      }
+    };
+
+    app.get<{ Params: { address: string } }>(
+      "/api/wallets/:address/positions",
+      (request, reply) => readPositions(request, reply, true),
+    );
+
+    app.get<{ Params: { address: string } }>(
+      "/api/positions/scan/:address",
+      (request, reply) => readPositions(request, reply, false),
     );
 
     app.get("/api/wallets", async (request, reply) => {

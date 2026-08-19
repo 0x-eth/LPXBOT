@@ -74,27 +74,34 @@ class PositionReads implements PositionReadApplication {
   async scan(input: PositionReadScanInput): Promise<Readonly<WalletPositionPage>> {
     this.calls.push(input);
     if (this.failure) throw this.failure;
-    return Object.freeze({
+    const page: WalletPositionPage = {
       address: input.address,
       chainId: 56,
-      coverage: Object.freeze({
+      coverage: {
         complete: true,
-        failedPlatformIds: Object.freeze([]),
-        scannedPlatformIds: Object.freeze(input.platformId === null ? [1, 2, 4, 5] : [input.platformId]),
-      }),
+        failedPlatformIds: [],
+        scannedPlatformIds: input.platformId === null ? [1, 2, 4, 5] : [input.platformId],
+      },
       cursor: null,
-      items: Object.freeze([]),
-      quarantined: Object.freeze([]),
+      items: [],
+      quarantined: [],
       registryVersion: "p05-bsc-execution-v1",
-      snapshot: Object.freeze({
+      snapshot: {
         blockHash: `0x${"ab".repeat(32)}` as const,
         blockNumber: "116718500",
         blockTimestamp: now.toISOString(),
         digest: `0x${"cd".repeat(32)}` as const,
-      }),
+      },
       status: "empty",
       walletId: input.walletId,
-    });
+    };
+    Object.freeze(page.coverage.failedPlatformIds);
+    Object.freeze(page.coverage.scannedPlatformIds);
+    Object.freeze(page.coverage);
+    Object.freeze(page.items);
+    Object.freeze(page.quarantined);
+    Object.freeze(page.snapshot);
+    return Object.freeze(page);
   }
 }
 
@@ -172,6 +179,7 @@ describe("P05-02 position read API", () => {
       [tokenA, "0x2222222222222222222222222222222222222222"],
       [tokenA, "not-an-address"],
     ]) {
+      if (!token) throw new Error("fixture token missing");
       const response = await app.inject({
         headers: auth(token),
         method: "GET",
@@ -230,7 +238,7 @@ describe("P05-02 position read API", () => {
       url: `/api/wallets/${wallet.address}/positions?chainId=56`,
     });
     expect(unavailable.statusCode).toBe(503);
-    expect(unavailable.json().error).toEqual({
+    expect(unavailable.json().error).toMatchObject({
       code: "CHAIN_READ_UNAVAILABLE",
       message: "The controlled position reader is unavailable",
       retryable: true,
