@@ -1,5 +1,25 @@
 import { getAddress, keccak256, type Hex } from "viem";
 
+export {
+  LocalExecutionRegistryError,
+  P05_BSC_LOCAL_EXECUTION_REGISTRY,
+  P05_BSC_LOCAL_EXECUTION_REGISTRY_VERSION,
+  P05_LOCAL_FEE_POLICY_VERSION,
+  P05_LOCAL_TOKEN_POLICY_VERSION,
+  validateLocalExecutionRegistryContext,
+} from "./local-execution.js";
+export type {
+  LocalExecutionCodeIdentity,
+  LocalExecutionComponentRole,
+  LocalExecutionFeePolicy,
+  LocalExecutionRegistry,
+  LocalExecutionRegistryFailure,
+  LocalExecutionTokenIdentity,
+  LocalExecutionTokenPolicy,
+  LocalExecutionVerification,
+  LocalTokenBehavior,
+} from "./local-execution.js";
+
 export const chainRegistryPackage = {
   name: "@lpbot/chain-registry",
 } as const;

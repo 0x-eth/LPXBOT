@@ -15,6 +15,11 @@
       "import": "./dist/monitor-evaluator.js",
       "default": "./dist/monitor-evaluator.js"
     },
+    "./execution-plans": {
+      "types": "./dist/execution-plans.d.ts",
+      "import": "./dist/execution-plans.js",
+      "default": "./dist/execution-plans.js"
+    },
     "./wallet-transfer": {
       "types": "./dist/wallet-transfer.d.ts",
       "import": "./dist/wallet-transfer.js",
