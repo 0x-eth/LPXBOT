@@ -790,7 +790,7 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
         "swap.replacement-failed",
         `${input.retryable ? "RETRYABLE_" : ""}${input.code}`,
         input.failedAt,
-        input.authorization.previous.transactionHash,
+        null,
       );
     });
   }
@@ -1115,10 +1115,10 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
   ): Promise<void> {
     await client.query(
       `UPDATE wallet_nonce_ledgers
-          SET last_confirmed_nonce = GREATEST(COALESCE(last_confirmed_nonce, $3), $3),
-              reconciliation_reason = NULL, updated_at = $4
-        WHERE chain_id = 31337 AND wallet_id = $2`,
-      [31_337, walletId, nonce, when],
+          SET last_confirmed_nonce = GREATEST(COALESCE(last_confirmed_nonce, $2), $2),
+              reconciliation_reason = NULL, updated_at = $3
+        WHERE chain_id = 31337 AND wallet_id = $1`,
+      [walletId, nonce, when],
     );
   }
 
@@ -1193,7 +1193,7 @@ export class PostgresLocalSwapRecoveryRepository implements LocalSwapWorkReposit
           walletId: operation.wallet_id,
         }),
         availableAt,
-        new Date(),
+        availableAt,
       ],
     );
   }
