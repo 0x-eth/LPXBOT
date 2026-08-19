@@ -168,7 +168,6 @@ import {
   parseLocalSwapExecute,
   parseLocalSwapExecutePreview,
   parseLocalSwapIdempotencyKey,
-  parseLocalSwapOperationId,
   parseLocalSwapQuoteRequest,
   type LocalSwapExecutionApplication,
   type LocalSwapQuoteApplication,
@@ -5399,6 +5398,196 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       },
     );
 
+    app.post(
+      "/api/positions/collect-fees/preview",
+      { bodyLimit: localPositionExecutionBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletDirectory || !options.localPositionExecutions || !options.tenantId) {
+          return localPositionFailure(
+            new LocalPositionExecutionError("LOCAL_POSITION_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          const input = parseLocalPositionCollectFeesPreview(request.body);
+          if (
+            !(await requireAllowedWalletChain(
+              31_337,
+              request,
+              reply,
+              session,
+              localPositionExecutionChainIds,
+            ))
+          ) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(session.userId, input.walletId);
+          if (!wallet) throw new LocalPositionExecutionError("WALLET_NOT_FOUND");
+          return createSuccessEnvelope(
+            await options.localPositionExecutions.previewCollectFees({
+              request: input,
+              tenantId: options.tenantId,
+              userId: session.userId,
+              wallet,
+            }),
+            request.id,
+          );
+        } catch (error) {
+          return localPositionFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.post(
+      "/api/positions/collect-fees",
+      { bodyLimit: localPositionExecutionBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+        if (!options.walletDirectory || !options.localPositionExecutions || !options.tenantId) {
+          return localPositionFailure(
+            new LocalPositionExecutionError("LOCAL_POSITION_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          const idempotencyKey = parseLocalPositionIdempotencyKey(
+            request.headers["idempotency-key"],
+          );
+          const input = parseLocalPositionCollectFees(request.body);
+          if (
+            !(await requireAllowedWalletChain(
+              31_337,
+              request,
+              reply,
+              session,
+              localPositionExecutionChainIds,
+            ))
+          ) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(session.userId, input.walletId);
+          if (!wallet) throw new LocalPositionExecutionError("WALLET_NOT_FOUND");
+          const result = await options.localPositionExecutions.collectFees({
+            idempotencyKey,
+            request: input,
+            requestId: request.id,
+            sessionId: session.id,
+            tenantId: options.tenantId,
+            userId: session.userId,
+            wallet,
+          });
+          return reply
+            .code(result.created ? 202 : 200)
+            .send(createSuccessEnvelope(result.operation, request.id));
+        } catch (error) {
+          return localPositionFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.post(
+      "/api/positions/remove-liquidity/preview",
+      { bodyLimit: localPositionExecutionBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletDirectory || !options.localPositionExecutions || !options.tenantId) {
+          return localPositionFailure(
+            new LocalPositionExecutionError("LOCAL_POSITION_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          const input = parseLocalPositionRemoveLiquidityPreview(request.body);
+          if (
+            !(await requireAllowedWalletChain(
+              31_337,
+              request,
+              reply,
+              session,
+              localPositionExecutionChainIds,
+            ))
+          ) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(session.userId, input.walletId);
+          if (!wallet) throw new LocalPositionExecutionError("WALLET_NOT_FOUND");
+          return createSuccessEnvelope(
+            await options.localPositionExecutions.previewRemoveLiquidity({
+              request: input,
+              tenantId: options.tenantId,
+              userId: session.userId,
+              wallet,
+            }),
+            request.id,
+          );
+        } catch (error) {
+          return localPositionFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.post(
+      "/api/positions/remove-liquidity",
+      { bodyLimit: localPositionExecutionBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+        if (!options.walletDirectory || !options.localPositionExecutions || !options.tenantId) {
+          return localPositionFailure(
+            new LocalPositionExecutionError("LOCAL_POSITION_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          const idempotencyKey = parseLocalPositionIdempotencyKey(
+            request.headers["idempotency-key"],
+          );
+          const input = parseLocalPositionRemoveLiquidity(request.body);
+          if (
+            !(await requireAllowedWalletChain(
+              31_337,
+              request,
+              reply,
+              session,
+              localPositionExecutionChainIds,
+            ))
+          ) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(session.userId, input.walletId);
+          if (!wallet) throw new LocalPositionExecutionError("WALLET_NOT_FOUND");
+          const result = await options.localPositionExecutions.removeLiquidity({
+            idempotencyKey,
+            request: input,
+            requestId: request.id,
+            sessionId: session.id,
+            tenantId: options.tenantId,
+            userId: session.userId,
+            wallet,
+          });
+          return reply
+            .code(result.created ? 202 : 200)
+            .send(createSuccessEnvelope(result.operation, request.id));
+        } catch (error) {
+          return localPositionFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
     app.get<{ Params: { operationId: string } }>(
       "/api/chain-operations/:operationId",
       async (request, reply) => {
@@ -5415,7 +5604,12 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             }),
           );
         }
-        if ((!options.helperDeployments && !options.localSwapExecutions) || !options.tenantId) {
+        if (
+          (!options.helperDeployments &&
+            !options.localPositionExecutions &&
+            !options.localSwapExecutions) ||
+          !options.tenantId
+        ) {
           return reply.code(503).send(
             createErrorEnvelope({
               code: "CHAIN_OPERATION_UNAVAILABLE",
@@ -5427,9 +5621,26 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         }
         let operationId: string;
         try {
-          operationId = parseLocalSwapOperationId(request.params.operationId);
+          operationId = parseLocalPositionOperationId(request.params.operationId);
         } catch (error) {
-          return localSwapFailure(error, request, reply) ?? reply;
+          return localPositionFailure(error, request, reply) ?? reply;
+        }
+        if (options.localPositionExecutions) {
+          try {
+            const operation = await options.localPositionExecutions.get({
+              operationId,
+              tenantId: options.tenantId,
+              userId: session.userId,
+            });
+            return createSuccessEnvelope(operation, request.id);
+          } catch (error) {
+            if (
+              !(error instanceof LocalPositionExecutionError) ||
+              error.code !== "LOCAL_POSITION_NOT_FOUND"
+            ) {
+              return localPositionFailure(error, request, reply) ?? reply;
+            }
+          }
         }
         if (options.localSwapExecutions) {
           try {
@@ -5460,8 +5671,8 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             return helperDeploymentFailure(error, request, reply) ?? reply;
           }
         }
-        return localSwapFailure(
-          new LocalSwapExecutionError("LOCAL_SWAP_NOT_FOUND"),
+        return localPositionFailure(
+          new LocalPositionExecutionError("LOCAL_POSITION_NOT_FOUND"),
           request,
           reply,
         );

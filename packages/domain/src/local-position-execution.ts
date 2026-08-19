@@ -278,7 +278,11 @@ export function localPositionStepSemanticDigest(
   return sha256("LPXBOT_LOCAL_POSITION_STEP\0v2\0", step, "semanticDigest");
 }
 
-export function validateLocalPositionSnapshot(snapshot: LocalPositionSnapshot, now = new Date()): void {
+export function validateLocalPositionSnapshot(
+  snapshot: LocalPositionSnapshot,
+  now = new Date(),
+  requireCurrent = true,
+): void {
   const observedAt = Date.parse(snapshot.observedAt);
   const expiresAt = Date.parse(snapshot.expiresAt);
   const position = snapshot.position;
@@ -322,8 +326,8 @@ export function validateLocalPositionSnapshot(snapshot: LocalPositionSnapshot, n
     new Date(observedAt).toISOString() !== snapshot.observedAt ||
     new Date(expiresAt).toISOString() !== snapshot.expiresAt ||
     observedAt > now.getTime() ||
-    expiresAt <= now.getTime() ||
-    expiresAt > observedAt + 60_000 ||
+    (requireCurrent && expiresAt <= now.getTime()) ||
+    expiresAt > observedAt + 15 * 60_000 ||
     snapshot.tokens[0].address !== position.pool.token0 ||
     snapshot.tokens[1].address !== position.pool.token1 ||
     snapshot.tokens.some(
@@ -359,7 +363,7 @@ export function validateLocalPositionExecutionPlan(
   context: LocalPositionPlanValidationContext,
   now = new Date(),
 ): void {
-  validateLocalPositionSnapshot(plan.snapshot, now);
+  validateLocalPositionSnapshot(plan.snapshot, now, false);
   const deadline = Date.parse(plan.deadline);
   if (
     plan.schemaVersion !== 2 ||
