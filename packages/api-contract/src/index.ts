@@ -1256,6 +1256,85 @@ export const swapQuoteContracts = Object.freeze({
   quote: Object.freeze({ method: "POST", path: "/api/swap/quote" }),
 } as const);
 
+export type PricingPositionPriceStatus = "current" | "missing" | "stale";
+export type PricingPositionStatus = "active" | "hidden" | "withdrawn";
+
+export interface PricingPositionCostBasisInput {
+  amount0BaseUnit: string;
+  amount1BaseUnit: string;
+  priceObservedAt: string | null;
+  priceSource: string | null;
+  usdValueDecimal: string | null;
+}
+
+export interface PricingPositionCostBasis extends PricingPositionCostBasisInput {
+  priceStatus: PricingPositionPriceStatus;
+}
+
+export interface ImportPricingPositionRequest {
+  chainId: 56;
+  costBasis: PricingPositionCostBasisInput;
+  platformId: PositionPlatformId;
+  snapshotDigest: `0x${string}`;
+  tokenId: string;
+  walletId: string;
+}
+
+export interface PricingPositionObservation {
+  blockHash: `0x${string}`;
+  blockNumber: string;
+  liquidityAmount0BaseUnit: string;
+  liquidityAmount1BaseUnit: string;
+  liquidityRaw: string;
+  observationId: string;
+  observedAt: string;
+  observedFee0BaseUnit: string;
+  observedFee1BaseUnit: string;
+  pageSnapshotDigest: `0x${string}`;
+  recordedAt: string;
+  snapshotDigest: `0x${string}`;
+}
+
+export interface PricingPosition {
+  chainId: 56;
+  costBasis: PricingPositionCostBasis;
+  importedAt: string;
+  observations: PricingPositionObservation[];
+  platformId: PositionPlatformId;
+  pool: {
+    poolAddress: EvmAddress | null;
+    poolId: `0x${string}` | null;
+    token0: EvmAddress;
+    token1: EvmAddress;
+  };
+  positionManager: EvmAddress;
+  pricingId: string;
+  revision: number;
+  status: PricingPositionStatus;
+  tokenId: string;
+  updatedAt: string;
+  walletAddress: EvmAddress;
+  walletId: string;
+}
+
+export interface PricingPositionPage {
+  items: PricingPosition[];
+}
+
+export interface MarkPricingPositionWithdrawnRequest {
+  expectedRevision: number;
+}
+
+export const pricingPositionContracts = Object.freeze({
+  import: Object.freeze({ method: "POST", path: "/api/pricing-positions/import" }),
+  list: Object.freeze({ method: "GET", path: "/api/pricing-positions" }),
+  stream: Object.freeze({ method: "GET", path: "/api/pricing-positions/stream" }),
+  withdrawn: Object.freeze({
+    method: "POST",
+    path: "/api/pricing-positions/{pricingId}/withdrawn",
+  }),
+} as const);
+
 export const helperReadStates = Object.freeze([
   "undeployed",
   "active",

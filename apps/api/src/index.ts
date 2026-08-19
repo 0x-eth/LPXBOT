@@ -287,6 +287,19 @@ export {
   parseSwapQuoteRequest,
   SwapQuoteValidationError,
 } from "./swap-quotes.js";
+export {
+  MemoryPricingPositionStore,
+  PricingPositionError,
+  PricingPositionService,
+} from "./pricing-positions.js";
+export type {
+  PricingPositionApplication,
+  PricingPositionErrorCode,
+  PricingPositionOutboxEvent,
+  PricingPositionSource,
+  PricingPositionSourceSnapshot,
+  PricingPositionStore,
+} from "./pricing-positions.js";
 export type {
   ParsedSwapQuoteRequest,
   SwapQuoteApplication,
