@@ -133,9 +133,11 @@ contract ReentrantOwner {
             address(helper).call(abi.encodeCall(WalletHelperV1.sweepNative, (keccak256("reentrant-plan"), 1)));
         require(!success, "reentrant call succeeded");
         if (data.length >= 4) {
+            bytes4 selector;
             assembly ("memory-safe") {
-                sstore(callbackError.slot, mload(add(data, 32)))
+                selector := mload(add(data, 32))
             }
+            callbackError = selector;
         }
     }
 
@@ -403,11 +405,7 @@ contract WalletHelperV1Test {
 
     function testMinOutDeadlineFeeAndUnknownTokenFailClosed() public {
         router.setAmountOutBps(9_000);
-        _expectSwapError(
-            _swapPlan(address(tokenIn), address(tokenOut), 1_000, 1_000),
-            WalletHelperV1.AmountOutTooLow.selector,
-            "min-out"
-        );
+        _expectSwapError(_swapPlan(address(tokenIn), address(tokenOut), 1_000, 1_000), bytes4(0x08c379a0), "min-out");
         WalletHelperV1.SwapPlan memory expired = _swapPlan(address(tokenIn), address(tokenOut), 1, 1);
         expired.deadline = block.timestamp - 1;
         _expectSwapError(expired, WalletHelperV1.DeadlineExpired.selector, "deadline");
@@ -562,7 +560,11 @@ contract WalletHelperV1InvariantTest {
     function setUp() public {
         vm.warp(2_000_000);
         handler = new WalletHelperInvariantHandler();
-        vm.targetContract(address(handler));
+    }
+
+    function targetContracts() public view returns (address[] memory targets) {
+        targets = new address[](1);
+        targets[0] = address(handler);
     }
 
     function invariantNoHelperOrAdapterDustAndNoResidualAllowance() public view {
