@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-03",
+  "phase": "P05",
+  "risk": "R1",
+  "status": "accepted-with-gaps",
+  "featureIds": ["SWAP-01", "POS-04"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "P05-03 quote adapter, ledger, strict client, and migration Vitest",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-03/E-DATA.md"
+    },
+    {
+      "id": "T-API",
+      "command": "authenticated quote and pricing-position Fastify route tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-03/E-API.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "four-platform deterministic quotes, Registry/code-hash checks, and local Anvil read closure",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-03/E-CHAIN.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "all PostgreSQL migrations up, downs in reverse, fresh connection, and all ups again",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-03/E-DATA.md"
+    },
+    {
+      "id": "T-SSE",
+      "command": "snapshot, diff, heartbeat, tombstone, Last-Event-ID, epoch, and cursor tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-03/E-SSE.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "concurrent import, optimistic revision, restart, and durable SSE replay tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-03/E-REC.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "tenant/user isolation, exact ingress, provider limits, Gitleaks, and dependency audit",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-03/E-SEC.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "desktop/mobile state, keyboard, focus, Axe, overflow, and no-execution-control Playwright",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-03/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "deterministic desktop/mobile Swap and pricing-ledger screenshots",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-03/E-VIS.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P05-03/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P05-03/E-DATA.md" },
+    { "id": "E-CHAIN", "path": "artifacts/acceptance/P05-03/E-CHAIN.md" },
+    { "id": "E-SSE", "path": "artifacts/acceptance/P05-03/E-SSE.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P05-03/E-REC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P05-03/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P05-03/E-VIS.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P05-03/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P05-03/E-SEC.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P05-03/E-OPS.md" }
+  ],
+  "assumptions": [
+    "Evidence is BSC local-fixture-verified only; SWAP-01 and POS-04 remain implemented-assumed.",
+    "The production quote source is unconfigured and fails closed; production provider and API runner composition remain unresolved.",
+    "P05-02 verified position snapshots and current chain reads remain the position source of truth.",
+    "The execution router selector allowlist is empty; raw calldata, signing, broadcast, and chain writes remain unreachable.",
+    "P00 through P05-02 acceptance files remain byte-identical to the 660-file baseline.",
+    "This accepted-with-gaps work item is not parity-verified and not released."
+  ],
+  "completedAt": "2026-08-19T11:55:00.000Z",
+  "commit": null
+}
