@@ -205,8 +205,7 @@ const helperConstructorTypes = [
   { type: "address" },
   { type: "bytes32" },
 ] as const;
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const digestPattern = /^sha256:[0-9a-f]{64}$/u;
 const idempotencyPattern = /^[!-~]{16,128}$/u;
 
@@ -299,13 +298,7 @@ export function parseHelperDeploymentPreviewRequest(
 export function parseHelperDeploymentSubmit(value: unknown): HelperDeploymentSubmitRequest {
   const input = record(value);
   if (
-    !exactKeys(input, [
-      "chainId",
-      "helperVersion",
-      "previewDigest",
-      "previewToken",
-      "walletId",
-    ]) ||
+    !exactKeys(input, ["chainId", "helperVersion", "previewDigest", "previewToken", "walletId"]) ||
     typeof input.previewDigest !== "string" ||
     !digestPattern.test(input.previewDigest) ||
     typeof input.previewToken !== "string" ||
@@ -361,9 +354,7 @@ export function buildHelperDeploymentMaterial(
   ] as const;
   const encodedArguments = encodeAbiParameters(helperConstructorTypes, args);
   const initCode = encodeDeployData({
-    abi: [
-      { inputs: helperConstructorTypes, stateMutability: "nonpayable", type: "constructor" },
-    ],
+    abi: [{ inputs: helperConstructorTypes, stateMutability: "nonpayable", type: "constructor" }],
     args,
     bytecode: registry.helperTemplate.creationCode,
   });
@@ -435,7 +426,10 @@ export class MemoryHelperDeploymentPreviewStore implements HelperDeploymentPrevi
 
 export class MemoryHelperDeploymentOperationStore implements HelperDeploymentOperationStore {
   readonly #bindings = new Map<string, string>();
-  readonly #idempotency = new Map<string, { operationId: string; requestHash: `sha256:${string}` }>();
+  readonly #idempotency = new Map<
+    string,
+    { operationId: string; requestHash: `sha256:${string}` }
+  >();
   readonly #ledgers = new Map<string, { fencingToken: bigint; nextNonce: bigint | null }>();
   readonly #now: () => Date;
   readonly #operations = new Map<string, StoredHelperDeploymentOperation>();
@@ -702,7 +696,13 @@ export class HelperDeploymentService implements HelperDeploymentApplication {
     }
     const result = await this.#operations.create({
       buildPlan: ({ fencingToken, nonce, operationId }) =>
-        this.#buildPlan({ facts: current, fencingToken, nonce, operationId, walletId: input.wallet.walletId }),
+        this.#buildPlan({
+          facts: current,
+          fencingToken,
+          nonce,
+          operationId,
+          walletId: input.wallet.walletId,
+        }),
       chainId: 31_337,
       expectedAddress: current.expectedAddress,
       expectedNonce: current.nonce,
@@ -736,7 +736,10 @@ export class HelperDeploymentService implements HelperDeploymentApplication {
       throw new HelperDeploymentError("REGISTRY_MISMATCH");
     }
     const material = buildHelperDeploymentMaterial(owner, this.#registry);
-    const expectedAddress = getContractAddress({ from: owner, nonce: BigInt(nonce) }).toLowerCase() as `0x${string}`;
+    const expectedAddress = getContractAddress({
+      from: owner,
+      nonce: BigInt(nonce),
+    }).toLowerCase() as `0x${string}`;
     const inspected = await this.#chain.inspectDeployment({
       blockNumber: snapshot.blockNumber,
       chainId: 31_337,

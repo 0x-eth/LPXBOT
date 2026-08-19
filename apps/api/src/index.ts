@@ -22,6 +22,34 @@ export { PostgresWalletTokenStore } from "./postgres-wallet-token-store.js";
 export { PostgresWalletTransferOperationStore } from "./postgres-wallet-transfer-store.js";
 export { ViemLocalWalletTransferChainReader } from "./viem-local-wallet-transfer-chain-reader.js";
 export type { ViemLocalWalletTransferChainReaderOptions } from "./viem-local-wallet-transfer-chain-reader.js";
+export {
+  buildHelperDeploymentMaterial,
+  HelperDeploymentError,
+  HelperDeploymentService,
+  MemoryHelperDeploymentOperationStore,
+  MemoryHelperDeploymentPreviewStore,
+  parseChainOperationId,
+  parseHelperDeploymentIdempotencyKey,
+  parseHelperDeploymentPreviewRequest,
+  parseHelperDeploymentSubmit,
+  helperDeploymentBodyLimit,
+  helperDeploymentIdempotencyRetentionHours,
+  helperDeploymentPreviewTtlMilliseconds,
+} from "./helper-deployments.js";
+export type {
+  HelperDeploymentApplication,
+  HelperDeploymentChainReader,
+  HelperDeploymentCreateInput,
+  HelperDeploymentErrorCode,
+  HelperDeploymentIdempotencyRecord,
+  HelperDeploymentInspection,
+  HelperDeploymentNonceSnapshot,
+  HelperDeploymentNonceView,
+  HelperDeploymentOperationStore,
+  HelperDeploymentPreviewStore,
+  StoredHelperDeploymentOperation,
+  StoredHelperDeploymentPreview,
+} from "./helper-deployments.js";
 export { PostgresAddressBookStore } from "./postgres-address-book-store.js";
 export { OkxKeyError, publicOkxKeyStatus, RemoteOkxKeyConnectorClient } from "./okx-key.js";
 export type { OkxKeyApplication, OkxKeyConnectorContext, OkxKeyErrorCode } from "./okx-key.js";
