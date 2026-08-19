@@ -275,7 +275,7 @@ CREATE TABLE chain_operation_receipt_evidence (
   UNIQUE (transaction_id, block_hash, evidence_digest)
 );
 
-CREATE TABLE wallet_helper_bindings (
+CREATE TABLE wallet_helper_deployment_bindings (
   binding_id uuid PRIMARY KEY,
   tenant_id text NOT NULL,
   user_id uuid NOT NULL,
@@ -297,7 +297,7 @@ CREATE TABLE wallet_helper_bindings (
   failure_code text CHECK (failure_code IS NULL OR char_length(failure_code) BETWEEN 1 AND 120),
   created_at timestamptz NOT NULL,
   updated_at timestamptz NOT NULL,
-  CONSTRAINT wallet_helper_bindings_wallet_fk
+  CONSTRAINT wallet_helper_deployment_bindings_wallet_fk
     FOREIGN KEY (tenant_id, user_id, wallet_id)
     REFERENCES custody_wallets(tenant_id, user_id, wallet_id)
     ON DELETE CASCADE,
@@ -342,7 +342,7 @@ COMMENT ON TABLE chain_operations IS
   'Immutable plan-bound local chain writes; helper deployment transactions always have NULL to and zero value.';
 COMMENT ON TABLE chain_operation_outbox IS
   'Credential-free durable work intents. Raw signed transactions are forbidden.';
-COMMENT ON TABLE wallet_helper_bindings IS
+COMMENT ON TABLE wallet_helper_deployment_bindings IS
   'Per-wallet Helper instances, separate from the Registry bytecode template.';
 
 REVOKE ALL ON helper_deployment_previews FROM PUBLIC;
@@ -353,7 +353,7 @@ REVOKE ALL ON chain_operation_replacement_authorizations FROM PUBLIC;
 REVOKE ALL ON chain_operation_outbox FROM PUBLIC;
 REVOKE ALL ON chain_operation_reconciliation_cases FROM PUBLIC;
 REVOKE ALL ON chain_operation_receipt_evidence FROM PUBLIC;
-REVOKE ALL ON wallet_helper_bindings FROM PUBLIC;
+REVOKE ALL ON wallet_helper_deployment_bindings FROM PUBLIC;
 REVOKE ALL ON chain_operation_audit_events FROM PUBLIC;
 
 -- migrate:down
@@ -361,7 +361,7 @@ REVOKE ALL ON chain_operation_audit_events FROM PUBLIC;
 DROP TRIGGER chain_operation_audit_append_only ON chain_operation_audit_events;
 DROP TRIGGER chain_operation_receipt_evidence_append_only ON chain_operation_receipt_evidence;
 DROP TABLE chain_operation_audit_events;
-DROP TABLE wallet_helper_bindings;
+DROP TABLE wallet_helper_deployment_bindings;
 DROP TABLE chain_operation_receipt_evidence;
 DROP TABLE chain_operation_reconciliation_cases;
 DROP TABLE chain_operation_outbox;

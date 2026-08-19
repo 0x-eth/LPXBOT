@@ -415,7 +415,7 @@ export class PostgresHelperDeploymentOperationStore implements HelperDeploymentO
       }
       const binding = await client.query<{ state: "active" | "degraded" | "deploying" }>(
         `SELECT state
-           FROM wallet_helper_bindings
+           FROM wallet_helper_deployment_bindings
           WHERE tenant_id = $1 AND user_id = $2 AND wallet_id = $3
             AND chain_id = 31337 AND helper_version = 'WalletHelperV1'
           FOR UPDATE`,
@@ -543,7 +543,7 @@ export class PostgresHelperDeploymentOperationStore implements HelperDeploymentO
         ],
       );
       await client.query(
-        `INSERT INTO wallet_helper_bindings (
+        `INSERT INTO wallet_helper_deployment_bindings (
            binding_id, tenant_id, user_id, wallet_id, chain_id, helper_version,
            operation_id, state, helper_address, owner_address, adapter_address,
            permit2_address, runtime_code_hash, registry_version,
