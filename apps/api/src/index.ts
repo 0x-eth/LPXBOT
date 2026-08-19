@@ -67,6 +67,10 @@ export {
   PostgresLocalSwapQuoteStore,
 } from "./postgres-local-swap-execution-store.js";
 export { RemoteLocalSwapPermit2Client } from "./remote-local-swap-permit2-client.js";
+export { ViemLocalSwapExecutionChainReader } from "./viem-local-swap-execution-chain-reader.js";
+export type { ViemLocalSwapExecutionChainReaderOptions } from "./viem-local-swap-execution-chain-reader.js";
+export { ViemLocalSwapQuoteProvider } from "./viem-local-swap-quote-provider.js";
+export type { ViemLocalSwapQuoteProviderOptions } from "./viem-local-swap-quote-provider.js";
 export type {
   LocalSwapChainInspection,
   LocalSwapExecutionApplication,
