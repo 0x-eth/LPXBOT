@@ -24,6 +24,11 @@ const walletTransferMigration = readFileSync(
   "utf8",
 );
 const [, walletTransferDown] = walletTransferMigration.split("-- migrate:down");
+const walletHelperMigration = readFileSync(
+  path.resolve("infra/migrations/20260819000200_create_wallet_helper_read_models.sql"),
+  "utf8",
+);
+const [walletHelperUp, walletHelperDown] = walletHelperMigration.split("-- migrate:down");
 const userA = "43000000-0000-4000-8000-000000000001";
 const userB = "43000000-0000-4000-8000-000000000002";
 const address = "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf";
@@ -84,10 +89,12 @@ describe("P04-02 PostgreSQL custody wallet store", () => {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
+      await client.query(walletHelperDown!);
       await client.query(walletTransferDown!);
       await client.query(walletAssetDown!);
       await client.query(down!);
       await client.query(up!);
+      await client.query(walletHelperUp!);
       expect(
         (await client.query("SELECT to_regclass('custody_wallet_envelopes') AS table_name")).rows[0]
           .table_name,
