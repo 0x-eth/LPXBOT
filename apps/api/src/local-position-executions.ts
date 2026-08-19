@@ -180,6 +180,7 @@ interface PreviewFacts {
   action: LocalPositionExecutionPlan["action"];
   blockHash: Hex;
   blockNumber: string;
+  deadline: string;
   expiresAt: string;
   feeLimits: Record<LocalPositionStepKind, LocalPositionFeeLimit>;
   headBlockNumber: string;
@@ -846,6 +847,9 @@ export class LocalPositionExecutionService implements LocalPositionExecutionAppl
     const expiresAt = new Date(
       Math.min(Date.parse(snapshot.expiresAt), now.getTime() + localPositionPreviewTtlMilliseconds),
     ).toISOString();
+    const deadline = new Date(
+      now.getTime() + this.#registry.maxDeadlineSeconds * 1_000,
+    ).toISOString();
     const stepKinds: LocalPositionStepKind[] =
       action.kind === "collect-fees"
         ? ["collect"]
@@ -857,6 +861,7 @@ export class LocalPositionExecutionService implements LocalPositionExecutionAppl
       action,
       blockHash: inspection.blockHash,
       blockNumber: inspection.blockNumber,
+      deadline,
       expiresAt,
       feeLimits: {
         burn: feeLimit("burn"),
@@ -1110,9 +1115,7 @@ export class LocalPositionExecutionService implements LocalPositionExecutionAppl
     const common = {
       ...request,
       chainId: 31_337 as const,
-      deadline: new Date(
-        this.#now().getTime() + this.#registry.maxDeadlineSeconds * 1_000,
-      ).toISOString(),
+      deadline: facts.deadline,
       expectedToken0DeltaBaseUnit: facts.accounting.collectTotal0BaseUnit,
       expectedToken1DeltaBaseUnit: facts.accounting.collectTotal1BaseUnit,
       expiresAt: facts.expiresAt,
@@ -1156,9 +1159,7 @@ export class LocalPositionExecutionService implements LocalPositionExecutionAppl
     reservations: readonly LocalPositionStepReservation[];
     snapshot: LocalPositionSnapshot;
   }): LocalPositionExecutionPlan {
-    const deadline = new Date(
-      this.#now().getTime() + this.#registry.maxDeadlineSeconds * 1_000,
-    ).toISOString();
+    const deadline = input.facts.deadline;
     const deadlineSeconds = BigInt(Math.floor(Date.parse(deadline) / 1_000));
     const accounting = input.facts.accounting;
     const data = (kind: LocalPositionStepKind): Hex => {
