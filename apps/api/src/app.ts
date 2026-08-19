@@ -796,7 +796,8 @@ function parseHelperResidualScanBody(value: unknown): {
   if (
     !isPlainRecord(value) ||
     Object.keys(value).sort().join(",") !== "chainId,idempotencyKey,walletId" ||
-    value.chainId !== 56 ||
+    !Number.isSafeInteger(value.chainId) ||
+    Number(value.chainId) < 1 ||
     typeof value.idempotencyKey !== "string" ||
     !/^[A-Za-z0-9](?:[A-Za-z0-9._:-]{0,126}[A-Za-z0-9])?$/u.test(value.idempotencyKey) ||
     typeof value.walletId !== "string" ||
@@ -807,7 +808,7 @@ function parseHelperResidualScanBody(value: unknown): {
     return null;
   }
   return {
-    chainId: 56,
+    chainId: Number(value.chainId),
     idempotencyKey: value.idempotencyKey,
     walletId: value.walletId.toLowerCase(),
   };
@@ -4982,11 +4983,18 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           ? wallets.items.find(({ address }) => address.toLowerCase() === requestedAddress)
           : null;
         if (!wallet) throw new WalletApiError("WALLET_NOT_FOUND");
+        const helperAddress = options.helperReads
+          ? await options.helperReads.resolveTrustedAddress({
+              chainId: 56,
+              userId: session.userId,
+              walletId: wallet.walletId,
+            })
+          : null;
         const page = await options.positionReads.scan({
           address: requestedAddress as `0x${string}`,
           chainId: 56,
           cursor: query.cursor,
-          helperAddress: null,
+          helperAddress,
           limit: query.limit,
           platformId: query.platformId,
           userId: session.userId,
@@ -5007,6 +5015,170 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       "/api/positions/scan/:address",
       (request, reply) => readPositions(request, reply, false),
     );
+
+    app.get<{ Params: { address: string } }>(
+      "/api/wallets/:address/helper",
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        const query = parseHelperStatusQuery(request.query);
+        if (!query) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "HELPER_QUERY_INVALID",
+              message: "The Helper read query is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
+        if (query.chainId !== 56) {
+          return reply.code(403).send(
+            createErrorEnvelope({
+              code: "CHAIN_NOT_ALLOWED",
+              message: "Helper reads are enabled only for BNB Smart Chain",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.walletDirectory || !options.helperReads) {
+          return reply.code(503).send(
+            createErrorEnvelope({
+              code: "CHAIN_READ_UNAVAILABLE",
+              message: "The controlled Helper reader is unavailable",
+              requestId: request.id,
+              retryable: true,
+            }),
+          );
+        }
+        const requestedAddress = /^0x[0-9a-fA-F]{40}$/u.test(request.params.address)
+          ? request.params.address.toLowerCase()
+          : null;
+        try {
+          const wallets = await options.walletDirectory.listWallets(session.userId);
+          if (!Array.isArray(wallets.items)) throw new WalletApiError("SIGNER_UNAVAILABLE");
+          const wallet = requestedAddress
+            ? wallets.items.find(({ address }) => address.toLowerCase() === requestedAddress)
+            : null;
+          if (!wallet) throw new WalletApiError("WALLET_NOT_FOUND");
+          const status = await options.helperReads.status({
+            chainId: 56,
+            userId: session.userId,
+            walletAddress: requestedAddress as EvmAddress,
+            walletId: wallet.walletId,
+          });
+          return createSuccessEnvelope(status, request.id);
+        } catch (error) {
+          return walletFailure(error, request, reply) ?? helperReadFailure(error, request, reply);
+        }
+      },
+    );
+
+    app.get("/api/wallets/helper-residuals", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      const query = parseHelperResidualListQuery(request.query);
+      if (!query) {
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "HELPER_RESIDUAL_INPUT_INVALID",
+            message: "The Helper residual request is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
+      if (query.chainId !== 56) {
+        return reply.code(403).send(
+          createErrorEnvelope({
+            code: "CHAIN_NOT_ALLOWED",
+            message: "Helper residual reads are enabled only for BNB Smart Chain",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!options.walletDirectory || !options.helperResiduals) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "CHAIN_READ_UNAVAILABLE",
+            message: "The controlled Helper residual reader is unavailable",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      try {
+        const wallet = await options.walletDirectory.getWallet(session.userId, query.walletId);
+        if (!wallet) throw new WalletApiError("WALLET_NOT_FOUND");
+        const page = await options.helperResiduals.latest({
+          chainId: 56,
+          cursor: query.cursor,
+          limit: query.limit,
+          userId: session.userId,
+          walletId: wallet.walletId,
+        });
+        return createSuccessEnvelope(page, request.id);
+      } catch (error) {
+        return walletFailure(error, request, reply) ?? helperReadFailure(error, request, reply);
+      }
+    });
+
+    app.post("/api/wallets/helper-residuals/scan", async (request, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const session = await authenticateSessionRequest(request, reply);
+      if (!session) return reply;
+      const input = parseHelperResidualScanBody(request.body);
+      if (!input) {
+        return reply.code(400).send(
+          createErrorEnvelope({
+            code: "HELPER_RESIDUAL_INPUT_INVALID",
+            message: "The Helper residual request is invalid",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!(await requireAllowedWalletChain(input.chainId, request, reply, session))) return reply;
+      if (input.chainId !== 56) {
+        return reply.code(403).send(
+          createErrorEnvelope({
+            code: "CHAIN_NOT_ALLOWED",
+            message: "Helper residual reads are enabled only for BNB Smart Chain",
+            requestId: request.id,
+            retryable: false,
+          }),
+        );
+      }
+      if (!options.walletDirectory || !options.helperResiduals) {
+        return reply.code(503).send(
+          createErrorEnvelope({
+            code: "CHAIN_READ_UNAVAILABLE",
+            message: "The controlled Helper residual reader is unavailable",
+            requestId: request.id,
+            retryable: true,
+          }),
+        );
+      }
+      try {
+        const wallet = await options.walletDirectory.getWallet(session.userId, input.walletId);
+        if (!wallet) throw new WalletApiError("WALLET_NOT_FOUND");
+        const page = await options.helperResiduals.scan({
+          chainId: 56,
+          idempotencyKey: input.idempotencyKey,
+          userId: session.userId,
+          walletId: wallet.walletId,
+        });
+        return createSuccessEnvelope(page, request.id);
+      } catch (error) {
+        return walletFailure(error, request, reply) ?? helperReadFailure(error, request, reply);
+      }
+    });
 
     app.get("/api/wallets", async (request, reply) => {
       reply.header("Cache-Control", "no-store");
