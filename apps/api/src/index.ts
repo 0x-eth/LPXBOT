@@ -277,6 +277,16 @@ export type {
   LiquidityFlowStreamContext,
   PostgresLiquidityFlowProviderOptions,
 } from "./liquidity-flow.js";
+export {
+  BscPositionReadService,
+  ERC721_TRANSFER_TOPIC,
+  PositionCursorError,
+} from "./position-read-model.js";
+export type {
+  BscPositionReadServiceOptions,
+  PositionReadApplication,
+  PositionReadScanInput,
+} from "./position-read-model.js";
 export { ChainPolicyStoreError } from "./chain-access-policies.js";
 export type {
   ChainAccessPolicyChange,
