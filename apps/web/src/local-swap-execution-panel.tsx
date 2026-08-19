@@ -33,11 +33,7 @@ import {
 
 type QuoteState = "idle" | "quoting" | "quoted" | "stale" | "expired" | "error";
 type PanelState =
-  | QuoteState
-  | "previewing"
-  | "preview-ready"
-  | "submitting"
-  | LocalSwapExecutionState;
+  QuoteState | "previewing" | "preview-ready" | "submitting" | LocalSwapExecutionState;
 
 const chainId = 31_337 as const;
 const localTokens = [
@@ -347,7 +343,10 @@ function OperationSteps({ operation }: { operation: LocalSwapExecutionOperation 
             </div>
           </dl>
           {step.transactions.length > 0 ? (
-            <ol aria-label={`${stepKindLabels[step.kind]} replacement lineage`} className="local-swap-lineage">
+            <ol
+              aria-label={`${stepKindLabels[step.kind]} replacement lineage`}
+              className="local-swap-lineage"
+            >
               {step.transactions.map((transaction) => (
                 <li data-active={transaction.active} key={transaction.generation}>
                   <div>
@@ -356,7 +355,9 @@ function OperationSteps({ operation }: { operation: LocalSwapExecutionOperation 
                     <span>{stepStateLabels[transaction.state]}</span>
                   </div>
                   <code title={transaction.transactionHash ?? undefined}>
-                    {transaction.transactionHash ? shortHash(transaction.transactionHash) : "待广播"}
+                    {transaction.transactionHash
+                      ? shortHash(transaction.transactionHash)
+                      : "待广播"}
                   </code>
                   <small>
                     {transaction.maxFeePerGasBaseUnit} / {transaction.maxPriorityFeePerGasBaseUnit}
@@ -591,7 +592,9 @@ export function LocalSwapExecutionPanel({ wallet }: { wallet: CustodyWallet }) {
       setIdempotencyKey(null);
     } catch (failure) {
       const code =
-        failure instanceof LocalSwapExecutionRequestError ? failure.code : "LOCAL_SWAP_REQUEST_FAILED";
+        failure instanceof LocalSwapExecutionRequestError
+          ? failure.code
+          : "LOCAL_SWAP_REQUEST_FAILED";
       setError(errorLabel(failure));
       setState("preview-ready");
       if (
@@ -734,7 +737,10 @@ export function LocalSwapExecutionPanel({ wallet }: { wallet: CustodyWallet }) {
               </p>
             ) : null}
             {quote ? (
-              <div className="local-swap-quote" data-current={state === "quoted"}>
+              <div
+                className="local-swap-quote"
+                data-current={state === "quoted" || state === "previewing"}
+              >
                 <dl className="local-swap-quote-facts">
                   <div>
                     <dt>预计输出</dt>
@@ -775,7 +781,7 @@ export function LocalSwapExecutionPanel({ wallet }: { wallet: CustodyWallet }) {
                     </dd>
                   </div>
                 </dl>
-                {state === "quoted" ? (
+                {state === "quoted" || state === "previewing" ? (
                   <div className="local-swap-execution-controls">
                     <AuthorizationControl
                       disabled={busy}
