@@ -13,32 +13,61 @@ import {
   type LocalSwapPlanStep,
 } from "@lpbot/domain/local-swap-execution";
 import type { Pool } from "pg";
-import {
-  decodeFunctionResult,
-  encodeFunctionData,
-  keccak256,
-  type Address,
-  type Hex,
-} from "viem";
+import { decodeFunctionResult, encodeFunctionData, keccak256, type Address, type Hex } from "viem";
 
-import type {
-  LocalSwapPermit2Authorizer,
-  LocalSwapStepPlanAuthorizer,
-} from "./custody-types.js";
+import type { LocalSwapPermit2Authorizer, LocalSwapStepPlanAuthorizer } from "./custody-types.js";
 
 const helperReadAbi = [
-  { inputs: [], name: "owner", outputs: [{ type: "address" }], stateMutability: "view", type: "function" },
-  { inputs: [], name: "adapter", outputs: [{ type: "address" }], stateMutability: "view", type: "function" },
-  { inputs: [], name: "permit2", outputs: [{ type: "address" }], stateMutability: "view", type: "function" },
-  { inputs: [{ type: "bytes32" }], name: "executedPlans", outputs: [{ type: "bool" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [{ type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "adapter",
+    outputs: [{ type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "permit2",
+    outputs: [{ type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ type: "bytes32" }],
+    name: "executedPlans",
+    outputs: [{ type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
 ] as const;
 
 const permit2ReadAbi = [
-  { inputs: [], name: "DOMAIN_SEPARATOR", outputs: [{ type: "bytes32" }], stateMutability: "view", type: "function" },
   {
-    inputs: [{ name: "user", type: "address" }, { name: "token", type: "address" }, { name: "spender", type: "address" }],
+    inputs: [],
+    name: "DOMAIN_SEPARATOR",
+    outputs: [{ type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "user", type: "address" },
+      { name: "token", type: "address" },
+      { name: "spender", type: "address" },
+    ],
     name: "allowance",
-    outputs: [{ name: "amount", type: "uint160" }, { name: "expiration", type: "uint48" }, { name: "nonce", type: "uint48" }],
+    outputs: [
+      { name: "amount", type: "uint160" },
+      { name: "expiration", type: "uint48" },
+      { name: "nonce", type: "uint48" },
+    ],
     stateMutability: "view",
     type: "function",
   },
@@ -46,8 +75,18 @@ const permit2ReadAbi = [
 
 export interface LocalSwapStepChainVerification {
   blockNumber: string;
-  componentCode: readonly { address: Address; role: "adapter" | "permit2" | "router"; runtimeCodeHash: Hex | null }[];
-  helper: { adapter: Address; codeHash: Hex | null; executed: boolean; owner: Address; permit2: Address };
+  componentCode: readonly {
+    address: Address;
+    role: "adapter" | "permit2" | "router";
+    runtimeCodeHash: Hex | null;
+  }[];
+  helper: {
+    adapter: Address;
+    codeHash: Hex | null;
+    executed: boolean;
+    owner: Address;
+    permit2: Address;
+  };
   tokenCode: readonly { address: Address; runtimeCodeHash: Hex | null }[];
 }
 
@@ -64,7 +103,10 @@ export interface LocalSwapPlanChainVerifier {
     owner: Address;
     payload: LocalSwapPermit2SigningPayload;
   }): Promise<LocalSwapPermit2ChainVerification>;
-  verifyStep(plan: LocalSwapExecutionPlan, step: LocalSwapPlanStep): Promise<LocalSwapStepChainVerification>;
+  verifyStep(
+    plan: LocalSwapExecutionPlan,
+    step: LocalSwapPlanStep,
+  ): Promise<LocalSwapStepChainVerification>;
 }
 
 function quantity(value: unknown): bigint {
@@ -109,7 +151,10 @@ export class ViemLocalSwapPlanVerifier implements LocalSwapPlanChainVerifier {
   }
 
   async verifyStep(plan: LocalSwapExecutionPlan): Promise<LocalSwapStepChainVerification> {
-    const calls = (name: "adapter" | "executedPlans" | "owner" | "permit2", args: readonly unknown[] = []) =>
+    const calls = (
+      name: "adapter" | "executedPlans" | "owner" | "permit2",
+      args: readonly unknown[] = [],
+    ) =>
       this.#client.request<Hex>("eth_call", [
         {
           data: encodeFunctionData({
@@ -121,25 +166,33 @@ export class ViemLocalSwapPlanVerifier implements LocalSwapPlanChainVerifier {
         },
         "latest",
       ]);
-    const [blockNumber, helperCode, ownerRaw, adapterRaw, permit2Raw, executedRaw, components, tokens] =
-      await Promise.all([
-        this.#client.request<Hex>("eth_blockNumber", []),
-        this.#client.request<Hex>("eth_getCode", [plan.helper.address, "latest"]),
-        calls("owner"),
-        calls("adapter"),
-        calls("permit2"),
-        calls("executedPlans", [plan.helperPlanDigest]),
-        Promise.all(
-          this.#registry.components.map(({ address }) =>
-            this.#client.request<Hex>("eth_getCode", [address, "latest"]),
-          ),
+    const [
+      blockNumber,
+      helperCode,
+      ownerRaw,
+      adapterRaw,
+      permit2Raw,
+      executedRaw,
+      components,
+      tokens,
+    ] = await Promise.all([
+      this.#client.request<Hex>("eth_blockNumber", []),
+      this.#client.request<Hex>("eth_getCode", [plan.helper.address, "latest"]),
+      calls("owner"),
+      calls("adapter"),
+      calls("permit2"),
+      calls("executedPlans", [plan.helperPlanDigest]),
+      Promise.all(
+        this.#registry.components.map(({ address }) =>
+          this.#client.request<Hex>("eth_getCode", [address, "latest"]),
         ),
-        Promise.all(
-          this.#registry.tokens.map(({ address }) =>
-            this.#client.request<Hex>("eth_getCode", [address, "latest"]),
-          ),
+      ),
+      Promise.all(
+        this.#registry.tokens.map(({ address }) =>
+          this.#client.request<Hex>("eth_getCode", [address, "latest"]),
         ),
-      ]);
+      ),
+    ]);
     return {
       blockNumber: quantity(blockNumber).toString(),
       componentCode: this.#registry.components.map(({ address, role }, index) => ({
@@ -148,11 +201,27 @@ export class ViemLocalSwapPlanVerifier implements LocalSwapPlanChainVerifier {
         runtimeCodeHash: codeHash(bytecode(components[index])),
       })),
       helper: {
-        adapter: decodeFunctionResult({ abi: helperReadAbi, data: adapterRaw, functionName: "adapter" }).toLowerCase() as Address,
+        adapter: decodeFunctionResult({
+          abi: helperReadAbi,
+          data: adapterRaw,
+          functionName: "adapter",
+        }).toLowerCase() as Address,
         codeHash: codeHash(bytecode(helperCode)),
-        executed: decodeFunctionResult({ abi: helperReadAbi, data: executedRaw, functionName: "executedPlans" }),
-        owner: decodeFunctionResult({ abi: helperReadAbi, data: ownerRaw, functionName: "owner" }).toLowerCase() as Address,
-        permit2: decodeFunctionResult({ abi: helperReadAbi, data: permit2Raw, functionName: "permit2" }).toLowerCase() as Address,
+        executed: decodeFunctionResult({
+          abi: helperReadAbi,
+          data: executedRaw,
+          functionName: "executedPlans",
+        }),
+        owner: decodeFunctionResult({
+          abi: helperReadAbi,
+          data: ownerRaw,
+          functionName: "owner",
+        }).toLowerCase() as Address,
+        permit2: decodeFunctionResult({
+          abi: helperReadAbi,
+          data: permit2Raw,
+          functionName: "permit2",
+        }).toLowerCase() as Address,
       },
       tokenCode: this.#registry.tokens.map(({ address }, index) => ({
         address,
@@ -168,7 +237,10 @@ export class ViemLocalSwapPlanVerifier implements LocalSwapPlanChainVerifier {
       this.#client.request<Hex>("eth_getCode", [permit2, "latest"]),
       this.#client.request<Hex>("eth_getCode", [input.payload.token, "latest"]),
       this.#client.request<Hex>("eth_call", [
-        { data: encodeFunctionData({ abi: permit2ReadAbi, functionName: "DOMAIN_SEPARATOR" }), to: permit2 },
+        {
+          data: encodeFunctionData({ abi: permit2ReadAbi, functionName: "DOMAIN_SEPARATOR" }),
+          to: permit2,
+        },
         "latest",
       ]),
       this.#client.request<Hex>("eth_call", [
@@ -183,10 +255,18 @@ export class ViemLocalSwapPlanVerifier implements LocalSwapPlanChainVerifier {
         "latest",
       ]),
     ]);
-    const [, , nonce] = decodeFunctionResult({ abi: permit2ReadAbi, data: allowanceRaw, functionName: "allowance" });
+    const [, , nonce] = decodeFunctionResult({
+      abi: permit2ReadAbi,
+      data: allowanceRaw,
+      functionName: "allowance",
+    });
     return {
       blockTimestamp: quantity(block.timestamp).toString(),
-      domainSeparator: decodeFunctionResult({ abi: permit2ReadAbi, data: domainRaw, functionName: "DOMAIN_SEPARATOR" }),
+      domainSeparator: decodeFunctionResult({
+        abi: permit2ReadAbi,
+        data: domainRaw,
+        functionName: "DOMAIN_SEPARATOR",
+      }),
       nonce: nonce.toString(),
       permit2CodeHash: codeHash(bytecode(permit2Code)),
       tokenCodeHash: codeHash(bytecode(tokenCode)),
@@ -209,10 +289,13 @@ export class PostgresLocalSwapStepPlanAuthorizer implements LocalSwapStepPlanAut
     );
   }
 
-  async authorize(input: Parameters<LocalSwapStepPlanAuthorizer["authorize"]>[0]): Promise<boolean> {
+  async authorize(
+    input: Parameters<LocalSwapStepPlanAuthorizer["authorize"]>[0],
+  ): Promise<boolean> {
     const plan = input.plan;
     const step = plan.steps.find(({ stepId }) => stepId === input.stepId);
-    if (!step || !this.#validPlan(plan, input.planDigest) || !this.#validFee(step, input)) return false;
+    if (!step || !this.#validPlan(plan, input.planDigest) || !this.#validFee(step, input))
+      return false;
     const result = await this.pool.query<{ authorized: boolean }>(
       `SELECT true AS authorized
          FROM local_swap_operations o
@@ -303,14 +386,21 @@ export class PostgresLocalSwapStepPlanAuthorizer implements LocalSwapStepPlanAut
         verification.helper.permit2 !== plan.helper.permit2 ||
         (step.kind === "swap" && verification.helper.executed) ||
         BigInt(verification.blockNumber) > BigInt(plan.quote.maxBlockNumber)
-      ) return false;
-      return this.#registry.components.every((expected) => {
-        const actual = verification.componentCode.find(({ role }) => role === expected.role);
-        return actual?.address === expected.address && actual.runtimeCodeHash === expected.runtimeCodeHash;
-      }) && this.#registry.tokens.every((expected) => {
-        const actual = verification.tokenCode.find(({ address }) => address === expected.address);
-        return actual?.runtimeCodeHash === expected.runtimeCodeHash;
-      });
+      )
+        return false;
+      return (
+        this.#registry.components.every((expected) => {
+          const actual = verification.componentCode.find(({ role }) => role === expected.role);
+          return (
+            actual?.address === expected.address &&
+            actual.runtimeCodeHash === expected.runtimeCodeHash
+          );
+        }) &&
+        this.#registry.tokens.every((expected) => {
+          const actual = verification.tokenCode.find(({ address }) => address === expected.address);
+          return actual?.runtimeCodeHash === expected.runtimeCodeHash;
+        })
+      );
     } catch {
       return false;
     }
@@ -337,17 +427,25 @@ export class PostgresLocalSwapStepPlanAuthorizer implements LocalSwapStepPlanAut
 
   #validFee(
     step: LocalSwapPlanStep,
-    input: Pick<Parameters<LocalSwapStepPlanAuthorizer["authorize"]>[0], "generation" | "maxFeePerGasBaseUnit" | "maxPriorityFeePerGasBaseUnit">,
+    input: Pick<
+      Parameters<LocalSwapStepPlanAuthorizer["authorize"]>[0],
+      "generation" | "maxFeePerGasBaseUnit" | "maxPriorityFeePerGasBaseUnit"
+    >,
   ): boolean {
     if (
-      !Number.isSafeInteger(input.generation) || input.generation < 0 ||
+      !Number.isSafeInteger(input.generation) ||
+      input.generation < 0 ||
       !/^[1-9][0-9]*$/u.test(input.maxFeePerGasBaseUnit) ||
       !/^(?:0|[1-9][0-9]*)$/u.test(input.maxPriorityFeePerGasBaseUnit)
-    ) return false;
+    )
+      return false;
     const max = BigInt(input.maxFeePerGasBaseUnit);
     const priority = BigInt(input.maxPriorityFeePerGasBaseUnit);
-    return max <= BigInt(step.feeLimit.maxFeePerGasBaseUnit) &&
-      priority <= BigInt(step.feeLimit.maxPriorityFeePerGasBaseUnit) && priority <= max;
+    return (
+      max <= BigInt(step.feeLimit.maxFeePerGasBaseUnit) &&
+      priority <= BigInt(step.feeLimit.maxPriorityFeePerGasBaseUnit) &&
+      priority <= max
+    );
   }
 }
 
@@ -368,15 +466,21 @@ export class PostgresLocalSwapPermit2Authorizer implements LocalSwapPermit2Autho
 
   async authorize(input: Parameters<LocalSwapPermit2Authorizer["authorize"]>[0]): Promise<boolean> {
     const payload = input.payload;
-    try { localSwapPermit2AuthorizationDigest(payload); } catch { return false; }
+    try {
+      localSwapPermit2AuthorizationDigest(payload);
+    } catch {
+      return false;
+    }
     const nowSeconds = BigInt(Math.floor(this.#now().getTime() / 1_000));
     if (
       payload.permit2 !== localSwapComponent("permit2", this.#registry).address ||
       !this.#registry.tokens.some(({ address }) => address === payload.token) ||
       BigInt(payload.expiration) <= nowSeconds ||
-      BigInt(payload.expiration) > nowSeconds + BigInt(this.#registry.maxPermit2ExpirationSeconds) ||
+      BigInt(payload.expiration) >
+        nowSeconds + BigInt(this.#registry.maxPermit2ExpirationSeconds) ||
       BigInt(payload.sigDeadline) < BigInt(payload.expiration)
-    ) return false;
+    )
+      return false;
     const result = await this.pool.query<{ owner_address: Address }>(
       `SELECT w.address_lower AS owner_address
          FROM local_swap_quote_snapshots q
@@ -414,11 +518,15 @@ export class PostgresLocalSwapPermit2Authorizer implements LocalSwapPermit2Autho
     if (!owner) return false;
     try {
       const verification = await this.chain.verifyPermit2({ owner, payload });
-      return verification.domainSeparator === payload.domainSeparator &&
+      return (
+        verification.domainSeparator === payload.domainSeparator &&
         verification.nonce === payload.nonce &&
-        verification.permit2CodeHash === localSwapComponent("permit2", this.#registry).runtimeCodeHash &&
-        verification.tokenCodeHash === this.#registry.tokens.find(({ address }) => address === payload.token)?.runtimeCodeHash &&
-        BigInt(verification.blockTimestamp) <= BigInt(payload.expiration);
+        verification.permit2CodeHash ===
+          localSwapComponent("permit2", this.#registry).runtimeCodeHash &&
+        verification.tokenCodeHash ===
+          this.#registry.tokens.find(({ address }) => address === payload.token)?.runtimeCodeHash &&
+        BigInt(verification.blockTimestamp) <= BigInt(payload.expiration)
+      );
     } catch {
       return false;
     }

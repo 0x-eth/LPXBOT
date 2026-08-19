@@ -469,9 +469,7 @@ export function decideLocalSwapObservation(input: {
     return {
       kind: "transition",
       operationState: "reconciling",
-      reason: cleanupPending
-        ? "ALLOWANCE_CLEANUP_REQUIRED"
-        : "NONCE_CONSUMED_BY_OTHER_TRANSACTION",
+      reason: cleanupPending ? "ALLOWANCE_CLEANUP_REQUIRED" : "NONCE_CONSUMED_BY_OTHER_TRANSACTION",
       stepState: "reconciling",
     };
   }

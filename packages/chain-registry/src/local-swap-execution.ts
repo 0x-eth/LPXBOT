@@ -1,12 +1,8 @@
 import { sha256, stringToHex } from "viem";
 
-import {
-  P05_HELPER_DEPLOYMENT_REGISTRY,
-  WALLET_HELPER_V1_VERSION,
-} from "./helper-deployment.js";
+import { P05_HELPER_DEPLOYMENT_REGISTRY, WALLET_HELPER_V1_VERSION } from "./helper-deployment.js";
 
-export const P05_LOCAL_SWAP_EXECUTION_REGISTRY_VERSION =
-  "p05-local-swap-execution-v2" as const;
+export const P05_LOCAL_SWAP_EXECUTION_REGISTRY_VERSION = "p05-local-swap-execution-v2" as const;
 export const P05_LOCAL_SWAP_QUOTE_VERSION = "p05-local-swap-quote-v2" as const;
 
 export type LocalSwapEnvironment = "local" | "testnet" | "production";
@@ -30,7 +26,10 @@ export interface LocalSwapExecutionRegistry {
   environment: "non-forked-anvil-synthetic-only";
   executionEnabled: true;
   gates: Readonly<
-    Record<LocalSwapEnvironment, { broadcasts: boolean; signatures: boolean; status: "CLOSED" | "OPEN" }>
+    Record<
+      LocalSwapEnvironment,
+      { broadcasts: boolean; signatures: boolean; status: "CLOSED" | "OPEN" }
+    >
   >;
   helper: {
     executeSwapSelector: "0x5a547e89";

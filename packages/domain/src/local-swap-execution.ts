@@ -127,9 +127,7 @@ function stable(value: unknown): string {
   return JSON.stringify(canonical(value));
 }
 
-export function localSwapExecutionPlanDigest(
-  plan: LocalSwapExecutionPlan,
-): `sha256:${string}` {
+export function localSwapExecutionPlanDigest(plan: LocalSwapExecutionPlan): `sha256:${string}` {
   return `sha256:${createHash("sha256")
     .update("LPXBOT_LOCAL_SWAP_PLAN\0v2\0", "utf8")
     .update(stable(plan), "utf8")
@@ -215,9 +213,10 @@ export function validateLocalSwapExecutionPlan(
     throw new RangeError("LOCAL_SWAP_STEP_SET_INVALID");
   }
   const kinds = plan.steps.map(({ kind }) => kind);
-  const expectedKinds = kinds[0] === "allowance-reset"
-    ? ["allowance-reset", "approve", "swap", "cleanup"]
-    : ["approve", "swap", "cleanup"];
+  const expectedKinds =
+    kinds[0] === "allowance-reset"
+      ? ["allowance-reset", "approve", "swap", "cleanup"]
+      : ["approve", "swap", "cleanup"];
   if (!same(kinds, expectedKinds)) throw new RangeError("LOCAL_SWAP_STEP_ORDER_INVALID");
   const nonces = new Set<string>();
   const fencingTokens = new Set<string>();
@@ -243,7 +242,10 @@ export function validateLocalSwapExecutionPlan(
     fencingTokens.add(step.fencingToken);
   }
   if (plan.authorization.mode === "direct") {
-    if (plan.authorization.permit2 !== null || plan.authorization.approvalSpender !== plan.helper.address) {
+    if (
+      plan.authorization.permit2 !== null ||
+      plan.authorization.approvalSpender !== plan.helper.address
+    ) {
       throw new RangeError("LOCAL_SWAP_DIRECT_APPROVAL_INVALID");
     }
   } else {
@@ -273,7 +275,10 @@ export function validateLocalSwapExecutionPlan(
       throw new RangeError("LOCAL_SWAP_PERMIT2_SIGNATURE_INVALID");
     }
   }
-  if (!digestPattern.test(plan.planDigest) || localSwapExecutionPlanDigest(plan) !== plan.planDigest) {
+  if (
+    !digestPattern.test(plan.planDigest) ||
+    localSwapExecutionPlanDigest(plan) !== plan.planDigest
+  ) {
     throw new RangeError("LOCAL_SWAP_PLAN_DIGEST_MISMATCH");
   }
 }
@@ -329,10 +334,20 @@ export function validateLocalSwapReplacement(
   next: LocalSwapReplacementCandidate,
   planDigest: `sha256:${string}`,
 ): void {
-  const previousMax = decimal(previous.fee.maxFeePerGasBaseUnit, "LOCAL_SWAP_REPLACEMENT_INVALID", true);
-  const previousPriority = decimal(previous.fee.maxPriorityFeePerGasBaseUnit, "LOCAL_SWAP_REPLACEMENT_INVALID");
+  const previousMax = decimal(
+    previous.fee.maxFeePerGasBaseUnit,
+    "LOCAL_SWAP_REPLACEMENT_INVALID",
+    true,
+  );
+  const previousPriority = decimal(
+    previous.fee.maxPriorityFeePerGasBaseUnit,
+    "LOCAL_SWAP_REPLACEMENT_INVALID",
+  );
   const nextMax = decimal(next.fee.maxFeePerGasBaseUnit, "LOCAL_SWAP_REPLACEMENT_INVALID", true);
-  const nextPriority = decimal(next.fee.maxPriorityFeePerGasBaseUnit, "LOCAL_SWAP_REPLACEMENT_INVALID");
+  const nextPriority = decimal(
+    next.fee.maxPriorityFeePerGasBaseUnit,
+    "LOCAL_SWAP_REPLACEMENT_INVALID",
+  );
   if (
     previous.planDigest !== planDigest ||
     next.planDigest !== planDigest ||

@@ -2,7 +2,10 @@ import { createHash, randomUUID } from "node:crypto";
 
 import type { LocalSwapOperationStep, LocalSwapStepTransactionView } from "@lpbot/api-contract";
 import type { LocalSwapQuote } from "@lpbot/chain-adapters";
-import { localSwapExecutionPlanDigest, type LocalSwapExecutionPlan } from "@lpbot/domain/local-swap-execution";
+import {
+  localSwapExecutionPlanDigest,
+  type LocalSwapExecutionPlan,
+} from "@lpbot/domain/local-swap-execution";
 import type { Pool, PoolClient } from "pg";
 
 import {
@@ -24,11 +27,14 @@ function sha256(value: string): string {
 }
 
 function uniqueViolation(error: unknown): boolean {
-  return typeof error === "object" && error !== null && (error as { code?: unknown }).code === "23505";
+  return (
+    typeof error === "object" && error !== null && (error as { code?: unknown }).code === "23505"
+  );
 }
 
 function retryableDatabaseError(error: unknown): boolean {
-  const code = typeof error === "object" && error !== null ? (error as { code?: unknown }).code : null;
+  const code =
+    typeof error === "object" && error !== null ? (error as { code?: unknown }).code : null;
   return code === "40001" || code === "40P01";
 }
 
@@ -60,7 +66,11 @@ function consensusNonce(views: readonly LocalSwapNonceView[]): bigint {
 export class PostgresLocalSwapQuoteStore implements LocalSwapQuoteStore {
   constructor(readonly pool: Pool) {}
 
-  async append(input: { quote: Readonly<LocalSwapQuote>; tenantId: string; userId: string }): Promise<void> {
+  async append(input: {
+    quote: Readonly<LocalSwapQuote>;
+    tenantId: string;
+    userId: string;
+  }): Promise<void> {
     const quote = input.quote;
     await this.pool.query(
       `INSERT INTO local_swap_quote_snapshots (
@@ -176,7 +186,11 @@ export class PostgresLocalSwapPreviewStore implements LocalSwapPreviewStore {
 export class PostgresLocalSwapHelperBindingStore implements LocalSwapHelperBindingStore {
   constructor(readonly pool: Pool) {}
 
-  async getActive(input: { tenantId: string; userId: string; walletId: string }): Promise<LocalSwapHelperBinding | null> {
+  async getActive(input: {
+    tenantId: string;
+    userId: string;
+    walletId: string;
+  }): Promise<LocalSwapHelperBinding | null> {
     const result = await this.pool.query<{
       adapter_address: LocalSwapHelperBinding["adapterAddress"];
       binding_id: string;
@@ -299,7 +313,11 @@ export class PostgresLocalSwapOperationStore implements LocalSwapOperationStore 
       : null;
   }
 
-  async get(input: { operationId: string; tenantId: string; userId: string }): Promise<StoredLocalSwapOperation | null> {
+  async get(input: {
+    operationId: string;
+    tenantId: string;
+    userId: string;
+  }): Promise<StoredLocalSwapOperation | null> {
     const result = await this.pool.query<OperationRow>(
       `SELECT ${operationColumns}
          FROM local_swap_operations o
@@ -337,7 +355,10 @@ export class PostgresLocalSwapOperationStore implements LocalSwapOperationStore 
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
-      const duplicate = await client.query<{ operation_id: string; request_hash: `sha256:${string}` }>(
+      const duplicate = await client.query<{
+        operation_id: string;
+        request_hash: `sha256:${string}`;
+      }>(
         `SELECT operation_id::text, request_hash
            FROM local_swap_operation_idempotency
           WHERE tenant_id = $1 AND user_id = $2 AND wallet_id = $3
@@ -355,7 +376,11 @@ export class PostgresLocalSwapOperationStore implements LocalSwapOperationStore 
         return { kind: "duplicate" as const, operation: loaded };
       }
 
-      const wallet = await client.query<{ address_lower: string; lifecycle_status: string; lock_status: string }>(
+      const wallet = await client.query<{
+        address_lower: string;
+        lifecycle_status: string;
+        lock_status: string;
+      }>(
         `SELECT address_lower, lifecycle_status, lock_status
            FROM custody_wallets
           WHERE tenant_id = $1 AND user_id = $2 AND wallet_id = $3
@@ -389,7 +414,10 @@ export class PostgresLocalSwapOperationStore implements LocalSwapOperationStore 
       if (!ledger) throw new LocalSwapExecutionError("LOCAL_SWAP_UNAVAILABLE", true);
       const providerNonce = consensusNonce(input.nonceViews);
       const nextNonce = ledger.next_nonce === null ? providerNonce : BigInt(ledger.next_nonce);
-      if (providerNonce !== BigInt(input.expectedNonce) || nextNonce !== BigInt(input.expectedNonce)) {
+      if (
+        providerNonce !== BigInt(input.expectedNonce) ||
+        nextNonce !== BigInt(input.expectedNonce)
+      ) {
         throw new LocalSwapExecutionError("NONCE_DRIFT");
       }
       let fencingToken = BigInt(ledger.fencing_token);
@@ -405,7 +433,12 @@ export class PostgresLocalSwapOperationStore implements LocalSwapOperationStore 
             SET next_nonce = $2, fencing_token = $3,
                 reconciliation_reason = NULL, updated_at = $4
           WHERE chain_id = 31337 AND wallet_id = $1`,
-        [input.walletId, (nextNonce + BigInt(reservations.length)).toString(), fencingToken.toString(), now],
+        [
+          input.walletId,
+          (nextNonce + BigInt(reservations.length)).toString(),
+          fencingToken.toString(),
+          now,
+        ],
       );
       const operationId = this.#uuid().toLowerCase();
       const plan = input.buildPlan({ operationId, reservations });
@@ -541,7 +574,12 @@ export class PostgresLocalSwapOperationStore implements LocalSwapOperationStore 
           this.#uuid().toLowerCase(),
           operationId,
           plan.steps[0]!.stepId,
-          JSON.stringify({ chainId: 31_337, operationId, state: "queued", walletId: input.walletId }),
+          JSON.stringify({
+            chainId: 31_337,
+            operationId,
+            state: "queued",
+            walletId: input.walletId,
+          }),
           now,
         ],
       );
