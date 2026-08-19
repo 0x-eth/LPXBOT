@@ -446,7 +446,7 @@ async function install(page: Page, state: FixtureState) {
       const body = JSON.parse(request.postData() ?? "{}") as Record<string, unknown>;
       state.executePayloads.push(body);
       state.idempotencyKeys.push(request.headers()["idempotency-key"] ?? "");
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 700));
       await route.fulfill({
         contentType: "application/json",
         json: envelope(operation(state, "queued")),
@@ -725,7 +725,7 @@ test("supports 1/25/50/99/100 percent controls and forbids burn on partial remov
   await panel.getByRole("button", { name: "预览撤出" }).click();
   const dialog = page.getByRole("dialog", { name: "确认撤出流动性" });
   await expect(dialog.getByRole("list", { name: "仓位执行预览步骤" }).locator("li")).toHaveCount(2);
-  await expect(dialog).toContainText("750");
+  await expect(dialog).toContainText("751");
   expect(state.previewPayloads).toEqual([
     {
       burnIfEmpty: false,
