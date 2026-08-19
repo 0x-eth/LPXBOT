@@ -46,7 +46,7 @@ import {
   type TelegramMiniAppAuthenticator,
 } from "@lpbot/security";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
-import { SwapQuoteAdapterError } from "@lpbot/chain-adapters";
+import { LocalSwapQuoteError, SwapQuoteAdapterError } from "@lpbot/chain-adapters";
 
 import { sessionCookieName, setBrowserSessionCookie } from "./browser-session-cookie.js";
 import {
@@ -4055,6 +4055,40 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       );
     };
 
+    const localSwapQuoteFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply => {
+      const invalid =
+        error instanceof LocalSwapQuoteValidationError ||
+        (error instanceof LocalSwapQuoteError && error.code === "INVALID_INPUT");
+      const stale =
+        error instanceof LocalSwapQuoteError &&
+        (error.code === "REGISTRY_MISMATCH" || error.code === "SNAPSHOT_EXPIRED");
+      const code = invalid
+        ? error instanceof LocalSwapQuoteValidationError
+          ? error.code
+          : "LOCAL_SWAP_QUOTE_INVALID"
+        : stale
+          ? "LOCAL_SWAP_QUOTE_STALE"
+          : "LOCAL_SWAP_QUOTE_UNAVAILABLE";
+      return reply.code(invalid ? (code === "WALLET_NOT_FOUND" ? 404 : 400) : stale ? 409 : 503).send(
+        createErrorEnvelope({
+          code,
+          message: invalid
+            ? code === "WALLET_NOT_FOUND"
+              ? "The custody wallet was not found"
+              : "The local Swap quote request is invalid"
+            : stale
+              ? "The local Swap quote snapshot is stale"
+              : "The local Swap quote provider is unavailable",
+          requestId: request.id,
+          retryable: !invalid && !stale,
+        }),
+      );
+    };
+
     const pricingPositionFailure = (
       error: unknown,
       request: FastifyRequest,
@@ -4229,6 +4263,71 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         PREVIEW_INVALID: "The Helper deployment preview is invalid",
         REGISTRY_MISMATCH: "The Helper deployment Registry does not match the chain snapshot",
         WALLET_LOCKED: "The wallet must be unlocked before Helper deployment",
+        WALLET_NOT_FOUND: "The wallet was not found",
+      };
+      return reply.code(status).send(
+        createErrorEnvelope({
+          code: error.code,
+          message: messages[error.code],
+          requestId: request.id,
+          retryable: error.retryable,
+        }),
+      );
+    };
+
+    const localSwapFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply | null => {
+      if (!(error instanceof LocalSwapExecutionError)) return null;
+      const status =
+        error.code === "CHAIN_NOT_ALLOWED"
+          ? 403
+          : error.code === "LOCAL_SWAP_NOT_FOUND" ||
+              error.code === "QUOTE_NOT_FOUND" ||
+              error.code === "WALLET_NOT_FOUND"
+            ? 404
+            : error.code === "LOCAL_SWAP_UNAVAILABLE"
+              ? 503
+              : error.code === "INSUFFICIENT_BALANCE"
+                ? 422
+                : error.code === "HELPER_BINDING_MISMATCH" ||
+                    error.code === "HELPER_NOT_ACTIVE" ||
+                    error.code === "IDEMPOTENCY_CONFLICT" ||
+                    error.code === "NONCE_DRIFT" ||
+                    error.code === "NONCE_RECONCILIATION_REQUIRED" ||
+                    error.code === "PERMIT2_AUTHORIZATION_INVALID" ||
+                    error.code === "PREVIEW_CHANGED" ||
+                    error.code === "PREVIEW_EXPIRED" ||
+                    error.code === "QUOTE_CHANGED" ||
+                    error.code === "QUOTE_EXPIRED" ||
+                    error.code === "QUOTE_STALE" ||
+                    error.code === "REGISTRY_MISMATCH" ||
+                    error.code === "WALLET_LOCKED"
+                  ? 409
+                  : 400;
+      const messages: Record<LocalSwapExecutionError["code"], string> = {
+        CHAIN_NOT_ALLOWED: "The chain is not available for local Swap execution",
+        HELPER_BINDING_MISMATCH: "The active Helper binding no longer matches chain state",
+        HELPER_NOT_ACTIVE: "An active per-wallet Helper is required",
+        IDEMPOTENCY_CONFLICT: "The idempotency key is already bound to another request",
+        IDEMPOTENCY_KEY_REQUIRED: "A valid Idempotency-Key header is required",
+        INSUFFICIENT_BALANCE: "The wallet token balance is insufficient",
+        LOCAL_SWAP_NOT_FOUND: "The chain operation was not found",
+        LOCAL_SWAP_UNAVAILABLE: "The local Swap execution service is unavailable",
+        NONCE_DRIFT: "The wallet nonce changed after preview",
+        NONCE_RECONCILIATION_REQUIRED: "The wallet nonce requires reconciliation",
+        PERMIT2_AUTHORIZATION_INVALID: "The Permit2 authorization is invalid",
+        PREVIEW_CHANGED: "The local Swap preview no longer matches current state",
+        PREVIEW_EXPIRED: "The local Swap preview has expired",
+        PREVIEW_INVALID: "The local Swap preview is invalid",
+        QUOTE_CHANGED: "The local Swap quote no longer matches its stored snapshot",
+        QUOTE_EXPIRED: "The local Swap quote has expired",
+        QUOTE_NOT_FOUND: "The local Swap quote was not found",
+        QUOTE_STALE: "The local Swap quote is stale at the current block",
+        REGISTRY_MISMATCH: "The local Swap Registry does not match chain state",
+        WALLET_LOCKED: "The wallet must be unlocked before Swap execution",
         WALLET_NOT_FOUND: "The wallet was not found",
       };
       return reply.code(status).send(
@@ -5096,6 +5195,101 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       },
     );
 
+    app.post(
+      "/api/swap/execute/preview",
+      { bodyLimit: localSwapExecutionBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletDirectory || !options.localSwapExecutions || !options.tenantId) {
+          return localSwapFailure(
+            new LocalSwapExecutionError("LOCAL_SWAP_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          const input = parseLocalSwapExecutePreview(request.body);
+          if (
+            !(await requireAllowedWalletChain(
+              31_337,
+              request,
+              reply,
+              session,
+              localSwapExecutionChainIds,
+            ))
+          ) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(session.userId, input.walletId);
+          if (!wallet) throw new LocalSwapExecutionError("WALLET_NOT_FOUND");
+          return createSuccessEnvelope(
+            await options.localSwapExecutions.preview({
+              request: input,
+              tenantId: options.tenantId,
+              userId: session.userId,
+              wallet,
+            }),
+            request.id,
+          );
+        } catch (error) {
+          return localSwapFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.post(
+      "/api/swap/execute",
+      { bodyLimit: localSwapExecutionBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+        if (!options.walletDirectory || !options.localSwapExecutions || !options.tenantId) {
+          return localSwapFailure(
+            new LocalSwapExecutionError("LOCAL_SWAP_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          const idempotencyKey = parseLocalSwapIdempotencyKey(
+            request.headers["idempotency-key"],
+          );
+          const input = parseLocalSwapExecute(request.body);
+          if (
+            !(await requireAllowedWalletChain(
+              31_337,
+              request,
+              reply,
+              session,
+              localSwapExecutionChainIds,
+            ))
+          ) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(session.userId, input.walletId);
+          if (!wallet) throw new LocalSwapExecutionError("WALLET_NOT_FOUND");
+          const result = await options.localSwapExecutions.submit({
+            idempotencyKey,
+            request: input,
+            requestId: request.id,
+            sessionId: session.id,
+            tenantId: options.tenantId,
+            userId: session.userId,
+            wallet,
+          });
+          return reply
+            .code(result.created ? 202 : 200)
+            .send(createSuccessEnvelope(result.operation, request.id));
+        } catch (error) {
+          return localSwapFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
     app.get<{ Params: { operationId: string } }>(
       "/api/chain-operations/:operationId",
       async (request, reply) => {
@@ -5112,26 +5306,56 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
             }),
           );
         }
-        if (!options.helperDeployments || !options.tenantId) {
+        if ((!options.helperDeployments && !options.localSwapExecutions) || !options.tenantId) {
           return reply.code(503).send(
             createErrorEnvelope({
-              code: "HELPER_DEPLOYMENT_UNAVAILABLE",
-              message: "The Helper deployment service is unavailable",
+              code: "CHAIN_OPERATION_UNAVAILABLE",
+              message: "The chain operation service is unavailable",
               requestId: request.id,
               retryable: true,
             }),
           );
         }
+        let operationId: string;
         try {
-          const operation = await options.helperDeployments.get({
-            operationId: parseChainOperationId(request.params.operationId),
-            tenantId: options.tenantId,
-            userId: session.userId,
-          });
-          return createSuccessEnvelope(operation, request.id);
+          operationId = parseLocalSwapOperationId(request.params.operationId);
         } catch (error) {
-          return helperDeploymentFailure(error, request, reply) ?? reply;
+          return localSwapFailure(error, request, reply) ?? reply;
         }
+        if (options.localSwapExecutions) {
+          try {
+            const operation = await options.localSwapExecutions.get({
+              operationId,
+              tenantId: options.tenantId,
+              userId: session.userId,
+            });
+            return createSuccessEnvelope(operation, request.id);
+          } catch (error) {
+            if (
+              !(error instanceof LocalSwapExecutionError) ||
+              error.code !== "LOCAL_SWAP_NOT_FOUND"
+            ) {
+              return localSwapFailure(error, request, reply) ?? reply;
+            }
+          }
+        }
+        if (options.helperDeployments) {
+          try {
+            const operation = await options.helperDeployments.get({
+              operationId: parseChainOperationId(operationId),
+              tenantId: options.tenantId,
+              userId: session.userId,
+            });
+            return createSuccessEnvelope(operation, request.id);
+          } catch (error) {
+            return helperDeploymentFailure(error, request, reply) ?? reply;
+          }
+        }
+        return localSwapFailure(
+          new LocalSwapExecutionError("LOCAL_SWAP_NOT_FOUND"),
+          request,
+          reply,
+        );
       },
     );
 
