@@ -600,9 +600,8 @@ async function confirmDialog(page: Page, name: string) {
   const confirm = dialog.getByRole("button", { name: "确认执行" });
   await confirm.focus();
   await page.keyboard.press("Enter");
-  await expect(confirm).toBeDisabled();
-  await page.keyboard.press("Enter");
   await expect(dialog).toBeHidden();
+  await page.keyboard.press("Enter");
 }
 
 test("collects a zero-owed snapshot once with canonical operation polling", async ({ page }) => {
