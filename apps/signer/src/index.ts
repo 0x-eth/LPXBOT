@@ -14,6 +14,8 @@ export type {
   LocalSwapPermit2SigningResult,
   LocalSwapStepPlanAuthorizer,
   LocalSwapStepSigningResult,
+  LocalPositionStepPlanAuthorizer,
+  LocalPositionStepSigningResult,
   KeystoreStatus,
   KeystoreStore,
   SecurityPasswordApplication,
