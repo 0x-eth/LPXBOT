@@ -21,8 +21,9 @@ const userA = "68000000-0000-4000-8000-000000000001";
 const userB = "68000000-0000-4000-8000-000000000002";
 const tokenIn = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c" as const;
 const tokenOut = "0x55d398326f99059ff775485246999027b3197955" as const;
+const walletAddress = "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf" as const;
 const wallet: CustodyWallet = {
-  address: "0x1111111111111111111111111111111111111111",
+  address: walletAddress,
   createdAt: now.toISOString(),
   envelopeVersion: 1,
   lockStatus: "ready",
@@ -148,7 +149,7 @@ describe("P05-03 swap quote API", () => {
       platformId: 2,
       tokenIn,
       tokenOut,
-      walletAddress: wallet.address,
+      walletAddress: walletAddress.toLowerCase(),
       walletId: wallet.walletId,
     });
     expect(response.json().data).not.toHaveProperty("calldata");
