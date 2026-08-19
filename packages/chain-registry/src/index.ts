@@ -44,6 +44,19 @@ export type {
   LocalSwapExecutionRegistry,
   LocalSwapTokenIdentity,
 } from "./local-swap-execution.js";
+export {
+  localPositionExecutionRegistryDigest,
+  P05_LOCAL_POSITION_EXECUTION_REGISTRY,
+  P05_LOCAL_POSITION_EXECUTION_REGISTRY_VERSION,
+  P05_LOCAL_POSITION_PLAN_VERSION,
+  P05_LOCAL_POSITION_SNAPSHOT_VERSION,
+  validateLocalPositionExecutionRegistry,
+} from "./local-position-execution.js";
+export type {
+  LocalPositionEnvironment,
+  LocalPositionExecutionRegistry,
+  LocalPositionPlatformId,
+} from "./local-position-execution.js";
 export type {
   HelperBytecodeTemplate,
   HelperDeploymentComponent,

@@ -30,6 +30,11 @@
       "import": "./dist/local-swap-execution.js",
       "default": "./dist/local-swap-execution.js"
     },
+    "./local-position-execution": {
+      "types": "./dist/local-position-execution.d.ts",
+      "import": "./dist/local-position-execution.js",
+      "default": "./dist/local-position-execution.js"
+    },
     "./wallet-transfer": {
       "types": "./dist/wallet-transfer.d.ts",
       "import": "./dist/wallet-transfer.js",
