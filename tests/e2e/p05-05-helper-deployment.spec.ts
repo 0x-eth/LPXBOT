@@ -76,7 +76,7 @@ function preview(expiresInMs: number) {
     nonce: "7",
     previewDigest,
     previewToken,
-    registryVersion: "p05-local-helper-v2",
+    registryVersion: "p05-local-helper-deployment-v2",
     walletId,
   };
 }
@@ -118,7 +118,7 @@ function operation(state: OperationState, index: number, recovered = false) {
     operationId,
     planDigest,
     reconciliationReason: state === "reconciling" ? "DROPPED_TRANSACTION_RECOVERY" : null,
-    registryVersion: "p05-local-helper-v2",
+    registryVersion: "p05-local-helper-deployment-v2",
     state,
     transactions: transactions(state, recovered),
     updatedAt: new Date(Date.parse(observedAt) + index * 1_000).toISOString(),

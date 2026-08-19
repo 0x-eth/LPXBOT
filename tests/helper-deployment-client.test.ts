@@ -37,7 +37,7 @@ function preview() {
     nonce: "7",
     previewDigest,
     previewToken,
-    registryVersion: "p05-local-helper-v2",
+    registryVersion: "p05-local-helper-deployment-v2",
     walletId,
   };
 }
@@ -54,7 +54,7 @@ function operation() {
     operationId,
     planDigest,
     reconciliationReason: null,
-    registryVersion: "p05-local-helper-v2",
+    registryVersion: "p05-local-helper-deployment-v2",
     state: "broadcast",
     transactions: [{ active: true, generation: 0, state: "broadcast", transactionHash }],
     updatedAt: "2026-08-20T10:00:01.000Z",
