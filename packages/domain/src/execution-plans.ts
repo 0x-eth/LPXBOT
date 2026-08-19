@@ -2,11 +2,7 @@ import { createHash } from "node:crypto";
 
 export const P05_OPERATION_PLAN_VERSION = "p05-operation-plan-v1" as const;
 
-export type ExecutionPlanType =
-  | "helper-deployment"
-  | "position"
-  | "swap"
-  | "sweep";
+export type ExecutionPlanType = "helper-deployment" | "position" | "swap" | "sweep";
 
 export interface ExecutionAssetBinding {
   address: `0x${string}`;
@@ -149,6 +145,8 @@ export interface ExecutionPlanValidationContext {
   registryValidFromBlock: string;
   registryValidToBlock: string;
   registryVersion: string;
+  serviceFeeMaxBps: number;
+  serviceFeeRecipientAllowlist: readonly `0x${string}`[];
   tokenPolicyDigest: `sha256:${string}`;
   tokenPolicyVersion: string;
   tokens: readonly ExecutionAssetBinding[];
@@ -207,7 +205,8 @@ function validateAsset(
 ): void {
   address(asset.address, "EXECUTION_TOKEN_IDENTITY_INVALID");
   hash(asset.runtimeCodeHash, "EXECUTION_TOKEN_IDENTITY_INVALID");
-  if (asset.implementationAddress !== null) address(asset.implementationAddress, "EXECUTION_TOKEN_IDENTITY_INVALID");
+  if (asset.implementationAddress !== null)
+    address(asset.implementationAddress, "EXECUTION_TOKEN_IDENTITY_INVALID");
   if (asset.implementationRuntimeCodeHash !== null) {
     hash(asset.implementationRuntimeCodeHash, "EXECUTION_TOKEN_IDENTITY_INVALID");
   }
@@ -241,8 +240,22 @@ function validateFees(plan: ExecutionPlan, context: ExecutionPlanValidationConte
   if (!Number.isInteger(service.bps) || !Number.isInteger(service.maxBps)) {
     throw new RangeError("EXECUTION_FEE_INVALID");
   }
-  if (service.bps < 0 || service.maxBps < 0 || service.bps > service.maxBps || service.maxBps > 10_000) {
+  if (
+    service.bps < 0 ||
+    service.maxBps < 0 ||
+    service.bps > service.maxBps ||
+    service.maxBps > 10_000
+  ) {
     throw new RangeError("EXECUTION_FEE_INVALID");
+  }
+  if (
+    service.maxBps > context.serviceFeeMaxBps ||
+    service.recipientAllowlist.length !== context.serviceFeeRecipientAllowlist.length ||
+    service.recipientAllowlist.some(
+      (recipient, index) => recipient !== context.serviceFeeRecipientAllowlist[index],
+    )
+  ) {
+    throw new RangeError("EXECUTION_FEE_POLICY_MISMATCH");
   }
   if (service.bps === 0) {
     if (

@@ -1,15 +1,9 @@
-export const P05_BSC_LOCAL_EXECUTION_REGISTRY_VERSION =
-  "p05-bsc-local-execution-v1" as const;
+export const P05_BSC_LOCAL_EXECUTION_REGISTRY_VERSION = "p05-bsc-local-execution-v1" as const;
 export const P05_LOCAL_TOKEN_POLICY_VERSION = "p05-local-token-policy-v1" as const;
 export const P05_LOCAL_FEE_POLICY_VERSION = "p05-local-fee-policy-v1" as const;
 
 export type LocalExecutionComponentRole =
-  | "adapter"
-  | "helper"
-  | "permit2"
-  | "position-manager"
-  | "router"
-  | "spender";
+  "adapter" | "helper" | "permit2" | "position-manager" | "router" | "spender";
 
 export interface LocalExecutionCodeIdentity {
   abiHash: `sha256:${string}`;
@@ -237,6 +231,8 @@ export function validateLocalExecutionRegistryContext(
       ? registry.helperSelectorAllowlist
       : registry.routerSelectorAllowlist;
   if (!allowedSelectors.includes(verification.selector)) reject("SELECTOR_NOT_ALLOWLISTED");
+
+  if (verification.components.length !== registry.components.length) reject("COMPONENT_MISSING");
 
   for (const expected of registry.components) {
     const actual = verification.components.find(({ role }) => role === expected.role);
