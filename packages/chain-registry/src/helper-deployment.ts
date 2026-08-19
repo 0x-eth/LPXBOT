@@ -1,4 +1,12 @@
-import { sha256, stringToHex, type Hex } from "viem";
+import {
+  encodeAbiParameters,
+  encodeDeployData,
+  getAddress,
+  keccak256,
+  sha256,
+  stringToHex,
+  type Hex,
+} from "viem";
 
 import {
   WALLET_HELPER_V1_CREATION_CODE,
@@ -50,6 +58,16 @@ export interface HelperDeploymentRegistry {
 }
 
 type RegistryPayload = Omit<HelperDeploymentRegistry, "registryDigest">;
+
+const helperConstructorTypes = [
+  { type: "address" },
+  { type: "address" },
+  { type: "address" },
+  { type: "address" },
+  { type: "bytes32" },
+  { type: "address" },
+  { type: "bytes32" },
+] as const;
 
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical);
@@ -149,6 +167,41 @@ export function validateHelperDeploymentRegistry(
   helperDeploymentComponent("adapter", registry);
   helperDeploymentComponent("permit2", registry);
   return registry;
+}
+
+export function buildWalletHelperV1DeploymentMaterial(
+  owner: `0x${string}`,
+  registry: HelperDeploymentRegistry = P05_HELPER_DEPLOYMENT_REGISTRY,
+): {
+  constructorArgumentsHash: `sha256:${string}`;
+  initCode: Hex;
+  initCodeHash: `0x${string}`;
+} {
+  validateHelperDeploymentRegistry(registry);
+  const canonicalOwner = getAddress(owner).toLowerCase() as `0x${string}`;
+  const adapter = helperDeploymentComponent("adapter", registry).address;
+  const permit2 = helperDeploymentComponent("permit2", registry).address;
+  const [tokenA, tokenB] = registry.tokens;
+  const args = [
+    canonicalOwner,
+    adapter,
+    permit2,
+    tokenA.address,
+    tokenA.runtimeCodeHash,
+    tokenB.address,
+    tokenB.runtimeCodeHash,
+  ] as const;
+  const encodedArguments = encodeAbiParameters(helperConstructorTypes, args);
+  const initCode = encodeDeployData({
+    abi: [{ inputs: helperConstructorTypes, stateMutability: "nonpayable", type: "constructor" }],
+    args,
+    bytecode: registry.helperTemplate.creationCode,
+  });
+  return {
+    constructorArgumentsHash: `sha256:${sha256(encodedArguments).slice(2)}`,
+    initCode,
+    initCodeHash: keccak256(initCode),
+  };
 }
 
 validateHelperDeploymentRegistry();

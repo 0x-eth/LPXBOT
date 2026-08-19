@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "@lpbot/api-contract": "workspace:*",
+    "@lpbot/chain-adapters": "workspace:*",
+    "@lpbot/chain-registry": "workspace:*",
     "@lpbot/domain": "workspace:*",
     "@lpbot/observability": "workspace:*",
     "@lpbot/security": "workspace:*",

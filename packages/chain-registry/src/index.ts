@@ -20,6 +20,7 @@ export type {
   LocalTokenBehavior,
 } from "./local-execution.js";
 export {
+  buildWalletHelperV1DeploymentMaterial,
   helperDeploymentComponent,
   helperDeploymentRegistryDigest,
   P05_HELPER_DEPLOYMENT_PLAN_VERSION,

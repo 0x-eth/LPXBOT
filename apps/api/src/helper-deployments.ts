@@ -9,6 +9,7 @@ import type {
   HelperDeploymentSubmitRequest,
 } from "@lpbot/api-contract";
 import {
+  buildWalletHelperV1DeploymentMaterial,
   helperDeploymentComponent,
   P05_HELPER_DEPLOYMENT_REGISTRY,
   validateHelperDeploymentRegistry,
@@ -21,15 +22,7 @@ import {
   type HelperDeploymentPlan,
   type HelperDeploymentPlanValidationContext,
 } from "@lpbot/domain/helper-deployment";
-import {
-  encodeAbiParameters,
-  encodeDeployData,
-  getAddress,
-  getContractAddress,
-  keccak256,
-  sha256 as viemSha256,
-  type Hex,
-} from "viem";
+import { getAddress, getContractAddress, type Hex } from "viem";
 
 export const helperDeploymentPreviewTtlMilliseconds = 5 * 60 * 1_000;
 export const helperDeploymentIdempotencyRetentionHours = 24;
@@ -196,15 +189,6 @@ interface HelperDeploymentPreviewFacts {
   snapshotDigest: `sha256:${string}`;
 }
 
-const helperConstructorTypes = [
-  { type: "address" },
-  { type: "address" },
-  { type: "address" },
-  { type: "address" },
-  { type: "bytes32" },
-  { type: "address" },
-  { type: "bytes32" },
-] as const;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const digestPattern = /^sha256:[0-9a-f]{64}$/u;
 const idempotencyPattern = /^[!-~]{16,128}$/u;
@@ -339,30 +323,7 @@ export function buildHelperDeploymentMaterial(
   initCode: Hex;
   initCodeHash: `0x${string}`;
 } {
-  validateHelperDeploymentRegistry(registry);
-  const adapter = helperDeploymentComponent("adapter", registry).address;
-  const permit2 = helperDeploymentComponent("permit2", registry).address;
-  const [tokenA, tokenB] = registry.tokens;
-  const args = [
-    owner,
-    adapter,
-    permit2,
-    tokenA.address,
-    tokenA.runtimeCodeHash,
-    tokenB.address,
-    tokenB.runtimeCodeHash,
-  ] as const;
-  const encodedArguments = encodeAbiParameters(helperConstructorTypes, args);
-  const initCode = encodeDeployData({
-    abi: [{ inputs: helperConstructorTypes, stateMutability: "nonpayable", type: "constructor" }],
-    args,
-    bytecode: registry.helperTemplate.creationCode,
-  });
-  return {
-    constructorArgumentsHash: `sha256:${viemSha256(encodedArguments).slice(2)}`,
-    initCode,
-    initCodeHash: keccak256(initCode),
-  };
+  return buildWalletHelperV1DeploymentMaterial(owner, registry);
 }
 
 function consensusNonce(views: readonly HelperDeploymentNonceView[]): string {
