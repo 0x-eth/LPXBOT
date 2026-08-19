@@ -209,15 +209,14 @@ test("P05-02 required evidence and sha256 inventory are complete", async () => {
 });
 
 test("P05-02 visual and chain evidence freezes the read-only boundary", async () => {
-  for (const [file, width] of [
-    ["position-helper-ready-chromium-desktop.png", 1440],
-    ["position-helper-ready-chromium-mobile.png", 390],
+  for (const [file, dimensions] of [
+    ["position-helper-ready-chromium-desktop.png", [1440, 734]],
+    ["position-helper-ready-chromium-mobile.png", [390, 1146]],
   ]) {
     const imagePath = path.join(ACCEPTANCE, "E-VIS", file);
     assert.ok((await stat(imagePath)).size > 8_000, file);
     const bytes = await readFile(imagePath);
-    assert.equal(bytes.readUInt32BE(16), width, file);
-    assert.ok(bytes.readUInt32BE(20) >= 844, file);
+    assert.deepEqual([bytes.readUInt32BE(16), bytes.readUInt32BE(20)], dimensions, file);
   }
   const evidence = await Promise.all(
     ["E-API.md", "E-CHAIN.md", "E-OPS.md", "E-RBAC.md", "E-REC.md", "E-SEC.md"].map((file) =>
