@@ -113,7 +113,10 @@ async function claim(
   return selected;
 }
 
-function receipt(claimValue: LocalPositionWorkClaim, block: number): LocalPositionReceiptObservation {
+function receipt(
+  claimValue: LocalPositionWorkClaim,
+  block: number,
+): LocalPositionReceiptObservation {
   const { plan, step } = claimValue.operation;
   const wallet0 = "500";
   const wallet1 = "700";
@@ -176,10 +179,14 @@ function receipt(claimValue: LocalPositionWorkClaim, block: number): LocalPositi
       tokensOwed0Before: plan.accounting.collectTotal0BaseUnit,
       tokensOwed1After: "0",
       tokensOwed1Before: plan.accounting.collectTotal1BaseUnit,
-      walletToken0After: (BigInt(wallet0) + BigInt(plan.accounting.collectTotal0BaseUnit)).toString(),
+      walletToken0After: (
+        BigInt(wallet0) + BigInt(plan.accounting.collectTotal0BaseUnit)
+      ).toString(),
       walletToken0Before: wallet0,
       walletToken0Delta: plan.accounting.collectTotal0BaseUnit,
-      walletToken1After: (BigInt(wallet1) + BigInt(plan.accounting.collectTotal1BaseUnit)).toString(),
+      walletToken1After: (
+        BigInt(wallet1) + BigInt(plan.accounting.collectTotal1BaseUnit)
+      ).toString(),
       walletToken1Before: wallet1,
       walletToken1Delta: plan.accounting.collectTotal1BaseUnit,
     };
@@ -309,7 +316,10 @@ describe("P05-07 PostgreSQL local position recovery", () => {
       blockHash: snapshot.block.hash,
       blockNumber: snapshot.block.number,
       headBlockNumber: "9",
-      manager: { address: snapshot.manager.address, runtimeCodeHash: snapshot.manager.runtimeCodeHash },
+      manager: {
+        address: snapshot.manager.address,
+        runtimeCodeHash: snapshot.manager.runtimeCodeHash,
+      },
       nonceViews: [
         { latest: "0", pending: "0", providerId: "anvil-a" },
         { latest: "0", pending: "0", providerId: "anvil-b" },
@@ -319,7 +329,11 @@ describe("P05-07 PostgreSQL local position recovery", () => {
     };
     const operationStore = new PostgresLocalPositionOperationStore(pool, { now: () => clock });
     const service = new LocalPositionExecutionService({
-      chain: { async inspect() { return structuredClone(inspection); } },
+      chain: {
+        async inspect() {
+          return structuredClone(inspection);
+        },
+      },
       now: () => clock,
       operations: operationStore,
       previews: new PostgresLocalPositionPreviewStore(pool),

@@ -430,7 +430,10 @@ export class PostgresLocalPositionOperationStore implements LocalPositionOperati
       if (!ledger) throw new LocalPositionExecutionError("LOCAL_POSITION_UNAVAILABLE", true);
       const providerNonce = consensusNonce(input.nonceViews);
       const nextNonce = ledger.next_nonce === null ? providerNonce : BigInt(ledger.next_nonce);
-      if (providerNonce !== BigInt(input.expectedNonce) || nextNonce !== BigInt(input.expectedNonce)) {
+      if (
+        providerNonce !== BigInt(input.expectedNonce) ||
+        nextNonce !== BigInt(input.expectedNonce)
+      ) {
         throw new LocalPositionExecutionError("NONCE_DRIFT");
       }
       let fencingToken = BigInt(ledger.fencing_token);
@@ -473,9 +476,7 @@ export class PostgresLocalPositionOperationStore implements LocalPositionOperati
         throw new LocalPositionExecutionError("LOCAL_POSITION_UNAVAILABLE", true);
       }
       const operationKind =
-        plan.action.kind === "collect-fees"
-          ? "position-collect-fees"
-          : "position-remove-liquidity";
+        plan.action.kind === "collect-fees" ? "position-collect-fees" : "position-remove-liquidity";
       await client.query(
         `INSERT INTO local_position_operations (
            operation_id, tenant_id, user_id, wallet_id, wallet_address, chain_id,

@@ -34,12 +34,7 @@ import {
 type Availability = "loading" | "ready" | "empty" | "closed" | "error";
 type ActionKind = "collect" | "remove";
 type PanelState =
-  | "ready"
-  | "expired"
-  | "previewing"
-  | "preview-ready"
-  | "submitting"
-  | LocalPositionExecutionState;
+  "ready" | "expired" | "previewing" | "preview-ready" | "submitting" | LocalPositionExecutionState;
 
 const platformLabels: Record<PositionPlatformId, string> = {
   1: "Uniswap V3",
@@ -403,7 +398,8 @@ function OperationView({
                       {transaction.transactionHash ? short(transaction.transactionHash) : "待广播"}
                     </code>
                     <small>
-                      {transaction.maxFeePerGasBaseUnit} / {transaction.maxPriorityFeePerGasBaseUnit}
+                      {transaction.maxFeePerGasBaseUnit} /{" "}
+                      {transaction.maxPriorityFeePerGasBaseUnit}
                     </small>
                   </li>
                 ))}
@@ -411,7 +407,9 @@ function OperationView({
             ) : (
               <p className="local-swap-step-waiting">等待前序 step</p>
             )}
-            {step.failureCode ? <p className="local-swap-step-failure">{step.failureCode}</p> : null}
+            {step.failureCode ? (
+              <p className="local-swap-step-failure">{step.failureCode}</p>
+            ) : null}
           </li>
         ))}
       </ol>
@@ -464,7 +462,11 @@ export function LocalPositionExecutionPanel({ wallet }: { wallet: CustodyWallet 
               : "",
         );
         setAvailability(next.items.length > 0 ? "ready" : "empty");
-        setState(next.items.some(({ expiresAt }) => Date.parse(expiresAt) > Date.now()) ? "ready" : "expired");
+        setState(
+          next.items.some(({ expiresAt }) => Date.parse(expiresAt) > Date.now())
+            ? "ready"
+            : "expired",
+        );
       } catch (failure) {
         if (signal?.aborted) return;
         if (
@@ -728,7 +730,8 @@ export function LocalPositionExecutionPanel({ wallet }: { wallet: CustodyWallet 
                 >
                   {page?.items.map((candidate) => (
                     <option key={snapshotKey(candidate)} value={snapshotKey(candidate)}>
-                      {platformLabels[candidate.position.platformId]} · #{candidate.position.tokenId}
+                      {platformLabels[candidate.position.platformId]} · #
+                      {candidate.position.tokenId}
                     </option>
                   ))}
                 </select>
@@ -759,7 +762,9 @@ export function LocalPositionExecutionPanel({ wallet }: { wallet: CustodyWallet 
               </div>
               <div>
                 <dt>Pool</dt>
-                <dd title={selected.position.pool.poolAddress ?? selected.position.pool.poolId ?? ""}>
+                <dd
+                  title={selected.position.pool.poolAddress ?? selected.position.pool.poolId ?? ""}
+                >
                   <code>
                     {short(
                       selected.position.pool.poolAddress ?? selected.position.pool.poolId ?? "0x",

@@ -254,10 +254,8 @@ function parseSnapshot(value: unknown, status: number): LocalPositionCurrentSnap
   const platformId = value.position.platformId as PositionPlatformId;
   const v3 = platformId === 1 || platformId === 2;
   if (
-    (v3 &&
-      (!address(value.position.pool.poolAddress) || value.position.pool.poolId !== null)) ||
-    (!v3 &&
-      (value.position.pool.poolAddress !== null || !hash(value.position.pool.poolId))) ||
+    (v3 && (!address(value.position.pool.poolAddress) || value.position.pool.poolId !== null)) ||
+    (!v3 && (value.position.pool.poolAddress !== null || !hash(value.position.pool.poolId))) ||
     tokens[0]?.address !== value.position.pool.token0 ||
     tokens[1]?.address !== value.position.pool.token1 ||
     BigInt(value.position.ticks.lower) >= BigInt(value.position.ticks.upper) ||
@@ -458,7 +456,11 @@ function transaction(value: unknown, status: number): LocalPositionStepTransacti
   return structuredClone(value) as unknown as LocalPositionStepTransactionView;
 }
 
-function operationStep(value: unknown, status: number, ordinal: number): LocalPositionOperationStep {
+function operationStep(
+  value: unknown,
+  status: number,
+  ordinal: number,
+): LocalPositionOperationStep {
   if (
     !record(value) ||
     !exact(value, [
@@ -650,10 +652,7 @@ export class LocalPositionExecutionClient {
     return operation;
   }
 
-  async previewRemove(
-    request: LocalPositionRemoveLiquidityPreviewRequest,
-    signal?: AbortSignal,
-  ) {
+  async previewRemove(request: LocalPositionRemoveLiquidityPreviewRequest, signal?: AbortSignal) {
     const response = await this.#request("/api/positions/remove-liquidity/preview", {
       body: JSON.stringify({
         burnIfEmpty: request.burnIfEmpty,

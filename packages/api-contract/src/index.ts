@@ -1468,8 +1468,7 @@ export interface LocalPositionRemoveLiquidityPreviewRequest {
   walletId: string;
 }
 
-export interface LocalPositionRemoveLiquidityRequest
-  extends LocalPositionRemoveLiquidityPreviewRequest {
+export interface LocalPositionRemoveLiquidityRequest extends LocalPositionRemoveLiquidityPreviewRequest {
   previewDigest: `sha256:${string}`;
   previewToken: string;
 }
@@ -1503,8 +1502,7 @@ export interface LocalPositionExecutionPreviewBase {
 }
 
 export interface LocalPositionCollectFeesPreview
-  extends LocalPositionCollectFeesPreviewRequest,
-    LocalPositionExecutionPreviewBase {
+  extends LocalPositionCollectFeesPreviewRequest, LocalPositionExecutionPreviewBase {
   burnIfEmpty: false;
   operationKind: "position-collect-fees";
   percent: null;
@@ -1512,24 +1510,19 @@ export interface LocalPositionCollectFeesPreview
 }
 
 export interface LocalPositionRemoveLiquidityPreview
-  extends LocalPositionRemoveLiquidityPreviewRequest,
-    LocalPositionExecutionPreviewBase {
+  extends LocalPositionRemoveLiquidityPreviewRequest, LocalPositionExecutionPreviewBase {
   operationKind: "position-remove-liquidity";
 }
 
 export type LocalPositionExecutionPreview =
-  | LocalPositionCollectFeesPreview
-  | LocalPositionRemoveLiquidityPreview;
+  LocalPositionCollectFeesPreview | LocalPositionRemoveLiquidityPreview;
 
 export interface LocalPositionStepTransactionView {
   active: boolean;
   generation: number;
   maxFeePerGasBaseUnit: string;
   maxPriorityFeePerGasBaseUnit: string;
-  state: Exclude<
-    LocalPositionStepState,
-    "blocked" | "queued" | "skipped" | "reconciling"
-  >;
+  state: Exclude<LocalPositionStepState, "blocked" | "queued" | "skipped" | "reconciling">;
   transactionHash: `0x${string}` | null;
 }
 
@@ -1567,9 +1560,7 @@ export interface LocalPositionExecutionOperation {
 }
 
 export type ChainOperationView =
-  | HelperDeploymentOperation
-  | LocalPositionExecutionOperation
-  | LocalSwapExecutionOperation;
+  HelperDeploymentOperation | LocalPositionExecutionOperation | LocalSwapExecutionOperation;
 
 export const localSwapExecutionContracts = Object.freeze({
   execute: Object.freeze({ method: "POST", path: "/api/swap/execute" }),

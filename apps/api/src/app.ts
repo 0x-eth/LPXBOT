@@ -1041,8 +1041,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
   }
   const localPositionExecutionChainIds = new Set(options.localPositionExecutionChainIds ?? []);
   if (
-    localPositionExecutionChainIds.size !==
-      (options.localPositionExecutionChainIds?.length ?? 0) ||
+    localPositionExecutionChainIds.size !== (options.localPositionExecutionChainIds?.length ?? 0) ||
     [...localPositionExecutionChainIds].some((chainId) => chainId !== 31_337)
   ) {
     throw new RangeError("Local position execution chain IDs must contain only 31337");

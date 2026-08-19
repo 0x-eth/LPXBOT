@@ -129,7 +129,11 @@ async function fixture(executionEnabled = true) {
   };
   let sequence = 20;
   const localPositionExecutions = new LocalPositionExecutionService({
-    chain: { async inspect() { return structuredClone(inspection); } },
+    chain: {
+      async inspect() {
+        return structuredClone(inspection);
+      },
+    },
     now: () => now,
     operations: new MemoryLocalPositionOperationStore({
       now: () => now,
@@ -141,7 +145,11 @@ async function fixture(executionEnabled = true) {
   });
   const app = buildApiApp({
     chainPolicyStore: new Policies(),
-    freshReauthentication: { async verify({ proof }) { return proof === "fresh-proof"; } },
+    freshReauthentication: {
+      async verify({ proof }) {
+        return proof === "fresh-proof";
+      },
+    },
     localPositionExecutionChainIds: executionEnabled ? [31_337] : [],
     localPositionExecutions,
     maintenance: { enabled: false, message: null, until: null },

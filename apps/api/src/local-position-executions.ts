@@ -231,9 +231,7 @@ export interface StoredLocalPositionPreview {
   createdAt: Date;
   facts: PreviewFacts;
   previewDigest: `sha256:${string}`;
-  request:
-    | LocalPositionCollectFeesPreviewRequest
-    | LocalPositionRemoveLiquidityPreviewRequest;
+  request: LocalPositionCollectFeesPreviewRequest | LocalPositionRemoveLiquidityPreviewRequest;
   tenantId: string;
   tokenDigest: string;
   userId: string;
@@ -406,9 +404,7 @@ export class MemoryLocalPositionOperationStore implements LocalPositionOperation
       managerAddress: plan.manager.address,
       operationId,
       operationKind:
-        plan.action.kind === "collect-fees"
-          ? "position-collect-fees"
-          : "position-remove-liquidity",
+        plan.action.kind === "collect-fees" ? "position-collect-fees" : "position-remove-liquidity",
       percent: plan.action.percent,
       plan,
       planDigest: plan.planDigest,
@@ -903,9 +899,7 @@ export class LocalPositionExecutionService implements LocalPositionExecutionAppl
 
   async #preview(
     input: {
-      request:
-        | LocalPositionCollectFeesPreviewRequest
-        | LocalPositionRemoveLiquidityPreviewRequest;
+      request: LocalPositionCollectFeesPreviewRequest | LocalPositionRemoveLiquidityPreviewRequest;
       tenantId: string;
       userId: string;
       wallet: CustodyWallet;
@@ -1070,9 +1064,7 @@ export class LocalPositionExecutionService implements LocalPositionExecutionAppl
 
   #withoutOpaque(
     request: LocalPositionCollectFeesRequest | LocalPositionRemoveLiquidityRequest,
-  ):
-    | LocalPositionCollectFeesPreviewRequest
-    | LocalPositionRemoveLiquidityPreviewRequest {
+  ): LocalPositionCollectFeesPreviewRequest | LocalPositionRemoveLiquidityPreviewRequest {
     const { previewDigest: _previewDigest, previewToken: _previewToken, ...result } = request;
     return result;
   }
@@ -1184,9 +1176,7 @@ export class LocalPositionExecutionService implements LocalPositionExecutionAppl
   }
 
   #publicPreview(
-    request:
-      | LocalPositionCollectFeesPreviewRequest
-      | LocalPositionRemoveLiquidityPreviewRequest,
+    request: LocalPositionCollectFeesPreviewRequest | LocalPositionRemoveLiquidityPreviewRequest,
     snapshot: LocalPositionSnapshot,
     facts: PreviewFacts,
     previewDigest: `sha256:${string}`,
