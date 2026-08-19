@@ -448,7 +448,6 @@ contract WalletHelperV1Test {
 
     function _helper(address owner, address adapterAddress, address firstToken, address secondToken)
         private
-        view
         returns (WalletHelperV1)
     {
         return new WalletHelperV1(
