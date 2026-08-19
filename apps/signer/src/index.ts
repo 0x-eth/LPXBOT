@@ -55,6 +55,14 @@ export {
   PostgresLocalSwapStepPlanAuthorizer,
   ViemLocalSwapPlanVerifier,
 } from "./postgres-local-swap-plan-authorizer.js";
+export {
+  PostgresLocalPositionStepPlanAuthorizer,
+  ViemLocalPositionPlanVerifier,
+} from "./postgres-local-position-plan-authorizer.js";
+export type {
+  LocalPositionPlanChainVerifier,
+  LocalPositionStepChainVerification,
+} from "./postgres-local-position-plan-authorizer.js";
 export type {
   LocalSwapPermit2ChainVerification,
   LocalSwapPlanChainVerifier,
