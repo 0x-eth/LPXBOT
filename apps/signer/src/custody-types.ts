@@ -15,6 +15,7 @@ import type {
   LocalSwapExecutionPlan,
   LocalSwapPermit2SigningPayload,
 } from "@lpbot/domain/local-swap-execution";
+import type { LocalPositionExecutionPlan } from "@lpbot/domain/local-position-execution";
 
 export type CustodyAuditAction = "wallet.generate" | "wallet.import";
 
@@ -122,6 +123,19 @@ export interface LocalSwapPermit2Authorizer {
   }): Promise<boolean>;
 }
 
+export interface LocalPositionStepPlanAuthorizer {
+  authorize(input: {
+    generation: number;
+    maxFeePerGasBaseUnit: string;
+    maxPriorityFeePerGasBaseUnit: string;
+    plan: LocalPositionExecutionPlan;
+    planDigest: `sha256:${string}`;
+    stepId: string;
+    tenantId: string;
+    userId: string;
+  }): Promise<boolean>;
+}
+
 export interface RawTransactionDeliveryResult {
   deliveryId: string;
   status: "accepted" | "already-known";
@@ -147,6 +161,13 @@ export interface HelperDeploymentSigningResult extends RawTransactionDeliveryRes
 }
 
 export interface LocalSwapStepSigningResult extends RawTransactionDeliveryResult {
+  generation: number;
+  planDigest: `sha256:${string}`;
+  stepId: string;
+  transactionHash: `0x${string}`;
+}
+
+export interface LocalPositionStepSigningResult extends RawTransactionDeliveryResult {
   generation: number;
   planDigest: `sha256:${string}`;
   stepId: string;

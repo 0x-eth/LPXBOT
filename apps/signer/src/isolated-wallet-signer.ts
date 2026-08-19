@@ -5,6 +5,7 @@ import {
   buildWalletHelperV1DeploymentMaterial,
   helperDeploymentComponent,
   P05_HELPER_DEPLOYMENT_REGISTRY,
+  P05_LOCAL_POSITION_EXECUTION_REGISTRY,
 } from "@lpbot/chain-registry";
 import {
   helperDeploymentPlanDigest,
@@ -17,6 +18,10 @@ import {
   type LocalSwapExecutionPlan,
   type LocalSwapPermit2SigningPayload,
 } from "@lpbot/domain/local-swap-execution";
+import {
+  localPositionExecutionPlanDigest,
+  type LocalPositionExecutionPlan,
+} from "@lpbot/domain/local-position-execution";
 import {
   validateWalletTransferPlan,
   walletTransferPlanDigest,
@@ -33,6 +38,7 @@ import type {
   HelperDeploymentSigningResult,
   LocalSwapPermit2SigningResult,
   LocalSwapStepSigningResult,
+  LocalPositionStepSigningResult,
 } from "./custody-types.js";
 import type { KmsClient } from "./kms.js";
 import {
@@ -61,6 +67,7 @@ export const signerCapabilities = [
   "plan-bound-helper-deployment-signing",
   "plan-bound-local-swap-step-signing",
   "plan-bound-local-permit2-signing",
+  "plan-bound-local-position-step-signing",
 ] as const;
 
 export interface SealedWalletDraft {
@@ -522,6 +529,125 @@ export class IsolatedWalletSigner {
         !/^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u.test(delivered.deliveryId)
       ) {
         throw new SignerError("LOCAL_SWAP_DELIVERY_UNAVAILABLE", true);
+      }
+      return {
+        ...delivered,
+        generation: input.generation,
+        planDigest: input.planDigest,
+        stepId: input.stepId,
+        transactionHash,
+      };
+    } finally {
+      rawBytes?.fill(0);
+      this.#zeroize("private-key", opened.privateKey);
+      this.#zeroize("dek", opened.dek);
+    }
+  }
+
+  async signAndDeliverLocalPositionStep(input: {
+    delivery: RawTransactionDelivery;
+    envelope: CustodyEnvelope;
+    generation: number;
+    maxFeePerGasBaseUnit: string;
+    maxPriorityFeePerGasBaseUnit: string;
+    now?: Date;
+    passwordKek?: Uint8Array | undefined;
+    plan: LocalPositionExecutionPlan;
+    planDigest: `sha256:${string}`;
+    stepId: string;
+    wallet: StoredCustodyWallet;
+  }): Promise<LocalPositionStepSigningResult> {
+    const now = input.now ?? new Date();
+    const step = input.plan.steps.find(({ stepId }) => stepId === input.stepId);
+    const maxFee = /^(?:0|[1-9][0-9]*)$/u.test(input.maxFeePerGasBaseUnit)
+      ? BigInt(input.maxFeePerGasBaseUnit)
+      : 0n;
+    const priority = /^(?:0|[1-9][0-9]*)$/u.test(input.maxPriorityFeePerGasBaseUnit)
+      ? BigInt(input.maxPriorityFeePerGasBaseUnit)
+      : -1n;
+    const registry = P05_LOCAL_POSITION_EXECUTION_REGISTRY;
+    const expectedSelector = step
+      ? step.kind === "decrease"
+        ? registry.manager.selectors.decreaseLiquidity
+        : registry.manager.selectors[step.kind]
+      : null;
+    if (
+      !step ||
+      input.plan.deadline <= now.toISOString() ||
+      input.plan.chainId !== 31_337 ||
+      input.plan.planDigest !== input.planDigest ||
+      localPositionExecutionPlanDigest(input.plan) !== input.planDigest ||
+      input.plan.registry.version !== registry.registryVersion ||
+      input.plan.registry.digest !== registry.registryDigest ||
+      input.plan.serviceFeeBps !== 0 ||
+      input.plan.wallet.walletId !== input.wallet.walletId ||
+      input.plan.wallet.address !== input.wallet.addressLower ||
+      input.plan.snapshot.position.owner !== input.wallet.addressLower ||
+      input.plan.manager.address !== registry.manager.address ||
+      input.plan.manager.abiHash !== registry.manager.abiHash ||
+      input.plan.manager.runtimeCodeHash !== registry.manager.runtimeCodeHash ||
+      input.wallet.lockStatus !== "ready" ||
+      !Number.isSafeInteger(input.generation) ||
+      input.generation < 0 ||
+      maxFee <= 0n ||
+      priority < 0n ||
+      priority > maxFee ||
+      maxFee > BigInt(step.feeLimit.maxFeePerGasBaseUnit) ||
+      priority > BigInt(step.feeLimit.maxPriorityFeePerGasBaseUnit) ||
+      step.transaction.to !== registry.manager.address ||
+      expectedSelector === null ||
+      !step.transaction.data.startsWith(expectedSelector)
+    ) {
+      throw new SignerError(
+        input.plan.deadline <= now.toISOString()
+          ? "LOCAL_POSITION_PLAN_EXPIRED"
+          : "LOCAL_POSITION_PLAN_REJECTED",
+      );
+    }
+    const nonce = Number(step.nonce);
+    if (!Number.isSafeInteger(nonce) || nonce < 0) {
+      throw new SignerError("LOCAL_POSITION_PLAN_REJECTED");
+    }
+    const opened = await this.#openMaterial({
+      envelope: input.envelope,
+      passwordKek: input.passwordKek,
+      wallet: input.wallet,
+    });
+    let rawBytes: Buffer | null = null;
+    try {
+      const account = privateKeyToAccount(
+        `0x${Buffer.from(opened.privateKey).toString("hex")}` as Hex,
+      );
+      const rawTransaction = await account.signTransaction({
+        chainId: 31_337,
+        data: step.transaction.data,
+        gas: BigInt(step.feeLimit.gasLimit),
+        maxFeePerGas: maxFee,
+        maxPriorityFeePerGas: priority,
+        nonce,
+        to: step.transaction.to,
+        type: "eip1559",
+        value: 0n,
+      });
+      const transactionHash = keccak256(rawTransaction);
+      rawBytes = Buffer.from(rawTransaction.slice(2), "hex");
+      let delivered;
+      try {
+        delivered = await input.delivery.deliver({
+          chainId: 31_337,
+          operationId: input.plan.operationId,
+          rawTransaction: rawBytes,
+          transactionHash,
+        });
+      } catch {
+        throw new SignerError("LOCAL_POSITION_DELIVERY_UNAVAILABLE", true);
+      }
+      if (
+        (delivered.status !== "accepted" && delivered.status !== "already-known") ||
+        typeof delivered.deliveryId !== "string" ||
+        !/^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u.test(delivered.deliveryId)
+      ) {
+        throw new SignerError("LOCAL_POSITION_DELIVERY_UNAVAILABLE", true);
       }
       return {
         ...delivered,
