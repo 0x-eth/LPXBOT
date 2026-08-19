@@ -58,6 +58,7 @@ export {
 export {
   BscSwapQuoteAdapter,
   computeSwapQuoteDigest,
+  createSwapQuoteProviderFromEnv,
   DeterministicSwapQuoteProvider,
   isSwapQuoteCurrent,
   SwapQuoteAdapterError,
@@ -69,6 +70,7 @@ export type {
   SwapQuoteAdapterFailureReason,
   SwapQuoteInput,
   SwapQuoteProvider,
+  SwapQuoteProviderEnvironment,
   SwapQuoteProviderSnapshot,
 } from "./swap-quote.js";
 export {

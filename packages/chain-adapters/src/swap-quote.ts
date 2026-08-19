@@ -49,6 +49,10 @@ export interface SwapQuoteProvider {
   quote(input: SwapQuoteInput, signal: AbortSignal): Promise<SwapQuoteProviderSnapshot>;
 }
 
+export type SwapQuoteProviderEnvironment = Readonly<
+  Partial<Record<"LPXBOT_SWAP_QUOTE_PROVIDER" | "NODE_ENV", string | undefined>>
+>;
+
 export interface SwapQuote {
   amountInBaseUnit: string;
   amountOutBaseUnit: string;
@@ -407,4 +411,18 @@ export class DeterministicSwapQuoteProvider implements SwapQuoteProvider {
       spender: route.spender,
     };
   }
+}
+
+export function createSwapQuoteProviderFromEnv(
+  environment: SwapQuoteProviderEnvironment = process.env,
+): SwapQuoteProvider | null {
+  const provider = environment.LPXBOT_SWAP_QUOTE_PROVIDER?.trim();
+  if (!provider) return null;
+  if (provider !== "deterministic-fixture") {
+    throw new Error("SWAP_QUOTE_PROVIDER_UNSUPPORTED");
+  }
+  if (environment.NODE_ENV !== "test") {
+    throw new Error("SWAP_QUOTE_PROVIDER_FORBIDDEN");
+  }
+  return new DeterministicSwapQuoteProvider();
 }

@@ -1,5 +1,6 @@
 import {
   BscSwapQuoteAdapter,
+  createSwapQuoteProviderFromEnv,
   DeterministicSwapQuoteProvider,
   SwapQuoteAdapterError,
   isSwapQuoteCurrent,
@@ -43,6 +44,28 @@ function adapter(provider: SwapQuoteProvider = new DeterministicSwapQuoteProvide
 }
 
 describe("P05-03 controlled BSC swap quote adapter", () => {
+  it("keeps deterministic fixtures test-only and production unconfigured fail-closed", () => {
+    expect(createSwapQuoteProviderFromEnv({ NODE_ENV: "production" })).toBeNull();
+    expect(
+      createSwapQuoteProviderFromEnv({
+        LPXBOT_SWAP_QUOTE_PROVIDER: "deterministic-fixture",
+        NODE_ENV: "test",
+      }),
+    ).toBeInstanceOf(DeterministicSwapQuoteProvider);
+    expect(() =>
+      createSwapQuoteProviderFromEnv({
+        LPXBOT_SWAP_QUOTE_PROVIDER: "deterministic-fixture",
+        NODE_ENV: "production",
+      }),
+    ).toThrow(/SWAP_QUOTE_PROVIDER_FORBIDDEN/u);
+    expect(() =>
+      createSwapQuoteProviderFromEnv({
+        LPXBOT_SWAP_QUOTE_PROVIDER: "unknown",
+        NODE_ENV: "test",
+      }),
+    ).toThrow(/SWAP_QUOTE_PROVIDER_UNSUPPORTED/u);
+  });
+
   it("rejects non-canonical base units, equal tokens, slippage outside 0..500, and unknown tokens", async () => {
     const quoteAdapter = adapter();
     for (const invalid of [
