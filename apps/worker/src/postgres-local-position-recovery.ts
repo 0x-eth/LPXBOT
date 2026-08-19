@@ -40,11 +40,11 @@ interface EventRow extends QueryResultRow {
 
 interface WorkRow extends QueryResultRow {
   active_transaction_id: string | null;
-  approval_succeeded: boolean;
   operation_id: string;
   operation_state: LocalPositionStepWorkOperation["operationState"];
   plan_digest: `sha256:${string}`;
   plan_payload: LocalPositionExecutionPlan;
+  prior_succeeded_step_ids: string[];
   reauthenticated_session_id: string;
   session_id: string;
   step_id: string;
@@ -195,7 +195,7 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
       !Number.isSafeInteger(this.#confirmedPollMilliseconds) ||
       this.#confirmedPollMilliseconds < 1_000
     ) {
-      throw new RangeError("Local Swap recovery repository configuration is invalid");
+      throw new RangeError("Local Position recovery repository configuration is invalid");
     }
   }
 
@@ -246,11 +246,13 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
                 o.state AS operation_state, o.plan_digest, o.plan_payload,
                 o.reauthenticated_session_id::text, o.reauthenticated_session_id::text AS session_id,
                 s.step_id::text, s.state AS step_state, s.active_transaction_id::text,
-                EXISTS (
-                  SELECT 1 FROM local_position_operation_steps approved
-                   WHERE approved.operation_id = o.operation_id
-                     AND approved.step_kind = 'approve' AND approved.state = 'succeeded'
-                ) AS approval_succeeded
+                ARRAY(
+                  SELECT prior.step_id::text
+                    FROM local_position_operation_steps prior
+                   WHERE prior.operation_id = o.operation_id
+                     AND prior.ordinal < s.ordinal AND prior.state = 'succeeded'
+                   ORDER BY prior.ordinal
+                ) AS prior_succeeded_step_ids
            FROM local_position_operation_outbox e
            JOIN local_position_operations o ON o.operation_id = e.aggregate_id
            JOIN local_position_operation_steps s ON s.step_id = e.step_id
@@ -296,11 +298,11 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
           activeTransaction:
             transactions.find(({ transactionId }) => transactionId === row.active_transaction_id) ??
             null,
-          approvalSucceeded: row.approval_succeeded,
           operationId: row.operation_id,
           operationState: row.operation_state,
           plan,
           planDigest: row.plan_digest,
+          priorSucceededStepIds: row.prior_succeeded_step_ids,
           reauthenticatedSessionId: row.reauthenticated_session_id,
           step,
           stepState: row.step_state,
@@ -377,21 +379,12 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
       );
       await client.query(
         `UPDATE local_position_operations
-            SET state = $2,
-                failure_code = CASE WHEN $2 = 'reconciling' THEN failure_code ELSE NULL END,
-                reconciliation_reason = CASE WHEN $2 = 'reconciling'
-                  THEN 'ALLOWANCE_CLEANUP_REQUIRED' ELSE NULL END,
-                updated_at = $3
+            SET state = 'broadcast', failure_code = NULL,
+                reconciliation_reason = NULL, updated_at = $2
           WHERE operation_id = $1`,
-        [
-          operation.operation_id,
-          step.step_kind === "cleanup" ? "reconciling" : "broadcast",
-          input.deliveredAt,
-        ],
+        [operation.operation_id, input.deliveredAt],
       );
-      if (step.step_kind !== "cleanup") {
-        await this.#resolveReconciliation(client, operation.operation_id, input.deliveredAt);
-      }
+      await this.#resolveReconciliation(client, operation.operation_id, input.deliveredAt);
       await this.#audit(
         client,
         operation,
@@ -406,8 +399,8 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
         client,
         operation,
         step.step_id,
-        step.step_kind === "cleanup" ? "local-position.reconciling" : "local-position.state-changed",
-        step.step_kind === "cleanup" ? "reconciling" : "broadcast",
+        "local-position.state-changed",
+        "broadcast",
         input.deliveredAt,
       );
     });
@@ -430,9 +423,10 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
         return;
       }
       let observedTransactionId = step.active_transaction_id;
+      let evidenceId: string | null = null;
       if (input.decision.kind === "receipt") {
         observedTransactionId = input.decision.transactionId;
-        await this.#appendReceipt(
+        evidenceId = await this.#appendReceipt(
           client,
           operation,
           step,
@@ -488,11 +482,15 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
         return;
       }
       if (!observedTransactionId) throw new LocalPositionWorkerError("ACTIVE_TRANSACTION_MISSING");
+      if (!evidenceId) {
+        throw new LocalPositionWorkerError("LOCAL_POSITION_RECOVERY_EVIDENCE_INVALID");
+      }
       await this.#applyReceiptDecision(
         client,
         operation,
         step,
         observedTransactionId,
+        evidenceId,
         input.decision,
         input.observedAt,
       );
@@ -531,58 +529,29 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
           WHERE event_id = $1`,
         [input.claim.outboxEventId, input.code.slice(0, 120)],
       );
-      if (
-        step.step_kind === "swap" &&
-        input.claim.operation.approvalSucceeded &&
-        step.state === "queued"
-      ) {
-        await this.#queueCleanup(client, operation, step, input.code, input.failedAt);
-        return;
-      }
-      const cleanupOutstanding =
-        input.claim.operation.approvalSucceeded || step.step_kind === "cleanup";
-      const target = cleanupOutstanding ? "reconciling" : "failed";
       await client.query(
         `UPDATE local_position_operation_steps
-            SET state = $2, failure_code = $3, updated_at = $4 WHERE step_id = $1`,
-        [step.step_id, target, input.code.slice(0, 120), input.failedAt],
+            SET state = 'failed', failure_code = $2, updated_at = $3 WHERE step_id = $1`,
+        [step.step_id, input.code.slice(0, 120), input.failedAt],
       );
       await client.query(
         `UPDATE local_position_operations
-            SET state = $2,
-                failure_code = CASE WHEN $2 = 'failed' THEN $3 ELSE failure_code END,
-                reconciliation_reason = CASE WHEN $2 = 'reconciling' THEN $3 ELSE NULL END,
-                updated_at = $4 WHERE operation_id = $1`,
-        [operation.operation_id, target, input.code.slice(0, 120), input.failedAt],
+            SET state = 'failed', failure_code = $2,
+                reconciliation_reason = NULL, updated_at = $3 WHERE operation_id = $1`,
+        [operation.operation_id, input.code.slice(0, 120), input.failedAt],
       );
-      if (target === "reconciling") {
-        await this.#openReconciliation(
-          client,
-          operation.operation_id,
-          step.step_id,
-          input.code,
-          input.failedAt,
-        );
-        await this.#enqueue(
-          client,
-          operation,
-          step.step_id,
-          "local-position.reconciling",
-          "reconciling",
-          new Date(input.failedAt.getTime() + this.#pollMilliseconds),
-        );
-      } else if (step.state === "queued") {
-        await this.#releaseUnusedNonces(client, operation, input.failedAt);
+      if (step.state === "queued" && !step.active_transaction_id) {
+        await this.#releaseUnusedNonces(client, operation, step, input.failedAt);
       }
       await this.#audit(
         client,
         operation,
         stepFromPlan(operation.plan_payload, step.step_id),
-        `position.${target}`,
+        "position.failed",
         input.code,
         input.failedAt,
         null,
-        target === "reconciling",
+        false,
       );
     });
   }
@@ -746,16 +715,10 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
       );
       await client.query(
         `UPDATE local_position_operations
-            SET state = $2,
-                reconciliation_reason = CASE WHEN $2 = 'reconciling'
-                  THEN 'ALLOWANCE_CLEANUP_REQUIRED' ELSE NULL END,
-                updated_at = $3
+            SET state = 'broadcast', reconciliation_reason = NULL,
+                updated_at = $2
           WHERE operation_id = $1`,
-        [
-          operation.operation_id,
-          step.step_kind === "cleanup" ? "reconciling" : "broadcast",
-          input.deliveredAt,
-        ],
+        [operation.operation_id, input.deliveredAt],
       );
       await client.query(
         `UPDATE local_position_operation_outbox
@@ -777,8 +740,8 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
         client,
         operation,
         step.step_id,
-        step.step_kind === "cleanup" ? "local-position.reconciling" : "local-position.state-changed",
-        step.step_kind === "cleanup" ? "reconciling" : "broadcast",
+        "local-position.state-changed",
+        "broadcast",
         input.deliveredAt,
       );
     });
@@ -874,6 +837,7 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
     operation: LockedOperationRow,
     step: LockedStepRow,
     transactionId: string,
+    evidenceId: string,
     decision: Extract<LocalPositionObservationDecision, { kind: "receipt" }>,
     observedAt: Date,
   ): Promise<void> {
@@ -900,9 +864,7 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
     if (decision.stepState === "confirmed") {
       await client.query(
         `UPDATE local_position_operations
-            SET state = $2,
-                reconciliation_reason = CASE WHEN $2 = 'reconciling'
-                  THEN 'ALLOWANCE_CLEANUP_REQUIRED' ELSE reconciliation_reason END,
+            SET state = $2, reconciliation_reason = NULL,
                 updated_at = $3 WHERE operation_id = $1`,
         [operation.operation_id, decision.operationState, observedAt],
       );
@@ -911,8 +873,9 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
     }
     if (decision.next === "advance") {
       await this.#recordConfirmedNonce(client, operation.wallet_id, planStep.nonce, observedAt);
+      await this.#recordProceeds(client, operation, planStep, evidenceId, observedAt);
       const nextStep = operation.plan_payload.steps[planStep.ordinal + 1];
-      if (!nextStep || nextStep.kind === "cleanup") {
+      if (!nextStep) {
         throw new LocalPositionWorkerError("LOCAL_POSITION_RECOVERY_PLAN_INVALID");
       }
       await client.query(
@@ -936,12 +899,7 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
       );
     } else if (decision.next === "complete-success") {
       await this.#recordConfirmedNonce(client, operation.wallet_id, planStep.nonce, observedAt);
-      await this.#releaseSkippedCleanupNonce(client, operation, observedAt);
-      await client.query(
-        `UPDATE local_position_operation_steps SET state = 'skipped', updated_at = $2
-          WHERE operation_id = $1 AND step_kind = 'cleanup' AND state = 'blocked'`,
-        [operation.operation_id, observedAt],
-      );
+      await this.#recordProceeds(client, operation, planStep, evidenceId, observedAt);
       await client.query(
         `UPDATE local_position_operations
             SET state = 'succeeded', failure_code = NULL, reconciliation_reason = NULL,
@@ -949,15 +907,7 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
         [operation.operation_id, observedAt],
       );
       await this.#resolveReconciliation(client, operation.operation_id, observedAt);
-    } else if (decision.next === "cleanup-required") {
-      await this.#recordConfirmedNonce(client, operation.wallet_id, planStep.nonce, observedAt);
-      await this.#queueCleanup(
-        client,
-        operation,
-        step,
-        decision.failureCode ?? decision.reason ?? "SWAP_FAILED",
-        observedAt,
-      );
+      await this.#completePricingWithdrawal(client, operation, observedAt);
     } else if (decision.next === "complete-failed") {
       await this.#recordConfirmedNonce(client, operation.wallet_id, planStep.nonce, observedAt);
       await client.query(
@@ -966,7 +916,7 @@ export class PostgresLocalPositionRecoveryRepository implements LocalPositionWor
                 updated_at = $3 WHERE operation_id = $1`,
         [
           operation.operation_id,
-          decision.failureCode ?? operation.failure_code ?? "SWAP_FAILED",
+          decision.failureCode ?? operation.failure_code ?? "LOCAL_POSITION_STEP_FAILED",
           observedAt,
         ],
       );
