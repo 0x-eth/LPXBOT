@@ -469,7 +469,7 @@ test("quotes without execution and maintains the observed pricing ledger", async
   if (captureEvidence) {
     await page.screenshot({
       fullPage: true,
-      path: `artifacts/acceptance/P05-03/ui-${testInfo.project.name}.png`,
+      path: `artifacts/acceptance/P05-03/E-VIS/swap-pricing-${testInfo.project.name}.png`,
     });
   }
 });
