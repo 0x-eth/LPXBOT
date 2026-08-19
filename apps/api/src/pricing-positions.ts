@@ -176,12 +176,12 @@ export interface PricingPositionOutboxEvent {
   userId: string;
 }
 
-interface PricingPositionScope {
+export interface PricingPositionScope {
   tenantId: string;
   userId: string;
 }
 
-interface PricingPositionStoreImportInput extends PricingPositionScope {
+export interface PricingPositionStoreImportInput extends PricingPositionScope {
   costBasis: PricingPositionCostBasis;
   now: Date;
   observation: PricingPositionObservation;
@@ -190,7 +190,7 @@ interface PricingPositionStoreImportInput extends PricingPositionScope {
   walletId: string;
 }
 
-interface PricingPositionStoreTransitionInput extends PricingPositionScope {
+export interface PricingPositionStoreTransitionInput extends PricingPositionScope {
   expectedRevision: number;
   now: Date;
   observation: PricingPositionObservation;

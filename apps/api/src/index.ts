@@ -297,14 +297,20 @@ export {
   PricingPositionService,
   PricingPositionStreamService,
 } from "./pricing-positions.js";
+export { PostgresPricingPositionStore } from "./postgres-pricing-position-store.js";
+export type { PostgresPricingPositionStoreOptions } from "./postgres-pricing-position-store.js";
+export { PostgresSwapQuoteSnapshotStore } from "./postgres-swap-quote-snapshot-store.js";
 export type {
   PricingPositionApplication,
   PricingPositionErrorCode,
   PricingPositionEventStore,
   PricingPositionOutboxEvent,
+  PricingPositionScope,
   PricingPositionSource,
   PricingPositionSourceSnapshot,
   PricingPositionStore,
+  PricingPositionStoreImportInput,
+  PricingPositionStoreTransitionInput,
   PricingPositionStreamOpen,
   PricingPositionStreamProvider,
   PricingPositionStreamSnapshot,
