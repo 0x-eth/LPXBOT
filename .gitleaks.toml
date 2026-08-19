@@ -89,3 +89,20 @@ regexes = [
   '''^replacement-signing-key-material-0002$''',
   '''^fixture-signing-secret-material-0001$''',
 ]
+
+[[rules.allowlists]]
+description = "P05-02 position scanner tests use this exact non-secret HMAC fixture value for cursor binding and tamper cases."
+condition = "AND"
+paths = ['''^tests/p05-position-scanner\.test\.ts$''']
+regexTarget = "secret"
+regexes = ['''^p05-position-cursor-fixture-secret-at-least-32-bytes$''']
+
+[[rules.allowlists]]
+description = "P05-02 residual tests use these exact public idempotency fixture values; they are request identifiers, not credentials."
+condition = "AND"
+paths = ['''^tests/(?:p05-helper-residual-model|p05-helper-api)\.test\.ts$''']
+regexTarget = "secret"
+regexes = [
+  '''^residual-fixture-001$''',
+  '''^fixture-residual-00[12]$''',
+]
