@@ -301,6 +301,25 @@ export type {
   WalletHelperReadStore,
   WalletHelperStatusInput,
 } from "./helper-read-model.js";
+export {
+  ERC20_RESIDUAL_READ_ABI,
+  ERC721_RESIDUAL_READ_ABI,
+  HelperResidualCursorError,
+  HelperResidualReadError,
+  WalletHelperResidualService,
+} from "./helper-residual-model.js";
+export type {
+  HelperKnownNft,
+  HelperPositionInventory,
+  HelperPositionInventorySource,
+  HelperResidualListInput,
+  HelperResidualReadErrorCode,
+  HelperResidualScanInput,
+  HelperWalletTokenInventory,
+  HelperWalletTokenSource,
+  WalletHelperResidualApplication,
+  WalletHelperResidualServiceOptions,
+} from "./helper-residual-model.js";
 export { ChainPolicyStoreError } from "./chain-access-policies.js";
 export type {
   ChainAccessPolicyChange,
