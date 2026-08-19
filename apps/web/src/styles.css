@@ -8817,6 +8817,10 @@ html[data-theme="dark"] .helper-deployment-success {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .helper-deployment-facts > div {
+    border-right: 0;
+  }
+
   .receive-result {
     grid-template-columns: minmax(0, 1fr);
     justify-items: center;

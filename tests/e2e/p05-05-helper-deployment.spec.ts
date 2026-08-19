@@ -435,6 +435,14 @@ test("previews, confirms once, and follows the local deployment operation to suc
     false,
   );
   await axe(page);
+  await panel.evaluate((element) => element.scrollIntoView({ block: "center" }));
+  const panelBox = await panel.boundingBox();
+  const statusBarBox = await page.locator(".shell-status-bar").boundingBox();
+  if (testInfo.project.name === "chromium-mobile") {
+    expect(panelBox).not.toBeNull();
+    expect(statusBarBox).not.toBeNull();
+    expect(panelBox!.y + panelBox!.height).toBeLessThanOrEqual(statusBarBox!.y);
+  }
   await expect(panel).toHaveScreenshot("p05-05-helper-deployment-succeeded.png", {
     animations: "disabled",
     caret: "hide",
