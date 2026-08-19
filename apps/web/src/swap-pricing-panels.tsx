@@ -186,7 +186,7 @@ function SwapQuotePanel({ client, wallet }: { client: SwapPricingClient; wallet:
         className="wallet-read-form swap-quote-form"
         onSubmit={(event: FormEvent) => {
           event.preventDefault();
-          void refresh();
+          if (state !== "quoting") void refresh();
         }}
       >
         <label>
@@ -267,10 +267,10 @@ function SwapQuotePanel({ client, wallet }: { client: SwapPricingClient; wallet:
           />
         </label>
         <button
+          aria-disabled={state === "quoting"}
           aria-label="刷新 Swap 报价"
           className="icon-button tooltip-control swap-quote-refresh"
           data-tooltip="刷新报价"
-          disabled={state === "quoting"}
           title="刷新 Swap 报价"
           type="submit"
         >
@@ -407,10 +407,12 @@ function PositionLedgerRecord({
           <dt>状态更新</dt>
           <dd>
             <button
+              aria-disabled={busy}
               aria-label={`标记 Token #${position.tokenId} 已撤出`}
               className="secondary-button"
-              disabled={busy}
-              onClick={() => onWithdrawn(position)}
+              onClick={() => {
+                if (!busy) onWithdrawn(position);
+              }}
               type="button"
             >
               {busy ? (
@@ -596,10 +598,12 @@ function PricingPositionPanel({
             <RefreshCw aria-hidden="true" size={16} />
           </button>
           <button
+            aria-disabled={!chosen || busyId === "import"}
             aria-label="导入观察仓位"
             className="secondary-button pricing-import-command"
-            disabled={!chosen || busyId === "import"}
-            onClick={() => void importPosition()}
+            onClick={() => {
+              if (chosen && busyId !== "import") void importPosition();
+            }}
             type="button"
           >
             {busyId === "import" ? (

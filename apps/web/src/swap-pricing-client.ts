@@ -497,7 +497,7 @@ async function responseData(response: Response): Promise<unknown> {
 export class SwapPricingClient {
   readonly #fetch: SwapPricingFetch;
 
-  constructor(fetcher: SwapPricingFetch = fetch) {
+  constructor(fetcher: SwapPricingFetch = globalThis.fetch.bind(globalThis)) {
     this.#fetch = fetcher;
   }
 

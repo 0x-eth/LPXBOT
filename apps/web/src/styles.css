@@ -7613,6 +7613,13 @@ html[data-theme="dark"] .read-state-badge[data-state="superseded"] {
   min-height: 38px;
 }
 
+.pricing-import-command[aria-disabled="true"],
+.pricing-position-action button[aria-disabled="true"],
+.swap-quote-refresh[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .swap-quote-result {
   display: grid;
   min-width: 0;
