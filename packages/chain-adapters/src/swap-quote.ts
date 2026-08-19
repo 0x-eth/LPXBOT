@@ -5,7 +5,7 @@ import {
   type BscSwapQuoteRegistry,
   type ProtocolId,
 } from "@lpbot/chain-registry";
-import type { Address, Hex } from "viem";
+import { getAddress, type Address, type Hex } from "viem";
 
 const addressPattern = /^0x[0-9a-f]{40}$/u;
 const hashPattern = /^0x[0-9a-f]{64}$/u;
@@ -129,6 +129,15 @@ function plusMilliseconds(value: Date, milliseconds: number): string {
 
 function isCanonicalAddress(value: unknown): value is Address {
   return typeof value === "string" && addressPattern.test(value);
+}
+
+function normalizeInputAddress(value: unknown): Address | null {
+  if (typeof value !== "string") return null;
+  try {
+    return getAddress(value).toLowerCase() as Address;
+  } catch {
+    return null;
+  }
 }
 
 function isHash(value: unknown): value is Hex {
@@ -312,6 +321,9 @@ export class BscSwapQuoteAdapter {
   }
 
   #validateInput(input: SwapQuoteInput): SwapQuoteInput & { chainId: 56; platformId: ProtocolId } {
+    const walletAddress = normalizeInputAddress(input.walletAddress);
+    const tokenIn = normalizeInputAddress(input.tokenIn);
+    const tokenOut = normalizeInputAddress(input.tokenOut);
     if (
       input.chainId !== 56 ||
       !platformIds.has(input.platformId as ProtocolId) ||
@@ -320,16 +332,23 @@ export class BscSwapQuoteAdapter {
       input.slippageBps < 0 ||
       input.slippageBps > 500 ||
       !uuidPattern.test(input.walletId) ||
-      !isCanonicalAddress(input.walletAddress) ||
-      !isCanonicalAddress(input.tokenIn) ||
-      !isCanonicalAddress(input.tokenOut) ||
-      input.tokenIn === input.tokenOut ||
-      !this.#registry.tokens.some(({ address }) => address === input.tokenIn) ||
-      !this.#registry.tokens.some(({ address }) => address === input.tokenOut)
+      !walletAddress ||
+      !tokenIn ||
+      !tokenOut ||
+      tokenIn === tokenOut ||
+      !this.#registry.tokens.some(({ address }) => address === tokenIn) ||
+      !this.#registry.tokens.some(({ address }) => address === tokenOut)
     ) {
       throw new SwapQuoteAdapterError("invalid-input");
     }
-    return { ...input, chainId: 56, platformId: input.platformId as ProtocolId };
+    return {
+      ...input,
+      chainId: 56,
+      platformId: input.platformId as ProtocolId,
+      tokenIn,
+      tokenOut,
+      walletAddress,
+    };
   }
 
   #validateSnapshot(
