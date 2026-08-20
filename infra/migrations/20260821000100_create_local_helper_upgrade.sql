@@ -229,6 +229,24 @@ CREATE TABLE local_helper_upgrade_replacement_authorizations (
 CREATE UNIQUE INDEX local_helper_upgrade_replacement_pending_unique
   ON local_helper_upgrade_replacement_authorizations (operation_id) WHERE state = 'pending';
 
+CREATE TABLE local_helper_upgrade_deployment_receipt_evidence (
+  evidence_id uuid PRIMARY KEY,
+  operation_id uuid NOT NULL REFERENCES local_helper_upgrade_operations(operation_id) ON DELETE CASCADE,
+  transaction_id uuid NOT NULL REFERENCES local_helper_upgrade_transactions(transaction_id),
+  transaction_hash text NOT NULL CHECK (transaction_hash ~ '^0x[0-9a-f]{64}$'),
+  block_number numeric(78, 0) NOT NULL CHECK (block_number >= 0),
+  block_hash text NOT NULL CHECK (block_hash ~ '^0x[0-9a-f]{64}$'),
+  canonical boolean NOT NULL,
+  confirmations numeric(78, 0) NOT NULL CHECK (confirmations > 0),
+  receipt_status text NOT NULL CHECK (receipt_status IN ('reverted', 'success')),
+  contract_address text CHECK (contract_address IS NULL OR contract_address ~ '^0x[0-9a-f]{40}$'),
+  runtime_code_hash text CHECK (runtime_code_hash IS NULL OR runtime_code_hash ~ '^0x[0-9a-f]{64}$'),
+  transaction_reconciled boolean NOT NULL,
+  evidence_digest text NOT NULL CHECK (evidence_digest ~ '^sha256:[0-9a-f]{64}$'),
+  observed_at timestamptz NOT NULL,
+  UNIQUE (transaction_id, block_hash, evidence_digest)
+);
+
 CREATE TABLE local_helper_upgrade_v2_verification_evidence (
   evidence_id uuid PRIMARY KEY,
   operation_id uuid NOT NULL REFERENCES local_helper_upgrade_operations(operation_id) ON DELETE CASCADE,
@@ -372,6 +390,10 @@ CREATE TRIGGER local_helper_upgrade_v2_evidence_append_only
 BEFORE UPDATE OR DELETE ON local_helper_upgrade_v2_verification_evidence
 FOR EACH ROW EXECUTE FUNCTION reject_local_helper_upgrade_evidence_mutation();
 
+CREATE TRIGGER local_helper_upgrade_deployment_evidence_append_only
+BEFORE UPDATE OR DELETE ON local_helper_upgrade_deployment_receipt_evidence
+FOR EACH ROW EXECUTE FUNCTION reject_local_helper_upgrade_evidence_mutation();
+
 CREATE TRIGGER local_helper_upgrade_rescan_evidence_append_only
 BEFORE UPDATE OR DELETE ON local_helper_upgrade_final_rescan_evidence
 FOR EACH ROW EXECUTE FUNCTION reject_local_helper_upgrade_evidence_mutation();
@@ -385,6 +407,7 @@ REVOKE ALL ON local_helper_upgrade_operations FROM PUBLIC;
 REVOKE ALL ON local_helper_upgrade_steps FROM PUBLIC;
 REVOKE ALL ON local_helper_upgrade_transactions FROM PUBLIC;
 REVOKE ALL ON local_helper_upgrade_replacement_authorizations FROM PUBLIC;
+REVOKE ALL ON local_helper_upgrade_deployment_receipt_evidence FROM PUBLIC;
 REVOKE ALL ON local_helper_upgrade_v2_verification_evidence FROM PUBLIC;
 REVOKE ALL ON local_helper_upgrade_final_rescan_evidence FROM PUBLIC;
 REVOKE ALL ON local_helper_upgrade_outbox FROM PUBLIC;
@@ -402,6 +425,8 @@ DROP TRIGGER local_helper_upgrade_rescan_evidence_append_only
   ON local_helper_upgrade_final_rescan_evidence;
 DROP TRIGGER local_helper_upgrade_v2_evidence_append_only
   ON local_helper_upgrade_v2_verification_evidence;
+DROP TRIGGER local_helper_upgrade_deployment_evidence_append_only
+  ON local_helper_upgrade_deployment_receipt_evidence;
 DROP TRIGGER local_helper_upgrade_previews_append_only ON local_helper_upgrade_previews;
 
 DROP INDEX wallet_helper_deployment_bindings_active_unique;
@@ -437,6 +462,7 @@ DROP TABLE local_helper_upgrade_audit_events;
 DROP TABLE local_helper_upgrade_outbox;
 DROP TABLE local_helper_upgrade_final_rescan_evidence;
 DROP TABLE local_helper_upgrade_v2_verification_evidence;
+DROP TABLE local_helper_upgrade_deployment_receipt_evidence;
 DROP TABLE local_helper_upgrade_replacement_authorizations;
 DROP TABLE local_helper_upgrade_transactions;
 DROP TABLE local_helper_upgrade_steps;

@@ -173,6 +173,7 @@ export interface LocalHelperUpgradeWorkRepository {
   completeAtomicBindingSwitch(input: {
     claim: LocalHelperUpgradeWorkClaim;
     completedAt: Date;
+    snapshot: LocalHelperResidualSnapshot;
   }): Promise<void>;
   completeBroadcast(input: {
     claim: LocalHelperUpgradeWorkClaim;
@@ -598,9 +599,11 @@ export class LocalHelperUpgradeRecoveryWorker {
           result.completed += 1;
           continue;
         }
+        const snapshot = await this.#sweeper.finalRescan(operation);
         await this.#repository.completeAtomicBindingSwitch({
           claim,
           completedAt: this.#now(),
+          snapshot,
         });
         result.completed += 1;
       } catch (error) {
