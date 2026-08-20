@@ -16,6 +16,7 @@ import {
   MemoryLocalHelperSweepBindingStore,
   MemoryLocalHelperSweepOperationStore,
   MemoryLocalHelperSweepPreviewStore,
+  ViemLocalHelperDeploymentChainReader,
   ViemLocalHelperResidualChainReader,
 } from "../../apps/api/src/index.js";
 import {
@@ -34,6 +35,7 @@ import {
   createPublicClient,
   createWalletClient,
   defineChain,
+  getContractAddress,
   http,
   keccak256,
   parseAbi,
