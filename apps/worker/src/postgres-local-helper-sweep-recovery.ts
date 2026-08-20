@@ -159,7 +159,7 @@ export class PostgresLocalHelperSweepRecoveryRepository implements LocalHelperSw
               (e.operation_id IS NOT NULL
                 AND o.state IN ('queued', 'broadcast', 'pending', 'confirmed', 'dropped', 'reconciling'))
             )
-          ORDER BY e.available_at, e.created_at, e.event_id
+          ORDER BY e.available_at, e.created_at, e.batch_id, o.ordinal NULLS LAST, e.event_id
           FOR UPDATE OF e SKIP LOCKED
           LIMIT $2`,
         [input.now, input.limit],

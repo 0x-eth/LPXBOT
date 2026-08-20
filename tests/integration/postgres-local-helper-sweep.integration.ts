@@ -277,6 +277,11 @@ async function claimOperations(
     now,
     workerId: "p05-08-worker",
   });
+  expect(
+    claims.flatMap((candidate) =>
+      candidate.kind === "operation" ? [candidate.operation.operationId] : [],
+    ),
+  ).toEqual(operationIds);
   return operationIds.map((operationId) => {
     const claim = claims.find(
       (candidate): candidate is Extract<LocalHelperSweepWorkClaim, { kind: "operation" }> =>
