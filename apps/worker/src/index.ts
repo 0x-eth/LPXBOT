@@ -87,6 +87,8 @@ export {
   LocalHelperSweepWorkerError,
   validateLocalHelperSweepWorkPlan,
 } from "./local-helper-sweep-worker.js";
+export { ViemLocalHelperSweepObserver } from "./viem-local-helper-sweep-observer.js";
+export type { ViemLocalHelperSweepObserverOptions } from "./viem-local-helper-sweep-observer.js";
 export type {
   LocalHelperSweepBatchResult,
   LocalHelperSweepObservation,
