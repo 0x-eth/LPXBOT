@@ -271,6 +271,14 @@ describe("P05-09 local Helper upgrade API domain", () => {
       helperVersion: "WalletHelperV2",
       owner: walletAddress,
     });
+    expect(Object.keys(stored!.plan.target.tokenA).sort()).toEqual([
+      "address",
+      "runtimeCodeHash",
+    ]);
+    expect(Object.keys(stored!.plan.target.tokenB).sort()).toEqual([
+      "address",
+      "runtimeCodeHash",
+    ]);
 
     const duplicate = await service.submit({
       idempotencyKey: "helper-upgrade-0001",

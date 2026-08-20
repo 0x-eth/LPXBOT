@@ -91,8 +91,14 @@ function plan(): LocalHelperUpgradePlan {
       permit2: P05_HELPER_DEPLOYMENT_REGISTRY.components.find(({ role }) => role === "permit2")!
         .address,
       selectorSetHash: localHelperUpgradeSelectorSetHash(registry.target.selectors),
-      tokenA: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[0],
-      tokenB: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[1],
+      tokenA: {
+        address: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[0].address,
+        runtimeCodeHash: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[0].runtimeCodeHash,
+      },
+      tokenB: {
+        address: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[1].address,
+        runtimeCodeHash: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[1].runtimeCodeHash,
+      },
     },
     transaction: {
       data: material.initCode,

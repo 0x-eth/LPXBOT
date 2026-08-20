@@ -729,8 +729,14 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
             owner: wallet.address,
             permit2: permit2.address,
             selectorSetHash,
-            tokenA: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[0],
-            tokenB: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[1],
+            tokenA: {
+              address: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[0].address,
+              runtimeCodeHash: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[0].runtimeCodeHash,
+            },
+            tokenB: {
+              address: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[1].address,
+              runtimeCodeHash: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[1].runtimeCodeHash,
+            },
           },
           transaction: {
             data: material.initCode,
