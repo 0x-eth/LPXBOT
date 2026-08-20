@@ -206,9 +206,14 @@ export class PostgresLocalSwapHelperBindingStore implements LocalSwapHelperBindi
       `SELECT binding_id::text, wallet_id::text, helper_version, helper_address,
               owner_address, adapter_address, permit2_address, runtime_code_hash,
               registry_version, verified_block_number::text
-         FROM wallet_helper_deployment_bindings
+        FROM wallet_helper_deployment_bindings
         WHERE tenant_id = $1 AND user_id = $2 AND wallet_id = $3
-          AND chain_id = 31337 AND helper_version = 'WalletHelperV1' AND state = 'active'`,
+          AND chain_id = 31337 AND helper_version = 'WalletHelperV1' AND state = 'active'
+          AND NOT EXISTS (
+            SELECT 1 FROM local_helper_sweep_batches sweep
+             WHERE sweep.helper_binding_id = wallet_helper_deployment_bindings.binding_id
+               AND sweep.state IN ('queued', 'running', 'reconciling')
+          )`,
       [input.tenantId, input.userId, input.walletId],
     );
     const row = result.rows[0];
@@ -467,6 +472,11 @@ export class PostgresLocalSwapOperationStore implements LocalSwapOperationStore 
             AND helper_address = $5 AND owner_address = $6 AND adapter_address = $7
             AND permit2_address = $8 AND runtime_code_hash = $9
             AND registry_version = 'p05-local-helper-deployment-v2'
+            AND NOT EXISTS (
+              SELECT 1 FROM local_helper_sweep_batches sweep
+               WHERE sweep.helper_binding_id = wallet_helper_deployment_bindings.binding_id
+                 AND sweep.state IN ('queued', 'running', 'reconciling')
+            )
           FOR UPDATE`,
         [
           plan.helper.bindingId,

@@ -9,6 +9,7 @@ import {
   PostgresLocalHelperSweepBindingStore,
   PostgresLocalHelperSweepOperationStore,
   PostgresLocalHelperSweepPreviewStore,
+  PostgresLocalSwapHelperBindingStore,
   type HelperDeploymentChainReader,
   type LocalHelperResidualChainInspection,
 } from "../../apps/api/src/index.js";
@@ -364,6 +365,8 @@ describe("P05-08 PostgreSQL local Helper sweep lifecycle", () => {
       manualRecoveryRequired: false,
       binding: { state: "degraded" },
     });
+    const swapBindings = new PostgresLocalSwapHelperBindingStore(pool);
+    await expect(swapBindings.getActive({ tenantId, userId, walletId })).resolves.toBeNull();
     const assetIds = [`token:${registry.tokens[0].address}`, "native:31337"];
     const preview = await service.preview({
       request: {
@@ -608,11 +611,16 @@ describe("P05-08 PostgreSQL local Helper sweep lifecycle", () => {
       unknownTokens: [],
     });
     expect(cleanSnapshot.balances.every(({ amountBaseUnit }) => amountBaseUnit === "0")).toBe(true);
+    await expect(swapBindings.getActive({ tenantId, userId, walletId })).resolves.toBeNull();
     await repository.completeRescan({
       claim: rescanClaim!,
       completedAt: new Date(clock.getTime() + 1),
       outcome: "active",
       snapshot: cleanSnapshot,
+    });
+    await expect(swapBindings.getActive({ tenantId, userId, walletId })).resolves.toMatchObject({
+      helperAddress: deployment.helperAddress,
+      state: "active",
     });
 
     await expect(
