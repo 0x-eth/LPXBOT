@@ -134,7 +134,7 @@ test("P05-08 ownership remains frozen after P05-09 advances P05 to 11 / 1 with g
     assert.match(document, /P05[^\n]*11[^\n]*implemented-assumed[^\n]*1[^\n]*planned/iu);
     assert.match(document, /72[^\n]*implemented-assumed[^\n]*124[^\n]*planned/iu);
     assert.match(document, /accepted-with-gaps/u);
-    assert.match(document, /BSC\/testnet\/production[^\n]*(?:`CLOSED`|closed)/iu);
+    assert.match(document, /BSC\/testnet\/production[^\n]*(?:均为 0|CLOSED|closed)/iu);
     assert.match(document, /not parity-verified|不标记 `parity-verified`/iu);
     assert.match(document, /not released|不标记[^\n]*`released`/iu);
   }

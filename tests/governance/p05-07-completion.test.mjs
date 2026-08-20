@@ -153,7 +153,7 @@ test("P05-07 owns POS-02/POS-03 while P05-09 advances P05 to 11 / 1 with global 
     assert.match(document, /accepted-with-gaps/u);
     assert.match(
       document,
-      /BSC\/testnet\/production gates[^\n]*`CLOSED`|BSC\/testnet\/production[^\n]*closed/iu,
+      /BSC\/testnet\/production[^\n]*(?:均为 0|CLOSED|closed)/iu,
     );
     assert.match(document, /not parity-verified|不标记 `parity-verified`/iu);
     assert.match(document, /not released|不标记[^\n]*`released`/iu);
@@ -366,6 +366,8 @@ test("existing Manager, Adapter, and Helper sources remain unchanged", () => {
     .filter(Boolean);
   assert.deepEqual(changed, [
     "contracts/src/TestOnlyPositionManagerV2.sol",
+    "contracts/src/WalletHelperV2.sol",
     "contracts/test/TestOnlyPositionManagerV2.t.sol",
+    "contracts/test/WalletHelperV2.t.sol",
   ]);
 });

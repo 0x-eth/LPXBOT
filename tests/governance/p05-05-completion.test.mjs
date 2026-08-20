@@ -140,7 +140,7 @@ test("P05-05 owns HELPER-02 while P05-09 advances P05 to 11 / 1 and global 72 / 
     assert.match(document, /72[^\n]*implemented-assumed[^\n]*124[^\n]*planned/iu);
     assert.match(
       document,
-      /testnet\/production[^\n]*CLOSED|testnet\/production gates[^\n]*`CLOSED`/iu,
+      /BSC\/testnet\/production[^\n]*(?:均为 0|CLOSED|closed)/iu,
     );
   }
 });
