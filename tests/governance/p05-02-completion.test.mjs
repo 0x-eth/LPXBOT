@@ -188,7 +188,8 @@ test("P00 through P05-01 acceptance files remain byte-identical to the 645-file 
         !file.startsWith("P05-04/") &&
         !file.startsWith("P05-05/") &&
         !file.startsWith("P05-06/") &&
-        !file.startsWith("P05-07/"),
+        !file.startsWith("P05-07/") &&
+        !file.startsWith("P05-08/"),
     )
     .map((file) => `artifacts/acceptance/${file}`);
   assert.equal(baselineFiles.length, 645);
@@ -208,7 +209,8 @@ test("P00 through P05-01 acceptance files remain byte-identical to the 645-file 
         !file.startsWith("artifacts/acceptance/P05-04/") &&
         !file.startsWith("artifacts/acceptance/P05-05/") &&
         !file.startsWith("artifacts/acceptance/P05-06/") &&
-        !file.startsWith("artifacts/acceptance/P05-07/"),
+        !file.startsWith("artifacts/acceptance/P05-07/") &&
+        !file.startsWith("artifacts/acceptance/P05-08/"),
     );
   assert.deepEqual(changed, []);
 });

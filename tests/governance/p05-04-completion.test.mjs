@@ -171,7 +171,8 @@ test("P00 through P05-03 acceptance files remain byte-identical to baseline", as
         !file.startsWith("P05-04/") &&
         !file.startsWith("P05-05/") &&
         !file.startsWith("P05-06/") &&
-        !file.startsWith("P05-07/"),
+        !file.startsWith("P05-07/") &&
+        !file.startsWith("P05-08/"),
     )
     .map((file) => `artifacts/acceptance/${file}`);
   assert.deepEqual(currentPriorFiles, sorted(baselineFiles));
@@ -188,7 +189,8 @@ test("P00 through P05-03 acceptance files remain byte-identical to baseline", as
         !file.startsWith("artifacts/acceptance/P05-04/") &&
         !file.startsWith("artifacts/acceptance/P05-05/") &&
         !file.startsWith("artifacts/acceptance/P05-06/") &&
-        !file.startsWith("artifacts/acceptance/P05-07/"),
+        !file.startsWith("artifacts/acceptance/P05-07/") &&
+        !file.startsWith("artifacts/acceptance/P05-08/"),
     );
   assert.deepEqual(changedPrior, []);
 });

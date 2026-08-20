@@ -36,6 +36,7 @@ const IMPLEMENTED = [
   "HELPER-06",
 ];
 const PLANNED = ["HELPER-03", "HELPER-04"];
+const P05_07_NON_GOALS = ["HELPER-03", "HELPER-04", "HELPER-06"];
 const EVIDENCE = [
   "E-API",
   "E-CHAIN",
@@ -259,7 +260,7 @@ test("execution contract and gates freeze local-only position execution", async 
   assert.deepEqual(contract.steps.fullRemoveWithBurn, ["decrease", "collect", "burn"]);
   assert.match(contract.recovery.decreaseConfirmed, /never replayed|禁止重复/u);
   assert.match(contract.recovery.collectPending, /principal[^\n]*unavailable|本金[^\n]*不可用/iu);
-  assert.deepEqual(contract.nonGoals, PLANNED);
+  assert.deepEqual(contract.nonGoals, P05_07_NON_GOALS);
   assert.equal(contract.executionCounters.testnetSignatures, 0);
   assert.equal(contract.executionCounters.productionBroadcasts, 0);
   assert.equal(contract.executionCounters.realFundOperations, 0);
