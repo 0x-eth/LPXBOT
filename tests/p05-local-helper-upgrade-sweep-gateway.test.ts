@@ -15,13 +15,13 @@ const sessionId = "9c000000-0000-4000-8000-000000000073";
 const bindingId = "9c000000-0000-4000-8000-000000000074";
 const operationId = "9c000000-0000-4000-8000-000000000075";
 const batchId = "9c000000-0000-4000-8000-000000000076";
-const walletAddress = `0x${"11".repeat(20)}` as const;
+const walletAddress = "0x70997970c51812dc3a010c7d01b50e0d17dc79c8" as const;
 const helperAddress = `0x${"22".repeat(20)}` as const;
 const runtimeCodeHash = `0x${"33".repeat(32)}` as const;
 const now = "2026-08-21T01:00:00.000Z";
 
 const wallet = {
-  address: walletAddress,
+  address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as const,
   createdAt: now,
   envelopeVersion: 1,
   lockStatus: "ready" as const,

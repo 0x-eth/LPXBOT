@@ -31,7 +31,7 @@ import type {
   LocalHelperResidualSnapshot,
   LocalHelperSweepBinding,
 } from "@lpbot/domain/local-helper-sweep";
-import { getContractAddress, type Hex } from "viem";
+import { getAddress, getContractAddress, type Hex } from "viem";
 
 export const localHelperUpgradePreviewTtlMilliseconds = 5 * 60 * 1_000;
 export const localHelperUpgradeBodyLimit = 8_192;
@@ -590,13 +590,13 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
     userId: string;
     wallet: CustodyWallet;
   }): Promise<LocalHelperUpgradePreview> {
-    this.#assertWallet(input.request, input.wallet);
+    const wallet = this.#wallet(input.request, input.wallet);
     const createdAt = this.#now();
     const facts = await this.#facts({
       expiresAt: new Date(createdAt.getTime() + this.#ttl).toISOString(),
       tenantId: input.tenantId,
       userId: input.userId,
-      wallet: input.wallet,
+      wallet,
     });
     const previewDigest = hash({
       facts: this.#previewFactsDigest(facts),
@@ -633,7 +633,7 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
     wallet: CustodyWallet;
   }) {
     const idempotencyKey = parseLocalHelperUpgradeIdempotencyKey(input.idempotencyKey);
-    this.#assertWallet(input.request, input.wallet);
+    const wallet = this.#wallet(input.request, input.wallet);
     const stored = await this.#previews.get(input.request.previewToken);
     if (
       !stored ||
@@ -655,7 +655,7 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
       idempotencyKey,
       tenantId: input.tenantId,
       userId: input.userId,
-      walletId: input.request.walletId,
+      walletId: wallet.walletId,
     });
     if (duplicate) {
       if (duplicate.requestHash !== requestHash) {
@@ -678,12 +678,12 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
       expiresAt: stored.facts.snapshot.expiresAt,
       tenantId: input.tenantId,
       userId: input.userId,
-      wallet: input.wallet,
+      wallet,
     });
     this.#assertFactsStable(stored.facts, current);
     const snapshot = stored.facts.snapshot;
     const binding = snapshot.sourceBinding;
-    const material = buildWalletHelperV2DeploymentMaterial(input.wallet.address, this.#registry);
+    const material = buildWalletHelperV2DeploymentMaterial(wallet.address, this.#registry);
     const adapter = P05_HELPER_DEPLOYMENT_REGISTRY.components.find(
       ({ role }) => role === "adapter",
     )!;
@@ -727,7 +727,7 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
             expectedAddress: snapshot.target.expectedAddress,
             expectedRuntimeCodeHash: snapshot.target.expectedRuntimeCodeHash,
             helperVersion: "WalletHelperV2",
-            owner: input.wallet.address,
+            owner: wallet.address,
             permit2: permit2.address,
             selectorSetHash,
             tokenA: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[0],
@@ -739,7 +739,7 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
             to: null,
             valueBaseUnit: "0",
           },
-          wallet: { address: input.wallet.address, walletId: input.wallet.walletId },
+          wallet: { address: wallet.address, walletId: wallet.walletId },
         };
         plan.planDigest = localHelperUpgradePlanDigest(plan);
         validateLocalHelperUpgradePlan(
@@ -753,7 +753,7 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
             expectedRuntimeCodeHash: snapshot.target.expectedRuntimeCodeHash,
             initCode: material.initCode,
             initCodeHash: material.initCodeHash,
-            owner: input.wallet.address,
+            owner: wallet.address,
             permit2: permit2.address,
             registryDigest: this.#registry.registryDigest,
             selectorSetHash,
@@ -776,7 +776,7 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
       target: snapshot.target,
       tenantId: input.tenantId,
       userId: input.userId,
-      wallet: { address: input.wallet.address, walletId: input.wallet.walletId },
+      wallet: { address: wallet.address, walletId: wallet.walletId },
     });
     return { created: created.kind === "created", operation: publicOperation(created.operation) };
   }
@@ -960,10 +960,7 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
     };
   }
 
-  #assertWallet(
-    request: LocalHelperUpgradePreviewRequest,
-    wallet: CustodyWallet,
-  ): asserts wallet is CustodyWallet & { address: `0x${string}` } {
+  #wallet(request: LocalHelperUpgradePreviewRequest, wallet: CustodyWallet): CustodyWallet {
     if (request.chainId !== 31_337) throw new LocalHelperUpgradeError("CHAIN_NOT_ALLOWED");
     if (request.walletId !== wallet.walletId || !uuidPattern.test(wallet.walletId)) {
       throw new LocalHelperUpgradeError("WALLET_NOT_FOUND");
@@ -971,7 +968,12 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
     if (wallet.lockStatus !== "ready") {
       throw new LocalHelperUpgradeError("WALLET_LOCKED");
     }
-    if (!addressPattern.test(wallet.address) || wallet.address !== wallet.address.toLowerCase()) {
+    try {
+      return {
+        ...wallet,
+        address: getAddress(wallet.address).toLowerCase() as `0x${string}`,
+      };
+    } catch (error) {
       throw new LocalHelperUpgradeError("WALLET_NOT_FOUND");
     }
   }

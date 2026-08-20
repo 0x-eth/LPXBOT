@@ -300,7 +300,7 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
         walletId,
       },
     });
-    expect(wallet.address).toBe(ownerAccount.address.toLowerCase());
+    expect(wallet.address).toBe(ownerAccount.address);
 
     const providers = [
       { providerId: "anvil-helper-upgrade-a", rpcUrl },

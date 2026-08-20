@@ -1,6 +1,7 @@
 import type { CustodyWallet, LocalHelperSweepBatch } from "@lpbot/api-contract";
 import { localHelperV1SupersedeDecision } from "@lpbot/domain/local-helper-upgrade";
 import type { LocalHelperResidualSnapshot } from "@lpbot/domain/local-helper-sweep";
+import { getAddress } from "viem";
 
 import type { LocalHelperSweepApplication } from "./local-helper-sweeps.js";
 import type { WalletDirectory } from "./wallets.js";
@@ -150,14 +151,16 @@ export class LocalHelperUpgradeSweepGateway {
 
   async #wallet(operation: UpgradeSweepOperation): Promise<CustodyWallet> {
     const wallet = await this.#wallets.getWallet(operation.userId, operation.plan.wallet.walletId);
-    if (
-      !wallet ||
-      wallet.address !== operation.plan.wallet.address ||
-      wallet.lockStatus !== "ready"
-    ) {
+    let address: `0x${string}`;
+    try {
+      address = getAddress(wallet?.address ?? "").toLowerCase() as `0x${string}`;
+    } catch {
       throw new LocalHelperUpgradeSweepGatewayError("WALLET_LOCKED");
     }
-    return wallet;
+    if (!wallet || address !== operation.plan.wallet.address || wallet.lockStatus !== "ready") {
+      throw new LocalHelperUpgradeSweepGatewayError("WALLET_LOCKED");
+    }
+    return { ...wallet, address };
   }
 
   #batchResult(batch: LocalHelperSweepBatch): LocalHelperUpgradeSweepGatewayResult {

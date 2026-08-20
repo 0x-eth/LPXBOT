@@ -21,9 +21,9 @@ const now = new Date("2026-08-21T01:00:00.000Z");
 const tenantId = "tenant-a";
 const userId = "9c000000-0000-4000-8000-000000000011";
 const walletId = "9c000000-0000-4000-8000-000000000012";
-const walletAddress = `0x${"11".repeat(20)}` as const;
+const walletAddress = "0x70997970c51812dc3a010c7d01b50e0d17dc79c8" as const;
 const wallet = {
-  address: walletAddress,
+  address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as const,
   createdAt: now.toISOString(),
   envelopeVersion: 1,
   lockStatus: "ready" as const,
