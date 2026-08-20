@@ -80,6 +80,30 @@ export {
   LocalPositionWorkerError,
   validateLocalPositionWorkPlan,
 } from "./local-position-worker.js";
+export {
+  decideLocalHelperSweepObservation,
+  localHelperSweepReplacementCandidate,
+  LocalHelperSweepRecoveryWorker,
+  LocalHelperSweepWorkerError,
+  validateLocalHelperSweepWorkPlan,
+} from "./local-helper-sweep-worker.js";
+export type {
+  LocalHelperSweepBatchResult,
+  LocalHelperSweepObservation,
+  LocalHelperSweepObservationDecision,
+  LocalHelperSweepObserver,
+  LocalHelperSweepProviderObservation,
+  LocalHelperSweepReceiptObservation,
+  LocalHelperSweepReplacementAuthorization,
+  LocalHelperSweepRescanner,
+  LocalHelperSweepRescanWork,
+  LocalHelperSweepSignerGateway,
+  LocalHelperSweepSignerResult,
+  LocalHelperSweepTransactionReference,
+  LocalHelperSweepWorkClaim,
+  LocalHelperSweepWorkOperation,
+  LocalHelperSweepWorkRepository,
+} from "./local-helper-sweep-worker.js";
 export { LoopbackLocalPositionSignerGateway } from "./loopback-local-position-signer-gateway.js";
 export { ViemLocalPositionObserver } from "./viem-local-position-observer.js";
 export type { ViemLocalPositionObserverOptions } from "./viem-local-position-observer.js";
