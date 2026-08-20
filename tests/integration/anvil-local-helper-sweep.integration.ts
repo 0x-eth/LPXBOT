@@ -187,9 +187,35 @@ describe.skipIf(!enabled)("P05-08 local Anvil Helper residual sweep closure", ()
       registry.components.find(({ role }) => role === "adapter")!.address,
     );
 
-    const helperMaterial = buildWalletHelperV1DeploymentMaterial(
-      owner.address.toLowerCase() as Address,
-    );
+    const canonicalOwner = owner.address.toLowerCase() as Address;
+    const helperMaterial = buildWalletHelperV1DeploymentMaterial(canonicalOwner);
+    const deploymentProviders = [
+      { providerId: "anvil-helper-deploy-a", rpcUrl },
+      { providerId: "anvil-helper-deploy-b", rpcUrl },
+    ] as const;
+    const deploymentReader = new ViemLocalHelperDeploymentChainReader({
+      chainId,
+      providers: deploymentProviders,
+    });
+    const nonceSnapshot = await deploymentReader.nonceSnapshot({
+      chainId,
+      walletAddress: canonicalOwner,
+    });
+    expect(nonceSnapshot.views.map(({ latest, pending }) => [latest, pending])).toEqual([
+      ["6", "6"],
+      ["6", "6"],
+    ]);
+    const expectedHelperAddress = getContractAddress({
+      from: canonicalOwner,
+      nonce: 6n,
+    }).toLowerCase() as Address;
+    const deploymentInspection = await deploymentReader.inspectDeployment({
+      blockNumber: nonceSnapshot.blockNumber,
+      chainId,
+      expectedAddress: expectedHelperAddress,
+      initCode: helperMaterial.initCode,
+      walletAddress: canonicalOwner,
+    });
     const helperDeploymentHash = await walletClient.sendTransaction({
       data: helperMaterial.initCode,
     });
@@ -200,6 +226,7 @@ describe.skipIf(!enabled)("P05-08 local Anvil Helper residual sweep closure", ()
       throw new Error("P05-05 WalletHelperV1 deployment failed");
     }
     const helperAddress = helperDeploymentReceipt.contractAddress.toLowerCase() as Address;
+    expect(helperAddress).toBe(expectedHelperAddress);
 
     const managerAddress = await deploy({
       abi: managerV2.abi,
@@ -213,8 +240,11 @@ describe.skipIf(!enabled)("P05-08 local Anvil Helper residual sweep closure", ()
       expect(code && keccak256(code), expected.address).toBe(expected.runtimeCodeHash);
     }
     const helperCode = await publicClient.getCode({ address: helperAddress });
-    expect(helperCode && keccak256(helperCode)).toBe(
-      P05_HELPER_DEPLOYMENT_REGISTRY.helperTemplate.runtimeTemplateHash,
+    if (!helperCode) throw new Error("deployed WalletHelperV1 runtime is missing");
+    const helperRuntimeCodeHash = keccak256(helperCode);
+    expect(helperRuntimeCodeHash).toBe(deploymentInspection.expectedRuntimeCodeHash);
+    expect((helperCode.length - 2) / 2).toBe(
+      P05_HELPER_DEPLOYMENT_REGISTRY.helperTemplate.runtimeBytes,
     );
 
     const helperAbi = parseAbi([
@@ -243,9 +273,9 @@ describe.skipIf(!enabled)("P05-08 local Anvil Helper residual sweep closure", ()
         deploymentRegistryVersion: "p05-local-helper-deployment-v2",
         helperAddress,
         helperVersion: "WalletHelperV1",
-        ownerAddress: owner.address.toLowerCase() as Address,
+        ownerAddress: canonicalOwner,
         permit2Address,
-        runtimeCodeHash: P05_HELPER_DEPLOYMENT_REGISTRY.helperTemplate.runtimeTemplateHash,
+        runtimeCodeHash: helperRuntimeCodeHash,
         state: "active",
         tenantId,
         userId,
@@ -254,7 +284,7 @@ describe.skipIf(!enabled)("P05-08 local Anvil Helper residual sweep closure", ()
       } satisfies LocalHelperSweepBinding & { tenantId: string; userId: string },
     ]);
     const wallet: CustodyWallet = {
-      address: owner.address.toLowerCase() as Address,
+      address: canonicalOwner,
       createdAt: new Date().toISOString(),
       envelopeVersion: 1,
       lockStatus: "ready",

@@ -942,7 +942,12 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
       throw new LocalHelperSweepError("PREVIEW_INVALID");
     }
     const current = await this.#facts({ ...input, request: baseRequest });
-    if (!same(current.facts, preview.facts)) {
+    const comparableCurrentFacts: LocalHelperSweepPreviewFacts = {
+      ...current.facts,
+      deadline: preview.facts.deadline,
+      expiresAt: preview.facts.expiresAt,
+    };
+    if (!same(comparableCurrentFacts, preview.facts)) {
       throw new LocalHelperSweepError("PREVIEW_CHANGED");
     }
     const requestHash = digest({ idempotencyKey, request: baseRequest });

@@ -100,13 +100,13 @@ function inspection(
   };
 }
 
-function fixture(initial = inspection()) {
+function fixture(initial = inspection(), fixtureNow: () => Date = () => now) {
   let observed = structuredClone(initial);
   let sequence = 10;
   let previewSequence = 8;
   const bindings = new MemoryLocalHelperSweepBindingStore([{ ...binding, tenantId, userId }]);
   const operations = new MemoryLocalHelperSweepOperationStore({
-    now: () => now,
+    now: fixtureNow,
     uuid: () => `a8100000-0000-4000-8000-${String(sequence++).padStart(12, "0")}`,
   });
   const service = new LocalHelperSweepService({
@@ -116,7 +116,7 @@ function fixture(initial = inspection()) {
         return structuredClone(observed);
       },
     },
-    now: () => now,
+    now: fixtureNow,
     operations,
     previews: new MemoryLocalHelperSweepPreviewStore(),
     randomBytes: () => new Uint8Array(32).fill(previewSequence++),
