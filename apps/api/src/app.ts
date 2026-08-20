@@ -195,6 +195,15 @@ import {
   type LocalHelperSweepApplication,
 } from "./local-helper-sweeps.js";
 import {
+  LocalHelperUpgradeError,
+  localHelperUpgradeBodyLimit,
+  parseLocalHelperUpgradeId,
+  parseLocalHelperUpgradeIdempotencyKey,
+  parseLocalHelperUpgradePreview,
+  parseLocalHelperUpgradeSubmit,
+  type LocalHelperUpgradeApplication,
+} from "./local-helper-upgrades.js";
+import {
   HelperResidualCursorError,
   HelperResidualReadError,
   type WalletHelperResidualApplication,
@@ -290,6 +299,8 @@ export interface ApiAppOptions {
   helperResiduals?: WalletHelperResidualApplication;
   localHelperSweepChainIds?: readonly number[];
   localHelperSweeps?: LocalHelperSweepApplication;
+  localHelperUpgradeChainIds?: readonly number[];
+  localHelperUpgrades?: LocalHelperUpgradeApplication;
   helperDeploymentLocalChainIds?: readonly number[];
   helperDeployments?: HelperDeploymentApplication;
   localSwapExecutionChainIds?: readonly number[];
@@ -1063,6 +1074,13 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     [...localHelperSweepChainIds].some((chainId) => chainId !== 31_337)
   ) {
     throw new RangeError("Local Helper sweep chain IDs must contain only 31337");
+  }
+  const localHelperUpgradeChainIds = new Set(options.localHelperUpgradeChainIds ?? []);
+  if (
+    localHelperUpgradeChainIds.size !== (options.localHelperUpgradeChainIds?.length ?? 0) ||
+    [...localHelperUpgradeChainIds].some((chainId) => chainId !== 31_337)
+  ) {
+    throw new RangeError("Local Helper upgrade chain IDs must contain only 31337");
   }
   const walletTransferLocalChainIds = new Set(options.walletTransferLocalChainIds ?? []);
   if (
@@ -4520,6 +4538,53 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         WALLET_LOCKED: "The wallet must be unlocked before Helper sweep execution",
         WALLET_NOT_FOUND: "The wallet was not found",
         ZERO_BALANCE: "The selected residual is zero or within dust",
+      };
+      return reply.code(status).send(
+        createErrorEnvelope({
+          code: error.code,
+          message: messages[error.code],
+          requestId: request.id,
+          retryable: error.retryable,
+        }),
+      );
+    };
+
+    const localHelperUpgradeFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply | null => {
+      if (!(error instanceof LocalHelperUpgradeError)) return null;
+      const status =
+        error.code === "CHAIN_NOT_ALLOWED"
+          ? 403
+          : error.code === "BINDING_NOT_FOUND" ||
+              error.code === "HELPER_UPGRADE_NOT_FOUND" ||
+              error.code === "WALLET_NOT_FOUND"
+            ? 404
+            : error.code === "HELPER_UPGRADE_UNAVAILABLE"
+              ? 503
+              : error.code === "IDEMPOTENCY_KEY_REQUIRED" || error.code === "PREVIEW_INVALID"
+                ? 400
+                : 409;
+      const messages: Record<LocalHelperUpgradeError["code"], string> = {
+        BINDING_NOT_FOUND: "An active WalletHelperV1 binding is required",
+        CHAIN_NOT_ALLOWED: "Helper upgrade execution is available only on local Anvil",
+        HELPER_UPGRADE_IN_PROGRESS: "Another Helper upgrade is active for this wallet",
+        HELPER_UPGRADE_NOT_FOUND: "The Helper upgrade operation was not found",
+        HELPER_UPGRADE_UNAVAILABLE: "The local Helper upgrade service is unavailable",
+        IDEMPOTENCY_CONFLICT: "The idempotency key is bound to another Helper upgrade",
+        IDEMPOTENCY_KEY_REQUIRED: "A valid Idempotency-Key header is required",
+        MANUAL_RECOVERY_REQUIRED: "WalletHelperV1 requires manual recovery before upgrade",
+        NONCE_CONFLICT: "The wallet nonce is reserved by another operation",
+        PREFLIGHT_FAILED: "The Helper upgrade preflight no longer passes",
+        PREVIEW_CHANGED: "The Helper upgrade preview no longer matches current state",
+        PREVIEW_EXPIRED: "The Helper upgrade preview has expired",
+        PREVIEW_INVALID: "The Helper upgrade preview is invalid",
+        PROVIDER_DIVERGENCE: "The local providers disagree on chain or nonce state",
+        TARGET_ADDRESS_OCCUPIED: "The expected WalletHelperV2 address is already occupied",
+        WALLET_LOCKED: "The wallet must be unlocked before Helper upgrade",
+        WALLET_NOT_FOUND: "The wallet was not found",
       };
       return reply.code(status).send(
         createErrorEnvelope({
