@@ -154,8 +154,8 @@ CREATE TABLE local_helper_sweep_operations (
   ordinal integer NOT NULL CHECK (ordinal BETWEEN 0 AND 2),
   operation_kind text NOT NULL CHECK (operation_kind = 'helper-residual-sweep'),
   state text NOT NULL CHECK (state IN (
-    'queued', 'signed', 'broadcast', 'pending', 'confirmed', 'succeeded',
-    'failed', 'dropped', 'replaced', 'reconciling'
+    'queued', 'signing', 'broadcast', 'pending', 'confirmed', 'succeeded',
+    'failed', 'dropped', 'reconciling'
   )),
   asset_id text NOT NULL CHECK (char_length(asset_id) BETWEEN 1 AND 128),
   asset_kind text NOT NULL CHECK (asset_kind IN ('native', 'token')),
