@@ -5,7 +5,7 @@ import {
   P05_HELPER_DEPLOYMENT_REGISTRY,
   P05_LOCAL_HELPER_UPGRADE_REGISTRY,
   validateLocalHelperUpgradeRegistry,
-} from "@lpbot/chain-registry";
+} from "../packages/chain-registry/src/index.js";
 import {
   assertLocalHelperUpgradeCursorTransition,
   compareLocalHelperVersions,
@@ -19,11 +19,11 @@ import {
   validateLocalHelperUpgradeReplacement,
   type LocalHelperUpgradePlan,
   type LocalHelperUpgradeSnapshot,
-} from "@lpbot/domain/local-helper-upgrade";
+} from "../packages/domain/src/local-helper-upgrade.js";
 import type {
   LocalHelperResidualSnapshot,
   LocalHelperSweepBinding,
-} from "@lpbot/domain/local-helper-sweep";
+} from "../packages/domain/src/local-helper-sweep.js";
 import { getContractAddress } from "viem";
 
 const now = new Date("2026-08-21T00:00:00.000Z");
