@@ -10440,6 +10440,10 @@ html[data-theme="dark"] .local-helper-upgrade-versions > span[data-target="true"
     max-width: none;
   }
 
+  .local-helper-upgrade-query {
+    flex: 0 0 auto;
+  }
+
   .local-helper-upgrade-facts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
