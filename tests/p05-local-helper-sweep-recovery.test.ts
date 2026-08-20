@@ -19,6 +19,7 @@ import {
   type LocalHelperSweepWorkOperation,
   type LocalHelperSweepWorkRepository,
 } from "../apps/worker/src/local-helper-sweep-worker.js";
+import { ViemLocalHelperSweepObserver } from "../apps/worker/src/viem-local-helper-sweep-observer.js";
 import { describe, expect, it, vi } from "vitest";
 
 const now = new Date("2026-08-20T08:00:00.000Z");
@@ -442,5 +443,43 @@ describe("P05-08 local Helper sweep recovery", () => {
     expect(completeRescan).toHaveBeenCalledWith(
       expect.objectContaining({ outcome: "active", snapshot: clean }),
     );
+  });
+
+  it("rejects non-EVM receipt statuses at the RPC observer boundary", async () => {
+    const value = plan();
+    const transactionHash = transaction(value).transactionHash;
+    const fetcher = vi.fn<typeof fetch>(async (_url, init) => {
+      const request = JSON.parse(String(init?.body)) as {
+        id: number;
+        method: string;
+      };
+      const results: Record<string, unknown> = {
+        eth_chainId: "0x7a69",
+        eth_getTransactionByHash: null,
+        eth_getTransactionCount: "0x8",
+        eth_getTransactionReceipt: {
+          blockHash: `0x${"66".repeat(32)}`,
+          blockNumber: "0x9",
+          effectiveGasPrice: "0x2",
+          gasUsed: "0x64",
+          logs: [],
+          status: "0x2",
+          transactionHash,
+        },
+      };
+      return new Response(
+        JSON.stringify({ id: request.id, jsonrpc: "2.0", result: results[request.method] }),
+        { headers: { "content-type": "application/json" } },
+      );
+    });
+    const observer = new ViemLocalHelperSweepObserver({
+      chainId: 31_337,
+      fetch: fetcher,
+      providers: [{ providerId: "anvil-primary", rpcUrl: "http://127.0.0.1:18545" }],
+    });
+    await expect(observer.observe({ plan: value, transactionHash })).rejects.toMatchObject({
+      code: "LOCAL_HELPER_SWEEP_RECEIPT_STATUS_INVALID",
+      retryable: true,
+    });
   });
 });
