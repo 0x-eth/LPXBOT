@@ -179,6 +179,41 @@ export type {
   LocalHelperResidualInventorySource,
   ViemLocalHelperResidualChainReaderOptions,
 } from "./viem-local-helper-residual-chain-reader.js";
+export {
+  LocalHelperUpgradeError,
+  LocalHelperUpgradeService,
+  MemoryLocalHelperUpgradeBindingStore,
+  MemoryLocalHelperUpgradeOperationStore,
+  MemoryLocalHelperUpgradePreviewStore,
+  localHelperUpgradeBodyLimit,
+  localHelperUpgradePreviewTtlMilliseconds,
+  parseLocalHelperUpgradeId,
+  parseLocalHelperUpgradeIdempotencyKey,
+  parseLocalHelperUpgradePreview,
+  parseLocalHelperUpgradeSubmit,
+} from "./local-helper-upgrades.js";
+export {
+  PostgresLocalHelperUpgradeBindingStore,
+  PostgresLocalHelperUpgradeOperationStore,
+  PostgresLocalHelperUpgradePreviewStore,
+} from "./postgres-local-helper-upgrade-store.js";
+export { LocalHelperUpgradeSweepResidualReader } from "./local-helper-upgrade-residual-reader.js";
+export { ViemLocalHelperUpgradeChainReader } from "./viem-local-helper-upgrade-chain-reader.js";
+export type {
+  LocalHelperUpgradeApplication,
+  LocalHelperUpgradeBindingStore,
+  LocalHelperUpgradeChainInspection,
+  LocalHelperUpgradeChainReader,
+  LocalHelperUpgradeCreateInput,
+  LocalHelperUpgradeErrorCode,
+  LocalHelperUpgradeOperationStore,
+  LocalHelperUpgradePreviewFacts,
+  LocalHelperUpgradePreviewStore,
+  LocalHelperUpgradeResidualReader,
+  StoredLocalHelperUpgradeOperation,
+  StoredLocalHelperUpgradePreview,
+} from "./local-helper-upgrades.js";
+export type { ViemLocalHelperUpgradeChainReaderOptions } from "./viem-local-helper-upgrade-chain-reader.js";
 export type {
   HelperDeploymentApplication,
   HelperDeploymentChainReader,

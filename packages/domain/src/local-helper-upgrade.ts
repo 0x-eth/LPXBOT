@@ -520,9 +520,13 @@ export function localHelperV1SupersedeDecision(snapshot: LocalHelperResidualSnap
   const blockers = new Set<string>();
   if (!snapshot.coverage.complete) blockers.add("RESIDUAL_COVERAGE_INCOMPLETE");
   if (
+    snapshot.binding.state !== "active" ||
     !snapshot.identity.bindingMatches ||
+    !snapshot.identity.componentsMatch ||
     !snapshot.identity.ownerMatches ||
-    !snapshot.identity.runtimeMatches
+    !snapshot.identity.registryMatches ||
+    !snapshot.identity.runtimeMatches ||
+    !snapshot.identity.tokensMatch
   ) {
     blockers.add("V1_IDENTITY_MISMATCH");
   }

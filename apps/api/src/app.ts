@@ -5788,6 +5788,177 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     );
 
     app.post(
+      "/api/wallets/helper/upgrade/preview",
+      { bodyLimit: localHelperUpgradeBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletDirectory || !options.localHelperUpgrades || !options.tenantId) {
+          return localHelperUpgradeFailure(
+            new LocalHelperUpgradeError("HELPER_UPGRADE_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          const input = parseLocalHelperUpgradePreview(request.body);
+          if (
+            !(await requireAllowedWalletChain(
+              input.chainId,
+              request,
+              reply,
+              session,
+              localHelperUpgradeChainIds,
+            ))
+          ) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(session.userId, input.walletId);
+          if (!wallet) throw new LocalHelperUpgradeError("WALLET_NOT_FOUND");
+          return createSuccessEnvelope(
+            await options.localHelperUpgrades.preview({
+              request: input,
+              tenantId: options.tenantId,
+              userId: session.userId,
+              wallet,
+            }),
+            request.id,
+          );
+        } catch (error) {
+          return localHelperUpgradeFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.post(
+      "/api/wallets/helper/upgrade",
+      { bodyLimit: localHelperUpgradeBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+        if (!options.walletDirectory || !options.localHelperUpgrades || !options.tenantId) {
+          return localHelperUpgradeFailure(
+            new LocalHelperUpgradeError("HELPER_UPGRADE_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          const idempotencyKey = parseLocalHelperUpgradeIdempotencyKey(
+            request.headers["idempotency-key"],
+          );
+          const input = parseLocalHelperUpgradeSubmit(request.body);
+          if (
+            !(await requireAllowedWalletChain(
+              input.chainId,
+              request,
+              reply,
+              session,
+              localHelperUpgradeChainIds,
+            ))
+          ) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(session.userId, input.walletId);
+          if (!wallet) throw new LocalHelperUpgradeError("WALLET_NOT_FOUND");
+          const result = await options.localHelperUpgrades.submit({
+            idempotencyKey,
+            request: input,
+            requestId: request.id,
+            sessionId: session.id,
+            tenantId: options.tenantId,
+            userId: session.userId,
+            wallet,
+          });
+          return reply
+            .code(result.created ? 202 : 200)
+            .send(createSuccessEnvelope(result.operation, request.id));
+        } catch (error) {
+          return localHelperUpgradeFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.get<{ Params: { operationId: string } }>(
+      "/api/helper-upgrades/:operationId",
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (Object.keys(request.query as Record<string, unknown>).length > 0) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "INVALID_QUERY",
+              message: "The Helper upgrade query is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.localHelperUpgrades || !options.tenantId) {
+          return localHelperUpgradeFailure(
+            new LocalHelperUpgradeError("HELPER_UPGRADE_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          return createSuccessEnvelope(
+            await options.localHelperUpgrades.get({
+              operationId: parseLocalHelperUpgradeId(request.params.operationId),
+              tenantId: options.tenantId,
+              userId: session.userId,
+            }),
+            request.id,
+          );
+        } catch (error) {
+          return localHelperUpgradeFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.get<{ Params: { walletId: string } }>(
+      "/api/wallets/:walletId/helper-upgrade",
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (Object.keys(request.query as Record<string, unknown>).length > 0) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "INVALID_QUERY",
+              message: "The wallet Helper upgrade query is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.localHelperUpgrades || !options.tenantId) {
+          return localHelperUpgradeFailure(
+            new LocalHelperUpgradeError("HELPER_UPGRADE_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          return createSuccessEnvelope(
+            await options.localHelperUpgrades.latest({
+              tenantId: options.tenantId,
+              userId: session.userId,
+              walletId: parseLocalHelperUpgradeId(request.params.walletId),
+            }),
+            request.id,
+          );
+        } catch (error) {
+          return localHelperUpgradeFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.post(
       "/api/wallets/helper-residuals/sweep/preview",
       { bodyLimit: localHelperSweepBodyLimit },
       async (request, reply) => {

@@ -7,6 +7,7 @@ import type {
 import { P05_LOCAL_HELPER_UPGRADE_REGISTRY } from "@lpbot/chain-registry";
 import {
   assertWalletHelperV2Verification,
+  localHelperResidualSnapshotDigest,
   localHelperUpgradePlanDigest,
   localHelperUpgradeSelectorSetHash,
   localHelperV1SupersedeDecision,
@@ -635,6 +636,8 @@ export class PostgresLocalHelperUpgradeOperationStore implements LocalHelperUpgr
       const plan = operation.plan_payload;
       const decision = localHelperV1SupersedeDecision(input.finalSnapshot);
       if (
+        input.finalSnapshot.snapshotDigest !==
+          localHelperResidualSnapshotDigest(input.finalSnapshot) ||
         input.finalSnapshot.binding.bindingId !== operation.source_binding_id ||
         input.finalSnapshot.binding.helperAddress !== operation.source_helper_address ||
         input.finalSnapshot.wallet.walletId !== operation.wallet_id
@@ -652,6 +655,16 @@ export class PostgresLocalHelperUpgradeOperationStore implements LocalHelperUpgr
         tokenA: plan.target.tokenA,
         tokenB: plan.target.tokenB,
       });
+      const live = (
+        await liveOperationIds(client, {
+          tenantId: operation.tenant_id,
+          userId: operation.user_id,
+          walletId: operation.wallet_id,
+        })
+      ).filter((operationId) => operationId !== input.operationId);
+      if (live.length > 0) {
+        throw new LocalHelperUpgradeError("PREFLIGHT_FAILED");
+      }
       await client.query(
         `INSERT INTO local_helper_upgrade_final_rescan_evidence (
            evidence_id, operation_id, snapshot_digest, snapshot_payload,
