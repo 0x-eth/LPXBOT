@@ -175,7 +175,10 @@ export function localHelperSweepComponent(
 export function validateLocalHelperSweepRegistry(
   registry: LocalHelperSweepRegistry = P05_LOCAL_HELPER_SWEEP_REGISTRY,
 ): LocalHelperSweepRegistry {
-  const roles = registry.components.map(({ role }) => role).sort().join(",");
+  const roles = registry.components
+    .map(({ role }) => role)
+    .sort()
+    .join(",");
   if (
     registry.chainId !== 31_337 ||
     registry.registryVersion !== P05_LOCAL_HELPER_SWEEP_REGISTRY_VERSION ||

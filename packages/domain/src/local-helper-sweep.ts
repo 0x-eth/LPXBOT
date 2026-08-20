@@ -237,7 +237,9 @@ function same(left: unknown, right: unknown): boolean {
 }
 
 export function localHelperSweepDataDigest(value: `0x${string}`): `sha256:${string}` {
-  return `sha256:${createHash("sha256").update(Buffer.from(value.slice(2), "hex")).digest("hex")}`;
+  return `sha256:${createHash("sha256")
+    .update(Buffer.from(value.slice(2), "hex"))
+    .digest("hex")}`;
 }
 
 function uint256(value: bigint): string {
@@ -394,8 +396,10 @@ export function validateLocalHelperResidualSnapshot(
       (snapshot.identity.observedRuntimeCodeHash === snapshot.binding.runtimeCodeHash) ||
     snapshot.balances.length !== context.tokenPolicy.length + 1 ||
     new Set(snapshot.balances.map(({ assetId }) => assetId)).size !== snapshot.balances.length ||
-    new Set(snapshot.allowances.map(({ assetId }) => assetId)).size !== snapshot.allowances.length ||
-    new Set(snapshot.nftCustody.map(({ assetId }) => assetId)).size !== snapshot.nftCustody.length ||
+    new Set(snapshot.allowances.map(({ assetId }) => assetId)).size !==
+      snapshot.allowances.length ||
+    new Set(snapshot.nftCustody.map(({ assetId }) => assetId)).size !==
+      snapshot.nftCustody.length ||
     new Set(snapshot.unknownTokens.map(({ assetId }) => assetId)).size !==
       snapshot.unknownTokens.length
   ) {
@@ -621,7 +625,11 @@ export function validateLocalHelperSweepReplacement(
     "LOCAL_HELPER_SWEEP_REPLACEMENT_INVALID",
   );
   const gasLimit = decimal(plan.feeLimit.gasLimit, "LOCAL_HELPER_SWEEP_REPLACEMENT_INVALID", true);
-  const feeCap = decimal(plan.feeLimit.feeCapBaseUnit, "LOCAL_HELPER_SWEEP_REPLACEMENT_INVALID", true);
+  const feeCap = decimal(
+    plan.feeLimit.feeCapBaseUnit,
+    "LOCAL_HELPER_SWEEP_REPLACEMENT_INVALID",
+    true,
+  );
   if (
     immutable.some((key) => previous[key] !== next[key]) ||
     previous.planDigest !== plan.planDigest ||

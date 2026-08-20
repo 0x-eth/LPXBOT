@@ -284,12 +284,12 @@ describe("P05-08 local Helper sweep HTTP API", () => {
       ).statusCode,
     ).toBe(200);
     const batchUrl = `/api/chain-operation-batches/${submitted.json().data.batchId}`;
-    expect((await app.inject({ headers: auth(tokenA), method: "GET", url: batchUrl })).statusCode).toBe(
-      200,
-    );
-    expect((await app.inject({ headers: auth(tokenB), method: "GET", url: batchUrl })).statusCode).toBe(
-      404,
-    );
+    expect(
+      (await app.inject({ headers: auth(tokenA), method: "GET", url: batchUrl })).statusCode,
+    ).toBe(200);
+    expect(
+      (await app.inject({ headers: auth(tokenB), method: "GET", url: batchUrl })).statusCode,
+    ).toBe(404);
     const operationUrl = `/api/chain-operations/${submitted.json().data.operations[0].operationId}`;
     expect(
       (await app.inject({ headers: auth(tokenA), method: "GET", url: operationUrl })).statusCode,

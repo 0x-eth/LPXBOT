@@ -1823,10 +1823,7 @@ export const helperReadContracts = Object.freeze({
 } as const);
 
 export type LocalHelperSweepAssetKind = "native" | "token";
-export type LocalHelperSweepOperationState =
-  | LocalSwapExecutionState
-  | "confirmed"
-  | "dropped";
+export type LocalHelperSweepOperationState = LocalSwapExecutionState | "confirmed" | "dropped";
 export type LocalHelperSweepTransactionState = Exclude<
   LocalSwapStepState,
   "blocked" | "queued" | "reconciling" | "skipped"
