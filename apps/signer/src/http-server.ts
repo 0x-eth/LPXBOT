@@ -654,6 +654,8 @@ function failure(response: ServerResponse, error: unknown): void {
                 signerError.code === "LOCAL_SWAP_PLAN_REJECTED" ||
                 signerError.code === "LOCAL_POSITION_PLAN_EXPIRED" ||
                 signerError.code === "LOCAL_POSITION_PLAN_REJECTED" ||
+                signerError.code === "LOCAL_HELPER_SWEEP_PLAN_EXPIRED" ||
+                signerError.code === "LOCAL_HELPER_SWEEP_PLAN_REJECTED" ||
                 signerError.code === "PERMIT2_AUTHORIZATION_REJECTED"
               ? 409
               : signerError.code === "WALLET_ADDRESS_EXISTS"
@@ -708,6 +710,9 @@ export function createSignerHttpServer(input: {
             ...(input.service.localPositionStepSigningConfigured()
               ? ["plan-bound-local-position-step-signing"]
               : []),
+            ...(input.service.localHelperSweepSigningConfigured()
+              ? ["plan-bound-local-helper-sweep-signing"]
+              : []),
           ],
           ready: true,
         },
@@ -724,6 +729,33 @@ export function createSignerHttpServer(input: {
     let importAcquired = false;
     try {
       const sessionId = reauthenticatedSessionId(request);
+      if (
+        request.method === "POST" &&
+        request.url === "/v1/local-helper-sweeps/sign-and-deliver"
+      ) {
+        if (request.headers["content-type"]?.split(";", 1)[0] !== "application/json") {
+          send(response, 415, {
+            error: { code: "UNSUPPORTED_MEDIA_TYPE", retryable: false },
+            success: false,
+          });
+          return;
+        }
+        body = await readBody(request, localHelperSweepPlanBodyLimit);
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(body.toString("utf8"));
+        } catch {
+          throw new SignerError("LOCAL_HELPER_SWEEP_PLAN_REJECTED");
+        }
+        const signing = localHelperSweepSigningRequest(parsed);
+        const signed = await input.service.signLocalHelperSweep({
+          ...ownership,
+          ...(sessionId ? { reauthenticatedSessionId: sessionId } : {}),
+          ...signing,
+        });
+        send(response, 202, { data: signed, success: true });
+        return;
+      }
       if (
         request.method === "POST" &&
         request.url === "/v1/local-position/steps/sign-and-deliver"

@@ -16,6 +16,8 @@ export type {
   LocalSwapStepSigningResult,
   LocalPositionStepPlanAuthorizer,
   LocalPositionStepSigningResult,
+  LocalHelperSweepPlanAuthorizer,
+  LocalHelperSweepSigningResult,
   KeystoreStatus,
   KeystoreStore,
   SecurityPasswordApplication,
@@ -59,6 +61,14 @@ export {
   PostgresLocalPositionStepPlanAuthorizer,
   ViemLocalPositionPlanVerifier,
 } from "./postgres-local-position-plan-authorizer.js";
+export {
+  PostgresLocalHelperSweepPlanAuthorizer,
+  ViemLocalHelperSweepPlanVerifier,
+} from "./postgres-local-helper-sweep-plan-authorizer.js";
+export type {
+  LocalHelperSweepChainVerification,
+  LocalHelperSweepPlanChainVerifier,
+} from "./postgres-local-helper-sweep-plan-authorizer.js";
 export type {
   LocalPositionPlanChainVerifier,
   LocalPositionStepChainVerification,
