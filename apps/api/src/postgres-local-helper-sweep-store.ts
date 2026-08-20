@@ -169,6 +169,7 @@ export class PostgresLocalHelperSweepBindingStore implements LocalHelperSweepBin
             SELECT 1 FROM local_helper_sweep_batches batch
              WHERE batch.helper_binding_id = wallet_helper_deployment_bindings.binding_id
                AND batch.state IN ('queued', 'running', 'reconciling')
+               AND NOT (batch.state = 'reconciling' AND batch.rescan_state = 'running')
           ))
         RETURNING ${bindingColumns}`,
       [

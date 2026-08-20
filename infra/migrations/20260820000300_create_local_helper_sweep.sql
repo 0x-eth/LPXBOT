@@ -322,6 +322,8 @@ CREATE TABLE local_helper_sweep_receipt_evidence (
   owner_balance_after numeric(78, 0) NOT NULL CHECK (owner_balance_after >= 0),
   gas_used numeric(78, 0) NOT NULL CHECK (gas_used >= 0),
   effective_gas_price numeric(78, 0) NOT NULL CHECK (effective_gas_price >= 0),
+  swept_event boolean NOT NULL,
+  plan_executed_event boolean NOT NULL,
   helper_runtime_code_hash text CHECK (
     helper_runtime_code_hash IS NULL OR helper_runtime_code_hash ~ '^0x[0-9a-f]{64}$'
   ),

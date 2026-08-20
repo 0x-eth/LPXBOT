@@ -665,11 +665,10 @@ export class LocalHelperSweepRecoveryWorker {
         }
         this.#assertClaim(claim);
         if (claim.operation.state === "queued") {
+          const fee = initialFee(claim.operation.plan.feeLimit);
           const signed = await this.#signer.signAndDeliver({
             generation: 0,
-            maxFeePerGasBaseUnit: claim.operation.plan.feeLimit.maxFeePerGasBaseUnit,
-            maxPriorityFeePerGasBaseUnit:
-              claim.operation.plan.feeLimit.maxPriorityFeePerGasBaseUnit,
+            ...fee,
             operationId: claim.operation.operationId,
             plan: claim.operation.plan,
             planDigest: claim.operation.planDigest,
@@ -819,4 +818,15 @@ export function localHelperSweepReplacementCandidate(
 ): LocalHelperSweepReplacementCandidate {
   validateLocalHelperSweepWorkPlan(operation);
   return candidate(operation, fee);
+}
+
+function initialFee(
+  limit: LocalHelperSweepFeeLimit,
+): Pick<LocalHelperSweepFeeLimit, "maxFeePerGasBaseUnit" | "maxPriorityFeePerGasBaseUnit"> {
+  const max = BigInt(limit.maxFeePerGasBaseUnit);
+  const priority = BigInt(limit.maxPriorityFeePerGasBaseUnit);
+  return {
+    maxFeePerGasBaseUnit: (max > 1n ? max / 2n : max).toString(),
+    maxPriorityFeePerGasBaseUnit: (priority > 1n ? priority / 2n : priority).toString(),
+  };
 }
