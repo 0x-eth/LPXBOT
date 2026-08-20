@@ -186,6 +186,15 @@ import {
   type LocalPositionExecutionApplication,
 } from "./local-position-executions.js";
 import {
+  LocalHelperSweepError,
+  localHelperSweepBodyLimit,
+  parseLocalHelperSweepId,
+  parseLocalHelperSweepIdempotencyKey,
+  parseLocalHelperSweepPreview,
+  parseLocalHelperSweepSubmit,
+  type LocalHelperSweepApplication,
+} from "./local-helper-sweeps.js";
+import {
   HelperResidualCursorError,
   HelperResidualReadError,
   type WalletHelperResidualApplication,
@@ -279,6 +288,8 @@ export interface ApiAppOptions {
   positionReads?: PositionReadApplication;
   helperReads?: WalletHelperReadApplication;
   helperResiduals?: WalletHelperResidualApplication;
+  localHelperSweepChainIds?: readonly number[];
+  localHelperSweeps?: LocalHelperSweepApplication;
   helperDeploymentLocalChainIds?: readonly number[];
   helperDeployments?: HelperDeploymentApplication;
   localSwapExecutionChainIds?: readonly number[];
@@ -1045,6 +1056,13 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
     [...localPositionExecutionChainIds].some((chainId) => chainId !== 31_337)
   ) {
     throw new RangeError("Local position execution chain IDs must contain only 31337");
+  }
+  const localHelperSweepChainIds = new Set(options.localHelperSweepChainIds ?? []);
+  if (
+    localHelperSweepChainIds.size !== (options.localHelperSweepChainIds?.length ?? 0) ||
+    [...localHelperSweepChainIds].some((chainId) => chainId !== 31_337)
+  ) {
+    throw new RangeError("Local Helper sweep chain IDs must contain only 31337");
   }
   const walletTransferLocalChainIds = new Set(options.walletTransferLocalChainIds ?? []);
   if (
@@ -4440,6 +4458,68 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         WALLET_LOCKED: "The wallet must be unlocked before position execution",
         WALLET_NOT_FOUND: "The wallet was not found",
         ZERO_LIQUIDITY_DELTA: "The selected percentage rounds to zero liquidity",
+      };
+      return reply.code(status).send(
+        createErrorEnvelope({
+          code: error.code,
+          message: messages[error.code],
+          requestId: request.id,
+          retryable: error.retryable,
+        }),
+      );
+    };
+
+    const localHelperSweepFailure = (
+      error: unknown,
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): FastifyReply | null => {
+      if (!(error instanceof LocalHelperSweepError)) return null;
+      const status =
+        error.code === "CHAIN_NOT_ALLOWED"
+          ? 403
+          : error.code === "HELPER_NOT_FOUND" ||
+              error.code === "LOCAL_HELPER_SWEEP_NOT_FOUND" ||
+              error.code === "SNAPSHOT_NOT_FOUND" ||
+              error.code === "WALLET_NOT_FOUND"
+            ? 404
+            : error.code === "LOCAL_HELPER_SWEEP_UNAVAILABLE"
+              ? 503
+              : error.code === "ZERO_BALANCE"
+                ? 422
+                : error.code === "PREVIEW_INVALID" ||
+                    error.code === "IDEMPOTENCY_KEY_REQUIRED" ||
+                    error.code === "DUPLICATE_ASSET_ID" ||
+                    error.code === "UNKNOWN_ASSET"
+                  ? 400
+                  : 409;
+      const messages: Record<LocalHelperSweepError["code"], string> = {
+        ASSET_ALREADY_CONFIRMED: "The selected residual asset was already confirmed",
+        BATCH_IN_PROGRESS: "Another Helper sweep batch is still active for this wallet",
+        CHAIN_NOT_ALLOWED: "Helper sweep execution is available only on local Anvil",
+        DUPLICATE_ASSET_ID: "Each residual asset may appear only once",
+        HELPER_BINDING_MISMATCH: "The Helper binding or immutable identity does not match",
+        HELPER_NOT_FOUND: "A deployed per-wallet Helper is required",
+        IDEMPOTENCY_CONFLICT: "The idempotency key is already bound to another batch",
+        IDEMPOTENCY_KEY_REQUIRED: "A valid Idempotency-Key header is required",
+        LOCAL_HELPER_SWEEP_NOT_FOUND: "The Helper sweep operation or batch was not found",
+        LOCAL_HELPER_SWEEP_UNAVAILABLE: "The local Helper sweep service is unavailable",
+        MANUAL_RECOVERY_REQUIRED: "This residual requires manual recovery",
+        NONCE_DRIFT: "The wallet nonce changed after preview",
+        NONCE_RECONCILIATION_REQUIRED: "The wallet nonce requires reconciliation",
+        PREVIEW_CHANGED: "The Helper sweep preview no longer matches current state",
+        PREVIEW_EXPIRED: "The Helper sweep preview has expired",
+        PREVIEW_INVALID: "The Helper sweep preview is invalid",
+        REGISTRY_MISMATCH: "The local Helper sweep Registry does not match",
+        SNAPSHOT_CHANGED: "The local Helper residual snapshot changed",
+        SNAPSHOT_EXPIRED: "The local Helper residual snapshot has expired",
+        SNAPSHOT_NOT_FOUND: "The local Helper residual snapshot was not found",
+        SNAPSHOT_REORGED: "The local Helper residual snapshot block was reorganized",
+        SNAPSHOT_STALE: "The local Helper residual snapshot is stale",
+        UNKNOWN_ASSET: "The selected residual asset is not allowlisted",
+        WALLET_LOCKED: "The wallet must be unlocked before Helper sweep execution",
+        WALLET_NOT_FOUND: "The wallet was not found",
+        ZERO_BALANCE: "The selected residual is zero or within dust",
       };
       return reply.code(status).send(
         createErrorEnvelope({
