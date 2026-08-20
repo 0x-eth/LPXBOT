@@ -234,9 +234,6 @@ export class PostgresLocalHelperSweepRecoveryRepository implements LocalHelperSw
         throw new LocalHelperSweepWorkerError("LOCAL_HELPER_SWEEP_BROADCAST_CONFLICT");
       }
       const plan = operation.plan_payload;
-      if (input.result.planDigest !== plan.planDigest) {
-        throw new LocalHelperSweepWorkerError("LOCAL_HELPER_SWEEP_REPLACEMENT_INVALID");
-      }
       const transactionId = this.#uuid().toLowerCase();
       await client.query(
         `INSERT INTO local_helper_sweep_transactions (
@@ -430,6 +427,9 @@ export class PostgresLocalHelperSweepRecoveryRepository implements LocalHelperSw
         throw new LocalHelperSweepWorkerError("LOCAL_HELPER_SWEEP_REPLACEMENT_INVALID");
       }
       const plan = operation.plan_payload;
+      if (input.result.planDigest !== plan.planDigest) {
+        throw new LocalHelperSweepWorkerError("LOCAL_HELPER_SWEEP_REPLACEMENT_INVALID");
+      }
       const transactionId = this.#uuid().toLowerCase();
       await client.query(
         `INSERT INTO local_helper_sweep_transactions (
