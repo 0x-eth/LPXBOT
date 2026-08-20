@@ -23,6 +23,7 @@ import {
   type StoredLocalPositionOperation,
   type StoredLocalPositionPreview,
 } from "./local-position-executions.js";
+import { hasLiveLocalHelperUpgrade } from "./postgres-local-helper-upgrade-guard.js";
 
 function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
@@ -399,6 +400,15 @@ export class PostgresLocalPositionOperationStore implements LocalPositionOperati
       }
       if (walletRow.lifecycle_status !== "active" || walletRow.lock_status !== "ready") {
         throw new LocalPositionExecutionError("WALLET_LOCKED");
+      }
+      if (
+        await hasLiveLocalHelperUpgrade(client, {
+          tenantId: input.tenantId,
+          userId: input.userId,
+          walletId: input.walletId,
+        })
+      ) {
+        throw new LocalPositionExecutionError("HELPER_UPGRADE_IN_PROGRESS");
       }
       const snapshot = await client.query<{ snapshot_digest: string }>(
         `SELECT snapshot_digest

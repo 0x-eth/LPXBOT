@@ -21,6 +21,7 @@ import {
   type StoredLocalSwapOperation,
   type StoredLocalSwapPreview,
 } from "./local-swap-executions.js";
+import { hasLiveLocalHelperUpgrade } from "./postgres-local-helper-upgrade-guard.js";
 
 function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
@@ -398,6 +399,15 @@ export class PostgresLocalSwapOperationStore implements LocalSwapOperationStore 
       }
       if (walletRow.lifecycle_status !== "active" || walletRow.lock_status !== "ready") {
         throw new LocalSwapExecutionError("WALLET_LOCKED");
+      }
+      if (
+        await hasLiveLocalHelperUpgrade(client, {
+          tenantId: input.tenantId,
+          userId: input.userId,
+          walletId: input.walletId,
+        })
+      ) {
+        throw new LocalSwapExecutionError("HELPER_UPGRADE_IN_PROGRESS");
       }
       const now = this.#now();
       await client.query(

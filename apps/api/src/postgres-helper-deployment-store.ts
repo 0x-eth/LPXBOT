@@ -22,6 +22,7 @@ import {
   type StoredHelperDeploymentOperation,
   type StoredHelperDeploymentPreview,
 } from "./helper-deployments.js";
+import { hasLiveLocalHelperUpgrade } from "./postgres-local-helper-upgrade-guard.js";
 
 interface OperationRow {
   active_transaction_id: string | null;
@@ -413,12 +414,23 @@ export class PostgresHelperDeploymentOperationStore implements HelperDeploymentO
       if (walletRow.lifecycle_status !== "active" || walletRow.lock_status !== "ready") {
         throw new HelperDeploymentError("WALLET_LOCKED");
       }
-      const binding = await client.query<{ state: "active" | "degraded" | "deploying" }>(
+      if (
+        await hasLiveLocalHelperUpgrade(client, {
+          tenantId: input.tenantId,
+          userId: input.userId,
+          walletId: input.walletId,
+        })
+      ) {
+        throw new HelperDeploymentError("HELPER_UPGRADE_IN_PROGRESS");
+      }
+      const binding = await client.query<{ state: "active" | "deploying" }>(
         `SELECT state
            FROM wallet_helper_deployment_bindings
          WHERE tenant_id = $1 AND user_id = $2 AND wallet_id = $3
-            AND chain_id = 31337 AND helper_version = 'WalletHelperV1'
+            AND chain_id = 31337
             AND state IN ('deploying', 'active')
+          ORDER BY (state = 'active') DESC
+          LIMIT 1
           FOR UPDATE`,
         [input.tenantId, input.userId, input.walletId],
       );

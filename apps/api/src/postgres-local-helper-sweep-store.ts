@@ -24,6 +24,7 @@ import {
   type StoredLocalHelperSweepOperation,
   type StoredLocalHelperSweepPreview,
 } from "./local-helper-sweeps.js";
+import { hasLiveLocalHelperUpgrade } from "./postgres-local-helper-upgrade-guard.js";
 
 interface BindingRow extends QueryResultRow {
   adapter_address: `0x${string}`;
@@ -457,6 +458,15 @@ export class PostgresLocalHelperSweepOperationStore implements LocalHelperSweepO
       }
       if (wallet.lifecycle_status !== "active" || wallet.lock_status !== "ready") {
         throw new LocalHelperSweepError("WALLET_LOCKED");
+      }
+      if (
+        await hasLiveLocalHelperUpgrade(client, {
+          tenantId: input.tenantId,
+          userId: input.userId,
+          walletId: input.walletId,
+        })
+      ) {
+        throw new LocalHelperSweepError("HELPER_UPGRADE_IN_PROGRESS");
       }
       const snapshotResult = await client.query<{
         binding_id: string;
