@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import {
   HelperDeploymentService,
+  LocalHelperSweepApplicationRescanner,
   LocalHelperSweepService,
   PostgresHelperDeploymentOperationStore,
   PostgresHelperDeploymentPreviewStore,
@@ -10,6 +11,7 @@ import {
   PostgresLocalHelperSweepOperationStore,
   PostgresLocalHelperSweepPreviewStore,
   PostgresLocalSwapHelperBindingStore,
+  PostgresWalletDirectory,
   type HelperDeploymentChainReader,
   type LocalHelperResidualChainInspection,
 } from "../../apps/api/src/index.js";
@@ -596,12 +598,11 @@ describe("P05-08 PostgreSQL local Helper sweep lifecycle", () => {
 
     chain.clean();
     clock = new Date(clock.getTime() + 1_000);
-    const cleanSnapshot = await service.scan({
-      idempotencyKey: "p05-08-mandatory-rescan",
-      tenantId,
-      userId,
-      wallet: deployment.wallet,
-    });
+    const rescanner = new LocalHelperSweepApplicationRescanner(
+      service,
+      new PostgresWalletDirectory(pool),
+    );
+    const cleanSnapshot = await rescanner.rescan(rescanClaim!.batch);
     expect(cleanSnapshot).toMatchObject({
       allowances: expect.arrayContaining([]),
       binding: { state: "active" },

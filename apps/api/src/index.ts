@@ -151,6 +151,8 @@ export {
   PostgresLocalHelperSweepPreviewStore,
 } from "./postgres-local-helper-sweep-store.js";
 export { ViemLocalHelperResidualChainReader } from "./viem-local-helper-residual-chain-reader.js";
+export { LocalHelperSweepApplicationRescanner } from "./local-helper-sweep-rescanner.js";
+export type { LocalHelperSweepRescanRequest } from "./local-helper-sweep-rescanner.js";
 export type {
   LocalHelperResidualChainInspection,
   LocalHelperResidualChainReader,
