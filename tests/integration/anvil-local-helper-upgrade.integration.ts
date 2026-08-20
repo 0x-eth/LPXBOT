@@ -836,6 +836,24 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
           WHERE batch.batch_id = $1`,
         [sweepBatchId],
       );
+      const receiptEvidence = await pool.query<{
+        asset_id: string;
+        block_number: string;
+        effective_gas_price: string;
+        gas_used: string;
+        owner_balance_after: string;
+        owner_balance_before: string;
+      }>(
+        `SELECT operation.asset_id, evidence.block_number::text,
+                evidence.gas_used::text, evidence.effective_gas_price::text,
+                evidence.owner_balance_before::text, evidence.owner_balance_after::text
+           FROM local_helper_sweep_receipt_evidence evidence
+           JOIN local_helper_sweep_operations operation
+             ON operation.operation_id = evidence.operation_id
+          WHERE operation.batch_id = $1
+          ORDER BY operation.ordinal`,
+        [sweepBatchId],
+      );
       const rescanErrors = await pool.query<{
         attempt_count: number;
         last_error_code: string | null;
@@ -859,6 +877,7 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
               state,
             }),
           ),
+          receiptEvidence: receiptEvidence.rows,
           rescanErrors: rescanErrors.rows,
           sweepRescan,
         })}`,
