@@ -1,0 +1,9 @@
+# P05-08 E-DATA
+
+Migration `20260820000300_create_local_helper_sweep.sql` adds a separate local ledger; it does not repurpose the BSC residual tables. `local_helper_residual_snapshots` stores tenant/user/wallet/helper identity, canonical block facts, complete native/token/allowance/NFT/unknown-token observations, coverage, expiry, Registry version/digest, and snapshot digest. Snapshot rows are append-only and uniquely bind wallet plus scan idempotency and snapshot digest.
+
+`local_helper_sweep_previews` stores opaque preview proof and current chain facts. `local_helper_sweep_batches` enforces one tenant/user/wallet/helper snapshot and a unique wallet live-batch predicate. `local_helper_sweep_operations` enforces unique batch ordinal, asset ID, and chain/wallet nonce. Each operation persists the snapshot amount, immutable owner recipient, plan/semantic/data digests, fencing token, deadline, target, selector, calldata, gas and fee caps, active transaction pointer, and reconciliation state.
+
+Transactions retain per-operation generation, replacement links, active lineage, fees, raw signed transaction transport, and transaction hash. Separate replacement authorization, append-only receipt evidence, reconciliation case, Outbox lease, and append-only audit tables preserve every state transition. Database constraints permit only one active transaction and one pending replacement authorization per operation. Public access is revoked from every new table.
+
+`tests/p05-local-helper-sweep-migration.test.ts` checks tenant scoping, immutable evidence, per-asset uniqueness, state constraints, and reverse dependency order. `tests/integration/postgres-local-helper-sweep.integration.ts` persists a mixed batch through drop, replacement, canonical receipt selection, restart, no replay, full rescan, binding activation, RBAC rejection, and idempotency conflict. `pnpm test:postgres` also verifies fresh migration and reverse migration cycles.

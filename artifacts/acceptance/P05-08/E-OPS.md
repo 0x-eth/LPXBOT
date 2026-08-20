@@ -1,0 +1,11 @@
+# P05-08 E-OPS
+
+Runtime composition fails closed. Local scan/preview requires the dedicated snapshot store, dual-provider `ViemLocalHelperResidualChainReader`, P05-05 Helper binding source, and valid `p05-local-helper-sweep-v2` Registry. Signing/recovery additionally requires PostgreSQL operation and nonce repositories, isolated loopback Signer, synthetic custody material, local RPC providers, Worker Outbox/recovery wiring, receipt observer, and full application rescanner.
+
+`execution-gate.json` opens only `HELPER-06:local-helper-residual-sweep` on non-forked Anvil chainId 31337. BSC chainId 56 stays read-only. BSC, testnet, and production gates are CLOSED with zero signatures, zero broadcasts, and zero real-fund operations. The Registry has `productionInheritance=false`, and non-local Signer/Worker routes do not admit local sweep plans.
+
+Operational diagnosis uses batch/operation state, per-asset cursor, nonce/fencing reservation, active transaction generation, replacement authorization, Outbox lease/attempt count, reconciliation case/reason, dual-provider canonical receipt evidence, token Transfer/balance facts, native gas accounting, rescan snapshot digest, and Helper binding state. Batch and single-operation GET responses expose stable lineage without returning calldata, signed raw transactions, custody material, or Signer credentials.
+
+Runbook: never manually replay a confirmed asset. Reconcile provider/block/receipt facts, then resume only the failed or dropped asset cursor. After all assets confirm, force a full scan. Keep the binding degraded unless balances are within dust, allowances are zero, NFT and unknown-token custody are empty, coverage is complete, and owner/runtime/Registry identities match. Unsupported authority/custody remains `manual-recovery-required`.
+
+Rollback closes local composition with `p05-local-helper-sweep-disabled-v1`, stops new previews/submissions and Worker delivery, and preserves append-only snapshots, plans, transactions, replacement, receipt, reconciliation, Outbox, and audit evidence. P05-02 through P05-07 acceptance is byte-checked against `7123512a720ad983bee2f9aee095f663fefc474f` by both the P05-08 completion test and finalizer.

@@ -1,0 +1,11 @@
+# P05-08 E-SEC
+
+The self-digesting `p05-local-helper-sweep-v2` Registry permits only non-forked Anvil chainId 31337, the P05-05 WalletHelperV1 template and binding Registry, exact `owner()`, `sweepToken`, and `sweepNative` selectors, four exact adapter/router/Permit2/manager code identities, two exact TestOnly token code identities, service fee 0, at most three assets, a five-block drift window, and a 900-second deadline. Native dust is 1000 base units and token dust is 1; only `balance > dust` creates an operation.
+
+Before preview, submit, every signature, replacement, receipt decision, and final rescan, the system verifies Registry version/digest, snapshot/plan version/digest, wallet/helper binding, immutable owner, Helper runtime hash, component/token identities, canonical block hash, balances/authority/custody, nonce, fencing token, deadline, target, zero value, selector, calldata/data digest, semantic digest, gas limit, fee cap, and active generation. Owner/runtime/helper/Registry mismatch fails closed.
+
+API, strict client, domain, Signer HTTP, loopback gateway, and E2E tests reject or strip arbitrary helper, token, target, selector, calldata, amount, recipient, deadline, fee, feeLimit, and serviceFeeBps. Replacement cannot alter asset, token, amount, recipient, target, nonce, or calldata. Public Signer endpoints, injected success envelopes, wrong operation IDs, and mismatched delivery responses are rejected.
+
+Nonzero allowance, Helper-held NFT, unknown Token, incomplete coverage, unexpected token runtime, or authority drift marks the binding degraded. The system returns `manual-recovery-required` for unsupported rescue conditions and never generates arbitrary calldata. Degraded or live-sweep Helpers are rejected by P05-06 Swap and subsequent new-funding entry points; only a full canonical clean rescan can restore active.
+
+Tests cover dust boundary, zero balance, duplicate assetId, expired/changed/reorged snapshot, owner/runtime/binding/Registry mismatch, nonce/provider divergence, receipt/Transfer mismatch, gas-adjusted native mismatch, cross-wallet batch, tenant/user/wallet RBAC, already-confirmed no replay, and idempotency conflict. HELPER-03/04, allowance revoke, NFT rescue, unknown Token sweep, and production execution remain excluded.
