@@ -821,6 +821,7 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       "upgrade-v1-sweep-rescan-after-restart",
     ).processBatch();
     if (sweepRescan.rescanned !== 1) {
+      const currentBatch = await sweepService.getBatch({ batchId: sweepBatchId, tenantId, userId });
       const rescanErrors = await pool.query<{
         attempt_count: number;
         last_error_code: string | null;
@@ -834,6 +835,14 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       );
       throw new Error(
         `WalletHelperV1 sweep rescan mismatch: ${JSON.stringify({
+          operations: currentBatch.operations.map(
+            ({ assetId, failureCode, reconciliationReason, state }) => ({
+              assetId,
+              failureCode,
+              reconciliationReason,
+              state,
+            }),
+          ),
           rescanErrors: rescanErrors.rows,
           sweepRescan,
         })}`,

@@ -20,7 +20,7 @@ export class LocalHelperSweepApplicationRescanner {
 
   async rescan(input: LocalHelperSweepRescanRequest): Promise<LocalHelperResidualSnapshot> {
     const wallet = await this.wallets.getWallet(input.userId, input.walletId);
-    if (!wallet || wallet.address !== input.walletAddress) {
+    if (!wallet || wallet.address.toLowerCase() !== input.walletAddress.toLowerCase()) {
       throw new LocalHelperSweepError("WALLET_NOT_FOUND");
     }
     const snapshot = await this.application.scan({
@@ -31,8 +31,8 @@ export class LocalHelperSweepApplicationRescanner {
     });
     if (
       snapshot.wallet.walletId !== input.walletId ||
-      snapshot.wallet.address !== input.walletAddress ||
-      snapshot.binding.helperAddress !== input.helperAddress
+      snapshot.wallet.address.toLowerCase() !== input.walletAddress.toLowerCase() ||
+      snapshot.binding.helperAddress.toLowerCase() !== input.helperAddress.toLowerCase()
     ) {
       throw new LocalHelperSweepError("HELPER_BINDING_MISMATCH");
     }
