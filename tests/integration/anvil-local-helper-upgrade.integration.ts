@@ -197,11 +197,7 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       artifact("contracts/out/LocalExecutionAdapter.sol/LocalExecutionAdapter.json"),
       artifact("contracts/out/TestOnlyPositionManagerV2.sol/TestOnlyPositionManagerV2.json"),
     ]);
-    const deployFixture = async (input: {
-      abi: Abi;
-      args?: readonly unknown[];
-      bytecode: Hex;
-    }) => {
+    const deployFixture = async (input: { abi: Abi; args?: readonly unknown[]; bytecode: Hex }) => {
       const hash = await fixtureClient.deployContract({
         abi: input.abi,
         ...(input.args ? { args: input.args } : {}),
@@ -220,8 +216,14 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       bytecode: token.bytecode.object,
     });
     const wbnbAddress = await deployFixture({ abi: wbnb.abi, bytecode: wbnb.bytecode.object });
-    const permit2Address = await deployFixture({ abi: permit2.abi, bytecode: permit2.bytecode.object });
-    const routerAddress = await deployFixture({ abi: router.abi, bytecode: router.bytecode.object });
+    const permit2Address = await deployFixture({
+      abi: permit2.abi,
+      bytecode: permit2.bytecode.object,
+    });
+    const routerAddress = await deployFixture({
+      abi: router.abi,
+      bytecode: router.bytecode.object,
+    });
     const oldManagerAddress = await deployFixture({
       abi: position.abi,
       bytecode: position.bytecode.object,
@@ -264,7 +266,11 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
     const isolatedSigner = new IsolatedWalletSigner({ kms });
     const custodyStore = new PostgresCustodyWalletStore(pool);
     const ingress = Buffer.from(
-      JSON.stringify({ mode: "server-kek", name: "Anvil Helper V1 owner", privateKey: ownerPrivateKey }),
+      JSON.stringify({
+        mode: "server-kek",
+        name: "Anvil Helper V1 owner",
+        privateKey: ownerPrivateKey,
+      }),
       "utf8",
     );
     const sealed = await isolatedSigner.importAndSeal({
@@ -339,7 +345,9 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       userId,
     });
     if (!storedDeployment) throw new Error("WalletHelperV1 deployment plan was not stored");
-    const v1Hash = await ownerClient.sendTransaction({ data: storedDeployment.plan.transaction.data });
+    const v1Hash = await ownerClient.sendTransaction({
+      data: storedDeployment.plan.transaction.data,
+    });
     const v1Receipt = await publicClient.waitForTransactionReceipt({ hash: v1Hash });
     if (!v1Receipt.contractAddress || v1Receipt.status !== "success") {
       throw new Error("WalletHelperV1 source deployment failed");
@@ -449,13 +457,15 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       upgradeable: true,
       versions: {
         comparison: "upgrade-available",
-        current: "WalletHelperV1",
+        source: "WalletHelperV1",
         target: "WalletHelperV2",
       },
     });
-    expect(upgradePreview.v1Residual).toMatchObject({
-      coverageComplete: true,
-      manualRecoveryRequired: false,
+    expect(upgradePreview.residual).toEqual({
+      allowanceCount: 0,
+      balancesAboveDust: 3,
+      nftCustodyCount: 0,
+      unknownTokenCount: 0,
     });
     const submitted = await upgradeService.submit({
       idempotencyKey: "anvil-helper-v2-upgrade-0001",
@@ -649,7 +659,9 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
     expect(P05_LOCAL_HELPER_UPGRADE_REGISTRY.target.selectors).toHaveLength(18);
 
     tick();
-    expect(await makeUpgradeWorker("upgrade-sweep-submit-after-restart").processBatch()).toMatchObject({
+    expect(
+      await makeUpgradeWorker("upgrade-sweep-submit-after-restart").processBatch(),
+    ).toMatchObject({
       claimed: 1,
       observed: 1,
     });
@@ -673,19 +685,19 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       claimed: 3,
     });
     tick();
-    expect(await makeSweepWorker("upgrade-v1-sweep-observe-after-restart").processBatch()).toMatchObject(
-      {
-        claimed: 3,
-        observed: 3,
-      },
-    );
+    expect(
+      await makeSweepWorker("upgrade-v1-sweep-observe-after-restart").processBatch(),
+    ).toMatchObject({
+      claimed: 3,
+      observed: 3,
+    });
     tick();
-    expect(await makeSweepWorker("upgrade-v1-sweep-rescan-after-restart").processBatch()).toMatchObject(
-      {
-        claimed: 1,
-        rescanned: 1,
-      },
-    );
+    expect(
+      await makeSweepWorker("upgrade-v1-sweep-rescan-after-restart").processBatch(),
+    ).toMatchObject({
+      claimed: 1,
+      rescanned: 1,
+    });
     expect(await publicClient.getBalance({ address: v1Address })).toBe(0n);
     await expect(
       publicClient.readContract({
@@ -705,17 +717,23 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
     ).resolves.toBe(0n);
 
     tick();
-    expect(await makeUpgradeWorker("upgrade-sweep-complete-after-restart").processBatch()).toMatchObject({
+    expect(
+      await makeUpgradeWorker("upgrade-sweep-complete-after-restart").processBatch(),
+    ).toMatchObject({
       claimed: 1,
       completed: 1,
     });
     tick();
-    expect(await makeUpgradeWorker("upgrade-final-rescan-after-restart").processBatch()).toMatchObject({
+    expect(
+      await makeUpgradeWorker("upgrade-final-rescan-after-restart").processBatch(),
+    ).toMatchObject({
       claimed: 1,
       completed: 1,
     });
     tick();
-    expect(await makeUpgradeWorker("upgrade-binding-switch-after-restart").processBatch()).toMatchObject({
+    expect(
+      await makeUpgradeWorker("upgrade-binding-switch-after-restart").processBatch(),
+    ).toMatchObject({
       claimed: 1,
       completed: 1,
     });
