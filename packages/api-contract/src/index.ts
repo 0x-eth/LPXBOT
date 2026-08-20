@@ -2023,17 +2023,9 @@ export const localHelperUpgradeCursors = Object.freeze([
 ] as const);
 export type LocalHelperUpgradeCursor = (typeof localHelperUpgradeCursors)[number];
 export type LocalHelperUpgradeState =
-  | "queued"
-  | "running"
-  | "manual-recovery-required"
-  | "failed"
-  | "completed";
+  "queued" | "running" | "manual-recovery-required" | "failed" | "completed";
 export type LocalHelperUpgradeStepState =
-  | "pending"
-  | "running"
-  | "succeeded"
-  | "failed"
-  | "manual-recovery-required";
+  "pending" | "running" | "succeeded" | "failed" | "manual-recovery-required";
 
 export interface LocalHelperUpgradePreviewRequest {
   chainId: 31_337;
