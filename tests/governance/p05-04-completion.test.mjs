@@ -29,9 +29,10 @@ const CURRENT_IMPLEMENTED = [
   "HELPER-01",
   "HELPER-02",
   "HELPER-05",
+  "HELPER-06",
 ];
 const CURRENT_PLANNED = REFERENCE_COVERAGE.filter(
-  (id) => !["SWAP-02", "POS-02", "POS-03", "HELPER-02"].includes(id),
+  (id) => !["SWAP-02", "POS-02", "POS-03", "HELPER-02", "HELPER-06"].includes(id),
 );
 const OBSERVED_SELECTORS = ["0xadc3f25c", "0xfb691fd9", "0x71fa74ed", "0x5dfd8e50"];
 const REQUIRED_FILES = [
@@ -107,7 +108,7 @@ function p05Statuses(markdown) {
   return rows;
 }
 
-test("P05-04 stays featureless while P05-07 advances current status to 9 / 3 and 70 / 126", async () => {
+test("P05-04 stays featureless while P05-08 advances current status to 10 / 2 and 71 / 125", async () => {
   const [manifest, functionMatrix, traceability, roadmap] = await Promise.all([
     json("manifest.json"),
     readFile(path.join(ROOT, "docs/FUNCTION_MATRIX.md"), "utf8"),
@@ -146,8 +147,8 @@ test("P05-04 stays featureless while P05-07 advances current status to 9 / 3 and
   }
   for (const document of [traceability, roadmap]) {
     assert.match(document, /P05-04/u);
-    assert.match(document, /P05[^\n]*9[^\n]*implemented-assumed[^\n]*3[^\n]*planned/iu);
-    assert.match(document, /70[^\n]*implemented-assumed[^\n]*126[^\n]*planned/iu);
+    assert.match(document, /P05[^\n]*10[^\n]*implemented-assumed[^\n]*2[^\n]*planned/iu);
+    assert.match(document, /71[^\n]*implemented-assumed[^\n]*125[^\n]*planned/iu);
     assert.match(
       document,
       /testnet\/production[^\n]*CLOSED|testnet\/production gates[^\n]*`CLOSED`/iu,

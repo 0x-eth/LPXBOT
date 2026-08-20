@@ -33,9 +33,10 @@ const IMPLEMENTED = [
   "HELPER-01",
   "HELPER-02",
   "HELPER-05",
+  "HELPER-06",
 ];
 const P05_06_NON_GOALS = ["POS-02", "POS-03", "HELPER-03", "HELPER-04", "HELPER-06"];
-const CURRENT_PLANNED = ["HELPER-03", "HELPER-04", "HELPER-06"];
+const CURRENT_PLANNED = ["HELPER-03", "HELPER-04"];
 const EVIDENCE = [
   "E-API",
   "E-CHAIN",
@@ -118,7 +119,7 @@ function checksums(source) {
   return rows;
 }
 
-test("P05-06 owns SWAP-02 while P05-07 advances P05 to 9 / 3 with global 70 / 126", async () => {
+test("P05-06 owns SWAP-02 while P05-08 advances P05 to 10 / 2 with global 71 / 125", async () => {
   const [functionMatrix, traceability, roadmap] = await Promise.all([
     readFile(path.join(ROOT, "docs/FUNCTION_MATRIX.md"), "utf8"),
     readFile(path.join(ROOT, "docs/TRACEABILITY_MATRIX.md"), "utf8"),
@@ -140,15 +141,15 @@ test("P05-06 owns SWAP-02 while P05-07 advances P05 to 9 / 3 with global 70 / 12
   assert.match(swap.evidence, /P05-06/u);
   assert.match(functionMatrix, /\| SWAP-02 \|[^\n]*implemented-assumed[^\n]*P05-06/u);
   for (const document of [traceability, roadmap]) {
-    assert.match(document, /P05[^\n]*9[^\n]*implemented-assumed[^\n]*3[^\n]*planned/iu);
-    assert.match(document, /70[^\n]*implemented-assumed[^\n]*126[^\n]*planned/iu);
+    assert.match(document, /P05[^\n]*10[^\n]*implemented-assumed[^\n]*2[^\n]*planned/iu);
+    assert.match(document, /71[^\n]*implemented-assumed[^\n]*125[^\n]*planned/iu);
     assert.match(
       document,
       /testnet\/production[^\n]*CLOSED|testnet\/production gates[^\n]*`CLOSED`/iu,
     );
   }
-  assert.match(traceability, /\| 当前产品实现 \| 70 \|/u);
-  assert.match(traceability, /\| 其余 `planned` \| 126 \|/u);
+  assert.match(traceability, /\| 当前产品实现 \| 71 \|/u);
+  assert.match(traceability, /\| 其余 `planned` \| 125 \|/u);
 });
 
 test("P05-06 manifest, evidence inventory, visuals, and checksums are complete", async () => {

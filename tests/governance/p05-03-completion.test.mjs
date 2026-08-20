@@ -38,6 +38,7 @@ const IMPLEMENTED = [
   "HELPER-01",
   "HELPER-02",
   "HELPER-05",
+  "HELPER-06",
 ];
 const OWNED = ["SWAP-01", "POS-04"];
 const REQUIRED_EVIDENCE = [
@@ -124,7 +125,7 @@ function statusRows(markdown) {
   return rows;
 }
 
-test("P05-03 ownership stays frozen at P05-07 current status 9 / 3 and global 70 / 126", async () => {
+test("P05-03 ownership stays frozen at P05-08 current status 10 / 2 and global 71 / 125", async () => {
   const [functionMatrix, traceability, roadmap] = await Promise.all([
     readFile(FUNCTION_MATRIX, "utf8"),
     readFile(TRACEABILITY, "utf8"),
@@ -152,15 +153,15 @@ test("P05-03 ownership stays frozen at P05-07 current status 9 / 3 and global 70
     );
   }
   for (const document of [traceability, roadmap]) {
-    assert.match(document, /P05[^\n]*9[^\n]*implemented-assumed[^\n]*3[^\n]*planned/iu);
+    assert.match(document, /P05[^\n]*10[^\n]*implemented-assumed[^\n]*2[^\n]*planned/iu);
     assert.match(document, /accepted-with-gaps/u);
     assert.match(document, /not parity-verified|不标记 `parity-verified`/iu);
     assert.match(document, /not released|不标记[^\n]*`released`/iu);
   }
-  assert.match(traceability, /\| 当前产品实现 \| 70 \|/u);
-  assert.match(traceability, /\| `implemented-assumed` \| 70 \|/u);
-  assert.match(traceability, /\| 其余 `planned` \| 126 \|/u);
-  assert.match(roadmap, /全局为 70 项 `implemented-assumed`、126 项 `planned`/u);
+  assert.match(traceability, /\| 当前产品实现 \| 71 \|/u);
+  assert.match(traceability, /\| `implemented-assumed` \| 71 \|/u);
+  assert.match(traceability, /\| 其余 `planned` \| 125 \|/u);
+  assert.match(roadmap, /全局为 71 项 `implemented-assumed`、125 项 `planned`/u);
 });
 
 test("P05-03 manifest owns only SWAP-01 and POS-04", async () => {
