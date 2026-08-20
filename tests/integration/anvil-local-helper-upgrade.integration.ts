@@ -800,6 +800,13 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       broadcast: 3,
       claimed: 3,
     });
+    const broadcastBatch = await sweepService.getBatch({ batchId: sweepBatchId, tenantId, userId });
+    for (const operation of broadcastBatch.operations) {
+      const transactionHash = operation.transactions.find(({ active }) => active)?.transactionHash;
+      if (!transactionHash) throw new Error(`Missing sweep transaction for ${operation.assetId}`);
+      await publicClient.waitForTransactionReceipt({ hash: transactionHash });
+    }
+    await rpc(rpcUrl, "evm_mine", []);
     tick();
     expect(
       await makeSweepWorker("upgrade-v1-sweep-observe-after-restart").processBatch(),
