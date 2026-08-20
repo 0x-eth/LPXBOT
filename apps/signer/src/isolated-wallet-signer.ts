@@ -3,8 +3,10 @@ import { randomBytes as systemRandomBytes } from "node:crypto";
 import type { WalletEncryptionMode } from "@lpbot/api-contract";
 import {
   buildWalletHelperV1DeploymentMaterial,
+  buildWalletHelperV2DeploymentMaterial,
   helperDeploymentComponent,
   P05_HELPER_DEPLOYMENT_REGISTRY,
+  P05_LOCAL_HELPER_UPGRADE_REGISTRY,
   P05_LOCAL_HELPER_SWEEP_REGISTRY,
   P05_LOCAL_POSITION_EXECUTION_REGISTRY,
 } from "@lpbot/chain-registry";
@@ -13,6 +15,12 @@ import {
   validateHelperDeploymentPlan,
   type HelperDeploymentPlan,
 } from "@lpbot/domain/helper-deployment";
+import {
+  localHelperUpgradePlanDigest,
+  localHelperUpgradeSelectorSetHash,
+  validateLocalHelperUpgradePlan,
+  type LocalHelperUpgradePlan,
+} from "@lpbot/domain/local-helper-upgrade";
 import {
   localHelperSweepCalldata,
   localHelperSweepDataDigest,
@@ -49,6 +57,7 @@ import type {
   LocalSwapStepSigningResult,
   LocalPositionStepSigningResult,
   LocalHelperSweepSigningResult,
+  LocalHelperUpgradeSigningResult,
 } from "./custody-types.js";
 import type { KmsClient } from "./kms.js";
 import {
@@ -79,6 +88,7 @@ export const signerCapabilities = [
   "plan-bound-local-permit2-signing",
   "plan-bound-local-position-step-signing",
   "plan-bound-local-helper-sweep-signing",
+  "plan-bound-local-helper-upgrade-signing",
 ] as const;
 
 export interface SealedWalletDraft {
@@ -437,6 +447,162 @@ export class IsolatedWalletSigner {
         throw new SignerError("HELPER_DELIVERY_UNAVAILABLE", true);
       }
       return { ...delivered, planDigest: input.planDigest, transactionHash };
+    } finally {
+      rawBytes?.fill(0);
+      this.#zeroize("private-key", opened.privateKey);
+      this.#zeroize("dek", opened.dek);
+    }
+  }
+
+  async signAndDeliverLocalHelperUpgrade(input: {
+    delivery: RawTransactionDelivery;
+    envelope: CustodyEnvelope;
+    generation: number;
+    maxFeePerGasBaseUnit: string;
+    maxPriorityFeePerGasBaseUnit: string;
+    now?: Date;
+    operationId: string;
+    passwordKek?: Uint8Array | undefined;
+    plan: LocalHelperUpgradePlan;
+    planDigest: `sha256:${string}`;
+    wallet: StoredCustodyWallet;
+  }): Promise<LocalHelperUpgradeSigningResult> {
+    const now = input.now ?? new Date();
+    const registry = P05_LOCAL_HELPER_UPGRADE_REGISTRY;
+    const material = buildWalletHelperV2DeploymentMaterial(input.plan.wallet.address, registry);
+    const adapter = helperDeploymentComponent("adapter", P05_HELPER_DEPLOYMENT_REGISTRY);
+    const permit2 = helperDeploymentComponent("permit2", P05_HELPER_DEPLOYMENT_REGISTRY);
+    let validPlan = true;
+    try {
+      validateLocalHelperUpgradePlan(
+        input.plan,
+        {
+          abiHash: registry.target.abiHash,
+          adapter: adapter.address,
+          constructorArgumentsHash: material.constructorArgumentsHash,
+          creationCodeHash: registry.target.creationCodeHash,
+          expectedAddress: getContractAddress({
+            from: input.plan.wallet.address,
+            nonce: BigInt(input.plan.nonce),
+          }).toLowerCase() as `0x${string}`,
+          expectedRuntimeCodeHash: input.plan.target.expectedRuntimeCodeHash,
+          initCode: material.initCode,
+          initCodeHash: material.initCodeHash,
+          owner: input.wallet.addressLower,
+          permit2: permit2.address,
+          registryDigest: registry.registryDigest,
+          selectorSetHash: localHelperUpgradeSelectorSetHash(registry.target.selectors),
+          sourceBinding: {
+            adapterAddress: adapter.address,
+            bindingId: input.plan.source.bindingId,
+            deploymentRegistryVersion: registry.source.bindingRegistryVersion,
+            helperAddress: input.plan.source.helperAddress,
+            helperVersion: "WalletHelperV1",
+            ownerAddress: input.wallet.addressLower,
+            permit2Address: permit2.address,
+            runtimeCodeHash: input.plan.source.runtimeCodeHash,
+            state: "active",
+            verifiedBlockNumber: input.plan.snapshot.blockNumber,
+            walletId: input.wallet.walletId,
+          },
+          tokenA: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[0],
+          tokenB: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[1],
+        },
+        now,
+      );
+    } catch {
+      validPlan = false;
+    }
+    const maxFee = /^(?:0|[1-9][0-9]*)$/u.test(input.maxFeePerGasBaseUnit)
+      ? BigInt(input.maxFeePerGasBaseUnit)
+      : 0n;
+    const priority = /^(?:0|[1-9][0-9]*)$/u.test(input.maxPriorityFeePerGasBaseUnit)
+      ? BigInt(input.maxPriorityFeePerGasBaseUnit)
+      : -1n;
+    if (
+      !validPlan ||
+      input.plan.deadline <= now.toISOString() ||
+      input.plan.chainId !== 31_337 ||
+      input.plan.operationId !== input.operationId ||
+      input.plan.planDigest !== input.planDigest ||
+      localHelperUpgradePlanDigest(input.plan) !== input.planDigest ||
+      input.plan.registry.version !== registry.registryVersion ||
+      input.plan.registry.digest !== registry.registryDigest ||
+      input.plan.wallet.walletId !== input.wallet.walletId ||
+      input.plan.wallet.address !== input.wallet.addressLower ||
+      input.plan.target.owner !== input.wallet.addressLower ||
+      input.plan.transaction.to !== null ||
+      input.plan.transaction.valueBaseUnit !== "0" ||
+      input.plan.transaction.data !== material.initCode ||
+      input.plan.transaction.dataHash !== material.initCodeHash ||
+      input.wallet.lockStatus !== "ready" ||
+      !Number.isSafeInteger(input.generation) ||
+      input.generation < 0 ||
+      maxFee <= 0n ||
+      priority < 0n ||
+      priority > maxFee ||
+      maxFee > BigInt(input.plan.feeLimit.maxFeePerGasBaseUnit) ||
+      priority > BigInt(input.plan.feeLimit.maxPriorityFeePerGasBaseUnit) ||
+      BigInt(input.plan.feeLimit.gasLimit) * maxFee >
+        BigInt(input.plan.feeLimit.feeCapBaseUnit)
+    ) {
+      throw new SignerError(
+        input.plan.deadline <= now.toISOString()
+          ? "LOCAL_HELPER_UPGRADE_PLAN_EXPIRED"
+          : "LOCAL_HELPER_UPGRADE_PLAN_REJECTED",
+      );
+    }
+    const nonce = Number(input.plan.nonce);
+    if (!Number.isSafeInteger(nonce) || nonce < 0) {
+      throw new SignerError("LOCAL_HELPER_UPGRADE_PLAN_REJECTED");
+    }
+    const opened = await this.#openMaterial({
+      envelope: input.envelope,
+      passwordKek: input.passwordKek,
+      wallet: input.wallet,
+    });
+    let rawBytes: Buffer | null = null;
+    try {
+      const account = privateKeyToAccount(
+        `0x${Buffer.from(opened.privateKey).toString("hex")}` as Hex,
+      );
+      const rawTransaction = await account.signTransaction({
+        chainId: 31_337,
+        data: input.plan.transaction.data,
+        gas: BigInt(input.plan.feeLimit.gasLimit),
+        maxFeePerGas: maxFee,
+        maxPriorityFeePerGas: priority,
+        nonce,
+        type: "eip1559",
+        value: 0n,
+      });
+      const transactionHash = keccak256(rawTransaction);
+      rawBytes = Buffer.from(rawTransaction.slice(2), "hex");
+      let delivered;
+      try {
+        delivered = await input.delivery.deliver({
+          chainId: 31_337,
+          operationId: input.operationId,
+          rawTransaction: rawBytes,
+          transactionHash,
+        });
+      } catch {
+        throw new SignerError("LOCAL_HELPER_UPGRADE_DELIVERY_UNAVAILABLE", true);
+      }
+      if (
+        (delivered.status !== "accepted" && delivered.status !== "already-known") ||
+        typeof delivered.deliveryId !== "string" ||
+        !/^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u.test(delivered.deliveryId)
+      ) {
+        throw new SignerError("LOCAL_HELPER_UPGRADE_DELIVERY_UNAVAILABLE", true);
+      }
+      return {
+        ...delivered,
+        generation: input.generation,
+        operationId: input.operationId,
+        planDigest: input.planDigest,
+        transactionHash,
+      };
     } finally {
       rawBytes?.fill(0);
       this.#zeroize("private-key", opened.privateKey);
