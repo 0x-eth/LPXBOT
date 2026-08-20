@@ -625,7 +625,7 @@ test("sweeps a mixed batch once and renders canonical per-asset recovery", async
   const confirm = dialog.getByRole("button", { name: "确认逐资产执行" });
   await confirm.focus();
   await page.keyboard.press("Enter");
-  await expect(confirm).toBeDisabled();
+  await expect(dialog.locator("button.primary-button")).toBeDisabled();
   await page.keyboard.press("Enter");
   await expect(dialog).toBeHidden();
   await expect(panel).toHaveAttribute("data-state", "queued");
