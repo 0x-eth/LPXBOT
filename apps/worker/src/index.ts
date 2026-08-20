@@ -89,6 +89,7 @@ export {
 } from "./local-helper-sweep-worker.js";
 export { ViemLocalHelperSweepObserver } from "./viem-local-helper-sweep-observer.js";
 export type { ViemLocalHelperSweepObserverOptions } from "./viem-local-helper-sweep-observer.js";
+export { PostgresLocalHelperSweepRecoveryRepository } from "./postgres-local-helper-sweep-recovery.js";
 export type {
   LocalHelperSweepBatchResult,
   LocalHelperSweepObservation,
