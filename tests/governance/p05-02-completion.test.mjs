@@ -37,6 +37,7 @@ const CURRENT_IMPLEMENTED = [
   "POS-03",
   "POS-04",
   "HELPER-02",
+  "HELPER-03",
   "HELPER-06",
 ];
 const REQUIRED_EVIDENCE = [
@@ -112,7 +113,7 @@ function statusRows(markdown) {
   return rows;
 }
 
-test("P05-02 ownership remains frozen after P05-08 advances current status to 10 / 2", async () => {
+test("P05-02 ownership remains frozen after P05-09 advances current status to 11 / 1", async () => {
   const [functionMatrix, traceability, roadmap] = await Promise.all([
     readFile(FUNCTION_MATRIX, "utf8"),
     readFile(TRACEABILITY, "utf8"),
@@ -140,15 +141,15 @@ test("P05-02 ownership remains frozen after P05-08 advances current status to 10
     );
   }
   for (const document of [traceability, roadmap]) {
-    assert.match(document, /P05[^\n]*10[^\n]*implemented-assumed[^\n]*2[^\n]*planned/iu);
+    assert.match(document, /P05[^\n]*11[^\n]*implemented-assumed[^\n]*1[^\n]*planned/iu);
     assert.match(document, /accepted-with-gaps/u);
     assert.match(document, /not parity-verified|不标记 `parity-verified`/iu);
     assert.match(document, /not released|不标记[^\n]*`released`/iu);
   }
-  assert.match(traceability, /\| 当前产品实现 \| 71 \|/u);
-  assert.match(traceability, /\| `implemented-assumed` \| 71 \|/u);
-  assert.match(traceability, /\| 其余 `planned` \| 125 \|/u);
-  assert.match(roadmap, /全局为 71 项 `implemented-assumed`、125 项 `planned`/u);
+  assert.match(traceability, /\| 当前产品实现 \| 72 \|/u);
+  assert.match(traceability, /\| `implemented-assumed` \| 72 \|/u);
+  assert.match(traceability, /\| 其余 `planned` \| 124 \|/u);
+  assert.match(roadmap, /全局为 72 项 `implemented-assumed`、124 项 `planned`/u);
 });
 
 test("P05-02 manifest owns only POS-01, HELPER-01, and HELPER-05", async () => {
@@ -189,7 +190,8 @@ test("P00 through P05-01 acceptance files remain byte-identical to the 645-file 
         !file.startsWith("P05-05/") &&
         !file.startsWith("P05-06/") &&
         !file.startsWith("P05-07/") &&
-        !file.startsWith("P05-08/"),
+        !file.startsWith("P05-08/") &&
+        !file.startsWith("P05-09/"),
     )
     .map((file) => `artifacts/acceptance/${file}`);
   assert.equal(baselineFiles.length, 645);
@@ -210,7 +212,8 @@ test("P00 through P05-01 acceptance files remain byte-identical to the 645-file 
         !file.startsWith("artifacts/acceptance/P05-05/") &&
         !file.startsWith("artifacts/acceptance/P05-06/") &&
         !file.startsWith("artifacts/acceptance/P05-07/") &&
-        !file.startsWith("artifacts/acceptance/P05-08/"),
+        !file.startsWith("artifacts/acceptance/P05-08/") &&
+        !file.startsWith("artifacts/acceptance/P05-09/"),
     );
   assert.deepEqual(changed, []);
 });

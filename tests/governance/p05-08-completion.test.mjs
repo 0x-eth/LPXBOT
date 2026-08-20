@@ -23,8 +23,9 @@ const FEATURE_IDS = [
   "HELPER-05",
   "HELPER-06",
 ];
-const IMPLEMENTED = FEATURE_IDS.filter((id) => !["HELPER-03", "HELPER-04"].includes(id));
-const PLANNED = ["HELPER-03", "HELPER-04"];
+const IMPLEMENTED = FEATURE_IDS.filter((id) => id !== "HELPER-04");
+const CURRENT_PLANNED = ["HELPER-04"];
+const P05_08_PLANNED = ["HELPER-03", "HELPER-04"];
 const EVIDENCE = [
   "E-API",
   "E-CHAIN",
@@ -107,7 +108,7 @@ function checksums(source) {
   return rows;
 }
 
-test("P05-08 owns HELPER-06 and advances P05 to 10 / 2 with global 71 / 125", async () => {
+test("P05-08 ownership remains frozen after P05-09 advances P05 to 11 / 1 with global 72 / 124", async () => {
   const [functionMatrix, traceability, roadmap] = await Promise.all([
     readFile(path.join(ROOT, "docs/FUNCTION_MATRIX.md"), "utf8"),
     readFile(path.join(ROOT, "docs/TRACEABILITY_MATRIX.md"), "utf8"),
@@ -121,7 +122,7 @@ test("P05-08 owns HELPER-06 and advances P05 to 10 / 2 with global 71 / 125", as
   );
   assert.deepEqual(
     sorted([...rows].filter(([, row]) => row.status === "planned").map(([id]) => id)),
-    PLANNED,
+    CURRENT_PLANNED,
   );
   const helper = rows.get("HELPER-06");
   assert.match(helper.implementation, /local-helper-sweep|local sweep Registry/u);
@@ -130,16 +131,16 @@ test("P05-08 owns HELPER-06 and advances P05 to 10 / 2 with global 71 / 125", as
   assert.match(helper.evidence, /local-fixture-verified/u);
   assert.match(functionMatrix, /\| HELPER-06 \|[^\n]*implemented-assumed[^\n]*P05-08/u);
   for (const document of [traceability, roadmap]) {
-    assert.match(document, /P05[^\n]*10[^\n]*implemented-assumed[^\n]*2[^\n]*planned/iu);
-    assert.match(document, /71[^\n]*implemented-assumed[^\n]*125[^\n]*planned/iu);
+    assert.match(document, /P05[^\n]*11[^\n]*implemented-assumed[^\n]*1[^\n]*planned/iu);
+    assert.match(document, /72[^\n]*implemented-assumed[^\n]*124[^\n]*planned/iu);
     assert.match(document, /accepted-with-gaps/u);
     assert.match(document, /BSC\/testnet\/production[^\n]*(?:`CLOSED`|closed)/iu);
     assert.match(document, /not parity-verified|不标记 `parity-verified`/iu);
     assert.match(document, /not released|不标记[^\n]*`released`/iu);
   }
-  assert.match(traceability, /\| 当前产品实现 \| 71 \|/u);
-  assert.match(traceability, /\| `implemented-assumed` \| 71 \|/u);
-  assert.match(traceability, /\| 其余 `planned` \| 125 \|/u);
+  assert.match(traceability, /\| 当前产品实现 \| 72 \|/u);
+  assert.match(traceability, /\| `implemented-assumed` \| 72 \|/u);
+  assert.match(traceability, /\| 其余 `planned` \| 124 \|/u);
 });
 
 test("P05-08 manifest, evidence inventory, visuals, and checksums are complete", async () => {
@@ -261,7 +262,7 @@ test("execution contract and gates freeze local-only Helper sweep", async () => 
   assert.equal(gate.gates.bsc.readOnly, true);
   assert.equal(gate.gates.testnet.status, "CLOSED");
   assert.equal(gate.gates.production.status, "CLOSED");
-  assert.deepEqual(gate.plannedOnly, PLANNED);
+  assert.deepEqual(gate.plannedOnly, P05_08_PLANNED);
 });
 
 test("evidence covers scan, batch, recovery, injection, RBAC, and UI requirements", async () => {

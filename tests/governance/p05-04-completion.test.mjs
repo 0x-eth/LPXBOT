@@ -28,11 +28,12 @@ const CURRENT_IMPLEMENTED = [
   "POS-04",
   "HELPER-01",
   "HELPER-02",
+  "HELPER-03",
   "HELPER-05",
   "HELPER-06",
 ];
 const CURRENT_PLANNED = REFERENCE_COVERAGE.filter(
-  (id) => !["SWAP-02", "POS-02", "POS-03", "HELPER-02", "HELPER-06"].includes(id),
+  (id) => !["SWAP-02", "POS-02", "POS-03", "HELPER-02", "HELPER-03", "HELPER-06"].includes(id),
 );
 const OBSERVED_SELECTORS = ["0xadc3f25c", "0xfb691fd9", "0x71fa74ed", "0x5dfd8e50"];
 const REQUIRED_FILES = [
@@ -108,7 +109,7 @@ function p05Statuses(markdown) {
   return rows;
 }
 
-test("P05-04 stays featureless while P05-08 advances current status to 10 / 2 and 71 / 125", async () => {
+test("P05-04 stays featureless while P05-09 advances current status to 11 / 1 and 72 / 124", async () => {
   const [manifest, functionMatrix, traceability, roadmap] = await Promise.all([
     json("manifest.json"),
     readFile(path.join(ROOT, "docs/FUNCTION_MATRIX.md"), "utf8"),
@@ -147,8 +148,8 @@ test("P05-04 stays featureless while P05-08 advances current status to 10 / 2 an
   }
   for (const document of [traceability, roadmap]) {
     assert.match(document, /P05-04/u);
-    assert.match(document, /P05[^\n]*10[^\n]*implemented-assumed[^\n]*2[^\n]*planned/iu);
-    assert.match(document, /71[^\n]*implemented-assumed[^\n]*125[^\n]*planned/iu);
+    assert.match(document, /P05[^\n]*11[^\n]*implemented-assumed[^\n]*1[^\n]*planned/iu);
+    assert.match(document, /72[^\n]*implemented-assumed[^\n]*124[^\n]*planned/iu);
     assert.match(
       document,
       /testnet\/production[^\n]*CLOSED|testnet\/production gates[^\n]*`CLOSED`/iu,
@@ -172,7 +173,8 @@ test("P00 through P05-03 acceptance files remain byte-identical to baseline", as
         !file.startsWith("P05-05/") &&
         !file.startsWith("P05-06/") &&
         !file.startsWith("P05-07/") &&
-        !file.startsWith("P05-08/"),
+        !file.startsWith("P05-08/") &&
+        !file.startsWith("P05-09/"),
     )
     .map((file) => `artifacts/acceptance/${file}`);
   assert.deepEqual(currentPriorFiles, sorted(baselineFiles));
@@ -190,7 +192,8 @@ test("P00 through P05-03 acceptance files remain byte-identical to baseline", as
         !file.startsWith("artifacts/acceptance/P05-05/") &&
         !file.startsWith("artifacts/acceptance/P05-06/") &&
         !file.startsWith("artifacts/acceptance/P05-07/") &&
-        !file.startsWith("artifacts/acceptance/P05-08/"),
+        !file.startsWith("artifacts/acceptance/P05-08/") &&
+        !file.startsWith("artifacts/acceptance/P05-09/"),
     );
   assert.deepEqual(changedPrior, []);
 });

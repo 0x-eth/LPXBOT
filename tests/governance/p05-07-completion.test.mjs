@@ -32,10 +32,11 @@ const IMPLEMENTED = [
   "POS-04",
   "HELPER-01",
   "HELPER-02",
+  "HELPER-03",
   "HELPER-05",
   "HELPER-06",
 ];
-const PLANNED = ["HELPER-03", "HELPER-04"];
+const PLANNED = ["HELPER-04"];
 const P05_07_NON_GOALS = ["HELPER-03", "HELPER-04", "HELPER-06"];
 const EVIDENCE = [
   "E-API",
@@ -119,7 +120,7 @@ function checksums(source) {
   return rows;
 }
 
-test("P05-07 owns POS-02/POS-03 while P05-08 advances P05 to 10 / 2 with global 71 / 125", async () => {
+test("P05-07 owns POS-02/POS-03 while P05-09 advances P05 to 11 / 1 with global 72 / 124", async () => {
   const [functionMatrix, traceability, roadmap] = await Promise.all([
     readFile(path.join(ROOT, "docs/FUNCTION_MATRIX.md"), "utf8"),
     readFile(path.join(ROOT, "docs/TRACEABILITY_MATRIX.md"), "utf8"),
@@ -147,8 +148,8 @@ test("P05-07 owns POS-02/POS-03 while P05-08 advances P05 to 10 / 2 with global 
     );
   }
   for (const document of [traceability, roadmap]) {
-    assert.match(document, /P05[^\n]*10[^\n]*implemented-assumed[^\n]*2[^\n]*planned/iu);
-    assert.match(document, /71[^\n]*implemented-assumed[^\n]*125[^\n]*planned/iu);
+    assert.match(document, /P05[^\n]*11[^\n]*implemented-assumed[^\n]*1[^\n]*planned/iu);
+    assert.match(document, /72[^\n]*implemented-assumed[^\n]*124[^\n]*planned/iu);
     assert.match(document, /accepted-with-gaps/u);
     assert.match(
       document,
@@ -157,9 +158,9 @@ test("P05-07 owns POS-02/POS-03 while P05-08 advances P05 to 10 / 2 with global 
     assert.match(document, /not parity-verified|不标记 `parity-verified`/iu);
     assert.match(document, /not released|不标记[^\n]*`released`/iu);
   }
-  assert.match(traceability, /\| 当前产品实现 \| 71 \|/u);
-  assert.match(traceability, /\| `implemented-assumed` \| 71 \|/u);
-  assert.match(traceability, /\| 其余 `planned` \| 125 \|/u);
+  assert.match(traceability, /\| 当前产品实现 \| 72 \|/u);
+  assert.match(traceability, /\| `implemented-assumed` \| 72 \|/u);
+  assert.match(traceability, /\| 其余 `planned` \| 124 \|/u);
 });
 
 test("P05-07 manifest, evidence inventory, visuals, and checksums are complete", async () => {
