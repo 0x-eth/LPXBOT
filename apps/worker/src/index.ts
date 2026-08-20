@@ -109,6 +109,29 @@ export type {
 } from "./local-helper-sweep-worker.js";
 export { LoopbackLocalPositionSignerGateway } from "./loopback-local-position-signer-gateway.js";
 export { LoopbackLocalHelperSweepSignerGateway } from "./loopback-local-helper-sweep-signer-gateway.js";
+export {
+  decideLocalHelperUpgradeDeploymentObservation,
+  LocalHelperUpgradeRecoveryWorker,
+  LocalHelperUpgradeWorkerError,
+  validateLocalHelperUpgradeWorkPlan,
+} from "./local-helper-upgrade-worker.js";
+export type {
+  LocalHelperUpgradeBatchResult,
+  LocalHelperUpgradeDeploymentDecision,
+  LocalHelperUpgradeObservation,
+  LocalHelperUpgradeObserver,
+  LocalHelperUpgradeProviderObservation,
+  LocalHelperUpgradeReceiptObservation,
+  LocalHelperUpgradeReplacementAuthorization,
+  LocalHelperUpgradeSignerGateway,
+  LocalHelperUpgradeSignerResult,
+  LocalHelperUpgradeSweepGateway,
+  LocalHelperUpgradeSweepResult,
+  LocalHelperUpgradeTransactionReference,
+  LocalHelperUpgradeWorkClaim,
+  LocalHelperUpgradeWorkOperation,
+  LocalHelperUpgradeWorkRepository,
+} from "./local-helper-upgrade-worker.js";
 export { ViemLocalPositionObserver } from "./viem-local-position-observer.js";
 export type { ViemLocalPositionObserverOptions } from "./viem-local-position-observer.js";
 export { PostgresLocalPositionRecoveryRepository } from "./postgres-local-position-recovery.js";
