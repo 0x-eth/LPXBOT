@@ -627,11 +627,10 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
     ).resolves.toBe(true);
     tick();
     const initialFee = {
-      maxFeePerGasBaseUnit: (
-        initialMaxFee > 1n ? initialMaxFee / 2n : initialMaxFee
-      ).toString(),
-      maxPriorityFeePerGasBaseUnit: (
-        initialPriority > 1n ? initialPriority / 2n : initialPriority
+      maxFeePerGasBaseUnit: (initialMaxFee > 1n ? initialMaxFee / 2n : initialMaxFee).toString(),
+      maxPriorityFeePerGasBaseUnit: (initialPriority > 1n
+        ? initialPriority / 2n
+        : initialPriority
       ).toString(),
     };
     await expect(
