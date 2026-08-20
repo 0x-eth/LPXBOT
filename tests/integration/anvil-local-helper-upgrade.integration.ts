@@ -407,6 +407,8 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       }),
     );
     expect(await publicClient.getTransactionCount({ address: ownerAccount.address })).toBe(1);
+    const fundedAtBlock = await publicClient.getBlock();
+    clock = new Date(Math.max(clock.getTime(), Number(fundedAtBlock.timestamp) * 1_000));
 
     const inventory = {
       async list() {
@@ -696,7 +698,7 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
     if (!v2TransactionHash) throw new Error("WalletHelperV2 transaction hash is missing");
     const v2Transaction = await publicClient.getTransaction({ hash: v2TransactionHash });
     expect(v2Transaction).toMatchObject({
-      from: ownerAccount.address,
+      from: ownerAccount.address.toLowerCase(),
       input: storedUpgrade.plan.transaction.data,
       nonce: 1,
       to: null,
