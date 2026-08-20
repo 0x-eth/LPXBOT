@@ -822,6 +822,20 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
     ).processBatch();
     if (sweepRescan.rescanned !== 1) {
       const currentBatch = await sweepService.getBatch({ batchId: sweepBatchId, tenantId, userId });
+      const directoryWallet = await wallets.getWallet(userId, walletId);
+      const batchIdentity = await pool.query<{
+        lifecycle_status: string;
+        stored_address: string;
+        wallet_address: string;
+      }>(
+        `SELECT batch.wallet_address, wallet.address AS stored_address,
+                wallet.lifecycle_status
+           FROM local_helper_sweep_batches batch
+           JOIN custody_wallets wallet
+             ON wallet.wallet_id = batch.wallet_id AND wallet.user_id = batch.user_id
+          WHERE batch.batch_id = $1`,
+        [sweepBatchId],
+      );
       const rescanErrors = await pool.query<{
         attempt_count: number;
         last_error_code: string | null;
@@ -835,6 +849,8 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       );
       throw new Error(
         `WalletHelperV1 sweep rescan mismatch: ${JSON.stringify({
+          batchIdentity: batchIdentity.rows,
+          directoryWallet,
           operations: currentBatch.operations.map(
             ({ assetId, failureCode, reconciliationReason, state }) => ({
               assetId,
