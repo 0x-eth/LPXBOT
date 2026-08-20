@@ -147,7 +147,17 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
     rpcUrl = `http://127.0.0.1:${port}`;
     anvil = spawn(
       "anvil",
-      ["--host", "127.0.0.1", "--port", String(port), "--chain-id", String(chainId), "--silent"],
+      [
+        "--host",
+        "127.0.0.1",
+        "--port",
+        String(port),
+        "--chain-id",
+        String(chainId),
+        "--base-fee",
+        "1",
+        "--silent",
+      ],
       { stdio: "ignore" },
     );
     await waitForRpc(rpcUrl);
