@@ -166,13 +166,7 @@ function operation(state: "completed" | "manual-recovery-required" | "queued") {
         ? []
         : completed
           ? [
-              transaction(
-                0,
-                "replaced",
-                firstTransactionId,
-                firstTransactionHash,
-                false,
-              ),
+              transaction(0, "replaced", firstTransactionId, firstTransactionHash, false),
               transaction(
                 1,
                 "confirmed",
@@ -181,15 +175,7 @@ function operation(state: "completed" | "manual-recovery-required" | "queued") {
                 true,
               ),
             ]
-          : [
-              transaction(
-                0,
-                "confirmed",
-                firstTransactionId,
-                firstTransactionHash,
-                true,
-              ),
-            ],
+          : [transaction(0, "confirmed", firstTransactionId, firstTransactionHash, true)],
     updatedAt: state === "queued" ? createdAt : completedAt,
     versions: versions(),
     walletId,
@@ -252,7 +238,10 @@ async function install(page: Page, state: FixtureState) {
       return;
     }
     if (path === "/api/wallets" && method === "GET") {
-      await route.fulfill({ contentType: "application/json", json: envelope({ items: [wallet()] }) });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope({ items: [wallet()] }),
+      });
       return;
     }
     if (path === `/api/wallets/${walletId}/helper-upgrade` && method === "GET") {
@@ -272,7 +261,10 @@ async function install(page: Page, state: FixtureState) {
     }
     if (path === "/api/wallets/helper/upgrade/preview" && method === "POST") {
       state.previewPayloads.push(JSON.parse(request.postData() ?? "{}") as Record<string, unknown>);
-      await route.fulfill({ contentType: "application/json", json: envelope(preview(state.manual)) });
+      await route.fulfill({
+        contentType: "application/json",
+        json: envelope(preview(state.manual)),
+      });
       return;
     }
     if (path === "/api/wallets/helper/upgrade" && method === "POST") {

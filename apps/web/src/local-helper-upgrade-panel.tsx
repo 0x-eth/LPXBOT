@@ -71,13 +71,22 @@ const transactionStateLabels: Record<
   signed: "已签名",
 };
 const blockerLabels: Record<string, string> = {
-  ALLOWANCE_NON_ZERO: "WalletHelperV1 仍有非零 allowance",
-  COMPONENT_IDENTITY_MISMATCH: "依赖合约 identity 不匹配",
+  BALANCE_ABOVE_DUST: "WalletHelperV1 残留余额仍高于 dust",
+  BINDING_DEGRADED: "WalletHelperV1 binding 已降级",
+  BINDING_IDENTITY_MISMATCH: "WalletHelperV1 binding identity 不匹配",
   LIVE_OPERATION: "钱包仍有链上操作进行中",
-  NFT_CUSTODY_NON_ZERO: "WalletHelperV1 仍持有 NFT",
+  NFT_CUSTODY: "WalletHelperV1 仍持有 NFT",
+  NON_ZERO_ALLOWANCE: "WalletHelperV1 仍有非零 allowance",
+  NONCE_CONFLICT: "钱包 nonce 已被占用",
   PROVIDER_DIVERGENCE: "本地 provider 观测不一致",
-  RESIDUAL_ABOVE_DUST: "WalletHelperV1 残留余额仍高于 dust",
-  UNKNOWN_TOKEN_NON_ZERO: "WalletHelperV1 存在未知 Token",
+  REGISTRY_MISMATCH: "Helper Registry identity 不匹配",
+  RESIDUAL_COVERAGE_INCOMPLETE: "WalletHelperV1 残留扫描覆盖不完整",
+  RESIDUAL_MANUAL_RECOVERY_REQUIRED: "WalletHelperV1 残留需要人工恢复",
+  SOURCE_OWNER_MISMATCH: "WalletHelperV1 owner 不匹配",
+  SOURCE_RUNTIME_MISMATCH: "WalletHelperV1 runtime hash 不匹配",
+  UNKNOWN_TOKEN: "WalletHelperV1 存在未知 Token",
+  V1_IDENTITY_MISMATCH: "WalletHelperV1 identity 不匹配",
+  WALLET_MISMATCH: "钱包与 Helper binding 不匹配",
 };
 const pollableStates = new Set<LocalHelperUpgradeState>([
   "queued",
