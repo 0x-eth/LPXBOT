@@ -512,6 +512,15 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       adapterId: "anvil-helper-upgrade",
       broadcast: broadcastPort,
     });
+    const upgradePlanVerifier = new ViemLocalHelperUpgradePlanVerifier({
+      chainId,
+      provider: { providerId: "anvil-helper-upgrade-signer", rpcUrl },
+    });
+    const upgradePlanAuthorizer = new PostgresLocalHelperUpgradePlanAuthorizer(
+      pool,
+      upgradePlanVerifier,
+      { now: () => clock },
+    );
     const signerService = new CustodySignerService({
       localHelperSweepPlanAuthorizer: new PostgresLocalHelperSweepPlanAuthorizer(
         pool,
@@ -521,14 +530,7 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
         }),
         { now: () => clock },
       ),
-      localHelperUpgradePlanAuthorizer: new PostgresLocalHelperUpgradePlanAuthorizer(
-        pool,
-        new ViemLocalHelperUpgradePlanVerifier({
-          chainId,
-          provider: { providerId: "anvil-helper-upgrade-signer", rpcUrl },
-        }),
-        { now: () => clock },
-      ),
+      localHelperUpgradePlanAuthorizer: upgradePlanAuthorizer,
       now: () => clock,
       rawTransactionDelivery: delivery,
       signer: isolatedSigner,
@@ -590,7 +592,82 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       claimed: 1,
       completed: 1,
     });
+    const chainVerification = await upgradePlanVerifier.verify(storedUpgrade.plan);
+    expect(chainVerification).toMatchObject({
+      canonicalSnapshotBlockHash: storedUpgrade.plan.snapshot.blockHash,
+      componentCodeMatches: true,
+      expectedTargetCode: "0x",
+      latestNonce: "1",
+      pendingNonce: "1",
+      simulatedRuntimeCodeHash: storedUpgrade.plan.target.expectedRuntimeCodeHash,
+      source: {
+        adapter: storedUpgrade.plan.target.adapter,
+        owner: storedUpgrade.plan.wallet.address,
+        permit2: storedUpgrade.plan.target.permit2,
+        runtimeCodeHash: storedUpgrade.plan.source.runtimeCodeHash,
+      },
+      tokenCodeMatches: true,
+    });
+    const initialMaxFee = BigInt(storedUpgrade.plan.feeLimit.maxFeePerGasBaseUnit);
+    const initialPriority = BigInt(storedUpgrade.plan.feeLimit.maxPriorityFeePerGasBaseUnit);
+    await expect(
+      upgradePlanAuthorizer.authorize({
+        generation: 0,
+        maxFeePerGasBaseUnit: (initialMaxFee > 1n ? initialMaxFee / 2n : initialMaxFee).toString(),
+        maxPriorityFeePerGasBaseUnit: (initialPriority > 1n
+          ? initialPriority / 2n
+          : initialPriority
+        ).toString(),
+        operationId: storedUpgrade.operationId,
+        plan: storedUpgrade.plan,
+        planDigest: storedUpgrade.planDigest,
+        tenantId,
+        userId,
+      }),
+    ).resolves.toBe(true);
     tick();
+    const initialFee = {
+      maxFeePerGasBaseUnit: (
+        initialMaxFee > 1n ? initialMaxFee / 2n : initialMaxFee
+      ).toString(),
+      maxPriorityFeePerGasBaseUnit: (
+        initialPriority > 1n ? initialPriority / 2n : initialPriority
+      ).toString(),
+    };
+    await expect(
+      upgradePlanAuthorizer.authorize({
+        generation: 0,
+        ...initialFee,
+        operationId: storedUpgrade.operationId,
+        plan: storedUpgrade.plan,
+        planDigest: storedUpgrade.planDigest,
+        tenantId,
+        userId,
+      }),
+    ).resolves.toBe(true);
+    const storedWallet = await custodyStore.get(userId, walletId);
+    if (!storedWallet) throw new Error("stored custody wallet is missing");
+    await expect(
+      isolatedSigner.signAndDeliverLocalHelperUpgrade({
+        delivery: {
+          async deliver() {
+            return { deliveryId: "anvil-upgrade-signing-probe", status: "accepted" as const };
+          },
+        },
+        envelope: sealed.envelope,
+        generation: 0,
+        ...initialFee,
+        now: clock,
+        operationId: storedUpgrade.operationId,
+        plan: storedUpgrade.plan,
+        planDigest: storedUpgrade.planDigest,
+        wallet: storedWallet,
+      }),
+    ).resolves.toMatchObject({
+      deliveryId: "anvil-upgrade-signing-probe",
+      planDigest: storedUpgrade.planDigest,
+      status: "accepted",
+    });
     const deployResult = await makeUpgradeWorker("upgrade-deploy").processBatch();
     if (deployResult.broadcast !== 1) {
       const failedOperation = await upgradeService.get({
