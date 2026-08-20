@@ -359,16 +359,16 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
     const v1RuntimeHash = keccak256(v1Code);
     expect(v1RuntimeHash).toBe(storedDeployment.plan.deployment.expectedRuntimeCodeHash);
     await pool.query(
-      `UPDATE chain_operations SET state = 'succeeded', updated_at = clock_timestamp()
+      `UPDATE chain_operations SET state = 'succeeded', updated_at = $2
         WHERE operation_id = $1`,
-      [storedDeployment.operationId],
+      [storedDeployment.operationId, clock],
     );
     await pool.query(
       `UPDATE wallet_helper_deployment_bindings
           SET state = 'active', deployment_transaction_hash = $2,
-              verified_block_number = $3, failure_code = NULL, updated_at = clock_timestamp()
+              verified_block_number = $3, failure_code = NULL, updated_at = $4
         WHERE operation_id = $1`,
-      [storedDeployment.operationId, v1Hash, v1Receipt.blockNumber.toString()],
+      [storedDeployment.operationId, v1Hash, v1Receipt.blockNumber.toString(), clock],
     );
 
     const erc20Abi = parseAbi([
