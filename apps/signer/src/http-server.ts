@@ -9,6 +9,7 @@ import type {
 } from "@lpbot/domain/local-swap-execution";
 import type { LocalPositionExecutionPlan } from "@lpbot/domain/local-position-execution";
 import type { LocalHelperSweepPlan } from "@lpbot/domain/local-helper-sweep";
+import type { LocalHelperUpgradePlan } from "@lpbot/domain/local-helper-upgrade";
 import {
   transferDigestPattern,
   validateWalletTransferPlan,
@@ -23,6 +24,7 @@ const helperDeploymentBodyLimit = 65_536;
 const localSwapPlanBodyLimit = 131_072;
 const localPositionPlanBodyLimit = 131_072;
 const localHelperSweepPlanBodyLimit = 65_536;
+const localHelperUpgradePlanBodyLimit = 131_072;
 const identityPattern = /^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const digestPattern = /^sha256:[0-9a-f]{64}$/u;
@@ -588,6 +590,131 @@ function localHelperSweepSigningRequest(value: unknown): {
   };
 }
 
+function localHelperUpgradeSigningRequest(value: unknown): {
+  generation: number;
+  maxFeePerGasBaseUnit: string;
+  maxPriorityFeePerGasBaseUnit: string;
+  operationId: string;
+  plan: LocalHelperUpgradePlan;
+  planDigest: `sha256:${string}`;
+} {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new SignerError("LOCAL_HELPER_UPGRADE_PLAN_REJECTED");
+  }
+  const request = value as Record<string, unknown>;
+  if (
+    !exactKeys(request, [
+      "generation",
+      "maxFeePerGasBaseUnit",
+      "maxPriorityFeePerGasBaseUnit",
+      "operationId",
+      "plan",
+      "planDigest",
+    ]) ||
+    !Number.isSafeInteger(request.generation) ||
+    Number(request.generation) < 0 ||
+    typeof request.maxFeePerGasBaseUnit !== "string" ||
+    !/^[1-9][0-9]*$/u.test(request.maxFeePerGasBaseUnit) ||
+    typeof request.maxPriorityFeePerGasBaseUnit !== "string" ||
+    !/^(?:0|[1-9][0-9]*)$/u.test(request.maxPriorityFeePerGasBaseUnit) ||
+    typeof request.operationId !== "string" ||
+    !uuidPattern.test(request.operationId) ||
+    typeof request.planDigest !== "string" ||
+    !digestPattern.test(request.planDigest) ||
+    typeof request.plan !== "object" ||
+    request.plan === null ||
+    Array.isArray(request.plan)
+  ) {
+    throw new SignerError("LOCAL_HELPER_UPGRADE_PLAN_REJECTED");
+  }
+  const plan = request.plan as Record<string, unknown>;
+  const nested = (key: string, keys: readonly string[]): Record<string, unknown> => {
+    const candidate = plan[key];
+    if (
+      typeof candidate !== "object" ||
+      candidate === null ||
+      Array.isArray(candidate) ||
+      !exactKeys(candidate as Record<string, unknown>, keys)
+    ) {
+      throw new SignerError("LOCAL_HELPER_UPGRADE_PLAN_REJECTED");
+    }
+    return candidate as Record<string, unknown>;
+  };
+  if (
+    !exactKeys(plan, [
+      "chainId",
+      "deadline",
+      "feeLimit",
+      "fencingToken",
+      "nonce",
+      "operationId",
+      "planDigest",
+      "planVersion",
+      "registry",
+      "schemaVersion",
+      "snapshot",
+      "source",
+      "target",
+      "transaction",
+      "wallet",
+    ]) ||
+    plan.chainId !== 31_337 ||
+    plan.schemaVersion !== 3 ||
+    plan.planVersion !== "p05-local-helper-upgrade-plan-v3" ||
+    plan.operationId !== request.operationId ||
+    plan.planDigest !== request.planDigest
+  ) {
+    throw new SignerError("LOCAL_HELPER_UPGRADE_PLAN_REJECTED");
+  }
+  nested("feeLimit", [
+    "feeCapBaseUnit",
+    "gasLimit",
+    "maxFeePerGasBaseUnit",
+    "maxPriorityFeePerGasBaseUnit",
+  ]);
+  nested("registry", ["digest", "rollbackVersion", "version"]);
+  nested("snapshot", ["blockHash", "blockNumber", "digest"]);
+  nested("source", ["bindingId", "helperAddress", "helperVersion", "runtimeCodeHash"]);
+  const target = nested("target", [
+    "abiHash",
+    "adapter",
+    "constructorArgumentsHash",
+    "creationCodeHash",
+    "expectedAddress",
+    "expectedRuntimeCodeHash",
+    "helperVersion",
+    "owner",
+    "permit2",
+    "selectorSetHash",
+    "tokenA",
+    "tokenB",
+  ]);
+  const transaction = nested("transaction", ["data", "dataHash", "to", "valueBaseUnit"]);
+  nested("wallet", ["address", "walletId"]);
+  for (const key of ["tokenA", "tokenB"] as const) {
+    const token = target[key];
+    if (
+      typeof token !== "object" ||
+      token === null ||
+      Array.isArray(token) ||
+      !exactKeys(token as Record<string, unknown>, ["address", "runtimeCodeHash"])
+    ) {
+      throw new SignerError("LOCAL_HELPER_UPGRADE_PLAN_REJECTED");
+    }
+  }
+  if (transaction.to !== null || transaction.valueBaseUnit !== "0") {
+    throw new SignerError("LOCAL_HELPER_UPGRADE_PLAN_REJECTED");
+  }
+  return {
+    generation: Number(request.generation),
+    maxFeePerGasBaseUnit: request.maxFeePerGasBaseUnit,
+    maxPriorityFeePerGasBaseUnit: request.maxPriorityFeePerGasBaseUnit,
+    operationId: request.operationId.toLowerCase(),
+    plan: plan as unknown as LocalHelperUpgradePlan,
+    planDigest: request.planDigest as `sha256:${string}`,
+  };
+}
+
 async function readBody(request: IncomingMessage, limit = bodyLimit): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let size = 0;
@@ -649,6 +776,8 @@ function failure(response: ServerResponse, error: unknown): void {
                 signerError.code === "LOCAL_POSITION_PLAN_REJECTED" ||
                 signerError.code === "LOCAL_HELPER_SWEEP_PLAN_EXPIRED" ||
                 signerError.code === "LOCAL_HELPER_SWEEP_PLAN_REJECTED" ||
+                signerError.code === "LOCAL_HELPER_UPGRADE_PLAN_EXPIRED" ||
+                signerError.code === "LOCAL_HELPER_UPGRADE_PLAN_REJECTED" ||
                 signerError.code === "PERMIT2_AUTHORIZATION_REJECTED"
               ? 409
               : signerError.code === "WALLET_ADDRESS_EXISTS"
@@ -706,6 +835,9 @@ export function createSignerHttpServer(input: {
             ...(input.service.localHelperSweepSigningConfigured()
               ? ["plan-bound-local-helper-sweep-signing"]
               : []),
+            ...(input.service.localHelperUpgradeSigningConfigured()
+              ? ["plan-bound-local-helper-upgrade-signing"]
+              : []),
           ],
           ready: true,
         },
@@ -722,6 +854,30 @@ export function createSignerHttpServer(input: {
     let importAcquired = false;
     try {
       const sessionId = reauthenticatedSessionId(request);
+      if (request.method === "POST" && request.url === "/v1/local-helper-upgrades/sign-and-deliver") {
+        if (request.headers["content-type"]?.split(";", 1)[0] !== "application/json") {
+          send(response, 415, {
+            error: { code: "UNSUPPORTED_MEDIA_TYPE", retryable: false },
+            success: false,
+          });
+          return;
+        }
+        body = await readBody(request, localHelperUpgradePlanBodyLimit);
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(body.toString("utf8"));
+        } catch {
+          throw new SignerError("LOCAL_HELPER_UPGRADE_PLAN_REJECTED");
+        }
+        const signing = localHelperUpgradeSigningRequest(parsed);
+        const signed = await input.service.signLocalHelperUpgrade({
+          ...ownership,
+          ...(sessionId ? { reauthenticatedSessionId: sessionId } : {}),
+          ...signing,
+        });
+        send(response, 202, { data: signed, success: true });
+        return;
+      }
       if (request.method === "POST" && request.url === "/v1/local-helper-sweeps/sign-and-deliver") {
         if (request.headers["content-type"]?.split(";", 1)[0] !== "application/json") {
           send(response, 415, {

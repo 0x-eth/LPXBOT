@@ -7,6 +7,7 @@ import { CustodySignerService } from "./custody-signer-service.js";
 import type {
   HelperDeploymentPlanAuthorizer,
   LocalHelperSweepPlanAuthorizer,
+  LocalHelperUpgradePlanAuthorizer,
   RawTransactionDelivery,
   WalletDependencyInventory,
   WalletTaskCoordinator,
@@ -51,6 +52,7 @@ export interface SignerRuntime {
 export interface SignerRuntimeDependencies {
   helperDeploymentPlanAuthorizer?: HelperDeploymentPlanAuthorizer;
   localHelperSweepPlanAuthorizer?: LocalHelperSweepPlanAuthorizer;
+  localHelperUpgradePlanAuthorizer?: LocalHelperUpgradePlanAuthorizer;
   kms?: KmsClient;
   pool?: Pool;
   rawTransactionDelivery?: RawTransactionDelivery;
@@ -161,6 +163,9 @@ export async function startSignerRuntime(
         : {}),
       ...(dependencies.localHelperSweepPlanAuthorizer
         ? { localHelperSweepPlanAuthorizer: dependencies.localHelperSweepPlanAuthorizer }
+        : {}),
+      ...(dependencies.localHelperUpgradePlanAuthorizer
+        ? { localHelperUpgradePlanAuthorizer: dependencies.localHelperUpgradePlanAuthorizer }
         : {}),
       ...(dependencies.rawTransactionDelivery
         ? { rawTransactionDelivery: dependencies.rawTransactionDelivery }
