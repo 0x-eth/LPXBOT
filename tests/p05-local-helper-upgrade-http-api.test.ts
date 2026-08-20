@@ -435,7 +435,7 @@ describe("P05-09 local Helper upgrade HTTP API", () => {
       payload: { chainId: 56, walletId },
       url: "/api/wallets/helper/upgrade/preview",
     });
-    expect(wrongChain.statusCode).toBe(400);
-    expect(wrongChain.json().error.code).toBe("PREVIEW_INVALID");
+    expect(wrongChain.statusCode).toBe(403);
+    expect(wrongChain.json().error.code).toBe("CHAIN_NOT_ALLOWED");
   });
 });
