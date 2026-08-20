@@ -5,6 +5,7 @@ import {
   buildWalletHelperV1DeploymentMaterial,
   helperDeploymentComponent,
   P05_HELPER_DEPLOYMENT_REGISTRY,
+  P05_LOCAL_HELPER_SWEEP_REGISTRY,
   P05_LOCAL_POSITION_EXECUTION_REGISTRY,
 } from "@lpbot/chain-registry";
 import {
@@ -12,6 +13,14 @@ import {
   validateHelperDeploymentPlan,
   type HelperDeploymentPlan,
 } from "@lpbot/domain/helper-deployment";
+import {
+  localHelperSweepCalldata,
+  localHelperSweepDataDigest,
+  localHelperSweepPlanDigest,
+  localHelperSweepSemanticDigest,
+  validateLocalHelperSweepPlan,
+  type LocalHelperSweepPlan,
+} from "@lpbot/domain/local-helper-sweep";
 import {
   localSwapExecutionPlanDigest,
   localSwapPermit2AuthorizationDigest,
@@ -39,6 +48,7 @@ import type {
   LocalSwapPermit2SigningResult,
   LocalSwapStepSigningResult,
   LocalPositionStepSigningResult,
+  LocalHelperSweepSigningResult,
 } from "./custody-types.js";
 import type { KmsClient } from "./kms.js";
 import {
@@ -68,6 +78,7 @@ export const signerCapabilities = [
   "plan-bound-local-swap-step-signing",
   "plan-bound-local-permit2-signing",
   "plan-bound-local-position-step-signing",
+  "plan-bound-local-helper-sweep-signing",
 ] as const;
 
 export interface SealedWalletDraft {
@@ -654,6 +665,138 @@ export class IsolatedWalletSigner {
         generation: input.generation,
         planDigest: input.planDigest,
         stepId: input.stepId,
+        transactionHash,
+      };
+    } finally {
+      rawBytes?.fill(0);
+      this.#zeroize("private-key", opened.privateKey);
+      this.#zeroize("dek", opened.dek);
+    }
+  }
+
+  async signAndDeliverLocalHelperSweep(input: {
+    delivery: RawTransactionDelivery;
+    envelope: CustodyEnvelope;
+    generation: number;
+    maxFeePerGasBaseUnit: string;
+    maxPriorityFeePerGasBaseUnit: string;
+    now?: Date;
+    operationId: string;
+    passwordKek?: Uint8Array | undefined;
+    plan: LocalHelperSweepPlan;
+    planDigest: `sha256:${string}`;
+    wallet: StoredCustodyWallet;
+  }): Promise<LocalHelperSweepSigningResult> {
+    const now = input.now ?? new Date();
+    const maxFee = /^(?:0|[1-9][0-9]*)$/u.test(input.maxFeePerGasBaseUnit)
+      ? BigInt(input.maxFeePerGasBaseUnit)
+      : 0n;
+    const priority = /^(?:0|[1-9][0-9]*)$/u.test(input.maxPriorityFeePerGasBaseUnit)
+      ? BigInt(input.maxPriorityFeePerGasBaseUnit)
+      : -1n;
+    const registry = P05_LOCAL_HELPER_SWEEP_REGISTRY;
+    let validPlan = true;
+    try {
+      validateLocalHelperSweepPlan(
+        input.plan,
+        {
+          currentBlockHash: input.plan.snapshot.blockHash,
+          currentBlockNumber: input.plan.snapshot.blockNumber,
+          expectedAsset: structuredClone(input.plan.asset),
+          expectedBinding: { ...input.plan.helper, state: "degraded" },
+          expectedWallet: structuredClone(input.plan.wallet),
+          registryDigest: registry.registryDigest,
+        },
+        now,
+      );
+    } catch {
+      validPlan = false;
+    }
+    const calldata = localHelperSweepCalldata(input.plan.planDigest, input.plan.asset);
+    if (
+      !validPlan ||
+      input.plan.deadline <= now.toISOString() ||
+      input.plan.chainId !== 31_337 ||
+      input.plan.operationId !== input.operationId ||
+      input.plan.planDigest !== input.planDigest ||
+      localHelperSweepPlanDigest(input.plan) !== input.planDigest ||
+      input.plan.registry.version !== registry.registryVersion ||
+      input.plan.registry.digest !== registry.registryDigest ||
+      input.plan.serviceFeeBps !== 0 ||
+      input.plan.wallet.walletId !== input.wallet.walletId ||
+      input.plan.wallet.address !== input.wallet.addressLower ||
+      input.plan.helper.ownerAddress !== input.wallet.addressLower ||
+      input.plan.recipient !== input.wallet.addressLower ||
+      input.plan.transaction.to !== input.plan.helper.helperAddress ||
+      input.plan.transaction.valueBaseUnit !== "0" ||
+      input.plan.transaction.data !== calldata ||
+      input.plan.transaction.dataDigest !== localHelperSweepDataDigest(calldata) ||
+      input.plan.semanticDigest !== localHelperSweepSemanticDigest(input.plan) ||
+      input.wallet.lockStatus !== "ready" ||
+      !Number.isSafeInteger(input.generation) ||
+      input.generation < 0 ||
+      maxFee <= 0n ||
+      priority < 0n ||
+      priority > maxFee ||
+      maxFee > BigInt(input.plan.feeLimit.maxFeePerGasBaseUnit) ||
+      priority > BigInt(input.plan.feeLimit.maxPriorityFeePerGasBaseUnit)
+    ) {
+      throw new SignerError(
+        input.plan.deadline <= now.toISOString()
+          ? "LOCAL_HELPER_SWEEP_PLAN_EXPIRED"
+          : "LOCAL_HELPER_SWEEP_PLAN_REJECTED",
+      );
+    }
+    const nonce = Number(input.plan.nonce);
+    if (!Number.isSafeInteger(nonce) || nonce < 0) {
+      throw new SignerError("LOCAL_HELPER_SWEEP_PLAN_REJECTED");
+    }
+    const opened = await this.#openMaterial({
+      envelope: input.envelope,
+      passwordKek: input.passwordKek,
+      wallet: input.wallet,
+    });
+    let rawBytes: Buffer | null = null;
+    try {
+      const account = privateKeyToAccount(
+        `0x${Buffer.from(opened.privateKey).toString("hex")}` as Hex,
+      );
+      const rawTransaction = await account.signTransaction({
+        chainId: 31_337,
+        data: input.plan.transaction.data,
+        gas: BigInt(input.plan.feeLimit.gasLimit),
+        maxFeePerGas: maxFee,
+        maxPriorityFeePerGas: priority,
+        nonce,
+        to: input.plan.transaction.to,
+        type: "eip1559",
+        value: 0n,
+      });
+      const transactionHash = keccak256(rawTransaction);
+      rawBytes = Buffer.from(rawTransaction.slice(2), "hex");
+      let delivered;
+      try {
+        delivered = await input.delivery.deliver({
+          chainId: 31_337,
+          operationId: input.operationId,
+          rawTransaction: rawBytes,
+          transactionHash,
+        });
+      } catch {
+        throw new SignerError("LOCAL_HELPER_SWEEP_DELIVERY_UNAVAILABLE", true);
+      }
+      if (
+        (delivered.status !== "accepted" && delivered.status !== "already-known") ||
+        typeof delivered.deliveryId !== "string" ||
+        !/^[a-z0-9](?:[a-z0-9._:-]{0,126}[a-z0-9])?$/u.test(delivered.deliveryId)
+      ) {
+        throw new SignerError("LOCAL_HELPER_SWEEP_DELIVERY_UNAVAILABLE", true);
+      }
+      return {
+        ...delivered,
+        generation: input.generation,
+        operationId: input.operationId,
+        planDigest: input.planDigest,
         transactionHash,
       };
     } finally {
