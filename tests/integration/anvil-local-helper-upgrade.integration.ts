@@ -59,6 +59,7 @@ import {
   createPublicClient,
   createWalletClient,
   defineChain,
+  getAddress,
   http,
   keccak256,
   parseAbi,
@@ -731,13 +732,13 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
     const readV2 = async (functionName: (typeof v2Abi)[number]["name"]) =>
       publicClient.readContract({ abi: v2Abi, address: v2Address, functionName });
     await expect(readV2("owner")).resolves.toBe(ownerAccount.address);
-    await expect(readV2("adapter")).resolves.toBe(adapterAddress);
-    await expect(readV2("permit2")).resolves.toBe(permit2Address);
-    await expect(readV2("allowedTokenA")).resolves.toBe(tokenAddress);
+    await expect(readV2("adapter")).resolves.toBe(getAddress(adapterAddress));
+    await expect(readV2("permit2")).resolves.toBe(getAddress(permit2Address));
+    await expect(readV2("allowedTokenA")).resolves.toBe(getAddress(tokenAddress));
     await expect(readV2("allowedTokenACodeHash")).resolves.toBe(
       P05_HELPER_DEPLOYMENT_REGISTRY.tokens[0].runtimeCodeHash,
     );
-    await expect(readV2("allowedTokenB")).resolves.toBe(wbnbAddress);
+    await expect(readV2("allowedTokenB")).resolves.toBe(getAddress(wbnbAddress));
     await expect(readV2("allowedTokenBCodeHash")).resolves.toBe(
       P05_HELPER_DEPLOYMENT_REGISTRY.tokens[1].runtimeCodeHash,
     );
