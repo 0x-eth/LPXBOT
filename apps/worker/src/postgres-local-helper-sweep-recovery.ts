@@ -234,6 +234,9 @@ export class PostgresLocalHelperSweepRecoveryRepository implements LocalHelperSw
         throw new LocalHelperSweepWorkerError("LOCAL_HELPER_SWEEP_BROADCAST_CONFLICT");
       }
       const plan = operation.plan_payload;
+      if (input.result.planDigest !== plan.planDigest) {
+        throw new LocalHelperSweepWorkerError("LOCAL_HELPER_SWEEP_REPLACEMENT_INVALID");
+      }
       const transactionId = this.#uuid().toLowerCase();
       await client.query(
         `INSERT INTO local_helper_sweep_transactions (
@@ -649,8 +652,7 @@ export class PostgresLocalHelperSweepRecoveryRepository implements LocalHelperSw
         const batch = await this.#lockBatch(client, input.claim.batch.batchId);
         await client.query(
           `UPDATE local_helper_sweep_batches
-              SET state = 'manual-recovery-required',
-                  rescan_state = 'manual-recovery-required', updated_at = $2
+              SET state = 'failed', rescan_state = 'failed', updated_at = $2
             WHERE batch_id = $1`,
           [batch.batch_id, input.failedAt],
         );
@@ -737,10 +739,26 @@ export class PostgresLocalHelperSweepRecoveryRepository implements LocalHelperSw
           : "pending";
     await client.query(
       `UPDATE local_helper_sweep_transactions
-          SET state = $2, updated_at = $3,
+          SET active = false,
+              state = CASE
+                WHEN state IN ('signed', 'broadcast', 'pending', 'confirmed') THEN 'replaced'
+                ELSE state
+              END,
+              updated_at = $3
+        WHERE operation_id = $1 AND active AND transaction_id <> $2`,
+      [operation.operation_id, decision.transactionId, observedAt],
+    );
+    await client.query(
+      `UPDATE local_helper_sweep_transactions
+          SET state = $2, active = true, updated_at = $3,
               confirmed_at = CASE WHEN $2 = 'confirmed' THEN $3::timestamptz ELSE NULL END
         WHERE transaction_id = $1`,
       [decision.transactionId, transactionState, observedAt],
+    );
+    await client.query(
+      `UPDATE local_helper_sweep_operations
+          SET active_transaction_id = $2 WHERE operation_id = $1`,
+      [operation.operation_id, decision.transactionId],
     );
     await this.#setOperationState(
       client,

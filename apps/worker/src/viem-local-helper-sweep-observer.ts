@@ -177,6 +177,10 @@ export class ViemLocalHelperSweepObserver implements LocalHelperSweepObserver {
     if (receipt.transactionHash.toLowerCase() !== transactionHash) {
       throw new LocalHelperSweepWorkerError("LOCAL_HELPER_SWEEP_RECEIPT_MISMATCH");
     }
+    const status = quantity(receipt.status, "RECEIPT_STATUS");
+    if (status !== 0n && status !== 1n) {
+      throw new LocalHelperSweepWorkerError("LOCAL_HELPER_SWEEP_RECEIPT_STATUS_INVALID", true);
+    }
     const blockNumber = quantity(receipt.blockNumber, "RECEIPT_BLOCK_NUMBER");
     const parentNumber = blockNumber > 0n ? blockNumber - 1n : 0n;
     const blockTag = toHex(blockNumber);
@@ -260,7 +264,7 @@ export class ViemLocalHelperSweepObserver implements LocalHelperSweepObserver {
       ownerBalanceAfter: ownerBalanceAfter.toString(),
       ownerBalanceBefore: ownerBalanceBefore.toString(),
       planExecutedEvent: events.planExecuted,
-      receiptStatus: quantity(receipt.status, "RECEIPT_STATUS") === 1n ? "success" : "reverted",
+      receiptStatus: status === 1n ? "success" : "reverted",
       sweptEvent: events.swept,
       tokenAddress: plan.asset.tokenAddress,
       transactionHash,

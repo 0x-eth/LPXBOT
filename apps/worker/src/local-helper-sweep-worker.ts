@@ -456,22 +456,22 @@ export function decideLocalHelperSweepObservation(input: {
         transactionId: transaction.transactionId,
       };
     }
-    if (receipt.receiptStatus === "reverted") {
-      return {
-        failureCode: "SWEEP_REVERTED",
-        kind: "receipt",
-        operationState: "failed",
-        reason: null,
-        receipt,
-        transactionId: transaction.transactionId,
-      };
-    }
     if (BigInt(receipt.confirmations) < BigInt(input.requiredConfirmations)) {
       return {
         failureCode: null,
         kind: "receipt",
         operationState: "confirmed",
         reason: "CONFIRMATIONS_PENDING",
+        receipt,
+        transactionId: transaction.transactionId,
+      };
+    }
+    if (receipt.receiptStatus === "reverted") {
+      return {
+        failureCode: "SWEEP_REVERTED",
+        kind: "receipt",
+        operationState: "failed",
+        reason: null,
         receipt,
         transactionId: transaction.transactionId,
       };

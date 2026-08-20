@@ -134,8 +134,10 @@ CREATE TABLE local_helper_sweep_batches (
   UNIQUE (batch_id, tenant_id, user_id),
   UNIQUE (tenant_id, user_id, wallet_id, idempotency_key),
   CHECK (updated_at >= created_at),
-  CHECK ((rescan_state IN ('passed', 'manual-recovery-required')) =
-    (rescan_snapshot_digest IS NOT NULL))
+  CHECK (rescan_state NOT IN ('passed', 'manual-recovery-required')
+    OR rescan_snapshot_digest IS NOT NULL),
+  CHECK (rescan_state NOT IN ('pending', 'running')
+    OR rescan_snapshot_digest IS NULL)
 );
 
 CREATE INDEX local_helper_sweep_batches_owner_idx
