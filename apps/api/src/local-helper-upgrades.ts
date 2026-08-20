@@ -92,7 +92,7 @@ export interface LocalHelperUpgradeResidualReader {
     binding: LocalHelperSweepBinding;
     tenantId: string;
     userId: string;
-    wallet: { address: `0x${string}`; walletId: string };
+    wallet: CustodyWallet;
   }): Promise<Readonly<LocalHelperResidualSnapshot>>;
 }
 
@@ -797,7 +797,7 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
         binding,
         tenantId: input.tenantId,
         userId: input.userId,
-        wallet: { address: input.wallet.address, walletId: input.wallet.walletId },
+        wallet: input.wallet,
       }),
       this.#operations.findLiveOperationIds({
         tenantId: input.tenantId,
@@ -872,7 +872,8 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
       current.snapshot.target.expectedAddress !== previous.snapshot.target.expectedAddress ||
       current.snapshot.target.expectedRuntimeCodeHash !==
         previous.snapshot.target.expectedRuntimeCodeHash ||
-      current.residual.snapshotDigest !== previous.residual.snapshotDigest ||
+      this.#residualSemanticDigest(current.residual) !==
+        this.#residualSemanticDigest(previous.residual) ||
       JSON.stringify(current.feeLimit) !== JSON.stringify(previous.feeLimit)
     ) {
       throw new LocalHelperUpgradeError("PREVIEW_CHANGED");
@@ -885,6 +886,20 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
       residualDigest: facts.residual.snapshotDigest,
       snapshotDigest: facts.snapshot.snapshotDigest,
     };
+  }
+
+  #residualSemanticDigest(snapshot: LocalHelperResidualSnapshot): `sha256:${string}` {
+    return hash({
+      allowances: snapshot.allowances,
+      balances: snapshot.balances,
+      binding: snapshot.binding,
+      coverage: snapshot.coverage,
+      identity: snapshot.identity,
+      manualRecoveryRequired: snapshot.manualRecoveryRequired,
+      nftCustody: snapshot.nftCustody,
+      unknownTokens: snapshot.unknownTokens,
+      wallet: snapshot.wallet,
+    });
   }
 
   #publicPreview(
