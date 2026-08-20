@@ -119,6 +119,7 @@ export class LocalHelperUpgradeSweepGateway {
       requestId: operation.operationId,
       sessionId: operation.reauthenticatedSessionId,
       tenantId: operation.tenantId,
+      upgradeOperationId: operation.operationId,
       userId: operation.userId,
       wallet,
     });

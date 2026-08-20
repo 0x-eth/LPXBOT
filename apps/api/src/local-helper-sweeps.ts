@@ -389,6 +389,7 @@ export interface StoredLocalHelperSweepBatch extends Omit<LocalHelperSweepBatch,
   requestHash: `sha256:${string}`;
   sessionId: string;
   tenantId: string;
+  upgradeOperationId: string | null;
   userId: string;
 }
 
@@ -409,6 +410,7 @@ export interface LocalHelperSweepOperationStore {
     sessionId: string;
     snapshotDigest: `sha256:${string}`;
     tenantId: string;
+    upgradeOperationId: string | null;
     userId: string;
     walletAddress: Address;
     walletId: string;
@@ -428,7 +430,10 @@ export interface LocalHelperSweepOperationStore {
 export class MemoryLocalHelperSweepOperationStore implements LocalHelperSweepOperationStore {
   readonly #batches = new Map<string, StoredLocalHelperSweepBatch>();
   readonly #confirmed = new Set<string>();
-  readonly #idempotency = new Map<string, { batchId: string; requestHash: string }>();
+  readonly #idempotency = new Map<
+    string,
+    { batchId: string; requestHash: string; upgradeOperationId: string | null }
+  >();
   readonly #ledgers = new Map<string, { fencingToken: bigint; nextNonce: bigint | null }>();
   readonly #operations = new Map<string, StoredLocalHelperSweepOperation>();
   readonly #now: () => Date;
@@ -444,7 +449,10 @@ export class MemoryLocalHelperSweepOperationStore implements LocalHelperSweepOpe
     const idempotencyScope = `${input.tenantId}:${input.userId}:${input.walletId}:${input.idempotencyKey}`;
     const existing = this.#idempotency.get(idempotencyScope);
     if (existing) {
-      if (existing.requestHash !== input.requestHash) {
+      if (
+        existing.requestHash !== input.requestHash ||
+        existing.upgradeOperationId !== input.upgradeOperationId
+      ) {
         throw new LocalHelperSweepError("IDEMPOTENCY_CONFLICT");
       }
       return {
@@ -535,6 +543,7 @@ export class MemoryLocalHelperSweepOperationStore implements LocalHelperSweepOpe
       snapshotDigest: input.snapshotDigest,
       state: "queued",
       tenantId: input.tenantId,
+      upgradeOperationId: input.upgradeOperationId,
       updatedAt: createdAt,
       userId: input.userId,
       walletId: input.walletId,
@@ -544,7 +553,11 @@ export class MemoryLocalHelperSweepOperationStore implements LocalHelperSweepOpe
       this.#operations.set(operation.operationId, operation);
       this.outbox.push({ batchId, operationId: operation.operationId, state: "queued" });
     }
-    this.#idempotency.set(idempotencyScope, { batchId, requestHash: input.requestHash });
+    this.#idempotency.set(idempotencyScope, {
+      batchId,
+      requestHash: input.requestHash,
+      upgradeOperationId: input.upgradeOperationId,
+    });
     return { batch: structuredClone(batch), kind: "created" as const };
   }
 
@@ -610,6 +623,7 @@ export interface LocalHelperSweepApplication {
     requestId: string;
     sessionId: string;
     tenantId: string;
+    upgradeOperationId?: string;
     userId: string;
     wallet: CustodyWallet;
   }): Promise<{ batch: LocalHelperSweepBatch; created: boolean }>;
@@ -911,6 +925,7 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
     requestId: string;
     sessionId: string;
     tenantId: string;
+    upgradeOperationId?: string;
     userId: string;
     wallet: CustodyWallet;
   }) {
@@ -992,6 +1007,7 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
       sessionId: input.sessionId,
       snapshotDigest: request.snapshotDigest,
       tenantId: input.tenantId,
+      upgradeOperationId: input.upgradeOperationId ?? null,
       userId: input.userId,
       walletAddress: input.wallet.address,
       walletId: input.wallet.walletId,

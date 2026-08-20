@@ -125,6 +125,13 @@ CREATE TABLE local_helper_upgrade_operations (
   CHECK (updated_at >= created_at)
 );
 
+ALTER TABLE local_helper_sweep_batches
+  ADD COLUMN upgrade_operation_id uuid
+    REFERENCES local_helper_upgrade_operations(operation_id) ON DELETE CASCADE;
+CREATE UNIQUE INDEX local_helper_sweep_batches_upgrade_operation_unique
+  ON local_helper_sweep_batches (upgrade_operation_id)
+  WHERE upgrade_operation_id IS NOT NULL;
+
 CREATE INDEX local_helper_upgrade_operations_owner_idx
   ON local_helper_upgrade_operations (tenant_id, user_id, created_at DESC, operation_id DESC);
 CREATE UNIQUE INDEX local_helper_upgrade_operations_wallet_live_unique
@@ -461,6 +468,8 @@ CREATE UNIQUE INDEX wallet_helper_deployment_bindings_live_unique
 
 ALTER TABLE local_helper_upgrade_operations
   DROP CONSTRAINT local_helper_upgrade_operations_active_transaction_fk;
+DROP INDEX local_helper_sweep_batches_upgrade_operation_unique;
+ALTER TABLE local_helper_sweep_batches DROP COLUMN upgrade_operation_id;
 DROP TABLE local_helper_upgrade_audit_events;
 DROP TABLE local_helper_upgrade_outbox;
 DROP TABLE local_helper_upgrade_final_rescan_evidence;

@@ -68,6 +68,7 @@ interface BatchRow extends QueryResultRow {
   snapshot_digest: `sha256:${string}`;
   state: StoredLocalHelperSweepBatch["state"];
   tenant_id: string;
+  upgrade_operation_id: string | null;
   updated_at: Date;
   user_id: string;
   wallet_id: string;
@@ -427,14 +428,22 @@ export class PostgresLocalHelperSweepOperationStore implements LocalHelperSweepO
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
-      const duplicate = await client.query<{ batch_id: string; request_hash: string }>(
-        `SELECT batch_id::text, request_hash FROM local_helper_sweep_batches
+      const duplicate = await client.query<{
+        batch_id: string;
+        request_hash: string;
+        upgrade_operation_id: string | null;
+      }>(
+        `SELECT batch_id::text, request_hash, upgrade_operation_id::text
+           FROM local_helper_sweep_batches
           WHERE tenant_id = $1 AND user_id = $2 AND wallet_id = $3 AND idempotency_key = $4
           FOR UPDATE`,
         [input.tenantId, input.userId, input.walletId, input.idempotencyKey],
       );
       if (duplicate.rows[0]) {
-        if (duplicate.rows[0].request_hash !== input.requestHash) {
+        if (
+          duplicate.rows[0].request_hash !== input.requestHash ||
+          duplicate.rows[0].upgrade_operation_id !== input.upgradeOperationId
+        ) {
           throw new LocalHelperSweepError("IDEMPOTENCY_CONFLICT");
         }
         const batch = await this.#load(client, duplicate.rows[0].batch_id, input);
@@ -459,14 +468,42 @@ export class PostgresLocalHelperSweepOperationStore implements LocalHelperSweepO
       if (wallet.lifecycle_status !== "active" || wallet.lock_status !== "ready") {
         throw new LocalHelperSweepError("WALLET_LOCKED");
       }
-      if (
-        await hasLiveLocalHelperUpgrade(client, {
-          tenantId: input.tenantId,
-          userId: input.userId,
-          walletId: input.walletId,
-        })
-      ) {
-        throw new LocalHelperSweepError("HELPER_UPGRADE_IN_PROGRESS");
+      let upgradeSourceBindingId: string | null = null;
+      if (input.upgradeOperationId === null) {
+        if (
+          await hasLiveLocalHelperUpgrade(client, {
+            tenantId: input.tenantId,
+            userId: input.userId,
+            walletId: input.walletId,
+          })
+        ) {
+          throw new LocalHelperSweepError("HELPER_UPGRADE_IN_PROGRESS");
+        }
+      } else {
+        const upgrade = await client.query<{
+          source_binding_id: string;
+          source_helper_address: `0x${string}`;
+        }>(
+          `SELECT source_binding_id::text, source_helper_address
+             FROM local_helper_upgrade_operations
+            WHERE operation_id = $1 AND tenant_id = $2 AND user_id = $3 AND wallet_id = $4
+              AND chain_id = 31337 AND state = 'running' AND cursor = 'sweep-v1'
+              AND source_helper_address = $5 AND reauthenticated_session_id = $6
+            FOR UPDATE`,
+          [
+            input.upgradeOperationId,
+            input.tenantId,
+            input.userId,
+            input.walletId,
+            input.helperAddress,
+            input.sessionId,
+          ],
+        );
+        const trustedUpgrade = upgrade.rows[0];
+        if (!trustedUpgrade || input.requestId !== input.upgradeOperationId) {
+          throw new LocalHelperSweepError("HELPER_UPGRADE_IN_PROGRESS");
+        }
+        upgradeSourceBindingId = trustedUpgrade.source_binding_id;
       }
       const snapshotResult = await client.query<{
         binding_id: string;
@@ -485,6 +522,9 @@ export class PostgresLocalHelperSweepOperationStore implements LocalHelperSweepO
         throw new LocalHelperSweepError("MANUAL_RECOVERY_REQUIRED");
       }
       if (snapshot.helper_address !== input.helperAddress) {
+        throw new LocalHelperSweepError("HELPER_BINDING_MISMATCH");
+      }
+      if (upgradeSourceBindingId !== null && snapshot.binding_id !== upgradeSourceBindingId) {
         throw new LocalHelperSweepError("HELPER_BINDING_MISMATCH");
       }
       const bindingResult = await client.query<BindingRow>(
@@ -581,10 +621,10 @@ export class PostgresLocalHelperSweepOperationStore implements LocalHelperSweepO
            batch_id, tenant_id, user_id, wallet_id, wallet_address, chain_id,
            helper_binding_id, helper_address, state, snapshot_digest, registry_version,
            registry_digest, preview_digest, request_hash, idempotency_key,
-           reauthenticated_session_id, created_at, updated_at
+           reauthenticated_session_id, upgrade_operation_id, created_at, updated_at
          ) VALUES (
            $1, $2, $3, $4, $5, 31337, $6, $7, 'queued', $8,
-           'p05-local-helper-sweep-v2', $9, $10, $11, $12, $13, $14, $14
+           'p05-local-helper-sweep-v2', $9, $10, $11, $12, $13, $14, $15, $15
          )`,
         [
           batchId,
@@ -600,6 +640,7 @@ export class PostgresLocalHelperSweepOperationStore implements LocalHelperSweepO
           input.requestHash,
           input.idempotencyKey,
           input.sessionId,
+          input.upgradeOperationId,
           now,
         ],
       );
@@ -712,7 +753,8 @@ export class PostgresLocalHelperSweepOperationStore implements LocalHelperSweepO
       `SELECT batch_id::text, tenant_id, user_id::text, wallet_id::text,
               chain_id::integer, helper_address, state, snapshot_digest,
               registry_version, preview_digest, request_hash,
-              reauthenticated_session_id::text, created_at, updated_at
+              reauthenticated_session_id::text, upgrade_operation_id::text,
+              created_at, updated_at
          FROM local_helper_sweep_batches
         WHERE batch_id = $1 AND tenant_id = $2 AND user_id = $3`,
       [batchId, owner.tenantId, owner.userId],
@@ -811,6 +853,7 @@ export class PostgresLocalHelperSweepOperationStore implements LocalHelperSweepO
       snapshotDigest: batch.snapshot_digest,
       state: batch.state,
       tenantId: batch.tenant_id,
+      upgradeOperationId: batch.upgrade_operation_id,
       updatedAt: batch.updated_at.toISOString(),
       userId: batch.user_id,
       walletId: batch.wallet_id,
