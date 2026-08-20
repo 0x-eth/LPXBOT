@@ -9974,6 +9974,20 @@ html[data-theme="dark"] .local-helper-network-line span[data-state="degraded"] {
     border-bottom: 0;
   }
 
+  .local-helper-sweep-section .wallet-read-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .local-helper-sweep-section .wallet-read-heading > div:first-child {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .local-helper-sweep-section .wallet-read-heading h2 {
+    white-space: nowrap;
+  }
+
   .local-helper-asset-list {
     grid-template-columns: minmax(0, 1fr);
   }
