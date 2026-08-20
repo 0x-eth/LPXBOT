@@ -578,6 +578,14 @@ export class PostgresLocalHelperUpgradeRecoveryRepository
         throw new LocalHelperUpgradeWorkerError("HELPER_UPGRADE_VERIFICATION_MISSING");
       }
       this.#assertVerification(operation.plan_payload, verification);
+      const wallet = await client.query(
+        `SELECT wallet_id FROM custody_wallets
+          WHERE tenant_id = $1 AND user_id = $2 AND wallet_id = $3 FOR UPDATE`,
+        [operation.tenant_id, operation.user_id, operation.wallet_id],
+      );
+      if (wallet.rowCount !== 1) {
+        throw new LocalHelperUpgradeWorkerError("HELPER_UPGRADE_BINDING_SWITCH_CONFLICT");
+      }
       const live = await this.#liveExternalOperationIds(client, operation);
       if (live.length > 0) {
         throw new LocalHelperUpgradeWorkerError("HELPER_UPGRADE_LIVE_OPERATION", true);
@@ -626,13 +634,16 @@ export class PostgresLocalHelperUpgradeRecoveryRepository
           WHERE operation_id = $1 AND cursor IN ('atomic-binding-switch', 'completed')`,
         [operation.operation_id, input.completedAt],
       );
-      await client.query(
+      const completed = await client.query(
         `UPDATE local_helper_upgrade_operations
             SET state = 'completed', cursor = 'completed', failure_code = NULL,
                 manual_recovery_blockers = '[]'::jsonb, updated_at = $2
           WHERE operation_id = $1 AND state = 'running' AND cursor = 'atomic-binding-switch'`,
         [operation.operation_id, input.completedAt],
       );
+      if (completed.rowCount !== 1) {
+        throw new LocalHelperUpgradeWorkerError("HELPER_UPGRADE_BINDING_SWITCH_CONFLICT");
+      }
       await this.#finishClaim(client, input.claim, input.completedAt, "delivered");
       await this.#audit(
         client,

@@ -430,10 +430,10 @@ DROP TRIGGER local_helper_upgrade_deployment_evidence_append_only
 DROP TRIGGER local_helper_upgrade_previews_append_only ON local_helper_upgrade_previews;
 
 DROP INDEX wallet_helper_deployment_bindings_active_unique;
-DELETE FROM wallet_helper_deployment_bindings WHERE helper_version = 'WalletHelperV2';
 UPDATE wallet_helper_deployment_bindings
    SET state = 'degraded', superseded_by_binding_id = NULL
  WHERE state = 'superseded';
+DELETE FROM wallet_helper_deployment_bindings WHERE helper_version = 'WalletHelperV2';
 ALTER TABLE wallet_helper_deployment_bindings
   DROP CONSTRAINT wallet_helper_bindings_superseded_check,
   DROP CONSTRAINT wallet_helper_bindings_evidence_check,

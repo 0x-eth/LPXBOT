@@ -69,8 +69,21 @@ export class LocalHelperUpgradeSweepGateway {
         kind: "manual-recovery-required",
       };
     }
+    const residualOnlyDegradation =
+      snapshot.binding.state === "degraded" &&
+      snapshot.coverage.complete &&
+      snapshot.identity.bindingMatches &&
+      snapshot.identity.componentsMatch &&
+      snapshot.identity.ownerMatches &&
+      snapshot.identity.registryMatches &&
+      snapshot.identity.runtimeMatches &&
+      snapshot.identity.tokensMatch &&
+      snapshot.degradationReasons.length > 0 &&
+      snapshot.degradationReasons.every((reason) => reason === "residual-above-dust");
     const identityBlockers = decision.blockers.filter(
-      (blocker) => blocker !== "BALANCE_ABOVE_DUST",
+      (blocker) =>
+        blocker !== "BALANCE_ABOVE_DUST" &&
+        !(blocker === "V1_IDENTITY_MISMATCH" && residualOnlyDegradation),
     );
     if (identityBlockers.length > 0) {
       throw new LocalHelperUpgradeSweepGatewayError(
