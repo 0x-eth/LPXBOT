@@ -23,6 +23,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PositionHelperClient, PositionHelperRequestError } from "./position-helper-client";
 import { HelperDeploymentPanel } from "./helper-deployment-panel";
+import { LocalHelperSweepPanel } from "./local-helper-sweep-panel";
 
 type HelperUiState = "error" | "loading" | HelperReadState;
 
@@ -506,6 +507,7 @@ export function PositionHelperPanels({ wallet }: { wallet: CustodyWallet }) {
       <PositionPanel client={client} wallet={wallet} />
       <HelperPanel client={client} wallet={wallet} />
       <ResidualPanel client={client} wallet={wallet} />
+      <LocalHelperSweepPanel wallet={wallet} />
     </div>
   );
 }
