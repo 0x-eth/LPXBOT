@@ -37,7 +37,10 @@ const transactionHash = `0x${"44".repeat(32)}` as const;
 function plan(): LocalHelperUpgradePlan {
   const registry = P05_LOCAL_HELPER_UPGRADE_REGISTRY;
   const material = buildWalletHelperV2DeploymentMaterial(owner, registry);
-  const expectedAddress = getContractAddress({ from: owner, nonce: 7n }).toLowerCase() as `0x${string}`;
+  const expectedAddress = getContractAddress({
+    from: owner,
+    nonce: 7n,
+  }).toLowerCase() as `0x${string}`;
   const value: LocalHelperUpgradePlan = {
     chainId: 31_337,
     deadline: new Date(now.getTime() + 10 * 60_000).toISOString(),
@@ -126,7 +129,10 @@ function operation(
     tenantId,
     transactions: cursor === "preflight" || cursor === "deploy-v2" ? [] : [transaction()],
     userId,
-    verification: cursor === "preflight" || cursor === "deploy-v2" || cursor === "verify-v2" ? null : verification(value),
+    verification:
+      cursor === "preflight" || cursor === "deploy-v2" || cursor === "verify-v2"
+        ? null
+        : verification(value),
   };
 }
 
@@ -179,7 +185,9 @@ function repository(
   } as LocalHelperUpgradeWorkRepository;
 }
 
-function idleObserver(overrides: Partial<LocalHelperUpgradeObserver> = {}): LocalHelperUpgradeObserver {
+function idleObserver(
+  overrides: Partial<LocalHelperUpgradeObserver> = {},
+): LocalHelperUpgradeObserver {
   return {
     async observeDeployment() {
       throw new Error("deployment observation was not expected");
@@ -191,7 +199,9 @@ function idleObserver(overrides: Partial<LocalHelperUpgradeObserver> = {}): Loca
   };
 }
 
-function idleSweeper(overrides: Partial<LocalHelperUpgradeSweepGateway> = {}): LocalHelperUpgradeSweepGateway {
+function idleSweeper(
+  overrides: Partial<LocalHelperUpgradeSweepGateway> = {},
+): LocalHelperUpgradeSweepGateway {
   return {
     async finalRescan() {
       throw new Error("final rescan was not expected");
@@ -232,19 +242,21 @@ describe("P05-09 local Helper upgrade crash recovery", () => {
     let persisted = false;
     let broadcastCount = 0;
     let deliveryAttempts = 0;
-    const signAndDeliver = vi.fn<LocalHelperUpgradeSignerGateway["signAndDeliver"]>(async (input) => {
-      const status = deliveryAttempts === 0 ? "accepted" : "already-known";
-      deliveryAttempts += 1;
-      if (status === "accepted") broadcastCount += 1;
-      return {
-        deliveryId: "helper-upgrade-recovery-delivery",
-        generation: input.generation,
-        operationId: input.operationId,
-        planDigest: input.planDigest,
-        status,
-        transactionHash,
-      };
-    });
+    const signAndDeliver = vi.fn<LocalHelperUpgradeSignerGateway["signAndDeliver"]>(
+      async (input) => {
+        const status = deliveryAttempts === 0 ? "accepted" : "already-known";
+        deliveryAttempts += 1;
+        if (status === "accepted") broadcastCount += 1;
+        return {
+          deliveryId: "helper-upgrade-recovery-delivery",
+          generation: input.generation,
+          operationId: input.operationId,
+          planDigest: input.planDigest,
+          status,
+          transactionHash,
+        };
+      },
+    );
     const completeBroadcast = vi.fn(async () => {
       if (!persisted) {
         persisted = true;
@@ -314,7 +326,9 @@ describe("P05-09 local Helper upgrade crash recovery", () => {
     const advance = vi.fn<LocalHelperUpgradeWorkRepository["advance"]>();
     const store = repository(() => [current], { advance });
 
-    await expect(worker({ repository: store }).processBatch()).resolves.toMatchObject({ completed: 1 });
+    await expect(worker({ repository: store }).processBatch()).resolves.toMatchObject({
+      completed: 1,
+    });
 
     expect(advance).toHaveBeenCalledOnce();
     expect(advance).toHaveBeenCalledWith(

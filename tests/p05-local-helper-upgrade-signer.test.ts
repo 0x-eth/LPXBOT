@@ -73,7 +73,10 @@ function plan(): LocalHelperUpgradePlan {
         .address,
       constructorArgumentsHash: material.constructorArgumentsHash,
       creationCodeHash: registry.target.creationCodeHash,
-      expectedAddress: getContractAddress({ from: owner, nonce: 7n }).toLowerCase() as `0x${string}`,
+      expectedAddress: getContractAddress({
+        from: owner,
+        nonce: 7n,
+      }).toLowerCase() as `0x${string}`,
       expectedRuntimeCodeHash: expectedRuntime,
       helperVersion: "WalletHelperV2",
       owner,
@@ -268,7 +271,10 @@ describe("P05-09 isolated WalletHelperV2 deployment signer", () => {
   it("rejects init code, nonce, owner, target, version, and plan digest tampering before delivery", async () => {
     const { sealed, signer, wallet } = await isolatedFixture();
     const deliver = vi.fn();
-    const cases: Array<{ mutate(value: LocalHelperUpgradePlan): void; outerDigest?: `sha256:${string}` }> = [
+    const cases: Array<{
+      mutate(value: LocalHelperUpgradePlan): void;
+      outerDigest?: `sha256:${string}`;
+    }> = [
       {
         mutate(value) {
           value.transaction.data = "0x00";
@@ -350,7 +356,8 @@ describe("P05-09 WalletHelperV2 plan authorizer", () => {
     ).resolves.toBe(true);
 
     for (const mutate of [
-      (row: ReturnType<typeof databaseRow>) => (row.replacement_init_code_hash = `0x${"11".repeat(32)}`),
+      (row: ReturnType<typeof databaseRow>) =>
+        (row.replacement_init_code_hash = `0x${"11".repeat(32)}`),
       (row: ReturnType<typeof databaseRow>) => (row.replacement_nonce = "8"),
       (row: ReturnType<typeof databaseRow>) => (row.replacement_owner = `0x${"22".repeat(20)}`),
       (row: ReturnType<typeof databaseRow>) =>
@@ -363,7 +370,11 @@ describe("P05-09 WalletHelperV2 plan authorizer", () => {
       const pool = { query: vi.fn(async () => ({ rows: [row] })) } as unknown as Pool;
       const rejected = new PostgresLocalHelperUpgradePlanAuthorizer(
         pool,
-        { async verify() { return chainVerification(value, { pendingNonce: "8" }); } },
+        {
+          async verify() {
+            return chainVerification(value, { pendingNonce: "8" });
+          },
+        },
         { now: () => now },
       );
       await expect(rejected.authorize(authorization(value, 1))).resolves.toBe(false);

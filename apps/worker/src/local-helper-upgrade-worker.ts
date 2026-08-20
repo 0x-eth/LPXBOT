@@ -315,7 +315,11 @@ function receiptIdentity(receipt: LocalHelperUpgradeReceiptObservation | null): 
 
 function consensus(
   observations: readonly LocalHelperUpgradeProviderObservation[],
-): { latestNonce: bigint; pendingNonce: bigint; receipt: LocalHelperUpgradeReceiptObservation | null } | null {
+): {
+  latestNonce: bigint;
+  pendingNonce: bigint;
+  receipt: LocalHelperUpgradeReceiptObservation | null;
+} | null {
   if (observations.length < 1 || observations.length > 4) return null;
   const ids = new Set<string>();
   const values = new Set<string>();
@@ -587,7 +591,11 @@ export class LocalHelperUpgradeRecoveryWorker {
         }
         if (operation.cursor === "sweep-v1") {
           const sweep = await this.#sweeper.sweep(operation);
-          await this.#repository.applySweepResult({ claim, observedAt: this.#now(), result: sweep });
+          await this.#repository.applySweepResult({
+            claim,
+            observedAt: this.#now(),
+            result: sweep,
+          });
           if (sweep.kind === "manual-recovery-required") result.manualRecovery += 1;
           else if (sweep.kind === "completed") result.completed += 1;
           else result.observed += 1;
@@ -695,7 +703,8 @@ export class LocalHelperUpgradeRecoveryWorker {
         ids.has(transaction.transactionId) ||
         generations.has(transaction.generation) ||
         (transaction.transactionHash !== null &&
-          (!hashPattern.test(transaction.transactionHash) || hashes.has(transaction.transactionHash)))
+          (!hashPattern.test(transaction.transactionHash) ||
+            hashes.has(transaction.transactionHash)))
       ) {
         throw new LocalHelperUpgradeWorkerError("HELPER_UPGRADE_LINEAGE_INVALID");
       }
@@ -726,7 +735,10 @@ export class LocalHelperUpgradeRecoveryWorker {
     }
   }
 
-  #assertVerification(plan: LocalHelperUpgradePlan, verification: WalletHelperV2Verification): void {
+  #assertVerification(
+    plan: LocalHelperUpgradePlan,
+    verification: WalletHelperV2Verification,
+  ): void {
     assertWalletHelperV2Verification(verification, {
       abiHash: plan.target.abiHash,
       adapter: plan.target.adapter,
@@ -748,9 +760,7 @@ export function localHelperUpgradeInitialFee(
   return initialFee(plan);
 }
 
-function initialFee(
-  plan: LocalHelperUpgradePlan,
-): LocalHelperUpgradeReplacementCandidate["fee"] {
+function initialFee(plan: LocalHelperUpgradePlan): LocalHelperUpgradeReplacementCandidate["fee"] {
   const max = BigInt(plan.feeLimit.maxFeePerGasBaseUnit);
   const priority = BigInt(plan.feeLimit.maxPriorityFeePerGasBaseUnit);
   return {

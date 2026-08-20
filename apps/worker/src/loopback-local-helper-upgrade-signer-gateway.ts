@@ -112,7 +112,11 @@ export class LoopbackLocalHelperUpgradeSignerGateway implements LocalHelperUpgra
     timeoutMilliseconds?: number;
     url: string;
   }) {
-    if (input.apiToken.length < 32 || input.apiToken.length > 4_096 || /[\r\n]/u.test(input.apiToken)) {
+    if (
+      input.apiToken.length < 32 ||
+      input.apiToken.length > 4_096 ||
+      /[\r\n]/u.test(input.apiToken)
+    ) {
       throw new RangeError("LOCAL_HELPER_UPGRADE_SIGNER_TOKEN_INVALID");
     }
     this.#timeoutMilliseconds = input.timeoutMilliseconds ?? 10_000;
@@ -163,28 +167,25 @@ export class LoopbackLocalHelperUpgradeSignerGateway implements LocalHelperUpgra
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.#timeoutMilliseconds);
     try {
-      const response = await this.#fetch(
-        `${this.#url}/v1/local-helper-upgrades/sign-and-deliver`,
-        {
-          body: JSON.stringify({
-            generation: input.generation,
-            maxFeePerGasBaseUnit: input.maxFeePerGasBaseUnit,
-            maxPriorityFeePerGasBaseUnit: input.maxPriorityFeePerGasBaseUnit,
-            operationId: input.operationId,
-            plan: input.plan,
-            planDigest: input.planDigest,
-          }),
-          headers: {
-            authorization: `Bearer ${this.#apiToken}`,
-            "content-type": "application/json",
-            "x-lpbot-reauthenticated-session-id": input.reauthenticatedSessionId,
-            "x-lpbot-tenant-id": input.tenantId,
-            "x-lpbot-user-id": input.userId,
-          },
-          method: "POST",
-          signal: controller.signal,
+      const response = await this.#fetch(`${this.#url}/v1/local-helper-upgrades/sign-and-deliver`, {
+        body: JSON.stringify({
+          generation: input.generation,
+          maxFeePerGasBaseUnit: input.maxFeePerGasBaseUnit,
+          maxPriorityFeePerGasBaseUnit: input.maxPriorityFeePerGasBaseUnit,
+          operationId: input.operationId,
+          plan: input.plan,
+          planDigest: input.planDigest,
+        }),
+        headers: {
+          authorization: `Bearer ${this.#apiToken}`,
+          "content-type": "application/json",
+          "x-lpbot-reauthenticated-session-id": input.reauthenticatedSessionId,
+          "x-lpbot-tenant-id": input.tenantId,
+          "x-lpbot-user-id": input.userId,
         },
-      );
+        method: "POST",
+        signal: controller.signal,
+      });
       let parsed: unknown;
       try {
         parsed = await response.json();

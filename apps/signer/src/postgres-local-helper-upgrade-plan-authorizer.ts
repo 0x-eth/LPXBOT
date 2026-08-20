@@ -15,7 +15,13 @@ import {
   type LocalHelperUpgradePlan,
 } from "@lpbot/domain/local-helper-upgrade";
 import type { Pool, QueryResultRow } from "pg";
-import { decodeFunctionResult, encodeFunctionData, getContractAddress, keccak256, type Hex } from "viem";
+import {
+  decodeFunctionResult,
+  encodeFunctionData,
+  getContractAddress,
+  keccak256,
+  type Hex,
+} from "viem";
 
 import type { LocalHelperUpgradePlanAuthorizer } from "./custody-types.js";
 
@@ -161,11 +167,16 @@ export class ViemLocalHelperUpgradePlanVerifier implements LocalHelperUpgradePla
     ]);
     if (!snapshotBlock) throw new Error("LOCAL_HELPER_UPGRADE_SIGNER_BLOCK_MISSING");
     const decoded = (name: "adapter" | "owner" | "permit2", data: Hex) =>
-      decodeFunctionResult({ abi: sourceReadAbi, data: code(data), functionName: name }).toLowerCase() as `0x${string}`;
+      decodeFunctionResult({
+        abi: sourceReadAbi,
+        data: code(data),
+        functionName: name,
+      }).toLowerCase() as `0x${string}`;
     return {
       canonicalSnapshotBlockHash: snapshotBlock.hash.toLowerCase() as Hex,
       componentCodeMatches: P05_HELPER_DEPLOYMENT_REGISTRY.components.every(
-        (component, index) => runtimeHash(code(componentCodes[index])) === component.runtimeCodeHash,
+        (component, index) =>
+          runtimeHash(code(componentCodes[index])) === component.runtimeCodeHash,
       ),
       expectedTargetCode: code(targetCode),
       headBlockNumber: quantity(head).toString(),
@@ -277,8 +288,12 @@ export class PostgresLocalHelperUpgradePlanAuthorizer implements LocalHelperUpgr
         return false;
       }
       const material = buildWalletHelperV2DeploymentMaterial(plan.wallet.address, this.#registry);
-      const adapter = P05_HELPER_DEPLOYMENT_REGISTRY.components.find(({ role }) => role === "adapter")!;
-      const permit2 = P05_HELPER_DEPLOYMENT_REGISTRY.components.find(({ role }) => role === "permit2")!;
+      const adapter = P05_HELPER_DEPLOYMENT_REGISTRY.components.find(
+        ({ role }) => role === "adapter",
+      )!;
+      const permit2 = P05_HELPER_DEPLOYMENT_REGISTRY.components.find(
+        ({ role }) => role === "permit2",
+      )!;
       validateLocalHelperUpgradePlan(
         plan,
         {

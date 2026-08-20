@@ -20,14 +20,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import {
   LocalHelperUpgradeClient,
@@ -35,12 +28,7 @@ import {
 } from "./local-helper-upgrade-client";
 
 type PanelState =
-  | "loading"
-  | "idle"
-  | "previewing"
-  | "preview-ready"
-  | "submitting"
-  | LocalHelperUpgradeState;
+  "loading" | "idle" | "previewing" | "preview-ready" | "submitting" | LocalHelperUpgradeState;
 
 const stateLabels: Record<PanelState, string> = {
   completed: "已升级",
@@ -303,7 +291,10 @@ function PreviewDialog({
             </Dialog.Close>
           </div>
           {preview ? (
-            <div className="local-helper-upgrade-preview" data-testid="local-helper-upgrade-preview">
+            <div
+              className="local-helper-upgrade-preview"
+              data-testid="local-helper-upgrade-preview"
+            >
               <VersionComparison />
               <dl className="local-helper-upgrade-facts">
                 <div>
@@ -585,7 +576,10 @@ export function LocalHelperUpgradePanel({ wallet }: { wallet: CustodyWallet }) {
           )}
           升级到 V2
         </button>
-        <form className="local-helper-upgrade-query" onSubmit={(event) => void queryOperation(event)}>
+        <form
+          className="local-helper-upgrade-query"
+          onSubmit={(event) => void queryOperation(event)}
+        >
           <label htmlFor="local-helper-upgrade-operation-id">Operation</label>
           <input
             autoComplete="off"

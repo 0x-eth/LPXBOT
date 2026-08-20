@@ -10,13 +10,7 @@ import {
   type LocalHelperUpgradePlan,
   type WalletHelperV2Verification,
 } from "@lpbot/domain/local-helper-upgrade";
-import {
-  decodeFunctionResult,
-  encodeFunctionData,
-  keccak256,
-  type Address,
-  type Hex,
-} from "viem";
+import { decodeFunctionResult, encodeFunctionData, keccak256, type Address, type Hex } from "viem";
 
 import type {
   LocalHelperUpgradeObservation,
@@ -183,7 +177,10 @@ export class ViemLocalHelperUpgradeObserver implements LocalHelperUpgradeObserve
         this.#providers.map(async (provider) => {
           const [latestNonce, pendingNonce, transaction, receipt] = await Promise.all([
             provider.request<Hex>("eth_getTransactionCount", [input.plan.wallet.address, "latest"]),
-            provider.request<Hex>("eth_getTransactionCount", [input.plan.wallet.address, "pending"]),
+            provider.request<Hex>("eth_getTransactionCount", [
+              input.plan.wallet.address,
+              "pending",
+            ]),
             provider.request<RpcTransaction | null>("eth_getTransactionByHash", [
               input.transactionHash,
             ]),
@@ -196,7 +193,13 @@ export class ViemLocalHelperUpgradeObserver implements LocalHelperUpgradeObserve
             pendingNonce: quantity(pendingNonce).toString(),
             providerId: provider.providerId,
             receipt: receipt
-              ? await this.#receipt(provider, input.plan, input.transactionHash, transaction, receipt)
+              ? await this.#receipt(
+                  provider,
+                  input.plan,
+                  input.transactionHash,
+                  transaction,
+                  receipt,
+                )
               : null,
             transactionFound: transaction !== null,
           };
@@ -240,9 +243,7 @@ export class ViemLocalHelperUpgradeObserver implements LocalHelperUpgradeObserve
     if (status !== 0n && status !== 1n) {
       throw new Error("LOCAL_HELPER_UPGRADE_OBSERVER_RECEIPT_INVALID");
     }
-    const contractAddress = receipt.contractAddress
-      ? address(receipt.contractAddress)
-      : null;
+    const contractAddress = receipt.contractAddress ? address(receipt.contractAddress) : null;
     return {
       blockCanonical: canonicalBlock.hash.toLowerCase() === receipt.blockHash.toLowerCase(),
       blockHash: receipt.blockHash.toLowerCase() as Hex,
@@ -320,7 +321,11 @@ export class ViemLocalHelperUpgradeObserver implements LocalHelperUpgradeObserve
     if (!componentsMatch || !tokensMatch) {
       throw new Error("LOCAL_HELPER_UPGRADE_SYNTHETIC_IDENTITY_MISMATCH");
     }
-    const owner = decodeFunctionResult({ abi: helperReadAbi, data: code(ownerRaw), functionName: "owner" });
+    const owner = decodeFunctionResult({
+      abi: helperReadAbi,
+      data: code(ownerRaw),
+      functionName: "owner",
+    });
     const adapter = decodeFunctionResult({
       abi: helperReadAbi,
       data: code(adapterRaw),
@@ -351,7 +356,10 @@ export class ViemLocalHelperUpgradeObserver implements LocalHelperUpgradeObserve
       data: code(tokenBHashRaw),
       functionName: "allowedTokenBCodeHash",
     });
-    if (tokenAHash !== plan.target.tokenA.runtimeCodeHash || tokenBHash !== plan.target.tokenB.runtimeCodeHash) {
+    if (
+      tokenAHash !== plan.target.tokenA.runtimeCodeHash ||
+      tokenBHash !== plan.target.tokenB.runtimeCodeHash
+    ) {
       throw new Error("LOCAL_HELPER_UPGRADE_TOKEN_IDENTITY_MISMATCH");
     }
     return {

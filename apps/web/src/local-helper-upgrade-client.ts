@@ -309,7 +309,7 @@ export function parseLocalHelperUpgradeOperation(
   if (
     (value.state === "completed") !== (value.cursor === "completed") ||
     value.manualRecovery.required !== (value.state === "manual-recovery-required") ||
-    value.manualRecovery.required !== (value.manualRecovery.blockers.length > 0) ||
+    value.manualRecovery.required !== value.manualRecovery.blockers.length > 0 ||
     new Set(transactions.map(({ generation }) => generation)).size !== transactions.length ||
     transactions.some(({ generation }, index) => generation !== index) ||
     transactions.filter(({ active }) => active).length > 1

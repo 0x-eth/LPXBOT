@@ -385,12 +385,7 @@ export function validateLocalHelperUpgradeSnapshot(
   ) {
     throw new RangeError("LOCAL_HELPER_UPGRADE_SNAPSHOT_EXPIRED");
   }
-  const {
-    blockers: storedBlockers,
-    eligible,
-    snapshotDigest,
-    ...facts
-  } = snapshot;
+  const { blockers: storedBlockers, eligible, snapshotDigest, ...facts } = snapshot;
   const blockers = localHelperUpgradePreflightBlockers(facts, context);
   if (
     !same(storedBlockers, blockers) ||

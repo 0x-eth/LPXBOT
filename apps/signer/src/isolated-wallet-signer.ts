@@ -543,8 +543,7 @@ export class IsolatedWalletSigner {
       priority > maxFee ||
       maxFee > BigInt(input.plan.feeLimit.maxFeePerGasBaseUnit) ||
       priority > BigInt(input.plan.feeLimit.maxPriorityFeePerGasBaseUnit) ||
-      BigInt(input.plan.feeLimit.gasLimit) * maxFee >
-        BigInt(input.plan.feeLimit.feeCapBaseUnit)
+      BigInt(input.plan.feeLimit.gasLimit) * maxFee > BigInt(input.plan.feeLimit.feeCapBaseUnit)
     ) {
       throw new SignerError(
         input.plan.deadline <= now.toISOString()

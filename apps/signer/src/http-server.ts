@@ -854,7 +854,10 @@ export function createSignerHttpServer(input: {
     let importAcquired = false;
     try {
       const sessionId = reauthenticatedSessionId(request);
-      if (request.method === "POST" && request.url === "/v1/local-helper-upgrades/sign-and-deliver") {
+      if (
+        request.method === "POST" &&
+        request.url === "/v1/local-helper-upgrades/sign-and-deliver"
+      ) {
         if (request.headers["content-type"]?.split(";", 1)[0] !== "application/json") {
           send(response, 415, {
             error: { code: "UNSUPPORTED_MEDIA_TYPE", retryable: false },
