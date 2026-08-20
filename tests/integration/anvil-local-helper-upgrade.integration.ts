@@ -808,9 +808,31 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       observed: 3,
     });
     tick();
-    expect(
-      await makeSweepWorker("upgrade-v1-sweep-rescan-after-restart").processBatch(),
-    ).toMatchObject({
+    const sweptAtBlock = await publicClient.getBlock();
+    clock = new Date(Math.max(clock.getTime(), Number(sweptAtBlock.timestamp) * 1_000));
+    const sweepRescan = await makeSweepWorker(
+      "upgrade-v1-sweep-rescan-after-restart",
+    ).processBatch();
+    if (sweepRescan.rescanned !== 1) {
+      const rescanErrors = await pool.query<{
+        attempt_count: number;
+        last_error_code: string | null;
+        state: string;
+      }>(
+        `SELECT state, attempt_count, last_error_code
+           FROM local_helper_sweep_outbox
+          WHERE batch_id = $1 AND operation_id IS NULL
+          ORDER BY created_at DESC`,
+        [sweepBatchId],
+      );
+      throw new Error(
+        `WalletHelperV1 sweep rescan mismatch: ${JSON.stringify({
+          rescanErrors: rescanErrors.rows,
+          sweepRescan,
+        })}`,
+      );
+    }
+    expect(sweepRescan).toMatchObject({
       claimed: 1,
       rescanned: 1,
     });
