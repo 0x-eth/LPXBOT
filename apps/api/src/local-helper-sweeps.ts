@@ -198,13 +198,19 @@ export class MemoryLocalHelperSweepBindingStore implements LocalHelperSweepBindi
   #public(
     value: LocalHelperSweepBinding & { failureCode: string | null; tenantId: string; userId: string },
   ): LocalHelperSweepBinding {
-    const {
-      failureCode: _failureCode,
-      tenantId: _tenantId,
-      userId: _userId,
-      ...binding
-    } = value;
-    return structuredClone(binding);
+    return structuredClone({
+      adapterAddress: value.adapterAddress,
+      bindingId: value.bindingId,
+      deploymentRegistryVersion: value.deploymentRegistryVersion,
+      helperAddress: value.helperAddress,
+      helperVersion: value.helperVersion,
+      ownerAddress: value.ownerAddress,
+      permit2Address: value.permit2Address,
+      runtimeCodeHash: value.runtimeCodeHash,
+      state: value.state,
+      verifiedBlockNumber: value.verifiedBlockNumber,
+      walletId: value.walletId,
+    });
   }
 }
 
@@ -760,16 +766,30 @@ function publicBatch(batch: StoredLocalHelperSweepBatch): LocalHelperSweepBatch 
 }
 
 function publicOperation(operation: StoredLocalHelperSweepOperation): LocalHelperSweepOperation {
-  const {
-    plan: _plan,
-    previewDigest: _previewDigest,
-    requestHash: _requestHash,
-    sessionId: _sessionId,
-    tenantId: _tenantId,
-    userId: _userId,
-    ...value
-  } = operation;
-  return structuredClone(value);
+  return structuredClone({
+    amountBaseUnit: operation.amountBaseUnit,
+    assetId: operation.assetId,
+    assetKind: operation.assetKind,
+    batchId: operation.batchId,
+    chainId: operation.chainId,
+    createdAt: operation.createdAt,
+    failureCode: operation.failureCode,
+    feeLimit: operation.feeLimit,
+    helperAddress: operation.helperAddress,
+    nonce: operation.nonce,
+    operationId: operation.operationId,
+    operationKind: operation.operationKind,
+    planDigest: operation.planDigest,
+    recipient: operation.recipient,
+    reconciliationReason: operation.reconciliationReason,
+    registryVersion: operation.registryVersion,
+    snapshotDigest: operation.snapshotDigest,
+    state: operation.state,
+    tokenAddress: operation.tokenAddress,
+    transactions: operation.transactions,
+    updatedAt: operation.updatedAt,
+    walletId: operation.walletId,
+  });
 }
 
 export class LocalHelperSweepService implements LocalHelperSweepApplication {

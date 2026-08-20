@@ -108,6 +108,7 @@ function inspection(
 function fixture(initial = inspection()) {
   let observed = structuredClone(initial);
   let sequence = 10;
+  let previewSequence = 8;
   const bindings = new MemoryLocalHelperSweepBindingStore([
     { ...binding, tenantId, userId },
   ]);
@@ -125,7 +126,7 @@ function fixture(initial = inspection()) {
     now: () => now,
     operations,
     previews: new MemoryLocalHelperSweepPreviewStore(),
-    randomBytes: () => new Uint8Array(32).fill(8),
+    randomBytes: () => new Uint8Array(32).fill(previewSequence++),
     snapshots: new MemoryLocalHelperResidualSnapshotStore(),
   });
   return {
