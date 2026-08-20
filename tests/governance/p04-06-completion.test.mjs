@@ -100,7 +100,7 @@ async function filesBelow(directory, prefix = "") {
   return sorted(files);
 }
 
-test("P04 status remains complete after P05-07 with global 70 / 126", async () => {
+test("P04 status remains complete after P05-08 with global 71 / 125", async () => {
   const [traceability, functionMatrix, roadmap] = await Promise.all([
     readFile(TRACEABILITY, "utf8"),
     readFile(FUNCTION_MATRIX, "utf8"),
@@ -122,10 +122,10 @@ test("P04 status remains complete after P05-07 with global 70 / 126", async () =
   assert.match(rows.get("WALLET-10").evidence, /local-fixture-verified/u);
   assert.match(functionMatrix, /\| WALLET-10 \|[^\n]*implemented-assumed[^\n]*P04-06/u);
   assert.match(traceability, /P04[^\n]*12[^\n]*implemented-assumed[^\n]*0[^\n]*planned/iu);
-  assert.match(traceability, /\| 当前产品实现 \| 70 \|/u);
-  assert.match(traceability, /\| `implemented-assumed` \| 70 \|/u);
-  assert.match(traceability, /\| 其余 `planned` \| 126 \|/u);
-  assert.match(roadmap, /全局为 70 项 `implemented-assumed`、126 项 `planned`/u);
+  assert.match(traceability, /\| 当前产品实现 \| 71 \|/u);
+  assert.match(traceability, /\| `implemented-assumed` \| 71 \|/u);
+  assert.match(traceability, /\| 其余 `planned` \| 125 \|/u);
+  assert.match(roadmap, /全局为 71 项 `implemented-assumed`、125 项 `planned`/u);
 });
 
 test("P04-06 manifest owns WALLET-10 and preserves the approval boundary", async () => {
