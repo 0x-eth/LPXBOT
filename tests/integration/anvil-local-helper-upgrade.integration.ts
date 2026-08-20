@@ -498,7 +498,6 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
         const transactionHash = await publicClient.sendRawTransaction({
           serializedTransaction: toHex(input.rawTransaction),
         });
-        await publicClient.waitForTransactionReceipt({ hash: transactionHash });
         return { status: "accepted", transactionHash };
       },
       async transactionKnown(input) {
