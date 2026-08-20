@@ -235,7 +235,7 @@ function same(left: unknown, right: unknown): boolean {
   return JSON.stringify(canonical(left)) === JSON.stringify(canonical(right));
 }
 
-function rawHexDigest(value: `0x${string}`): `sha256:${string}` {
+export function localHelperSweepDataDigest(value: `0x${string}`): `sha256:${string}` {
   return `sha256:${createHash("sha256").update(Buffer.from(value.slice(2), "hex")).digest("hex")}`;
 }
 
@@ -567,7 +567,7 @@ export function validateLocalHelperSweepPlan(
   const calldata = localHelperSweepCalldata(plan.planDigest, plan.asset);
   if (
     plan.transaction.data !== calldata ||
-    plan.transaction.dataDigest !== rawHexDigest(calldata) ||
+    plan.transaction.dataDigest !== localHelperSweepDataDigest(calldata) ||
     plan.semanticDigest !== localHelperSweepSemanticDigest(plan)
   ) {
     invalid();
