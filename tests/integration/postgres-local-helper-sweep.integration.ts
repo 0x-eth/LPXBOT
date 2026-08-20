@@ -40,7 +40,7 @@ const userId = randomUUID();
 const otherUserId = randomUUID();
 const sessionId = randomUUID();
 const walletAddress = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266" as const;
-const startedAt = new Date("2026-08-20T09:00:00.000Z");
+const startedAt = new Date(Date.now() - 60_000);
 let clock = new Date(startedAt);
 
 class DeploymentChainFixture implements HelperDeploymentChainReader {
@@ -397,8 +397,8 @@ describe("P05-08 PostgreSQL local Helper sweep lifecycle", () => {
       batch: {
         helperAddress: deployment.helperAddress,
         operations: [
-          { assetKind: "token", nonce: "1", state: "queued" },
-          { assetKind: "native", nonce: "2", state: "queued" },
+          { assetKind: "native", nonce: "1", state: "queued" },
+          { assetKind: "token", nonce: "2", state: "queued" },
         ],
         state: "queued",
         walletId,
@@ -436,7 +436,8 @@ describe("P05-08 PostgreSQL local Helper sweep lifecycle", () => {
     });
     const operationIds = submitted.batch.operations.map(({ operationId }) => operationId);
     let claims = await claimOperations(repository, operationIds, clock);
-    const originalHashes = [`0x${"91".repeat(32)}`, `0x${"92".repeat(32)}`] as const;
+    const nativeOriginalHash = `0x${"91".repeat(32)}` as const;
+    const tokenOriginalHash = `0x${"92".repeat(32)}` as const;
     for (const [index, claim] of claims.entries()) {
       await repository.completeBroadcast({
         claim,
@@ -447,15 +448,16 @@ describe("P05-08 PostgreSQL local Helper sweep lifecycle", () => {
           operationId: claim.operation.operationId,
           planDigest: claim.operation.planDigest,
           status: "accepted",
-          transactionHash: originalHashes[index]!,
+          transactionHash:
+            claim.operation.plan.asset.kind === "native" ? nativeOriginalHash : tokenOriginalHash,
         },
       });
     }
 
     clock = new Date(clock.getTime() + 1_000);
     claims = await claimOperations(repository, operationIds, clock);
-    const tokenClaim = claims[0]!;
-    const nativeClaim = claims[1]!;
+    const tokenClaim = claims.find(({ operation }) => operation.plan.asset.kind === "token")!;
+    const nativeClaim = claims.find(({ operation }) => operation.plan.asset.kind === "native")!;
     await repository.applyObservation({
       claim: tokenClaim,
       decision: {
@@ -463,7 +465,7 @@ describe("P05-08 PostgreSQL local Helper sweep lifecycle", () => {
         kind: "receipt",
         operationState: "succeeded",
         reason: null,
-        receipt: receipt(tokenClaim, originalHashes[0], "10"),
+        receipt: receipt(tokenClaim, tokenOriginalHash, "10"),
         transactionId: tokenClaim.operation.activeTransaction!.transactionId,
       },
       observedAt: new Date(clock.getTime() + 1),
@@ -570,7 +572,7 @@ describe("P05-08 PostgreSQL local Helper sweep lifecycle", () => {
     expect(completedNative).toMatchObject({
       state: "succeeded",
       transactions: [
-        { active: true, generation: 0, state: "confirmed", transactionHash: originalHashes[1] },
+        { active: true, generation: 0, state: "confirmed", transactionHash: nativeOriginalHash },
         { active: false, generation: 1, state: "replaced", transactionHash: replacementHash },
       ],
     });
