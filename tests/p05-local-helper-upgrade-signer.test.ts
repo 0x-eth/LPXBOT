@@ -1,3 +1,5 @@
+import type { Server } from "node:http";
+
 import type { Pool } from "pg";
 import {
   buildWalletHelperV2DeploymentMaterial,
@@ -16,9 +18,12 @@ import {
   type LocalHelperUpgradePlanChainVerification,
   type StoredCustodyWallet,
 } from "../apps/signer/src/index.js";
+import type { CustodySignerService } from "../apps/signer/src/custody-signer-service.js";
+import { createSignerHttpServer } from "../apps/signer/src/http-server.js";
+import { LoopbackLocalHelperUpgradeSignerGateway } from "../apps/worker/src/index.js";
 import { getContractAddress, keccak256, parseTransaction, toHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 const owner = privateKeyToAccount(privateKey).address.toLowerCase() as `0x${string}`;
@@ -27,11 +32,14 @@ const userId = "9e090000-0000-4000-8000-000000000001";
 const walletId = "9e090000-0000-4000-8000-000000000002";
 const operationId = "9e090000-0000-4000-8000-000000000003";
 const bindingId = "9e090000-0000-4000-8000-000000000004";
+const sessionId = "9e090000-0000-4000-8000-000000000006";
+const apiToken = "local-helper-upgrade-signer-token-at-least-32-bytes";
 const sourceHelper = `0x${"22".repeat(20)}` as const;
 const sourceRuntime = `0x${"33".repeat(32)}` as const;
 const deployedRuntime = "0x6000" as const;
 const expectedRuntime = keccak256(deployedRuntime);
 const now = new Date("2026-08-21T03:00:00.000Z");
+const servers: Server[] = [];
 
 function plan(): LocalHelperUpgradePlan {
   const registry = P05_LOCAL_HELPER_UPGRADE_REGISTRY;
@@ -230,6 +238,24 @@ function authorization(value: LocalHelperUpgradePlan, generation = 0) {
   };
 }
 
+async function start(service: Partial<CustodySignerService>): Promise<string> {
+  const server = createSignerHttpServer({ apiToken, service: service as CustodySignerService });
+  servers.push(server);
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("signer fixture did not bind");
+  return `http://127.0.0.1:${address.port}`;
+}
+
+afterEach(async () => {
+  for (const server of servers) server.closeAllConnections();
+  await Promise.all(
+    servers
+      .splice(0)
+      .map((server) => new Promise<void>((resolve) => server.close(() => resolve()))),
+  );
+});
+
 describe("P05-09 isolated WalletHelperV2 deployment signer", () => {
   it("signs a plan-bound CREATE transaction and preserves generation, nonce, owner, and init code", async () => {
     const { sealed, signer, wallet } = await isolatedFixture();
@@ -379,5 +405,37 @@ describe("P05-09 WalletHelperV2 plan authorizer", () => {
       );
       await expect(rejected.authorize(authorization(value, 1))).resolves.toBe(false);
     }
+  });
+});
+
+describe("P05-09 WalletHelperV2 signer HTTP boundary", () => {
+  it("round-trips only the typed deploy-new envelope through the loopback gateway", async () => {
+    const value = plan();
+    const signLocalHelperUpgrade = vi.fn(
+      async (input: Parameters<CustodySignerService["signLocalHelperUpgrade"]>[0]) => {
+        expect(input).toEqual({
+          ...authorization(value),
+          reauthenticatedSessionId: sessionId,
+        });
+        return {
+          deliveryId: "local-helper-upgrade:http",
+          generation: 0,
+          operationId,
+          planDigest: value.planDigest,
+          status: "accepted" as const,
+          transactionHash: `0x${"55".repeat(32)}` as const,
+        };
+      },
+    );
+    const url = await start({ signLocalHelperUpgrade });
+    const gateway = new LoopbackLocalHelperUpgradeSignerGateway({ apiToken, url });
+
+    await expect(
+      gateway.signAndDeliver({
+        ...authorization(value),
+        reauthenticatedSessionId: sessionId,
+      }),
+    ).resolves.toMatchObject({ generation: 0, operationId, planDigest: value.planDigest });
+    expect(signLocalHelperUpgrade).toHaveBeenCalledOnce();
   });
 });
