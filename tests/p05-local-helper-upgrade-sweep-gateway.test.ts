@@ -32,11 +32,13 @@ const wallet = {
   walletId,
 };
 
-function residual(input: {
-  allowance?: string;
-  bindingState?: "active" | "degraded";
-  identityMatches?: boolean;
-} = {}): LocalHelperResidualSnapshot {
+function residual(
+  input: {
+    allowance?: string;
+    bindingState?: "active" | "degraded";
+    identityMatches?: boolean;
+  } = {},
+): LocalHelperResidualSnapshot {
   const allowance = input.allowance ?? "0";
   const identityMatches = input.identityMatches ?? true;
   return {
@@ -83,9 +85,7 @@ function residual(input: {
       tokenInventoryComplete: true,
     },
     degradationReasons:
-      allowance !== "0"
-        ? ["nonzero-allowance", "residual-above-dust"]
-        : ["residual-above-dust"],
+      allowance !== "0" ? ["nonzero-allowance", "residual-above-dust"] : ["residual-above-dust"],
     expiresAt: "2026-08-21T01:05:00.000Z",
     identity: {
       bindingMatches: identityMatches,
@@ -202,7 +202,10 @@ describe("P05-09 local Helper upgrade sweep bridge", () => {
 
   it("loads a persisted successful batch after restart without rescanning or replaying", async () => {
     const value = fixture();
-    await expect(value.gateway.sweep(operation(batchId))).resolves.toEqual({ batchId, kind: "completed" });
+    await expect(value.gateway.sweep(operation(batchId))).resolves.toEqual({
+      batchId,
+      kind: "completed",
+    });
     expect(value.getBatch).toHaveBeenCalledOnce();
     expect(value.scan).not.toHaveBeenCalled();
     expect(value.preview).not.toHaveBeenCalled();

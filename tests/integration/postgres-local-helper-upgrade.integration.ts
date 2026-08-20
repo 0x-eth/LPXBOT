@@ -12,13 +12,21 @@ import {
 } from "../../packages/domain/src/local-helper-sweep.js";
 import {
   HelperDeploymentService,
+  LocalHelperSweepService,
+  LocalHelperUpgradeSweepGateway,
   LocalHelperUpgradeService,
   PostgresHelperDeploymentOperationStore,
   PostgresHelperDeploymentPreviewStore,
+  PostgresLocalHelperResidualSnapshotStore,
+  PostgresLocalHelperSweepBindingStore,
+  PostgresLocalHelperSweepOperationStore,
+  PostgresLocalHelperSweepPreviewStore,
   PostgresLocalHelperUpgradeBindingStore,
   PostgresLocalHelperUpgradeOperationStore,
   PostgresLocalHelperUpgradePreviewStore,
+  PostgresWalletDirectory,
   type HelperDeploymentChainReader,
+  type LocalHelperResidualChainInspection,
   type LocalHelperUpgradeChainReader,
   type LocalHelperUpgradeResidualReader,
 } from "../../apps/api/src/index.js";
@@ -38,6 +46,7 @@ const pool = new Pool({ connectionString: databaseUrl, max: 12 });
 const tenantId = "tenant-fixture-01";
 const successUserId = randomUUID();
 const manualUserId = randomUUID();
+const sweepUserId = randomUUID();
 const startedAt = new Date();
 let clock = new Date(startedAt);
 
@@ -111,6 +120,71 @@ class UpgradeChainFixture implements LocalHelperUpgradeChainReader {
 class UpgradeResidualFixture implements LocalHelperUpgradeResidualReader {
   async scan(input: Parameters<LocalHelperUpgradeResidualReader["scan"]>[0]) {
     return residualSnapshot(input.binding, input.wallet);
+  }
+}
+
+class UpgradeSweepChainFixture {
+  constructor(
+    readonly helperAddress: `0x${string}`,
+    readonly runtimeCodeHash: `0x${string}`,
+    readonly walletAddress: `0x${string}`,
+  ) {}
+
+  async inspect(input: {
+    referencedBlockNumber: string | null;
+  }): Promise<LocalHelperResidualChainInspection> {
+    const blockHash = `0x${"b1".repeat(32)}` as const;
+    return {
+      allowances: P05_LOCAL_HELPER_SWEEP_REGISTRY.tokens.flatMap((token) =>
+        P05_LOCAL_HELPER_SWEEP_REGISTRY.components.map((component) => ({
+          amountBaseUnit: "0",
+          spenderAddress: component.address,
+          spenderRole: component.role,
+          tokenAddress: token.address,
+        })),
+      ),
+      block: {
+        hash: blockHash,
+        number: "15",
+        timestamp: new Date(clock.getTime() - 1_000).toISOString(),
+      },
+      componentCode: P05_LOCAL_HELPER_SWEEP_REGISTRY.components.map(
+        ({ address, role, runtimeCodeHash }) => ({ address, role, runtimeCodeHash }),
+      ),
+      coverage: {
+        allowancesComplete: true,
+        complete: true,
+        helperIdentityComplete: true,
+        nftCustodyComplete: true,
+        tokenInventoryComplete: true,
+      },
+      feeLimits: [
+        {
+          assetId: "native:31337",
+          feeLimit: {
+            feeCapBaseUnit: "400000",
+            gasLimit: "100000",
+            maxFeePerGasBaseUnit: "4",
+            maxPriorityFeePerGasBaseUnit: "2",
+          },
+        },
+      ],
+      headBlockNumber: "15",
+      helper: { owner: this.walletAddress, runtimeCodeHash: this.runtimeCodeHash },
+      nativeBalanceBaseUnit: "5000",
+      nftCustody: [],
+      nonceViews: [{ latest: "2", pending: "2", providerId: "anvil-primary" }],
+      referencedBlockHash:
+        input.referencedBlockNumber === null || input.referencedBlockNumber === "15"
+          ? blockHash
+          : (`0x${"00".repeat(32)}` as const),
+      tokenBalances: P05_LOCAL_HELPER_SWEEP_REGISTRY.tokens.map(({ address, runtimeCodeHash }) => ({
+        address,
+        amountBaseUnit: "0",
+        runtimeCodeHash,
+      })),
+      unknownTokens: [],
+    };
   }
 }
 
@@ -428,14 +502,17 @@ async function advanceThroughVerification(
 beforeAll(async () => {
   await pool.query(
     `INSERT INTO users (id, role, tier, status, display_name, created_at, updated_at)
-     VALUES ($1, 'user', 'normal', 'active', 'P05-09 success fixture', $3, $3),
-            ($2, 'user', 'normal', 'active', 'P05-09 manual fixture', $3, $3)`,
-    [successUserId, manualUserId, startedAt],
+     VALUES ($1, 'user', 'normal', 'active', 'P05-09 success fixture', $4, $4),
+            ($2, 'user', 'normal', 'active', 'P05-09 manual fixture', $4, $4),
+            ($3, 'user', 'normal', 'active', 'P05-09 sweep provenance fixture', $4, $4)`,
+    [successUserId, manualUserId, sweepUserId, startedAt],
   );
 });
 
 afterAll(async () => {
-  await pool.query("DELETE FROM users WHERE id = ANY($1::uuid[])", [[successUserId, manualUserId]]);
+  await pool.query("DELETE FROM users WHERE id = ANY($1::uuid[])", [
+    [successUserId, manualUserId, sweepUserId],
+  ]);
   await pool.end();
 });
 
@@ -604,6 +681,102 @@ describe("P05-09 PostgreSQL local Helper deploy-new upgrade", () => {
         v1_state: "degraded",
         v2_state: "deploying",
       },
+    ]);
+  });
+
+  it("allows only the owning sweep-v1 operation to create one provenance-bound P05-08 batch", async () => {
+    clock = new Date(clock.getTime() + 1_000);
+    const wallet = await createWallet({
+      address: "0x1000000000000000000000000000000000000093",
+      name: "P05-09 sweep provenance",
+      userId: sweepUserId,
+    });
+    const source = await deployV1(wallet, sweepUserId);
+    const { operation } = await submitUpgrade(wallet, sweepUserId);
+    const repository = new PostgresLocalHelperUpgradeRecoveryRepository(pool, {
+      pollMilliseconds: 100,
+    });
+    await advanceThroughVerification(repository, operation.operationId);
+
+    const sweeps = new LocalHelperSweepService({
+      bindings: new PostgresLocalHelperSweepBindingStore(pool),
+      chain: new UpgradeSweepChainFixture(
+        source.helperAddress,
+        source.runtimeCodeHash,
+        wallet.address,
+      ),
+      now: () => clock,
+      operations: new PostgresLocalHelperSweepOperationStore(pool, { now: () => clock }),
+      previews: new PostgresLocalHelperSweepPreviewStore(pool),
+      snapshots: new PostgresLocalHelperResidualSnapshotStore(pool),
+    });
+    const initial = await sweeps.scan({
+      idempotencyKey: "p05-09-upgrade-sweep-provenance-scan",
+      tenantId,
+      userId: sweepUserId,
+      wallet,
+    });
+    const preview = await sweeps.preview({
+      request: {
+        assetIds: ["native:31337"],
+        chainId: 31_337,
+        snapshotDigest: initial.snapshotDigest,
+        walletId: wallet.walletId,
+      },
+      tenantId,
+      userId: sweepUserId,
+      wallet,
+    });
+    const submitRequest = {
+      idempotencyKey: "p05-09-ordinary-sweep-blocked",
+      request: {
+        assetIds: ["native:31337"],
+        chainId: 31_337 as const,
+        previewDigest: preview.previewDigest,
+        previewToken: preview.previewToken,
+        snapshotDigest: initial.snapshotDigest,
+        walletId: wallet.walletId,
+      },
+      requestId: "p05-09-ordinary-sweep-request",
+      sessionId: randomUUID(),
+      tenantId,
+      userId: sweepUserId,
+      wallet,
+    };
+    await expect(sweeps.sweep(submitRequest)).rejects.toMatchObject({
+      code: "HELPER_UPGRADE_IN_PROGRESS",
+    });
+
+    const sweepClaim = await claim(repository, operation.operationId);
+    const gateway = new LocalHelperUpgradeSweepGateway({
+      idempotencyKey: () => "p05-09-upgrade-sweep-gateway-scan",
+      sweeps,
+      wallets: new PostgresWalletDirectory(pool),
+    });
+    const first = await gateway.sweep(sweepClaim.operation);
+    expect(first).toMatchObject({ batchId: expect.any(String), kind: "pending" });
+    await expect(gateway.sweep(sweepClaim.operation)).resolves.toEqual(first);
+
+    await expect(
+      sweeps.sweep({
+        ...submitRequest,
+        idempotencyKey: "p05-09-forged-upgrade-sweep",
+        requestId: operation.operationId,
+        sessionId: sweepClaim.operation.reauthenticatedSessionId,
+        upgradeOperationId: randomUUID(),
+      }),
+    ).rejects.toMatchObject({ code: "HELPER_UPGRADE_IN_PROGRESS" });
+
+    const provenance = await pool.query<{
+      batch_count: string;
+      upgrade_operation_id: string;
+    }>(
+      `SELECT count(*) OVER ()::text AS batch_count, upgrade_operation_id::text
+         FROM local_helper_sweep_batches WHERE wallet_id = $1`,
+      [wallet.walletId],
+    );
+    expect(provenance.rows).toEqual([
+      { batch_count: "1", upgrade_operation_id: operation.operationId },
     ]);
   });
 });

@@ -44,8 +44,7 @@ export class LocalHelperUpgradeSweepGateway {
     wallets: WalletDirectory;
   }) {
     this.#idempotencyKey =
-      input.idempotencyKey ??
-      (() => `upgrade-rescan-${crypto.randomUUID().toLowerCase()}`);
+      input.idempotencyKey ?? (() => `upgrade-rescan-${crypto.randomUUID().toLowerCase()}`);
     this.#sweeps = input.sweeps;
     this.#wallets = input.wallets;
   }
@@ -86,10 +85,7 @@ export class LocalHelperUpgradeSweepGateway {
         !(blocker === "V1_IDENTITY_MISMATCH" && residualOnlyDegradation),
     );
     if (identityBlockers.length > 0) {
-      throw new LocalHelperUpgradeSweepGatewayError(
-        "HELPER_UPGRADE_SWEEP_PREFLIGHT_CHANGED",
-        true,
-      );
+      throw new LocalHelperUpgradeSweepGatewayError("HELPER_UPGRADE_SWEEP_PREFLIGHT_CHANGED", true);
     }
     const assetIds = snapshot.balances
       .filter(({ amountBaseUnit, dustBaseUnit }) => BigInt(amountBaseUnit) > BigInt(dustBaseUnit))

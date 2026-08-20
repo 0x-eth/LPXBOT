@@ -13,17 +13,15 @@ const userId = "9c000000-0000-4000-8000-000000000081";
 const walletId = "9c000000-0000-4000-8000-000000000082";
 const walletAddress = `0x${"11".repeat(20)}` as const;
 const binding = {
-  adapterAddress: P05_LOCAL_HELPER_SWEEP_REGISTRY.components.find(
-    ({ role }) => role === "adapter",
-  )!.address,
+  adapterAddress: P05_LOCAL_HELPER_SWEEP_REGISTRY.components.find(({ role }) => role === "adapter")!
+    .address,
   bindingId: "9c000000-0000-4000-8000-000000000083",
   deploymentRegistryVersion: "p05-local-helper-deployment-v2" as const,
   helperAddress: `0x${"22".repeat(20)}` as const,
   helperVersion: "WalletHelperV1" as const,
   ownerAddress: walletAddress,
-  permit2Address: P05_LOCAL_HELPER_SWEEP_REGISTRY.components.find(
-    ({ role }) => role === "permit2",
-  )!.address,
+  permit2Address: P05_LOCAL_HELPER_SWEEP_REGISTRY.components.find(({ role }) => role === "permit2")!
+    .address,
   runtimeCodeHash: P05_LOCAL_HELPER_SWEEP_REGISTRY.helper.runtimeTemplateHash,
   state: "active" as const,
   verifiedBlockNumber: "7",
@@ -74,13 +72,11 @@ class ResidualChainFixture implements LocalHelperResidualChainReader {
       nftCustody: [],
       nonceViews: [{ latest: "1", pending: "1", providerId: "anvil-primary" }],
       referencedBlockHash: null,
-      tokenBalances: P05_LOCAL_HELPER_SWEEP_REGISTRY.tokens.map(
-        ({ address, runtimeCodeHash }) => ({
-          address,
-          amountBaseUnit: "0",
-          runtimeCodeHash,
-        }),
-      ),
+      tokenBalances: P05_LOCAL_HELPER_SWEEP_REGISTRY.tokens.map(({ address, runtimeCodeHash }) => ({
+        address,
+        amountBaseUnit: "0",
+        runtimeCodeHash,
+      })),
       unknownTokens: [],
     };
   }
