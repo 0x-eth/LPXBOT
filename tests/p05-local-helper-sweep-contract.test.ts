@@ -37,13 +37,15 @@ const bindingBase = {
   walletId: wallet.walletId,
 } as const;
 
-function snapshot(input: {
-  allowance?: string;
-  native?: string;
-  owner?: `0x${string}` | null;
-  tokenA?: string;
-  unknown?: boolean;
-} = {}): LocalHelperResidualSnapshot {
+function snapshot(
+  input: {
+    allowance?: string;
+    native?: string;
+    owner?: `0x${string}` | null;
+    tokenA?: string;
+    unknown?: boolean;
+  } = {},
+): LocalHelperResidualSnapshot {
   const allowance = input.allowance ?? "0";
   const native = input.native ?? registry.dustPolicy.nativeDustBaseUnit;
   const tokenA = input.tokenA ?? registry.dustPolicy.tokenDustBaseUnit;
@@ -153,7 +155,9 @@ function snapshotContext(value: LocalHelperResidualSnapshot) {
 
 function plan(): LocalHelperSweepPlan {
   const state = snapshot({ tokenA: "2" });
-  const asset = state.balances.find(({ assetId }) => assetId === `token:${registry.tokens[0].address}`)!;
+  const asset = state.balances.find(
+    ({ assetId }) => assetId === `token:${registry.tokens[0].address}`,
+  )!;
   const helper: LocalHelperSweepPlan["helper"] = {
     adapterAddress: state.binding.adapterAddress,
     bindingId: state.binding.bindingId,
@@ -231,7 +235,7 @@ describe("P05-08 local Helper sweep contract", () => {
       registryVersion: "p05-local-helper-sweep-v2",
     });
     const changed = structuredClone(registry);
-    changed.dustPolicy.nativeDustBaseUnit = "0";
+    (changed.dustPolicy as { nativeDustBaseUnit: string }).nativeDustBaseUnit = "0";
     changed.registryDigest = localHelperSweepRegistryDigest(changed);
     expect(() => validateLocalHelperSweepRegistry(changed)).toThrow(
       "LOCAL_HELPER_SWEEP_REGISTRY_INVALID",
@@ -240,10 +244,14 @@ describe("P05-08 local Helper sweep contract", () => {
 
   it("treats exact dust as active and residual above dust as degraded", () => {
     const boundary = snapshot();
-    expect(() => validateLocalHelperResidualSnapshot(boundary, snapshotContext(boundary), now)).not.toThrow();
+    expect(() =>
+      validateLocalHelperResidualSnapshot(boundary, snapshotContext(boundary), now),
+    ).not.toThrow();
     expect(boundary.binding.state).toBe("active");
     const residual = snapshot({ native: "1001" });
-    expect(() => validateLocalHelperResidualSnapshot(residual, snapshotContext(residual), now)).not.toThrow();
+    expect(() =>
+      validateLocalHelperResidualSnapshot(residual, snapshotContext(residual), now),
+    ).not.toThrow();
     expect(residual).toMatchObject({
       binding: { state: "degraded" },
       degradationReasons: ["residual-above-dust"],
@@ -252,11 +260,15 @@ describe("P05-08 local Helper sweep contract", () => {
 
   it("records authority, custody and owner mismatches without creating sweep authority", () => {
     const manual = snapshot({ allowance: "1", unknown: true });
-    expect(() => validateLocalHelperResidualSnapshot(manual, snapshotContext(manual), now)).not.toThrow();
+    expect(() =>
+      validateLocalHelperResidualSnapshot(manual, snapshotContext(manual), now),
+    ).not.toThrow();
     expect(manual.manualRecoveryRequired).toBe(true);
     expect(manual.degradationReasons).toEqual(["nonzero-allowance", "unknown-token"]);
     const mismatch = snapshot({ owner: registry.tokens[0].address });
-    expect(() => validateLocalHelperResidualSnapshot(mismatch, snapshotContext(mismatch), now)).not.toThrow();
+    expect(() =>
+      validateLocalHelperResidualSnapshot(mismatch, snapshotContext(mismatch), now),
+    ).not.toThrow();
     expect(mismatch.degradationReasons).toEqual(["identity-mismatch"]);
   });
 

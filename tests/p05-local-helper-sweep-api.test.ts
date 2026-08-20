@@ -1,11 +1,7 @@
 import type { CustodyWallet } from "../packages/api-contract/src/index.js";
-import {
-  P05_LOCAL_HELPER_SWEEP_REGISTRY,
-  type LocalHelperSweepComponentRole,
-} from "../packages/chain-registry/src/index.js";
+import { P05_LOCAL_HELPER_SWEEP_REGISTRY } from "../packages/chain-registry/src/index.js";
 import type { LocalHelperSweepBinding } from "../packages/domain/src/local-helper-sweep.js";
 import {
-  LocalHelperSweepError,
   LocalHelperSweepService,
   MemoryLocalHelperResidualSnapshotStore,
   MemoryLocalHelperSweepBindingStore,
@@ -77,18 +73,17 @@ function inspection(
       nftCustodyComplete: true,
       tokenInventoryComplete: true,
     },
-    feeLimits: [
-      "native:31337",
-      ...registry.tokens.map(({ address }) => `token:${address}`),
-    ].map((assetId) => ({
-      assetId,
-      feeLimit: {
-        feeCapBaseUnit: "400000",
-        gasLimit: "100000",
-        maxFeePerGasBaseUnit: "4",
-        maxPriorityFeePerGasBaseUnit: "2",
-      },
-    })),
+    feeLimits: ["native:31337", ...registry.tokens.map(({ address }) => `token:${address}`)].map(
+      (assetId) => ({
+        assetId,
+        feeLimit: {
+          feeCapBaseUnit: "400000",
+          gasLimit: "100000",
+          maxFeePerGasBaseUnit: "4",
+          maxPriorityFeePerGasBaseUnit: "2",
+        },
+      }),
+    ),
     headBlockNumber: "8",
     helper: { owner: wallet.address, runtimeCodeHash: binding.runtimeCodeHash },
     nativeBalanceBaseUnit: "2000",
@@ -109,9 +104,7 @@ function fixture(initial = inspection()) {
   let observed = structuredClone(initial);
   let sequence = 10;
   let previewSequence = 8;
-  const bindings = new MemoryLocalHelperSweepBindingStore([
-    { ...binding, tenantId, userId },
-  ]);
+  const bindings = new MemoryLocalHelperSweepBindingStore([{ ...binding, tenantId, userId }]);
   const operations = new MemoryLocalHelperSweepOperationStore({
     now: () => now,
     uuid: () => `a8100000-0000-4000-8000-${String(sequence++).padStart(12, "0")}`,
@@ -232,7 +225,9 @@ describe("P05-08 local Helper sweep API", () => {
     expect(first.batch.operations.map(({ nonce }) => nonce)).toEqual(["8", "9"]);
     expect(new Set(first.batch.operations.map(({ operationId }) => operationId)).size).toBe(2);
     expect(new Set(first.batch.operations.map(({ planDigest }) => planDigest)).size).toBe(2);
-    expect(first.batch.operations.every(({ recipient }) => recipient === wallet.address)).toBe(true);
+    expect(first.batch.operations.every(({ recipient }) => recipient === wallet.address)).toBe(
+      true,
+    );
     expect(api.operations.outbox).toHaveLength(2);
     await expect(
       api.service.getBatch({ batchId: first.batch.batchId, tenantId, userId: otherUserId }),
@@ -431,7 +426,12 @@ describe("P05-08 local Helper sweep API", () => {
       snapshotDigest: snapshot.snapshotDigest,
       walletId: wallet.walletId,
     };
-    const firstPreview = await api.service.preview({ request: firstRequest, tenantId, userId, wallet });
+    const firstPreview = await api.service.preview({
+      request: firstRequest,
+      tenantId,
+      userId,
+      wallet,
+    });
     const common = {
       idempotencyKey: "local-helper-conflict-0001",
       requestId: "request-conflict",
@@ -452,7 +452,12 @@ describe("P05-08 local Helper sweep API", () => {
       ...firstRequest,
       assetIds: [`token:${registry.tokens[0].address}`],
     };
-    const tokenPreview = await api.service.preview({ request: tokenRequest, tenantId, userId, wallet });
+    const tokenPreview = await api.service.preview({
+      request: tokenRequest,
+      tenantId,
+      userId,
+      wallet,
+    });
     await expect(
       api.service.sweep({
         ...common,
