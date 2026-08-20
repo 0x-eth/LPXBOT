@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import type {
   LocalHelperUpgradeStepView,
@@ -171,9 +171,7 @@ export class PostgresLocalHelperUpgradePreviewStore implements LocalHelperUpgrad
 
   async get(token: string) {
     if (!/^[A-Za-z0-9_-]{43}$/u.test(token)) return null;
-    const tokenDigest = await import("node:crypto").then(({ createHash }) =>
-      createHash("sha256").update(token, "utf8").digest("hex"),
-    );
+    const tokenDigest = createHash("sha256").update(token, "utf8").digest("hex");
     const result = await this.pool.query<PreviewRow>(
       `SELECT token_digest, tenant_id, user_id::text, preview_digest,
               request_payload, facts_payload, created_at
@@ -604,9 +602,11 @@ export class PostgresLocalHelperUpgradeOperationStore implements LocalHelperUpgr
           input.operationId,
           input.transactionId,
           input.verification.observedAtBlock,
-          `0x${"0".repeat(64)}`,
+          input.verification.blockHash,
           JSON.stringify(input.verification),
-          localHelperUpgradePlanDigest(plan),
+          `sha256:${createHash("sha256")
+            .update(JSON.stringify(input.verification), "utf8")
+            .digest("hex")}`,
           input.verifiedAt,
         ],
       );
@@ -634,6 +634,13 @@ export class PostgresLocalHelperUpgradeOperationStore implements LocalHelperUpgr
       }
       const plan = operation.plan_payload;
       const decision = localHelperV1SupersedeDecision(input.finalSnapshot);
+      if (
+        input.finalSnapshot.binding.bindingId !== operation.source_binding_id ||
+        input.finalSnapshot.binding.helperAddress !== operation.source_helper_address ||
+        input.finalSnapshot.wallet.walletId !== operation.wallet_id
+      ) {
+        throw new LocalHelperUpgradeError("PREFLIGHT_FAILED");
+      }
       assertWalletHelperV2Verification(input.verification, {
         abiHash: plan.target.abiHash,
         adapter: plan.target.adapter,

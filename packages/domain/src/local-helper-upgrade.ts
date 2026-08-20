@@ -173,6 +173,7 @@ export interface WalletHelperV2Verification {
   abiHash: `sha256:${string}`;
   adapter: `0x${string}` | null;
   atomicLiquidityExecutionEnabled: boolean | null;
+  blockHash: `0x${string}`;
   helperAddress: `0x${string}`;
   observedAtBlock: string;
   owner: `0x${string}` | null;
@@ -488,6 +489,7 @@ export function assertWalletHelperV2Verification(
 ): void {
   decimal(actual.observedAtBlock, "LOCAL_HELPER_UPGRADE_V2_VERIFICATION_INVALID");
   if (
+    !hashPattern.test(actual.blockHash) ||
     actual.helperAddress !== expected.expectedAddress ||
     actual.runtimeCodeHash !== expected.expectedRuntimeCodeHash ||
     actual.owner !== expected.owner ||

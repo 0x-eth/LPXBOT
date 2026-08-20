@@ -9,10 +9,7 @@ export class LocalHelperUpgradeSweepResidualReader implements LocalHelperUpgrade
   readonly #idempotencyKey: () => string;
   readonly #sweeps: LocalHelperSweepApplication;
 
-  constructor(input: {
-    idempotencyKey?: () => string;
-    sweeps: LocalHelperSweepApplication;
-  }) {
+  constructor(input: { idempotencyKey?: () => string; sweeps: LocalHelperSweepApplication }) {
     this.#idempotencyKey = input.idempotencyKey ?? (() => `upgrade-${randomUUID()}`);
     this.#sweeps = input.sweeps;
   }
