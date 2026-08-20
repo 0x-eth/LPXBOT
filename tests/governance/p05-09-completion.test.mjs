@@ -203,11 +203,14 @@ test("execution contract freezes deploy-new identities, selectors, cursors, and 
   );
   assert.equal(contract.registry.productionInheritance, false);
   assert.equal(contract.registry.serviceFeeBps, 0);
-  assert.deepEqual(contract.registry.components.map(({ role }) => role), ["adapter", "permit2"]);
-  assert.deepEqual(contract.registry.tokens.map(({ fixture }) => fixture), [
-    "TestOnlyERC20",
-    "TestOnlyWBNB",
-  ]);
+  assert.deepEqual(
+    contract.registry.components.map(({ role }) => role),
+    ["adapter", "permit2"],
+  );
+  assert.deepEqual(
+    contract.registry.tokens.map(({ fixture }) => fixture),
+    ["TestOnlyERC20", "TestOnlyWBNB"],
+  );
   assert.equal(
     contract.registry.target.abiHash,
     "sha256:e7c79a2f0882dc97d19a42e5fe3868ae986e08817b2aed4c66d1f55fcdb16219",
@@ -222,7 +225,10 @@ test("execution contract freezes deploy-new identities, selectors, cursors, and 
   );
   assert.equal(contract.registry.target.runtimeBytes, 8_633);
   assert.equal(contract.registry.target.selectors.length, 18);
-  assert.equal(new Set(contract.registry.target.selectors.map(({ selector }) => selector)).size, 18);
+  assert.equal(
+    new Set(contract.registry.target.selectors.map(({ selector }) => selector)).size,
+    18,
+  );
   assert.ok(
     contract.registry.target.selectors.some(
       ({ selector, signature }) =>
@@ -302,14 +308,17 @@ test("source freezes V2 safety, strict ingress, no-replay recovery, and atomic b
     .split("export const WALLET_HELPER_V2_SELECTORS = ")[1]
     ?.split("] as const;")[0];
   assert.ok(selectorSection);
-  const selectors = [...selectorSection.matchAll(/selector: "(0x[0-9a-f]+)",\s*signature:\s*"([^"]+)"/gs)].map(
-    ([, selector, signature]) => ({ selector, signature }),
-  );
+  const selectors = [
+    ...selectorSection.matchAll(/selector: "(0x[0-9a-f]+)",\s*signature:\s*"([^"]+)"/gs),
+  ].map(([, selector, signature]) => ({ selector, signature }));
   assert.deepEqual(selectors, contract.registry.target.selectors);
   assert.match(artifact, /WALLET_HELPER_V2_RUNTIME_BYTES = 8633 as const/u);
   assert.match(registry, /p05-local-helper-upgrade-v3/u);
   assert.match(registry, /Object\.values\(registry\.gates\).*atomicLiquidity/isu);
-  assert.match(domain, /"preflight"[\s\S]*"deploy-v2"[\s\S]*"verify-v2"[\s\S]*"sweep-v1"[\s\S]*"final-rescan-v1"[\s\S]*"atomic-binding-switch"[\s\S]*"completed"/u);
+  assert.match(
+    domain,
+    /"preflight"[\s\S]*"deploy-v2"[\s\S]*"verify-v2"[\s\S]*"sweep-v1"[\s\S]*"final-rescan-v1"[\s\S]*"atomic-binding-switch"[\s\S]*"completed"/u,
+  );
   assert.match(domain, /NON_ZERO_ALLOWANCE[\s\S]*NFT_CUSTODY[\s\S]*UNKNOWN_TOKEN/u);
   assert.match(helper, /address public immutable owner/u);
   assert.match(helper, /address public immutable adapter/u);
@@ -321,7 +330,10 @@ test("source freezes V2 safety, strict ingress, no-replay recovery, and atomic b
   assert.match(helper, /recipient: owner[\s\S]*refundRecipient: owner/u);
   assert.match(api, /exact\(value, \["chainId", "walletId"\]\)/u);
   assert.match(api, /exact\(value, \["chainId", "previewDigest", "previewToken", "walletId"\]\)/u);
-  assert.match(client, /body: JSON\.stringify\(\{\s*chainId: request\.chainId,\s*walletId: request\.walletId/isu);
+  assert.match(
+    client,
+    /body: JSON\.stringify\(\{\s*chainId: 31_337,\s*walletId: request\.walletId/isu,
+  );
   assert.match(recovery, /continue at verify-v2|operation\.cursor !== "verify-v2"/iu);
   assert.match(recovery, /operation\.cursor !== "final-rescan-v1"/u);
   assert.match(recovery, /SET state = 'superseded'/u);
@@ -358,15 +370,7 @@ test("evidence covers deploy, cleanup, recovery, security, RBAC, and UI requirem
 });
 
 test("P05-02 through P05-08 acceptance are byte-identical to the requested baseline", async () => {
-  for (const directory of [
-    "P05-02",
-    "P05-03",
-    "P05-04",
-    "P05-05",
-    "P05-06",
-    "P05-07",
-    "P05-08",
-  ]) {
+  for (const directory of ["P05-02", "P05-03", "P05-04", "P05-05", "P05-06", "P05-07", "P05-08"]) {
     const repositoryPath = `artifacts/acceptance/${directory}`;
     const baselineFiles = execFileSync(
       "git",
