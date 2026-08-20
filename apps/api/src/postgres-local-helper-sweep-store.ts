@@ -186,9 +186,7 @@ export class PostgresLocalHelperSweepBindingStore implements LocalHelperSweepBin
   }
 }
 
-export class PostgresLocalHelperResidualSnapshotStore
-  implements LocalHelperResidualSnapshotStore
-{
+export class PostgresLocalHelperResidualSnapshotStore implements LocalHelperResidualSnapshotStore {
   readonly #registry: LocalHelperSweepRegistry;
 
   constructor(
@@ -521,7 +519,10 @@ export class PostgresLocalHelperSweepOperationStore implements LocalHelperSweepO
       if (!ledger) throw new LocalHelperSweepError("LOCAL_HELPER_SWEEP_UNAVAILABLE", true);
       const providerNonce = consensusNonce(input.nonceViews);
       const nextNonce = ledger.next_nonce === null ? providerNonce : BigInt(ledger.next_nonce);
-      if (providerNonce !== BigInt(input.expectedNonce) || nextNonce !== BigInt(input.expectedNonce)) {
+      if (
+        providerNonce !== BigInt(input.expectedNonce) ||
+        nextNonce !== BigInt(input.expectedNonce)
+      ) {
         throw new LocalHelperSweepError("NONCE_DRIFT");
       }
       let fencingToken = BigInt(ledger.fencing_token);
@@ -738,7 +739,10 @@ export class PostgresLocalHelperSweepOperationStore implements LocalHelperSweepO
     }
     const operations = operationResult.rows.map((row): StoredLocalHelperSweepOperation => {
       const plan = structuredClone(row.plan_payload);
-      if (plan.planDigest !== row.plan_digest || localHelperSweepPlanDigest(plan) !== row.plan_digest) {
+      if (
+        plan.planDigest !== row.plan_digest ||
+        localHelperSweepPlanDigest(plan) !== row.plan_digest
+      ) {
         throw new LocalHelperSweepError("REGISTRY_MISMATCH");
       }
       return {

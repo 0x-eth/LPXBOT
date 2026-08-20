@@ -196,7 +196,11 @@ export class MemoryLocalHelperSweepBindingStore implements LocalHelperSweepBindi
   }
 
   #public(
-    value: LocalHelperSweepBinding & { failureCode: string | null; tenantId: string; userId: string },
+    value: LocalHelperSweepBinding & {
+      failureCode: string | null;
+      tenantId: string;
+      userId: string;
+    },
   ): LocalHelperSweepBinding {
     return structuredClone({
       adapterAddress: value.adapterAddress,
@@ -248,11 +252,15 @@ export class MemoryLocalHelperResidualSnapshotStore implements LocalHelperResidu
     const scope = this.#idempotencyKey(input);
     const existingDigest = this.#idempotency.get(scope);
     if (existingDigest) {
-      return structuredClone(this.#snapshots.get(this.#snapshotKey({
-        ...input,
-        snapshotDigest: existingDigest,
-        walletId: input.snapshot.wallet.walletId,
-      }))!);
+      return structuredClone(
+        this.#snapshots.get(
+          this.#snapshotKey({
+            ...input,
+            snapshotDigest: existingDigest,
+            walletId: input.snapshot.wallet.walletId,
+          }),
+        )!,
+      );
     }
     const key = this.#snapshotKey({
       ...input,
@@ -271,9 +279,7 @@ export class MemoryLocalHelperResidualSnapshotStore implements LocalHelperResidu
     walletId: string;
   }) {
     const value = this.#idempotency.get(this.#idempotencyKey(input));
-    return value
-      ? this.get({ ...input, snapshotDigest: value as `sha256:${string}` })
-      : null;
+    return value ? this.get({ ...input, snapshotDigest: value as `sha256:${string}` }) : null;
   }
 
   async get(input: {
@@ -440,7 +446,10 @@ export class MemoryLocalHelperSweepOperationStore implements LocalHelperSweepOpe
       if (existing.requestHash !== input.requestHash) {
         throw new LocalHelperSweepError("IDEMPOTENCY_CONFLICT");
       }
-      return { batch: structuredClone(this.#batches.get(existing.batchId)!), kind: "duplicate" as const };
+      return {
+        batch: structuredClone(this.#batches.get(existing.batchId)!),
+        kind: "duplicate" as const,
+      };
     }
     if (
       [...this.#batches.values()].some(
@@ -559,7 +568,9 @@ export class MemoryLocalHelperSweepOperationStore implements LocalHelperSweepOpe
     operation.updatedAt = this.#now().toISOString();
     this.#confirmed.add(`${operation.walletId}:${operation.snapshotDigest}:${operation.assetId}`);
     const batch = this.#batches.get(operation.batchId)!;
-    batch.state = batch.operations.every(({ state }) => state === "succeeded") ? "succeeded" : "running";
+    batch.state = batch.operations.every(({ state }) => state === "succeeded")
+      ? "succeeded"
+      : "running";
     batch.updatedAt = operation.updatedAt;
   }
 }
@@ -910,7 +921,10 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
     }
     const preview = await this.#previews.get(request.previewToken);
     if (!preview) throw new LocalHelperSweepError("PREVIEW_INVALID");
-    if (preview.createdAt.getTime() + localHelperSweepPreviewTtlMilliseconds <= this.#now().getTime()) {
+    if (
+      preview.createdAt.getTime() + localHelperSweepPreviewTtlMilliseconds <=
+      this.#now().getTime()
+    ) {
       throw new LocalHelperSweepError("PREVIEW_EXPIRED");
     }
     const baseRequest: LocalHelperSweepPreviewRequest = {
@@ -1024,7 +1038,9 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
       unknownTokens.length > 0;
     const reasons = new Set<string>();
     if (!inspection.coverage.complete) reasons.add("coverage-incomplete");
-    if (Object.entries(identity).some(([key, value]) => key.endsWith("Matches") && value === false)) {
+    if (
+      Object.entries(identity).some(([key, value]) => key.endsWith("Matches") && value === false)
+    ) {
       reasons.add("identity-mismatch");
     }
     if (balances.some((asset) => BigInt(asset.amountBaseUnit) > BigInt(asset.dustBaseUnit))) {
@@ -1127,7 +1143,10 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
     if (inspection.referencedBlockHash !== snapshot.block.hash) {
       throw new LocalHelperSweepError("SNAPSHOT_REORGED", true);
     }
-    if (BigInt(inspection.headBlockNumber) - BigInt(snapshot.block.number) > BigInt(this.#registry.maxBlockDrift)) {
+    if (
+      BigInt(inspection.headBlockNumber) - BigInt(snapshot.block.number) >
+      BigInt(this.#registry.maxBlockDrift)
+    ) {
       throw new LocalHelperSweepError("SNAPSHOT_STALE");
     }
     const observationDigest = this.#observationDigest(binding, inspection, input.wallet);
@@ -1145,14 +1164,19 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
     });
     const feeLimits: Record<string, LocalHelperSweepFeeLimit> = {};
     for (const asset of selected) {
-      const fee = inspection.feeLimits.find((candidate) => candidate.assetId === asset.assetId)?.feeLimit;
+      const fee = inspection.feeLimits.find(
+        (candidate) => candidate.assetId === asset.assetId,
+      )?.feeLimit;
       if (!fee) throw new LocalHelperSweepError("PREVIEW_CHANGED");
       this.#fee(fee);
       feeLimits[asset.assetId] = structuredClone(fee);
     }
     const nonce = consensusNonce(inspection.nonceViews);
     const expiresAt = new Date(
-      Math.min(Date.parse(snapshot.expiresAt), now.getTime() + localHelperSweepPreviewTtlMilliseconds),
+      Math.min(
+        Date.parse(snapshot.expiresAt),
+        now.getTime() + localHelperSweepPreviewTtlMilliseconds,
+      ),
     ).toISOString();
     const deadline = new Date(
       Math.min(
@@ -1193,7 +1217,8 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
     const componentsMatch = expectedComponents.every((expected) => {
       const observed = inspection.componentCode.find(({ role }) => role === expected.role);
       return (
-        observed?.address === expected.address && observed.runtimeCodeHash === expected.runtimeCodeHash
+        observed?.address === expected.address &&
+        observed.runtimeCodeHash === expected.runtimeCodeHash
       );
     });
     const tokensMatch = this.#registry.tokens.every((expected) => {
@@ -1262,7 +1287,9 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
       .sort((left, right) => left.assetId.localeCompare(right.assetId));
   }
 
-  #unknownTokens(inspection: LocalHelperResidualChainInspection): LocalHelperUnknownTokenResidual[] {
+  #unknownTokens(
+    inspection: LocalHelperResidualChainInspection,
+  ): LocalHelperUnknownTokenResidual[] {
     return inspection.unknownTokens
       .filter(
         ({ address, amountBaseUnit, runtimeCodeHash }) =>

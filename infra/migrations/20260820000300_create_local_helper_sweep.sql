@@ -220,7 +220,7 @@ CREATE TABLE local_helper_sweep_operations (
 
 CREATE INDEX local_helper_sweep_operations_recovery_idx
   ON local_helper_sweep_operations (state, updated_at, operation_id)
-  WHERE state IN ('queued', 'signed', 'broadcast', 'pending', 'dropped', 'reconciling');
+  WHERE state IN ('queued', 'signing', 'broadcast', 'pending', 'dropped', 'reconciling');
 
 CREATE TABLE local_helper_sweep_transactions (
   transaction_id uuid PRIMARY KEY,
