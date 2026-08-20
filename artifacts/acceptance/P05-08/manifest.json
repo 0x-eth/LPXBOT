@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workItemId": "P05-08",
   "phase": "P05",
-  "risk": "R3/R4",
+  "risk": "R4",
   "status": "accepted-with-gaps",
   "featureIds": ["HELPER-06"],
   "tests": [

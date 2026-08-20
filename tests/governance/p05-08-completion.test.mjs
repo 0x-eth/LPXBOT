@@ -146,7 +146,7 @@ test("P05-08 manifest, evidence inventory, visuals, and checksums are complete",
   const manifest = JSON.parse(await readFile(path.join(ACCEPTANCE, "manifest.json"), "utf8"));
   assert.equal(manifest.workItemId, "P05-08");
   assert.equal(manifest.phase, "P05");
-  assert.equal(manifest.risk, "R3/R4");
+  assert.equal(manifest.risk, "R4");
   assert.equal(manifest.status, "accepted-with-gaps");
   assert.deepEqual(manifest.featureIds, ["HELPER-06"]);
   assert.deepEqual(sorted(manifest.evidence.map(({ id }) => id)), EVIDENCE);
