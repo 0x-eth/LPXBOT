@@ -128,6 +128,37 @@ export type {
   StoredLocalPositionOperation,
   StoredLocalPositionPreview,
 } from "./local-position-executions.js";
+export {
+  LocalHelperSweepError,
+  LocalHelperSweepService,
+  MemoryLocalHelperResidualSnapshotStore,
+  MemoryLocalHelperSweepBindingStore,
+  MemoryLocalHelperSweepOperationStore,
+  MemoryLocalHelperSweepPreviewStore,
+  localHelperResidualSnapshotTtlMilliseconds,
+  localHelperSweepBodyLimit,
+  localHelperSweepIdempotencyRetentionHours,
+  localHelperSweepPreviewTtlMilliseconds,
+  parseLocalHelperSweepId,
+  parseLocalHelperSweepIdempotencyKey,
+  parseLocalHelperSweepPreview,
+  parseLocalHelperSweepSubmit,
+} from "./local-helper-sweeps.js";
+export type {
+  LocalHelperResidualChainInspection,
+  LocalHelperResidualChainReader,
+  LocalHelperResidualSnapshotStore,
+  LocalHelperSweepApplication,
+  LocalHelperSweepBindingStore,
+  LocalHelperSweepErrorCode,
+  LocalHelperSweepNonceView,
+  LocalHelperSweepOperationStore,
+  LocalHelperSweepPreviewStore,
+  LocalHelperSweepReservation,
+  StoredLocalHelperSweepBatch,
+  StoredLocalHelperSweepOperation,
+  StoredLocalHelperSweepPreview,
+} from "./local-helper-sweeps.js";
 export type {
   HelperDeploymentApplication,
   HelperDeploymentChainReader,
