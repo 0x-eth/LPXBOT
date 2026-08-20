@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-09",
+  "phase": "P05",
+  "risk": "R4",
+  "status": "accepted-with-gaps",
+  "featureIds": ["HELPER-03"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "WalletHelperV2 Registry, snapshot, typed plan, cursor, replacement, client, API, Signer, Worker, and governance tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-09/E-SEC.md"
+    },
+    {
+      "id": "T-API",
+      "command": "authenticated preview, reauthenticated submit, idempotency, strict ingress, latest, and operation query tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-09/E-API.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "fresh non-forked Anvil V1 deployment, V2 CREATE and verification, three-asset V1 sweep, final rescan, atomic binding switch, and restart no-replay",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-09/E-CHAIN.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "PostgreSQL fresh migration, reverse cycle, durable cursor/evidence/lineage, one-active-binding index, and SERIALIZABLE compare-and-swap",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-09/E-DATA.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "deployment persistence crash, confirmed deploy/sweep no-replay, fee-only replacement, final rescan, CAS, and manual recovery",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-09/E-REC.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "owner/runtime/Registry/provider/nonce guards, V2 safety invariants, arbitrary-field denial, closed atomic/non-local gates, and manual recovery",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-09/E-SEC.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "desktop/mobile version comparison, preview, confirmation, seven steps, lineage, manual recovery, operation query, keyboard, Axe, and overflow",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-09/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile completed-upgrade Playwright screenshot regression and accepted visual capture",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-09/E-VIS.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P05-09/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P05-09/E-DATA.md" },
+    { "id": "E-CHAIN", "path": "artifacts/acceptance/P05-09/E-CHAIN.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P05-09/E-REC.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P05-09/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P05-09/E-SEC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P05-09/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P05-09/E-VIS.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P05-09/E-OPS.md" }
+  ],
+  "assumptions": [
+    "HELPER-03 is implemented-assumed only for non-forked local Anvil chainId 31337, synthetic custody wallets, the exact P05-05 WalletHelperV1 binding, P05-08 sweep Registry, and allowlisted TestOnly components.",
+    "The local deploy-new upgrade gate is OPEN; proxy, atomic liquidity, BSC, testnet, and production execution gates remain CLOSED with zero non-local signatures, broadcasts, and real-fund operations.",
+    "WalletHelperV2 freezes the P05-10 typed atomic liquidity ABI, but its immutable execution flag is false and HELPER-04 remains planned.",
+    "Nonzero allowance, Helper NFT custody, and unknown Token inventory require manual recovery and produce no arbitrary calldata.",
+    "P05-02 through P05-08 acceptance files remain byte-identical to baseline 9e520339f7c3a975a7f5d4370a28ee0ca59a28bb.",
+    "Independent contract review, testnet evidence, production Registry, production Signer/Worker routes, monitoring SLO, and production rollback evidence remain unresolved.",
+    "This accepted-with-gaps work item is not parity-verified and not released."
+  ],
+  "completedAt": "2026-08-21T03:00:00.000Z",
+  "commit": null
+}

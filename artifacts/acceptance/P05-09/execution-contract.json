@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-09",
+  "featureIds": ["HELPER-03"],
+  "registry": {
+    "chainId": 31337,
+    "environment": "non-forked-anvil-synthetic-only",
+    "productionInheritance": false,
+    "registryVersion": "p05-local-helper-upgrade-v3",
+    "registryDigest": "sha256:5b588c0d214067e7759f9a0c3a7e053d3cea50f8910873aba76bc54cd73753b1",
+    "rollbackVersion": "p05-local-helper-upgrade-disabled-v1",
+    "snapshotVersion": "p05-local-helper-upgrade-snapshot-v3",
+    "planVersion": "p05-local-helper-upgrade-plan-v3",
+    "serviceFeeBps": 0,
+    "maxBlockDrift": 5,
+    "maxDeadlineSeconds": 900,
+    "source": {
+      "helperVersion": "WalletHelperV1",
+      "bindingRegistryVersion": "p05-local-helper-deployment-v2",
+      "abiHash": "sha256:f5457f6a9755e133e1ae1870e7ddccb70ddac316883a7f431f02c00ccb5c2623",
+      "runtimeTemplateHash": "0xb3d942814a116a39a12bdffb9df3a1eab804dbf57dda22ff4108c90e5c99e95c",
+      "selectors": {
+        "owner": "0x8da5cb5b",
+        "sweepNative": "0x6971b189",
+        "sweepToken": "0x3609afa9"
+      }
+    },
+    "target": {
+      "helperVersion": "WalletHelperV2",
+      "abiHash": "sha256:e7c79a2f0882dc97d19a42e5fe3868ae986e08817b2aed4c66d1f55fcdb16219",
+      "creationCodeHash": "0xed00df31c585db148d0a25bb5db4d982e762b9bd59f5bfea5b78ba2fe15e9063",
+      "runtimeTemplateHash": "0x972616e68e263322b1b5b69f9f55a34d76c1ea6915cc622059c14a01c537e8f5",
+      "runtimeBytes": 8633,
+      "selectorSetHash": "sha256:e784a0900dc3d3c7ef04cd2b00b8ee96c206616d169a08b43e45d1bd5b0bbf87",
+      "selectors": [
+        { "selector": "0x03eadcfc", "signature": "adapter()" },
+        { "selector": "0xc30868a0", "signature": "allowedTokenA()" },
+        { "selector": "0xf28c7ad0", "signature": "allowedTokenACodeHash()" },
+        { "selector": "0x111c6855", "signature": "allowedTokenB()" },
+        { "selector": "0xfad0c1d2", "signature": "allowedTokenBCodeHash()" },
+        { "selector": "0x3bfb3913", "signature": "ATOMIC_LIQUIDITY_EXECUTION_ENABLED()" },
+        { "selector": "0xdb6b5246", "signature": "depositNative()" },
+        { "selector": "0xe25f4c85", "signature": "executeAtomicLiquidity(bytes32,(uint8,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint16),(bool,((address,uint160,uint48,uint48),address,uint256),bytes))" },
+        { "selector": "0xd3fe1721", "signature": "executedPlans(bytes32)" },
+        { "selector": "0xf285ba97", "signature": "executePosition(bytes32,(uint8,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint16))" },
+        { "selector": "0x5a547e89", "signature": "executeSwap(bytes32,(address,address,uint256,uint256,uint256,uint16),(bool,((address,uint160,uint48,uint48),address,uint256),bytes))" },
+        { "selector": "0xd40dc870", "signature": "MAX_AMOUNT()" },
+        { "selector": "0xc2b86d60", "signature": "MAX_DEADLINE_WINDOW()" },
+        { "selector": "0x7d13cb00", "signature": "MAX_PERMIT2_EXPIRATION()" },
+        { "selector": "0x8da5cb5b", "signature": "owner()" },
+        { "selector": "0x12261ee7", "signature": "permit2()" },
+        { "selector": "0x6971b189", "signature": "sweepNative(bytes32,uint256)" },
+        { "selector": "0x3609afa9", "signature": "sweepToken(bytes32,address,uint256)" }
+      ],
+      "atomicLiquidity": {
+        "featureId": "HELPER-04",
+        "selector": "0xe25f4c85",
+        "executionEnabled": false,
+        "gate": "CLOSED"
+      }
+    },
+    "components": [
+      {
+        "role": "adapter",
+        "address": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+        "runtimeCodeHash": "0xb4b2ae4ee6025275948cb04c4ab0ad52cf5e6bb016def1a2050568b812bb30f8"
+      },
+      {
+        "role": "permit2",
+        "address": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+        "runtimeCodeHash": "0x85f295c14e6e29cd939674c5f0ec10bc1606a00330ffd059e604bd231e35b7ad"
+      }
+    ],
+    "tokens": [
+      {
+        "fixture": "TestOnlyERC20",
+        "address": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+        "runtimeCodeHash": "0x438d7e29bb977ff7241816f8388a6cc0be9c4cbe4e356f177b77d71d9b7d4354"
+      },
+      {
+        "fixture": "TestOnlyWBNB",
+        "address": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+        "runtimeCodeHash": "0x4bd73dd3f768a57356137078198f3637e40f39b8339c36803672e3d4eae453f8"
+      }
+    ],
+    "sweep": {
+      "registryVersion": "p05-local-helper-sweep-v2",
+      "registryDigest": "sha256:aa8f99d0f123310fd87f16f562fbbf41b3651af35198dcf12fe76f99a3cdce30"
+    }
+  },
+  "upgrade": {
+    "model": "deploy-new",
+    "proxy": false,
+    "cursors": [
+      "preflight",
+      "deploy-v2",
+      "verify-v2",
+      "sweep-v1",
+      "final-rescan-v1",
+      "atomic-binding-switch",
+      "completed"
+    ],
+    "preflightBlockers": [
+      "BINDING_DEGRADED",
+      "BINDING_IDENTITY_MISMATCH",
+      "LIVE_OPERATION",
+      "NONCE_CONFLICT",
+      "PROVIDER_DIVERGENCE",
+      "REGISTRY_MISMATCH",
+      "RESIDUAL_COVERAGE_INCOMPLETE",
+      "RESIDUAL_MANUAL_RECOVERY_REQUIRED",
+      "SOURCE_OWNER_MISMATCH",
+      "SOURCE_RUNTIME_MISMATCH",
+      "WALLET_MISMATCH"
+    ],
+    "targetVerification": [
+      "owner",
+      "instance runtime code hash",
+      "ABI hash and complete selector set",
+      "adapter",
+      "Permit2",
+      "TestOnlyERC20 identity",
+      "TestOnlyWBNB identity",
+      "atomic liquidity execution disabled"
+    ]
+  },
+  "plan": {
+    "schemaVersion": 3,
+    "transaction": { "to": null, "valueBaseUnit": "0", "data": "server-derived frozen init code" },
+    "identity": [
+      "wallet and immutable owner",
+      "source binding/helper/version/runtime",
+      "target version and predicted CREATE address",
+      "ABI/creation/init-code/runtime/selector hashes",
+      "adapter/Permit2/Token identities",
+      "nonce and fencing token",
+      "Registry/snapshot/plan digests",
+      "deadline, gas limit, fee cap"
+    ]
+  },
+  "v1Supersede": {
+    "required": [
+      "complete residual coverage",
+      "all balances <= dust",
+      "all allowances = 0",
+      "NFT custody = 0",
+      "unknown Token inventory = 0",
+      "no live operation",
+      "owner/runtime/component/token/Registry identities match"
+    ],
+    "manualRecoveryBlockers": ["NON_ZERO_ALLOWANCE", "NFT_CUSTODY", "UNKNOWN_TOKEN"],
+    "arbitraryCalldata": "never generated"
+  },
+  "bindingSwitch": {
+    "isolation": "SERIALIZABLE",
+    "operation": "single database transaction compare-and-swap",
+    "sourceResult": "WalletHelperV1 superseded",
+    "targetResult": "WalletHelperV2 active",
+    "uniqueInvariant": "one active binding per tenant+user+wallet+chain"
+  },
+  "replacement": {
+    "mutableFields": ["maxFeePerGas", "maxPriorityFeePerGas"],
+    "mustIncreaseFees": true,
+    "immutableFields": [
+      "init code and initCodeHash",
+      "target WalletHelperV2 version and predicted address",
+      "nonce",
+      "owner",
+      "plan digest",
+      "Registry digest",
+      "source binding",
+      "deadline",
+      "gas limit",
+      "zero value"
+    ]
+  },
+  "recovery": {
+    "cursor": "persisted and compare-and-swapped",
+    "confirmedDeployment": "continue at verify-v2; never sign or broadcast again",
+    "confirmedSweep": "continue at final-rescan-v1; never create or replay the sweep batch",
+    "sourceRecoveryAnchor": "WalletHelperV1 retained until atomic-binding-switch commits",
+    "completedRestart": "claim no work and preserve wallet nonce"
+  },
+  "api": {
+    "routes": [
+      "POST /api/wallets/helper/upgrade/preview",
+      "POST /api/wallets/helper/upgrade",
+      "GET /api/helper-upgrades/:operationId",
+      "GET /api/wallets/:walletId/helper-upgrade"
+    ],
+    "previewRequestFields": ["chainId", "walletId"],
+    "submitRequestFields": ["chainId", "previewDigest", "previewToken", "walletId"],
+    "clientControlledFieldsDenied": [
+      "bytecode",
+      "helper",
+      "target",
+      "selector",
+      "calldata",
+      "recipient",
+      "registryOverride",
+      "feeOverride",
+      "fee",
+      "nonce",
+      "owner",
+      "planDigest"
+    ],
+    "submitRequirements": [
+      "authenticated tenant/user-owned ready wallet",
+      "fresh reauthentication",
+      "stable idempotency key",
+      "current opaque preview digest and token"
+    ]
+  },
+  "executionCounters": {
+    "localV2DeploymentCanonicalReceipts": 1,
+    "localV1SweepCanonicalReceipts": 3,
+    "bscSignatures": 0,
+    "bscBroadcasts": 0,
+    "testnetSignatures": 0,
+    "testnetBroadcasts": 0,
+    "productionSignatures": 0,
+    "productionBroadcasts": 0,
+    "realFundOperations": 0
+  },
+  "nonGoals": [
+    "HELPER-04",
+    "proxy upgrade",
+    "allowance revoke",
+    "NFT rescue",
+    "unknown Token sweep",
+    "BSC/testnet/production execution"
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-09",
+  "featureIds": ["HELPER-03"],
+  "gates": {
+    "local": {
+      "status": "OPEN",
+      "chainIds": [31337],
+      "scope": "WalletHelperV1 to WalletHelperV2 deploy-new upgrade, V1 residual sweep, final rescan, and atomic binding switch on a non-forked Anvil chain with synthetic wallets and allowlisted TestOnly components only",
+      "registryVersion": "p05-local-helper-upgrade-v3",
+      "snapshotVersion": "p05-local-helper-upgrade-snapshot-v3",
+      "planVersion": "p05-local-helper-upgrade-plan-v3",
+      "allowedOperations": ["HELPER-03:local-helper-deploy-new-upgrade"],
+      "proxy": false,
+      "evidence": [
+        "execution-contract.json",
+        "E-CHAIN.md",
+        "E-REC.md",
+        "E-SEC.md",
+        "E-UI.md",
+        "E-VIS.md"
+      ]
+    },
+    "atomicLiquidity": {
+      "status": "CLOSED",
+      "featureIds": ["HELPER-04"],
+      "selector": "0xe25f4c85",
+      "signatures": 0,
+      "broadcasts": 0,
+      "reasons": [
+        "WalletHelperV2 immutable execution flag is false",
+        "P05-09 freezes only the P05-10 typed ABI",
+        "HELPER-04 is not claimed by this work item"
+      ]
+    },
+    "bsc": {
+      "status": "CLOSED",
+      "chainIds": [56],
+      "readOnly": true,
+      "signatures": 0,
+      "broadcasts": 0,
+      "reasons": [
+        "chainId 56 retains the read-only residual surface",
+        "the upgrade Registry accepts only chainId 31337",
+        "no BSC WalletHelperV2 deployment or binding switch route exists"
+      ]
+    },
+    "testnet": {
+      "status": "CLOSED",
+      "allowlistedChainIds": [],
+      "signatures": 0,
+      "broadcasts": 0,
+      "reasons": [
+        "no testnet upgrade Registry",
+        "no independent contract review",
+        "no testnet rollback evidence"
+      ]
+    },
+    "production": {
+      "status": "CLOSED",
+      "allowlistedChainIds": [],
+      "signatures": 0,
+      "broadcasts": 0,
+      "realFundOperations": 0,
+      "reasons": [
+        "local Registry has productionInheritance=false",
+        "production Signer and Worker do not admit local Helper upgrade plans",
+        "production Helper and component allowlists are empty",
+        "independent review and staging rollback evidence remain unresolved"
+      ]
+    }
+  },
+  "plannedOnly": ["HELPER-04"]
+}
