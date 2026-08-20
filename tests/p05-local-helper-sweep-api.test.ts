@@ -241,6 +241,37 @@ describe("P05-08 local Helper sweep API", () => {
     ).rejects.toMatchObject({ code: "LOCAL_HELPER_SWEEP_NOT_FOUND" });
   });
 
+  it("keeps an unchanged preview valid while the real-time clock advances", async () => {
+    let tick = 0;
+    const api = fixture(inspection(), () => new Date(now.getTime() + tick++));
+    const snapshot = await scanned(api);
+    const request = {
+      assetIds: ["native:31337"],
+      chainId: 31_337 as const,
+      snapshotDigest: snapshot.snapshotDigest,
+      walletId: wallet.walletId,
+    };
+    const preview = await api.service.preview({ request, tenantId, userId, wallet });
+    await expect(
+      api.service.sweep({
+        idempotencyKey: "local-helper-advancing-clock-0001",
+        request: {
+          ...request,
+          previewDigest: preview.previewDigest,
+          previewToken: preview.previewToken,
+        },
+        requestId: "advancing-clock-request",
+        sessionId: "a8100000-0000-4000-8000-000000000099",
+        tenantId,
+        userId,
+        wallet,
+      }),
+    ).resolves.toMatchObject({
+      batch: { operations: [{ assetId: "native:31337" }] },
+      created: true,
+    });
+  });
+
   it.each([
     ["TestOnlyERC20", `token:${registry.tokens[0].address}`],
     ["WBNB", `token:${registry.tokens[1].address}`],
