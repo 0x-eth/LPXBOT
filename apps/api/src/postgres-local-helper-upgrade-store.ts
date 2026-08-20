@@ -134,6 +134,22 @@ function bindingFrom(row: BindingRow): LocalHelperSweepBinding {
   };
 }
 
+function sameBinding(left: LocalHelperSweepBinding, right: LocalHelperSweepBinding): boolean {
+  return (
+    left.adapterAddress === right.adapterAddress &&
+    left.bindingId === right.bindingId &&
+    left.deploymentRegistryVersion === right.deploymentRegistryVersion &&
+    left.helperAddress === right.helperAddress &&
+    left.helperVersion === right.helperVersion &&
+    left.ownerAddress === right.ownerAddress &&
+    left.permit2Address === right.permit2Address &&
+    left.runtimeCodeHash === right.runtimeCodeHash &&
+    left.state === right.state &&
+    left.verifiedBlockNumber === right.verifiedBlockNumber &&
+    left.walletId === right.walletId
+  );
+}
+
 async function rollback(client: PoolClient): Promise<void> {
   await client.query("ROLLBACK").catch(() => undefined);
 }
@@ -381,11 +397,7 @@ export class PostgresLocalHelperUpgradeOperationStore implements LocalHelperUpgr
         [input.sourceBinding.bindingId, input.tenantId, input.userId, input.wallet.walletId],
       );
       const binding = bindingResult.rows[0] ? bindingFrom(bindingResult.rows[0]) : null;
-      if (
-        !binding ||
-        binding.state !== "active" ||
-        JSON.stringify(binding) !== JSON.stringify(input.sourceBinding)
-      ) {
+      if (!binding || binding.state !== "active" || !sameBinding(binding, input.sourceBinding)) {
         throw new LocalHelperUpgradeError("PREFLIGHT_FAILED");
       }
       if (

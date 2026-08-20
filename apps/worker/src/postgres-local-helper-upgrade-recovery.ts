@@ -129,9 +129,7 @@ function rollback(client: PoolClient): Promise<void> {
   );
 }
 
-export class PostgresLocalHelperUpgradeRecoveryRepository
-  implements LocalHelperUpgradeWorkRepository
-{
+export class PostgresLocalHelperUpgradeRecoveryRepository implements LocalHelperUpgradeWorkRepository {
   readonly #pollMilliseconds: number;
   readonly #uuid: () => string;
 
@@ -522,7 +520,13 @@ export class PostgresLocalHelperUpgradeRecoveryRepository
         throw new LocalHelperUpgradeWorkerError("HELPER_UPGRADE_RESCAN_CONFLICT");
       }
       const decision = this.#rescanDecision(operation, input.snapshot);
-      await this.#appendRescanEvidence(client, operation, input.snapshot, decision, input.observedAt);
+      await this.#appendRescanEvidence(
+        client,
+        operation,
+        input.snapshot,
+        decision,
+        input.observedAt,
+      );
       if (decision.manualRecoveryRequired) {
         await this.#manualRecovery(
           client,
@@ -536,7 +540,13 @@ export class PostgresLocalHelperUpgradeRecoveryRepository
       if (!decision.eligible) {
         throw new LocalHelperUpgradeWorkerError("HELPER_UPGRADE_FINAL_RESCAN_NOT_CLEAN", true);
       }
-      await this.#advance(client, input.claim, operation, "atomic-binding-switch", input.observedAt);
+      await this.#advance(
+        client,
+        input.claim,
+        operation,
+        "atomic-binding-switch",
+        input.observedAt,
+      );
     });
   }
 
@@ -552,7 +562,13 @@ export class PostgresLocalHelperUpgradeRecoveryRepository
         throw new LocalHelperUpgradeWorkerError("HELPER_UPGRADE_BINDING_SWITCH_CONFLICT");
       }
       const decision = this.#rescanDecision(operation, input.snapshot);
-      await this.#appendRescanEvidence(client, operation, input.snapshot, decision, input.completedAt);
+      await this.#appendRescanEvidence(
+        client,
+        operation,
+        input.snapshot,
+        decision,
+        input.completedAt,
+      );
       if (decision.manualRecoveryRequired) {
         await this.#manualRecovery(
           client,
@@ -602,8 +618,12 @@ export class PostgresLocalHelperUpgradeRecoveryRepository
           ORDER BY helper_version FOR UPDATE`,
         [operation.source_binding_id, operation.operation_id],
       );
-      const source = bindings.rows.find(({ helper_version }) => helper_version === "WalletHelperV1");
-      const target = bindings.rows.find(({ helper_version }) => helper_version === "WalletHelperV2");
+      const source = bindings.rows.find(
+        ({ helper_version }) => helper_version === "WalletHelperV1",
+      );
+      const target = bindings.rows.find(
+        ({ helper_version }) => helper_version === "WalletHelperV2",
+      );
       if (
         !source ||
         source.state !== "active" ||
@@ -723,7 +743,9 @@ export class PostgresLocalHelperUpgradeRecoveryRepository
         localHelperUpgradeReplacementCandidate(plan, input.fee),
       );
       const generation = transaction.generation + 1;
-      const expiresAt = new Date(Math.min(Date.parse(plan.deadline), input.now.getTime() + 5 * 60_000));
+      const expiresAt = new Date(
+        Math.min(Date.parse(plan.deadline), input.now.getTime() + 5 * 60_000),
+      );
       if (expiresAt <= input.now) {
         throw new LocalHelperUpgradeWorkerError("HELPER_UPGRADE_PLAN_EXPIRED");
       }
@@ -969,7 +991,9 @@ export class PostgresLocalHelperUpgradeRecoveryRepository
     blockers: readonly string[],
     when: Date,
   ): Promise<void> {
-    const values = [...new Set(blockers.map((value) => bounded(value, "MANUAL_RECOVERY_REQUIRED")))].sort();
+    const values = [
+      ...new Set(blockers.map((value) => bounded(value, "MANUAL_RECOVERY_REQUIRED"))),
+    ].sort();
     if (values.length === 0) values.push("MANUAL_RECOVERY_REQUIRED");
     await client.query(
       `UPDATE local_helper_upgrade_steps
@@ -1026,7 +1050,10 @@ export class PostgresLocalHelperUpgradeRecoveryRepository
     await this.#audit(client, operation, "helper-upgrade.failed", code, when, null);
   }
 
-  async #loadOperation(client: PoolClient, operationId: string): Promise<LocalHelperUpgradeWorkOperation> {
+  async #loadOperation(
+    client: PoolClient,
+    operationId: string,
+  ): Promise<LocalHelperUpgradeWorkOperation> {
     const operationResult = await client.query<OperationRow>(
       `SELECT ${operationColumns} FROM local_helper_upgrade_operations
         WHERE operation_id = $1`,
@@ -1205,7 +1232,8 @@ export class PostgresLocalHelperUpgradeRecoveryRepository
   ): Promise<void> {
     await client.query(
       `UPDATE local_helper_upgrade_outbox
-          SET state = $2, delivered_at = CASE WHEN $2 = 'delivered' THEN $3 ELSE NULL END,
+          SET state = $2,
+              delivered_at = CASE WHEN $2 = 'delivered' THEN $3::timestamptz ELSE NULL END,
               lease_owner = NULL, lease_token = NULL, lease_expires_at = NULL,
               last_error_code = $4
         WHERE event_id = $1 AND state = 'leased'`,
@@ -1213,10 +1241,7 @@ export class PostgresLocalHelperUpgradeRecoveryRepository
     );
   }
 
-  async #liveExternalOperationIds(
-    client: PoolClient,
-    operation: OperationRow,
-  ): Promise<string[]> {
+  async #liveExternalOperationIds(client: PoolClient, operation: OperationRow): Promise<string[]> {
     const result = await client.query<{ operation_id: string }>(
       `SELECT operation_id::text FROM chain_operations
         WHERE tenant_id = $1 AND user_id = $2 AND wallet_id = $3
@@ -1242,7 +1267,10 @@ export class PostgresLocalHelperUpgradeRecoveryRepository
     return result.rows.map(({ operation_id }) => operation_id);
   }
 
-  #assertVerification(plan: LocalHelperUpgradePlan, verification: WalletHelperV2Verification): void {
+  #assertVerification(
+    plan: LocalHelperUpgradePlan,
+    verification: WalletHelperV2Verification,
+  ): void {
     assertWalletHelperV2Verification(verification, {
       abiHash: plan.target.abiHash,
       adapter: plan.target.adapter,
