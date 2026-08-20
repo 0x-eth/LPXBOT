@@ -25,6 +25,7 @@ export interface LocalHelperSweepBinding {
   runtimeCodeHash: `0x${string}`;
   state: LocalHelperSweepBindingState;
   verifiedBlockNumber: string;
+  walletId: string;
 }
 
 export interface LocalHelperResidualBalance {
@@ -374,6 +375,7 @@ export function validateLocalHelperResidualSnapshot(
     Date.parse(snapshot.block.timestamp) > Date.parse(snapshot.observedAt) ||
     !same(snapshot.wallet, context.wallet) ||
     !same(snapshot.binding, context.binding) ||
+    snapshot.binding.walletId !== snapshot.wallet.walletId ||
     snapshot.wallet.address !== snapshot.binding.ownerAddress ||
     !uuidPattern.test(snapshot.wallet.walletId) ||
     !uuidPattern.test(snapshot.binding.bindingId) ||
@@ -511,6 +513,7 @@ export function validateLocalHelperSweepPlan(
     permit2Address: context.expectedBinding.permit2Address,
     runtimeCodeHash: context.expectedBinding.runtimeCodeHash,
     verifiedBlockNumber: context.expectedBinding.verifiedBlockNumber,
+    walletId: context.expectedBinding.walletId,
   };
   if (
     plan.chainId !== 31_337 ||

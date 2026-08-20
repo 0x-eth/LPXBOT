@@ -34,6 +34,7 @@ const bindingBase = {
   permit2Address: registry.components.find(({ role }) => role === "permit2")!.address,
   runtimeCodeHash: `0x${"ab".repeat(32)}`,
   verifiedBlockNumber: "7",
+  walletId: wallet.walletId,
 } as const;
 
 function snapshot(input: {
@@ -163,6 +164,7 @@ function plan(): LocalHelperSweepPlan {
     permit2Address: state.binding.permit2Address,
     runtimeCodeHash: state.binding.runtimeCodeHash,
     verifiedBlockNumber: state.binding.verifiedBlockNumber,
+    walletId: state.binding.walletId,
   };
   const value: LocalHelperSweepPlan = {
     asset,

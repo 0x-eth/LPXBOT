@@ -1859,6 +1859,7 @@ export interface LocalHelperResidualSnapshot {
     runtimeCodeHash: `0x${string}`;
     state: "active" | "degraded";
     verifiedBlockNumber: string;
+    walletId: string;
   };
   block: { hash: `0x${string}`; number: string; timestamp: string };
   chainId: 31_337;

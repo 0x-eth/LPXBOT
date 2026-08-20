@@ -1339,6 +1339,7 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
       permit2Address: input.binding.permit2Address,
       runtimeCodeHash: input.binding.runtimeCodeHash,
       verifiedBlockNumber: input.binding.verifiedBlockNumber,
+      walletId: input.binding.walletId,
     };
     const selector =
       input.asset.kind === "native"
