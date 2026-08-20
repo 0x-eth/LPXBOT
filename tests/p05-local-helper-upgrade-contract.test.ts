@@ -110,9 +110,9 @@ function plan(): LocalHelperUpgradePlan {
     chainId: 31_337,
     deadline: "2026-08-21T00:10:00.000Z",
     feeLimit: {
-      feeCapBaseUnit: "2000000",
+      feeCapBaseUnit: "4000000",
       gasLimit: "1000000",
-      maxFeePerGasBaseUnit: "2",
+      maxFeePerGasBaseUnit: "4",
       maxPriorityFeePerGasBaseUnit: "1",
     },
     fencingToken: "3",
@@ -241,14 +241,61 @@ describe("P05-09 local Helper deploy-new upgrade contracts", () => {
 
   it("requires manual recovery for allowance, NFT, or unknown Token residuals", () => {
     const residual = {
-      allowances: [{ amountBaseUnit: "1" }],
-      balances: [{ amountBaseUnit: "0", dustBaseUnit: "1" }],
-      coverage: { complete: true },
-      identity: { bindingMatches: true, ownerMatches: true, runtimeMatches: true },
+      allowances: [
+        {
+          amountBaseUnit: "1",
+          assetId: "allowance:test",
+          spenderAddress: binding.adapterAddress,
+          spenderRole: "adapter",
+          tokenAddress: P05_HELPER_DEPLOYMENT_REGISTRY.tokens[0]!.address,
+        },
+      ],
+      balances: [
+        {
+          amountBaseUnit: "0",
+          assetId: "native",
+          dustBaseUnit: "1",
+          fixture: null,
+          kind: "native",
+          runtimeCodeHash: null,
+          tokenAddress: null,
+        },
+      ],
+      binding,
+      block: { hash: `0x${"77".repeat(32)}`, number: "10", timestamp: now.toISOString() },
+      chainId: 31_337,
+      coverage: {
+        allowancesComplete: true,
+        complete: true,
+        helperIdentityComplete: true,
+        nftCustodyComplete: true,
+        tokenInventoryComplete: true,
+      },
+      degradationReasons: [],
+      expiresAt: "2026-08-21T00:05:00.000Z",
+      identity: {
+        bindingMatches: true,
+        componentsMatch: true,
+        observedOwner: walletAddress,
+        observedRuntimeCodeHash: binding.runtimeCodeHash,
+        ownerMatches: true,
+        registryMatches: true,
+        runtimeMatches: true,
+        tokensMatch: true,
+      },
       manualRecoveryRequired: true,
       nftCustody: [],
+      observedAt: now.toISOString(),
+      registry: {
+        digest: P05_LOCAL_HELPER_UPGRADE_REGISTRY.sweep.registryDigest,
+        version: "p05-local-helper-sweep-v2",
+      },
+      schemaVersion: 2,
+      snapshotDigest: `sha256:${"88".repeat(32)}`,
+      snapshotVersion: "p05-local-helper-residual-snapshot-v2",
       unknownTokens: [],
-    } as unknown as LocalHelperResidualSnapshot;
+      wallet: { address: walletAddress, walletId },
+    } satisfies LocalHelperResidualSnapshot;
     expect(localHelperV1SupersedeDecision(residual)).toMatchObject({
       eligible: false,
       manualRecoveryRequired: true,
