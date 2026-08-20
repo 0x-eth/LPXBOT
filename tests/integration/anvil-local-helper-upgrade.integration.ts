@@ -498,8 +498,18 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
         const transactionHash = await publicClient.sendRawTransaction({
           serializedTransaction: toHex(input.rawTransaction),
         });
-        await rpc(rpcUrl, "evm_mine", []);
-        await publicClient.waitForTransactionReceipt({ hash: transactionHash });
+        let included = false;
+        for (let attempt = 0; attempt < 32; attempt += 1) {
+          await rpc(rpcUrl, "evm_mine", []);
+          try {
+            await publicClient.getTransactionReceipt({ hash: transactionHash });
+            included = true;
+            break;
+          } catch {
+            // The fee becomes mineable as empty fixture blocks lower the Anvil base fee.
+          }
+        }
+        if (!included) throw new Error("raw transaction was not included by local Anvil");
         return { status: "accepted", transactionHash };
       },
       async transactionKnown(input) {
