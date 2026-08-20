@@ -1560,7 +1560,10 @@ export interface LocalPositionExecutionOperation {
 }
 
 export type ChainOperationView =
-  HelperDeploymentOperation | LocalPositionExecutionOperation | LocalSwapExecutionOperation;
+  | HelperDeploymentOperation
+  | LocalHelperSweepOperation
+  | LocalPositionExecutionOperation
+  | LocalSwapExecutionOperation;
 
 export const localSwapExecutionContracts = Object.freeze({
   execute: Object.freeze({ method: "POST", path: "/api/swap/execute" }),
@@ -1817,6 +1820,195 @@ export const helperReadContracts = Object.freeze({
     path: "/api/wallets/helper-residuals/scan",
   }),
   status: Object.freeze({ method: "GET", path: "/api/wallets/{address}/helper" }),
+} as const);
+
+export type LocalHelperSweepAssetKind = "native" | "token";
+export type LocalHelperSweepOperationState = LocalSwapExecutionState;
+export type LocalHelperSweepTransactionState = Exclude<
+  LocalSwapStepState,
+  "blocked" | "queued" | "reconciling" | "skipped"
+>;
+
+export interface LocalHelperResidualBalance {
+  amountBaseUnit: string;
+  assetId: string;
+  dustBaseUnit: string;
+  fixture: "TestOnlyERC20" | "TestOnlyWBNB" | null;
+  kind: LocalHelperSweepAssetKind;
+  runtimeCodeHash: `0x${string}` | null;
+  tokenAddress: EvmAddress | null;
+}
+
+export interface LocalHelperResidualSnapshot {
+  allowances: Array<{
+    amountBaseUnit: string;
+    assetId: string;
+    spenderAddress: EvmAddress;
+    spenderRole: "adapter" | "manager" | "permit2" | "router";
+    tokenAddress: EvmAddress;
+  }>;
+  balances: LocalHelperResidualBalance[];
+  binding: {
+    adapterAddress: EvmAddress;
+    bindingId: string;
+    deploymentRegistryVersion: "p05-local-helper-deployment-v2";
+    helperAddress: EvmAddress;
+    helperVersion: "WalletHelperV1";
+    ownerAddress: EvmAddress;
+    permit2Address: EvmAddress;
+    runtimeCodeHash: `0x${string}`;
+    state: "active" | "degraded";
+    verifiedBlockNumber: string;
+  };
+  block: { hash: `0x${string}`; number: string; timestamp: string };
+  chainId: 31_337;
+  coverage: {
+    allowancesComplete: boolean;
+    complete: boolean;
+    helperIdentityComplete: boolean;
+    nftCustodyComplete: boolean;
+    tokenInventoryComplete: boolean;
+  };
+  degradationReasons: string[];
+  expiresAt: string;
+  identity: {
+    bindingMatches: boolean;
+    componentsMatch: boolean;
+    observedOwner: EvmAddress | null;
+    observedRuntimeCodeHash: `0x${string}` | null;
+    ownerMatches: boolean;
+    registryMatches: boolean;
+    runtimeMatches: boolean;
+    tokensMatch: boolean;
+  };
+  manualRecoveryRequired: boolean;
+  nftCustody: Array<{ assetId: string; managerAddress: EvmAddress; tokenId: string }>;
+  observedAt: string;
+  registry: {
+    digest: `sha256:${string}`;
+    version: "p05-local-helper-sweep-v2";
+  };
+  schemaVersion: 2;
+  snapshotDigest: `sha256:${string}`;
+  snapshotVersion: "p05-local-helper-residual-snapshot-v2";
+  unknownTokens: Array<{
+    amountBaseUnit: string;
+    assetId: string;
+    runtimeCodeHash: `0x${string}`;
+    tokenAddress: EvmAddress;
+  }>;
+  wallet: { address: EvmAddress; walletId: string };
+}
+
+export interface LocalHelperResidualScanRequest {
+  chainId: 31_337;
+  idempotencyKey: string;
+  walletId: string;
+}
+
+export interface LocalHelperSweepPreviewRequest {
+  assetIds: string[];
+  chainId: 31_337;
+  snapshotDigest: `sha256:${string}`;
+  walletId: string;
+}
+
+export interface LocalHelperSweepSubmitRequest extends LocalHelperSweepPreviewRequest {
+  previewDigest: `sha256:${string}`;
+  previewToken: string;
+}
+
+export interface LocalHelperSweepPreviewAsset {
+  amountBaseUnit: string;
+  assetId: string;
+  dustBaseUnit: string;
+  feeLimit: LocalSwapFeeLimit;
+  kind: LocalHelperSweepAssetKind;
+  recipient: EvmAddress;
+  tokenAddress: EvmAddress | null;
+}
+
+export interface LocalHelperSweepPreview {
+  assets: LocalHelperSweepPreviewAsset[];
+  chainId: 31_337;
+  deadline: string;
+  expiresAt: string;
+  feeLimitTotalBaseUnit: string;
+  helperAddress: EvmAddress;
+  manualRecoveryRequired: false;
+  previewDigest: `sha256:${string}`;
+  previewToken: string;
+  recipient: EvmAddress;
+  registryVersion: "p05-local-helper-sweep-v2";
+  snapshotDigest: `sha256:${string}`;
+  walletId: string;
+}
+
+export interface LocalHelperSweepTransactionView {
+  active: boolean;
+  generation: number;
+  maxFeePerGasBaseUnit: string;
+  maxPriorityFeePerGasBaseUnit: string;
+  state: LocalHelperSweepTransactionState;
+  transactionHash: `0x${string}` | null;
+}
+
+export interface LocalHelperSweepOperation {
+  amountBaseUnit: string;
+  assetId: string;
+  assetKind: LocalHelperSweepAssetKind;
+  batchId: string;
+  chainId: 31_337;
+  createdAt: string;
+  failureCode: string | null;
+  feeLimit: LocalSwapFeeLimit;
+  helperAddress: EvmAddress;
+  nonce: string;
+  operationId: string;
+  operationKind: "helper-residual-sweep";
+  planDigest: `sha256:${string}`;
+  recipient: EvmAddress;
+  reconciliationReason: string | null;
+  registryVersion: "p05-local-helper-sweep-v2";
+  snapshotDigest: `sha256:${string}`;
+  state: LocalHelperSweepOperationState;
+  tokenAddress: EvmAddress | null;
+  transactions: LocalHelperSweepTransactionView[];
+  updatedAt: string;
+  walletId: string;
+}
+
+export type LocalHelperSweepBatchState =
+  | "queued"
+  | "running"
+  | "partial"
+  | "reconciling"
+  | "succeeded"
+  | "failed"
+  | "manual-recovery-required";
+
+export interface LocalHelperSweepBatch {
+  batchId: string;
+  chainId: 31_337;
+  createdAt: string;
+  helperAddress: EvmAddress;
+  operations: LocalHelperSweepOperation[];
+  registryVersion: "p05-local-helper-sweep-v2";
+  snapshotDigest: `sha256:${string}`;
+  state: LocalHelperSweepBatchState;
+  updatedAt: string;
+  walletId: string;
+}
+
+export const localHelperSweepContracts = Object.freeze({
+  getBatch: Object.freeze({ method: "GET", path: "/api/chain-operation-batches/{batchId}" }),
+  getOperation: Object.freeze({ method: "GET", path: "/api/chain-operations/{operationId}" }),
+  preview: Object.freeze({
+    method: "POST",
+    path: "/api/wallets/helper-residuals/sweep/preview",
+  }),
+  scan: Object.freeze({ method: "POST", path: "/api/wallets/helper-residuals/scan" }),
+  sweep: Object.freeze({ method: "POST", path: "/api/wallets/helper-residuals/sweep" }),
 } as const);
 
 export const helperDeploymentStates = Object.freeze([
