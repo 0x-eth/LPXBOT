@@ -89,7 +89,6 @@ function runtimeHash(value: Hex): Hex | null {
 
 export class ViemLocalHelperUpgradePlanVerifier implements LocalHelperUpgradePlanChainVerifier {
   readonly #client: LocalEvmRpcClient;
-  readonly #registry: LocalHelperUpgradeRegistry;
 
   constructor(input: {
     chainId: 31_337;
@@ -101,9 +100,7 @@ export class ViemLocalHelperUpgradePlanVerifier implements LocalHelperUpgradePla
     if (input.chainId !== 31_337) {
       throw new RangeError("LOCAL_HELPER_UPGRADE_SIGNER_CHAIN_INVALID");
     }
-    this.#registry = validateLocalHelperUpgradeRegistry(
-      input.registry ?? P05_LOCAL_HELPER_UPGRADE_REGISTRY,
-    );
+    validateLocalHelperUpgradeRegistry(input.registry ?? P05_LOCAL_HELPER_UPGRADE_REGISTRY);
     this.#client = new LocalEvmRpcClient({
       expectedChainId: 31_337,
       ...(input.fetch ? { fetch: input.fetch } : {}),
