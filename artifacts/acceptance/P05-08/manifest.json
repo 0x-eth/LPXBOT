@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-08",
+  "phase": "P05",
+  "risk": "R3/R4",
+  "status": "accepted-with-gaps",
+  "featureIds": ["HELPER-06"],
+  "tests": [
+    {
+      "id": "T-UNIT",
+      "command": "Registry, snapshot, dust, plan, replacement, strict client, and governance tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-08/E-REC.md"
+    },
+    {
+      "id": "T-API",
+      "command": "authenticated scan, preview, sweep, batch/single operation query, idempotency, reauthentication, and strict ingress tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-08/E-API.md"
+    },
+    {
+      "id": "T-CHAIN",
+      "command": "real non-forked Anvil native, TestOnlyERC20, WBNB, mixed batch, receipt, Transfer, gas-adjusted balance, and full rescan tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-08/E-CHAIN.md"
+    },
+    {
+      "id": "T-MIG",
+      "command": "PostgreSQL fresh migration, reverse cycle, immutable snapshot/operation/transaction/receipt/audit evidence, and per-asset cursor lifecycle",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-08/E-DATA.md"
+    },
+    {
+      "id": "T-REC",
+      "command": "partial success restart, failed retry, replacement, dropped, reorg, provider-divergence, no-replay, and canonical full-rescan recovery",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-08/E-REC.md"
+    },
+    {
+      "id": "T-SEC",
+      "command": "RBAC, helper/owner/runtime/Registry/fencing checks, arbitrary execution-field denial, degraded funding block, and manual recovery cases",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-08/E-SEC.md"
+    },
+    {
+      "id": "T-UI",
+      "command": "desktop/mobile asset selection, per-asset gas and lineage, duplicate Enter, keyboard, Axe, overflow, manual recovery, and BSC read-only tests",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-08/E-UI.md"
+    },
+    {
+      "id": "T-VIS",
+      "command": "desktop/mobile successful mixed-batch Playwright screenshot regression and accepted visual capture",
+      "result": "passed",
+      "evidencePath": "artifacts/acceptance/P05-08/E-VIS.md"
+    }
+  ],
+  "evidence": [
+    { "id": "E-API", "path": "artifacts/acceptance/P05-08/E-API.md" },
+    { "id": "E-DATA", "path": "artifacts/acceptance/P05-08/E-DATA.md" },
+    { "id": "E-CHAIN", "path": "artifacts/acceptance/P05-08/E-CHAIN.md" },
+    { "id": "E-REC", "path": "artifacts/acceptance/P05-08/E-REC.md" },
+    { "id": "E-RBAC", "path": "artifacts/acceptance/P05-08/E-RBAC.md" },
+    { "id": "E-SEC", "path": "artifacts/acceptance/P05-08/E-SEC.md" },
+    { "id": "E-UI", "path": "artifacts/acceptance/P05-08/E-UI.md" },
+    { "id": "E-VIS", "path": "artifacts/acceptance/P05-08/E-VIS.md" },
+    { "id": "E-OPS", "path": "artifacts/acceptance/P05-08/E-OPS.md" }
+  ],
+  "assumptions": [
+    "HELPER-06 is implemented-assumed only for non-forked local Anvil chainId 31337 with synthetic custody wallets, the P05-05 WalletHelperV1 deployment binding, and allowlisted TestOnlyERC20/TestOnlyWBNB assets.",
+    "The local gate is OPEN; chainId 56 remains read-only and BSC, testnet, and production execution gates remain CLOSED with zero non-local signatures, broadcasts, and real-fund operations.",
+    "HELPER-03 and HELPER-04 remain planned. Allowance revoke, NFT rescue, unknown Token sweep, cross-wallet batch, and multi-asset single-transaction atomicity remain outside P05-08.",
+    "P05-02 through P05-07 acceptance files remain byte-identical to baseline 7123512a720ad983bee2f9aee095f663fefc474f.",
+    "Independent contract review, testnet evidence, production Registry, production signer/Worker routes, monitoring SLO, and production operational evidence remain unresolved.",
+    "This accepted-with-gaps work item is not parity-verified and not released."
+  ],
+  "completedAt": "2026-08-20T04:31:43.000Z",
+  "commit": null
+}

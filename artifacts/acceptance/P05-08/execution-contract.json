@@ -1,0 +1,250 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-08",
+  "featureIds": ["HELPER-06"],
+  "registry": {
+    "chainId": 31337,
+    "environment": "non-forked-anvil-synthetic-only",
+    "executionEnabled": true,
+    "productionInheritance": false,
+    "registryVersion": "p05-local-helper-sweep-v2",
+    "registryDigest": "sha256:aa8f99d0f123310fd87f16f562fbbf41b3651af35198dcf12fe76f99a3cdce30",
+    "rollbackVersion": "p05-local-helper-sweep-disabled-v1",
+    "snapshotVersion": "p05-local-helper-residual-snapshot-v2",
+    "planVersion": "p05-local-helper-sweep-plan-v2",
+    "serviceFeeBps": 0,
+    "maxAssetsPerBatch": 3,
+    "maxBlockDrift": 5,
+    "maxDeadlineSeconds": 900,
+    "helper": {
+      "helperVersion": "WalletHelperV1",
+      "bindingRegistryVersion": "p05-local-helper-deployment-v2",
+      "instanceBinding": "chainId+walletId+helperVersion",
+      "abiHash": "sha256:f5457f6a9755e133e1ae1870e7ddccb70ddac316883a7f431f02c00ccb5c2623",
+      "runtimeTemplateHash": "0xb3d942814a116a39a12bdffb9df3a1eab804dbf57dda22ff4108c90e5c99e95c",
+      "selectors": {
+        "owner": "0x8da5cb5b",
+        "sweepNative": "0x6971b189",
+        "sweepToken": "0x3609afa9"
+      }
+    },
+    "components": [
+      {
+        "role": "adapter",
+        "address": "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+        "runtimeCodeHash": "0xb4b2ae4ee6025275948cb04c4ab0ad52cf5e6bb016def1a2050568b812bb30f8"
+      },
+      {
+        "role": "manager",
+        "address": "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853",
+        "runtimeCodeHash": "0x6218a887ec7babb0af09bf8e4c71880954fcfeb5872b055e2f858f146bb25106"
+      },
+      {
+        "role": "permit2",
+        "address": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+        "runtimeCodeHash": "0x85f295c14e6e29cd939674c5f0ec10bc1606a00330ffd059e604bd231e35b7ad"
+      },
+      {
+        "role": "router",
+        "address": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+        "runtimeCodeHash": "0x3c6483edb8b5d43ef28f4cbc66c181a3b3dcb40a445cfd80af52f8590a419216"
+      }
+    ],
+    "tokens": [
+      {
+        "fixture": "TestOnlyERC20",
+        "address": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+        "runtimeCodeHash": "0x438d7e29bb977ff7241816f8388a6cc0be9c4cbe4e356f177b77d71d9b7d4354",
+        "dustBaseUnit": "1"
+      },
+      {
+        "fixture": "TestOnlyWBNB",
+        "address": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+        "runtimeCodeHash": "0x4bd73dd3f768a57356137078198f3637e40f39b8339c36803672e3d4eae453f8",
+        "dustBaseUnit": "1"
+      }
+    ],
+    "dustPolicy": {
+      "comparison": "balance>dust",
+      "nativeDustBaseUnit": "1000",
+      "tokenDustBaseUnit": "1",
+      "postSweep": "balance<=dust",
+      "zeroBalance": "omit-operation"
+    }
+  },
+  "snapshot": {
+    "scope": "tenantId+userId+walletId+chainId+helper binding",
+    "appendOnly": true,
+    "identity": [
+      "walletId",
+      "walletAddress",
+      "bindingId",
+      "helperAddress",
+      "immutable owner",
+      "helper runtime code hash",
+      "adapter/manager/permit2/router identities",
+      "TestOnly token identities",
+      "canonical block number/hash/timestamp",
+      "native and token balances",
+      "allowances",
+      "NFT custody",
+      "unknown token inventory",
+      "coverage",
+      "Registry digest",
+      "snapshot digest"
+    ],
+    "liveRevalidation": [
+      "expiry and five-block drift",
+      "canonical block hash and dual-provider agreement",
+      "binding/helper/owner/runtime identities",
+      "component and token identities",
+      "balances, allowances, NFT custody and unknown token inventory",
+      "wallet nonce"
+    ]
+  },
+  "api": {
+    "routes": [
+      "GET /api/wallets/helper-residuals?chainId=31337&walletId=...",
+      "POST /api/wallets/helper-residuals/scan",
+      "POST /api/wallets/helper-residuals/sweep/preview",
+      "POST /api/wallets/helper-residuals/sweep",
+      "GET /api/chain-operation-batches/:batchId",
+      "GET /api/chain-operations/:operationId"
+    ],
+    "previewRequestFields": ["assetIds", "chainId", "snapshotDigest", "walletId"],
+    "sweepRequestFields": [
+      "assetIds",
+      "chainId",
+      "previewDigest",
+      "previewToken",
+      "snapshotDigest",
+      "walletId"
+    ],
+    "clientControlledFieldsDenied": [
+      "helper",
+      "token",
+      "target",
+      "selector",
+      "calldata",
+      "amount",
+      "recipient",
+      "deadline",
+      "fee",
+      "feeLimit",
+      "serviceFeeBps"
+    ],
+    "submitRequirements": [
+      "authenticated tenant/user-owned ready wallet",
+      "reauthentication",
+      "stable idempotency key",
+      "current opaque preview token and digest"
+    ]
+  },
+  "batch": {
+    "ownership": "exactly one tenant/user/wallet/helper/snapshot",
+    "assetCount": "one to three unique allowlisted assetIds",
+    "operationCardinality": "one typed operation per assetId",
+    "crossWallet": "deny",
+    "multiAssetAtomicityClaim": false
+  },
+  "operation": {
+    "perAssetBindings": [
+      "nonce",
+      "fencingToken",
+      "planDigest",
+      "semanticDigest",
+      "dataDigest",
+      "deadline",
+      "gasLimit",
+      "feeCap",
+      "snapshot amount",
+      "immutable owner recipient"
+    ],
+    "tokenCalldata": "sweepToken(planDigest, token, snapshotBalance)",
+    "nativeCalldata": "sweepNative(planDigest, snapshotBalance)",
+    "target": "bound WalletHelperV1 instance only",
+    "valueBaseUnit": "0"
+  },
+  "replacement": {
+    "mutableFields": ["maxFeePerGas", "maxPriorityFeePerGas"],
+    "mustIncreaseFees": true,
+    "immutableFields": [
+      "batch",
+      "operation",
+      "assetId",
+      "token",
+      "amount",
+      "recipient",
+      "nonce",
+      "fencingToken",
+      "planDigest",
+      "semanticDigest",
+      "target",
+      "selector",
+      "calldataDigest"
+    ]
+  },
+  "reconciliation": {
+    "tokenSuccess": [
+      "canonical successful receipt",
+      "Transfer(helper, owner, snapshotBalance)",
+      "helper decrease and owner increase equal amount",
+      "helper balance at or below token dust"
+    ],
+    "nativeSuccess": [
+      "canonical successful receipt",
+      "helper balance at or below native dust",
+      "owner net delta equals amount minus owner-paid gas"
+    ],
+    "bindingRecovery": [
+      "full canonical rescan",
+      "all balances at or below dust",
+      "all allowances zero",
+      "NFT custody empty",
+      "unknown token inventory empty",
+      "helper runtime code hash and immutable owner match"
+    ]
+  },
+  "recovery": {
+    "confirmedAsset": "never replay",
+    "failedOrDroppedAsset": "resume from its persisted per-asset cursor",
+    "uncertainEvidence": "reorg, underconfirmation or provider divergence enters reconciling",
+    "restart": "reclaim durable Outbox lease and preserve completed cursors"
+  },
+  "manualRecovery": {
+    "conditions": ["nonzero allowance", "Helper NFT custody", "unknown Token residual"],
+    "result": "manual-recovery-required",
+    "arbitraryCalldata": "never generated",
+    "implementedRescueCapabilities": []
+  },
+  "fundingBlock": {
+    "bindingDegraded": "reject Swap and new funding operations",
+    "sweepInProgress": "reject Swap and new funding operations",
+    "bindingActive": "requires successful full canonical rescan"
+  },
+  "executionCounters": {
+    "localAssetOperations": 6,
+    "localMixedBatchOperations": 3,
+    "localSingleAssetOperations": 3,
+    "localSignatures": 6,
+    "localBroadcasts": 6,
+    "localCanonicalReceipts": 6,
+    "bscSignatures": 0,
+    "bscBroadcasts": 0,
+    "testnetSignatures": 0,
+    "testnetBroadcasts": 0,
+    "productionSignatures": 0,
+    "productionBroadcasts": 0,
+    "realFundOperations": 0
+  },
+  "nonGoals": [
+    "HELPER-03",
+    "HELPER-04",
+    "allowance revoke",
+    "NFT rescue",
+    "unknown Token sweep",
+    "cross-wallet batch",
+    "BSC/testnet/production execution",
+    "multi-asset single-transaction atomicity"
+  ]
+}

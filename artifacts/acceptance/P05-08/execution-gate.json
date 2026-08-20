@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "workItemId": "P05-08",
+  "featureIds": ["HELPER-06"],
+  "gates": {
+    "local": {
+      "status": "OPEN",
+      "chainIds": [31337],
+      "scope": "WalletHelperV1 residual scan and per-asset sweep on a non-forked Anvil chain with synthetic wallets and allowlisted TestOnly assets only",
+      "registryVersion": "p05-local-helper-sweep-v2",
+      "snapshotVersion": "p05-local-helper-residual-snapshot-v2",
+      "planVersion": "p05-local-helper-sweep-plan-v2",
+      "allowedOperations": ["HELPER-06:local-helper-residual-sweep"],
+      "allowedAssets": ["native:31337", "TestOnlyERC20", "TestOnlyWBNB"],
+      "evidence": [
+        "execution-contract.json",
+        "E-CHAIN.md",
+        "E-REC.md",
+        "E-SEC.md",
+        "E-UI.md",
+        "E-VIS.md"
+      ]
+    },
+    "bsc": {
+      "status": "CLOSED",
+      "chainIds": [56],
+      "readOnly": true,
+      "signatures": 0,
+      "broadcasts": 0,
+      "reasons": [
+        "chainId 56 retains the P05-02 read-only residual reader",
+        "the BSC residual panel exposes no preview or sweep execution control",
+        "the local sweep Registry accepts only chainId 31337"
+      ]
+    },
+    "testnet": {
+      "status": "CLOSED",
+      "allowlistedChainIds": [],
+      "signatures": 0,
+      "broadcasts": 0,
+      "reasons": [
+        "no testnet Helper sweep Registry",
+        "no independent contract review",
+        "no testnet recovery evidence"
+      ]
+    },
+    "production": {
+      "status": "CLOSED",
+      "allowlistedChainIds": [],
+      "signatures": 0,
+      "broadcasts": 0,
+      "realFundOperations": 0,
+      "reasons": [
+        "local Registry has productionInheritance=false",
+        "production signer and Worker queues do not admit local Helper sweep plans",
+        "production Helper and token allowlists are empty",
+        "independent security review and staging rollback evidence remain unresolved"
+      ]
+    }
+  },
+  "plannedOnly": ["HELPER-03", "HELPER-04"]
+}
