@@ -5722,6 +5722,139 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       },
     );
 
+    app.post(
+      "/api/wallets/helper-residuals/sweep/preview",
+      { bodyLimit: localHelperSweepBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!options.walletDirectory || !options.localHelperSweeps || !options.tenantId) {
+          return localHelperSweepFailure(
+            new LocalHelperSweepError("LOCAL_HELPER_SWEEP_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          const input = parseLocalHelperSweepPreview(request.body);
+          if (
+            !(await requireAllowedWalletChain(
+              input.chainId,
+              request,
+              reply,
+              session,
+              localHelperSweepChainIds,
+            ))
+          ) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(session.userId, input.walletId);
+          if (!wallet) throw new LocalHelperSweepError("WALLET_NOT_FOUND");
+          return createSuccessEnvelope(
+            await options.localHelperSweeps.preview({
+              request: input,
+              tenantId: options.tenantId,
+              userId: session.userId,
+              wallet,
+            }),
+            request.id,
+          );
+        } catch (error) {
+          return localHelperSweepFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.post(
+      "/api/wallets/helper-residuals/sweep",
+      { bodyLimit: localHelperSweepBodyLimit },
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (!(await requireFreshReauthentication(request, reply, session))) return reply;
+        if (!options.walletDirectory || !options.localHelperSweeps || !options.tenantId) {
+          return localHelperSweepFailure(
+            new LocalHelperSweepError("LOCAL_HELPER_SWEEP_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          const idempotencyKey = parseLocalHelperSweepIdempotencyKey(
+            request.headers["idempotency-key"],
+          );
+          const input = parseLocalHelperSweepSubmit(request.body);
+          if (
+            !(await requireAllowedWalletChain(
+              input.chainId,
+              request,
+              reply,
+              session,
+              localHelperSweepChainIds,
+            ))
+          ) {
+            return reply;
+          }
+          const wallet = await options.walletDirectory.getWallet(session.userId, input.walletId);
+          if (!wallet) throw new LocalHelperSweepError("WALLET_NOT_FOUND");
+          const result = await options.localHelperSweeps.sweep({
+            idempotencyKey,
+            request: input,
+            requestId: request.id,
+            sessionId: session.id,
+            tenantId: options.tenantId,
+            userId: session.userId,
+            wallet,
+          });
+          return reply
+            .code(result.created ? 202 : 200)
+            .send(createSuccessEnvelope(result.batch, request.id));
+        } catch (error) {
+          return localHelperSweepFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
+    app.get<{ Params: { batchId: string } }>(
+      "/api/chain-operation-batches/:batchId",
+      async (request, reply) => {
+        reply.header("Cache-Control", "no-store");
+        const session = await authenticateSessionRequest(request, reply);
+        if (!session) return reply;
+        if (Object.keys(request.query as Record<string, unknown>).length > 0) {
+          return reply.code(400).send(
+            createErrorEnvelope({
+              code: "INVALID_QUERY",
+              message: "The chain operation batch query is invalid",
+              requestId: request.id,
+              retryable: false,
+            }),
+          );
+        }
+        if (!options.localHelperSweeps || !options.tenantId) {
+          return localHelperSweepFailure(
+            new LocalHelperSweepError("LOCAL_HELPER_SWEEP_UNAVAILABLE", true),
+            request,
+            reply,
+          );
+        }
+        try {
+          return createSuccessEnvelope(
+            await options.localHelperSweeps.getBatch({
+              batchId: parseLocalHelperSweepId(request.params.batchId),
+              tenantId: options.tenantId,
+              userId: session.userId,
+            }),
+            request.id,
+          );
+        } catch (error) {
+          return localHelperSweepFailure(error, request, reply) ?? reply;
+        }
+      },
+    );
+
     app.get<{ Params: { operationId: string } }>(
       "/api/chain-operations/:operationId",
       async (request, reply) => {
@@ -5740,6 +5873,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         }
         if (
           (!options.helperDeployments &&
+            !options.localHelperSweeps &&
             !options.localPositionExecutions &&
             !options.localSwapExecutions) ||
           !options.tenantId
@@ -5758,6 +5892,23 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           operationId = parseLocalPositionOperationId(request.params.operationId);
         } catch (error) {
           return localPositionFailure(error, request, reply) ?? reply;
+        }
+        if (options.localHelperSweeps) {
+          try {
+            const operation = await options.localHelperSweeps.getOperation({
+              operationId,
+              tenantId: options.tenantId,
+              userId: session.userId,
+            });
+            return createSuccessEnvelope(operation, request.id);
+          } catch (error) {
+            if (
+              !(error instanceof LocalHelperSweepError) ||
+              error.code !== "LOCAL_HELPER_SWEEP_NOT_FOUND"
+            ) {
+              return localHelperSweepFailure(error, request, reply) ?? reply;
+            }
+          }
         }
         if (options.localPositionExecutions) {
           try {
@@ -6392,18 +6543,32 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           }),
         );
       }
-      if (!(await requireAllowedWalletChain(query.chainId, request, reply, session))) return reply;
-      if (query.chainId !== 56) {
+      if (
+        !(await requireAllowedWalletChain(
+          query.chainId,
+          request,
+          reply,
+          session,
+          query.chainId === 31_337 ? localHelperSweepChainIds : null,
+        ))
+      ) {
+        return reply;
+      }
+      if (query.chainId !== 56 && query.chainId !== 31_337) {
         return reply.code(403).send(
           createErrorEnvelope({
             code: "CHAIN_NOT_ALLOWED",
-            message: "Helper residual reads are enabled only for BNB Smart Chain",
+            message: "Helper residual reads are unavailable for this chain",
             requestId: request.id,
             retryable: false,
           }),
         );
       }
-      if (!options.walletDirectory || !options.helperResiduals) {
+      if (
+        !options.walletDirectory ||
+        (query.chainId === 56 ? !options.helperResiduals : !options.localHelperSweeps) ||
+        (query.chainId === 31_337 && !options.tenantId)
+      ) {
         return reply.code(503).send(
           createErrorEnvelope({
             code: "CHAIN_READ_UNAVAILABLE",
@@ -6416,16 +6581,31 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       try {
         const wallet = await options.walletDirectory.getWallet(session.userId, query.walletId);
         if (!wallet) throw new WalletApiError("WALLET_NOT_FOUND");
-        const page = await options.helperResiduals.latest({
-          chainId: 56,
-          cursor: query.cursor,
-          limit: query.limit,
-          userId: session.userId,
-          walletId: wallet.walletId,
-        });
+        const page =
+          query.chainId === 56
+            ? await options.helperResiduals!.latest({
+                chainId: 56,
+                cursor: query.cursor,
+                limit: query.limit,
+                userId: session.userId,
+                walletId: wallet.walletId,
+              })
+            : query.cursor === null
+              ? await options.localHelperSweeps!.latest({
+                  tenantId: options.tenantId!,
+                  userId: session.userId,
+                  wallet,
+                })
+              : (() => {
+                  throw new LocalHelperSweepError("PREVIEW_INVALID");
+                })();
         return createSuccessEnvelope(page, request.id);
       } catch (error) {
-        return walletFailure(error, request, reply) ?? helperReadFailure(error, request, reply);
+        return (
+          walletFailure(error, request, reply) ??
+          localHelperSweepFailure(error, request, reply) ??
+          helperReadFailure(error, request, reply)
+        );
       }
     });
 
@@ -6444,18 +6624,32 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
           }),
         );
       }
-      if (!(await requireAllowedWalletChain(input.chainId, request, reply, session))) return reply;
-      if (input.chainId !== 56) {
+      if (
+        !(await requireAllowedWalletChain(
+          input.chainId,
+          request,
+          reply,
+          session,
+          input.chainId === 31_337 ? localHelperSweepChainIds : null,
+        ))
+      ) {
+        return reply;
+      }
+      if (input.chainId !== 56 && input.chainId !== 31_337) {
         return reply.code(403).send(
           createErrorEnvelope({
             code: "CHAIN_NOT_ALLOWED",
-            message: "Helper residual reads are enabled only for BNB Smart Chain",
+            message: "Helper residual reads are unavailable for this chain",
             requestId: request.id,
             retryable: false,
           }),
         );
       }
-      if (!options.walletDirectory || !options.helperResiduals) {
+      if (
+        !options.walletDirectory ||
+        (input.chainId === 56 ? !options.helperResiduals : !options.localHelperSweeps) ||
+        (input.chainId === 31_337 && !options.tenantId)
+      ) {
         return reply.code(503).send(
           createErrorEnvelope({
             code: "CHAIN_READ_UNAVAILABLE",
@@ -6468,15 +6662,27 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       try {
         const wallet = await options.walletDirectory.getWallet(session.userId, input.walletId);
         if (!wallet) throw new WalletApiError("WALLET_NOT_FOUND");
-        const page = await options.helperResiduals.scan({
-          chainId: 56,
-          idempotencyKey: input.idempotencyKey,
-          userId: session.userId,
-          walletId: wallet.walletId,
-        });
+        const page =
+          input.chainId === 56
+            ? await options.helperResiduals!.scan({
+                chainId: 56,
+                idempotencyKey: input.idempotencyKey,
+                userId: session.userId,
+                walletId: wallet.walletId,
+              })
+            : await options.localHelperSweeps!.scan({
+                idempotencyKey: input.idempotencyKey,
+                tenantId: options.tenantId!,
+                userId: session.userId,
+                wallet,
+              });
         return createSuccessEnvelope(page, request.id);
       } catch (error) {
-        return walletFailure(error, request, reply) ?? helperReadFailure(error, request, reply);
+        return (
+          walletFailure(error, request, reply) ??
+          localHelperSweepFailure(error, request, reply) ??
+          helperReadFailure(error, request, reply)
+        );
       }
     });
 
