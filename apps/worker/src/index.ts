@@ -115,6 +115,8 @@ export {
   LocalHelperUpgradeWorkerError,
   validateLocalHelperUpgradeWorkPlan,
 } from "./local-helper-upgrade-worker.js";
+export { ViemLocalHelperUpgradeObserver } from "./viem-local-helper-upgrade-observer.js";
+export type { ViemLocalHelperUpgradeObserverOptions } from "./viem-local-helper-upgrade-observer.js";
 export type {
   LocalHelperUpgradeBatchResult,
   LocalHelperUpgradeDeploymentDecision,
