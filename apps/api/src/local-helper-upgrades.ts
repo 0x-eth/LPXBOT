@@ -186,7 +186,6 @@ export interface LocalHelperUpgradePreviewFacts {
   snapshot: LocalHelperUpgradeSnapshot;
 }
 
-const addressPattern = /^0x[0-9a-f]{40}$/u;
 const digestPattern = /^sha256:[0-9a-f]{64}$/u;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const idempotencyPattern = /^[!-~]{16,128}$/u;
@@ -973,7 +972,7 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
         ...wallet,
         address: getAddress(wallet.address).toLowerCase() as `0x${string}`,
       };
-    } catch (error) {
+    } catch {
       throw new LocalHelperUpgradeError("WALLET_NOT_FOUND");
     }
   }

@@ -371,7 +371,6 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       [storedDeployment.operationId, v1Hash, v1Receipt.blockNumber.toString()],
     );
 
-    const helperFundingAbi = parseAbi(["function depositNative() payable"]);
     const erc20Abi = parseAbi([
       "function balanceOf(address owner) view returns (uint256)",
       "function transfer(address to,uint256 amount) returns (bool)",
@@ -382,14 +381,7 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       expect(receipt.status).toBe("success");
     };
-    await waitWrite(
-      fixtureClient.writeContract({
-        abi: helperFundingAbi,
-        address: v1Address,
-        functionName: "depositNative",
-        value: 5_000n,
-      }),
-    );
+    await rpc(rpcUrl, "anvil_setBalance", [v1Address, toHex(5_000n)]);
     await waitWrite(
       fixtureClient.writeContract({
         abi: erc20Abi,
