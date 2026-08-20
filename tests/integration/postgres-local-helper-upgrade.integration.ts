@@ -179,8 +179,11 @@ async function deployV1(wallet: CustodyWallet, userId: string): Promise<LocalHel
     wallet,
   });
   await pool.query(
-    `UPDATE chain_operations SET state = 'succeeded', updated_at = $2 WHERE operation_id = $1;
-     UPDATE wallet_helper_deployment_bindings
+    "UPDATE chain_operations SET state = 'succeeded', updated_at = $2 WHERE operation_id = $1",
+    [submitted.operation.operationId, clock],
+  );
+  await pool.query(
+    `UPDATE wallet_helper_deployment_bindings
         SET state = 'active', deployment_transaction_hash = $2,
             verified_block_number = 6, failure_code = NULL, updated_at = $3
       WHERE operation_id = $1`,
@@ -202,7 +205,9 @@ function residualSnapshot(
 ): LocalHelperResidualSnapshot {
   const manual = input.manual ?? false;
   const binding = { ...source, state: manual ? ("degraded" as const) : ("active" as const) };
-  const manager = P05_LOCAL_HELPER_SWEEP_REGISTRY.components.find(({ role }) => role === "manager")!;
+  const manager = P05_LOCAL_HELPER_SWEEP_REGISTRY.components.find(
+    ({ role }) => role === "manager",
+  )!;
   const unknownAddress = "0x9000000000000000000000000000000000000009" as const;
   const snapshot: LocalHelperResidualSnapshot = {
     allowances: manual
@@ -308,7 +313,10 @@ async function submitUpgrade(wallet: CustodyWallet, userId: string) {
   });
   const request = { chainId: 31_337 as const, walletId: wallet.walletId };
   const preview = await service.preview({ request, tenantId, userId, wallet });
-  expect(preview).toMatchObject({ upgradeable: true, versions: { comparison: "upgrade-available" } });
+  expect(preview).toMatchObject({
+    upgradeable: true,
+    versions: { comparison: "upgrade-available" },
+  });
   const submitted = await service.submit({
     idempotencyKey: `p05-09-upgrade-${wallet.walletId}`,
     request: {
@@ -409,7 +417,11 @@ async function advanceThroughVerification(
   clock = new Date(clock.getTime() + 1);
   current = await claim(repository, operationId);
   const verified = verification(current);
-  await repository.completeVerification({ claim: current, verification: verified, verifiedAt: clock });
+  await repository.completeVerification({
+    claim: current,
+    verification: verified,
+    verifiedAt: clock,
+  });
   return verified;
 }
 
@@ -423,9 +435,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await pool.query("DELETE FROM users WHERE id = ANY($1::uuid[])", [
-    [successUserId, manualUserId],
-  ]);
+  await pool.query("DELETE FROM users WHERE id = ANY($1::uuid[])", [[successUserId, manualUserId]]);
   await pool.end();
 });
 
@@ -507,7 +517,11 @@ describe("P05-09 PostgreSQL local Helper deploy-new upgrade", () => {
       },
     ]);
     await expect(
-      repository.completeAtomicBindingSwitch({ claim: switchClaim, completedAt: clock, snapshot: clean }),
+      repository.completeAtomicBindingSwitch({
+        claim: switchClaim,
+        completedAt: clock,
+        snapshot: clean,
+      }),
     ).rejects.toMatchObject({ code: "HELPER_UPGRADE_LEASE_LOST" });
     await expect(
       pool.query(
