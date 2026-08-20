@@ -23,11 +23,15 @@ export class LocalHelperSweepApplicationRescanner {
     if (!wallet || wallet.address.toLowerCase() !== input.walletAddress.toLowerCase()) {
       throw new LocalHelperSweepError("WALLET_NOT_FOUND");
     }
+    const normalizedWallet = {
+      ...wallet,
+      address: wallet.address.toLowerCase() as `0x${string}`,
+    };
     const snapshot = await this.application.scan({
       idempotencyKey: `helper-sweep-rescan:${input.batchId}`,
       tenantId: input.tenantId,
       userId: input.userId,
-      wallet,
+      wallet: normalizedWallet,
     });
     if (
       snapshot.wallet.walletId !== input.walletId ||
