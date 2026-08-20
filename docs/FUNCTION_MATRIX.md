@@ -219,7 +219,7 @@
 | HELPER-03 | 自动升级 Helper | UI+BUNDLE | USER | R3/R4 | 版本注册表、旧仓兼容、升级提示；具体升级策略待验证；`planned`（P05-04 仅冻结 deploy-new policy） |
 | HELPER-04 | 原子 Swap + Mint/Increase | UI+CHAIN | USER | R3/R4 | owner-only、Permit2/approve、NFT 给 owner、refund；`planned`（P05-04 仅建立 typed local adapter baseline） |
 | HELPER-05 | Helper 残留扫描 | UI+BUNDLE | USER | R0 | 多链/token/native、刷新和空态；`implemented-assumed`（P05-02 当前仅 chainId 56，local fixture only） |
-| HELPER-06 | 逐钱包 sweep/rescue | UI+BUNDLE+CHAIN | USER | R3/R4 | 每钱包发交易、gas 提示、余额归 owner、逐笔结果；`planned`（P05-04 仅建立 owner-only local fixture） |
+| HELPER-06 | 逐钱包 sweep/rescue | UI+BUNDLE+CHAIN | USER | R3/R4 | 每钱包发交易、gas 提示、余额归 owner、逐笔结果；`implemented-assumed`（P05-08，仅非 fork Anvil chainId 31337、P05-05 WalletHelperV1、合成钱包与 allowlisted TestOnly 资产的逐资产 local sweep/rescan 闭环；BSC/testnet/production closed） |
 
 ## 8. 建池、初始流动性、私有池和收费 Hook
 

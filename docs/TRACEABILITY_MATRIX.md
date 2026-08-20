@@ -3,7 +3,7 @@
 > 基线日期：2026-08-13  
 > 范围源：[功能矩阵](./FUNCTION_MATRIX.md)  
 > 阶段源：[开发路线图](./DEVELOPMENT_ROADMAP.md)  
-> 当前状态：P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项及 P05 的 9 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 126 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
+> 当前状态：P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项及 P05 的 10 项功能已完成阶段实现，因目标对照和 live 证据缺口均保持 `implemented-assumed`；其余 125 项保持 `planned`。表中测试和证据是达到完成定义的最低要求。
 
 ## 1. 使用规则
 
@@ -359,7 +359,7 @@ P04-07 在既有 custody、Keystore、安全密码、资产、地址簿、转账
 
 #### P05 当前实现与证据状态
 
-P05-07 复用 P05-06 的 ordered steps、`wallet_nonce_ledgers`、隔离 Signer、replacement、canonical receipt 与恢复模式，增加独立 local Position Registry、snapshot v2、plan v2 和 TestOnlyPositionManagerV2，将四个平台的 collect、1%-100% decrease、collect proceeds reconciliation、optional burn、费用/本金分类和 100% withdrawn 更新接成闭环。客户端不能提交 manager/target/selector/calldata/recipient/liquidityDelta/amount maxima/min amounts/fee；decrease 确认后只从 collect/burn 游标恢复，collect 确认前 principal 不可用。local gate 只对非 fork Anvil chainId 31337、合成钱包/资产、固定 Manager 和 POS-02/POS-03 为 `OPEN`；chainId 56 保持只读，BSC/testnet/production gates 为 `CLOSED`，测试网/生产签名、广播和真实资金操作均为 0。P05 当前为 9 项 `implemented-assumed`、3 项 `planned`，全局为 70 项 `implemented-assumed`、126 项 `planned`，工作项保持 `accepted-with-gaps`。HELPER-03、HELPER-04、HELPER-06 继续 planned，因此不标记 `parity-verified` 或 `released`。
+P05-08 复用 P05-05 WalletHelperV1 binding 与 P05-06 的 nonce/fencing、隔离 Signer、replacement、canonical receipt 和恢复模式，增加独立 `p05-local-helper-sweep-v2` Registry、residual snapshot v2、plan v2 和逐资产 batch，将 native、TestOnlyERC20 与 WBNB 的残留扫描、preview、签名广播、receipt/Transfer、gas-adjusted 余额核对和完整 canonical rescan 接成闭环。客户端不能提交 helper/token/target/selector/calldata/amount/recipient/fee；confirmed 资产不重放，失败或 dropped 资产从独立游标恢复，allowance/NFT custody/unknown Token 进入 manual recovery。local gate 只对非 fork Anvil chainId 31337、合成钱包、P05-05 WalletHelperV1 与 allowlisted TestOnly 资产的 HELPER-06 为 `OPEN`；chainId 56 保持只读，BSC/testnet/production gates 为 `CLOSED`，非本地签名、广播和真实资金操作均为 0。P05 当前为 10 项 `implemented-assumed`、2 项 `planned`，全局为 71 项 `implemented-assumed`、125 项 `planned`，工作项保持 `accepted-with-gaps`。HELPER-03 与 HELPER-04 继续 planned，因此不标记 `parity-verified` 或 `released`。
 
 <!-- P05_STATUS_TABLE_START -->
 | ID | 当前状态 | 实现 | 测试 | 验收与证据等级 |
@@ -375,7 +375,7 @@ P05-07 复用 P05-06 的 ordered steps、`wallet_nonce_ledgers`、隔离 Signer�
 | HELPER-03 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs), [P05-04 safety baseline](../tests/governance/p05-04-completion.test.mjs) | [P05-04](../artifacts/acceptance/P05-04/manifest.json); reference-only; deploy-new version policy only |
 | HELPER-04 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs), [P05-04 safety baseline](../tests/governance/p05-04-completion.test.mjs) | [P05-04](../artifacts/acceptance/P05-04/manifest.json); reference-only; typed local adapter only |
 | HELPER-05 | `implemented-assumed` | [bounded residual scanner](../apps/api/src/helper-residual-model.ts), [append-only store](../apps/api/src/postgres-wallet-helper-read-store.ts), [GET/POST read routes](../apps/api/src/app.ts), [strict web client](../apps/web/src/position-helper-client.ts), [residual UI](../apps/web/src/position-helper-panels.tsx) | [T-UNIT/T-CHAIN](../tests/p05-helper-residual-model.test.ts), [T-API/T-SEC](../tests/p05-helper-api.test.ts), [T-MIG/T-REC](../tests/integration/postgres-helper-read-store.integration.ts), [T-UI/T-VIS](../tests/e2e/p05-02-position-helper-read-model.spec.ts) | [P05-02](../artifacts/acceptance/P05-02/manifest.json); local-fixture-verified; incomplete allowlist/inventory returns partial; production coverage unresolved |
-| HELPER-06 | `planned` | 未实现 | [P05-01 reference](../tests/governance/p05-reference.test.mjs), [P05-04 safety baseline](../tests/governance/p05-04-completion.test.mjs) | [P05-04](../artifacts/acceptance/P05-04/manifest.json); reference-only; local owner-only sweep fixture |
+| HELPER-06 | `implemented-assumed` | [local sweep Registry](../packages/chain-registry/src/local-helper-sweep.ts), [snapshot/plan domain](../packages/domain/src/local-helper-sweep.ts), [API service](../apps/api/src/local-helper-sweeps.ts), [local residual chain reader](../apps/api/src/viem-local-helper-residual-chain-reader.ts), [PostgreSQL ledger](../apps/api/src/postgres-local-helper-sweep-store.ts), [Signer authorizer](../apps/signer/src/postgres-local-helper-sweep-plan-authorizer.ts), [Worker recovery](../apps/worker/src/postgres-local-helper-sweep-recovery.ts), [strict web client](../apps/web/src/local-helper-sweep-client.ts), [sweep UI](../apps/web/src/local-helper-sweep-panel.tsx), [migration](../infra/migrations/20260820000300_create_local_helper_sweep.sql) | [T-UNIT/T-API/T-SEC](../tests/p05-local-helper-sweep-api.test.ts), [T-API/T-RBAC](../tests/p05-local-helper-sweep-http-api.test.ts), [T-SEC](../tests/p05-local-helper-sweep-signer.test.ts), [T-REC](../tests/p05-local-helper-sweep-recovery.test.ts), [T-MIG/T-REC](../tests/integration/postgres-local-helper-sweep.integration.ts), [T-CHAIN](../tests/integration/anvil-local-helper-sweep.integration.ts), [T-UI](../tests/p05-local-helper-sweep-client.test.ts), [T-UI/T-VIS](../tests/e2e/p05-08-local-helper-sweep.spec.ts) | [P05-08](../artifacts/acceptance/P05-08/manifest.json); local-fixture-verified; chainId 31337, P05-05 WalletHelperV1 and allowlisted TestOnly assets only; BSC/testnet/production execution closed |
 <!-- P05_STATUS_TABLE_END -->
 
 ### 管理后台
@@ -405,10 +405,10 @@ P05-07 复用 P05-06 的 ordered steps、`wallet_nonce_ledgers`、隔离 Signer�
 |---|---:|---|
 | 功能矩阵稳定 ID | 196 | 已全部映射 |
 | 追踪表稳定 ID | 196 | 必须由自动检查保持相等 |
-| 当前产品实现 | 70 | P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项和 P05 的 9 项完成阶段实现；P05 为 9 implemented-assumed / 3 planned |
-| `implemented-assumed` | 70 | 目标对照或 live 证据仍不完整 |
+| 当前产品实现 | 71 | P01 的 18 项、P02 的 23 项、P03 的 8 项、P04 的 12 项和 P05 的 10 项完成阶段实现；P05 为 10 implemented-assumed / 2 planned |
+| `implemented-assumed` | 71 | 目标对照或 live 证据仍不完整 |
 | `parity-verified` | 0 | 不由 accepted work item 自动提升 |
 | `released` | 0 | 尚无 staging、监控和回滚完整证明 |
-| 其余 `planned` | 126 | P02/P03/P04 已无 planned；P05 仍有 3 项 planned |
+| 其余 `planned` | 125 | P02/P03/P04 已无 planned；P05 仍有 2 项 planned |
 
 建议 CI 检查逻辑：从 `FUNCTION_MATRIX.md` 与本文件抽取 `^[A-Z]+-[0-9]{2}$`，比较去重集合；再检查每行非空的阶段、测试和证据列。任何新增功能 ID 必须先进入范围源和本表。
