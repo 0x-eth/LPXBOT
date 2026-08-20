@@ -4315,6 +4315,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
                   error.code === "HELPER_ALREADY_ACTIVE" ||
                   error.code === "HELPER_CODE_IDENTITY_MISMATCH" ||
                   error.code === "HELPER_DEPLOYMENT_IN_PROGRESS" ||
+                  error.code === "HELPER_UPGRADE_IN_PROGRESS" ||
                   error.code === "IDEMPOTENCY_CONFLICT" ||
                   error.code === "NONCE_DRIFT" ||
                   error.code === "NONCE_RECONCILIATION_REQUIRED" ||
@@ -4332,6 +4333,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         HELPER_DEPLOYMENT_IN_PROGRESS: "A Helper deployment is already in progress",
         HELPER_DEPLOYMENT_NOT_FOUND: "The chain operation was not found",
         HELPER_DEPLOYMENT_UNAVAILABLE: "The Helper deployment service is unavailable",
+        HELPER_UPGRADE_IN_PROGRESS: "A Helper upgrade is active for this wallet",
         IDEMPOTENCY_CONFLICT: "The idempotency key is already bound to another request",
         IDEMPOTENCY_KEY_REQUIRED: "A valid Idempotency-Key header is required",
         NONCE_DRIFT: "The wallet nonce changed after preview",
@@ -4372,6 +4374,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
                 ? 422
                 : error.code === "HELPER_BINDING_MISMATCH" ||
                     error.code === "HELPER_NOT_ACTIVE" ||
+                    error.code === "HELPER_UPGRADE_IN_PROGRESS" ||
                     error.code === "IDEMPOTENCY_CONFLICT" ||
                     error.code === "NONCE_DRIFT" ||
                     error.code === "NONCE_RECONCILIATION_REQUIRED" ||
@@ -4389,6 +4392,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         CHAIN_NOT_ALLOWED: "The chain is not available for local Swap execution",
         HELPER_BINDING_MISMATCH: "The active Helper binding no longer matches chain state",
         HELPER_NOT_ACTIVE: "An active per-wallet Helper is required",
+        HELPER_UPGRADE_IN_PROGRESS: "A Helper upgrade is active for this wallet",
         IDEMPOTENCY_CONFLICT: "The idempotency key is already bound to another request",
         IDEMPOTENCY_KEY_REQUIRED: "A valid Idempotency-Key header is required",
         INSUFFICIENT_BALANCE: "The wallet token balance is insufficient",
@@ -4436,6 +4440,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
               : error.code === "ZERO_LIQUIDITY_DELTA"
                 ? 422
                 : error.code === "BURN_NOT_ALLOWED" ||
+                    error.code === "HELPER_UPGRADE_IN_PROGRESS" ||
                     error.code === "IDEMPOTENCY_CONFLICT" ||
                     error.code === "MANAGER_IDENTITY_MISMATCH" ||
                     error.code === "NONCE_DRIFT" ||
@@ -4455,6 +4460,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
       const messages: Record<LocalPositionExecutionError["code"], string> = {
         BURN_NOT_ALLOWED: "Burn is available only for an exact 100% exit",
         CHAIN_NOT_ALLOWED: "The chain is not available for local position execution",
+        HELPER_UPGRADE_IN_PROGRESS: "A Helper upgrade is active for this wallet",
         IDEMPOTENCY_CONFLICT: "The idempotency key is already bound to another request",
         IDEMPOTENCY_KEY_REQUIRED: "A valid Idempotency-Key header is required",
         LOCAL_POSITION_NOT_FOUND: "The chain operation was not found",
@@ -4518,6 +4524,7 @@ export function buildApiApp(options: ApiAppOptions): FastifyInstance {
         DUPLICATE_ASSET_ID: "Each residual asset may appear only once",
         HELPER_BINDING_MISMATCH: "The Helper binding or immutable identity does not match",
         HELPER_NOT_FOUND: "A deployed per-wallet Helper is required",
+        HELPER_UPGRADE_IN_PROGRESS: "A Helper upgrade is active for this wallet",
         IDEMPOTENCY_CONFLICT: "The idempotency key is already bound to another batch",
         IDEMPOTENCY_KEY_REQUIRED: "A valid Idempotency-Key header is required",
         LOCAL_HELPER_SWEEP_NOT_FOUND: "The Helper sweep operation or batch was not found",

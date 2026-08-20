@@ -43,6 +43,7 @@ export const localPositionIdempotencyRetentionHours = 24;
 export type LocalPositionExecutionErrorCode =
   | "BURN_NOT_ALLOWED"
   | "CHAIN_NOT_ALLOWED"
+  | "HELPER_UPGRADE_IN_PROGRESS"
   | "IDEMPOTENCY_CONFLICT"
   | "IDEMPOTENCY_KEY_REQUIRED"
   | "LOCAL_POSITION_NOT_FOUND"
