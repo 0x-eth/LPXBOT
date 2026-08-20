@@ -150,10 +150,7 @@ test("P05-04 stays featureless while P05-09 advances current status to 11 / 1 an
     assert.match(document, /P05-04/u);
     assert.match(document, /P05[^\n]*11[^\n]*implemented-assumed[^\n]*1[^\n]*planned/iu);
     assert.match(document, /72[^\n]*implemented-assumed[^\n]*124[^\n]*planned/iu);
-    assert.match(
-      document,
-      /BSC\/testnet\/production[^\n]*(?:均为 0|CLOSED|closed)/iu,
-    );
+    assert.match(document, /BSC\/testnet\/production[^\n]*(?:均为 0|CLOSED|closed)/iu);
   }
 });
 

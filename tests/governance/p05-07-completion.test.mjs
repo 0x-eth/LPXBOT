@@ -151,10 +151,7 @@ test("P05-07 owns POS-02/POS-03 while P05-09 advances P05 to 11 / 1 with global 
     assert.match(document, /P05[^\n]*11[^\n]*implemented-assumed[^\n]*1[^\n]*planned/iu);
     assert.match(document, /72[^\n]*implemented-assumed[^\n]*124[^\n]*planned/iu);
     assert.match(document, /accepted-with-gaps/u);
-    assert.match(
-      document,
-      /BSC\/testnet\/production[^\n]*(?:均为 0|CLOSED|closed)/iu,
-    );
+    assert.match(document, /BSC\/testnet\/production[^\n]*(?:均为 0|CLOSED|closed)/iu);
     assert.match(document, /not parity-verified|不标记 `parity-verified`/iu);
     assert.match(document, /not released|不标记[^\n]*`released`/iu);
   }

@@ -144,10 +144,7 @@ test("P05-06 owns SWAP-02 while P05-09 advances P05 to 11 / 1 with global 72 / 1
   for (const document of [traceability, roadmap]) {
     assert.match(document, /P05[^\n]*11[^\n]*implemented-assumed[^\n]*1[^\n]*planned/iu);
     assert.match(document, /72[^\n]*implemented-assumed[^\n]*124[^\n]*planned/iu);
-    assert.match(
-      document,
-      /BSC\/testnet\/production[^\n]*(?:均为 0|CLOSED|closed)/iu,
-    );
+    assert.match(document, /BSC\/testnet\/production[^\n]*(?:均为 0|CLOSED|closed)/iu);
   }
   assert.match(traceability, /\| 当前产品实现 \| 72 \|/u);
   assert.match(traceability, /\| 其余 `planned` \| 124 \|/u);

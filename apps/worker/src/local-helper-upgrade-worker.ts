@@ -313,9 +313,7 @@ function receiptIdentity(receipt: LocalHelperUpgradeReceiptObservation | null): 
   return JSON.stringify(receipt);
 }
 
-function consensus(
-  observations: readonly LocalHelperUpgradeProviderObservation[],
-): {
+function consensus(observations: readonly LocalHelperUpgradeProviderObservation[]): {
   latestNonce: bigint;
   pendingNonce: bigint;
   receipt: LocalHelperUpgradeReceiptObservation | null;
