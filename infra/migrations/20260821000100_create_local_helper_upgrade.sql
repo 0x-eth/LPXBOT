@@ -353,7 +353,7 @@ ALTER TABLE wallet_helper_deployment_bindings
     (helper_version = 'WalletHelperV2' AND operation_id IS NULL AND upgrade_operation_id IS NOT NULL)
   ),
   ADD CONSTRAINT wallet_helper_bindings_evidence_check CHECK (
-    state = 'deploying'
+    state IN ('deploying', 'degraded')
     OR (deployment_transaction_hash IS NOT NULL AND verified_block_number IS NOT NULL)
   ),
   ADD CONSTRAINT wallet_helper_bindings_superseded_check CHECK (
