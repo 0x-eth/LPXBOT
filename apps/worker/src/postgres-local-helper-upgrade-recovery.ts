@@ -1077,27 +1077,27 @@ export class PostgresLocalHelperUpgradeRecoveryRepository implements LocalHelper
     ) {
       throw new LocalHelperUpgradeWorkerError("HELPER_UPGRADE_RECOVERY_PLAN_INVALID");
     }
-    const [transactions, verification, finalSnapshot] = await Promise.all([
-      client.query<TransactionRow>(
-        `SELECT transaction_id::text, generation, state, active,
-                max_fee_per_gas_base_unit::text, max_priority_fee_per_gas_base_unit::text,
-                transaction_hash, updated_at
-           FROM local_helper_upgrade_transactions WHERE operation_id = $1
-          ORDER BY generation, transaction_id`,
-        [operationId],
-      ),
-      client.query<{ verification_payload: WalletHelperV2Verification }>(
-        `SELECT verification_payload FROM local_helper_upgrade_v2_verification_evidence
-          WHERE operation_id = $1 ORDER BY observed_at DESC, evidence_id DESC LIMIT 1`,
-        [operationId],
-      ),
-      client.query<{ snapshot_payload: LocalHelperResidualSnapshot }>(
-        `SELECT snapshot_payload FROM local_helper_upgrade_final_rescan_evidence
-          WHERE operation_id = $1 AND eligible_for_supersede
-          ORDER BY observed_at DESC, evidence_id DESC LIMIT 1`,
-        [operationId],
-      ),
-    ]);
+    const transactions = await client.query<TransactionRow>(
+      `SELECT transaction_id::text, generation, state, active,
+              max_fee_per_gas_base_unit::text, max_priority_fee_per_gas_base_unit::text,
+              transaction_hash, updated_at
+         FROM local_helper_upgrade_transactions WHERE operation_id = $1
+        ORDER BY generation, transaction_id`,
+      [operationId],
+    );
+    const verification = await client.query<{
+      verification_payload: WalletHelperV2Verification;
+    }>(
+      `SELECT verification_payload FROM local_helper_upgrade_v2_verification_evidence
+        WHERE operation_id = $1 ORDER BY observed_at DESC, evidence_id DESC LIMIT 1`,
+      [operationId],
+    );
+    const finalSnapshot = await client.query<{ snapshot_payload: LocalHelperResidualSnapshot }>(
+      `SELECT snapshot_payload FROM local_helper_upgrade_final_rescan_evidence
+        WHERE operation_id = $1 AND eligible_for_supersede
+        ORDER BY observed_at DESC, evidence_id DESC LIMIT 1`,
+      [operationId],
+    );
     return {
       cursor: operation.cursor,
       finalSnapshot: finalSnapshot.rows[0]?.snapshot_payload ?? null,

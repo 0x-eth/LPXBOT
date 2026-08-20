@@ -783,21 +783,19 @@ export class PostgresLocalHelperUpgradeOperationStore implements LocalHelperUpgr
     if (row.plan_digest !== localHelperUpgradePlanDigest(row.plan_payload)) {
       throw new LocalHelperUpgradeError("HELPER_UPGRADE_UNAVAILABLE", true);
     }
-    const [stepResult, transactionResult] = await Promise.all([
-      client.query<StepRow>(
-        `SELECT cursor, state, failure_code, updated_at
-           FROM local_helper_upgrade_steps WHERE operation_id = $1 ORDER BY ordinal`,
-        [operationId],
-      ),
-      client.query<TransactionRow>(
-        `SELECT transaction_id::text, generation, state, active,
-                max_fee_per_gas_base_unit::text, max_priority_fee_per_gas_base_unit::text,
-                transaction_hash
-           FROM local_helper_upgrade_transactions
-          WHERE operation_id = $1 ORDER BY generation`,
-        [operationId],
-      ),
-    ]);
+    const stepResult = await client.query<StepRow>(
+      `SELECT cursor, state, failure_code, updated_at
+         FROM local_helper_upgrade_steps WHERE operation_id = $1 ORDER BY ordinal`,
+      [operationId],
+    );
+    const transactionResult = await client.query<TransactionRow>(
+      `SELECT transaction_id::text, generation, state, active,
+              max_fee_per_gas_base_unit::text, max_priority_fee_per_gas_base_unit::text,
+              transaction_hash
+         FROM local_helper_upgrade_transactions
+        WHERE operation_id = $1 ORDER BY generation`,
+      [operationId],
+    );
     return {
       chainId: 31_337,
       createdAt: row.created_at.toISOString(),
