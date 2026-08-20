@@ -591,7 +591,7 @@ export function parseLocalHelperSweepBatch(value: unknown, status = 0): LocalHel
 
 export class LocalHelperSweepClient {
   constructor(
-    readonly fetcher: typeof fetch = globalThis.fetch,
+    readonly fetcher: typeof fetch = (...args) => globalThis.fetch(...args),
     readonly reauthentication: () => string | null = () => null,
   ) {}
 

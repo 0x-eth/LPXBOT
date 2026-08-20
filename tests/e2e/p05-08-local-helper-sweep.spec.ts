@@ -603,7 +603,7 @@ test("sweeps a mixed batch once and renders canonical per-asset recovery", async
   const assets = panel.getByRole("group", { name: "选择超过 dust 的资产" });
   const checkboxes = assets.getByRole("checkbox");
   await expect(checkboxes).toHaveCount(3);
-  await expect(checkboxes).toBeChecked();
+  for (let index = 0; index < 3; index += 1) await expect(checkboxes.nth(index)).toBeChecked();
   await checkboxes.nth(2).focus();
   await page.keyboard.press("Space");
   await expect(checkboxes.nth(2)).not.toBeChecked();
