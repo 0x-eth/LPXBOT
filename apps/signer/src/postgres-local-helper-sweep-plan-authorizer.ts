@@ -9,13 +9,7 @@ import {
   type LocalHelperSweepPlan,
 } from "@lpbot/domain/local-helper-sweep";
 import type { Pool, QueryResultRow } from "pg";
-import {
-  decodeFunctionResult,
-  encodeFunctionData,
-  keccak256,
-  type Address,
-  type Hex,
-} from "viem";
+import { decodeFunctionResult, encodeFunctionData, keccak256, type Address, type Hex } from "viem";
 
 import type { LocalHelperSweepPlanAuthorizer } from "./custody-types.js";
 

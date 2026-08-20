@@ -555,14 +555,7 @@ function localHelperSweepSigningRequest(value: unknown): {
   ) {
     throw new SignerError("LOCAL_HELPER_SWEEP_PLAN_REJECTED");
   }
-  nested("asset", [
-    "amountBaseUnit",
-    "assetId",
-    "dustBaseUnit",
-    "fixture",
-    "kind",
-    "tokenAddress",
-  ]);
+  nested("asset", ["amountBaseUnit", "assetId", "dustBaseUnit", "fixture", "kind", "tokenAddress"]);
   nested("feeLimit", [
     "feeCapBaseUnit",
     "gasLimit",
@@ -729,10 +722,7 @@ export function createSignerHttpServer(input: {
     let importAcquired = false;
     try {
       const sessionId = reauthenticatedSessionId(request);
-      if (
-        request.method === "POST" &&
-        request.url === "/v1/local-helper-sweeps/sign-and-deliver"
-      ) {
+      if (request.method === "POST" && request.url === "/v1/local-helper-sweeps/sign-and-deliver") {
         if (request.headers["content-type"]?.split(";", 1)[0] !== "application/json") {
           send(response, 415, {
             error: { code: "UNSUPPORTED_MEDIA_TYPE", retryable: false },
