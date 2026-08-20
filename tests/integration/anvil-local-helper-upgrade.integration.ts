@@ -770,6 +770,21 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
     const sweepBroadcast = await makeSweepWorker("upgrade-v1-sweep-broadcast").processBatch();
     if (sweepBroadcast.broadcast !== 3) {
       const failedBatch = await sweepService.getBatch({ batchId: sweepBatchId, tenantId, userId });
+      const outboxErrors = await pool.query<{
+        asset_id: string;
+        attempt_count: number;
+        last_error_code: string | null;
+        nonce: string;
+      }>(
+        `SELECT operation.asset_id, operation.nonce::text, event.attempt_count,
+                event.last_error_code
+           FROM local_helper_sweep_operations operation
+           JOIN local_helper_sweep_outbox event
+             ON event.operation_id = operation.operation_id
+          WHERE operation.batch_id = $1
+          ORDER BY operation.ordinal`,
+        [sweepBatchId],
+      );
       throw new Error(
         `WalletHelperV1 sweep broadcast mismatch: ${JSON.stringify({
           operations: failedBatch.operations.map(({ assetId, failureCode, state }) => ({
@@ -777,6 +792,7 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
             failureCode,
             state,
           })),
+          outboxErrors: outboxErrors.rows,
           sweepBroadcast,
         })}`,
       );
