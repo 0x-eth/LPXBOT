@@ -71,6 +71,14 @@ export type {
   LocalHelperSweepChainVerification,
   LocalHelperSweepPlanChainVerifier,
 } from "./postgres-local-helper-sweep-plan-authorizer.js";
+export {
+  PostgresLocalHelperUpgradePlanAuthorizer,
+  ViemLocalHelperUpgradePlanVerifier,
+} from "./postgres-local-helper-upgrade-plan-authorizer.js";
+export type {
+  LocalHelperUpgradePlanChainVerification,
+  LocalHelperUpgradePlanChainVerifier,
+} from "./postgres-local-helper-upgrade-plan-authorizer.js";
 export type {
   LocalPositionPlanChainVerifier,
   LocalPositionStepChainVerification,
