@@ -47,7 +47,7 @@ const tenantId = "tenant-fixture-01";
 const successUserId = randomUUID();
 const manualUserId = randomUUID();
 const sweepUserId = randomUUID();
-const startedAt = new Date();
+const startedAt = new Date(Date.now() - 60_000);
 let clock = new Date(startedAt);
 
 class DeploymentChainFixture implements HelperDeploymentChainReader {
@@ -747,6 +747,7 @@ describe("P05-09 PostgreSQL local Helper deploy-new upgrade", () => {
       code: "HELPER_UPGRADE_IN_PROGRESS",
     });
 
+    clock = new Date(clock.getTime() + 1);
     const sweepClaim = await claim(repository, operation.operationId);
     const gateway = new LocalHelperUpgradeSweepGateway({
       idempotencyKey: () => "p05-09-upgrade-sweep-gateway-scan",
