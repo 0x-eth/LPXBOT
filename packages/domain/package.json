@@ -35,6 +35,11 @@
       "import": "./dist/local-position-execution.js",
       "default": "./dist/local-position-execution.js"
     },
+    "./local-helper-sweep": {
+      "types": "./dist/local-helper-sweep.d.ts",
+      "import": "./dist/local-helper-sweep.js",
+      "default": "./dist/local-helper-sweep.js"
+    },
     "./wallet-transfer": {
       "types": "./dist/wallet-transfer.d.ts",
       "import": "./dist/wallet-transfer.js",
