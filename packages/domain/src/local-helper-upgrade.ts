@@ -385,12 +385,17 @@ export function validateLocalHelperUpgradeSnapshot(
   ) {
     throw new RangeError("LOCAL_HELPER_UPGRADE_SNAPSHOT_EXPIRED");
   }
-  const { blockers: _blockers, eligible: _eligible, snapshotDigest: _digest, ...facts } = snapshot;
+  const {
+    blockers: storedBlockers,
+    eligible,
+    snapshotDigest,
+    ...facts
+  } = snapshot;
   const blockers = localHelperUpgradePreflightBlockers(facts, context);
   if (
-    !same(snapshot.blockers, blockers) ||
-    snapshot.eligible !== (blockers.length === 0) ||
-    snapshot.snapshotDigest !== localHelperUpgradeSnapshotDigest(snapshot)
+    !same(storedBlockers, blockers) ||
+    eligible !== (blockers.length === 0) ||
+    snapshotDigest !== localHelperUpgradeSnapshotDigest(snapshot)
   ) {
     throw new RangeError("LOCAL_HELPER_UPGRADE_SNAPSHOT_MISMATCH");
   }

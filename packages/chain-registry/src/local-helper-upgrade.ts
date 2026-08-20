@@ -255,12 +255,23 @@ export function validateLocalHelperUpgradeRegistry(
     registry.environment !== "non-forked-anvil-synthetic-only" ||
     registry.productionInheritance ||
     registry.serviceFeeBps !== 0 ||
+    registry.maxBlockDrift !== 5 ||
+    registry.maxDeadlineSeconds !== 900 ||
+    registry.validFromBlock !== "0" ||
+    registry.validToBlock !== "1000000" ||
     registry.source.helperVersion !== WALLET_HELPER_V1_VERSION ||
     registry.source.bindingRegistryVersion !== deployment.registryVersion ||
     registry.source.abiHash !== deployment.helperTemplate.abiHash ||
     registry.source.runtimeTemplateHash !== deployment.helperTemplate.runtimeTemplateHash ||
+    registry.source.selectors.owner !== "0x8da5cb5b" ||
+    registry.source.selectors.sweepNative !== "0x6971b189" ||
+    registry.source.selectors.sweepToken !== "0x3609afa9" ||
     registry.target.helperVersion !== WALLET_HELPER_V2_VERSION ||
+    JSON.stringify(registry.target.abi) !== JSON.stringify(WALLET_HELPER_V2_ABI) ||
     registry.target.abiHash !== WALLET_HELPER_V2_ABI_HASH ||
+    `sha256:${sha256(stringToHex(JSON.stringify(registry.target.abi))).slice(2)}` !==
+      registry.target.abiHash ||
+    registry.target.creationCode !== WALLET_HELPER_V2_CREATION_CODE ||
     registry.target.creationCodeHash !== WALLET_HELPER_V2_CREATION_CODE_HASH ||
     keccak256(registry.target.creationCode) !== registry.target.creationCodeHash ||
     registry.target.runtimeTemplateHash !== WALLET_HELPER_V2_RUNTIME_TEMPLATE_HASH ||
@@ -278,8 +289,13 @@ export function validateLocalHelperUpgradeRegistry(
         registry.gates[environment].signatures ||
         registry.gates[environment].broadcasts,
     ) ||
+    registry.constraints.allowanceRequired !== "zero" ||
     registry.constraints.bindingSwitch !== "single-transaction-compare-and-swap" ||
+    registry.constraints.liveOperationRequired !== "none" ||
+    registry.constraints.nftCustodyRequired !== "zero" ||
     registry.constraints.replacementPolicy !== "fee-only" ||
+    registry.constraints.unknownTokenRequired !== "zero" ||
+    registry.constraints.v1PostSweep !== "balance<=dust" ||
     registry.registryDigest !== localHelperUpgradeRegistryDigest(registry)
   ) {
     throw new RangeError("LOCAL_HELPER_UPGRADE_REGISTRY_INVALID");
