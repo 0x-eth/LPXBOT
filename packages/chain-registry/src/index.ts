@@ -57,6 +57,22 @@ export type {
   LocalPositionExecutionRegistry,
   LocalPositionPlatformId,
 } from "./local-position-execution.js";
+export {
+  localHelperSweepComponent,
+  localHelperSweepRegistryDigest,
+  P05_LOCAL_HELPER_RESIDUAL_SNAPSHOT_VERSION,
+  P05_LOCAL_HELPER_SWEEP_PLAN_VERSION,
+  P05_LOCAL_HELPER_SWEEP_REGISTRY,
+  P05_LOCAL_HELPER_SWEEP_REGISTRY_VERSION,
+  validateLocalHelperSweepRegistry,
+} from "./local-helper-sweep.js";
+export type {
+  LocalHelperSweepCodeIdentity,
+  LocalHelperSweepComponentRole,
+  LocalHelperSweepEnvironment,
+  LocalHelperSweepRegistry,
+  LocalHelperSweepTokenIdentity,
+} from "./local-helper-sweep.js";
 export type {
   HelperBytecodeTemplate,
   HelperDeploymentComponent,
