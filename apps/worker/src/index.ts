@@ -118,6 +118,7 @@ export {
 } from "./local-helper-upgrade-worker.js";
 export { ViemLocalHelperUpgradeObserver } from "./viem-local-helper-upgrade-observer.js";
 export type { ViemLocalHelperUpgradeObserverOptions } from "./viem-local-helper-upgrade-observer.js";
+export { PostgresLocalHelperUpgradeRecoveryRepository } from "./postgres-local-helper-upgrade-recovery.js";
 export type {
   LocalHelperUpgradeBatchResult,
   LocalHelperUpgradeDeploymentDecision,
