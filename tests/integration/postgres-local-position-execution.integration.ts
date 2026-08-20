@@ -487,5 +487,9 @@ describe("P05-07 PostgreSQL local position recovery", () => {
     expect(decreaseTransactions.rows[0]?.count).toBe("1");
     expect(pricing.rows[0]?.status).toBe("withdrawn");
     expect(completion.rows[0]?.count).toBe("1");
+
+    await expect(pool.query("DELETE FROM users WHERE id = $1", [userId])).resolves.toMatchObject({
+      rowCount: 1,
+    });
   });
 });
