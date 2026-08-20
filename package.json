@@ -40,6 +40,7 @@
     "finalize:p05-reference": "node scripts/finalize-p05-reference-artifacts.mjs",
     "finalize:p05-06": "node scripts/finalize-p05-06-acceptance.mjs",
     "finalize:p05-07": "node scripts/finalize-p05-07-acceptance.mjs",
+    "finalize:p05-08": "node scripts/finalize-p05-08-acceptance.mjs",
     "finalize:p02-03": "node scripts/finalize-p02-03-acceptance.mjs",
     "infra:down": "bash scripts/infra.sh down",
     "infra:logs": "bash scripts/infra.sh logs",
