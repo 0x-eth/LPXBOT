@@ -27,10 +27,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  LocalHelperSweepClient,
-  LocalHelperSweepRequestError,
-} from "./local-helper-sweep-client";
+import { LocalHelperSweepClient, LocalHelperSweepRequestError } from "./local-helper-sweep-client";
 
 type SweepPanelState =
   | "degraded"
@@ -287,7 +284,9 @@ function PreviewDialog({
 }
 
 function ManualRecovery({ snapshot }: { snapshot: LocalHelperResidualSnapshot }) {
-  const allowances = snapshot.allowances.filter(({ amountBaseUnit }) => BigInt(amountBaseUnit) > 0n);
+  const allowances = snapshot.allowances.filter(
+    ({ amountBaseUnit }) => BigInt(amountBaseUnit) > 0n,
+  );
   if (!snapshot.manualRecoveryRequired && snapshot.coverage.complete) return null;
   return (
     <div className="local-helper-manual-recovery" role="alert">
@@ -572,7 +571,11 @@ export function LocalHelperSweepPanel({ wallet }: { wallet: CustodyWallet }) {
   }, [batch, client]);
 
   useEffect(() => {
-    if (!batch || !terminalBatchStates.has(batch.state) || refreshedBatch.current === batch.batchId) {
+    if (
+      !batch ||
+      !terminalBatchStates.has(batch.state) ||
+      refreshedBatch.current === batch.batchId
+    ) {
       return;
     }
     refreshedBatch.current = batch.batchId;
@@ -791,7 +794,11 @@ export function LocalHelperSweepPanel({ wallet }: { wallet: CustodyWallet }) {
               </div>
               <div>
                 <dt>Runtime / owner</dt>
-                <dd>{snapshot.identity.runtimeMatches && snapshot.identity.ownerMatches ? "通过" : "异常"}</dd>
+                <dd>
+                  {snapshot.identity.runtimeMatches && snapshot.identity.ownerMatches
+                    ? "通过"
+                    : "异常"}
+                </dd>
               </div>
               <div>
                 <dt>Registry</dt>
