@@ -8,10 +8,7 @@ import {
   type Hex,
 } from "viem";
 
-import {
-  P05_HELPER_DEPLOYMENT_REGISTRY,
-  WALLET_HELPER_V1_VERSION,
-} from "./helper-deployment.js";
+import { P05_HELPER_DEPLOYMENT_REGISTRY, WALLET_HELPER_V1_VERSION } from "./helper-deployment.js";
 import { P05_LOCAL_HELPER_SWEEP_REGISTRY } from "./local-helper-sweep.js";
 import {
   WALLET_HELPER_V2_ABI,
@@ -23,12 +20,10 @@ import {
   WALLET_HELPER_V2_SELECTORS,
 } from "./wallet-helper-v2-artifact.js";
 
-export const P05_LOCAL_HELPER_UPGRADE_REGISTRY_VERSION =
-  "p05-local-helper-upgrade-v3" as const;
+export const P05_LOCAL_HELPER_UPGRADE_REGISTRY_VERSION = "p05-local-helper-upgrade-v3" as const;
 export const P05_LOCAL_HELPER_UPGRADE_SNAPSHOT_VERSION =
   "p05-local-helper-upgrade-snapshot-v3" as const;
-export const P05_LOCAL_HELPER_UPGRADE_PLAN_VERSION =
-  "p05-local-helper-upgrade-plan-v3" as const;
+export const P05_LOCAL_HELPER_UPGRADE_PLAN_VERSION = "p05-local-helper-upgrade-plan-v3" as const;
 export const WALLET_HELPER_V2_VERSION = "WalletHelperV2" as const;
 
 export type LocalHelperUpgradeEnvironment = "bsc" | "local" | "production" | "testnet";
@@ -111,9 +106,7 @@ function canonical(value: unknown): unknown {
   if (value !== null && typeof value === "object") {
     return Object.fromEntries(
       Object.entries(value)
-        .filter(
-          ([key]) => key !== "abi" && key !== "creationCode" && key !== "registryDigest",
-        )
+        .filter(([key]) => key !== "abi" && key !== "creationCode" && key !== "registryDigest")
         .sort(([left], [right]) => left.localeCompare(right))
         .map(([key, entry]) => [key, canonical(entry)]),
     );

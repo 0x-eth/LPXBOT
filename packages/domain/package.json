@@ -40,6 +40,11 @@
       "import": "./dist/local-helper-sweep.js",
       "default": "./dist/local-helper-sweep.js"
     },
+    "./local-helper-upgrade": {
+      "types": "./dist/local-helper-upgrade.d.ts",
+      "import": "./dist/local-helper-upgrade.js",
+      "default": "./dist/local-helper-upgrade.js"
+    },
     "./wallet-transfer": {
       "types": "./dist/wallet-transfer.d.ts",
       "import": "./dist/wallet-transfer.js",
