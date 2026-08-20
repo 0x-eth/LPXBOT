@@ -591,7 +591,23 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
       completed: 1,
     });
     tick();
-    expect(await makeUpgradeWorker("upgrade-deploy").processBatch()).toMatchObject({
+    const deployResult = await makeUpgradeWorker("upgrade-deploy").processBatch();
+    if (deployResult.broadcast !== 1) {
+      const failedOperation = await upgradeService.get({
+        operationId: submitted.operation.operationId,
+        tenantId,
+        userId,
+      });
+      throw new Error(
+        `upgrade deployment did not broadcast: ${JSON.stringify({
+          cursor: failedOperation.cursor,
+          deployResult,
+          failureCode: failedOperation.failureCode,
+          state: failedOperation.state,
+        })}`,
+      );
+    }
+    expect(deployResult).toMatchObject({
       broadcast: 1,
       claimed: 1,
     });
