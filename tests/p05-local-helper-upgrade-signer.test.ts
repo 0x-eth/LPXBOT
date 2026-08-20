@@ -411,6 +411,8 @@ describe("P05-09 WalletHelperV2 plan authorizer", () => {
 describe("P05-09 WalletHelperV2 signer HTTP boundary", () => {
   it("round-trips only the typed deploy-new envelope through the loopback gateway", async () => {
     const value = plan();
+    value.deadline = new Date(Date.now() + 10 * 60_000).toISOString();
+    value.planDigest = localHelperUpgradePlanDigest(value);
     const signLocalHelperUpgrade = vi.fn(
       async (input: Parameters<CustodySignerService["signLocalHelperUpgrade"]>[0]) => {
         expect(input).toEqual({
