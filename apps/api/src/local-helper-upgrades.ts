@@ -201,8 +201,26 @@ function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, canonical(entry)]),
+    );
+  }
+  return value;
+}
+
 function hash(value: unknown): `sha256:${string}` {
-  return `sha256:${createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex")}`;
+  return `sha256:${createHash("sha256")
+    .update(JSON.stringify(canonical(value)), "utf8")
+    .digest("hex")}`;
+}
+
+function same(left: unknown, right: unknown): boolean {
+  return JSON.stringify(canonical(left)) === JSON.stringify(canonical(right));
 }
 
 function tokenHash(value: string): string {
@@ -867,14 +885,13 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
       currentBlock - previousBlock > BigInt(this.#registry.maxBlockDrift) ||
       current.snapshot.providers[0]!.pendingNonce !==
         previous.snapshot.providers[0]!.pendingNonce ||
-      JSON.stringify(current.snapshot.sourceBinding) !==
-        JSON.stringify(previous.snapshot.sourceBinding) ||
+      !same(current.snapshot.sourceBinding, previous.snapshot.sourceBinding) ||
       current.snapshot.target.expectedAddress !== previous.snapshot.target.expectedAddress ||
       current.snapshot.target.expectedRuntimeCodeHash !==
         previous.snapshot.target.expectedRuntimeCodeHash ||
       this.#residualSemanticDigest(current.residual) !==
         this.#residualSemanticDigest(previous.residual) ||
-      JSON.stringify(current.feeLimit) !== JSON.stringify(previous.feeLimit)
+      !same(current.feeLimit, previous.feeLimit)
     ) {
       throw new LocalHelperUpgradeError("PREVIEW_CHANGED");
     }
