@@ -330,7 +330,7 @@ export function parseLocalHelperResidualSnapshot(
     ) {
       invalid(status);
     }
-    return structuredClone(item) as unknown as LocalHelperSweepPreview["assets"][number];
+    return structuredClone(item) as unknown as LocalHelperResidualSnapshot["allowances"][number];
   });
   const nftCustody = value.nftCustody.map((item) => {
     if (
@@ -342,7 +342,7 @@ export function parseLocalHelperResidualSnapshot(
     ) {
       invalid(status);
     }
-    return structuredClone(item);
+    return structuredClone(item) as unknown as LocalHelperResidualSnapshot["nftCustody"][number];
   });
   const unknownTokens = value.unknownTokens.map((item) => {
     if (
@@ -355,7 +355,7 @@ export function parseLocalHelperResidualSnapshot(
     ) {
       invalid(status);
     }
-    return structuredClone(item);
+    return structuredClone(item) as unknown as LocalHelperResidualSnapshot["unknownTokens"][number];
   });
   if (
     new Set(allowances.map((item) => item.assetId)).size !== allowances.length ||
@@ -434,7 +434,7 @@ export function parseLocalHelperSweepPreview(value: unknown, status = 0): LocalH
     ) {
       invalid(status);
     }
-    return structuredClone(item);
+    return structuredClone(item) as unknown as LocalHelperSweepPreview["assets"][number];
   });
   if (
     new Set(assets.map((item) => item.assetId)).size !== assets.length ||
