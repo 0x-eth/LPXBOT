@@ -199,7 +199,6 @@ describe.skipIf(!enabled)("P05-08 local Anvil Helper residual sweep closure", ()
     }
     const helperAddress = helperDeploymentReceipt.contractAddress.toLowerCase() as Address;
 
-    await deploy({ abi: position.abi, bytecode: position.bytecode.object });
     const managerAddress = await deploy({
       abi: managerV2.abi,
       bytecode: managerV2.bytecode.object,

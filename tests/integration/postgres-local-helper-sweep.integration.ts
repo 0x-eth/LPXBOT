@@ -548,11 +548,13 @@ describe("P05-08 PostgreSQL local Helper sweep lifecycle", () => {
     });
 
     clock = new Date(clock.getTime() + 1_000);
-    const [replacementClaim] = await claimOperations(
+    const replacementClaims = await claimOperations(
       repository,
       [nativeClaim.operation.operationId],
       clock,
     );
+    const replacementClaim = replacementClaims[0];
+    if (!replacementClaim) throw new Error("Replacement sweep claim was not recovered");
     const historical = replacementClaim.operation.transactionLineage.find(
       ({ generation }) => generation === 0,
     )!;
