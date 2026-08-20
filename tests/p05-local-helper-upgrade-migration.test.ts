@@ -25,6 +25,8 @@ describe("P05-09 local Helper upgrade migration", () => {
     expect(sql).toContain("local_helper_upgrade_replacement_authorizations");
     expect(sql).toContain("local_helper_upgrade_v2_verification_evidence");
     expect(sql).toContain("local_helper_upgrade_final_rescan_evidence");
+    expect(sql).toContain("local_helper_sweep_batches_upgrade_operation_unique");
+    expect(sql).toContain("ADD COLUMN upgrade_operation_id uuid");
     expect(sql).toContain("wallet_helper_deployment_bindings_active_unique");
     expect(sql).toContain("WHERE state = 'active'");
     expect(sql).toContain("state IN ('deploying', 'active', 'degraded', 'superseded')");

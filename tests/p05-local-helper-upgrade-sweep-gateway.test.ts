@@ -175,6 +175,9 @@ describe("P05-09 local Helper upgrade sweep bridge", () => {
     });
     expect(value.preview).toHaveBeenCalledOnce();
     expect(value.sweep).toHaveBeenCalledOnce();
+    expect(value.sweep).toHaveBeenCalledWith(
+      expect.objectContaining({ upgradeOperationId: operationId }),
+    );
   });
 
   it("routes nonzero allowance to manual recovery before preview or calldata", async () => {
