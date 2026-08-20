@@ -376,7 +376,6 @@ export function validateLocalHelperResidualSnapshot(
     !same(snapshot.wallet, context.wallet) ||
     !same(snapshot.binding, context.binding) ||
     snapshot.binding.walletId !== snapshot.wallet.walletId ||
-    snapshot.wallet.address !== snapshot.binding.ownerAddress ||
     !uuidPattern.test(snapshot.wallet.walletId) ||
     !uuidPattern.test(snapshot.binding.bindingId) ||
     !addressPattern.test(snapshot.wallet.address) ||

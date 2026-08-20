@@ -984,15 +984,6 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
       walletId: input.wallet.walletId,
     });
     if (!binding) throw new LocalHelperSweepError("HELPER_NOT_FOUND");
-    if (
-      binding.ownerAddress !== input.wallet.address ||
-      binding.helperVersion !== "WalletHelperV1" ||
-      binding.deploymentRegistryVersion !== this.#registry.helper.bindingRegistryVersion ||
-      binding.adapterAddress !== localHelperSweepComponent("adapter", this.#registry).address ||
-      binding.permit2Address !== localHelperSweepComponent("permit2", this.#registry).address
-    ) {
-      throw new LocalHelperSweepError("HELPER_BINDING_MISMATCH");
-    }
     return binding;
   }
 
@@ -1002,7 +993,7 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
     inspection: LocalHelperResidualChainInspection,
   ): Promise<LocalHelperResidualSnapshot> {
     const observedAt = this.#now();
-    const identity = this.#identity(binding, inspection);
+    const identity = this.#identity(binding, inspection, input.wallet);
     const balances = this.#balances(inspection);
     const allowances = this.#allowances(inspection);
     const nftCustody = this.#nfts(inspection);
@@ -1119,7 +1110,7 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
     if (BigInt(inspection.headBlockNumber) - BigInt(snapshot.block.number) > BigInt(this.#registry.maxBlockDrift)) {
       throw new LocalHelperSweepError("SNAPSHOT_STALE");
     }
-    const observationDigest = this.#observationDigest(binding, inspection);
+    const observationDigest = this.#observationDigest(binding, inspection, input.wallet);
     const snapshotObservationDigest = this.#snapshotObservationDigest(snapshot);
     if (observationDigest !== snapshotObservationDigest) {
       throw new LocalHelperSweepError("SNAPSHOT_CHANGED");
@@ -1153,8 +1144,8 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
       facts: {
         assets: selected,
         binding,
-        blockHash: inspection.block.hash,
-        blockNumber: inspection.block.number,
+        blockHash: snapshot.block.hash,
+        blockNumber: snapshot.block.number,
         deadline,
         expiresAt,
         feeLimits,
@@ -1166,10 +1157,17 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
     };
   }
 
-  #identity(binding: LocalHelperSweepBinding, inspection: LocalHelperResidualChainInspection) {
+  #identity(
+    binding: LocalHelperSweepBinding,
+    inspection: LocalHelperResidualChainInspection,
+    wallet: Pick<CustodyWallet, "address" | "walletId">,
+  ) {
     const expectedComponents = this.#registry.components;
     const bindingMatches =
       binding.deploymentRegistryVersion === this.#registry.helper.bindingRegistryVersion &&
+      binding.helperVersion === this.#registry.helper.helperVersion &&
+      binding.walletId === wallet.walletId &&
+      binding.ownerAddress === wallet.address &&
       binding.adapterAddress === localHelperSweepComponent("adapter", this.#registry).address &&
       binding.permit2Address === localHelperSweepComponent("permit2", this.#registry).address;
     const componentsMatch = expectedComponents.every((expected) => {
@@ -1188,7 +1186,8 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
       observedOwner: inspection.helper.owner,
       observedRuntimeCodeHash: inspection.helper.runtimeCodeHash,
       ownerMatches: inspection.helper.owner === binding.ownerAddress,
-      registryMatches: true,
+      registryMatches:
+        binding.deploymentRegistryVersion === this.#registry.helper.bindingRegistryVersion,
       runtimeMatches: inspection.helper.runtimeCodeHash === binding.runtimeCodeHash,
       tokensMatch,
     };
@@ -1263,6 +1262,7 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
   #observationDigest(
     binding: LocalHelperSweepBinding,
     inspection: LocalHelperResidualChainInspection,
+    wallet: Pick<CustodyWallet, "address" | "walletId">,
   ): `sha256:${string}` {
     return digest({
       allowances: this.#allowances(inspection),
@@ -1270,7 +1270,7 @@ export class LocalHelperSweepService implements LocalHelperSweepApplication {
       binding: { ...binding, state: undefined },
       coverage: inspection.coverage,
       helper: inspection.helper,
-      identity: this.#identity(binding, inspection),
+      identity: this.#identity(binding, inspection, wallet),
       nftCustody: this.#nfts(inspection),
       unknownTokens: this.#unknownTokens(inspection),
     });
