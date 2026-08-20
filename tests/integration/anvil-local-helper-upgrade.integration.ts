@@ -764,10 +764,24 @@ describe.skipIf(!enabled)("P05-09 local Anvil Helper deploy-new upgrade closure"
         [submitted.operation.operationId],
       )
     ).rows[0]?.sweep_batch_id;
-    expect(sweepBatchId).toEqual(expect.any(String));
+    if (!sweepBatchId) throw new Error("WalletHelperV1 sweep batch was not persisted");
 
     tick();
-    expect(await makeSweepWorker("upgrade-v1-sweep-broadcast").processBatch()).toMatchObject({
+    const sweepBroadcast = await makeSweepWorker("upgrade-v1-sweep-broadcast").processBatch();
+    if (sweepBroadcast.broadcast !== 3) {
+      const failedBatch = await sweepService.getBatch({ batchId: sweepBatchId, tenantId, userId });
+      throw new Error(
+        `WalletHelperV1 sweep broadcast mismatch: ${JSON.stringify({
+          operations: failedBatch.operations.map(({ assetId, failureCode, state }) => ({
+            assetId,
+            failureCode,
+            state,
+          })),
+          sweepBroadcast,
+        })}`,
+      );
+    }
+    expect(sweepBroadcast).toMatchObject({
       broadcast: 3,
       claimed: 3,
     });
