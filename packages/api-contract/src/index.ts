@@ -2012,6 +2012,121 @@ export const localHelperSweepContracts = Object.freeze({
   sweep: Object.freeze({ method: "POST", path: "/api/wallets/helper-residuals/sweep" }),
 } as const);
 
+export const localHelperUpgradeCursors = Object.freeze([
+  "preflight",
+  "deploy-v2",
+  "verify-v2",
+  "sweep-v1",
+  "final-rescan-v1",
+  "atomic-binding-switch",
+  "completed",
+] as const);
+export type LocalHelperUpgradeCursor = (typeof localHelperUpgradeCursors)[number];
+export type LocalHelperUpgradeState =
+  | "queued"
+  | "running"
+  | "manual-recovery-required"
+  | "failed"
+  | "completed";
+export type LocalHelperUpgradeStepState =
+  | "pending"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "manual-recovery-required";
+
+export interface LocalHelperUpgradePreviewRequest {
+  chainId: 31_337;
+  walletId: string;
+}
+
+export interface LocalHelperUpgradeSubmitRequest extends LocalHelperUpgradePreviewRequest {
+  previewDigest: `sha256:${string}`;
+  previewToken: string;
+}
+
+export interface LocalHelperUpgradeVersionView {
+  comparison: "upgrade-available";
+  source: "WalletHelperV1";
+  target: "WalletHelperV2";
+}
+
+export interface LocalHelperUpgradePreview {
+  blockers: string[];
+  chainId: 31_337;
+  expectedTargetAddress: EvmAddress;
+  expectedTargetRuntimeCodeHash: `0x${string}`;
+  expiresAt: string;
+  feeLimit: LocalSwapFeeLimit;
+  nonce: string;
+  previewDigest: `sha256:${string}`;
+  previewToken: string;
+  registryVersion: "p05-local-helper-upgrade-v3";
+  residual: {
+    allowanceCount: number;
+    balancesAboveDust: number;
+    nftCustodyCount: number;
+    unknownTokenCount: number;
+  };
+  sourceHelperAddress: EvmAddress;
+  steps: LocalHelperUpgradeCursor[];
+  upgradeable: boolean;
+  versions: LocalHelperUpgradeVersionView;
+  walletId: string;
+}
+
+export interface LocalHelperUpgradeStepView {
+  cursor: LocalHelperUpgradeCursor;
+  failureCode: string | null;
+  state: LocalHelperUpgradeStepState;
+  updatedAt: string | null;
+}
+
+export interface LocalHelperUpgradeTransactionView {
+  active: boolean;
+  generation: number;
+  maxFeePerGasBaseUnit: string;
+  maxPriorityFeePerGasBaseUnit: string;
+  state: "signed" | "broadcast" | "pending" | "confirmed" | "failed" | "dropped" | "replaced";
+  transactionHash: `0x${string}` | null;
+  transactionId: string;
+}
+
+export interface LocalHelperUpgradeOperation {
+  chainId: 31_337;
+  createdAt: string;
+  cursor: LocalHelperUpgradeCursor;
+  expectedTargetAddress: EvmAddress;
+  failureCode: string | null;
+  manualRecovery: {
+    blockers: string[];
+    required: boolean;
+  };
+  nonce: string;
+  operationId: string;
+  planDigest: `sha256:${string}`;
+  registryVersion: "p05-local-helper-upgrade-v3";
+  sourceBindingId: string;
+  sourceHelperAddress: EvmAddress;
+  state: LocalHelperUpgradeState;
+  steps: LocalHelperUpgradeStepView[];
+  sweepBatchId: string | null;
+  transactions: LocalHelperUpgradeTransactionView[];
+  updatedAt: string;
+  versions: LocalHelperUpgradeVersionView;
+  walletId: string;
+}
+
+export const localHelperUpgradeContracts = Object.freeze({
+  get: Object.freeze({ method: "GET", path: "/api/helper-upgrades/{operationId}" }),
+  preview: Object.freeze({ method: "POST", path: "/api/wallets/helper/upgrade/preview" }),
+  submit: Object.freeze({ method: "POST", path: "/api/wallets/helper/upgrade" }),
+  walletOperation: Object.freeze({
+    method: "GET",
+    path: "/api/wallets/{walletId}/helper-upgrade",
+  }),
+} as const);
+
 export const helperDeploymentStates = Object.freeze([
   "queued",
   "signed",
