@@ -251,7 +251,8 @@ describe("P05-09 isolated WalletHelperV2 deployment signer", () => {
     });
 
     expect(signed).toMatchObject({ generation: 0, operationId, planDigest: value.planDigest });
-    expect(parseTransaction(toHex(raw!))).toMatchObject({
+    const transaction = parseTransaction(toHex(raw!));
+    expect(transaction).toMatchObject({
       chainId: 31_337,
       data: value.transaction.data,
       gas: 1000000n,
@@ -259,9 +260,9 @@ describe("P05-09 isolated WalletHelperV2 deployment signer", () => {
       maxPriorityFeePerGas: 1n,
       nonce: 7,
       type: "eip1559",
-      value: 0n,
     });
-    expect(parseTransaction(toHex(raw!)).to).toBeUndefined();
+    expect(transaction.to).toBeUndefined();
+    expect(transaction.value ?? 0n).toBe(0n);
   });
 
   it("rejects init code, nonce, owner, target, version, and plan digest tampering before delivery", async () => {

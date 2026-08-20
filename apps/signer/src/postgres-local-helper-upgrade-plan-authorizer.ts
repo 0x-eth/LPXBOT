@@ -381,12 +381,26 @@ export class PostgresLocalHelperUpgradePlanAuthorizer implements LocalHelperUpgr
       if (!row || !this.#databaseMatches(row, input)) return false;
       const chain = await this.verifier.verify(plan);
       const nonce = BigInt(plan.nonce);
+      const latestNonce = BigInt(chain.latestNonce);
+      const pendingNonce = BigInt(chain.pendingNonce);
+      const targetRuntimeCodeHash = runtimeHash(chain.expectedTargetCode);
+      const initialDeployment =
+        targetRuntimeCodeHash === null && latestNonce === nonce && pendingNonce === nonce;
+      const undurablePendingDeployment =
+        targetRuntimeCodeHash === null && latestNonce === nonce && pendingNonce === nonce + 1n;
+      const undurableConfirmedDeployment =
+        targetRuntimeCodeHash === plan.target.expectedRuntimeCodeHash &&
+        latestNonce === nonce + 1n &&
+        pendingNonce === nonce + 1n;
+      const deploymentStateMatches =
+        input.generation === 0
+          ? initialDeployment || undurablePendingDeployment || undurableConfirmedDeployment
+          : initialDeployment || undurablePendingDeployment;
       return (
         chain.canonicalSnapshotBlockHash === plan.snapshot.blockHash &&
         BigInt(chain.headBlockNumber) >= BigInt(plan.snapshot.blockNumber) &&
         BigInt(chain.headBlockNumber) - BigInt(plan.snapshot.blockNumber) <=
           BigInt(this.#registry.maxBlockDrift) &&
-        chain.expectedTargetCode === "0x" &&
         chain.simulatedRuntimeCodeHash === plan.target.expectedRuntimeCodeHash &&
         chain.source.owner === plan.wallet.address &&
         chain.source.adapter === plan.target.adapter &&
@@ -394,10 +408,7 @@ export class PostgresLocalHelperUpgradePlanAuthorizer implements LocalHelperUpgr
         chain.source.runtimeCodeHash === plan.source.runtimeCodeHash &&
         chain.componentCodeMatches &&
         chain.tokenCodeMatches &&
-        BigInt(chain.latestNonce) === nonce &&
-        (input.generation === 0
-          ? BigInt(chain.pendingNonce) === nonce
-          : BigInt(chain.pendingNonce) === nonce || BigInt(chain.pendingNonce) === nonce + 1n)
+        deploymentStateMatches
       );
     } catch {
       return false;
