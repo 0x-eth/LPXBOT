@@ -153,7 +153,17 @@ function snapshotContext(value: LocalHelperResidualSnapshot) {
 function plan(): LocalHelperSweepPlan {
   const state = snapshot({ tokenA: "2" });
   const asset = state.balances.find(({ assetId }) => assetId === `token:${registry.tokens[0].address}`)!;
-  const { state: _state, ...helper } = state.binding;
+  const helper: LocalHelperSweepPlan["helper"] = {
+    adapterAddress: state.binding.adapterAddress,
+    bindingId: state.binding.bindingId,
+    deploymentRegistryVersion: state.binding.deploymentRegistryVersion,
+    helperAddress: state.binding.helperAddress,
+    helperVersion: state.binding.helperVersion,
+    ownerAddress: state.binding.ownerAddress,
+    permit2Address: state.binding.permit2Address,
+    runtimeCodeHash: state.binding.runtimeCodeHash,
+    verifiedBlockNumber: state.binding.verifiedBlockNumber,
+  };
   const value: LocalHelperSweepPlan = {
     asset,
     batchId: "a8000000-0000-4000-8000-000000000010",

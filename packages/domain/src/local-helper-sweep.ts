@@ -501,7 +501,17 @@ export function validateLocalHelperSweepPlan(
   const invalid = () => {
     throw new RangeError("LOCAL_HELPER_SWEEP_PLAN_INVALID");
   };
-  const { state: _bindingState, ...expectedHelper } = context.expectedBinding;
+  const expectedHelper: LocalHelperSweepPlan["helper"] = {
+    adapterAddress: context.expectedBinding.adapterAddress,
+    bindingId: context.expectedBinding.bindingId,
+    deploymentRegistryVersion: context.expectedBinding.deploymentRegistryVersion,
+    helperAddress: context.expectedBinding.helperAddress,
+    helperVersion: context.expectedBinding.helperVersion,
+    ownerAddress: context.expectedBinding.ownerAddress,
+    permit2Address: context.expectedBinding.permit2Address,
+    runtimeCodeHash: context.expectedBinding.runtimeCodeHash,
+    verifiedBlockNumber: context.expectedBinding.verifiedBlockNumber,
+  };
   if (
     plan.chainId !== 31_337 ||
     plan.schemaVersion !== 2 ||
