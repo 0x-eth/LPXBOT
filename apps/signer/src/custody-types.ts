@@ -17,6 +17,7 @@ import type {
 } from "@lpbot/domain/local-swap-execution";
 import type { LocalPositionExecutionPlan } from "@lpbot/domain/local-position-execution";
 import type { LocalHelperSweepPlan } from "@lpbot/domain/local-helper-sweep";
+import type { LocalHelperUpgradePlan } from "@lpbot/domain/local-helper-upgrade";
 
 export type CustodyAuditAction = "wallet.generate" | "wallet.import";
 
@@ -150,6 +151,19 @@ export interface LocalHelperSweepPlanAuthorizer {
   }): Promise<boolean>;
 }
 
+export interface LocalHelperUpgradePlanAuthorizer {
+  authorize(input: {
+    generation: number;
+    maxFeePerGasBaseUnit: string;
+    maxPriorityFeePerGasBaseUnit: string;
+    operationId: string;
+    plan: LocalHelperUpgradePlan;
+    planDigest: `sha256:${string}`;
+    tenantId: string;
+    userId: string;
+  }): Promise<boolean>;
+}
+
 export interface RawTransactionDeliveryResult {
   deliveryId: string;
   status: "accepted" | "already-known";
@@ -189,6 +203,13 @@ export interface LocalPositionStepSigningResult extends RawTransactionDeliveryRe
 }
 
 export interface LocalHelperSweepSigningResult extends RawTransactionDeliveryResult {
+  generation: number;
+  operationId: string;
+  planDigest: `sha256:${string}`;
+  transactionHash: `0x${string}`;
+}
+
+export interface LocalHelperUpgradeSigningResult extends RawTransactionDeliveryResult {
   generation: number;
   operationId: string;
   planDigest: `sha256:${string}`;

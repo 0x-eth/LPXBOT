@@ -627,11 +627,25 @@ export function validateLocalHelperUpgradeReplacement(
     next.fee.maxPriorityFeePerGasBaseUnit,
     "LOCAL_HELPER_UPGRADE_FEE_INVALID",
   );
+  const gasLimit = decimal(plan.feeLimit.gasLimit, "LOCAL_HELPER_UPGRADE_FEE_INVALID", true);
+  const feeCap = decimal(plan.feeLimit.feeCapBaseUnit, "LOCAL_HELPER_UPGRADE_FEE_INVALID", true);
+  const planMax = decimal(
+    plan.feeLimit.maxFeePerGasBaseUnit,
+    "LOCAL_HELPER_UPGRADE_FEE_INVALID",
+    true,
+  );
+  const planPriority = decimal(
+    plan.feeLimit.maxPriorityFeePerGasBaseUnit,
+    "LOCAL_HELPER_UPGRADE_FEE_INVALID",
+  );
   if (
     nextMax < previousMax ||
     nextPriority < previousPriority ||
     (nextMax === previousMax && nextPriority === previousPriority) ||
-    nextPriority > nextMax
+    nextPriority > nextMax ||
+    nextMax > planMax ||
+    nextPriority > planPriority ||
+    gasLimit * nextMax > feeCap
   ) {
     throw new RangeError("LOCAL_HELPER_UPGRADE_REPLACEMENT_FEE_INVALID");
   }

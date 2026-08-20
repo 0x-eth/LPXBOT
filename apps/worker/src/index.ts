@@ -111,6 +111,7 @@ export { LoopbackLocalPositionSignerGateway } from "./loopback-local-position-si
 export { LoopbackLocalHelperSweepSignerGateway } from "./loopback-local-helper-sweep-signer-gateway.js";
 export {
   decideLocalHelperUpgradeDeploymentObservation,
+  localHelperUpgradeInitialFee,
   LocalHelperUpgradeRecoveryWorker,
   LocalHelperUpgradeWorkerError,
   validateLocalHelperUpgradeWorkPlan,

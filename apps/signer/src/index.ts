@@ -18,6 +18,8 @@ export type {
   LocalPositionStepSigningResult,
   LocalHelperSweepPlanAuthorizer,
   LocalHelperSweepSigningResult,
+  LocalHelperUpgradePlanAuthorizer,
+  LocalHelperUpgradeSigningResult,
   KeystoreStatus,
   KeystoreStore,
   SecurityPasswordApplication,

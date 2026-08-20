@@ -141,6 +141,7 @@ export interface LocalHelperUpgradeReplacementAuthorization {
   operationId: string;
   plan: LocalHelperUpgradePlan;
   planDigest: `sha256:${string}`;
+  previousFee: LocalHelperUpgradeReplacementCandidate["fee"];
   reauthenticatedSessionId: string;
   replacedTransactionId: string;
   tenantId: string;
@@ -521,11 +522,11 @@ export class LocalHelperUpgradeRecoveryWorker {
         }
         if (operation.cursor === "deploy-v2") {
           if (operation.transactions.length === 0) {
+            const fee = initialFee(operation.plan);
             const signed = await this.#signer.signAndDeliver({
               generation: 0,
-              maxFeePerGasBaseUnit: operation.plan.feeLimit.maxFeePerGasBaseUnit,
-              maxPriorityFeePerGasBaseUnit:
-                operation.plan.feeLimit.maxPriorityFeePerGasBaseUnit,
+              maxFeePerGasBaseUnit: fee.maxFeePerGasBaseUnit,
+              maxPriorityFeePerGasBaseUnit: fee.maxPriorityFeePerGasBaseUnit,
               operationId: operation.operationId,
               plan: operation.plan,
               planDigest: operation.planDigest,
@@ -624,14 +625,12 @@ export class LocalHelperUpgradeRecoveryWorker {
         historicalValidationTime(authorization.plan),
       );
       const previous = authorization.plan;
-      const previousFee = this.#activeReplacementFee(authorization);
       validateLocalHelperUpgradeReplacement(
         previous,
-        localHelperUpgradeReplacementCandidate(previous, previousFee),
+        localHelperUpgradeReplacementCandidate(previous, authorization.previousFee),
         localHelperUpgradeReplacementCandidate(previous, authorization.fee),
       );
       const signed = await this.#signer.signAndDeliver({
-        fee: authorization.fee,
         generation: authorization.generation,
         maxFeePerGasBaseUnit: authorization.fee.maxFeePerGasBaseUnit,
         maxPriorityFeePerGasBaseUnit: authorization.fee.maxPriorityFeePerGasBaseUnit,
@@ -641,7 +640,7 @@ export class LocalHelperUpgradeRecoveryWorker {
         reauthenticatedSessionId: authorization.reauthenticatedSessionId,
         tenantId: authorization.tenantId,
         userId: authorization.userId,
-      } as Parameters<LocalHelperUpgradeSignerGateway["signAndDeliver"]>[0]);
+      });
       this.#assertSignerResult(
         {
           operationId: authorization.operationId,
@@ -666,16 +665,6 @@ export class LocalHelperUpgradeRecoveryWorker {
       });
       throw error;
     }
-  }
-
-  #activeReplacementFee(
-    authorization: LocalHelperUpgradeReplacementAuthorization,
-  ): LocalHelperUpgradeReplacementCandidate["fee"] {
-    const operation = authorization.plan;
-    return {
-      maxFeePerGasBaseUnit: operation.feeLimit.maxFeePerGasBaseUnit,
-      maxPriorityFeePerGasBaseUnit: operation.feeLimit.maxPriorityFeePerGasBaseUnit,
-    };
   }
 
   #assertClaim(claim: LocalHelperUpgradeWorkClaim): void {
@@ -747,4 +736,22 @@ export class LocalHelperUpgradeRecoveryWorker {
       tokenB: plan.target.tokenB,
     });
   }
+}
+
+export function localHelperUpgradeInitialFee(
+  plan: LocalHelperUpgradePlan,
+): LocalHelperUpgradeReplacementCandidate["fee"] {
+  validateLocalHelperUpgradeWorkPlan(plan, historicalValidationTime(plan));
+  return initialFee(plan);
+}
+
+function initialFee(
+  plan: LocalHelperUpgradePlan,
+): LocalHelperUpgradeReplacementCandidate["fee"] {
+  const max = BigInt(plan.feeLimit.maxFeePerGasBaseUnit);
+  const priority = BigInt(plan.feeLimit.maxPriorityFeePerGasBaseUnit);
+  return {
+    maxFeePerGasBaseUnit: (max > 1n ? max / 2n : max).toString(),
+    maxPriorityFeePerGasBaseUnit: (priority > 1n ? priority / 2n : priority).toString(),
+  };
 }
