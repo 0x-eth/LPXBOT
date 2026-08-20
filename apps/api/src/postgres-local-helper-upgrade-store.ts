@@ -7,16 +7,16 @@ import type {
 import { P05_LOCAL_HELPER_UPGRADE_REGISTRY } from "@lpbot/chain-registry";
 import {
   assertWalletHelperV2Verification,
-  localHelperResidualSnapshotDigest,
   localHelperUpgradePlanDigest,
   localHelperUpgradeSelectorSetHash,
   localHelperV1SupersedeDecision,
   type LocalHelperUpgradePlan,
   type WalletHelperV2Verification,
 } from "@lpbot/domain/local-helper-upgrade";
-import type {
-  LocalHelperResidualSnapshot,
-  LocalHelperSweepBinding,
+import {
+  localHelperResidualSnapshotDigest,
+  type LocalHelperResidualSnapshot,
+  type LocalHelperSweepBinding,
 } from "@lpbot/domain/local-helper-sweep";
 import type { Pool, PoolClient, QueryResultRow } from "pg";
 
