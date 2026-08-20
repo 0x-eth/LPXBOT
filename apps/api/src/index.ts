@@ -144,6 +144,12 @@ export {
   parseLocalHelperSweepPreview,
   parseLocalHelperSweepSubmit,
 } from "./local-helper-sweeps.js";
+export {
+  PostgresLocalHelperResidualSnapshotStore,
+  PostgresLocalHelperSweepBindingStore,
+  PostgresLocalHelperSweepOperationStore,
+  PostgresLocalHelperSweepPreviewStore,
+} from "./postgres-local-helper-sweep-store.js";
 export type {
   LocalHelperResidualChainInspection,
   LocalHelperResidualChainReader,
@@ -153,6 +159,7 @@ export type {
   LocalHelperSweepErrorCode,
   LocalHelperSweepNonceView,
   LocalHelperSweepOperationStore,
+  LocalHelperSweepPreviewFacts,
   LocalHelperSweepPreviewStore,
   LocalHelperSweepReservation,
   StoredLocalHelperSweepBatch,

@@ -160,12 +160,12 @@ export class PostgresLocalHelperSweepBindingStore implements LocalHelperSweepBin
   async transition(input: Parameters<LocalHelperSweepBindingStore["transition"]>[0]) {
     const result = await this.pool.query<BindingRow>(
       `UPDATE wallet_helper_deployment_bindings
-          SET state = $7, failure_code = $8, verified_block_number = $9::numeric,
+          SET state = $5, failure_code = $6, verified_block_number = $7::numeric,
               updated_at = clock_timestamp()
         WHERE binding_id = $1 AND tenant_id = $2 AND user_id = $3 AND wallet_id = $4
           AND chain_id = 31337 AND helper_version = 'WalletHelperV1'
           AND state IN ('active', 'degraded')
-          AND ($7 <> 'active' OR NOT EXISTS (
+          AND ($5 <> 'active' OR NOT EXISTS (
             SELECT 1 FROM local_helper_sweep_batches batch
              WHERE batch.helper_binding_id = wallet_helper_deployment_bindings.binding_id
                AND batch.state IN ('queued', 'running', 'reconciling')
@@ -176,8 +176,6 @@ export class PostgresLocalHelperSweepBindingStore implements LocalHelperSweepBin
         input.tenantId,
         input.userId,
         input.walletId,
-        31_337,
-        "WalletHelperV1",
         input.state,
         input.failureCode,
         input.verifiedBlockNumber,

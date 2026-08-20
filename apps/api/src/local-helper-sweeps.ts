@@ -317,7 +317,7 @@ export class MemoryLocalHelperResidualSnapshotStore implements LocalHelperResidu
   }
 }
 
-interface LocalHelperSweepPreviewFacts {
+export interface LocalHelperSweepPreviewFacts {
   assets: LocalHelperSweepAsset[];
   binding: LocalHelperSweepBinding;
   blockHash: Hex;
