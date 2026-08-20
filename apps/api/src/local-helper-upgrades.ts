@@ -936,7 +936,7 @@ export class LocalHelperUpgradeService implements LocalHelperUpgradeApplication 
     if (request.walletId !== wallet.walletId || !uuidPattern.test(wallet.walletId)) {
       throw new LocalHelperUpgradeError("WALLET_NOT_FOUND");
     }
-    if (wallet.lockStatus !== "ready" || wallet.lifecycleStatus !== "active") {
+    if (wallet.lockStatus !== "ready") {
       throw new LocalHelperUpgradeError("WALLET_LOCKED");
     }
     if (!addressPattern.test(wallet.address) || wallet.address !== wallet.address.toLowerCase()) {
