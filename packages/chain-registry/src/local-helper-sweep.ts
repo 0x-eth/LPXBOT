@@ -104,14 +104,14 @@ const positionRegistry = P05_LOCAL_POSITION_EXECUTION_REGISTRY;
 const registryPayload: RegistryPayload = {
   chainId: 31_337,
   components: Object.freeze([
-    Object.freeze({ ...localSwapComponent("adapter", swapRegistry) }),
+    Object.freeze({ ...localSwapComponent("adapter", swapRegistry), role: "adapter" }),
     Object.freeze({
       address: positionRegistry.manager.address,
       role: "manager",
       runtimeCodeHash: positionRegistry.manager.runtimeCodeHash,
     }),
-    Object.freeze({ ...localSwapComponent("permit2", swapRegistry) }),
-    Object.freeze({ ...localSwapComponent("router", swapRegistry) }),
+    Object.freeze({ ...localSwapComponent("permit2", swapRegistry), role: "permit2" }),
+    Object.freeze({ ...localSwapComponent("router", swapRegistry), role: "router" }),
   ]),
   dustPolicy: Object.freeze({
     comparison: "balance>dust",

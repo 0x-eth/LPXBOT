@@ -375,9 +375,22 @@ export function validateLocalHelperResidualSnapshot(
     !same(snapshot.wallet, context.wallet) ||
     !same(snapshot.binding, context.binding) ||
     snapshot.wallet.address !== snapshot.binding.ownerAddress ||
-    snapshot.identity.observedOwner !== snapshot.binding.ownerAddress ||
-    snapshot.identity.observedRuntimeCodeHash !== snapshot.binding.runtimeCodeHash ||
     !uuidPattern.test(snapshot.wallet.walletId) ||
+    !uuidPattern.test(snapshot.binding.bindingId) ||
+    !addressPattern.test(snapshot.wallet.address) ||
+    !addressPattern.test(snapshot.binding.helperAddress) ||
+    !addressPattern.test(snapshot.binding.ownerAddress) ||
+    !addressPattern.test(snapshot.binding.adapterAddress) ||
+    !addressPattern.test(snapshot.binding.permit2Address) ||
+    !hashPattern.test(snapshot.binding.runtimeCodeHash) ||
+    (snapshot.identity.observedOwner !== null &&
+      !addressPattern.test(snapshot.identity.observedOwner)) ||
+    (snapshot.identity.observedRuntimeCodeHash !== null &&
+      !hashPattern.test(snapshot.identity.observedRuntimeCodeHash)) ||
+    snapshot.identity.ownerMatches !==
+      (snapshot.identity.observedOwner === snapshot.binding.ownerAddress) ||
+    snapshot.identity.runtimeMatches !==
+      (snapshot.identity.observedRuntimeCodeHash === snapshot.binding.runtimeCodeHash) ||
     snapshot.balances.length !== context.tokenPolicy.length + 1 ||
     new Set(snapshot.balances.map(({ assetId }) => assetId)).size !== snapshot.balances.length ||
     new Set(snapshot.allowances.map(({ assetId }) => assetId)).size !== snapshot.allowances.length ||
@@ -488,6 +501,7 @@ export function validateLocalHelperSweepPlan(
   const invalid = () => {
     throw new RangeError("LOCAL_HELPER_SWEEP_PLAN_INVALID");
   };
+  const { state: _bindingState, ...expectedHelper } = context.expectedBinding;
   if (
     plan.chainId !== 31_337 ||
     plan.schemaVersion !== 2 ||
@@ -499,7 +513,7 @@ export function validateLocalHelperSweepPlan(
     !uuidPattern.test(plan.batchId) ||
     !uuidPattern.test(plan.operationId) ||
     !same(plan.wallet, context.expectedWallet) ||
-    !same(plan.helper, { ...context.expectedBinding, state: undefined }) ||
+    !same(plan.helper, expectedHelper) ||
     plan.recipient !== plan.helper.ownerAddress ||
     plan.wallet.address !== plan.recipient ||
     plan.transaction.to !== plan.helper.helperAddress ||
