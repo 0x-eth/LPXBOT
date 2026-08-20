@@ -73,6 +73,20 @@ export type {
   LocalHelperSweepRegistry,
   LocalHelperSweepTokenIdentity,
 } from "./local-helper-sweep.js";
+export {
+  buildWalletHelperV2DeploymentMaterial,
+  localHelperUpgradeRegistryDigest,
+  P05_LOCAL_HELPER_UPGRADE_PLAN_VERSION,
+  P05_LOCAL_HELPER_UPGRADE_REGISTRY,
+  P05_LOCAL_HELPER_UPGRADE_REGISTRY_VERSION,
+  P05_LOCAL_HELPER_UPGRADE_SNAPSHOT_VERSION,
+  validateLocalHelperUpgradeRegistry,
+  WALLET_HELPER_V2_VERSION,
+} from "./local-helper-upgrade.js";
+export type {
+  LocalHelperUpgradeEnvironment,
+  LocalHelperUpgradeRegistry,
+} from "./local-helper-upgrade.js";
 export type {
   HelperBytecodeTemplate,
   HelperDeploymentComponent,
