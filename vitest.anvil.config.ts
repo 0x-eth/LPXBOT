@@ -10,6 +10,7 @@ export default defineConfig({
       "tests/integration/anvil-helper-deployment.integration.ts",
       "tests/integration/anvil-local-swap-execution.integration.ts",
       "tests/integration/anvil-local-position-execution.integration.ts",
+      "tests/integration/anvil-local-helper-sweep.integration.ts",
     ],
     testTimeout: 30_000,
   },
