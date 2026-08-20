@@ -373,7 +373,7 @@ test("shows manual recovery without exposing arbitrary recovery calldata", async
   const panel = await openPanel(page, state);
   await expect(panel).toContainText("需人工恢复");
   await expect(panel).toContainText("非零 allowance");
-  await expect(panel).toContainText("Helper 持有 NFT");
+  await expect(panel).toContainText("WalletHelperV1 仍持有 NFT");
   await expect(panel).toContainText("未知 Token");
   await expect(panel).toContainText(`V1: ${sourceHelperAddress}`);
 
@@ -384,7 +384,7 @@ test("shows manual recovery without exposing arbitrary recovery calldata", async
   await expect(dialog.getByRole("textbox")).toHaveCount(0);
   await dialog.getByRole("button", { name: "关闭 Helper 升级预览" }).click();
 
-  const query = panel.getByLabel("Operation");
+  const query = panel.getByRole("textbox", { name: "Operation", exact: true });
   await query.fill(operationId);
   await panel.getByRole("button", { name: "查询 Helper 升级 operation" }).click();
   await expect.poll(() => state.operationQueries).toBeGreaterThan(0);
